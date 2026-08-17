@@ -31,15 +31,12 @@ docker run --rm \
   postgres:17-alpine \
   pg_dump -Fc -h "$POSTGRES_HOST" -p "${POSTGRES_PORT:-5432}" -U "$POSTGRES_USER" "$POSTGRES_DB" > "$DB_FILE"
 
-# Backup named media volume if it exists.
-MEDIA_VOL="$(docker compose config --volumes | grep -E '(^|_)media_data$' | head -n1 || true)"
-if [[ -n "$MEDIA_VOL" ]]; then
-  PROJECT="$(basename "$PWD" | tr '[:upper:]' '[:lower:]')"
-  FULL_VOL="${COMPOSE_PROJECT_NAME:-$PROJECT}_${MEDIA_VOL}"
-  if docker volume inspect "$FULL_VOL" >/dev/null 2>&1; then
-    docker run --rm -v "$FULL_VOL":/data:ro -v "$(realpath "$BACKUP_DIR")":/backup alpine:3.20 \
-      sh -c "tar czf /backup/$(basename "$MEDIA_FILE") -C /data ."
-  fi
+# Use the resolved named volume directly. This also preserves media when the
+# new Compose project intentionally reuses the version 17 volume name.
+MEDIA_VOL="${MEDIA_VOLUME_NAME:-greenlife_staff_media_data}"
+if docker volume inspect "$MEDIA_VOL" >/dev/null 2>&1; then
+  docker run --rm -v "$MEDIA_VOL":/data:ro -v "$(realpath "$BACKUP_DIR")":/backup alpine:3.20 \
+    sh -c "tar czf /backup/$(basename "$MEDIA_FILE") -C /data ."
 fi
 
 find "$BACKUP_DIR" -type f -mtime +"$RETENTION_DAYS" -delete || true
