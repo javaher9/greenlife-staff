@@ -1,0 +1,142 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<div class="executive-shell">
+  <section class="exec-hero glass-card">
+    <div class="exec-hero-copy">
+      <div class="eyebrow">GREENLIFE · EXECUTIVE VIEW</div>
+      <h1>امروز چه خبر است؟</h1>
+      <p>{{ day|jdate }} · یک نگاه سریع به چیزهایی که واقعاً نیاز به توجه دارند.</p>
+      <div class="exec-actions">
+        <a class="exec-btn primary" href="/live/">داشبورد زنده شعبه</a>
+        <a class="exec-btn" href="/reports/">گزارش‌های روزانه</a>
+      </div>
+    </div>
+    <form class="exec-filter" method="get">
+      <label>نمایش شعبه</label>
+      <select name="branch" onchange="this.form.submit()">
+        {% if user.profile.role == 'admin' %}<option value="">همه شعب</option>{% endif %}
+        {% for b in branches %}<option value="{{ b.id }}" {% if selected_branch and selected_branch.id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+      </select>
+    </form>
+  </section>
+
+  <section class="exec-kpi-grid">
+    <article class="metric-card metric-attention">
+      <div class="metric-icon">!</div><div><span>نیازمند توجه</span><strong>{{ risk_count|fa }}</strong><small>مورد عملیاتی</small></div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-icon">👥</div><div><span>تیم فعال</span><strong>{{ team_count|fa }}</strong><small>نفر</small></div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-icon">↗</div><div><span>درآمد امروز</span><strong>{{ revenue_today|fa }}</strong><small>{% if revenue_change != None %}{{ revenue_change|fa }}٪ نسبت به دیروز{% else %}بدون مبنای دیروز{% endif %}</small></div>
+    </article>
+    <article class="metric-card">
+      <div class="metric-icon">✓</div><div><span>مرخصی/ماموریت</span><strong>{{ leave_people|length|fa }}</strong><small>امروز</small></div>
+    </article>
+  </section>
+
+  <section class="exec-priority-grid">
+    <article class="attention-card danger-card">
+      <div class="sectionhead"><div><span class="eyebrow">حضور</span><h2>تأخیرهای امروز</h2></div><span class="count-badge">{{ late_people|length|fa }}</span></div>
+      <div class="people-stack">
+        {% for p in late_people %}
+        <a class="priority-person" href="/employees/{{ p.profile_id }}/file/">
+          <div class="avatar-md">{% if p.avatar %}<img src="{{ p.avatar }}">{% else %}<span>{{ p.name|first }}</span>{% endif %}</div>
+          <div class="priority-main"><strong>{{ p.name }}</strong><small>{{ p.branch }} · {{ p.job_title|default:'بدون سمت' }}</small></div>
+          <div class="priority-stat"><b>{{ p.time }}</b><span>ورود</span></div>
+        </a>
+        {% empty %}<div class="empty-state">امروز فعلاً تأخیری ثبت نشده.</div>{% endfor %}
+      </div>
+    </article>
+
+    <article class="attention-card warning-card">
+      <div class="sectionhead"><div><span class="eyebrow">حضور</span><h2>هنوز نیامده‌اند</h2></div><span class="count-badge">{{ missing_people|length|fa }}</span></div>
+      <div class="people-stack">
+        {% for p in missing_people %}
+        <a class="priority-person" href="/employees/{{ p.profile_id }}/file/">
+          <div class="avatar-md">{% if p.avatar %}<img src="{{ p.avatar }}">{% else %}<span>{{ p.name|first }}</span>{% endif %}</div>
+          <div class="priority-main"><strong>{{ p.name }}</strong><small>{{ p.branch }} · {{ p.job_title|default:'بدون سمت' }}</small></div>
+          <div class="priority-stat muted-stat"><b>—</b><span>ورود</span></div>
+        </a>
+        {% empty %}<div class="empty-state">همه وضعیت مشخص دارند.</div>{% endfor %}
+      </div>
+    </article>
+
+    <article class="attention-card">
+      <div class="sectionhead"><div><span class="eyebrow">عملکرد</span><h2>KPI پایین</h2></div><span class="count-badge">{{ kpi_issues|length|fa }}</span></div>
+      <div class="people-stack">
+        {% for p in kpi_issues %}
+        <a class="priority-person" href="/employees/{{ p.profile_id }}/file/">
+          <div class="avatar-md">{% if p.avatar %}<img src="{{ p.avatar }}">{% else %}<span>{{ p.name|first }}</span>{% endif %}</div>
+          <div class="priority-main"><strong>{{ p.name }}</strong><small>{{ p.branch }}</small></div>
+          <div class="priority-stat"><b>{{ p.score|fa }}</b><span>از ۱۰۰</span></div>
+        </a>
+        {% empty %}<div class="empty-state">KPI بحرانی دیده نمی‌شود.</div>{% endfor %}
+      </div>
+    </article>
+  </section>
+
+  <section class="exec-middle-grid">
+    <article class="glass-card">
+      <div class="sectionhead"><div><span class="eyebrow">وظایف</span><h2>Taskهای عقب‌افتاده</h2></div><a href="/tasks/">مشاهده همه</a></div>
+      <div class="task-list-premium">
+        {% for t in overdue_tasks %}
+        <div class="task-premium"><div><strong>{{ t.title }}</strong><small>{{ t.assigned_to.get_full_name|default:t.assigned_to.username }} · موعد {{ t.due_date|jdate }}</small></div><span class="mini-danger">عقب‌افتاده</span></div>
+        {% empty %}<div class="empty-state">Task عقب‌افتاده‌ای ندارید.</div>{% endfor %}
+      </div>
+    </article>
+
+    <article class="glass-card">
+      <div class="sectionhead"><div><span class="eyebrow">نظم روزانه</span><h2>چک‌لیست ناقص</h2></div><a href="/checklists/team/">وضعیت تیم</a></div>
+      <div class="people-stack compact">
+        {% for p in checklist_issues %}
+        <a class="priority-person" href="/employees/{{ p.profile_id }}/file/">
+          <div class="avatar-md">{% if p.avatar %}<img src="{{ p.avatar }}">{% else %}<span>{{ p.name|first }}</span>{% endif %}</div>
+          <div class="priority-main"><strong>{{ p.name }}</strong><small>{{ p.branch }}</small></div>
+          <div class="priority-stat"><b>{{ p.missing|fa }}</b><span>مورد ناقص</span></div>
+        </a>
+        {% empty %}<div class="empty-state">همه موارد اجباری تکمیل شده‌اند.</div>{% endfor %}
+      </div>
+    </article>
+  </section>
+
+  <section class="glass-card branch-performance">
+    <div class="sectionhead"><div><span class="eyebrow">مقایسه شعب</span><h2>نبض امروز شعب</h2></div></div>
+    <div class="branch-card-grid">
+      {% for b in branch_cards %}
+      <div class="branch-card">
+        <div class="branch-title"><strong>{{ b.branch.name }}</strong><span>{{ b.present|fa }}/{{ b.total|fa }} حاضر</span></div>
+        <div class="branch-visual"><div class="branch-bar"><span style="width:{% if b.total %}{% widthratio b.present b.total 100 %}{% else %}0{% endif %}%"></span></div></div>
+        <div class="branch-bottom"><span><b>{{ b.late|fa }}</b> تأخیر</span><span><b>{{ b.revenue|fa }}</b> درآمد</span></div>
+      </div>
+      {% empty %}<div class="empty-state">اطلاعات شعب موجود نیست.</div>{% endfor %}
+    </div>
+  </section>
+
+  <section class="exec-bottom-grid">
+    <article class="glass-card">
+      <div class="sectionhead"><div><span class="eyebrow">گزارش شبانه</span><h2>گزارش‌های جاافتاده</h2></div></div>
+      <div class="people-stack compact">
+        {% for p in report_issues %}
+        <a class="priority-person" href="/employees/{{ p.profile_id }}/file/">
+          <div class="avatar-md">{% if p.avatar %}<img src="{{ p.avatar }}">{% else %}<span>{{ p.name|first }}</span>{% endif %}</div>
+          <div class="priority-main"><strong>{{ p.name }}</strong><small>{{ p.branch }}</small></div>
+          <div class="priority-stat"><b>{{ p.count|fa }}</b><span>شب در ۷ روز</span></div>
+        </a>
+        {% empty %}<div class="empty-state">در ۷ روز اخیر موردی نیست.</div>{% endfor %}
+      </div>
+    </article>
+    <article class="glass-card">
+      <div class="sectionhead"><div><span class="eyebrow">وضعیت برنامه‌ریزی</span><h2>مرخصی و ماموریت امروز</h2></div></div>
+      <div class="people-stack compact">
+        {% for p in leave_people %}
+        <a class="priority-person" href="/employees/{{ p.profile_id }}/file/">
+          <div class="avatar-md">{% if p.avatar %}<img src="{{ p.avatar }}">{% else %}<span>{{ p.name|first }}</span>{% endif %}</div>
+          <div class="priority-main"><strong>{{ p.name }}</strong><small>{{ p.branch }}</small></div>
+          <div class="priority-stat"><b>{{ p.label }}</b><span>وضعیت</span></div>
+        </a>
+        {% empty %}<div class="empty-state">کسی مرخصی یا ماموریت ندارد.</div>{% endfor %}
+      </div>
+    </article>
+  </section>
+</div>
+{% endblock %}

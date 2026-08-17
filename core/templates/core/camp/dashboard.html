@@ -1,0 +1,72 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="camp-v18-shell">
+  <section class="camp-v18-head">
+    <div>
+      <h1>Camp Dashboard <span class="camp-tent">△</span></h1>
+      <p>نمای کلی و وضعیت لحظه‌ای کمپ گرین‌لایف</p>
+    </div>
+    <div class="camp-head-actions">
+      <a href="/camp/reports/" class="camp-btn camp-btn-light"><span>▣</span> گزارش خلاصه امروز</a>
+      {% if role == 'owner' %}<a href="/camp/commander/" class="camp-btn camp-btn-dark">Camp Commander <span>✦</span></a>{% endif %}
+    </div>
+  </section>
+
+  <section class="camp-v18-kpis">
+    <a href="/camp/workers/" class="v18-kpi kpi-green"><div class="v18-kpi-icon">♙</div><div><span>کارگر حاضر امروز</span><b>{{ summary.present_workers|fa }} نفر</b><small>هزینه کارگری {{ summary.worker_cost|toman }}</small></div><i class="kpi-line"><em style="width:82%"></em></i></a>
+    <a href="/camp/projects/" class="v18-kpi kpi-orange"><div class="v18-kpi-icon">▥</div><div><span>پروژه‌های فعال</span><b>{{ active_projects|fa }} مورد</b><small class="danger-copy">{{ delayed_projects|fa }} مورد عقب افتاده</small></div></a>
+    <a href="/camp/reports/" class="v18-kpi kpi-green"><div class="v18-kpi-icon">▣</div><div><span>هزینه امروز</span><b>{{ summary.today_cost|toman }}</b><small>تومان · خرید + غذا + کارگر</small></div></a>
+    <a href="/camp/reports/" class="v18-kpi kpi-blue"><div class="v18-kpi-icon">↗</div><div><span>هزینه این هفته</span><b>{{ summary.week_cost|toman }}</b><small>تومان</small></div></a>
+    <a href="/camp/purchases/" class="v18-kpi kpi-purple"><div class="v18-kpi-icon">▱</div><div><span>خریدهای در انتظار</span><b>{{ pending_purchases|fa }} مورد</b><small class="warn-copy">{{ urgent_purchases|fa }} مورد فوری</small></div></a>
+    <a href="#alerts" class="v18-kpi kpi-red"><div class="v18-kpi-icon">!</div><div><span>هشدارهای فعال</span><b>{{ alert_count|fa }} مورد</b><small>نیاز به توجه</small></div></a>
+  </section>
+
+  <section class="camp-v18-row camp-v18-row-main">
+    <article class="camp-v18-card alerts-card" id="alerts">
+      <div class="v18-section-head"><h2><span class="red-dot">↯</span> هشدارهای مهم</h2><a href="/camp/reports/">مشاهده همه هشدارها</a></div>
+      <div class="v18-alert-list">
+        {% for a in alerts|slice:':6' %}
+          <div class="v18-alert {{ a.level }}"><span class="alert-badge">{% if a.level == 'danger' %}!{% else %}△{% endif %}</span><div><strong>{{ a.title }}</strong><small>{{ a.text }}</small></div></div>
+        {% empty %}<div class="v18-empty">هشدار مهمی برای امروز ثبت نشده است.</div>{% endfor %}
+      </div>
+    </article>
+
+    <article class="camp-v18-card quick-card">
+      <div class="v18-section-head"><h2>بررسی سریع</h2></div>
+      <div class="quick-grid">
+        <a href="/camp/purchases/"><span class="quick-ico q-red">▱</span><strong>درخواست‌های رو به اقدام</strong><b>{{ pending_purchases|fa }} قلم</b></a>
+        <a href="/camp/purchases/"><span class="quick-ico q-green">▣</span><strong>فاکتورهای ثبت‌شده</strong><b>{{ invoice_today_count|fa }} فاکتور امروز</b></a>
+        <a href="/camp/tasks/"><span class="quick-ico q-blue">▥</span><strong>وظایف امروز</strong><b>{{ summary.tasks_total|fa }} مورد</b><small>{{ summary.tasks_done|fa }} انجام شده</small></a>
+        <a href="/camp/photos/"><span class="quick-ico q-purple">▣</span><strong>گزارش عکس امروز</strong><b>{{ summary.photos|fa }} عکس</b></a>
+        <a href="/camp/workers/"><span class="quick-ico q-orange">♙</span><strong>هزینه کارگر امروز</strong><b>{{ summary.worker_cost|toman }}</b></a>
+        <a href="/camp/food/"><span class="quick-ico q-orange">⌘</span><strong>هزینه غذا امروز</strong><b>{{ summary.food_cost|toman }}</b></a>
+      </div>
+    </article>
+
+    <article class="camp-v18-card expense-card">
+      <div class="v18-section-head"><h2>هزینه‌ها</h2><div class="legend"><span><i class="lg-green"></i> هزینه روزانه</span><span><i class="lg-dash"></i> میانگین ۷ روز</span></div></div>
+      <div class="cost-chart">
+        <div class="avg-line" style="bottom:48%"></div>
+        {% for p in expense_trend %}<div class="cost-col"><div class="cost-bar"><span style="height:{{ p.pct }}%"></span></div><small>{{ p.date|jdate }}</small></div>{% endfor %}
+      </div>
+      <div class="cost-summary"><div><span>میانگین هزینه روزانه</span><b>{{ expense_average|toman }}</b><small>تومان</small></div><div><span>بیشترین هزینه</span><b>{{ expense_max|toman }}</b><small>تومان</small></div><div><span>کمترین هزینه</span><b>{{ expense_min|toman }}</b><small>تومان</small></div></div>
+    </article>
+  </section>
+
+  <section class="camp-v18-row camp-v18-row-bottom">
+    <article class="camp-v18-card invoices-card">
+      <div class="v18-section-head"><h2>آخرین فاکتورها</h2><a href="/camp/purchases/">مشاهده همه فاکتورها</a></div>
+      {% for x in recent_invoices %}<div class="v18-list-row"><span class="list-ico invoice-ico">▧</span><div><strong>فاکتور {{ x.purchase.item_name }}</strong><small>از: {{ x.vendor|default:'فروشنده ثبت نشده' }}</small></div><div class="list-price"><b>{{ x.final_amount|toman }}</b><small>تومان</small></div><span class="status-pill {% if x.is_paid %}paid{% else %}unpaid{% endif %}">{% if x.is_paid %}پرداخت شده{% else %}پرداخت نشده{% endif %}</span></div>{% empty %}<div class="v18-empty">هنوز فاکتوری ثبت نشده است.</div>{% endfor %}
+    </article>
+
+    <article class="camp-v18-card stock-card">
+      <div class="v18-section-head"><h2>موجودی‌های رو به اتمام</h2><a href="/camp/inventory/">مشاهده انبار</a></div>
+      {% for x in low_items %}<div class="v18-list-row stock-row"><span class="list-ico stock-ico">◇</span><div><strong>{{ x.name }}</strong><small>حداقل: {{ x.minimum_stock|fa }} {{ x.get_unit_display }}</small></div><div class="stock-meter"><i><em style="width:{% if x.stock_status == 'critical' %}18{% else %}42{% endif %}%"></em></i></div><span class="status-pill {% if x.stock_status == 'critical' %}critical{% else %}low{% endif %}">{% if x.stock_status == 'critical' %}بحرانی{% else %}کم{% endif %}</span></div>{% empty %}<div class="v18-empty">تمام موجودی‌ها در سطح مناسب هستند.</div>{% endfor %}
+    </article>
+
+    <article class="camp-v18-card projects-card">
+      <div class="v18-section-head"><h2>پروژه‌های عقب افتاده</h2><a href="/camp/projects/">مشاهده همه پروژه‌ها</a></div>
+      {% for p in delayed_project_list %}<div class="v18-list-row project-row"><span class="list-ico project-ico">▥</span><div><strong>{{ p.name }}</strong><small>{% if p.last_progress_date %}{{ p.last_progress_date|jdate }} آخرین پیشرفت{% endif %}</small></div><div class="project-meter"><i><em style="width:{{ p.progress }}%"></em></i><b>{{ p.progress|fa }}٪</b></div></div>{% empty %}<div class="v18-empty">پروژه عقب‌افتاده‌ای ثبت نشده است.</div>{% endfor %}
+    </article>
+  </section>
+</section>
+{% endblock %}

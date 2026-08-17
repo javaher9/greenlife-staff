@@ -1,0 +1,20 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="profile-cover {% if profile.avatar %}has-photo{% endif %}" {% if profile.avatar %}style="--profile-bg:url('{{ profile.avatar.url }}')"{% endif %}>
+  <div class="profile-cover-bg"></div>
+  <div class="profile-cover-content">
+    <div class="avatar-xl">
+      {% if profile.avatar %}<img src="{{ profile.avatar.url }}" alt="{{ user.get_full_name|default:user.username }}">{% else %}<span>{{ user.first_name|first|default:user.username|first }}</span>{% endif %}
+    </div>
+    <div><h1>{{ user.get_full_name|default:user.username }}</h1><p>{{ profile.job_title|default:'—' }}{% if profile.branch %} · {{ profile.branch }}{% endif %}</p></div>
+  </div>
+</section>
+<section class="panel profilecard">
+  <div class="sectionhead"><h2>اطلاعات پرسنلی</h2></div>
+  <div class="profilegrid"><div><span>نام</span><b>{{ user.get_full_name|default:user.username }}</b></div><div><span>کد پرسنلی</span><b>{{ profile.employee_code|default:'—' }}</b></div><div><span>سمت</span><b>{{ profile.job_title|default:'—' }}</b></div><div><span>شعبه</span><b>{{ profile.branch|default:'—' }}</b></div><div><span>تلفن</span><b>{{ profile.phone|default:'—' }}</b></div><div><span>نقش</span><b>{{ profile.get_role_display }}</b></div></div>
+</section>
+<section class="panel formbox">
+  <h2>عکس پروفایل</h2>
+  <p class="muted">این عکس در پروفایل به‌صورت پس‌زمینه و در لیست‌های مدیریتی به‌صورت تصویر کوچک نمایش داده می‌شود.</p>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}{{ avatar_form.as_p }}<button>ذخیره عکس</button></form>
+</section>
+{% endblock %}

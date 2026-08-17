@@ -1,0 +1,5 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="camp-shell">{% include 'core/camp/_nav.html' %}
+<section class="camp-page-head"><div><span class="eyebrow">FOOD COST CONTROL</span><h1>Food Plan</h1><p>هزینه ۷ روز اخیر: <strong>{{ week_cost|toman }}</strong></p></div>{% if role != 'worker' and role != 'finance' %}<a class="primary" href="/camp/food/new/">وعده جدید</a>{% endif %}</section>
+<div class="camp-food-grid">{% for x in plans %}<article class="food-card"><div class="food-date">{{ x.date|jdate }}</div><h3>{{ x.meal }}</h3><div class="food-people">{{ x.people_count|fa }} نفر</div><p>{{ x.ingredients|truncatechars:100 }}</p><div class="food-cost"><span>تخمین {{ x.estimated_cost|toman }}</span><strong>{{ x.actual_cost|toman }}</strong></div><small>مسئول: {{ x.responsible|default:'—' }}</small></article>{% empty %}<div class="camp-empty">برنامه غذایی ثبت نشده است.</div>{% endfor %}</div>
+</section>{% endblock %}

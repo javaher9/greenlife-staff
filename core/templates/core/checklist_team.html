@@ -1,0 +1,6 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="hero"><div><h1>وضعیت چک‌لیست تیم</h1><p>{{ day|jdate }}</p></div><a class="primary" href="/checklists/manage/">مدیریت چک‌لیست‌ها</a></section>
+<form method="get" class="panel"><label>تاریخ <input name="date" dir="ltr" value="{{ day|jdate }}" placeholder="۱۴۰۵/۰۵/۲۴"></label><button>نمایش</button></form>
+<section class="panel"><div class="tablewrap"><table><tr><th>پرسنل</th><th>شعبه</th><th>پیشرفت</th><th>موارد اجباری</th></tr>
+{% for r in rows %}<tr><td><div class="person-cell"><div class="avatar-xs">{% if r.user.profile.avatar %}<img src="{{ r.user.profile.avatar.url }}">{% else %}<span>{{ r.user.first_name|first|default:r.user.username|first }}</span>{% endif %}</div><strong>{{ r.user.get_full_name|default:r.user.username }}</strong></div></td><td>{{ r.user.profile.branch|default:'—' }}</td><td><span class="badge">{{ r.percent|fa }}٪</span> {{ r.done|fa }}/{{ r.total|fa }}</td><td>{{ r.required_done|fa }}/{{ r.required_total|fa }}</td></tr>{% empty %}<tr><td colspan="4">پرسنلی نیست.</td></tr>{% endfor %}
+</table></div></section>{% endblock %}

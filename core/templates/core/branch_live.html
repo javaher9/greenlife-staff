@@ -1,0 +1,84 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<div class="sectionhead live-head">
+  <div><h1>داشبورد زنده شعبه</h1><p class="muted">{{ data.date }} · آخرین بروزرسانی <span id="generatedAt">{{ data.generated_at }}</span></p></div>
+  <form method="get" class="branch-picker">
+    <select name="branch" onchange="this.form.submit()">
+      {% if user.profile.role == 'admin' %}<option value="">همه شعب</option>{% endif %}
+      {% for b in branches %}<option value="{{ b.id }}" {% if selected_branch and selected_branch.id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+    </select>
+  </form>
+</div>
+
+<div class="live-kpis">
+  <div><span>حاضر</span><b id="presentCount">{{ data.counts.present }}</b></div>
+  <div><span>با تأخیر</span><b id="lateCount">{{ data.counts.late }}</b></div>
+  <div><span>ورود ثبت نشده</span><b id="missingCount">{{ data.counts.missing }}</b></div>
+  <div><span>مرخصی/ماموریت</span><b id="leaveCount">{{ data.counts.leave }}</b></div>
+  <div><span>درآمد امروز</span><b id="revenueToday">{{ data.revenue_today }}</b></div>
+  <div><span>Task عقب‌افتاده</span><b id="overdueTasks">{{ data.overdue_tasks }}</b></div>
+</div>
+
+<div class="grid live-grid">
+  <section class="panel">
+    <div class="sectionhead"><h2>وضعیت پرسنل</h2><span class="live-dot">● زنده</span></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>پرسنل</th><th>وضعیت</th><th>ورود</th><th>خروج</th><th>Task عقب‌افتاده</th><th>گزارش جاافتاده ۷ روز</th></tr></thead>
+        <tbody id="livePeople">
+          {% for p in data.people %}
+          <tr>
+            <td><div class="person-cell"><div class="avatar-xs">{% if p.avatar %}<img src="{{ p.avatar }}">{% else %}<span>{{ p.name|first }}</span>{% endif %}</div><div><strong>{{ p.name }}</strong><small>{{ p.job_title }} · {{ p.branch }}</small></div></div></td>
+            <td><span class="status-pill {{ p.status }}">{{ p.status_label }}</span></td>
+            <td>{{ p.check_in|default:"—" }}</td><td>{{ p.check_out|default:"—" }}</td>
+            <td>{% if p.overdue_tasks %}<b class="warn">{{ p.overdue_tasks }}</b>{% else %}۰{% endif %}</td>
+            <td>{% if p.missing_reports_7d %}<b class="warn">{{ p.missing_reports_7d }}</b>{% else %}۰{% endif %}</td>
+          </tr>{% empty %}<tr><td colspan="6">پرسنلی یافت نشد.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <aside class="panel alert-panel">
+    <div class="sectionhead"><h2>نیازمند توجه</h2><form method="post" action="/api/alerts/run/" id="alertForm">{% csrf_token %}<button class="mini-btn" type="submit">بررسی الان</button></form></div>
+    <div id="alertResult" class="muted"></div>
+    {% for n in alerts %}<div class="smart-alert"><strong>{{ n.title }}</strong><p>{{ n.message }}</p><small>{{ n.created_at|jdatetime }}</small></div>{% empty %}<p class="muted">هشدار خوانده‌نشده‌ای ندارید.</p>{% endfor %}
+    <a class="primary ghost" href="/notifications/">همه اعلان‌ها</a>
+  </aside>
+</div>
+
+<script>
+(function(){
+ const params=new URLSearchParams(location.search);
+ const api='/api/live/'+(params.toString()?'?'+params.toString():'');
+ const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+ function row(p){
+   const avatar=p.avatar?'<img src="'+esc(p.avatar)+'">':'<span>'+esc((p.name||'?')[0])+'</span>';
+   return '<tr><td><div class="person-cell"><div class="avatar-xs">'+avatar+'</div><div><strong>'+esc(p.name)+'</strong><small>'+esc(p.job_title||'')+' · '+esc(p.branch)+'</small></div></div></td>'+
+   '<td><span class="status-pill '+esc(p.status)+'">'+esc(p.status_label)+'</span></td><td>'+(p.check_in||'—')+'</td><td>'+(p.check_out||'—')+'</td>'+
+   '<td>'+(p.overdue_tasks?'<b class="warn">'+p.overdue_tasks+'</b>':'۰')+'</td><td>'+(p.missing_reports_7d?'<b class="warn">'+p.missing_reports_7d+'</b>':'۰')+'</td></tr>';
+ }
+ async function refresh(){
+   try{
+    const r=await fetch(api,{headers:{'X-Requested-With':'XMLHttpRequest'}}); if(!r.ok)return;
+    const d=await r.json();
+    document.getElementById('generatedAt').textContent=d.generated_at;
+    document.getElementById('presentCount').textContent=d.counts.present;
+    document.getElementById('lateCount').textContent=d.counts.late;
+    document.getElementById('missingCount').textContent=d.counts.missing;
+    document.getElementById('leaveCount').textContent=d.counts.leave;
+    document.getElementById('revenueToday').textContent=d.revenue_today;
+    document.getElementById('overdueTasks').textContent=d.overdue_tasks;
+    document.getElementById('livePeople').innerHTML=d.people.map(row).join('');
+   }catch(e){}
+ }
+ setInterval(refresh,60000);
+
+ const form=document.getElementById('alertForm');
+ form.addEventListener('submit',async e=>{
+   e.preventDefault();
+   const r=await fetch(form.action,{method:'POST',headers:{'X-CSRFToken':form.querySelector('[name=csrfmiddlewaretoken]').value}});
+   const d=await r.json(); document.getElementById('alertResult').textContent=d.message||'انجام شد';
+ });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,201 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}
+{% block content %}
+<section class="panel reportbox">
+  <h1>گزارش امروز</h1>
+  <p class="muted">هر چیزی که مدیریت باید بداند را در کمتر از دو دقیقه بگو یا بنویس.</p>
+
+  <div class="recorder">
+    <button type="button" id="record">🎙 شروع ضبط</button>
+    <span id="timer">00:00</span>
+    <audio id="preview" controls hidden></audio>
+    <p id="recordStatus" class="muted" style="margin-top:10px"></p>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" id="reportForm">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <label class="check"><input type="checkbox" name="process_ai" value="1"> همین حالا با هوش مصنوعی تحلیل شود</label>
+    <button class="primary" id="submitReport">ارسال گزارش</button>
+  </form>
+</section>
+
+<script>
+(() => {
+  const btn = document.getElementById('record');
+  const preview = document.getElementById('preview');
+  const timer = document.getElementById('timer');
+  const statusEl = document.getElementById('recordStatus');
+  const form = document.getElementById('reportForm');
+  const submitBtn = document.getElementById('submitReport');
+  const fileInput = form.querySelector('input[type="file"]');
+
+  if (fileInput) {
+    fileInput.setAttribute('accept', 'audio/*,.webm,.m4a,.mp3,.wav,.ogg');
+  }
+
+  let recorder = null;
+  let stream = null;
+  let chunks = [];
+  let recordedBlob = null;
+  let recordedMime = '';
+  let sec = 0;
+  let interval = null;
+
+  const setStatus = (text, isError=false) => {
+    statusEl.textContent = text || '';
+    statusEl.style.color = isError ? '#ff7b7b' : '';
+  };
+
+  const resetTimer = () => {
+    sec = 0;
+    timer.textContent = '00:00';
+  };
+
+  const stopTimer = () => {
+    if (interval) clearInterval(interval);
+    interval = null;
+  };
+
+  const pickMime = () => {
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return '';
+    const types = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/ogg;codecs=opus'
+    ];
+    return types.find(t => MediaRecorder.isTypeSupported(t)) || '';
+  };
+
+  const extensionFor = (mime) => {
+    if (mime.includes('mp4')) return 'm4a';
+    if (mime.includes('ogg')) return 'ogg';
+    if (mime.includes('wav')) return 'wav';
+    return 'webm';
+  };
+
+  const stopRecording = () => {
+    if (recorder && recorder.state === 'recording') recorder.stop();
+  };
+
+  btn.addEventListener('click', async () => {
+    if (recorder && recorder.state === 'recording') {
+      stopRecording();
+      return;
+    }
+
+    if (!window.isSecureContext) {
+      setStatus('برای ضبط صدا باید صفحه با HTTPS باز شود. از آدرس https://staff.greenlifeclinics.com استفاده کنید.', true);
+      return;
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setStatus('مرورگر شما ضبط مستقیم صدا را پشتیبانی نمی‌کند. لطفاً از گزینه انتخاب فایل صوتی استفاده کنید.', true);
+      if (fileInput) fileInput.click();
+      return;
+    }
+
+    if (!window.MediaRecorder) {
+      setStatus('مرورگر شما MediaRecorder را پشتیبانی نمی‌کند. لطفاً از گزینه انتخاب فایل صوتی استفاده کنید.', true);
+      if (fileInput) fileInput.click();
+      return;
+    }
+
+    try {
+      setStatus('در حال درخواست اجازه میکروفون...');
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordedMime = pickMime();
+      recorder = recordedMime ? new MediaRecorder(stream, { mimeType: recordedMime }) : new MediaRecorder(stream);
+      chunks = [];
+      recordedBlob = null;
+
+      recorder.addEventListener('dataavailable', e => {
+        if (e.data && e.data.size > 0) chunks.push(e.data);
+      });
+
+      recorder.addEventListener('stop', () => {
+        stopTimer();
+        btn.textContent = '🎙 ضبط دوباره';
+
+        const mime = recorder.mimeType || recordedMime || 'audio/webm';
+        recordedBlob = new Blob(chunks, { type: mime });
+
+        if (!recordedBlob.size) {
+          setStatus('فایل صوتی خالی بود. لطفاً دوباره ضبط کنید.', true);
+          return;
+        }
+
+        preview.src = URL.createObjectURL(recordedBlob);
+        preview.hidden = false;
+        setStatus('ضبط آماده است. برای ثبت، دکمه «ارسال گزارش» را بزنید.');
+
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+          stream = null;
+        }
+      });
+
+      recorder.addEventListener('error', e => {
+        stopTimer();
+        setStatus('در ضبط صدا خطایی رخ داد. لطفاً دوباره تلاش کنید.', true);
+        console.error('MediaRecorder error:', e);
+      });
+
+      recorder.start(500);
+      resetTimer();
+      btn.textContent = '⏹ پایان ضبط';
+      setStatus('در حال ضبط...');
+      interval = setInterval(() => {
+        sec += 1;
+        timer.textContent = String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
+        if (sec >= 120) stopRecording();
+      }, 1000);
+    } catch (err) {
+      stopTimer();
+      if (stream) stream.getTracks().forEach(track => track.stop());
+      stream = null;
+      console.error(err);
+      if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) {
+        setStatus('اجازه میکروفون داده نشده است. از تنظیمات مرورگر، Microphone را برای این سایت روی Allow بگذارید.', true);
+      } else if (err && err.name === 'NotFoundError') {
+        setStatus('میکروفونی روی دستگاه پیدا نشد.', true);
+      } else {
+        setStatus('امکان شروع ضبط وجود ندارد. صفحه را با HTTPS باز کنید و اجازه میکروفون را بررسی کنید.', true);
+      }
+    }
+  });
+
+  form.addEventListener('submit', async (event) => {
+    if (!recordedBlob) return; // regular browser submit when using uploaded file/text only
+
+    event.preventDefault();
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'در حال ارسال...';
+    setStatus('در حال ارسال گزارش صوتی...');
+
+    try {
+      const data = new FormData(form);
+      data.delete('audio');
+      const mime = recordedBlob.type || 'audio/webm';
+      const filename = `daily-report-${Date.now()}.${extensionFor(mime)}`;
+      data.append('audio', recordedBlob, filename);
+
+      const response = await fetch(form.action || window.location.href, {
+        method: 'POST',
+        body: data,
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      window.location.href = response.url || '/reports/';
+    } catch (err) {
+      console.error(err);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'ارسال گزارش';
+      setStatus('ارسال فایل صوتی ناموفق بود. اینترنت را بررسی کنید یا فایل صوتی را دستی انتخاب و دوباره ارسال کنید.', true);
+    }
+  });
+})();
+</script>
+{% endblock %}

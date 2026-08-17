@@ -1,0 +1,4 @@
+{% extends 'core/base.html' %}{% block content %}
+<section class="panel"><div class="sectionhead"><h1>مدیریت چک‌لیست‌ها</h1><div><a class="primary" href="/checklists/manage/new/">چک‌لیست جدید</a> <a class="mini" href="/checklists/team/">وضعیت امروز تیم</a></div></div>
+{% for t in templates %}<a class="row" href="/checklists/manage/{{ t.id }}/"><div><strong>{{ t.name }}</strong><small>{{ t.branch|default:'همه شعب' }} · {{ t.get_role_display|default:'همه نقش‌ها' }}{% if t.job_title %} · {{ t.job_title }}{% endif %}</small></div><span class="badge">{{ t.items.count }} مورد</span></a>{% empty %}<p class="muted">هنوز چک‌لیستی ساخته نشده است.</p>{% endfor %}
+</section>{% endblock %}

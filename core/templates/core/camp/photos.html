@@ -1,0 +1,5 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="camp-shell">{% include 'core/camp/_nav.html' %}
+<section class="camp-page-head"><div><span class="eyebrow">VISUAL PROOF</span><h1>Daily Photos</h1><p>گزارش تصویری پروژه، کار، خرید و محوطه</p></div>{% if role != 'finance' %}<a class="primary" href="/camp/photos/new/">ثبت عکس</a>{% endif %}</section>
+<div class="camp-photo-grid">{% for x in photos %}<figure class="camp-photo"><img src="{{ x.image.url }}" alt="{{ x.caption }}"><figcaption><strong>{{ x.get_photo_type_display }}</strong><span>{{ x.date|jdate }} · {{ x.location|default:'کمپ' }}</span><p>{{ x.caption }}</p></figcaption></figure>{% empty %}<div class="camp-empty">عکسی ثبت نشده است.</div>{% endfor %}</div>
+</section>{% endblock %}

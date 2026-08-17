@@ -1,0 +1,14 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="camp-shell">{% include 'core/camp/_nav.html' %}
+<section class="camp-page-head"><div><span class="eyebrow">PROCUREMENT</span><h1>Purchase Requests</h1><p>خرید قبل از انجام تأیید شود؛ سقف مالک {{ site.owner_approval_threshold|toman }}</p></div>{% if role != 'finance' %}<a class="primary" href="/camp/purchases/new/">درخواست خرید</a>{% endif %}</section>
+<div class="camp-card"><div class="tablewrap"><table><thead><tr><th>کالا</th><th>درخواست</th><th>تخمین</th><th>فوریت</th><th>وضعیت</th><th>فاکتور</th><th></th></tr></thead><tbody>
+{% for p in purchases %}<tr class="{% if p.requires_owner_approval and p.status == 'pending' %}camp-owner-required{% endif %}">
+<td><strong>{{ p.item_name }}</strong><small class="camp-table-sub">{{ p.get_category_display }} · {{ p.quantity|fa }} {{ p.get_unit_display }}</small>{% if p.attachment %}<a class="camp-table-link" href="{{ p.attachment.url }}" target="_blank">پیوست درخواست</a>{% endif %}</td>
+<td>{{ p.request_date|jdate }}<small class="camp-table-sub">{{ p.requester.get_full_name|default:p.requester.username }}</small></td>
+<td>{{ p.estimated_amount|toman }}{% if p.requires_owner_approval %}<small class="camp-danger-text">تأیید Owner لازم</small>{% endif %}</td>
+<td><span class="camp-chip {{ p.urgency }}">{{ p.get_urgency_display }}</span></td>
+<td><span class="camp-chip status-{{ p.status }}">{{ p.get_status_display }}</span></td>
+<td>{% if p.invoice %}<strong>{{ p.invoice.final_amount|toman }}</strong>{% if not p.invoice.invoice_image %}<small class="camp-danger-text">بدون عکس</small>{% endif %}{% if p.invoice.final_amount > p.estimated_amount %}<small class="camp-warning-text">بیشتر از تخمین</small>{% endif %}{% else %}<span class="camp-muted">—</span>{% endif %}</td>
+<td><div class="camp-actions">{% if p.status == 'pending' and role != 'finance' %}<form method="post" action="/camp/purchases/{{ p.id }}/approve/">{% csrf_token %}<button class="camp-mini-action ok">تأیید</button></form><form method="post" action="/camp/purchases/{{ p.id }}/reject/">{% csrf_token %}<button class="camp-mini-action danger">رد</button></form>{% endif %}{% if p.status == 'approved' or p.status == 'purchased' or p.status == 'paid' %}<a class="camp-mini-action" href="/camp/purchases/{{ p.id }}/invoice/">فاکتور</a>{% endif %}</div></td>
+</tr>{% empty %}<tr><td colspan="7">درخواستی ثبت نشده است.</td></tr>{% endfor %}</tbody></table></div></div>
+</section>{% endblock %}

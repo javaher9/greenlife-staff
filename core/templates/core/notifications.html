@@ -1,0 +1,3 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="hero"><div><h1>اعلان‌های من</h1><p>هشدارهای حضور، گزارش روزانه و درخواست‌ها</p></div><form method="post">{% csrf_token %}<button class="primary">همه خوانده شد</button></form></section>
+<section class="panel">{% for n in notifications %}<article class="notice"><strong>{% if not n.is_read %}● {% endif %}{{ n.title }}</strong><p>{{ n.message }}</p><small>{{ n.created_at|jdatetime }}</small></article>{% empty %}<p class="muted">اعلانی وجود ندارد.</p>{% endfor %}</section>{% endblock %}

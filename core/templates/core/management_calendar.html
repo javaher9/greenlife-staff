@@ -1,0 +1,6 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="hero"><div><span class="eyebrow">PERSIAN MANAGEMENT CALENDAR</span><h1>تقویم مدیریتی شمسی</h1><p>{{ jy|fa }}/{{ jm|fa }} · شیفت، مرخصی، Task، هدف، مدارک و رویدادها</p></div><a class="primary" href="/calendar/new/">رویداد جدید</a></section>
+<section class="calendar-toolbar"><a href="?year={{ prev_y }}&month={{ prev_m }}">ماه قبل</a><strong>{{ jy|fa }}/{{ jm|fa }}</strong><a href="?year={{ next_y }}&month={{ next_m }}">ماه بعد</a></section>
+<section class="calendar-wrap"><div class="calendar-week"><b>شنبه</b><b>یکشنبه</b><b>دوشنبه</b><b>سه‌شنبه</b><b>چهارشنبه</b><b>پنجشنبه</b><b>جمعه</b></div><div class="calendar-grid">
+{% for d in days %}{% if d %}<div class="calendar-day {% if d.today %}today{% endif %}"><div class="day-num">{{ d.jd|fa }}</div><div class="day-events">{% for e in d.events|slice:":4" %}<a class="cal-event {{ e.kind }}" {% if e.url %}href="{{ e.url }}"{% endif %}><strong>{{ e.title }}</strong><span>{{ e.detail|truncatechars:28 }}</span></a>{% endfor %}{% if d.events|length > 4 %}<small>+ {{ d.events|length|add:"-4"|fa }} مورد دیگر</small>{% endif %}</div></div>{% else %}<div class="calendar-day empty"></div>{% endif %}{% endfor %}
+</div></section>{% endblock %}

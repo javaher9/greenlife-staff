@@ -1,0 +1,5 @@
+{% extends 'core/base.html' %}{% block content %}
+<section class="panel formbox">
+  <div class="person-cell photo-edit-head"><div class="avatar-lg">{% if employee.avatar %}<img src="{{ employee.avatar.url }}">{% else %}<span>{{ employee.user.first_name|first|default:employee.user.username|first }}</span>{% endif %}</div><div><h1>عکس {{ employee.user.get_full_name|default:employee.user.username }}</h1><p class="muted">{{ employee.job_title|default:'—' }} · {{ employee.branch|default:'—' }}</p></div></div>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button>ذخیره عکس</button></form>
+</section>{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="hero ceo-hero"><div><span class="eyebrow">EXECUTIVE HEALTH</span><h1>CEO Score</h1><p>امتیاز توضیح‌پذیر وضعیت مجموعه در ۳۰ روز اخیر</p></div><div class="ceo-score-ring"><strong>{{ score.score|fa }}</strong><span>از ۱۰۰</span></div></section>
+<section class="ceo-parts">
+<div class="ceo-part"><span>نیروی انسانی</span><b>{{ score.people|fa }}</b><div class="progressbar"><span style="width:{{ score.people }}%"></span></div></div>
+<div class="ceo-part"><span>عملیات</span><b>{{ score.operations|fa }}</b><div class="progressbar"><span style="width:{{ score.operations }}%"></span></div></div>
+<div class="ceo-part"><span>درآمد</span><b>{{ score.revenue|fa }}</b><div class="progressbar"><span style="width:{{ score.revenue }}%"></span></div></div>
+<div class="ceo-part"><span>انضباط</span><b>{{ score.discipline|fa }}</b><div class="progressbar"><span style="width:{{ score.discipline }}%"></span></div></div>
+</section>
+{% if history %}<section class="panel"><div class="sectionhead"><h2>روند CEO Score</h2><small>Snapshotهای روزانه</small></div><div class="score-history">{% for h in history %}<div class="score-point" title="{{ h.date|jdate }} · {{ h.score }}"><span style="height:{{ h.score }}%"></span><small>{{ h.score|fa }}</small></div>{% endfor %}</div></section>{% endif %}
+<div class="grid"><section class="panel"><h2>چرا این امتیاز؟</h2>{% for r in score.reasons %}<div class="insight-row"><span class="insight-dot"></span><p>{{ r }}</p></div>{% endfor %}</section>
+<section class="panel"><div class="sectionhead"><h2>هشدارهای روند</h2><a href="/trends/">همه روندها</a></div>{% for x in trends|slice:":5" %}<div class="trend-row {{ x.level }}"><strong>{{ x.title }}</strong><span>{{ x.text }}</span></div>{% empty %}<p class="muted">روند نگران‌کننده‌ای شناسایی نشده.</p>{% endfor %}</section></div>
+{% endblock %}

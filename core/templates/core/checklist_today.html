@@ -1,0 +1,14 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="hero"><div><h1>چک‌لیست امروز</h1><p>{{ day|jdate }} · {{ done|fa }} از {{ total|fa }} مورد انجام شده</p></div><div class="progress-ring"><b>{{ progress|fa }}٪</b></div></section>
+<div class="progressbar"><span style="width:{{ progress }}%"></span></div>
+{% for row in rows %}
+<section class="panel checklist-card"><div class="sectionhead"><h2>{{ row.template.name }}</h2><small>{% if row.template.branch %}{{ row.template.branch }}{% else %}همه شعب{% endif %}</small></div>
+{% for x in row.items %}
+<form method="post" action="/checklists/toggle/{{ x.item.id }}/" class="check-row {% if x.done %}checked{% endif %}">{% csrf_token %}
+<button class="check-button" type="submit" aria-label="تغییر وضعیت">{% if x.done %}✓{% else %}○{% endif %}</button>
+<div><strong>{{ x.item.title }}{% if x.item.is_required %}<sup>*</sup>{% endif %}</strong>{% if x.item.description %}<small>{{ x.item.description }}</small>{% endif %}{% if x.completion.completed_at %}<small>انجام شده ساعت {{ x.completion.completed_at|date:'H:i' }}</small>{% endif %}</div>
+</form>
+{% empty %}<p class="muted">موردی برای این چک‌لیست تعریف نشده.</p>{% endfor %}
+</section>
+{% empty %}<section class="panel"><p class="muted">برای نقش/سمت شما هنوز چک‌لیست روزانه تعریف نشده است.</p></section>{% endfor %}
+{% endblock %}

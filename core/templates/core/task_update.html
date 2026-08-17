@@ -1,0 +1,1 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}<section class="panel"><h1>{{ task.title }}</h1><p>{{ task.description }}</p><form method="post">{% csrf_token %}{{ form.as_p }}<button class="primary">ذخیره وضعیت</button></form></section>{% endblock %}

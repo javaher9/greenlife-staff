@@ -1,0 +1,3 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="hero"><div><h1>اصلاح حضور و غیاب</h1><p>درخواست اصلاح ساعت ورود یا خروج با سابقه تأیید مدیر</p></div><a class="primary" href="/attendance/corrections/new/">درخواست جدید</a></section>
+<section class="panel">{% for x in items %}<div class="row"><div><strong>{{ x.user.get_full_name|default:x.user.username }} · {{ x.date|jdate }}</strong><small>{{ x.reason|truncatechars:100 }}</small></div><span class="badge">{{ x.get_status_display }}{% if can_review and x.status == 'pending' %} · <a href="/attendance/corrections/{{ x.id }}/review/">بررسی</a>{% endif %}</span></div>{% empty %}<p class="muted">درخواستی ثبت نشده است.</p>{% endfor %}</section>{% endblock %}

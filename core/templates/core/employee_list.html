@@ -1,0 +1,11 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="panel"><div class="sectionhead"><h1>پرسنل</h1><a class="primary" href="/employees/new/">افزودن کارمند</a></div>
+{% for e in employees %}
+<article class="row personnel-row">
+  <div class="person-cell">
+    <div class="avatar-sm">{% if e.avatar %}<img src="{{ e.avatar.url }}" alt="{{ e.user.get_full_name|default:e.user.username }}">{% else %}<span>{{ e.user.first_name|first|default:e.user.username|first }}</span>{% endif %}</div>
+    <div><strong>{{ e.user.get_full_name|default:e.user.username }}</strong><small>{{ e.job_title|default:'بدون سمت' }} · {{ e.branch|default:'بدون شعبه' }} · {{ e.get_role_display }}</small></div>
+  </div>
+  <div class="person-actions"><span class="badge {% if e.is_active %}done{% endif %}">{% if e.is_active %}فعال{% else %}غیرفعال{% endif %}</span><a class="mini" href="/employees/{{ e.id }}/360/">۳۶۰°</a><a class="mini" href="/employees/{{ e.id }}/file/">پرونده</a><a class="mini" href="/employees/{{ e.id }}/photo/">عکس</a></div>
+</article>
+{% empty %}<p class="muted">پرسنلی ثبت نشده است.</p>{% endfor %}</section>{% endblock %}

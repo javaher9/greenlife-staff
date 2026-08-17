@@ -1,0 +1,8 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="hero"><div><h1>مالی و درآمد</h1><p>خلاصه درآمد CRM · {{ summary.date }}</p></div>{% if user.profile.role == 'admin' %}<form method="post" action="/finance/sync/">{% csrf_token %}<button class="primary">همگام‌سازی CRM</button></form>{% endif %}</section>
+<form method="get" class="panel"><label>تاریخ شمسی</label><div class="queryrow"><input name="date" value="{{ summary.date }}" placeholder="۱۴۰۵/۰۵/۲۴"><button class="primary">نمایش</button></div></form>
+<section class="stats"><div><b>{{ summary.total|floatformat:0|fa }}</b><span>درآمد روز</span></div><div><b>{{ summary.count|fa }}</b><span>تراکنش</span></div><div><b>{{ summary.by_branch|length|fa }}</b><span>شعب فعال در درآمد</span></div></section>
+<div class="grid"><section class="panel"><h2>درآمد شعب</h2>{% for x in summary.by_branch %}<div class="rankrow"><span>{{ x.branch__name|default:'بدون شعبه' }}</span><b>{{ x.total|floatformat:0|fa }}</b></div>{% empty %}<p class="muted">برای این روز داده مالی ثبت نشده است.</p>{% endfor %}</section>
+<section class="panel"><h2>روش پرداخت</h2>{% for x in summary.by_payment %}<div class="rankrow"><span>{{ x.payment_method|default:'نامشخص' }}</span><b>{{ x.total|floatformat:0|fa }}</b></div>{% empty %}<p class="muted">داده‌ای وجود ندارد.</p>{% endfor %}</section></div>
+<section class="panel"><h2>وضعیت اتصال CRM</h2>{% for x in logs %}<div class="row"><strong>{{ x.get_status_display }}</strong><span>{{ x.message }} · جدید {{ x.imported|fa }} / به‌روزرسانی {{ x.updated|fa }}</span></div>{% empty %}<p class="muted">هنوز همگام‌سازی اجرا نشده است. ابتدا تنظیمات API روی سرور وارد شود.</p>{% endfor %}</section>
+{% endblock %}

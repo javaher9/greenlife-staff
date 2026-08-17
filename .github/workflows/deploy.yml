@@ -1,0 +1,97 @@
+name: Deploy GreenLife Staff
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: greenlife-staff-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    # Register the Ubuntu runner with these labels: self-hosted, linux, greenlife-prod
+    runs-on: [self-hosted, linux, greenlife-prod]
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout approved main branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Preflight
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -f docker-compose.yml
+          test -f scripts/deploy_runner.sh
+          python3 -m compileall -q core greenlife
+
+      - name: Sync source to fixed production directory
+        shell: bash
+        env:
+          DEPLOY_PATH: /opt/greenlife-staff
+        run: |
+          set -Eeuo pipefail
+          test -d "$DEPLOY_PATH"
+          test -f "$DEPLOY_PATH/.env"
+          mkdir -p "$DEPLOY_PATH/.rollback"
+
+          # Preserve a source snapshot for quick code rollback. Secrets and runtime data are excluded.
+          if [ -f "$DEPLOY_PATH/manage.py" ]; then
+            tar \
+              --exclude='.env' \
+              --exclude='backups' \
+              --exclude='.rollback' \
+              --exclude='media' \
+              --exclude='staticfiles' \
+              -czf "$DEPLOY_PATH/.rollback/source_previous.tar.gz" \
+              -C "$DEPLOY_PATH" .
+          fi
+
+          rsync -a --delete \
+            --exclude='.git/' \
+            --exclude='.env' \
+            --exclude='backups/' \
+            --exclude='.rollback/' \
+            --exclude='media/' \
+            --exclude='staticfiles/' \
+            ./ "$DEPLOY_PATH/"
+
+          chmod +x "$DEPLOY_PATH"/scripts/*.sh "$DEPLOY_PATH"/entrypoint.sh
+
+      - name: Deploy containers
+        shell: bash
+        env:
+          DEPLOY_PATH: /opt/greenlife-staff
+        run: |
+          set -Eeuo pipefail
+          "$DEPLOY_PATH/scripts/deploy_runner.sh"
+
+      - name: Roll back source if deployment fails
+        if: failure()
+        shell: bash
+        env:
+          DEPLOY_PATH: /opt/greenlife-staff
+        run: |
+          set +e
+          if [ -f "$DEPLOY_PATH/.rollback/source_previous.tar.gz" ]; then
+            echo "Restoring previous source snapshot..."
+            find "$DEPLOY_PATH" -mindepth 1 -maxdepth 1 \
+              ! -name '.env' ! -name 'backups' ! -name '.rollback' \
+              -exec rm -rf {} +
+            tar -xzf "$DEPLOY_PATH/.rollback/source_previous.tar.gz" -C "$DEPLOY_PATH"
+            chmod +x "$DEPLOY_PATH"/scripts/*.sh "$DEPLOY_PATH"/entrypoint.sh 2>/dev/null || true
+            cd "$DEPLOY_PATH"
+            docker compose build
+            docker compose up -d --remove-orphans
+            ./scripts/healthcheck.sh || true
+          else
+            echo "No previous source snapshot is available for code rollback."
+          fi
+          echo "NOTE: database migrations are not auto-reversed; use the pre-deploy DB backup if necessary."

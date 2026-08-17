@@ -1,0 +1,4 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="hero"><div><h1>شیفت‌های کاری</h1><p>ساعت کاری اختصاصی هر روز و هر کارمند</p></div><div><a class="primary" href="/shifts/new/">تعریف شیفت</a> <a class="primary" href="/shifts/assign/">تخصیص شیفت</a></div></section>
+<div class="grid"><section class="panel"><h2>شیفت‌ها</h2>{% for s in shifts %}<div class="row"><strong>{{ s.name }} · {{ s.branch }}</strong><span>{{ s.start_time|time:'H:i' }} تا {{ s.end_time|time:'H:i' }} · مهلت {{ s.grace_minutes|fa }} دقیقه</span></div>{% empty %}<p class="muted">شیفتی تعریف نشده.</p>{% endfor %}</section>
+<section class="panel"><h2>تخصیص‌های اخیر</h2>{% for a in assignments %}<div class="row"><strong>{{ a.user.get_full_name|default:a.user.username }}</strong><span>{{ a.date|jdate }} · {{ a.shift.name }}</span></div>{% empty %}<p class="muted">تخصیصی ثبت نشده.</p>{% endfor %}</section></div>{% endblock %}

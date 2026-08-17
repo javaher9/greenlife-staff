@@ -1,0 +1,29 @@
+# Secrets / local config
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+
+# Django runtime
+media/
+staticfiles/
+*.sqlite3
+
+# Deploy/runtime state
+backups/
+.rollback/
+.last_good_commit
+*.dump
+*.tar.gz
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/

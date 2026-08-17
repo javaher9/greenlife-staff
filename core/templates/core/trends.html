@@ -1,0 +1,3 @@
+{% extends 'core/base.html' %}{% block content %}
+<section class="hero"><div><span class="eyebrow">EARLY WARNING</span><h1>روندها و هشدار زودهنگام</h1><p>مقایسه دوره‌ها برای دیدن مشکل قبل از بحرانی‌شدن</p></div><a class="primary" href="/ceo-score/">CEO Score</a></section>
+<section class="panel trend-list">{% for x in trends %}<article class="trend-alert {{ x.level }}"><div class="trend-icon">{% if x.level == 'danger' %}!{% elif x.level == 'warning' %}↗{% else %}✓{% endif %}</div><div><strong>{{ x.title }}</strong><p>{{ x.text }}</p></div></article>{% empty %}<div class="empty-state">در حال حاضر هشدار روندی مهمی وجود ندارد.</div>{% endfor %}</section>{% endblock %}

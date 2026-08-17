@@ -1,0 +1,35 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="hero personnel-file-head">
+  <div class="person-cell">
+    <div class="avatar-xl">{% if employee.avatar %}<img src="{{ employee.avatar.url }}">{% else %}<span>{{ employee.user.first_name|first|default:employee.user.username|first }}</span>{% endif %}</div>
+    <div><h1>{{ employee.user.get_full_name|default:employee.user.username }}</h1><p>{{ employee.job_title|default:'بدون سمت' }} · {{ employee.branch|default:'بدون شعبه' }} · کد {{ employee.employee_code|default:'—' }}</p><p>{{ employee.phone|default:'بدون تلفن' }}{% if employee.start_date %} · شروع همکاری {{ employee.start_date|jdate }}{% endif %}</p></div>
+  </div>
+  <div><a class="primary" href="/employees/{{ employee.id }}/documents/new/">افزودن مدرک</a> <a class="mini" href="/employees/{{ employee.id }}/photo/">تغییر عکس</a></div>
+</section>
+
+<section class="stats">
+ <div><b>{{ kpi.score|fa }}</b><span>KPI سی‌روزه</span></div>
+ <div><b>{{ stats.attendance_days|fa }}</b><span>روز حضور</span></div>
+ <div><b>{{ stats.late_days|fa }}</b><span>روز تأخیر</span></div>
+ <div><b>{{ stats.reports|fa }}</b><span>گزارش ۳۰ روز</span></div>
+</section>
+
+<div class="grid">
+<section class="panel"><div class="sectionhead"><h2>مدارک و قراردادها</h2><a href="/employees/{{ employee.id }}/documents/new/">افزودن</a></div>
+{% for d in documents %}<div class="row"><div><strong>{{ d.title }}</strong><small>{{ d.get_document_type_display }}{% if d.issue_date %} · صدور {{ d.issue_date|jdate }}{% endif %}{% if d.expiry_date %} · انقضا {{ d.expiry_date|jdate }}{% endif %}</small></div><a class="mini" href="{{ d.file.url }}" target="_blank">مشاهده</a></div>{% empty %}<p class="muted">هنوز مدرکی ثبت نشده است.</p>{% endfor %}</section>
+<section class="panel"><h2>وضعیت عملکرد</h2><p>امتیاز خودکار: <strong>{{ kpi.score|fa }}/۱۰۰</strong></p><p class="muted">دوره {{ start|jdate }} تا {{ today|jdate }}</p><div class="metric-line"><span>حضور</span><b>{{ kpi.attendance|fa }}/۱۰۰</b></div>
+<div class="metric-line"><span>Taskها</span><b>{{ kpi.tasks|fa }}/۱۰۰</b></div>
+<div class="metric-line"><span>گزارش روزانه</span><b>{{ kpi.reports|fa }}/۱۰۰</b></div>
+<div class="metric-line"><span>درآمد شعبه</span><b>{{ kpi.revenue|fa }}/۱۰۰</b></div></section>
+</div>
+
+<div class="grid">
+<section class="panel"><h2>حضور اخیر</h2>{% for a in attendance %}<div class="row"><strong>{{ a.date|jdate }}</strong><span>{{ a.check_in|date:'H:i'|default:'—' }} تا {{ a.check_out|date:'H:i'|default:'—' }} · {{ a.get_status_display }}</span></div>{% empty %}<p class="muted">رکوردی نیست.</p>{% endfor %}</section>
+<section class="panel"><h2>مرخصی و مأموریت</h2>{% for l in leaves %}<div class="row"><strong>{{ l.get_request_type_display }}</strong><span>{{ l.start_date|jdate }} تا {{ l.end_date|jdate }} · {{ l.get_status_display }}</span></div>{% empty %}<p class="muted">موردی نیست.</p>{% endfor %}</section>
+</div>
+
+<div class="grid">
+<section class="panel"><h2>Taskها</h2>{% for t in tasks %}<div class="row"><strong>{{ t.title }}</strong><span>{{ t.get_status_display }}{% if t.due_date %} · {{ t.due_date|jdate }}{% endif %}</span></div>{% empty %}<p class="muted">Task ثبت نشده.</p>{% endfor %}</section>
+<section class="panel"><h2>امتیازها</h2>{% for s in scores %}<div class="row"><strong>{{ s.points|fa }}</strong><span>{{ s.description|default:s.get_reason_display }} · {{ s.event_date|jdate }}</span></div>{% empty %}<p class="muted">امتیازی ثبت نشده.</p>{% endfor %}</section>
+</div>
+{% endblock %}

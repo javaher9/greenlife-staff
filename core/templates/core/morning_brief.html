@@ -1,0 +1,5 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="hero"><div><span class="eyebrow">MORNING BRIEF</span><h1>خلاصه مدیریتی امروز</h1><p>{{ brief.day|jdate }} · مهم‌ترین اتفاق‌ها در یک نگاه</p></div><a class="primary" href="/command/">از Staff بپرس</a></section>
+<section class="stats"><div><b>{{ brief.team|fa }}</b><span>تیم فعال</span></div><div><b>{{ brief.late|length|fa }}</b><span>تأخیر</span></div><div><b>{{ brief.missing|length|fa }}</b><span>ورود ثبت‌نشده</span></div><div><b>{{ brief.overdue|fa }}</b><span>Task عقب‌افتاده</span></div></section>
+<div class="grid"><section class="panel"><h2>تأخیرهای امروز</h2>{% for x in brief.late %}<div class="row"><strong>{{ x.get_full_name|default:x.username }}</strong><span>{{ x.profile.branch }}</span></div>{% empty %}<p class="muted">تأخیری ثبت نشده.</p>{% endfor %}</section>
+<section class="panel"><h2>KPI نیازمند توجه</h2>{% for x,s in brief.low_kpi %}<div class="row"><strong>{{ x.get_full_name|default:x.username }}</strong><span class="badge todo">{{ s|fa }}/۱۰۰</span></div>{% empty %}<p class="muted">موردی نیست.</p>{% endfor %}</section></div>{% endblock %}

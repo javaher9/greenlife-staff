@@ -1,0 +1,7 @@
+{% extends 'core/base.html' %}{% block content %}
+<section class="camp-shell">
+{% include 'core/camp/_nav.html' %}
+<div class="camp-form-card">
+<div class="sectionhead"><div><span class="eyebrow">CAMP · GREENLIFE</span><h1>{{ title }}</h1></div><a class="mini" href="{{ back }}">بازگشت</a></div>
+<form method="post" enctype="multipart/form-data" class="camp-form">{% csrf_token %}{{ form.as_p }}<button class="primary">{{ button }}</button></form>
+</div></section>{% endblock %}

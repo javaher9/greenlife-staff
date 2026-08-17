@@ -1,0 +1,64 @@
+{% load static jalali_tags %}<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GreenLife Staff</title>
+  <link rel="stylesheet" href="{% static 'core/app.css' %}">
+</head>
+<body>
+<aside class="app-sidebar">
+  <div class="brand brand-premium">
+    <span class="brand-mark"><i></i><i></i></span>
+    <span><b>GreenLife</b><small>STAFF APP</small></span>
+  </div>
+  <nav class="app-nav">
+    <a href="/" class="nav-main"><span class="nav-ico">⌂</span><span>داشبورد اصلی</span></a>
+    {% if user.profile.role != 'employee' %}<a href="/live/"><span class="nav-ico">⌘</span><span>پنل مدیریتی</span></a>{% endif %}
+    <a href="/employees/"><span class="nav-ico">♙</span><span>پرسنل</span></a>
+    <a href="/attendance/"><span class="nav-ico">◷</span><span>حضور و غیاب</span></a>
+    {% if user.profile.role != 'employee' %}<a href="/kpi/"><span class="nav-ico">◎</span><span>عملکرد و KPI</span></a>{% endif %}
+    <a href="/sop/"><span class="nav-ico">◇</span><span>آموزش</span></a>
+    <a href="/service-requests/"><span class="nav-ico">✓</span><span>درخواست‌ها</span></a>
+    <a href="/reports/"><span class="nav-ico">▥</span><span>گزارش‌ها</span></a>
+    {% if user.profile.role != 'employee' %}<a href="/finance/"><span class="nav-ico">▧</span><span>مالی و درآمد</span></a>{% endif %}
+    <a href="/notifications/"><span class="nav-ico">⚙</span><span>اعلان‌ها</span></a>
+
+    <div class="nav-section-title">ماژول‌ها</div>
+    <a href="#" class="nav-module muted-module"><span class="nav-ico">⌂</span><span>Clinic</span></a>
+    <a href="#" class="nav-module muted-module"><span class="nav-ico">☎</span><span>Call Center</span></a>
+    <a href="/finance/" class="nav-module"><span class="nav-ico">▥</span><span>Finance</span></a>
+    <a href="/camp/" class="nav-module camp-nav-entry"><span class="nav-ico">△</span><span>Camp</span><b>⌄</b></a>
+    {% if request.path|slice:':6' == '/camp/' %}
+      <div class="camp-side-subnav">
+        <a href="/camp/">Dashboard</a>
+        <a href="/camp/purchases/">Purchase Requests</a>
+        <a href="/camp/inventory/">Inventory</a>
+        <a href="/camp/workers/">Workers</a>
+        <a href="/camp/tasks/">Daily Tasks</a>
+        <a href="/camp/projects/">Projects</a>
+        <a href="/camp/food/">Food Plan</a>
+        <a href="/camp/photos/">Daily Photos</a>
+        <a href="/camp/reports/">Reports</a>
+        {% if request.camp_role == 'owner' %}<a href="/camp/commander/">Camp Commander</a>{% endif %}
+      </div>
+    {% endif %}
+  </nav>
+  <div class="sidebar-footer">
+    <a href="/profile/">پروفایل</a><a href="/logout/">خروج</a>
+  </div>
+</aside>
+
+<main class="app-main">
+  <header class="topbar">
+    <div class="topbar-search"><span>⌕</span><input type="text" placeholder="جستجو در گرین‌لایف..." disabled></div>
+    <div class="topbar-meta"><span class="topbar-date">{{ request.user.date_joined|jdate }}</span><span class="topbar-bell">♢<b>8</b></span></div>
+    <div class="header-person">
+      <div class="avatar-xs">{% if user.profile.avatar %}<img src="{{ user.profile.avatar.url }}">{% else %}<span>{{ user.first_name|first|default:user.username|first }}</span>{% endif %}</div>
+      <div><strong>{{ user.get_full_name|default:user.username }}</strong><span>{{ user.profile.job_title|default:'مدیر سیستم' }}{% if user.profile.branch %} · {{ user.profile.branch }}{% endif %}</span></div>
+    </div>
+  </header>
+  {% for message in messages %}<div class="msg {{ message.tags }}">{{ message }}</div>{% endfor %}
+  {% block content %}{% endblock %}
+</main>
+</body></html>

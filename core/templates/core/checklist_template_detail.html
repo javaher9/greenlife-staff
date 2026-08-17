@@ -1,0 +1,5 @@
+{% extends 'core/base.html' %}{% block content %}
+<section class="hero"><div><h1>{{ template.name }}</h1><p>{{ template.branch|default:'همه شعب' }} · {{ template.get_role_display|default:'همه نقش‌ها' }}{% if template.job_title %} · {{ template.job_title }}{% endif %}</p></div><a class="mini" href="/checklists/manage/">بازگشت</a></section>
+<div class="grid"><section class="panel"><h2>موارد فعلی</h2>{% for i in template.items.all %}<div class="row"><div><strong>{{ i.title }}</strong><small>{{ i.description|default:'—' }}</small></div><span>{% if i.is_required %}اجباری{% else %}اختیاری{% endif %}</span></div>{% empty %}<p class="muted">هنوز موردی اضافه نشده.</p>{% endfor %}</section>
+<section class="panel formbox"><h2>افزودن مورد</h2><form method="post">{% csrf_token %}{{ form.as_p }}<button>افزودن</button></form></section></div>
+{% endblock %}
