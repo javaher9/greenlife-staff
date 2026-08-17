@@ -1,6 +1,6 @@
-# GreenLife Staff v2
+# GreenLife Staff v18
 
-نسخه اصلاح‌شده برای استقرار Docker روی سرور GreenLife.
+نسخه Premium UI به‌همراه ماژول کمپ و استقرار خودکار Docker روی سرور GreenLife.
 
 ## اصلاح اصلی v2
 

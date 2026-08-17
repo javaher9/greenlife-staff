@@ -34,16 +34,17 @@ The workflow requires these labels:
 
 Every push to `main` triggers:
 
-1. Checkout
-2. Python syntax preflight
-3. Source snapshot for rollback
-4. Rsync to `/opt/greenlife-staff` while preserving `.env`, backups and runtime data
-5. PostgreSQL + media backup
-6. Docker build
-7. Django migrations
-8. Container replacement
-9. Healthcheck against `http://127.0.0.1:8085/api/health/`
-10. Source rollback if healthcheck/deployment fails
+1. Python and shell syntax validation on a GitHub-hosted runner
+2. Production Docker image build validation
+3. Checkout on the GreenLife production runner
+4. Source snapshot for rollback
+5. Rsync to `/opt/greenlife-staff` while preserving `.env`, backups and runtime data
+6. PostgreSQL + media backup
+7. Docker build on the production server
+8. Django migrations
+9. Container replacement
+10. Healthcheck against `http://127.0.0.1:8085/api/health/`
+11. Source rollback if healthcheck/deployment fails
 
 Database migrations are not automatically reversed. A database dump is created before migrations so a manual DB restore remains possible.
 
