@@ -30,4 +30,6 @@ services:
 
 volumes:
   media_data:
+    name: ${MEDIA_VOLUME_NAME:-greenlife_staff_media_data}
   static_data:
+    name: ${STATIC_VOLUME_NAME:-greenlife_staff_static_data}
