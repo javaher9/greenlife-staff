@@ -21,6 +21,7 @@ TEMPLATES=[{'BACKEND':'django.template.backends.django.DjangoTemplates','DIRS':[
 WSGI_APPLICATION='greenlife.wsgi.application'
 DATABASES={'default':{'ENGINE':'django.db.backends.postgresql','NAME':os.getenv('POSTGRES_DB','greenlife'),'USER':os.getenv('POSTGRES_USER','greenlife'),'PASSWORD':os.getenv('POSTGRES_PASSWORD','change-me'),'HOST':os.getenv('POSTGRES_HOST','db'),'PORT':os.getenv('POSTGRES_PORT','5432')}}
 AUTH_PASSWORD_VALIDATORS=[]
+AUTHENTICATION_BACKENDS=['core.auth_backends.CaseInsensitiveModelBackend']
 LANGUAGE_CODE='fa-ir'; TIME_ZONE='Asia/Tehran'; USE_I18N=True; USE_TZ=True
 STATIC_URL='/static/'; STATIC_ROOT=BASE_DIR/'staticfiles'; STATICFILES_STORAGE='whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL='/media/'; MEDIA_ROOT=BASE_DIR/'media'
