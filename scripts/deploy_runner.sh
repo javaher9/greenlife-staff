@@ -42,6 +42,13 @@ if "${COMPOSE[@]}" config --services | grep -qx db; then
   "${COMPOSE[@]}" up -d db
 fi
 
+# Summarize the outgoing web container before replacement. Only aggregate
+# exception classes are emitted; request/user data and tracebacks are discarded.
+if "${COMPOSE[@]}" ps --status running --services 2>/dev/null | grep -qx web; then
+  "${COMPOSE[@]}" logs --no-color --tail=2000 web 2>&1 \
+    | python3 "$DEPLOY_PATH/scripts/summarize_runtime_errors.py" || true
+fi
+
 # Data backup happens before migrations/container replacement.
 ./scripts/backup.sh
 
