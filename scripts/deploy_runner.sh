@@ -1,20 +1,25 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-DEPLOY_PATH="${DEPLOY_PATH:-/opt/greenlife-staff}"
+DEPLOY_PATH="${DEPLOY_PATH:-/home/ubuntu/greenlife-staff-runtime}"
 cd "$DEPLOY_PATH"
+
+COMPOSE_FILE="$DEPLOY_PATH/docker-compose.yml"
+ENV_FILE="$DEPLOY_PATH/.env"
+COMPOSE=(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" --project-directory "$DEPLOY_PATH")
 
 LOCKFILE="/tmp/greenlife_staff_deploy.lock"
 exec 9>"$LOCKFILE"
 flock -n 9 || { echo "Another deployment is already running."; exit 1; }
 
-[[ -f .env ]] || { echo "ERROR: $DEPLOY_PATH/.env is missing" >&2; exit 1; }
+[[ -f "$ENV_FILE" ]] || { echo "ERROR: $ENV_FILE is missing" >&2; exit 1; }
+[[ -f "$COMPOSE_FILE" ]] || { echo "ERROR: $COMPOSE_FILE is missing" >&2; exit 1; }
 command -v docker >/dev/null || { echo "ERROR: docker is required" >&2; exit 1; }
 docker compose version >/dev/null
 
 set -a
 # shellcheck disable=SC1091
-source .env
+source "$ENV_FILE"
 set +a
 
 if [[ "${NGINX_PORT:-8085}" != "8085" ]]; then
@@ -27,26 +32,26 @@ echo "NGINX port: ${NGINX_PORT:-8085}"
 
 # The approved production Compose owns PostgreSQL. Start it before the first
 # backup so a clean server can bootstrap without deleting or replacing data.
-if docker compose config --services | grep -qx db; then
+if "${COMPOSE[@]}" config --services | grep -qx db; then
   echo "Ensuring PostgreSQL service is running..."
-  docker compose up -d db
+  "${COMPOSE[@]}" up -d db
 fi
 
 # Data backup happens before migrations/container replacement.
 ./scripts/backup.sh
 
 echo "Building application image..."
-docker compose build --pull
+"${COMPOSE[@]}" build --pull
 
 echo "Applying database migrations..."
-docker compose run --rm --entrypoint python web manage.py migrate --noinput
+"${COMPOSE[@]}" run --rm --entrypoint python web manage.py migrate --noinput
 
 echo "Starting/replacing containers..."
-docker compose up -d --remove-orphans
+"${COMPOSE[@]}" up -d --remove-orphans
 
 if ./scripts/healthcheck.sh; then
   echo "Deploy successful."
-  docker compose ps
+  "${COMPOSE[@]}" ps
   exit 0
 fi
 

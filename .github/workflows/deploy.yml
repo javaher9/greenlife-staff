@@ -35,17 +35,25 @@ jobs:
       - name: Sync source to fixed production directory
         shell: bash
         env:
-          DEPLOY_PATH: /opt/greenlife-staff
+          # Docker is installed as a confined Snap. This bind-mounted path is
+          # the Snap-readable view of the canonical /opt/greenlife-staff tree.
+          DEPLOY_PATH: /home/ubuntu/greenlife-staff-runtime
         run: |
           set -Eeuo pipefail
           test -d "$DEPLOY_PATH"
           test -f "$DEPLOY_PATH/.env"
+          test -f "$DEPLOY_PATH/docker-compose.yml"
+          mountpoint -q "$DEPLOY_PATH" || {
+            echo "ERROR: $DEPLOY_PATH must be bind-mounted from /opt/greenlife-staff" >&2
+            exit 1
+          }
           mkdir -p "$DEPLOY_PATH/.rollback"
 
           # Preserve a source snapshot for quick code rollback. Secrets and runtime data are excluded.
           if [ -f "$DEPLOY_PATH/manage.py" ]; then
             tar \
               --exclude='.env' \
+              --exclude='docker-compose.yml' \
               --exclude='backups' \
               --exclude='.rollback' \
               --exclude='media' \
@@ -57,6 +65,7 @@ jobs:
           rsync -a --delete \
             --exclude='.git/' \
             --exclude='.env' \
+            --exclude='docker-compose.yml' \
             --exclude='backups/' \
             --exclude='.rollback/' \
             --exclude='media/' \
@@ -68,7 +77,7 @@ jobs:
       - name: Deploy containers
         shell: bash
         env:
-          DEPLOY_PATH: /opt/greenlife-staff
+          DEPLOY_PATH: /home/ubuntu/greenlife-staff-runtime
         run: |
           set -Eeuo pipefail
           "$DEPLOY_PATH/scripts/deploy_runner.sh"
@@ -77,19 +86,28 @@ jobs:
         if: failure()
         shell: bash
         env:
-          DEPLOY_PATH: /opt/greenlife-staff
+          DEPLOY_PATH: /home/ubuntu/greenlife-staff-runtime
         run: |
           set +e
           if [ -f "$DEPLOY_PATH/.rollback/source_previous.tar.gz" ]; then
             echo "Restoring previous source snapshot..."
             find "$DEPLOY_PATH" -mindepth 1 -maxdepth 1 \
-              ! -name '.env' ! -name 'backups' ! -name '.rollback' \
+              ! -name '.env' ! -name 'docker-compose.yml' \
+              ! -name 'backups' ! -name '.rollback' \
               -exec rm -rf {} +
             tar -xzf "$DEPLOY_PATH/.rollback/source_previous.tar.gz" -C "$DEPLOY_PATH"
             chmod +x "$DEPLOY_PATH"/scripts/*.sh "$DEPLOY_PATH"/entrypoint.sh 2>/dev/null || true
+            docker compose \
+              --env-file "$DEPLOY_PATH/.env" \
+              -f "$DEPLOY_PATH/docker-compose.yml" \
+              --project-directory "$DEPLOY_PATH" \
+              build
+            docker compose \
+              --env-file "$DEPLOY_PATH/.env" \
+              -f "$DEPLOY_PATH/docker-compose.yml" \
+              --project-directory "$DEPLOY_PATH" \
+              up -d --remove-orphans
             cd "$DEPLOY_PATH"
-            docker compose build
-            docker compose up -d --remove-orphans
             ./scripts/healthcheck.sh || true
           else
             echo "No previous source snapshot is available for code rollback."
