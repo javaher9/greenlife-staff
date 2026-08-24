@@ -4,15 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>GreenLife Staff</title>
-  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v34">
+  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v35">
 
-<link rel="manifest" href="/static/core/manifest.webmanifest?v=v34">
+<link rel="manifest" href="/static/core/manifest.webmanifest?v=v35">
 <meta name="theme-color" content="#15945f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GreenLife Staff">
-<link rel="apple-touch-icon" href="/static/core/icon-192.png?v=v34">
+<link rel="apple-touch-icon" href="/static/core/icon-192.png?v=v35">
 
 </head>
 <body class="gl-app gl-premium-dark {% if user.is_authenticated %}gl-authenticated{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
@@ -101,7 +101,7 @@
 <main class="app-main">
   <header class="topbar">
     <div class="topbar-search"><span>⌕</span><input type="text" placeholder="جستجو در گرین‌لایف..." disabled></div>
-    <div class="topbar-meta"><span class="topbar-date">{{ request.user.date_joined|jdate }}</span><span class="topbar-bell">♢<b>8</b></span></div>
+    <div class="topbar-meta"><span class="topbar-date">{% if data.date %}{{ data.date }}{% else %}{{ request.user.date_joined|jdate }}{% endif %}</span><a class="topbar-bell" href="/notifications/">♢{% if alerts %}<b>{{ alerts|length }}</b>{% endif %}</a></div>
     <div class="header-person">
       <div class="avatar-xs">{% if user.profile.avatar %}<img src="{{ user.profile.avatar.url }}">{% else %}<span>{{ user.first_name|first|default:user.username|first }}</span>{% endif %}</div>
       <div><strong>{{ user.get_full_name|default:user.username }}</strong><span>{{ user.profile.job_title|default:'مدیر سیستم' }}{% if user.profile.branch %} · {{ user.profile.branch }}{% endif %}</span></div>
@@ -159,7 +159,7 @@
 <script>
 (function(){
   if('serviceWorker' in navigator){
-    window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js?v=v34',{updateViaCache:'none'}).catch(()=>{}));
+    window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js?v=v35',{updateViaCache:'none'}).catch(()=>{}));
   }
   let deferredPrompt=null;
   const bar=document.getElementById('pwaInstallBar');
@@ -206,7 +206,7 @@
 
 
 <div class="gl-version-footer">
-  GreenLife Staff <strong>v34 Premium Dark</strong>
+  GreenLife Staff <strong>v35 Premium Dark</strong>
 </div>
 
 </body></html>

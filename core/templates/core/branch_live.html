@@ -1,33 +1,80 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
-<div class="ref-dashboard">
-  <section class="ref-welcome">
-    <div><h1>سلام {{ user.get_full_name|default:user.username }} جان، خوش آمدی 👋</h1><p>نمای کلی عملکرد مجموعه در یک نگاه</p></div>
-    <form method="get" class="ref-date-filter"><select name="branch" onchange="this.form.submit()">{% if user.profile.role == 'admin' %}<option value="">همه شعب</option>{% endif %}{% for b in branches %}<option value="{{ b.id }}" {% if selected_branch and selected_branch.id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select><span>▣ {{ data.date }}</span></form>
+<div class="owner-dashboard-v35">
+  <section class="owner-hero-v35">
+    <div class="owner-hero-copy">
+      <h1>درخواست‌های داخلی</h1>
+      <p>خرید، تعمیر، IT، منابع انسانی و مالی</p>
+    </div>
+    <div class="owner-hero-orb" aria-hidden="true"></div>
+    <div class="owner-hero-actions">
+      <a class="owner-new-request" href="/service-requests/new/"><span>＋</span> درخواست جدید</a>
+      <form method="get" class="owner-branch-filter">
+        <select name="branch" onchange="this.form.submit()">
+          {% if user.profile.role == 'admin' %}<option value="">همه شعب</option>{% endif %}
+          {% for b in branches %}<option value="{{ b.id }}" {% if selected_branch and selected_branch.id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+        </select>
+      </form>
+    </div>
   </section>
 
-  <section class="ref-kpis">
-    <article><div><small>حاضر</small><strong class="c-green">{{ data.counts.present }}</strong><span>نفر از {{ data.total_people }} نفر</span></div><i class="ico green">♙</i></article>
-    <article><div><small>تأخیر</small><strong class="c-orange">{{ data.counts.late }}</strong><span>{{ data.attendance_rate }}٪ نرخ حضور</span></div><i class="ico orange">◷</i></article>
-    <article><div><small>گزارش ارسال شده</small><strong class="c-blue">{{ data.reports_today }}</strong><span>{{ data.report_rate }}٪ از کل</span></div><i class="ico blue">▣</i></article>
-    <article><div><small>وظایف عقب‌افتاده</small><strong class="c-purple">{{ data.overdue_tasks }}</strong><span>نیازمند پیگیری</span></div><i class="ico purple">☷</i></article>
-    <article><div><small>انجام وظایف امروز</small><strong class="c-green">{{ data.task_completion_rate }}%</strong><span>{{ data.tasks_today_done }} از {{ data.tasks_today_total }} وظیفه</span></div><i class="ico green">↗</i></article>
+  <section class="owner-kpis-v35">
+    <article class="owner-kpi teal"><span class="owner-kpi-icon">▥</span><div><small>میانگین KPI</small><strong>{{ data.average_kpi }}٪</strong><em>بر پایه حضور، گزارش و وظایف</em></div></article>
+    <article class="owner-kpi amber"><span class="owner-kpi-icon">⚡</span><div><small>مرکز اقدام</small><strong>{{ data.action_required_count }}</strong><em>در انتظار پیگیری</em></div></article>
+    <article class="owner-kpi purple"><span class="owner-kpi-icon">▤</span><div><small>درخواست‌های باز</small><strong>{{ data.request_open }}</strong><em>{{ data.request_total }} درخواست در مجموع</em></div></article>
+    <article class="owner-kpi blue"><span class="owner-kpi-icon">▣</span><div><small>حضور امروز</small><strong>{{ data.present_people }}</strong><em>{{ data.attendance_rate }}٪ از کل پرسنل</em></div></article>
+    <article class="owner-kpi green"><span class="owner-kpi-icon">♟</span><div><small>پرسنل فعال</small><strong>{{ data.total_people }}</strong><em>در شعب انتخاب‌شده</em></div></article>
   </section>
 
-  <section class="ref-mid">
-    <article class="ref-card attendance-card"><h2>نرخ حضور امروز</h2><div class="semi-gauge" style="--v:{{ data.attendance_rate }}"><div><strong>{{ data.attendance_rate }}%</strong></div></div><p>◎ هدف ما: بالای 85٪</p></article>
-    <article class="ref-card trend-card"><h2>نمودار عملکرد ۷ روز اخیر</h2><div class="chart-legend"><span class="green">━ حضور</span><span class="blue">━ گزارش‌ها</span><span class="orange">━ تأخیر</span></div><div class="ref-linechart" id="refChart"><svg viewBox="0 0 700 220" preserveAspectRatio="none"><g class="grid"><line x1="0" y1="30" x2="700" y2="30"/><line x1="0" y1="80" x2="700" y2="80"/><line x1="0" y1="130" x2="700" y2="130"/><line x1="0" y1="180" x2="700" y2="180"/></g><polyline id="linePresent" class="lp" points=""/><polyline id="lineReports" class="lr" points=""/><polyline id="lineLate" class="ll" points=""/></svg><div class="chart-days">{% for t in data.trend %}<span>{{ t.label }}</span>{% endfor %}</div></div></article>
-    <article class="ref-card donut-card"><h2>توزیع وضعیت پرسنل</h2><div class="donut-body"><div class="donut" style="--p:{{ data.counts.present }};--l:{{ data.counts.late }};--m:{{ data.counts.missing }};--lv:{{ data.counts.leave }};--total:{{ data.total_people }}"><div><strong>{{ data.total_people }}</strong><span>نفر</span></div></div><div class="donut-legend"><p><i class="g"></i>حاضر <b>{{ data.counts.present }}</b></p><p><i class="o"></i>تأخیر <b>{{ data.counts.late }}</b></p><p><i class="r"></i>غیبت <b>{{ data.counts.missing }}</b></p><p><i class="b"></i>مرخصی <b>{{ data.counts.leave }}</b></p></div></div></article>
+  <section class="owner-main-grid-v35">
+    <article class="owner-card-v35 owner-chart-card">
+      <div class="owner-card-head"><h2>نمودار درخواست‌ها</h2><span>هفته جاری⌄</span></div>
+      <div class="owner-request-chart">
+        <div class="owner-y-axis"><span>100</span><span>75</span><span>50</span><span>25</span><span>0</span></div>
+        <svg viewBox="0 0 720 230" preserveAspectRatio="none" aria-label="نمودار درخواست‌های هفت روز اخیر">
+          <defs><linearGradient id="requestAreaV35" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#76df83" stop-opacity=".30"/><stop offset="1" stop-color="#76df83" stop-opacity="0"/></linearGradient></defs>
+          <g class="owner-chart-grid"><line x1="0" y1="25" x2="720" y2="25"/><line x1="0" y1="75" x2="720" y2="75"/><line x1="0" y1="125" x2="720" y2="125"/><line x1="0" y1="175" x2="720" y2="175"/><line x1="0" y1="225" x2="720" y2="225"/></g>
+          <polygon id="requestAreaPolygonV35" points="" fill="url(#requestAreaV35)"/><polyline id="requestLineV35" points=""/><g id="requestDotsV35"></g>
+        </svg>
+        <div class="owner-chart-days">{% for item in data.request_trend %}<span>{{ item.label }}</span>{% endfor %}</div>
+      </div>
+    </article>
+
+    <article class="owner-card-v35 owner-request-status">
+      <h2>درخواست‌ها بر اساس وضعیت</h2>
+      <div class="owner-request-status-body">
+        <div class="owner-request-donut {% if not data.request_total %}is-empty{% endif %}" style="--a:{{ data.request_open_end }}%;--b:{{ data.request_doing_end }}%;--c:{{ data.request_done_end }}%;"><div><strong>{{ data.request_total }}</strong><span>کل</span></div></div>
+        <div class="owner-status-list">
+          <p><i class="new"></i><span>جدید</span><b>{{ data.request_counts.open }}</b></p><p><i class="doing"></i><span>در حال بررسی</span><b>{{ data.request_counts.doing }}</b></p><p><i class="done"></i><span>تکمیل شده</span><b>{{ data.request_counts.done }}</b></p><p><i class="rejected"></i><span>رد شده</span><b>{{ data.request_counts.rejected }}</b></p>
+        </div>
+      </div>
+    </article>
+
+    <article class="owner-card-v35 owner-activity-card">
+      <h2>آخرین فعالیت‌ها</h2>
+      <div class="owner-activity-list">
+        {% for item in data.request_activity %}<a href="/service-requests/" class="owner-activity-row"><span class="owner-activity-dot {{ item.color }}"></span><div class="owner-activity-avatar">{% if item.avatar %}<img src="{{ item.avatar }}" alt="{{ item.person }}">{% else %}{{ item.person|first }}{% endif %}</div><div><strong>{{ item.title|truncatechars:34 }}</strong><p>{{ item.person }} · {{ item.job_title }}</p><small>{{ item.time }} · {{ item.status_label }}</small></div></a>{% empty %}<div class="owner-empty-v35">هنوز فعالیتی در درخواست‌های داخلی ثبت نشده است.</div>{% endfor %}
+      </div>
+    </article>
   </section>
 
-  <section class="ref-bottom">
-    <article class="ref-card action-card"><h2>نیازمند اقدام امروز</h2><div class="action-list"><div class="action orange"><i>◷</i><div><strong>{{ data.counts.late }} تأخیر ثبت شده امروز</strong><small>نیاز به بررسی و پیگیری</small></div></div><div class="action blue"><i>▣</i><div><strong>{{ data.missing_reports_today }} گزارش بدون ثبت</strong><small>لطفاً بررسی و تأیید کنید</small></div></div><div class="action purple"><i>▤</i><div><strong>{{ data.overdue_tasks }} وظیفه عقب‌افتاده</strong><small>نیاز به پیگیری پرسنل</small></div></div></div><a href="/action-center/">مشاهده همه ‹</a></article>
-    <article class="ref-card goals-card"><h2>پیشرفت اهداف ماهانه ◎</h2><div class="goal"><span>نرخ حضور</span><b>{{ data.attendance_rate }}%</b><div><i class="green" style="width:{{ data.attendance_rate }}%"></i></div></div><div class="goal"><span>ارسال گزارش روزانه</span><b>{{ data.report_rate }}%</b><div><i class="blue" style="width:{{ data.report_rate }}%"></i></div></div><div class="goal"><span>انجام وظایف امروز</span><b>{{ data.task_completion_rate }}%</b><div><i class="purple" style="width:{{ data.task_completion_rate }}%"></i></div></div><div class="goal"><span>ورود به‌موقع</span><b>{{ data.ontime_rate }}%</b><div><i class="green" style="width:{{ data.ontime_rate }}%"></i></div></div></article>
-    <article class="ref-card device-dashboard-card"><div class="card-head"><h2>گزارش خرابی دستگاه</h2><a href="/device-issues/manage/">مشاهده همه ‹</a></div><div class="device-kpi"><strong>{{ data.device_open }}</strong><span>مورد باز و نیازمند رسیدگی</span></div><div class="device-dashboard-list">{% for x in data.device_recent %}<a href="/device-issues/{{ x.id }}/review/" class="device-dashboard-row"><div><b>{{ x.device_name }}</b><small>{{ x.reporter }} · {{ x.branch }} · {{ x.time }}</small><p>{{ x.description }}</p></div><em class="device-status {{ x.status }}">{{ x.status_label }}</em></a>{% empty %}<p class="empty">خرابی باز یا گزارش جدیدی وجود ندارد.</p>{% endfor %}</div></article>
-    <article class="ref-card staff-table-card"><div class="card-head"><h2>وضعیت پرسنل امروز</h2><a href="/attendance/team/">مشاهده همه پرسنل ‹</a></div><div class="staff-list">{% for p in data.people|slice:':5' %}<div class="staff-row"><div class="staff-person"><div class="avatar">{% if p.avatar %}<img src="{{ p.avatar }}">{% else %}{{ p.name|first }}{% endif %}</div><div><b>{{ p.name }}</b><small>{{ p.job_title|default:'پرسنل' }}</small></div></div><span>{{ p.branch }}</span><span>{{ p.check_in|default:'--:--' }}</span><span>{{ p.check_out|default:'--:--' }}</span><em class="status {{ p.status }}">{{ p.status_label }}</em><span class="report-ok">{% if p.report_today %}✓{% else %}−{% endif %}</span></div>{% empty %}<p class="empty">پرسنلی یافت نشد.</p>{% endfor %}</div></article>
+  <section class="owner-bottom-grid-v35">
+    <article class="owner-card-v35 owner-note-card"><div class="owner-card-head"><h2>یادداشت سریع</h2><span>✎</span></div><textarea id="ownerQuickNoteV35" rows="4" placeholder="یادداشتی بنویسید..."></textarea><small id="ownerNoteStateV35">به‌صورت خودکار روی همین دستگاه ذخیره می‌شود.</small></article>
+    <article class="owner-card-v35 owner-alert-card"><div class="owner-card-head"><h2>اعلان‌های مهم</h2><a href="/notifications/">مشاهده همه</a></div><div class="owner-alert-list">{% for n in alerts|slice:':3' %}<a href="/notifications/"><span class="alert-symbol">{% if n.notification_type == 'warning' %}⚠{% else %}▤{% endif %}</span><div><strong>{{ n.title }}</strong><small>{{ n.message|truncatechars:70 }}</small></div></a>{% empty %}{% for a in dashboard_announcements|slice:':3' %}<a href="/announcements/"><span class="alert-symbol">▤</span><div><strong>{{ a.title }}</strong><small>{{ a.body|truncatechars:70 }}</small></div></a>{% empty %}<div class="owner-empty-v35">اعلان مهمی وجود ندارد.</div>{% endfor %}{% endfor %}</div></article>
+    <article class="owner-card-v35 owner-shortcut-card"><h2>میانبرها</h2><div class="owner-shortcuts"><a href="/notifications/"><i class="amber">♟</i><span>اعلان جدید</span></a><a href="/reports/"><i class="teal">▥</i><span>گزارش جدید</span></a><a href="/attendance/team/"><i class="green">▣</i><span>گزارش حضور</span></a><a href="/service-requests/new/"><i class="lime">＋</i><span>ثبت درخواست</span></a></div></article>
   </section>
 
-  <footer class="ref-summary"><div>↻ <span>آخرین بروزرسانی</span><b>{{ data.generated_at }}</b></div><div>♙ <span>کل پرسنل</span><b>{{ data.total_people }} نفر</b></div><div>▥ <span>شعب فعال</span><b>{{ branches|length }} شعبه</b></div><div>▣ <span>گزارش امروز</span><b>{{ data.reports_today }}</b></div><div>☷ <span>Task امروز</span><b>{{ data.overdue_tasks }}</b></div><a href="/reports/">گزارش جامع روزانه ▥</a></footer>
+  <section class="owner-operations-v35">
+    <article class="owner-card-v35 owner-action-summary"><div class="owner-card-head"><h2>عملیات امروز</h2><a href="/action-center/">مرکز اقدام ‹</a></div><div class="owner-ops-pills"><a href="/attendance/team/"><b>{{ data.counts.late }}</b><span>تأخیر</span></a><a href="/reports/"><b>{{ data.missing_reports_today }}</b><span>گزارش ثبت‌نشده</span></a><a href="/tasks/"><b>{{ data.overdue_tasks }}</b><span>وظیفه عقب‌افتاده</span></a><a href="/device-issues/manage/"><b>{{ data.device_open }}</b><span>خرابی باز</span></a></div></article>
+    <article class="owner-card-v35 owner-staff-mini"><div class="owner-card-head"><h2>وضعیت پرسنل امروز</h2><a href="/attendance/team/">مشاهده همه</a></div>{% for p in data.people|slice:':5' %}<div class="owner-staff-row"><span class="owner-staff-avatar">{% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.name }}">{% else %}{{ p.name|first }}{% endif %}</span><div><b>{{ p.name }}</b><small>{{ p.job_title|default:'پرسنل' }} · {{ p.branch }}</small></div><em class="status {{ p.status }}">{{ p.status_label }}</em><span>{{ p.check_in|default:'--:--' }}</span></div>{% empty %}<div class="owner-empty-v35">پرسنلی یافت نشد.</div>{% endfor %}</article>
+  </section>
 </div>
-{{ data.trend|json_script:"trend-data" }}
-<script>(function(){const d=JSON.parse(document.getElementById('trend-data').textContent||'[]');if(!d.length)return;const max=Math.max(1,...d.flatMap(x=>[x.present,x.reports,x.late]));const pts=k=>d.map((x,i)=>`${30+i*(640/Math.max(1,d.length-1))},${190-(x[k]/max)*145}`).join(' ');document.getElementById('linePresent').setAttribute('points',pts('present'));document.getElementById('lineReports').setAttribute('points',pts('reports'));document.getElementById('lineLate').setAttribute('points',pts('late'));})();</script>
+
+{{ data.request_trend|json_script:"request-trend-v35" }}
+<script>
+(function(){
+  const trendNode=document.getElementById('request-trend-v35'),line=document.getElementById('requestLineV35'),area=document.getElementById('requestAreaPolygonV35'),dots=document.getElementById('requestDotsV35');
+  if(trendNode&&line&&area&&dots){const data=JSON.parse(trendNode.textContent||'[]');if(data.length){const max=Math.max(1,...data.map(x=>Number(x.count)||0));const points=data.map((x,i)=>[25+i*(670/Math.max(1,data.length-1)),210-((Number(x.count)||0)/max)*160]);line.setAttribute('points',points.map(x=>x.join(',')).join(' '));area.setAttribute('points',`25,225 ${points.map(x=>x.join(',')).join(' ')} 695,225`);points.forEach((point,i)=>{const circle=document.createElementNS('http://www.w3.org/2000/svg','circle');circle.setAttribute('cx',point[0]);circle.setAttribute('cy',point[1]);circle.setAttribute('r',i===points.length-2?'7':'5');if(i===points.length-2)circle.classList.add('is-highlight');dots.appendChild(circle);});}}
+  const note=document.getElementById('ownerQuickNoteV35'),state=document.getElementById('ownerNoteStateV35');if(note){const key='greenlife_owner_quick_note_v35';note.value=localStorage.getItem(key)||'';let timer;note.addEventListener('input',()=>{clearTimeout(timer);if(state)state.textContent='در حال ذخیره...';timer=setTimeout(()=>{localStorage.setItem(key,note.value);if(state)state.textContent='ذخیره شد ✓';},350);});}
+})();
+</script>
 {% endblock %}

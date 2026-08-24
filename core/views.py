@@ -858,8 +858,43 @@ def _branch_live_payload(branch=None, day=None):
     tasks_today_done = tasks_today.filter(status='done').count()
     task_completion_rate = round(tasks_today_done * 100 / max(1, tasks_today_total)) if tasks_today_total else 100
 
+    # Internal-request data powers the approved owner dashboard. Keep the
+    # branch scope aligned with the rest of the management payload so a branch
+    # manager never sees another branch's requests.
+    internal_requests_qs = InternalRequest.objects.select_related(
+        'requester', 'requester__profile', 'assigned_to'
+    ).order_by('-created_at')
+    if branch:
+        internal_requests_qs = internal_requests_qs.filter(requester__profile__branch=branch)
+    request_counts = {'open': 0, 'doing': 0, 'done': 0, 'rejected': 0}
+    for item in internal_requests_qs.values('status').annotate(n=Count('id')):
+        request_counts[item['status']] = item['n']
+    request_total = sum(request_counts.values())
+    request_open = request_counts['open'] + request_counts['doing']
+    request_base = max(1, request_total)
+    request_open_end = round(request_counts['open'] * 100 / request_base)
+    request_doing_end = request_open_end + round(request_counts['doing'] * 100 / request_base)
+    request_done_end = request_doing_end + round(request_counts['done'] * 100 / request_base)
+
+    recent_request_activity = []
+    activity_colors = {'open': 'green', 'doing': 'blue', 'done': 'teal', 'rejected': 'red'}
+    for item in internal_requests_qs[:5]:
+        requester_name = item.requester.get_full_name() or item.requester.username
+        profile = getattr(item.requester, 'profile', None)
+        recent_request_activity.append({
+            'title': item.title,
+            'person': requester_name,
+            'job_title': getattr(profile, 'job_title', '') or 'پرسنل',
+            'avatar': profile.avatar.url if profile and profile.avatar else '',
+            'status': item.status,
+            'status_label': item.get_status_display(),
+            'color': activity_colors.get(item.status, 'green'),
+            'time': timezone.localtime(item.updated_at).strftime('%H:%M'),
+        })
+
     # Lightweight 7-day management trend data.
     trend=[]
+    request_trend=[]
     for offset in range(6,-1,-1):
         d=day-timedelta(days=offset)
         active_users=users
@@ -873,6 +908,8 @@ def _branch_live_payload(branch=None, day=None):
             'late':late_count,
             'reports':report_count,
         })
+        daily_request_count = internal_requests_qs.filter(created_at__date=d).count()
+        request_trend.append({'label': format_jalali(d)[5:], 'count': daily_request_count})
 
     device_issues = DeviceIssue.objects.filter(reporter__in=users).select_related('reporter','branch').order_by('-created_at')
     if branch:
@@ -917,8 +954,22 @@ def _branch_live_payload(branch=None, day=None):
         'ontime_rate':ontime_rate,
         'report_rate':report_rate,
         'task_completion_rate':task_completion_rate,
+        'average_kpi':round((attendance_rate+report_rate+task_completion_rate)/3),
         'tasks_today_total':tasks_today_total,
         'tasks_today_done':tasks_today_done,
+        'present_people':present_people,
+        'action_required_count':(
+            counters.get('late',0) + sum(1 for p in rows if not p['report_today'])
+            + overdue_tasks.count() + device_open_count
+        ),
+        'request_total':request_total,
+        'request_open':request_open,
+        'request_counts':request_counts,
+        'request_open_end':request_open_end,
+        'request_doing_end':request_doing_end,
+        'request_done_end':request_done_end,
+        'request_activity':recent_request_activity,
+        'request_trend':request_trend,
         'device_open':device_open.count(),
         'device_recent':device_recent,
         'total_people':len(rows),
@@ -938,7 +989,16 @@ def branch_live_dashboard(request):
         branch=request.user.profile.branch
     data=_branch_live_payload(branch)
     alerts=StaffNotification.objects.filter(user=request.user,is_read=False)[:12]
-    return render(request,'core/branch_live.html',{'data':data,'branches':branches,'selected_branch':branch,'alerts':alerts})
+    announcements=Announcement.objects.filter(is_active=True)
+    if branch:
+        announcements=announcements.filter(Q(branch__isnull=True)|Q(branch=branch))
+    return render(request,'core/branch_live.html',{
+        'data':data,
+        'branches':branches,
+        'selected_branch':branch,
+        'alerts':alerts,
+        'dashboard_announcements':announcements.order_by('-created_at')[:4],
+    })
 
 
 @manager_required
@@ -1784,6 +1844,6 @@ def action_center(request):
 
 @login_required
 def service_worker(request):
-    response=HttpResponse("const CACHE='greenlife-staff-v34';\nconst STATIC=[\n  '/static/core/app.css?v=v34',\n  '/static/core/icon-192.png?v=v34',\n  '/static/core/icon-512.png?v=v34',\n  '/static/core/manifest.webmanifest?v=v34'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
+    response=HttpResponse("const CACHE='greenlife-staff-v35';\nconst STATIC=[\n  '/static/core/app.css?v=v35',\n  '/static/core/icon-192.png?v=v35',\n  '/static/core/icon-512.png?v=v35',\n  '/static/core/manifest.webmanifest?v=v35'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
     response['Cache-Control']='no-cache, no-store, must-revalidate'
     return response
