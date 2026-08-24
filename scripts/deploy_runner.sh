@@ -17,6 +17,11 @@ flock -n 9 || { echo "Another deployment is already running."; exit 1; }
 command -v docker >/dev/null || { echo "ERROR: docker is required" >&2; exit 1; }
 docker compose version >/dev/null
 
+# Keep the server-owned .env file, but replace known placeholder settings and
+# enforce safe production flags before Docker reads it. Secret values are never
+# written to the GitHub Actions log.
+python3 "$DEPLOY_PATH/scripts/harden_env.py" "$ENV_FILE"
+
 set -a
 # shellcheck disable=SC1091
 source "$ENV_FILE"
@@ -45,6 +50,9 @@ if ! "${COMPOSE[@]}" build --pull; then
   echo "WARNING: Registry refresh failed; retrying with the locally cached base image." >&2
   "${COMPOSE[@]}" build
 fi
+
+echo "Validating production configuration..."
+"${COMPOSE[@]}" run --rm --entrypoint python web manage.py check --deploy
 
 echo "Applying database migrations..."
 "${COMPOSE[@]}" run --rm --entrypoint python web manage.py migrate --noinput

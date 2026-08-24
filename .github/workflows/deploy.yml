@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout approved main branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
@@ -30,7 +30,10 @@ jobs:
           set -Eeuo pipefail
           test -f docker-compose.yml
           test -f scripts/deploy_runner.sh
+          test -f scripts/harden_env.py
           python3 -m compileall -q core greenlife
+          python3 -m py_compile scripts/harden_env.py
+          bash -n entrypoint.sh scripts/*.sh
 
       - name: Sync source to fixed production directory
         shell: bash
