@@ -95,6 +95,9 @@ class Command(BaseCommand):
 
     def _verify_sessions(self):
         checked = 0
+        app_admin_checked = 0
+        django_admin_checked = 0
+        role_admin_without_staff = 0
         errors = Counter()
         host = (settings.ALLOWED_HOSTS or ['localhost'])[0]
         if host == '*':
@@ -116,6 +119,22 @@ class Command(BaseCommand):
                     response = client.get('/', follow=True, secure=True, HTTP_HOST=host)
                     if response.status_code >= 500:
                         errors[f'HTTP_{response.status_code}'] += 1
+
+                    profile_role = getattr(getattr(user, 'profile', None), 'role', '')
+                    if profile_role in ('admin', 'manager'):
+                        app_admin_checked += 1
+                        response = client.get('/live/', follow=True, secure=True, HTTP_HOST=host)
+                        if response.status_code >= 500:
+                            errors[f'APP_ADMIN_HTTP_{response.status_code}'] += 1
+
+                    if profile_role == 'admin' and not user.is_staff:
+                        role_admin_without_staff += 1
+
+                    if user.is_staff:
+                        django_admin_checked += 1
+                        response = client.get('/admin/', follow=True, secure=True, HTTP_HOST=host)
+                        if response.status_code >= 500:
+                            errors[f'DJANGO_ADMIN_HTTP_{response.status_code}'] += 1
                 except Exception as exc:
                     errors[type(exc).__name__] += 1
                 finally:
@@ -126,5 +145,11 @@ class Command(BaseCommand):
 
         summary = ','.join(f'{name}:{count}' for name, count in sorted(errors.items())) or 'none'
         self.stdout.write(f'Staff session verification: checked={checked}, errors={summary}')
+        self.stdout.write(
+            'Admin session verification: '
+            f'app_admin_checked={app_admin_checked}, '
+            f'django_admin_checked={django_admin_checked}, '
+            f'role_admin_without_staff={role_admin_without_staff}'
+        )
         if errors:
             raise CommandError('Authenticated staff session verification failed.')
