@@ -56,8 +56,8 @@ class EmployeeCreateForm(forms.Form):
     job_title=forms.CharField(label='سمت',required=False); phone=forms.CharField(label='تلفن',required=False); birth_date=JalaliDateField(label='تاریخ تولد',required=False)
     branch=forms.ModelChoiceField(label='شعبه',queryset=Branch.objects.filter(is_active=True),required=False); role=forms.ChoiceField(label='نقش',choices=EmployeeProfile.ROLE_CHOICES)
     def clean_username(self):
-        value=self.cleaned_data['username']
-        if User.objects.filter(username=value).exists(): raise forms.ValidationError('این نام کاربری قبلاً ثبت شده است.')
+        value=self.cleaned_data['username'].strip()
+        if User.objects.filter(username__iexact=value).exists(): raise forms.ValidationError('این نام کاربری قبلاً ثبت شده است.')
         return value
 
 class AttendanceManualForm(forms.ModelForm):

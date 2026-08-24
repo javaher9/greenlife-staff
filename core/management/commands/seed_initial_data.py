@@ -6,5 +6,5 @@ class Command(BaseCommand):
         branches={n:Branch.objects.get_or_create(name=n)[0] for n in ['افسریه','نیاوران','پونک','اصفهان','ارومیه']}
         if not User.objects.filter(username='admin').exists():
             u=User.objects.create_superuser('admin','admin@example.com','ChangeMeNow!')
-            EmployeeProfile.objects.create(user=u,role='admin',job_title='مدیر سیستم')
+            EmployeeProfile.objects.update_or_create(user=u,defaults={'role':'admin','job_title':'مدیر سیستم'})
             self.stdout.write(self.style.WARNING('کاربر اولیه admin با رمز ChangeMeNow! ساخته شد؛ فوراً رمز را تغییر دهید.'))

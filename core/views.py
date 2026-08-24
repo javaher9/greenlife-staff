@@ -84,7 +84,17 @@ def login_view(request):
 
     form=AuthenticationForm(request,data=data)
     if request.method=='POST' and form.is_valid():
-        login(request,form.get_user())
+        user=form.get_user()
+        # Accounts created from Django's generic User admin may not yet have
+        # the EmployeeProfile required throughout the staff application.
+        EmployeeProfile.objects.get_or_create(
+            user=user,
+            defaults={
+                'role':'admin' if user.is_superuser else 'employee',
+                'is_active':user.is_active,
+            },
+        )
+        login(request,user)
         return redirect('dashboard')
     return render(request,'core/login.html',{'form':form})
 
@@ -326,7 +336,11 @@ def employee_create(request):
         form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=request.user.profile.branch_id); form.fields['branch'].initial=request.user.profile.branch; form.fields['role'].choices=[('employee','کارمند')]
     if request.method=='POST' and form.is_valid():
         d=form.cleaned_data; user=User.objects.create_user(username=d['username'],password=d['password'],first_name=d['first_name'],last_name=d['last_name'])
-        EmployeeProfile.objects.create(user=user,branch=d['branch'],role=d['role'],job_title=d['job_title'],employee_code=d['employee_code'] or None,phone=d['phone'],birth_date=d.get('birth_date'))
+        EmployeeProfile.objects.update_or_create(user=user,defaults={
+            'branch':d['branch'],'role':d['role'],'job_title':d['job_title'],
+            'employee_code':d['employee_code'] or None,'phone':d['phone'],
+            'birth_date':d.get('birth_date'),'is_active':user.is_active,
+        })
         messages.success(request,'کارمند ایجاد شد.'); return redirect('employee_list')
     return render(request,'core/generic_form.html',{'form':form,'title':'افزودن کارمند','button':'ساخت حساب'})
 

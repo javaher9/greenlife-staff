@@ -57,6 +57,9 @@ echo "Validating production configuration..."
 echo "Applying database migrations..."
 "${COMPOSE[@]}" run --rm --entrypoint python web manage.py migrate --noinput
 
+echo "Repairing staff account integrity..."
+"${COMPOSE[@]}" run --rm --entrypoint python web manage.py repair_staff_accounts --apply
+
 echo "Starting/replacing containers..."
 "${COMPOSE[@]}" up -d --remove-orphans
 
