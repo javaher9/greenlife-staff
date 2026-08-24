@@ -41,7 +41,10 @@ fi
 ./scripts/backup.sh
 
 echo "Building application image..."
-"${COMPOSE[@]}" build --pull
+if ! "${COMPOSE[@]}" build --pull; then
+  echo "WARNING: Registry refresh failed; retrying with the locally cached base image." >&2
+  "${COMPOSE[@]}" build
+fi
 
 echo "Applying database migrations..."
 "${COMPOSE[@]}" run --rm --entrypoint python web manage.py migrate --noinput
