@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.utils import timezone
-from .models import DailyReport, Task, LeaveRequest, Announcement, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, Branch
+from .models import DailyReport, Task, LeaveRequest, Announcement, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, Branch, JobDutyTemplate, Guideline, DeviceIssue
 from .jalali import parse_jalali, format_jalali
 
 class JalaliDateInput(forms.TextInput):
@@ -56,8 +56,8 @@ class EmployeeCreateForm(forms.Form):
     job_title=forms.CharField(label='سمت',required=False); phone=forms.CharField(label='تلفن',required=False); birth_date=JalaliDateField(label='تاریخ تولد',required=False)
     branch=forms.ModelChoiceField(label='شعبه',queryset=Branch.objects.filter(is_active=True),required=False); role=forms.ChoiceField(label='نقش',choices=EmployeeProfile.ROLE_CHOICES)
     def clean_username(self):
-        value=self.cleaned_data['username'].strip()
-        if User.objects.filter(username__iexact=value).exists(): raise forms.ValidationError('این نام کاربری قبلاً ثبت شده است.')
+        value=self.cleaned_data['username']
+        if User.objects.filter(username=value).exists(): raise forms.ValidationError('این نام کاربری قبلاً ثبت شده است.')
         return value
 
 class AttendanceManualForm(forms.ModelForm):
@@ -109,8 +109,12 @@ class EmployeeAvatarForm(forms.ModelForm):
 
     def clean_avatar(self):
         avatar=self.cleaned_data.get('avatar')
-        if avatar and getattr(avatar,'size',0) > 5*1024*1024:
-            raise forms.ValidationError('حجم عکس باید کمتر از ۵ مگابایت باشد.')
+        if avatar:
+            if getattr(avatar,'size',0) > 5*1024*1024:
+                raise forms.ValidationError('حجم عکس باید کمتر از ۵ مگابایت باشد.')
+            content_type=getattr(avatar,'content_type','')
+            if content_type and content_type not in ('image/jpeg','image/png','image/webp'):
+                raise forms.ValidationError('فرمت عکس باید JPG، PNG یا WEBP باشد.')
         return avatar
 
 
@@ -250,3 +254,40 @@ class CampDailyPhotoForm(forms.ModelForm):
         model=CampDailyPhoto
         fields=['date','photo_type','image','project','caption','location']
         widgets={'image':forms.ClearableFileInput(attrs={'accept':'image/*'})}
+
+
+class ManagerReportCommentForm(forms.ModelForm):
+    class Meta:
+        model=DailyReport
+        fields=['manager_comment']
+        widgets={'manager_comment':forms.TextInput(attrs={'maxlength':300,'placeholder':'مثلاً: لطفاً با صدای بلندتر ضبط کنید.'})}
+
+class JobDutyTemplateForm(forms.ModelForm):
+    class Meta:
+        model=JobDutyTemplate
+        fields=['title','branch','job_title','description','is_active']
+        widgets={'description':forms.Textarea(attrs={'rows':6})}
+
+class GuidelineForm(forms.ModelForm):
+    class Meta:
+        model=Guideline
+        fields=['title','body','audience','branch','job_title','is_required','is_active']
+        widgets={'body':forms.Textarea(attrs={'rows':8})}
+
+
+class DeviceIssueForm(forms.ModelForm):
+    class Meta:
+        model=DeviceIssue
+        fields=['device_name','description']
+        labels={'device_name':'نام دستگاه','description':'شرح خرابی'}
+        widgets={
+            'device_name':forms.TextInput(attrs={'placeholder':'مثلاً دستگاه لیزر، اتوکلاو، کامپیوتر پذیرش...'}),
+            'description':forms.Textarea(attrs={'rows':6,'placeholder':'مشکل دستگاه را کوتاه و دقیق توضیح دهید؛ چه اتفاقی افتاده و از چه زمانی.'}),
+        }
+
+class DeviceIssueReviewForm(forms.ModelForm):
+    class Meta:
+        model=DeviceIssue
+        fields=['status','manager_note']
+        labels={'status':'وضعیت','manager_note':'یادداشت مدیر / مسئول فنی'}
+        widgets={'manager_note':forms.Textarea(attrs={'rows':4,'placeholder':'اقدام انجام‌شده یا توضیح پیگیری...'})}

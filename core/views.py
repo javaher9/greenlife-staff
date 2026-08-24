@@ -1,3 +1,5 @@
+import math
+import uuid
 from datetime import timedelta
 from django.http import JsonResponse
 from functools import wraps
@@ -9,16 +11,51 @@ from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect, render
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
-from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, EmployeeCreateForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm
-from .models import Announcement, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot
+from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, EmployeeCreateForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm
+from .models import Announcement, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue
 from .ai import process_report
 from .jalali import parse_jalali, format_jalali
 from .reporting import day_summary, leaderboard, answer_query
-from .operations import shift_rule, attendance_status_for, overtime_minutes, award_report, award_task, missing_report_days, auto_kpi, approve_correction
+from .operations import shift_rule, attendance_status_for, overtime_minutes, award_report, award_task, missing_report_days, auto_kpi, approve_correction, report_required, report_exists
 from .smart_alerts import generate_smart_alerts
 from .executive_engine import ceo_score, trend_alerts, calendar_events
 
 def role_of(user): return getattr(getattr(user,'profile',None),'role','employee')
+
+def _request_ip(request):
+    forwarded=request.META.get('HTTP_X_FORWARDED_FOR','')
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR') or None
+
+def _attendance_audit(request, action, summary='', metadata=None, obj=None):
+    """Best-effort audit logging; never blocks attendance if logging itself fails."""
+    try:
+        AuditLog.objects.create(
+            actor=request.user if getattr(request,'user',None) and request.user.is_authenticated else None,
+            action=action,
+            path=request.path[:255],
+            method=request.method[:10],
+            object_type='Attendance',
+            object_id=str(getattr(obj,'pk','') or ''),
+            summary=(summary or '')[:250],
+            metadata=metadata or {},
+            ip_address=_request_ip(request),
+        )
+    except Exception:
+        pass
+
+
+_UNICODE_ESCAPES = {
+    r'\u200c':'‌', r'\u200f':'‏', r'\u200e':'‎', r'\n':'\n', r'\t':'\t'
+}
+def normalize_ai_text(value):
+    if not isinstance(value,str): return value
+    out=value
+    for raw,real in _UNICODE_ESCAPES.items():
+        out=out.replace(raw,real)
+    return out
+
 def manager_required(view):
     @wraps(view)
     @login_required
@@ -30,15 +67,34 @@ def manager_required(view):
     return wrapper
 
 def login_view(request):
-    if request.user.is_authenticated: return redirect('dashboard')
-    form=AuthenticationForm(request, data=request.POST or None)
-    if request.method=='POST' and form.is_valid(): login(request,form.get_user()); return redirect('dashboard')
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
+    data=request.POST or None
+    # Usernames in Staff are treated case-insensitively at login.
+    # Example: Moradi / moradi / MORADI resolve to the same stored username.
+    if request.method=='POST' and data:
+        mutable=data.copy()
+        raw=(mutable.get('username') or '').strip()
+        if raw:
+            matched=User.objects.filter(username__iexact=raw,is_active=True).order_by('id').first()
+            if matched:
+                mutable['username']=matched.username
+        data=mutable
+
+    form=AuthenticationForm(request,data=data)
+    if request.method=='POST' and form.is_valid():
+        login(request,form.get_user())
+        return redirect('dashboard')
     return render(request,'core/login.html',{'form':form})
 
 def logout_view(request): logout(request); return redirect('login')
 
 @login_required
 def dashboard(request):
+    role=role_of(request.user)
+    if role in ('admin','manager'):
+        return redirect('branch_live')
     user_tasks=Task.objects.filter(assigned_to=request.user)
     tasks=user_tasks.order_by('status','due_date')[:8]
     profile=getattr(request.user,'profile',None)
@@ -46,30 +102,110 @@ def dashboard(request):
     counts=user_tasks.values('status').annotate(n=Count('id')); stats={x['status']:x['n'] for x in counts}
     pending_leave=LeaveRequest.objects.filter(user=request.user,status='pending').count()
     attendance_today=Attendance.objects.filter(user=request.user,date=timezone.localdate()).first()
-    missing_reports=missing_report_days(request.user,days=31,end=timezone.localdate()-timedelta(days=1))
-    notifications=StaffNotification.objects.filter(user=request.user,is_read=False)[:5]
+    today_local=timezone.localdate()
+    jalali_today=jdatetime.date.fromgregorian(date=today_local)
+    jalali_month_start=jdatetime.date(jalali_today.year,jalali_today.month,1).togregorian()
+    report_end=today_local-timedelta(days=1)
+    if report_end < jalali_month_start:
+        missing_reports=[]
+    else:
+        month_days=(report_end-jalali_month_start).days+1
+        missing_reports=missing_report_days(request.user,days=month_days,end=report_end)
+    notifications_qs=StaffNotification.objects.filter(user=request.user,is_read=False)
+    notifications=notifications_qs[:5]
+    notification_count=notifications_qs.count()
     today_shift=shift_rule(request.user,timezone.localdate())
+
+    # Real employee-dashboard status (no mock values).
+    today_report_exists=DailyReport.objects.filter(
+        user=request.user,
+        created_at__date=today_local,
+    ).exists()
+
+    checklist_templates=_checklist_templates_for(request.user)
+    checklist_item_ids=list(
+        ChecklistItem.objects.filter(template__in=checklist_templates).values_list('id',flat=True)
+    )
+    checklist_total=len(checklist_item_ids)
+    checklist_done=ChecklistCompletion.objects.filter(
+        user=request.user,
+        date=today_local,
+        item_id__in=checklist_item_ids,
+        is_done=True,
+    ).count() if checklist_item_ids else 0
+
+    task_total=user_tasks.count()
+    task_done=user_tasks.filter(status='done').count()
+    task_progress=round(task_done*100/task_total) if task_total else 100
+    checklist_progress=round(checklist_done*100/checklist_total) if checklist_total else 100
+    overall_progress=round((task_progress+checklist_progress+(100 if today_report_exists else 0))/3)
+
+    weekday_names={0:'دوشنبه',1:'سه‌شنبه',2:'چهارشنبه',3:'پنجشنبه',4:'جمعه',5:'شنبه',6:'یکشنبه'}
+    jalali_dashboard_date=f"{weekday_names[today_local.weekday()]} {jalali_today.day} {jalali_today.j_months_fa[jalali_today.month-1]} {jalali_today.year}"
+
     role=role_of(request.user)
     manager_stats={}
     if role in ('admin','manager'):
         qs=Task.objects.all()
         if role=='manager': qs=qs.filter(assigned_to__profile__branch=getattr(profile,'branch',None))
         manager_stats={'all_tasks':qs.count(),'overdue':qs.filter(due_date__lt=timezone.localdate()).exclude(status='done').count(),'pending_leave':LeaveRequest.objects.filter(status='pending').count()}
-    return render(request,'core/dashboard.html',{'tasks':tasks,'announcements':announcements,'stats':stats,'pending_leave':pending_leave,'manager_stats':manager_stats,'role':role,'attendance_today':attendance_today,'missing_reports':missing_reports,'notifications':notifications,'today_shift':today_shift})
+    return render(request,'core/dashboard.html',{
+        'tasks':tasks,
+        'announcements':announcements,
+        'stats':stats,
+        'pending_leave':pending_leave,
+        'manager_stats':manager_stats,
+        'role':role,
+        'attendance_today':attendance_today,
+        'missing_reports':missing_reports,
+        'notifications':notifications,
+        'notification_count':notification_count,
+        'today_shift':today_shift,
+        'today_report_exists':today_report_exists,
+        'checklist_total':checklist_total,
+        'checklist_done':checklist_done,
+        'checklist_progress':checklist_progress,
+        'task_total':task_total,
+        'task_done':task_done,
+        'task_progress':task_progress,
+        'overall_progress':overall_progress,
+        'jalali_dashboard_date':jalali_dashboard_date,
+    })
 
 @login_required
 def report_create(request):
+    # A stable token is rendered with the form and sent back on POST.
+    # If the browser/network retries the same submission, return the already
+    # created report instead of inserting another DailyReport row.
+    submission_id=(request.POST.get('submission_id') or '').strip() if request.method=='POST' else uuid.uuid4().hex
+
+    if request.method=='POST' and submission_id:
+        existing=DailyReport.objects.filter(client_submission_id=submission_id,user=request.user).first()
+        if existing:
+            messages.info(request,'این گزارش قبلاً ثبت شده بود؛ از ثبت تکراری جلوگیری شد.')
+            return redirect('report_detail',pk=existing.pk)
+
     form=ReportForm(request.POST or None,request.FILES or None)
     if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False); obj.user=request.user; obj.branch=getattr(getattr(request.user,'profile',None),'branch',None); obj.save(); award_report(request.user,timezone.localdate())
+        obj=form.save(commit=False)
+        obj.user=request.user
+        obj.branch=getattr(getattr(request.user,'profile',None),'branch',None)
+        obj.client_submission_id=submission_id or uuid.uuid4().hex
+        obj.save()
+        award_report(request.user,timezone.localdate())
+
         if request.POST.get('process_ai')=='1':
             try:
                 ok,msg=process_report(obj); messages.success(request,msg) if ok else messages.warning(request,msg)
             except Exception as e:
                 obj.process_status='failed'; obj.save(update_fields=['process_status']); messages.error(request,f'گزارش ذخیره شد، ولی پردازش هوش مصنوعی انجام نشد: {e}')
-        else: messages.success(request,'گزارش با موفقیت ثبت شد.')
+        else:
+            messages.success(request,'گزارش با موفقیت ثبت شد.')
         return redirect('report_detail',pk=obj.pk)
-    return render(request,'core/report_form.html',{'form':form})
+
+    if not submission_id:
+        submission_id=uuid.uuid4().hex
+    return render(request,'core/report_form.html',{'form':form,'submission_id':submission_id})
 
 @login_required
 def report_list(request):
@@ -80,15 +216,35 @@ def report_list(request):
 
 @login_required
 def report_detail(request,pk):
-    report=get_object_or_404(DailyReport.objects.select_related('user','branch'),pk=pk); role=role_of(request.user)
-    if role=='employee' and report.user_id!=request.user.id: return redirect('report_list')
-    if role=='manager' and report.branch_id!=getattr(request.user.profile,'branch_id',None): return redirect('report_list')
-    if request.method=='POST' and request.POST.get('action')=='process':
-        try:
-            ok,msg=process_report(report); messages.success(request,msg) if ok else messages.warning(request,msg)
-        except Exception as e: messages.error(request,str(e))
-        return redirect('report_detail',pk=pk)
-    return render(request,'core/report_detail.html',{'report':report})
+    obj=get_object_or_404(DailyReport,pk=pk)
+    role=role_of(request.user)
+    if role=='employee' and obj.user_id!=request.user.id:
+        messages.error(request,'دسترسی مجاز نیست.')
+        return redirect('report_list')
+    if role=='manager' and getattr(obj.user.profile,'branch_id',None)!=getattr(request.user.profile,'branch_id',None):
+        messages.error(request,'دسترسی مجاز نیست.')
+        return redirect('report_list')
+
+    # Clean escaped Unicode sequences for correct Persian rendering.
+    obj.text=normalize_ai_text(obj.text)
+    obj.transcript=normalize_ai_text(obj.transcript)
+    obj.ai_summary=normalize_ai_text(obj.ai_summary)
+    obj.follow_up=normalize_ai_text(obj.follow_up)
+    obj.manager_comment=normalize_ai_text(obj.manager_comment)
+
+    comment_form=None
+    if role in ('admin','manager'):
+        comment_form=ManagerReportCommentForm(request.POST or None,instance=obj)
+        if request.method=='POST' and request.POST.get('action')=='manager_comment' and comment_form.is_valid():
+            target=comment_form.save(commit=False)
+            target.manager_comment=normalize_ai_text(target.manager_comment)
+            target.manager_comment_by=request.user
+            target.manager_comment_at=timezone.now()
+            target.save(update_fields=['manager_comment','manager_comment_by','manager_comment_at'])
+            messages.success(request,'کامنت مدیر ثبت شد.')
+            return redirect('report_detail',pk=obj.pk)
+
+    return render(request,'core/report_detail.html',{'report':obj,'comment_form':comment_form})
 
 @login_required
 def task_list(request):
@@ -182,7 +338,12 @@ def profile_view(request):
         form.save()
         messages.success(request,'عکس پروفایل به‌روزرسانی شد.')
         return redirect('profile')
-    return render(request,'core/profile.html',{'profile':profile,'avatar_form':form})
+    today_shift=shift_rule(request.user,timezone.localdate()) if profile else None
+    return render(request,'core/profile.html',{
+        'profile':profile,
+        'avatar_form':form,
+        'today_shift':today_shift,
+    })
 
 @manager_required
 def employee_avatar_edit(request,pk):
@@ -205,28 +366,131 @@ def health_check(request):
 def attendance(request):
     today=timezone.localdate()
     profile=getattr(request.user,'profile',None)
+    branch=getattr(profile,'branch',None)
     record=Attendance.objects.filter(user=request.user,date=today).first()
+
+    def verify_location():
+        """Return (ok, message, metadata). GPS is required only when branch geofence is enabled."""
+        if not branch or not branch.geofence_enabled:
+            return True, '', {'status':'legacy'}
+        if branch.latitude is None or branch.longitude is None:
+            return False, 'موقعیت شعبه هنوز توسط مدیر تنظیم نشده است.', {'status':'unavailable'}
+        try:
+            lat=float(request.POST.get('latitude',''))
+            lon=float(request.POST.get('longitude',''))
+            accuracy=float(request.POST.get('accuracy',''))
+        except (TypeError,ValueError):
+            return False, 'برای ثبت ورود باید دسترسی موقعیت مکانی را فعال کنید.', {'status':'unavailable'}
+
+        # Reject malformed/impossible location values before distance calculation.
+        if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0) or accuracy <= 0:
+            return False, 'اطلاعات موقعیت مکانی معتبر نیست. GPS را خاموش و روشن کنید و دوباره امتحان کنید.', {
+                'status':'unavailable','lat':lat,'lon':lon,'accuracy':accuracy
+            }
+
+        # Reject very imprecise fixes; otherwise a user could appear inside a large uncertainty circle.
+        if accuracy > 200:
+            return False, f'دقت GPS کافی نیست ({int(accuracy)} متر). کنار پنجره یا فضای باز دوباره امتحان کنید.', {
+                'status':'low_accuracy','lat':lat,'lon':lon,'accuracy':accuracy
+            }
+
+        # Haversine distance, meters.
+        r=6371000.0
+        lat1,lon1=math.radians(float(branch.latitude)),math.radians(float(branch.longitude))
+        lat2,lon2=math.radians(lat),math.radians(lon)
+        dlat,dlon=lat2-lat1,lon2-lon1
+        a=math.sin(dlat/2)**2 + math.cos(lat1)*math.cos(lat2)*math.sin(dlon/2)**2
+        distance=r*(2*math.atan2(math.sqrt(a),math.sqrt(1-a)))
+        allowed=float(branch.attendance_radius_m) + min(accuracy,50.0)
+        meta={'status':'verified' if distance <= allowed else 'outside',
+              'lat':lat,'lon':lon,'accuracy':accuracy,'distance':round(distance)}
+        if distance > allowed:
+            return False, f'شما حدود {int(distance)} متر از شعبه فاصله دارید؛ ثبت ورود فقط داخل محدوده مجاز است.', meta
+        return True, '', meta
+
     if request.method=='POST':
         action=request.POST.get('action')
-        record,_=Attendance.objects.get_or_create(user=request.user,date=today,defaults={'branch':getattr(profile,'branch',None)})
-        now=timezone.now()
         if action=='checkin':
+            # Verify BEFORE creating today's record so failed attempts do not create phantom attendance.
+            ok,msg,meta=verify_location()
+            if not ok:
+                _attendance_audit(
+                    request,'attendance_location_rejected',msg,
+                    {'action':'checkin','branch_id':getattr(branch,'id',None),**meta}
+                )
+                messages.error(request,msg)
+                return redirect('attendance')
+            record,_=Attendance.objects.get_or_create(
+                user=request.user,date=today,defaults={'branch':branch}
+            )
+            now=timezone.now()
             if not record.check_in:
                 record.check_in=now
                 record.status=attendance_status_for(request.user,today,now)
-                if record.status=='present' and not ScoreEvent.objects.filter(user=request.user,event_date=today,reason='attendance').exists():
-                    ScoreEvent.objects.create(user=request.user,points=5,reason='attendance',description='حضور به‌موقع')
+                record.check_in_location_status=meta.get('status','legacy')
+                if meta.get('lat') is not None:
+                    record.check_in_latitude=meta['lat']
+                    record.check_in_longitude=meta['lon']
+                    record.check_in_accuracy_m=meta.get('accuracy')
+                    record.check_in_distance_m=meta.get('distance')
+                if record.status=='present' and not ScoreEvent.objects.filter(
+                    user=request.user,event_date=today,reason='attendance'
+                ).exists():
+                    ScoreEvent.objects.create(
+                        user=request.user,points=5,reason='attendance',description='حضور به‌موقع'
+                    )
                 record.save()
-                messages.success(request,'ورود شما ثبت شد.')
-            else: messages.info(request,'ورود امروز قبلاً ثبت شده است.')
+                _attendance_audit(
+                    request,'attendance_checkin','ثبت ورود',
+                    {
+                        'branch_id':getattr(branch,'id',None),
+                        'location_status':record.check_in_location_status,
+                        'distance_m':record.check_in_distance_m,
+                        'accuracy_m':record.check_in_accuracy_m,
+                        'server_time':record.check_in.isoformat() if record.check_in else None,
+                    },record
+                )
+                messages.success(request,'ورود شما با تأیید موقعیت ثبت شد.' if branch and branch.geofence_enabled else 'ورود شما ثبت شد.')
+            else:
+                messages.info(request,'ورود امروز قبلاً ثبت شده است.')
         elif action=='checkout':
-            if not record.check_in: messages.error(request,'ابتدا ورود را ثبت کنید.')
+            record=Attendance.objects.filter(user=request.user,date=today).first()
+            if not record or not record.check_in:
+                messages.error(request,'ابتدا ورود را ثبت کنید.')
             elif not record.check_out:
-                record.check_out=now; record.save(); messages.success(request,'خروج شما ثبت شد.')
-            else: messages.info(request,'خروج امروز قبلاً ثبت شده است.')
+                # When geofence is enabled, checkout must also happen inside the branch radius.
+                ok,msg,meta=verify_location()
+                if not ok:
+                    _attendance_audit(
+                        request,'attendance_location_rejected','خروج ثبت نشد: '+msg,
+                        {'action':'checkout','branch_id':getattr(branch,'id',None),**meta},record
+                    )
+                    messages.error(request,'خروج ثبت نشد: '+msg)
+                    return redirect('attendance')
+                record.check_out=timezone.now()
+                record.save()
+                _attendance_audit(
+                    request,'attendance_checkout','ثبت خروج',
+                    {
+                        'branch_id':getattr(branch,'id',None),
+                        'location_status':meta.get('status'),
+                        'distance_m':meta.get('distance'),
+                        'accuracy_m':meta.get('accuracy'),
+                        'server_time':record.check_out.isoformat() if record.check_out else None,
+                    },record
+                )
+                messages.success(request,'خروج شما با تأیید موقعیت ثبت شد.' if branch and branch.geofence_enabled else 'خروج شما ثبت شد.')
+            else:
+                messages.info(request,'خروج امروز قبلاً ثبت شده است.')
         return redirect('attendance')
+
     recent=Attendance.objects.filter(user=request.user).order_by('-date')[:31]
-    return render(request,'core/attendance.html',{'record':record,'recent':recent,'today':today,'today_shift':shift_rule(request.user,today),'overtime':overtime_minutes(record)})
+    return render(request,'core/attendance.html',{
+        'record':record,'recent':recent,'today':today,
+        'today_shift':shift_rule(request.user,today),'overtime':overtime_minutes(record),
+        'geofence_enabled':bool(branch and branch.geofence_enabled),
+        'geofence_radius':getattr(branch,'attendance_radius_m',None),
+    })
 
 @manager_required
 def attendance_team(request):
@@ -249,7 +513,25 @@ def attendance_edit(request,pk):
     if role_of(request.user)=='manager' and obj.branch_id!=request.user.profile.branch_id: return redirect('attendance_team')
     form=AttendanceManualForm(request.POST or None,instance=obj)
     if role_of(request.user)=='manager': form.fields['user'].queryset=User.objects.filter(profile__branch=request.user.profile.branch)
-    if request.method=='POST' and form.is_valid(): form.save(); messages.success(request,'رکورد حضور و غیاب اصلاح شد.'); return redirect('attendance_team')
+    if request.method=='POST' and form.is_valid():
+        before={
+            'user_id':obj.user_id,'date':str(obj.date),
+            'check_in':obj.check_in.isoformat() if obj.check_in else None,
+            'check_out':obj.check_out.isoformat() if obj.check_out else None,
+            'status':obj.status,
+        }
+        changed=form.save(commit=False)
+        changed.check_in_location_status='manual'
+        changed.save()
+        after={
+            'user_id':changed.user_id,'date':str(changed.date),
+            'check_in':changed.check_in.isoformat() if changed.check_in else None,
+            'check_out':changed.check_out.isoformat() if changed.check_out else None,
+            'status':changed.status,
+        }
+        _attendance_audit(request,'attendance_manual_edit','اصلاح دستی حضور و غیاب',{'before':before,'after':after},changed)
+        messages.success(request,'رکورد حضور و غیاب اصلاح شد.')
+        return redirect('attendance_team')
     return render(request,'core/generic_form.html',{'form':form,'title':'اصلاح حضور و غیاب','button':'ذخیره'})
 
 @manager_required
@@ -258,7 +540,20 @@ def attendance_create(request):
     if role_of(request.user)=='manager': form.fields['user'].queryset=User.objects.filter(profile__branch=request.user.profile.branch)
     if request.method=='POST' and form.is_valid():
         obj=form.save(commit=False)
-        obj.branch=getattr(getattr(obj.user,'profile',None),'branch',None); obj.save(); messages.success(request,'رکورد حضور و غیاب ثبت شد.'); return redirect('attendance_team')
+        obj.branch=getattr(getattr(obj.user,'profile',None),'branch',None)
+        obj.check_in_location_status='manual'
+        obj.save()
+        _attendance_audit(
+            request,'attendance_manual_create','ثبت دستی حضور و غیاب',
+            {
+                'user_id':obj.user_id,'date':str(obj.date),
+                'check_in':obj.check_in.isoformat() if obj.check_in else None,
+                'check_out':obj.check_out.isoformat() if obj.check_out else None,
+                'status':obj.status,
+            },obj
+        )
+        messages.success(request,'رکورد حضور و غیاب ثبت شد.')
+        return redirect('attendance_team')
     return render(request,'core/generic_form.html',{'form':form,'title':'ثبت دستی حضور و غیاب','button':'ثبت'})
 
 @login_required
@@ -496,6 +791,13 @@ def _branch_live_payload(branch=None, day=None):
         counters[status] = counters.get(status,0)+1
         overdue = Task.objects.filter(assigned_to=u,status__in=('todo','doing'),due_date__lt=day).count()
         missing_reports = len(missing_report_days(u,days=7,end=day-timedelta(days=1)))
+        shift=shift_rule(u,day)
+        expected_start=shift.get('start')
+        late_minutes=0
+        if rec and rec.check_in and expected_start:
+            expected_dt=timezone.make_aware(datetime.combine(day,expected_start),timezone.get_current_timezone())
+            late_minutes=max(0,int((rec.check_in-expected_dt).total_seconds()//60))
+        report_today=DailyReport.objects.filter(user=u,created_at__date=day).exists()
         rows.append({
             'id':u.id,
             'name':u.get_full_name() or u.username,
@@ -506,6 +808,11 @@ def _branch_live_payload(branch=None, day=None):
             'status_label':label,
             'check_in':timezone.localtime(rec.check_in).strftime('%H:%M') if rec and rec.check_in else None,
             'check_out':timezone.localtime(rec.check_out).strftime('%H:%M') if rec and rec.check_out else None,
+            'expected_start':expected_start.strftime('%H:%M') if expected_start else None,
+            'late_minutes':late_minutes,
+            'location_status':rec.check_in_location_status if rec else None,
+            'location_distance_m':rec.check_in_distance_m if rec else None,
+            'report_today':report_today,
             'overdue_tasks':overdue,
             'missing_reports_7d':missing_reports,
         })
@@ -516,6 +823,66 @@ def _branch_live_payload(branch=None, day=None):
     if branch: overdue_tasks=overdue_tasks.filter(assigned_to__profile__branch=branch)
     reports_today = DailyReport.objects.filter(created_at__date=day)
     if branch: reports_today=reports_today.filter(user__profile__branch=branch)
+    total_people=max(1,len(rows))
+    present_people=counters.get('present',0)+counters.get('late',0)
+    attendance_rate=round(present_people*100/total_people)
+    ontime_rate=round(counters.get('present',0)*100/total_people)
+    report_rate=round((len(rows)-sum(1 for p in rows if not p['report_today']))*100/total_people)
+
+    # Real task completion metric for today (no decorative/hard-coded KPI).
+    tasks_today = Task.objects.filter(
+        assigned_to__in=users,
+        due_date=day,
+        assigned_to__profile__is_active=True,
+    )
+    if branch:
+        tasks_today = tasks_today.filter(assigned_to__profile__branch=branch)
+    tasks_today_total = tasks_today.count()
+    tasks_today_done = tasks_today.filter(status='done').count()
+    task_completion_rate = round(tasks_today_done * 100 / max(1, tasks_today_total)) if tasks_today_total else 100
+
+    # Lightweight 7-day management trend data.
+    trend=[]
+    for offset in range(6,-1,-1):
+        d=day-timedelta(days=offset)
+        active_users=users
+        daily_records=Attendance.objects.filter(date=d,user__in=active_users)
+        present_count=daily_records.filter(check_in__isnull=False).values('user').distinct().count()
+        late_count=daily_records.filter(status='late').values('user').distinct().count()
+        report_count=DailyReport.objects.filter(created_at__date=d,user__in=active_users).values('user').distinct().count()
+        trend.append({
+            'label':format_jalali(d)[5:],
+            'present':present_count,
+            'late':late_count,
+            'reports':report_count,
+        })
+
+    device_issues = DeviceIssue.objects.filter(reporter__in=users).select_related('reporter','branch').order_by('-created_at')
+    if branch:
+        device_issues = device_issues.filter(branch=branch)
+    device_open = device_issues.exclude(status='resolved')
+    device_recent = [{
+        'id': x.id, 'device_name': x.device_name, 'description': x.description[:90],
+        'status': x.status, 'status_label': x.get_status_display(),
+        'reporter': x.reporter.get_full_name() or x.reporter.username,
+        'branch': x.branch.name if x.branch else '—',
+        'time': timezone.localtime(x.created_at).strftime('%H:%M'),
+    } for x in device_issues[:4]]
+
+    rejected_attempts=AuditLog.objects.filter(
+        action='attendance_location_rejected',
+        created_at__date=day,
+    )
+
+    device_issues_qs=DeviceIssue.objects.exclude(status='resolved')
+    if branch:
+        device_issues_qs=device_issues_qs.filter(branch=branch)
+    device_open_count=device_issues_qs.count()
+    device_new_count=device_issues_qs.filter(status='new').count()
+    device_reviewing_count=device_issues_qs.filter(status='reviewing').count()
+    if branch:
+        rejected_attempts=rejected_attempts.filter(metadata__branch_id=branch.id)
+
     return {
         'date':format_jalali(day),
         'branch':branch.name if branch else 'همه شعب',
@@ -523,6 +890,22 @@ def _branch_live_payload(branch=None, day=None):
         'revenue_today':str(revenue),
         'overdue_tasks':overdue_tasks.count(),
         'reports_today':reports_today.values('user').distinct().count(),
+        'missing_reports_today':sum(1 for p in rows if not p['report_today']),
+        'unverified_locations':sum(1 for p in rows if p['check_in'] and p['location_status'] not in ('verified','manual')),
+        'rejected_location_attempts':rejected_attempts.count(),
+        'device_open_count':device_open_count,
+        'device_new_count':device_new_count,
+        'device_reviewing_count':device_reviewing_count,
+        'attendance_rate':attendance_rate,
+        'ontime_rate':ontime_rate,
+        'report_rate':report_rate,
+        'task_completion_rate':task_completion_rate,
+        'tasks_today_total':tasks_today_total,
+        'tasks_today_done':tasks_today_done,
+        'device_open':device_open.count(),
+        'device_recent':device_recent,
+        'total_people':len(rows),
+        'trend':trend,
         'people':rows,
         'generated_at':timezone.localtime().strftime('%H:%M:%S'),
     }
@@ -847,21 +1230,91 @@ def morning_brief(request):
 
 @manager_required
 def employee_360(request,pk):
-    employee=get_object_or_404(EmployeeProfile.objects.select_related('user','branch'),pk=pk)
+    employee=get_object_or_404(
+        EmployeeProfile.objects.select_related('user','branch','shift_group'),
+        pk=pk
+    )
     if role_of(request.user)=='manager' and employee.branch_id!=request.user.profile.branch_id:
+        messages.error(request,'دسترسی مجاز نیست.')
         return redirect('employee_list')
-    u=employee.user; day=timezone.localdate(); start=day-timedelta(days=89)
+
+    u=employee.user
+    day=timezone.localdate()
+    start30=day-timedelta(days=29)
+    start90=day-timedelta(days=89)
+
+    attendance_qs=Attendance.objects.filter(user=u,date__gte=start30).order_by('-date')
+    attendance_total=attendance_qs.count()
+    attendance_present=attendance_qs.filter(check_in__isnull=False).count()
+    late_count=attendance_qs.filter(status='late').count()
+    missing_count=max(0,30-attendance_present)
+    attendance_rate=round(attendance_present*100/max(1,attendance_total)) if attendance_total else 0
+
+    reports30=DailyReport.objects.filter(user=u,created_at__date__gte=start30,created_at__date__lte=day)
+    report_count=reports30.values('created_at__date').distinct().count()
+
+    tasks=Task.objects.filter(assigned_to=u)
+    task_total=tasks.count()
+    task_done=tasks.filter(status='done').count()
+    task_overdue=tasks.filter(status__in=('todo','doing'),due_date__lt=day).count()
+    task_rate=round(task_done*100/max(1,task_total)) if task_total else 100
+
+    leaves=LeaveRequest.objects.filter(user=u).order_by('-created_at')[:8]
+    corrections=AttendanceCorrectionRequest.objects.filter(user=u).order_by('-created_at')[:8]
+    device_issues=DeviceIssue.objects.filter(reporter=u).order_by('-created_at')[:8]
+    report_items=DailyReport.objects.filter(user=u).order_by('-created_at')[:8]
+    documents=EmployeeDocument.objects.filter(employee=employee).order_by('-created_at')[:8]
+    guideline_ack_count=GuidelineAcknowledgement.objects.filter(user=u).count()
+    guideline_total=_guidelines_for_user(u).count()
+
+    score30=ScoreEvent.objects.filter(user=u,event_date__gte=start30,event_date__lte=day)
+    score_total=score30.aggregate(x=Sum('points'))['x'] or 0
+
     events=[]
-    for a in Attendance.objects.filter(user=u,date__gte=start):
-        if a.status=='late': events.append({'date':a.date,'type':'late','title':'تأخیر','text':timezone.localtime(a.check_in).strftime('%H:%M') if a.check_in else ''})
-    for x in PersonnelAction.objects.filter(user=u,event_date__gte=start):
-        events.append({'date':x.event_date,'type':x.action_type,'title':x.get_action_type_display(),'text':x.title})
-    for x in ScoreEvent.objects.filter(user=u,event_date__gte=start):
-        events.append({'date':x.event_date,'type':'score','title':'امتیاز','text':f'{x.points}: {x.description}'})
-    events=sorted(events,key=lambda x:x['date'],reverse=True)[:50]
+    for a in Attendance.objects.filter(user=u,date__gte=start90):
+        if a.check_in:
+            label='تأخیر' if a.status=='late' else 'حضور'
+            text=timezone.localtime(a.check_in).strftime('%H:%M')
+            events.append({'date':a.date,'type':a.status,'title':label,'text':text,'icon':'◷'})
+    for x in PersonnelAction.objects.filter(user=u,event_date__gte=start90):
+        events.append({'date':x.event_date,'type':x.action_type,'title':x.get_action_type_display(),'text':x.title,'icon':'⚑'})
+    for x in ScoreEvent.objects.filter(user=u,event_date__gte=start90):
+        events.append({'date':x.event_date,'type':'score','title':'امتیاز','text':f'{x.points:+d} · {x.description}','icon':'★'})
+    for x in DeviceIssue.objects.filter(reporter=u,created_at__date__gte=start90):
+        events.append({'date':timezone.localdate(x.created_at),'type':'device','title':'گزارش خرابی دستگاه','text':x.device_name,'icon':'⚒'})
+    for x in DailyReport.objects.filter(user=u,created_at__date__gte=start90):
+        events.append({'date':timezone.localdate(x.created_at),'type':'report','title':'گزارش روزانه','text':normalize_ai_text(x.ai_summary or x.text or x.transcript)[:100],'icon':'▤'})
+    events=sorted(events,key=lambda x:x['date'],reverse=True)[:60]
+
     goals=PerformanceGoal.objects.filter(employee=u,is_active=True)
-    kpi=auto_kpi(u,day-timedelta(days=29),day)
-    return render(request,'core/employee_360.html',{'employee':employee,'events':events,'goals':goals,'kpi':kpi})
+    kpi=auto_kpi(u,start30,day)
+    today_shift=shift_rule(u,day)
+
+    summary={
+        'attendance_rate':attendance_rate,
+        'late_count':late_count,
+        'report_count':report_count,
+        'task_rate':task_rate,
+        'task_overdue':task_overdue,
+        'score_total':score_total,
+        'guideline_ack_count':guideline_ack_count,
+        'guideline_total':guideline_total,
+    }
+
+    return render(request,'core/employee_360.html',{
+        'employee':employee,
+        'events':events,
+        'goals':goals,
+        'kpi':kpi,
+        'summary':summary,
+        'today_shift':today_shift,
+        'attendance_recent':attendance_qs[:10],
+        'reports_recent':report_items,
+        'leaves':leaves,
+        'corrections':corrections,
+        'device_issues':device_issues,
+        'documents':documents,
+    })
 
 @manager_required
 def personnel_action_add(request,pk):
@@ -1002,3 +1455,305 @@ def audit_log_view(request):
 def ceo_score_api(request):
     branch=_branch_scope_for_manager(request)
     return JsonResponse({'score':ceo_score(branch),'trends':trend_alerts(branch)},json_dumps_params={'ensure_ascii':False})
+
+
+def _guidelines_for_user(user):
+    profile=getattr(user,'profile',None)
+    qs=Guideline.objects.filter(is_active=True)
+    if not profile:
+        return qs.filter(audience='all')
+    return qs.filter(
+        Q(audience='all') |
+        Q(audience='branch',branch=profile.branch) |
+        Q(audience='job',job_title=profile.job_title)
+    ).distinct().order_by('-published_at')
+
+def _job_duties_for_user(user):
+    profile=getattr(user,'profile',None)
+    if not profile: return JobDutyTemplate.objects.none()
+    qs=JobDutyTemplate.objects.filter(is_active=True)
+    return qs.filter(
+        (Q(branch__isnull=True)|Q(branch=profile.branch)) &
+        (Q(job_title='')|Q(job_title=profile.job_title))
+    ).order_by('title')
+
+@login_required
+def my_guidelines(request):
+    guidelines=_guidelines_for_user(request.user)
+    ack_ids=set(GuidelineAcknowledgement.objects.filter(user=request.user,guideline__in=guidelines).values_list('guideline_id',flat=True))
+    duties=_job_duties_for_user(request.user)
+    return render(request,'core/my_guidelines.html',{'guidelines':guidelines,'ack_ids':ack_ids,'duties':duties})
+
+@login_required
+def guideline_ack(request,pk):
+    if request.method!='POST': return redirect('my_guidelines')
+    guideline=get_object_or_404(_guidelines_for_user(request.user),pk=pk)
+    GuidelineAcknowledgement.objects.get_or_create(guideline=guideline,user=request.user)
+    messages.success(request,'مطالعه دستورالعمل ثبت شد.')
+    return redirect('my_guidelines')
+
+@manager_required
+def guidelines_manage(request):
+    profile=getattr(request.user,'profile',None)
+    guidelines=Guideline.objects.all().order_by('-published_at')
+    duties=JobDutyTemplate.objects.all().order_by('title')
+    if role_of(request.user)=='manager':
+        guidelines=guidelines.filter(Q(branch=profile.branch)|Q(branch__isnull=True))
+        duties=duties.filter(Q(branch=profile.branch)|Q(branch__isnull=True))
+    return render(request,'core/guidelines_manage.html',{'guidelines':guidelines,'duties':duties})
+
+@manager_required
+def guideline_create(request):
+    form=GuidelineForm(request.POST or None)
+    if role_of(request.user)=='manager':
+        form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=request.user.profile.branch_id)
+    if request.method=='POST' and form.is_valid():
+        obj=form.save(commit=False); obj.created_by=request.user
+        if role_of(request.user)=='manager' and not obj.branch: obj.branch=request.user.profile.branch
+        obj.save(); messages.success(request,'دستورالعمل منتشر شد.'); return redirect('guidelines_manage')
+    return render(request,'core/generic_form.html',{'form':form,'title':'دستورالعمل جدید','button':'انتشار'})
+
+@manager_required
+def job_duty_create(request):
+    form=JobDutyTemplateForm(request.POST or None)
+    if role_of(request.user)=='manager':
+        form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=request.user.profile.branch_id)
+    if request.method=='POST' and form.is_valid():
+        obj=form.save(commit=False); obj.created_by=request.user
+        if role_of(request.user)=='manager' and not obj.branch: obj.branch=request.user.profile.branch
+        obj.save(); messages.success(request,'شرح وظایف ثبت شد.'); return redirect('guidelines_manage')
+    return render(request,'core/generic_form.html',{'form':form,'title':'شرح وظایف جدید','button':'ذخیره'})
+
+
+DEVICE_ISSUE_RECIPIENT_USERNAMES=('admin','manager1','sadeghi')
+
+def _device_issue_recipients(issue):
+    qs=User.objects.filter(is_active=True).filter(
+        Q(username__in=DEVICE_ISSUE_RECIPIENT_USERNAMES) |
+        Q(profile__role='admin') |
+        Q(profile__role='manager',profile__branch=issue.branch)
+    ).distinct()
+    return qs
+
+def _can_manage_device_issues(user):
+    return role_of(user) in ('admin','manager') or user.username.lower()=='sadeghi'
+
+@login_required
+def device_issue_create(request):
+    form=DeviceIssueForm(request.POST or None)
+    if request.method=='POST' and form.is_valid():
+        issue=form.save(commit=False)
+        issue.reporter=request.user
+        issue.branch=getattr(getattr(request.user,'profile',None),'branch',None)
+        issue.save()
+        title=f'خرابی دستگاه: {issue.device_name}'
+        reporter_name=request.user.get_full_name() or request.user.username
+        for recipient in _device_issue_recipients(issue):
+            StaffNotification.objects.create(
+                user=recipient,
+                title=title,
+                message=f'{reporter_name} خرابی دستگاه «{issue.device_name}» را گزارش کرده است. لطفاً بررسی شود.',
+                notification_type='device_issue',
+                related_date=timezone.localdate(),
+            )
+        messages.success(request,'گزارش خرابی ثبت شد و برای مسئولان مربوطه ارسال شد.')
+        return redirect('device_issue_mine')
+    return render(request,'core/device_issue_form.html',{'form':form})
+
+@login_required
+def device_issue_mine(request):
+    issues=DeviceIssue.objects.filter(reporter=request.user).select_related('branch','resolved_by')
+    return render(request,'core/device_issue_mine.html',{'issues':issues})
+
+@login_required
+def device_issue_manage(request):
+    if not _can_manage_device_issues(request.user):
+        messages.error(request,'دسترسی مجاز نیست.')
+        return redirect('dashboard')
+    issues=DeviceIssue.objects.select_related('reporter','reporter__profile','branch','resolved_by')
+    if role_of(request.user)=='manager':
+        issues=issues.filter(branch=request.user.profile.branch)
+    status=request.GET.get('status')
+    if status in ('new','reviewing','resolved'):
+        issues=issues.filter(status=status)
+    return render(request,'core/device_issue_manage.html',{'issues':issues,'selected_status':status or ''})
+
+@login_required
+def device_issue_review(request,pk):
+    if not _can_manage_device_issues(request.user):
+        messages.error(request,'دسترسی مجاز نیست.')
+        return redirect('dashboard')
+    issue=get_object_or_404(DeviceIssue,pk=pk)
+    if role_of(request.user)=='manager' and issue.branch_id!=request.user.profile.branch_id:
+        messages.error(request,'دسترسی مجاز نیست.')
+        return redirect('device_issue_manage')
+    old_status=issue.status
+    form=DeviceIssueReviewForm(request.POST or None,instance=issue)
+    if request.method=='POST' and form.is_valid():
+        obj=form.save(commit=False)
+        if obj.status=='resolved' and old_status!='resolved':
+            obj.resolved_at=timezone.now()
+            obj.resolved_by=request.user
+        elif obj.status!='resolved':
+            obj.resolved_at=None
+            obj.resolved_by=None
+        obj.save()
+        if obj.reporter_id:
+            StaffNotification.objects.create(
+                user=obj.reporter,
+                title=f'پیگیری خرابی: {obj.device_name}',
+                message=f'وضعیت گزارش خرابی شما به «{obj.get_status_display()}» تغییر کرد.'
+                        + (f' توضیح: {obj.manager_note}' if obj.manager_note else ''),
+                notification_type='device_issue',
+                related_date=timezone.localdate(),
+            )
+        messages.success(request,'وضعیت خرابی بروزرسانی شد.')
+        return redirect('device_issue_manage')
+    return render(request,'core/device_issue_review.html',{'form':form,'issue':issue})
+
+
+@manager_required
+def action_center(request):
+    role=role_of(request.user)
+    profile=getattr(request.user,'profile',None)
+    day=timezone.localdate()
+
+    users=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
+    if role=='manager':
+        users=users.filter(profile__branch=profile.branch)
+
+    user_ids=list(users.values_list('id',flat=True))
+    items=[]
+
+    def add_item(kind,priority,title,subtitle,user=None,url='#',created_at=None,icon='•',meta=None):
+        rank={'critical':0,'high':1,'medium':2,'low':3}.get(priority,4)
+        items.append({
+            'kind':kind,'priority':priority,'rank':rank,
+            'title':title,'subtitle':subtitle,'user':user,
+            'url':url,'created_at':created_at or timezone.now(),
+            'icon':icon,'meta':meta or {},
+        })
+
+    # Pending leave requests
+    leave_qs=LeaveRequest.objects.filter(user_id__in=user_ids,status='pending').select_related('user','user__profile','user__profile__branch')
+    for x in leave_qs:
+        add_item(
+            'leave','medium','درخواست مرخصی/ماموریت',
+            f'{x.get_request_type_display()} · {format_jalali(x.start_date)} تا {format_jalali(x.end_date)}',
+            x.user,f'/requests/{x.pk}/review/',x.created_at,'◫'
+        )
+
+    # Pending attendance corrections
+    correction_qs=AttendanceCorrectionRequest.objects.filter(user_id__in=user_ids,status='pending').select_related('user','user__profile')
+    for x in correction_qs:
+        add_item(
+            'correction','high','درخواست اصلاح حضور',
+            f'{format_jalali(x.date)} · {x.reason[:90]}',
+            x.user,f'/attendance/corrections/{x.pk}/review/',x.created_at,'◷'
+        )
+
+    # Device issues not resolved
+    device_qs=DeviceIssue.objects.filter(reporter_id__in=user_ids).exclude(status='resolved').select_related('reporter','branch')
+    for x in device_qs:
+        priority='high' if x.status=='new' else 'medium'
+        add_item(
+            'device',priority,f'خرابی دستگاه: {x.device_name}',
+            x.description[:110],x.reporter,f'/device-issues/{x.pk}/review/',x.created_at,'⚒',
+            {'status':x.get_status_display()}
+        )
+
+    # Overdue tasks
+    overdue_qs=Task.objects.filter(
+        assigned_to_id__in=user_ids,
+        status__in=('todo','doing'),
+        due_date__lt=day
+    ).select_related('assigned_to','assigned_to__profile')
+    for x in overdue_qs:
+        days=(day-x.due_date).days if x.due_date else 0
+        priority='high' if days>=3 else 'medium'
+        add_item(
+            'task',priority,'وظیفه عقب‌افتاده',
+            f'{x.title} · {days} روز تأخیر',
+            x.assigned_to,f'/employees/{x.assigned_to.profile.pk}/360/',timezone.make_aware(datetime.combine(x.due_date,datetime.min.time())) if x.due_date else timezone.now(),'✓',
+            {'days':days}
+        )
+
+    # Attendance exceptions today, but ignore approved leave
+    recs={r.user_id:r for r in Attendance.objects.filter(user_id__in=user_ids,date=day).select_related('user')}
+    approved_leave_ids=set(LeaveRequest.objects.filter(
+        user_id__in=user_ids,status='approved',start_date__lte=day,end_date__gte=day
+    ).values_list('user_id',flat=True))
+    for u in users:
+        if u.id in approved_leave_ids:
+            continue
+        rec=recs.get(u.id)
+        shift=shift_rule(u,day)
+        if rec and rec.check_in:
+            current_status=attendance_status_for(u,day,rec.check_in)
+            if current_status=='late':
+                late_mins=0
+                if shift.get('start'):
+                    expected=timezone.make_aware(datetime.combine(day,shift['start']),timezone.get_current_timezone())
+                    late_mins=max(0,int((rec.check_in-expected).total_seconds()//60))
+                add_item(
+                    'late','medium','تأخیر امروز',
+                    f'ورود {timezone.localtime(rec.check_in).strftime("%H:%M")}'
+                    + (f' · {late_mins} دقیقه دیرتر' if late_mins else ''),
+                    u,f'/employees/{u.profile.pk}/360/',rec.check_in,'◷',
+                    {'late_minutes':late_mins}
+                )
+        else:
+            # Don't call it absence early if shift start is still in future.
+            is_due=True
+            if shift.get('start'):
+                due_dt=timezone.make_aware(datetime.combine(day,shift['start']),timezone.get_current_timezone())
+                is_due=timezone.now() > due_dt + timedelta(minutes=int(shift.get('grace') or 0))
+            if is_due:
+                add_item(
+                    'missing_attendance','critical','ورود امروز ثبت نشده',
+                    'از زمان شروع شیفت گذشته و ورود ثبت نشده است.',
+                    u,f'/employees/{u.profile.pk}/360/',timezone.now(),'!',
+                )
+
+    # Missing daily report after end-of-day threshold is intentionally not guessed.
+    # Show missing report only for past required day (yesterday), avoiding false alerts during current day.
+    yesterday=day-timedelta(days=1)
+    for u in users:
+        if report_required(u,yesterday) and not report_exists(u,yesterday):
+            add_item(
+                'report','medium','گزارش روزانه ارسال نشده',
+                f'گزارش {format_jalali(yesterday)} ثبت نشده است.',
+                u,f'/employees/{u.profile.pk}/360/',timezone.make_aware(datetime.combine(yesterday,datetime.max.time().replace(microsecond=0))),'▤'
+            )
+
+    items.sort(key=lambda x:(x['rank'],-x['created_at'].timestamp()))
+    counts={
+        'all':len(items),
+        'critical':sum(1 for x in items if x['priority']=='critical'),
+        'high':sum(1 for x in items if x['priority']=='high'),
+        'medium':sum(1 for x in items if x['priority']=='medium'),
+        'people':len({x['user'].id for x in items if x.get('user')}),
+    }
+
+    priority_filter=request.GET.get('priority','')
+    kind_filter=request.GET.get('kind','')
+    filtered=items
+    if priority_filter in ('critical','high','medium','low'):
+        filtered=[x for x in filtered if x['priority']==priority_filter]
+    if kind_filter:
+        filtered=[x for x in filtered if x['kind']==kind_filter]
+
+    return render(request,'core/action_center.html',{
+        'items':filtered[:200],
+        'counts':counts,
+        'priority_filter':priority_filter,
+        'kind_filter':kind_filter,
+        'today':day,
+    })
+
+
+from django.http import HttpResponse
+
+@login_required
+def service_worker(request):
+    return HttpResponse("const CACHE='greenlife-staff-v31';\nconst STATIC=[\n  '/static/core/app.css',\n  '/static/core/icon-192.png',\n  '/static/core/icon-512.png',\n  '/static/core/manifest.webmanifest'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')

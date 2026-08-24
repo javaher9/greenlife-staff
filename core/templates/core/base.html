@@ -5,24 +5,73 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>GreenLife Staff</title>
   <link rel="stylesheet" href="{% static 'core/app.css' %}">
+
+<link rel="manifest" href="/static/core/manifest.webmanifest">
+<meta name="theme-color" content="#15945f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="GreenLife Staff">
+<link rel="apple-touch-icon" href="/static/core/icon-192.png">
+
 </head>
-<body>
+<body class="gl-app {% if user.is_authenticated %}gl-authenticated{% else %}gl-guest{% endif %}">
+<div class="mobile-more-backdrop" hidden></div>
 <aside class="app-sidebar">
   <div class="brand brand-premium">
     <span class="brand-mark"><i></i><i></i></span>
     <span><b>GreenLife</b><small>STAFF APP</small></span>
   </div>
   <nav class="app-nav">
-    <a href="/" class="nav-main"><span class="nav-ico">⌂</span><span>داشبورد اصلی</span></a>
-    {% if user.profile.role != 'employee' %}<a href="/live/"><span class="nav-ico">⌘</span><span>پنل مدیریتی</span></a>{% endif %}
+    <a href="/" class="nav-main {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico">⌂</span><span>داشبورد اصلی</span></a>
+    {% if user.profile.role == 'employee' %}
+    <a href="/profile/" class="employee-profile-nav {% if request.resolver_match.url_name == 'profile' %}is-active{% endif %}" aria-label="پروفایل من">
+      <span class="nav-ico profile-nav-icon"><svg viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-5.1 0-8 2.55-8 5.25V21h16v-1.75C20 16.55 17.1 14 12 14Z"/></svg></span>
+      <span>پروفایل من</span>
+    </a>
+    {% endif %}
+    {% if user.profile.role == 'employee' %}
+    <a href="/tasks/" class="employee-tasks-nav"><span class="nav-ico">✓</span><span>وظایف</span></a>
+    {% endif %}
+    {% if user.profile.role != 'employee' %}<a href="/live/"><span class="nav-ico">⌘</span><span>{% if user.profile.role == "manager" %}مدیریت شعبه{% else %}پنل مدیریتی{% endif %}</span></a>{% endif %}
+    {% if user.profile.role != 'employee' %}<a href="/action-center/"><span class="nav-ico">⚡</span><span>مرکز اقدام</span></a>{% endif %}
     <a href="/employees/"><span class="nav-ico">♙</span><span>پرسنل</span></a>
-    <a href="/attendance/"><span class="nav-ico">◷</span><span>حضور و غیاب</span></a>
+    <a href="/attendance/" class="{% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور و غیاب</span></a>
     {% if user.profile.role != 'employee' %}<a href="/kpi/"><span class="nav-ico">◎</span><span>عملکرد و KPI</span></a>{% endif %}
     <a href="/sop/"><span class="nav-ico">◇</span><span>آموزش</span></a>
+    <a href="/guidelines/"><span class="nav-ico">▤</span><span>شرح وظایف و دستورالعمل‌ها</span></a>
     <a href="/service-requests/"><span class="nav-ico">✓</span><span>درخواست‌ها</span></a>
-    <a href="/reports/"><span class="nav-ico">▥</span><span>گزارش‌ها</span></a>
+    <a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌ها</span></a>
     {% if user.profile.role != 'employee' %}<a href="/finance/"><span class="nav-ico">▧</span><span>مالی و درآمد</span></a>{% endif %}
-    <a href="/notifications/"><span class="nav-ico">⚙</span><span>اعلان‌ها</span></a>
+    <a href="/notifications/" class="{% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico">⚙</span><span>اعلان‌ها</span></a>
+
+    <a href="/device-issues/mine/"><span class="nav-ico">🛠</span><span>خرابی دستگاه</span></a>
+    {% if user.profile.role == 'admin' or user.profile.role == 'manager' or user.username == 'sadeghi' %}
+    <a href="/device-issues/manage/"><span class="nav-ico">⚒</span><span>مدیریت خرابی‌ها</span></a>
+    {% endif %}
+
+
+    <button type="button" class="mobile-more-toggle" aria-expanded="false" aria-controls="mobileMoreMenu">
+      <span class="nav-ico">☰</span><span>بیشتر</span>
+    </button>
+
+    <div class="mobile-more-menu" id="mobileMoreMenu" hidden>
+      <div class="mobile-more-head">
+        <strong>منوی کامل</strong>
+        <button type="button" class="mobile-more-close" aria-label="بستن">×</button>
+      </div>
+      <div class="mobile-more-links">
+        {% if user.profile.role != 'employee' %}<a href="/live/"><span>⌘</span>پنل مدیریتی</a>{% endif %}
+        <a href="/employees/"><span>♙</span>پرسنل</a>
+        <a href="/attendance/"><span>◷</span>حضور و غیاب</a>
+        {% if user.profile.role != 'employee' %}<a href="/kpi/"><span>◎</span>عملکرد و KPI</a>{% endif %}
+        <a href="/sop/"><span>◇</span>آموزش</a>
+        <a href="/service-requests/"><span>✓</span>درخواست‌ها</a>
+        <a href="/notifications/"><span>⚙</span>اعلان‌ها</a>
+        <a href="/profile/"><span>◉</span>پروفایل</a>
+        <a href="/logout/"><span>↪</span>خروج</a>
+      </div>
+    </div>
 
     <div class="nav-section-title">ماژول‌ها</div>
     <a href="#" class="nav-module muted-module"><span class="nav-ico">⌂</span><span>Clinic</span></a>
@@ -61,4 +110,98 @@
   {% for message in messages %}<div class="msg {{ message.tags }}">{{ message }}</div>{% endfor %}
   {% block content %}{% endblock %}
 </main>
+
+<script>
+(function(){
+  const toggle = document.querySelector('.mobile-more-toggle');
+  const menu = document.getElementById('mobileMoreMenu');
+  const closeBtn = document.querySelector('.mobile-more-close');
+  const backdrop = document.querySelector('.mobile-more-backdrop');
+
+  if (!toggle || !menu || !backdrop) return;
+
+  function openMenu(){
+    menu.hidden = false;
+    backdrop.hidden = false;
+    document.body.classList.add('mobile-menu-open');
+    toggle.setAttribute('aria-expanded','true');
+  }
+  function closeMenu(){
+    menu.hidden = true;
+    backdrop.hidden = true;
+    document.body.classList.remove('mobile-menu-open');
+    toggle.setAttribute('aria-expanded','false');
+  }
+
+  toggle.addEventListener('click', function(){
+    if (menu.hidden) openMenu(); else closeMenu();
+  });
+  if (closeBtn) closeBtn.addEventListener('click', closeMenu);
+  backdrop.addEventListener('click', closeMenu);
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') closeMenu();
+  });
+})();
+</script>
+
+{% block extra_js %}{% endblock %}
+
+<div id="pwaInstallBar" class="pwa-install-bar" hidden>
+  <div>
+    <strong>نصب GreenLife Staff</strong>
+    <small>برای باز شدن مثل یک اپ واقعی روی صفحه اصلی نصبش کنید.</small>
+  </div>
+  <div class="pwa-install-actions">
+    <button id="pwaInstallBtn" type="button">نصب اپ</button>
+    <button id="pwaInstallClose" type="button" class="ghost">بعداً</button>
+  </div>
+</div>
+<script>
+(function(){
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}));
+  }
+  let deferredPrompt=null;
+  const bar=document.getElementById('pwaInstallBar');
+  const btn=document.getElementById('pwaInstallBtn');
+  const close=document.getElementById('pwaInstallClose');
+
+  const isStandalone=window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+  const dismissed=localStorage.getItem('greenlife_pwa_install_dismissed')==='1';
+
+  window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault();
+    deferredPrompt=e;
+    if(!isStandalone && !dismissed) bar.hidden=false;
+  });
+
+  if(btn) btn.addEventListener('click',async()=>{
+    if(!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt=null;
+    bar.hidden=true;
+  });
+
+  if(close) close.addEventListener('click',()=>{
+    bar.hidden=true;
+    localStorage.setItem('greenlife_pwa_install_dismissed','1');
+  });
+
+  // iOS cannot trigger beforeinstallprompt; show concise instructions.
+  const isiOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(isiOS && !isStandalone && !dismissed){
+    setTimeout(()=>{
+      bar.hidden=false;
+      if(btn){
+        btn.textContent='راهنمای نصب';
+        btn.onclick=()=>{
+          alert('در Safari روی Share بزنید و سپس Add to Home Screen را انتخاب کنید.');
+        };
+      }
+    },1200);
+  }
+})();
+</script>
+
 </body></html>

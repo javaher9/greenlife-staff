@@ -6,7 +6,7 @@ from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 from .models import (Attendance, AttendanceCorrectionRequest, DailyReport, LeaveRequest,
-                     ScoreEvent, ShiftAssignment, StaffNotification, Task, FinancialTransaction)
+                     ScoreEvent, ShiftAssignment, ShiftGroup, StaffNotification, Task, FinancialTransaction)
 from .jalali import format_jalali
 
 REPORT_MISSING_PENALTY=int(os.getenv('REPORT_MISSING_PENALTY','-2'))
@@ -24,15 +24,58 @@ def assignment_for(user, day):
 
 
 def shift_rule(user, day):
+    # Priority:
+    # 1) One-day personal override
+    # 2) Employee shift group
+    # 3) Branch default hours
     assignment=assignment_for(user,day)
     if assignment:
-        return {'name':assignment.shift.name,'start':assignment.shift.start_time,'end':assignment.shift.end_time,
-                'grace':assignment.shift.grace_minutes,'report_required':assignment.shift.report_required,'assignment':assignment}
-    branch=getattr(getattr(user,'profile',None),'branch',None)
+        return {
+            'name':assignment.shift.name,
+            'start':assignment.shift.start_time,
+            'end':assignment.shift.end_time,
+            'grace':assignment.shift.grace_minutes,
+            'report_required':assignment.shift.report_required,
+            'assignment':assignment,
+            'source':'personal',
+        }
+
+    profile=getattr(user,'profile',None)
+    group=getattr(profile,'shift_group',None) if profile else None
+    if group and group.is_active and group.default_shift and group.default_shift.is_active:
+        shift=group.default_shift
+        return {
+            'name':f'{group.name} - {shift.name}',
+            'start':shift.start_time,
+            'end':shift.end_time,
+            'grace':shift.grace_minutes,
+            'report_required':shift.report_required,
+            'assignment':None,
+            'source':'group',
+            'group':group,
+        }
+
+    branch=getattr(profile,'branch',None) if profile else None
     if branch:
-        return {'name':'ساعت کاری شعبه','start':branch.work_start,'end':branch.work_end,
-                'grace':branch.grace_minutes,'report_required':True,'assignment':None}
-    return {'name':'ساعت پیش‌فرض','start':None,'end':None,'grace':0,'report_required':True,'assignment':None}
+        return {
+            'name':'ساعت کاری شعبه',
+            'start':branch.work_start,
+            'end':branch.work_end,
+            'grace':branch.grace_minutes,
+            'report_required':True,
+            'assignment':None,
+            'source':'branch',
+        }
+
+    return {
+        'name':'ساعت پیش‌فرض',
+        'start':None,
+        'end':None,
+        'grace':0,
+        'report_required':True,
+        'assignment':None,
+        'source':'default',
+    }
 
 
 def attendance_status_for(user, day, check_in):

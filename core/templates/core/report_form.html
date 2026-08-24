@@ -13,6 +13,7 @@
 
   <form method="post" enctype="multipart/form-data" id="reportForm">
     {% csrf_token %}
+    <input type="hidden" name="submission_id" value="{{ submission_id }}">
     {{ form.as_p }}
     <label class="check"><input type="checkbox" name="process_ai" value="1"> همین حالا با هوش مصنوعی تحلیل شود</label>
     <button class="primary" id="submitReport">ارسال گزارش</button>
@@ -165,12 +166,24 @@
     }
   });
 
-  form.addEventListener('submit', async (event) => {
-    if (!recordedBlob) return; // regular browser submit when using uploaded file/text only
+  let submitting = false;
 
-    event.preventDefault();
+  form.addEventListener('submit', async (event) => {
+    // Guard against double taps/clicks before the first request leaves the page.
+    if (submitting) {
+      event.preventDefault();
+      return;
+    }
+    submitting = true;
     submitBtn.disabled = true;
     submitBtn.textContent = 'در حال ارسال...';
+
+    if (!recordedBlob) {
+      setStatus('در حال ثبت گزارش...');
+      return; // normal browser POST; button remains locked
+    }
+
+    event.preventDefault();
     setStatus('در حال ارسال گزارش صوتی...');
 
     try {
@@ -191,6 +204,7 @@
       window.location.href = response.url || '/reports/';
     } catch (err) {
       console.error(err);
+      submitting = false;
       submitBtn.disabled = false;
       submitBtn.textContent = 'ارسال گزارش';
       setStatus('ارسال فایل صوتی ناموفق بود. اینترنت را بررسی کنید یا فایل صوتی را دستی انتخاب و دوباره ارسال کنید.', true);

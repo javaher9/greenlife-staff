@@ -8,24 +8,34 @@ class Branch(models.Model):
     work_start = models.TimeField(default='09:00')
     work_end = models.TimeField(default='17:00')
     grace_minutes = models.PositiveSmallIntegerField(default=15)
-    latitude=models.DecimalField(max_digits=9,decimal_places=6,null=True,blank=True)
-    longitude=models.DecimalField(max_digits=9,decimal_places=6,null=True,blank=True)
-    attendance_radius_m=models.PositiveIntegerField(default=150)
-    geofence_enabled=models.BooleanField(default=False)
+    # Attendance geofence. Configure these per branch in Django Admin.
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    attendance_radius_m = models.PositiveIntegerField(default=150)
+    geofence_enabled = models.BooleanField(default=False)
     def __str__(self): return self.name
+
+class ShiftGroup(models.Model):
+    name=models.CharField(max_length=100)
+    branch=models.ForeignKey(Branch,on_delete=models.CASCADE,related_name='shift_groups')
+    default_shift=models.ForeignKey('WorkShift',on_delete=models.SET_NULL,null=True,blank=True,related_name='default_for_groups')
+    is_active=models.BooleanField(default=True)
+    note=models.CharField(max_length=250,blank=True)
+    def __str__(self):
+        return f'{self.branch} - {self.name}'
 
 class EmployeeProfile(models.Model):
     ROLE_CHOICES=[('admin','مدیر سیستم'),('manager','مدیر شعبه'),('employee','کارمند')]
     user=models.OneToOneField(User,on_delete=models.CASCADE,related_name='profile')
     branch=models.ForeignKey(Branch,on_delete=models.SET_NULL,null=True,blank=True)
     role=models.CharField(max_length=20,choices=ROLE_CHOICES,default='employee')
+    shift_group=models.ForeignKey(ShiftGroup,on_delete=models.SET_NULL,null=True,blank=True,related_name='employees')
     job_title=models.CharField(max_length=120,blank=True)
     employee_code=models.CharField(max_length=30,blank=True,unique=True,null=True)
     phone=models.CharField(max_length=30,blank=True)
     start_date=models.DateField(null=True,blank=True)
     birth_date=models.DateField(null=True,blank=True)
     avatar=models.ImageField(upload_to='avatars/',null=True,blank=True)
-    shift_group=models.ForeignKey('ShiftGroup',on_delete=models.SET_NULL,null=True,blank=True,related_name='employees')
     is_active=models.BooleanField(default=True)
     def __str__(self): return self.user.get_full_name() or self.user.username
 
@@ -77,6 +87,56 @@ class LeaveRequest(models.Model):
     created_at=models.DateTimeField(auto_now_add=True)
     def __str__(self): return f'{self.user} - {self.get_request_type_display()}'
 
+
+class JobDutyTemplate(models.Model):
+    title=models.CharField(max_length=140)
+    branch=models.ForeignKey(Branch,on_delete=models.SET_NULL,null=True,blank=True,related_name='job_duties')
+    job_title=models.CharField(max_length=120,blank=True,help_text='اگر خالی باشد برای همه سمت‌ها قابل استفاده است.')
+    description=models.TextField()
+    is_active=models.BooleanField(default=True)
+    created_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='created_job_duties')
+    created_at=models.DateTimeField(auto_now_add=True)
+    def __str__(self): return self.title
+
+class Guideline(models.Model):
+    AUDIENCE=[('all','همه پرسنل'),('branch','یک شعبه'),('job','یک سمت شغلی')]
+    title=models.CharField(max_length=160)
+    body=models.TextField()
+    audience=models.CharField(max_length=20,choices=AUDIENCE,default='all')
+    branch=models.ForeignKey(Branch,on_delete=models.SET_NULL,null=True,blank=True,related_name='guidelines')
+    job_title=models.CharField(max_length=120,blank=True)
+    is_required=models.BooleanField(default=True)
+    is_active=models.BooleanField(default=True)
+    published_at=models.DateTimeField(auto_now_add=True)
+    created_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='created_guidelines')
+    def __str__(self): return self.title
+
+class GuidelineAcknowledgement(models.Model):
+    guideline=models.ForeignKey(Guideline,on_delete=models.CASCADE,related_name='acknowledgements')
+    user=models.ForeignKey(User,on_delete=models.CASCADE,related_name='guideline_acknowledgements')
+    acknowledged_at=models.DateTimeField(auto_now_add=True)
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['guideline','user'],name='uniq_guideline_ack')]
+    def __str__(self): return f'{self.user} - {self.guideline}'
+
+
+class DeviceIssue(models.Model):
+    STATUS=[('new','جدید'),('reviewing','در حال بررسی'),('resolved','رفع شده')]
+    reporter=models.ForeignKey(User,on_delete=models.CASCADE,related_name='reported_device_issues')
+    branch=models.ForeignKey(Branch,on_delete=models.SET_NULL,null=True,blank=True,related_name='device_issues')
+    device_name=models.CharField(max_length=160)
+    description=models.TextField()
+    status=models.CharField(max_length=20,choices=STATUS,default='new')
+    manager_note=models.TextField(blank=True)
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+    resolved_at=models.DateTimeField(null=True,blank=True)
+    resolved_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='resolved_device_issues')
+    class Meta:
+        ordering=['-created_at']
+    def __str__(self):
+        return f'{self.device_name} - {self.reporter}'
+
 class DailyReport(models.Model):
     PROCESS=[('pending','در انتظار پردازش'),('processed','پردازش شده'),('failed','خطا')]
     user=models.ForeignKey(User,on_delete=models.CASCADE,related_name='reports')
@@ -87,11 +147,13 @@ class DailyReport(models.Model):
     ai_summary=models.TextField(blank=True)
     ai_tags=models.JSONField(default=list,blank=True)
     follow_up=models.TextField(blank=True)
-    process_status=models.CharField(max_length=15,choices=PROCESS,default='pending')
-    client_submission_id=models.CharField(max_length=64,null=True,blank=True,unique=True,db_index=True)
     manager_comment=models.CharField(max_length=300,blank=True)
-    manager_comment_at=models.DateTimeField(null=True,blank=True)
     manager_comment_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='report_comments')
+    manager_comment_at=models.DateTimeField(null=True,blank=True)
+    process_status=models.CharField(max_length=15,choices=PROCESS,default='pending')
+    # Client-generated idempotency key: prevents duplicate report/voice rows
+    # when the same POST is retried or submitted twice.
+    client_submission_id=models.CharField(max_length=64,unique=True,null=True,blank=True,db_index=True)
     created_at=models.DateTimeField(auto_now_add=True)
     def __str__(self): return f'{self.user} - {self.created_at:%Y-%m-%d}'
 
@@ -108,7 +170,10 @@ class Attendance(models.Model):
     check_in_longitude=models.DecimalField(max_digits=9,decimal_places=6,null=True,blank=True)
     check_in_accuracy_m=models.FloatField(null=True,blank=True)
     check_in_distance_m=models.PositiveIntegerField(null=True,blank=True)
-    check_in_location_status=models.CharField(max_length=20,choices=[('verified','تأیید موقعیت'),('outside','خارج محدوده'),('low_accuracy','دقت پایین'),('unavailable','موقعیت ناموجود'),('manual','ثبت دستی مدیر'),('legacy','قدیمی')],default='legacy')
+    check_in_location_status=models.CharField(max_length=20,default='legacy',choices=[
+        ('verified','تأیید موقعیت'),('outside','خارج محدوده'),('low_accuracy','دقت پایین'),
+        ('unavailable','موقعیت ناموجود'),('manual','ثبت دستی مدیر'),('legacy','قدیمی')
+    ])
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
     class Meta:
@@ -186,14 +251,6 @@ class WorkShift(models.Model):
     grace_minutes=models.PositiveSmallIntegerField(default=15)
     report_required=models.BooleanField(default=True)
     is_active=models.BooleanField(default=True)
-    def __str__(self): return f'{self.branch} - {self.name}'
-
-class ShiftGroup(models.Model):
-    name=models.CharField(max_length=100)
-    is_active=models.BooleanField(default=True)
-    note=models.CharField(max_length=250,blank=True)
-    branch=models.ForeignKey(Branch,on_delete=models.CASCADE,related_name='shift_groups')
-    default_shift=models.ForeignKey(WorkShift,on_delete=models.SET_NULL,null=True,blank=True,related_name='default_for_groups')
     def __str__(self): return f'{self.branch} - {self.name}'
 
 class ShiftAssignment(models.Model):
@@ -382,55 +439,6 @@ class CEOScoreSnapshot(models.Model):
         ordering=['-date']
         constraints=[models.UniqueConstraint(fields=['date','branch'],name='uniq_ceo_score_date_branch')]
     def __str__(self): return f'{self.date} - {self.branch or "all"} - {self.score}'
-
-
-class JobDutyTemplate(models.Model):
-    title=models.CharField(max_length=140)
-    job_title=models.CharField(max_length=120,blank=True,help_text='اگر خالی باشد برای همه سمت‌ها قابل استفاده است.')
-    description=models.TextField()
-    is_active=models.BooleanField(default=True)
-    created_at=models.DateTimeField(auto_now_add=True)
-    branch=models.ForeignKey(Branch,on_delete=models.SET_NULL,null=True,blank=True,related_name='job_duties')
-    created_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='created_job_duties')
-    def __str__(self): return self.title
-
-
-class Guideline(models.Model):
-    AUDIENCE=[('all','همه پرسنل'),('branch','یک شعبه'),('job','یک سمت شغلی')]
-    title=models.CharField(max_length=160)
-    body=models.TextField()
-    audience=models.CharField(max_length=20,choices=AUDIENCE,default='all')
-    job_title=models.CharField(max_length=120,blank=True)
-    is_required=models.BooleanField(default=True)
-    is_active=models.BooleanField(default=True)
-    published_at=models.DateTimeField(auto_now_add=True)
-    branch=models.ForeignKey(Branch,on_delete=models.SET_NULL,null=True,blank=True,related_name='guidelines')
-    created_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='created_guidelines')
-    def __str__(self): return self.title
-
-
-class GuidelineAcknowledgement(models.Model):
-    guideline=models.ForeignKey(Guideline,on_delete=models.CASCADE,related_name='acknowledgements')
-    user=models.ForeignKey(User,on_delete=models.CASCADE,related_name='guideline_acknowledgements')
-    acknowledged_at=models.DateTimeField(auto_now_add=True)
-    class Meta:
-        constraints=[models.UniqueConstraint(fields=['guideline','user'],name='uniq_guideline_ack')]
-
-
-class DeviceIssue(models.Model):
-    STATUS=[('new','جدید'),('reviewing','در حال بررسی'),('resolved','رفع شده')]
-    device_name=models.CharField(max_length=160)
-    description=models.TextField()
-    status=models.CharField(max_length=20,choices=STATUS,default='new')
-    manager_note=models.TextField(blank=True)
-    created_at=models.DateTimeField(auto_now_add=True)
-    updated_at=models.DateTimeField(auto_now=True)
-    resolved_at=models.DateTimeField(null=True,blank=True)
-    branch=models.ForeignKey(Branch,on_delete=models.SET_NULL,null=True,blank=True,related_name='device_issues')
-    reporter=models.ForeignKey(User,on_delete=models.CASCADE,related_name='reported_device_issues')
-    resolved_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='resolved_device_issues')
-    class Meta: ordering=['-created_at']
-    def __str__(self): return self.device_name
 
 
 # =========================

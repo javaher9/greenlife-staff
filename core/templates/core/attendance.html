@@ -1,4 +1,52 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
 <section class="hero"><div><h1>حضور و غیاب</h1><p>{{ today|jdate }} · شیفت: {{ today_shift.name }}{% if today_shift.start %} · {{ today_shift.start|time:'H:i' }} تا {{ today_shift.end|time:'H:i' }}{% endif %}</p></div><div>{% if user.profile.role != 'employee' %}<a class="primary" href="/attendance/team/">گزارش تیم</a>{% endif %} <a class="primary" href="/attendance/corrections/new/">درخواست اصلاح</a></div></section>
-<section class="panel"><div class="attendance-actions"><div><strong>ورود:</strong> {% if record.check_in %}{{ record.check_in|date:'H:i' }}{% else %}ثبت نشده{% endif %}</div><div><strong>خروج:</strong> {% if record.check_out %}{{ record.check_out|date:'H:i' }}{% else %}ثبت نشده{% endif %}</div><div><strong>وضعیت:</strong> {% if record %}{{ record.get_status_display }}{% else %}—{% endif %}</div><div><strong>اضافه‌کاری امروز:</strong> {{ overtime|fa }} دقیقه</div><form method="post">{% csrf_token %}{% if not record.check_in %}<button class="primary" name="action" value="checkin">ثبت ورود</button>{% elif not record.check_out %}<button class="primary" name="action" value="checkout">ثبت خروج</button>{% else %}<span class="badge done">کامل شد</span>{% endif %}</form></div></section>
+<section class="panel"><div class="attendance-actions"><div><strong>ورود:</strong> {% if record.check_in %}{{ record.check_in|date:'H:i' }}{% else %}ثبت نشده{% endif %}</div><div><strong>خروج:</strong> {% if record.check_out %}{{ record.check_out|date:'H:i' }}{% else %}ثبت نشده{% endif %}</div><div><strong>وضعیت:</strong> {% if record %}{{ record.get_status_display }}{% else %}—{% endif %}</div><div><strong>اضافه‌کاری امروز:</strong> {{ overtime|fa }} دقیقه</div><form method="post" id="attendanceForm">{% csrf_token %}
+<input type="hidden" name="latitude" id="attendanceLat">
+<input type="hidden" name="longitude" id="attendanceLon">
+<input type="hidden" name="accuracy" id="attendanceAccuracy">
+{% if not record.check_in %}
+<button class="primary" id="checkinBtn" name="action" value="checkin" data-geofence="{% if geofence_enabled %}1{% else %}0{% endif %}">ثبت ورود</button>
+{% elif not record.check_out %}
+<button class="primary" id="checkoutBtn" name="action" value="checkout" data-geofence="{% if geofence_enabled %}1{% else %}0{% endif %}">ثبت خروج</button>
+{% else %}<span class="badge done">کامل شد</span>{% endif %}
+</form>
+{% if geofence_enabled and not record.check_in %}<small class="muted" id="geoStatus">📍 ثبت ورود فقط در محدوده {{ geofence_radius }} متری شعبه و با GPS انجام می‌شود.</small>{% endif %}
+{% if record.check_in_location_status == 'verified' %}<small class="badge done">📍 موقعیت ورود تأیید شد{% if record.check_in_distance_m != None %} · فاصله {{ record.check_in_distance_m }} متر{% endif %}</small>{% endif %}</div></section>
 <section class="panel"><div class="sectionhead"><h2>۳۱ روز اخیر</h2></div><div class="tablewrap"><table><tr><th>تاریخ</th><th>ورود</th><th>خروج</th><th>وضعیت</th><th>کارکرد</th></tr>{% for r in recent %}<tr><td>{{ r.date|jdate }}</td><td>{{ r.check_in|date:'H:i'|default:'—' }}</td><td>{{ r.check_out|date:'H:i'|default:'—' }}</td><td>{{ r.get_status_display }}</td><td>{% if r.worked_minutes != None %}{{ r.worked_minutes|fa }} دقیقه{% else %}—{% endif %}</td></tr>{% empty %}<tr><td colspan="5">هنوز رکوردی وجود ندارد.</td></tr>{% endfor %}</table></div></section>{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const form=document.getElementById('attendanceForm');
+  if(!form) return;
+  const status=document.getElementById('geoStatus');
+  let locating=false;
+  form.addEventListener('submit',function(e){
+    const btn=e.submitter;
+    if(!btn || btn.dataset.geofence!=='1' || btn.dataset.ready==='1') return;
+    e.preventDefault();
+    if(locating) return;
+    locating=true;
+    const original=btn.textContent;
+    btn.disabled=true; btn.textContent='در حال بررسی موقعیت...';
+    if(!navigator.geolocation){
+      if(status) status.textContent='مرورگر شما GPS را در اختیار سایت قرار نمی‌دهد.';
+      btn.disabled=false; btn.textContent=original; locating=false; return;
+    }
+    navigator.geolocation.getCurrentPosition(function(pos){
+      document.getElementById('attendanceLat').value=pos.coords.latitude;
+      document.getElementById('attendanceLon').value=pos.coords.longitude;
+      document.getElementById('attendanceAccuracy').value=pos.coords.accuracy;
+      btn.dataset.ready='1'; btn.disabled=false; btn.textContent=original; btn.click();
+    },function(err){
+      let msg='دسترسی موقعیت مکانی لازم است.';
+      if(err.code===1) msg='اجازه Location را برای این سایت فعال کنید.';
+      if(err.code===2) msg='موقعیت فعلی قابل دریافت نیست؛ GPS را روشن کنید.';
+      if(err.code===3) msg='دریافت موقعیت طول کشید؛ دوباره امتحان کنید.';
+      if(status) status.textContent=msg;
+      btn.disabled=false; btn.textContent=original; locating=false;
+    },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+  });
+})();
+</script>
+{% endblock %}

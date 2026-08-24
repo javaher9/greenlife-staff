@@ -1,20 +1,172 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
-<section class="profile-cover {% if profile.avatar %}has-photo{% endif %}" {% if profile.avatar %}style="--profile-bg:url('{{ profile.avatar.url }}')"{% endif %}>
-  <div class="profile-cover-bg"></div>
-  <div class="profile-cover-content">
-    <div class="avatar-xl">
-      {% if profile.avatar %}<img src="{{ profile.avatar.url }}" alt="{{ user.get_full_name|default:user.username }}">{% else %}<span>{{ user.first_name|first|default:user.username|first }}</span>{% endif %}
+<div class="gl-profile-page">
+
+  <section class="gl-profile-header">
+    <div class="gl-profile-main">
+      <div class="gl-profile-photo-wrap">
+        <div class="gl-profile-photo">
+          {% if profile.avatar %}
+            <img src="{{ profile.avatar.url }}" alt="{{ user.get_full_name|default:user.username }}">
+          {% else %}
+            <span>{{ user.first_name|first|default:user.username|first }}</span>
+          {% endif %}
+        </div>
+        <label for="{{ avatar_form.avatar.id_for_label }}" class="gl-profile-camera" title="تغییر عکس">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.3 5.5 9.8 3.8h4.4l1.5 1.7H19a3 3 0 0 1 3 3v8.7a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V8.5a3 3 0 0 1 3-3h3.3Zm3.7 3a4.4 4.4 0 1 0 0 8.8 4.4 4.4 0 0 0 0-8.8Zm0 2a2.4 2.4 0 1 1 0 4.8 2.4 2.4 0 0 1 0-4.8Z"/></svg>
+        </label>
+      </div>
+
+      <div class="gl-profile-identity">
+        <span class="gl-profile-eyebrow">GREENLIFE STAFF</span>
+        <h1>{{ user.get_full_name|default:user.username }}</h1>
+        <p>{{ profile.job_title|default:'پرسنل' }}</p>
+        <span class="gl-profile-status {% if profile.is_active %}is-active{% else %}is-inactive{% endif %}">
+          {% if profile.is_active %}✓ فعال{% else %}غیرفعال{% endif %}
+        </span>
+      </div>
     </div>
-    <div><h1>{{ user.get_full_name|default:user.username }}</h1><p>{{ profile.job_title|default:'—' }}{% if profile.branch %} · {{ profile.branch }}{% endif %}</p></div>
-  </div>
-</section>
-<section class="panel profilecard">
-  <div class="sectionhead"><h2>اطلاعات پرسنلی</h2></div>
-  <div class="profilegrid"><div><span>نام</span><b>{{ user.get_full_name|default:user.username }}</b></div><div><span>کد پرسنلی</span><b>{{ profile.employee_code|default:'—' }}</b></div><div><span>سمت</span><b>{{ profile.job_title|default:'—' }}</b></div><div><span>شعبه</span><b>{{ profile.branch|default:'—' }}</b></div><div><span>تلفن</span><b>{{ profile.phone|default:'—' }}</b></div><div><span>نقش</span><b>{{ profile.get_role_display }}</b></div></div>
-</section>
-<section class="panel formbox">
-  <h2>عکس پروفایل</h2>
-  <p class="muted">این عکس در پروفایل به‌صورت پس‌زمینه و در لیست‌های مدیریتی به‌صورت تصویر کوچک نمایش داده می‌شود.</p>
-  <form method="post" enctype="multipart/form-data">{% csrf_token %}{{ avatar_form.as_p }}<button>ذخیره عکس</button></form>
-</section>
+
+    <form method="post" enctype="multipart/form-data" class="gl-profile-photo-form" id="profilePhotoForm">
+      {% csrf_token %}
+      <div class="gl-profile-file-hidden">{{ avatar_form.avatar }}</div>
+      <div class="gl-profile-photo-actions">
+        <button type="button" class="gl-profile-photo-select" id="profilePhotoSelect">
+          <svg viewBox="0 0 24 24"><path d="M8.3 5.5 9.8 3.8h4.4l1.5 1.7H19a3 3 0 0 1 3 3v8.7a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V8.5a3 3 0 0 1 3-3h3.3Z"/></svg>
+          انتخاب عکس جدید
+        </button>
+        <button type="submit" class="gl-profile-photo-save">ذخیره عکس</button>
+      </div>
+      <small id="profileFileName">JPG، PNG یا WEBP · حداکثر ۵ مگابایت</small>
+      {{ avatar_form.avatar.errors }}
+    </form>
+  </section>
+
+  <section class="gl-profile-card">
+    <div class="gl-profile-card-title">
+      <div>
+        <span class="gl-profile-section-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-5 0-8 2.5-8 5.2V21h16v-1.8C20 16.5 17 14 12 14Z"/></svg>
+        </span>
+        <h2>اطلاعات فردی</h2>
+      </div>
+      <span class="gl-profile-readonly">فقط نمایش</span>
+    </div>
+
+    <div class="gl-profile-rows">
+      <div class="gl-profile-row">
+        <span class="gl-row-label">کد پرسنلی</span>
+        <strong>{{ profile.employee_code|default:'—' }}</strong>
+      </div>
+      <div class="gl-profile-row">
+        <span class="gl-row-label">شماره موبایل</span>
+        <strong dir="ltr">{{ profile.phone|default:'—' }}</strong>
+      </div>
+      <div class="gl-profile-row">
+        <span class="gl-row-label">ایمیل</span>
+        <strong dir="ltr">{{ user.email|default:'—' }}</strong>
+      </div>
+      <div class="gl-profile-row">
+        <span class="gl-row-label">تاریخ شروع همکاری</span>
+        <strong>{% if profile.start_date %}{{ profile.start_date|jdate }}{% else %}—{% endif %}</strong>
+      </div>
+      <div class="gl-profile-row">
+        <span class="gl-row-label">تاریخ تولد</span>
+        <strong>{% if profile.birth_date %}{{ profile.birth_date|jdate }}{% else %}—{% endif %}</strong>
+      </div>
+      <div class="gl-profile-row">
+        <span class="gl-row-label">نام کاربری</span>
+        <strong dir="ltr">{{ user.username }}</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="gl-profile-card">
+    <div class="gl-profile-card-title">
+      <div>
+        <span class="gl-profile-section-icon">
+          <svg viewBox="0 0 24 24"><path d="M4 21V4h10v4h6v13H4Zm3-3h2v-2H7v2Zm0-5h2v-2H7v2Zm0-5h2V6H7v2Zm5 10h2v-2h-2v2Zm0-5h2v-2h-2v2Zm5 5h1v-7h-1v7Z"/></svg>
+        </span>
+        <h2>اطلاعات سازمانی</h2>
+      </div>
+      <span class="gl-profile-readonly">مدیریتی</span>
+    </div>
+
+    <div class="gl-profile-rows">
+      <div class="gl-profile-row">
+        <span class="gl-row-label">شعبه</span>
+        <strong>{{ profile.branch|default:'—' }}</strong>
+      </div>
+      <div class="gl-profile-row">
+        <span class="gl-row-label">سمت</span>
+        <strong>{{ profile.job_title|default:'—' }}</strong>
+      </div>
+      <div class="gl-profile-row">
+        <span class="gl-row-label">گروه شیفت</span>
+        <strong>{{ profile.shift_group|default:'—' }}</strong>
+      </div>
+      <div class="gl-profile-row">
+        <span class="gl-row-label">ساعت کاری امروز</span>
+        <strong>
+          {% if today_shift and today_shift.start %}
+            {{ today_shift.start|time:'H:i' }} تا {{ today_shift.end|time:'H:i' }}
+          {% else %}—{% endif %}
+        </strong>
+      </div>
+      <div class="gl-profile-row">
+        <span class="gl-row-label">نقش</span>
+        <strong>{{ profile.get_role_display }}</strong>
+      </div>
+      <div class="gl-profile-row">
+        <span class="gl-row-label">وضعیت حساب</span>
+        <strong class="{% if profile.is_active %}gl-text-green{% else %}gl-text-red{% endif %}">
+          {% if profile.is_active %}● فعال{% else %}● غیرفعال{% endif %}
+        </strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="gl-profile-card gl-profile-note">
+    <div>
+      <strong>ویرایش اطلاعات سازمانی</strong>
+      <p>تغییر شعبه، سمت، نقش، گروه شیفت و سایر اطلاعات سازمانی توسط مدیر انجام می‌شود.</p>
+    </div>
+    <span>🔒</span>
+  </section>
+
+  
+  <a class="gl-profile-device-issue" href="/device-issues/new/">
+    <span class="gl-device-icon">🛠️</span>
+    <div><strong>گزارش خرابی دستگاه</strong><small>مشکل دستگاه یا تجهیزات را برای مدیریت ارسال کنید.</small></div>
+    <span class="gl-device-arrow">‹</span>
+  </a>
+
+<a class="gl-profile-logout" href="/logout/">
+    <span>خروج از حساب کاربری</span>
+    <svg viewBox="0 0 24 24"><path d="M10 17v2H5V5h5v2H7v10h3Zm2-1.4 4-3.6-4-3.6V11H8v2h4v2.6Zm6-10.6h-5V3h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5v-2h5V5Z"/></svg>
+  </a>
+
+</div>
+
+<script>
+(function(){
+  const fileInput=document.getElementById('{{ avatar_form.avatar.id_for_label }}');
+  const selectBtn=document.getElementById('profilePhotoSelect');
+  const cameraBtn=document.querySelector('.gl-profile-camera');
+  const fileName=document.getElementById('profileFileName');
+
+  function openPicker(e){
+    if(e) e.preventDefault();
+    if(fileInput) fileInput.click();
+  }
+  if(selectBtn) selectBtn.addEventListener('click',openPicker);
+  if(cameraBtn) cameraBtn.addEventListener('click',openPicker);
+  if(fileInput){
+    fileInput.addEventListener('change',function(){
+      if(this.files && this.files[0]){
+        fileName.textContent='فایل انتخاب‌شده: '+this.files[0].name;
+      }
+    });
+  }
+})();
+</script>
 {% endblock %}

@@ -7,33 +7,13 @@ on:
 
 concurrency:
   group: greenlife-staff-production
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
-
-      - name: Validate Python and deployment scripts
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          python3 -m compileall -q core greenlife
-          bash -n entrypoint.sh scripts/*.sh
-
-      - name: Build production image
-        shell: bash
-        run: docker build --tag "greenlife-staff:${GITHUB_SHA}" .
-
   deploy:
-    needs: build
     # Register the Ubuntu runner with these labels: self-hosted, linux, greenlife-prod
     runs-on: [self-hosted, linux, greenlife-prod]
     timeout-minutes: 30

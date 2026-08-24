@@ -1,1 +1,31 @@
-{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}<section class="panel"><h1>گزارش {{ report.user.get_full_name|default:report.user.username }}</h1><p class="muted">{{ report.branch }} · {{ report.created_at|jdatetime }}</p>{% if report.audio %}<audio controls src="{{ report.audio.url }}"></audio>{% endif %}<h3>متن کاربر</h3><p>{{ report.text|default:'—'|linebreaks }}</p><h3>متن استخراج‌شده از وویس</h3><p>{{ report.transcript|default:'هنوز پردازش نشده است.'|linebreaks }}</p><h3>خلاصه هوش مصنوعی</h3><p>{{ report.ai_summary|default:'هنوز پردازش نشده است.'|linebreaks }}</p><h3>پیگیری پیشنهادی</h3><p>{{ report.follow_up|default:'—'|linebreaks }}</p>{% if report.ai_tags %}<div class="tags">{% for tag in report.ai_tags %}<span>{{ tag }}</span>{% endfor %}</div>{% endif %}{% if user.is_staff %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="process"><button class="primary">پردازش با AI</button></form>{% endif %}</section>{% endblock %}
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="panel">
+  <div class="sectionhead"><div><h1>گزارش {{ report.user.get_full_name|default:report.user.username }}</h1><p class="muted">{{ report.created_at|jdatetime }}</p></div></div>
+  {% if report.audio %}<audio controls style="width:100%" src="{{ report.audio.url }}"></audio>{% endif %}
+  {% if report.transcript %}<div class="report-block"><h3>متن پیاده‌سازی‌شده</h3><p>{{ report.transcript|linebreaksbr }}</p></div>{% endif %}
+  {% if report.text %}<div class="report-block"><h3>متن گزارش</h3><p>{{ report.text|linebreaksbr }}</p></div>{% endif %}
+  {% if report.ai_summary %}<div class="report-block ai"><h3>خلاصه هوش مصنوعی</h3><p>{{ report.ai_summary|linebreaksbr }}</p></div>{% endif %}
+  {% if report.follow_up %}<div class="report-block"><h3>پیگیری پیشنهادی</h3><p>{{ report.follow_up|linebreaksbr }}</p></div>{% endif %}
+</section>
+
+<section class="panel report-manager-comment">
+  <div class="sectionhead"><h2>بازخورد مدیر</h2></div>
+  {% if report.manager_comment %}
+    <div class="manager-comment-box">
+      <p>{{ report.manager_comment }}</p>
+      {% if report.manager_comment_by %}<small>{{ report.manager_comment_by.get_full_name|default:report.manager_comment_by.username }}{% if report.manager_comment_at %} · {{ report.manager_comment_at|jdatetime }}{% endif %}</small>{% endif %}
+    </div>
+  {% elif not comment_form %}
+    <p class="muted">هنوز بازخوردی برای این گزارش ثبت نشده است.</p>
+  {% endif %}
+
+  {% if comment_form %}
+    <form method="post" class="manager-comment-form">{% csrf_token %}
+      <input type="hidden" name="action" value="manager_comment">
+      {{ comment_form.manager_comment }}
+      <button class="primary" type="submit">ثبت کامنت کوتاه</button>
+    </form>
+    <small class="muted">مثال: لطفاً با صدای بلندتر ضبط کنید.</small>
+  {% endif %}
+</section>
+{% endblock %}

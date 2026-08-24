@@ -1,6 +1,7 @@
 import json
 import mimetypes
 import os
+import re
 from pathlib import Path
 
 from openai import OpenAI
@@ -60,12 +61,52 @@ def process_report(report):
             model=os.getenv("OPENAI_ANALYSIS_MODEL", "gpt-4.1-mini"),
             input=prompt,
         )
-        raw = response.output_text.strip()
-        data = json.loads(raw)
 
-        report.ai_summary = data.get("summary", "")
-        report.ai_tags = data.get("tags", [])
-        report.follow_up = data.get("follow_up", "")
+        raw = (getattr(response, "output_text", "") or "").strip()
+        if not raw:
+            raise ValueError(
+                "پاسخ تحلیل هوش مصنوعی خالی بود. "
+                "OPENAI_API_KEY، مدل OPENAI_ANALYSIS_MODEL و دسترسی اینترنت کانتینر را بررسی کنید."
+            )
+
+        # Some models/SDK versions may wrap valid JSON in Markdown fences.
+        # Normalize that before parsing so a harmless ```json wrapper does not
+        # break report processing.
+        cleaned = raw
+        if cleaned.startswith("```"):
+            cleaned = re.sub(r"^```(?:json)?\\s*", "", cleaned, flags=re.IGNORECASE)
+            cleaned = re.sub(r"\\s*```$", "", cleaned).strip()
+
+        # If there is explanatory text around the object, extract the outermost
+        # JSON object rather than failing with a cryptic line/column error.
+        if not cleaned.startswith("{"):
+            start = cleaned.find("{")
+            end = cleaned.rfind("}")
+            if start != -1 and end > start:
+                cleaned = cleaned[start:end + 1]
+
+        try:
+            data = json.loads(cleaned)
+        except json.JSONDecodeError as exc:
+            preview = raw.replace("\\n", " ")[:220]
+            raise ValueError(
+                "پاسخ تحلیل AI فرمت JSON معتبر نداشت. "
+                f"پاسخ دریافتی: {preview or '[خالی]'}"
+            ) from exc
+
+        if not isinstance(data, dict):
+            raise ValueError("پاسخ تحلیل AI باید یک JSON object باشد.")
+
+        summary = data.get("summary", "")
+        tags = data.get("tags", [])
+        follow_up = data.get("follow_up", "")
+
+        if not isinstance(tags, list):
+            tags = [str(tags)] if tags else []
+
+        report.ai_summary = str(summary or "")
+        report.ai_tags = [str(tag) for tag in tags]
+        report.follow_up = str(follow_up or "")
         report.process_status = "processed"
         report.save()
         return True, "پردازش شد."

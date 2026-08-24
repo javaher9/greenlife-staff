@@ -2,7 +2,6 @@
 set -Eeuo pipefail
 
 DEPLOY_PATH="${DEPLOY_PATH:-/opt/greenlife-staff}"
-LEGACY_COMPOSE_FILE="${LEGACY_COMPOSE_FILE:-/home/ubuntu/staff-gl/greenlife_staff_v17/docker-compose.yml}"
 cd "$DEPLOY_PATH"
 
 LOCKFILE="/tmp/greenlife_staff_deploy.lock"
@@ -35,33 +34,11 @@ docker compose build --pull
 echo "Applying database migrations..."
 docker compose run --rm --entrypoint python web manage.py migrate --noinput
 
-LEGACY_STOPPED=0
-restore_legacy_on_error() {
-  status=$?
-  if [[ "$status" -ne 0 && "$LEGACY_STOPPED" -eq 1 ]]; then
-    echo "Deployment failed; restoring the version 17 web services..." >&2
-    docker compose down --remove-orphans || true
-    docker compose -f "$LEGACY_COMPOSE_FILE" up -d db web nginx || true
-  fi
-  exit "$status"
-}
-trap restore_legacy_on_error EXIT
-
-# Version 17 owns port 8085. Stop only its web tier immediately before the
-# switch; PostgreSQL remains running and its existing data volume is untouched.
-if [[ -f "$LEGACY_COMPOSE_FILE" ]] && \
-   docker compose -f "$LEGACY_COMPOSE_FILE" ps --status running --services | grep -qx nginx; then
-  echo "Stopping version 17 web services for controlled port handover..."
-  docker compose -f "$LEGACY_COMPOSE_FILE" stop nginx web
-  LEGACY_STOPPED=1
-fi
-
-echo "Starting/replacing version 18 containers..."
+echo "Starting/replacing containers..."
 docker compose up -d --remove-orphans
 
 if ./scripts/healthcheck.sh; then
-  trap - EXIT
-  echo "Deploy successful. PostgreSQL remained online during the switch."
+  echo "Deploy successful."
   docker compose ps
   exit 0
 fi

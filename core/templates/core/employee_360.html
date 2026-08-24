@@ -1,4 +1,85 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
-<section class="hero"><div class="person-cell"><div class="avatar-xl">{% if employee.avatar %}<img src="{{ employee.avatar.url }}">{% else %}<span>{{ employee.user.first_name|first|default:employee.user.username|first }}</span>{% endif %}</div><div><span class="eyebrow">360° PROFILE</span><h1>{{ employee.user.get_full_name|default:employee.user.username }}</h1><p>{{ employee.job_title }} · {{ employee.branch }} · KPI {{ kpi.score|fa }}/۱۰۰</p></div></div><div><a class="primary" href="/employees/{{ employee.id }}/action/">تشویق / اخطار</a> <a class="mini" href="/employees/{{ employee.id }}/file/">پرونده کامل</a></div></section>
-<div class="grid"><section class="panel"><h2>Timeline عملکرد</h2>{% for e in events %}<div class="timeline-event {{ e.type }}"><span>{{ e.date|jdate }}</span><div><strong>{{ e.title }}</strong><small>{{ e.text }}</small></div></div>{% empty %}<p class="muted">رویدادی نیست.</p>{% endfor %}</section>
-<section class="panel"><h2>اهداف فعال</h2>{% for g in goals %}<div class="goal-card"><div class="sectionhead"><strong>{{ g.title }}</strong><span>{{ g.current_value|fa }} / {{ g.target|fa }}</span></div><div class="progressbar"><span style="width:{% widthratio g.current_value g.target 100 %}%"></span></div><small>{{ g.start_date|jdate }} تا {{ g.end_date|jdate }}</small></div>{% empty %}<p class="muted">هدف فعالی تعریف نشده.</p>{% endfor %}</section></div>{% endblock %}
+<div class="p360-page">
+  <section class="p360-hero">
+    <div class="p360-person">
+      <div class="p360-avatar">{% if employee.avatar %}<img src="{{ employee.avatar.url }}">{% else %}<span>{{ employee.user.first_name|first|default:employee.user.username|first }}</span>{% endif %}</div>
+      <div>
+        <span class="eyebrow">EMPLOYEE 360°</span>
+        <h1>{{ employee.user.get_full_name|default:employee.user.username }}</h1>
+        <p>{{ employee.job_title|default:'پرسنل' }}{% if employee.branch %} · {{ employee.branch }}{% endif %}{% if employee.shift_group %} · {{ employee.shift_group.name }}{% endif %}</p>
+        <div class="p360-chips">
+          <span class="{% if employee.is_active %}active{% else %}inactive{% endif %}">{% if employee.is_active %}● فعال{% else %}● غیرفعال{% endif %}</span>
+          <span>KPI {{ kpi.score|fa }}/۱۰۰</span>
+          {% if today_shift.start %}<span>شیفت {{ today_shift.start|time:'H:i' }}–{{ today_shift.end|time:'H:i' }}</span>{% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="p360-actions">
+      <a class="primary" href="/employees/{{ employee.id }}/action/">تشویق / تذکر / اخطار</a>
+      <a class="primary ghost" href="/employees/{{ employee.id }}/file/">پرونده پرسنلی</a>
+    </div>
+  </section>
+
+  <section class="p360-kpis">
+    <article><span class="i green">◷</span><div><small>حضور ۳۰ روز</small><strong>{{ summary.attendance_rate }}%</strong><em>{{ summary.late_count }} تأخیر</em></div></article>
+    <article><span class="i blue">▤</span><div><small>گزارش ۳۰ روز</small><strong>{{ summary.report_count }}</strong><em>گزارش ثبت‌شده</em></div></article>
+    <article><span class="i purple">✓</span><div><small>انجام وظایف</small><strong>{{ summary.task_rate }}%</strong><em>{{ summary.task_overdue }} عقب‌افتاده</em></div></article>
+    <article><span class="i amber">★</span><div><small>امتیاز ۳۰ روز</small><strong>{{ summary.score_total }}</strong><em>خالص امتیاز</em></div></article>
+    <article><span class="i green">◇</span><div><small>دستورالعمل‌ها</small><strong>{{ summary.guideline_ack_count }}/{{ summary.guideline_total }}</strong><em>تأیید مطالعه</em></div></article>
+  </section>
+
+  <section class="p360-grid-main">
+    <article class="p360-card p360-timeline">
+      <div class="p360-card-head"><div><h2>Timeline عملکرد</h2><p>۹۰ روز اخیر</p></div></div>
+      <div class="p360-events">
+      {% for e in events %}
+        <div class="p360-event {{ e.type }}"><span class="event-icon">{{ e.icon }}</span><div><strong>{{ e.title }}</strong><p>{{ e.text|default:'—' }}</p><small>{{ e.date|jdate }}</small></div></div>
+      {% empty %}<p class="muted">رویدادی ثبت نشده است.</p>{% endfor %}
+      </div>
+    </article>
+
+    <div class="p360-side-stack">
+      <article class="p360-card">
+        <div class="p360-card-head"><div><h2>اهداف فعال</h2><p>پیشرفت اهداف فردی</p></div></div>
+        {% for g in goals %}
+        <div class="p360-goal">
+          <div><strong>{{ g.title }}</strong><span>{{ g.current_value|fa }} / {{ g.target|fa }}</span></div>
+          <div class="p360-progress"><i style="width:{% widthratio g.current_value g.target 100 %}%"></i></div>
+          <small>{{ g.start_date|jdate }} تا {{ g.end_date|jdate }}</small>
+        </div>
+        {% empty %}<p class="muted">هدف فعالی تعریف نشده است.</p>{% endfor %}
+      </article>
+
+      <article class="p360-card">
+        <div class="p360-card-head"><div><h2>حضورهای اخیر</h2><p>۱۰ رکورد آخر</p></div><a href="/attendance/team/">همه</a></div>
+        {% for a in attendance_recent %}
+        <div class="p360-mini-row"><span>{{ a.date|jdate }}</span><b>{{ a.check_in|date:'H:i'|default:'—' }}</b><em class="{{ a.status }}">{{ a.get_status_display }}</em></div>
+        {% empty %}<p class="muted">رکوردی وجود ندارد.</p>{% endfor %}
+      </article>
+    </div>
+  </section>
+
+  <section class="p360-four-grid">
+    <article class="p360-card">
+      <div class="p360-card-head"><div><h2>گزارش‌های اخیر</h2></div><a href="/reports/">همه</a></div>
+      {% for r in reports_recent %}<a class="p360-list-item" href="/reports/{{ r.id }}/"><div><strong>{{ r.created_at|jdatetime }}</strong><p>{{ r.ai_summary|default:r.text|truncatechars:90 }}</p></div><span>‹</span></a>{% empty %}<p class="muted">گزارشی نیست.</p>{% endfor %}
+    </article>
+
+    <article class="p360-card">
+      <div class="p360-card-head"><div><h2>درخواست‌ها</h2></div></div>
+      {% for x in leaves %}<div class="p360-list-item"><div><strong>{{ x.get_request_type_display }}</strong><p>{{ x.start_date|jdate }} تا {{ x.end_date|jdate }}</p></div><span class="mini-status {{ x.status }}">{{ x.get_status_display }}</span></div>{% empty %}<p class="muted">درخواستی نیست.</p>{% endfor %}
+      {% for x in corrections %}<div class="p360-list-item"><div><strong>اصلاح حضور</strong><p>{{ x.date|jdate }}</p></div><span class="mini-status {{ x.status }}">{{ x.get_status_display }}</span></div>{% endfor %}
+    </article>
+
+    <article class="p360-card">
+      <div class="p360-card-head"><div><h2>خرابی‌های ثبت‌شده</h2></div><a href="/device-issues/manage/">مدیریت</a></div>
+      {% for x in device_issues %}<a class="p360-list-item" href="/device-issues/{{ x.id }}/review/"><div><strong>{{ x.device_name }}</strong><p>{{ x.description|truncatechars:70 }}</p></div><span class="device-status {{ x.status }}">{{ x.get_status_display }}</span></a>{% empty %}<p class="muted">خرابی ثبت‌شده‌ای ندارد.</p>{% endfor %}
+    </article>
+
+    <article class="p360-card">
+      <div class="p360-card-head"><div><h2>مدارک پرسنلی</h2></div><a href="/employees/{{ employee.id }}/file/">پرونده</a></div>
+      {% for d in documents %}<div class="p360-list-item"><div><strong>{{ d.title }}</strong><p>{{ d.get_document_type_display }}{% if d.issue_date %} · {{ d.issue_date|jdate }}{% endif %}</p></div><span>▣</span></div>{% empty %}<p class="muted">مدرکی ثبت نشده است.</p>{% endfor %}
+    </article>
+  </section>
+</div>
+{% endblock %}
