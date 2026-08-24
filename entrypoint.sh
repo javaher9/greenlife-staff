@@ -27,4 +27,4 @@ PY
 python manage.py migrate --noinput
 python manage.py collectstatic --noinput
 python manage.py seed_initial_data
-exec gunicorn greenlife.wsgi:application --bind 0.0.0.0:8000 --workers "${GUNICORN_WORKERS:-3}" --timeout 120
+exec gunicorn greenlife.wsgi:application --bind 0.0.0.0:8005 --workers "${GUNICORN_WORKERS:-3}" --timeout 120

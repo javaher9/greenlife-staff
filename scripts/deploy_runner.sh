@@ -25,6 +25,13 @@ echo "== GreenLife Staff self-hosted deployment =="
 echo "Path: $DEPLOY_PATH"
 echo "NGINX port: ${NGINX_PORT:-8085}"
 
+# The approved production Compose owns PostgreSQL. Start it before the first
+# backup so a clean server can bootstrap without deleting or replacing data.
+if docker compose config --services | grep -qx db; then
+  echo "Ensuring PostgreSQL service is running..."
+  docker compose up -d db
+fi
+
 # Data backup happens before migrations/container replacement.
 ./scripts/backup.sh
 
