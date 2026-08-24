@@ -1335,3 +1335,24 @@ body.gl-manager-dashboard .app-sidebar{
 @supports not (backdrop-filter: blur(2px)){
   .topbar,.app-sidebar{background:#fff!important}
 }
+
+/* =========================================================
+   v32.2 — RTL desktop shell
+   Keep the primary navigation on the right for Persian UI.
+   Tablet/fold layouts are already right-aligned above, while
+   phones continue to use the bottom navigation.
+   ========================================================= */
+@media (min-width:1101px){
+  body.gl-app .app-sidebar{
+    right:0!important;
+    left:auto!important;
+    border-right:0!important;
+    border-left:1px solid var(--gl-line)!important;
+    box-shadow:-8px 0 28px rgba(35,67,54,.035)!important;
+  }
+
+  body.gl-app .app-main{
+    margin:0 245px 0 0!important;
+    width:calc(100% - 245px)!important;
+  }
+}
