@@ -1,0 +1,23 @@
+{
+  "name": "GreenLife Staff",
+  "short_name": "GreenLife",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f9f7",
+  "theme_color": "#15945f",
+  "orientation": "any",
+  "description": "GreenLife Staff Management App",
+  "icons": [
+    {
+      "src": "/static/core/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/core/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

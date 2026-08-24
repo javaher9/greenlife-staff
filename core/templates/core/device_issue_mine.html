@@ -1,0 +1,10 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="hero"><div><h1>گزارش‌های خرابی من</h1><p>وضعیت پیگیری خرابی‌هایی که ثبت کرده‌اید.</p></div><a class="primary" href="/device-issues/new/">+ گزارش خرابی</a></section>
+<section class="panel">
+{% for i in issues %}
+<article class="device-issue-row">
+<div><strong>{{ i.device_name }}</strong><small>{{ i.created_at|jdatetime }}{% if i.branch %} · {{ i.branch }}{% endif %}</small><p>{{ i.description }}</p>{% if i.manager_note %}<div class="device-manager-note"><b>پاسخ/پیگیری:</b> {{ i.manager_note }}</div>{% endif %}</div>
+<span class="device-status {{ i.status }}">{{ i.get_status_display }}</span>
+</article>
+{% empty %}<p class="muted">هنوز خرابی دستگاهی ثبت نکرده‌اید.</p>{% endfor %}
+</section>{% endblock %}

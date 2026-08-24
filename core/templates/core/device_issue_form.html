@@ -1,0 +1,5 @@
+{% extends 'core/base.html' %}{% block content %}
+<div class="device-issue-page">
+<section class="hero device-issue-hero"><div><span class="eyebrow">GREENLIFE SUPPORT</span><h1>گزارش خرابی دستگاه</h1><p>نام دستگاه و مشکل را کوتاه و دقیق ثبت کنید تا برای مدیر و مسئول مربوطه ارسال شود.</p></div><span class="device-issue-big-icon">🛠️</span></section>
+<section class="panel device-issue-form-card"><form method="post">{% csrf_token %}{{ form.as_p }}<div class="device-issue-actions"><button class="primary" type="submit">ارسال گزارش خرابی</button><a class="primary ghost" href="/device-issues/mine/">گزارش‌های من</a></div></form></section>
+</div>{% endblock %}

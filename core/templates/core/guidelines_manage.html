@@ -1,0 +1,7 @@
+{% extends 'core/base.html' %}{% block content %}
+<section class="hero"><div><h1>مدیریت شرح وظایف و دستورالعمل‌ها</h1><p>محتوای سازمانی قابل انتشار برای پرسنل</p></div><div><a class="primary" href="/guidelines/manage/new/">+ دستورالعمل</a> <a class="primary ghost" href="/job-duties/new/">+ شرح وظایف</a></div></section>
+<div class="grid">
+<section class="panel"><div class="sectionhead"><h2>دستورالعمل‌ها</h2></div>{% for g in guidelines %}<div class="row"><strong>{{ g.title }}</strong><span>{{ g.get_audience_display }} · {% if g.is_required %}الزامی{% else %}اختیاری{% endif %}</span></div>{% empty %}<p class="muted">موردی ثبت نشده است.</p>{% endfor %}</section>
+<section class="panel"><div class="sectionhead"><h2>شرح وظایف</h2></div>{% for d in duties %}<div class="row"><strong>{{ d.title }}</strong><span>{{ d.job_title|default:'همه سمت‌ها' }}{% if d.branch %} · {{ d.branch }}{% endif %}</span></div>{% empty %}<p class="muted">موردی ثبت نشده است.</p>{% endfor %}</section>
+</div>
+{% endblock %}

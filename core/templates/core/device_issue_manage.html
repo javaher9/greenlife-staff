@@ -1,0 +1,12 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="hero"><div><h1>مدیریت خرابی دستگاه‌ها</h1><p>گزارش‌های پرسنل و وضعیت رسیدگی</p></div><div class="device-filter"><a href="/device-issues/manage/">همه</a><a href="?status=new">جدید</a><a href="?status=reviewing">در حال بررسی</a><a href="?status=resolved">رفع شده</a></div></section>
+<section class="panel"><div class="device-manage-grid">
+{% for i in issues %}
+<a class="device-manage-card" href="/device-issues/{{ i.id }}/review/">
+<div class="device-manage-top"><span class="device-tool-icon">🛠</span><span class="device-status {{ i.status }}">{{ i.get_status_display }}</span></div>
+<h3>{{ i.device_name }}</h3>
+<p>{{ i.description|truncatechars:140 }}</p>
+<small>{{ i.reporter.get_full_name|default:i.reporter.username }}{% if i.branch %} · {{ i.branch }}{% endif %} · {{ i.created_at|jdatetime }}</small>
+</a>
+{% empty %}<p class="muted">گزارشی وجود ندارد.</p>{% endfor %}
+</div></section>{% endblock %}

@@ -1,0 +1,50 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<div class="ac-page">
+  <section class="ac-hero">
+    <div>
+      <span class="eyebrow">GREENLIFE ACTION CENTER</span>
+      <h1>مرکز اقدام مدیر</h1>
+      <p>{{ today|jdate }} · همه مواردی که امروز نیاز به تصمیم یا پیگیری دارند.</p>
+    </div>
+    <a class="primary ghost" href="/live/">بازگشت به داشبورد مدیریت</a>
+  </section>
+
+  <section class="ac-stats">
+    <a href="/action-center/"><small>کل موارد</small><strong>{{ counts.all }}</strong><span>صف عملیاتی</span></a>
+    <a href="?priority=critical" class="critical"><small>فوری</small><strong>{{ counts.critical }}</strong><span>اقدام مستقیم</span></a>
+    <a href="?priority=high" class="high"><small>مهم</small><strong>{{ counts.high }}</strong><span>اولویت بالا</span></a>
+    <a href="?priority=medium"><small>پیگیری</small><strong>{{ counts.medium }}</strong><span>اولویت متوسط</span></a>
+    <a href="/employees/"><small>افراد درگیر</small><strong>{{ counts.people }}</strong><span>پرسنل</span></a>
+  </section>
+
+  <section class="ac-panel">
+    <div class="ac-toolbar">
+      <div><h2>صف اقدامات</h2><p>روی هر مورد بزنید و همان جریان بررسی را باز کنید.</p></div>
+      <div class="ac-filters">
+        <a href="/action-center/" class="{% if not priority_filter and not kind_filter %}active{% endif %}">همه</a>
+        <a href="?kind=correction">اصلاح حضور</a>
+        <a href="?kind=leave">مرخصی</a>
+        <a href="?kind=device">خرابی دستگاه</a>
+        <a href="?kind=task">Task</a>
+        <a href="?kind=report">گزارش</a>
+      </div>
+    </div>
+
+    <div class="ac-list">
+      {% for item in items %}
+      <a class="ac-item {{ item.priority }}" href="{{ item.url }}">
+        <span class="ac-icon">{{ item.icon }}</span>
+        <div class="ac-main">
+          <div class="ac-title-row"><strong>{{ item.title }}</strong><span class="ac-priority {{ item.priority }}">{% if item.priority == 'critical' %}فوری{% elif item.priority == 'high' %}مهم{% elif item.priority == 'medium' %}پیگیری{% else %}عادی{% endif %}</span></div>
+          <p>{{ item.subtitle }}</p>
+          {% if item.user %}<small>{{ item.user.get_full_name|default:item.user.username }}{% if item.user.profile.branch %} · {{ item.user.profile.branch }}{% endif %}</small>{% endif %}
+        </div>
+        <span class="ac-open">باز کردن ‹</span>
+      </a>
+      {% empty %}
+      <div class="ac-empty"><span>✓</span><strong>مورد بازی باقی نمانده</strong><p>صف اقدام با فیلتر فعلی خالی است.</p></div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -902,7 +902,7 @@ def internal_requests(request):
 
 @login_required
 def internal_request_add(request):
-    form=InternalRequestForm, ManagementEventForm(request.POST or None)
+    form=InternalRequestForm(request.POST or None)
     if request.method=='POST' and form.is_valid():
         x=form.save(commit=False); x.requester=request.user; x.save(); return redirect('internal_requests')
     return render(request,'core/generic_form.html',{'form':form,'title':'درخواست داخلی جدید','button':'ارسال درخواست'})

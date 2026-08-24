@@ -1,0 +1,5 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="hero"><div><h1>{{ issue.device_name }}</h1><p>{{ issue.reporter.get_full_name|default:issue.reporter.username }} · {{ issue.created_at|jdatetime }}</p></div><span class="device-status {{ issue.status }}">{{ issue.get_status_display }}</span></section>
+<section class="panel"><h3>شرح خرابی</h3><p>{{ issue.description|linebreaksbr }}</p></section>
+<section class="panel"><div class="sectionhead"><h2>پیگیری</h2></div><form method="post">{% csrf_token %}{{ form.as_p }}<button class="primary" type="submit">ذخیره وضعیت</button></form></section>
+{% endblock %}

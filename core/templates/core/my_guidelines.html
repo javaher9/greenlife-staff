@@ -1,0 +1,27 @@
+{% extends 'core/base.html' %}{% block content %}
+<div class="guideline-page">
+<section class="hero"><div><h1>شرح وظایف و دستورالعمل‌های من</h1><p>موارد مربوط به سمت و شعبه شما</p></div>{% if user.profile.role != 'employee' %}<a class="primary ghost" href="/guidelines/manage/">مدیریت محتوا</a>{% endif %}</section>
+
+<section class="panel">
+<div class="sectionhead"><h2>شرح وظایف من</h2></div>
+{% for d in duties %}
+<article class="guideline-card duty"><h3>{{ d.title }}</h3><p>{{ d.description|linebreaksbr }}</p></article>
+{% empty %}<p class="muted">شرح وظایفی برای سمت شما ثبت نشده است.</p>{% endfor %}
+</section>
+
+<section class="panel">
+<div class="sectionhead"><h2>دستورالعمل‌ها</h2></div>
+{% for g in guidelines %}
+<article class="guideline-card">
+  <div class="guideline-head"><div><h3>{{ g.title }}</h3><small>{{ g.get_audience_display }}</small></div>{% if g.is_required %}<span class="required-pill">مطالعه الزامی</span>{% endif %}</div>
+  <p>{{ g.body|linebreaksbr }}</p>
+  {% if g.id in ack_ids %}
+    <span class="ack-done">✓ مطالعه و تأیید شده</span>
+  {% else %}
+    <form method="post" action="/guidelines/{{ g.id }}/ack/">{% csrf_token %}<button class="primary" type="submit">مطالعه کردم و تأیید می‌کنم</button></form>
+  {% endif %}
+</article>
+{% empty %}<p class="muted">دستورالعمل فعالی برای شما وجود ندارد.</p>{% endfor %}
+</section>
+</div>
+{% endblock %}
