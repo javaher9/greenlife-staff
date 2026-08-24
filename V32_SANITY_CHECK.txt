@@ -1,0 +1,4 @@
+Python syntax: OK
+Named URL references missing: NONE
+Important routes expected: dashboard, branch_live_dashboard, action_center, device_issue_manage
+Present: dashboard, branch_live_dashboard, action_center, device_issue_manage

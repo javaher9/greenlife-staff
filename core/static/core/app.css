@@ -1157,3 +1157,181 @@ body:has(.ref-dashboard) .sidebar a:hover{
   .app-nav>a>span:last-child,.app-nav>button>span:last-child{font-size:7px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;max-width:100%}
   .app-main{padding-bottom:94px!important}
 }
+
+/* v32.0 stability footer */
+.gl-version-footer{
+  text-align:center;
+  font-size:8px;
+  color:#98a39e;
+  padding:18px 8px 92px;
+  user-select:text;
+}
+.gl-version-footer strong{color:#5f7168;font-weight:800}
+@media(min-width:901px){
+  .gl-version-footer{padding-bottom:18px}
+}
+
+/* =========================================================
+   v32.1 — Fold / Tablet Responsive Compatibility Fix
+   ========================================================= */
+
+/* Explicit dashboard class for browsers with partial :has() behavior */
+body.gl-manager-dashboard .app-main{
+  background:#f6f9f7!important;
+}
+body.gl-manager-dashboard .content-shell{
+  max-width:none!important;
+  padding:18px 18px 28px!important;
+}
+body.gl-manager-dashboard .topbar{
+  background:rgba(255,255,255,.94)!important;
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid #edf1ef!important;
+  box-shadow:none!important;
+}
+body.gl-manager-dashboard .app-sidebar{
+  background:#fff!important;
+  border-color:#e9efec!important;
+}
+
+/*
+  Critical fix:
+  v31 converted every screen <=900px into phone bottom navigation.
+  Fold-unfolded and many tablets live around 650-900 CSS px.
+  Restore tablet/desktop shell from 640px upward.
+*/
+@media (min-width:640px) and (max-width:1100px){
+  body.gl-app .app-sidebar{
+    position:fixed!important;
+    top:0!important;
+    bottom:0!important;
+    right:0!important;
+    left:auto!important;
+    width:190px!important;
+    height:100dvh!important;
+    min-height:100vh!important;
+    border-radius:0!important;
+    border-left:1px solid var(--gl-line)!important;
+    border-top:0!important;
+    box-shadow:-5px 0 24px rgba(28,62,49,.035)!important;
+    padding-bottom:12px!important;
+    overflow-y:auto!important;
+  }
+
+  body.gl-app .app-nav{
+    display:block!important;
+    height:auto!important;
+    overflow:visible!important;
+    padding:8px!important;
+  }
+
+  body.gl-app .app-nav>a,
+  body.gl-app .app-nav>button{
+    width:100%!important;
+    height:auto!important;
+    min-height:42px!important;
+    margin:2px 0!important;
+    padding:9px 10px!important;
+    display:flex!important;
+    flex-direction:row!important;
+    justify-content:flex-start!important;
+    align-items:center!important;
+    gap:9px!important;
+    border-radius:12px!important;
+  }
+
+  body.gl-app .app-nav .nav-ico{
+    width:26px!important;
+    min-width:26px!important;
+    font-size:16px!important;
+  }
+
+  body.gl-app .app-nav>a>span:last-child,
+  body.gl-app .app-nav>button>span:last-child{
+    display:inline!important;
+    font-size:8px!important;
+    max-width:none!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+    white-space:normal!important;
+  }
+
+  body.gl-app .app-main{
+    margin-right:190px!important;
+    padding-bottom:24px!important;
+    min-height:100vh!important;
+  }
+
+  body.gl-app .topbar{
+    right:190px!important;
+    width:auto!important;
+  }
+
+  body.gl-manager-dashboard .content-shell{
+    padding:14px 14px 24px!important;
+  }
+
+  /* Fold/tablet dashboard should remain wide, not stack like a phone */
+  .ref-dashboard{
+    max-width:none!important;
+    width:100%!important;
+  }
+
+  .ref-kpis{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  }
+
+  .ref-mid{
+    grid-template-columns:1fr 1.45fr!important;
+  }
+
+  .ref-mid > .donut-card{
+    grid-column:1/-1!important;
+  }
+
+  .ref-bottom{
+    grid-template-columns:1fr 1fr!important;
+  }
+
+  .staff-table-card{
+    grid-column:1/-1!important;
+  }
+
+  .internal-manager-strip{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+
+  .ref-card{
+    min-width:0!important;
+  }
+}
+
+/* Only truly small phones get bottom navigation */
+@media (max-width:639px){
+  body.gl-app .app-sidebar{
+    position:fixed!important;
+    left:10px!important;
+    right:10px!important;
+    bottom:8px!important;
+    top:auto!important;
+    width:auto!important;
+    height:68px!important;
+    border-radius:20px!important;
+  }
+  body.gl-app .app-main{
+    margin-right:0!important;
+    padding-bottom:94px!important;
+  }
+}
+
+/* Samsung Internet / fold width changes: prevent stale fixed width overflow */
+@media (orientation:landscape) and (min-width:640px){
+  html,body{max-width:100%;overflow-x:hidden}
+  .content-shell,.ref-dashboard,.panel,.hero{min-width:0}
+}
+
+/* Avoid unsupported visual effects becoming layout-critical */
+@supports not (backdrop-filter: blur(2px)){
+  .topbar,.app-sidebar{background:#fff!important}
+}

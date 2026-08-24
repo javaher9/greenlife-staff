@@ -94,7 +94,7 @@ def logout_view(request): logout(request); return redirect('login')
 def dashboard(request):
     role=role_of(request.user)
     if role in ('admin','manager'):
-        return redirect('branch_live')
+        return redirect('branch_live_dashboard')
     user_tasks=Task.objects.filter(assigned_to=request.user)
     tasks=user_tasks.order_by('status','due_date')[:8]
     profile=getattr(request.user,'profile',None)
@@ -1620,23 +1620,24 @@ def action_center(request):
 
     users=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
     if role=='manager':
-        users=users.filter(profile__branch=profile.branch)
-
+        users=users.filter(profile__branch=getattr(profile,'branch',None))
     user_ids=list(users.values_list('id',flat=True))
+
     items=[]
 
     def add_item(kind,priority,title,subtitle,user=None,url='#',created_at=None,icon='•',meta=None):
         rank={'critical':0,'high':1,'medium':2,'low':3}.get(priority,4)
+        dt=created_at or timezone.now()
+        if not hasattr(dt,'timestamp'):
+            dt=timezone.now()
         items.append({
             'kind':kind,'priority':priority,'rank':rank,
             'title':title,'subtitle':subtitle,'user':user,
-            'url':url,'created_at':created_at or timezone.now(),
-            'icon':icon,'meta':meta or {},
+            'url':url,'created_at':dt,'icon':icon,'meta':meta or {},
         })
 
     # Pending leave requests
-    leave_qs=LeaveRequest.objects.filter(user_id__in=user_ids,status='pending').select_related('user','user__profile','user__profile__branch')
-    for x in leave_qs:
+    for x in LeaveRequest.objects.filter(user_id__in=user_ids,status='pending').select_related('user','user__profile','user__profile__branch'):
         add_item(
             'leave','medium','درخواست مرخصی/ماموریت',
             f'{x.get_request_type_display()} · {format_jalali(x.start_date)} تا {format_jalali(x.end_date)}',
@@ -1644,21 +1645,20 @@ def action_center(request):
         )
 
     # Pending attendance corrections
-    correction_qs=AttendanceCorrectionRequest.objects.filter(user_id__in=user_ids,status='pending').select_related('user','user__profile')
-    for x in correction_qs:
+    for x in AttendanceCorrectionRequest.objects.filter(user_id__in=user_ids,status='pending').select_related('user','user__profile'):
         add_item(
             'correction','high','درخواست اصلاح حضور',
-            f'{format_jalali(x.date)} · {x.reason[:90]}',
+            f'{format_jalali(x.date)} · {(x.reason or "")[:90]}',
             x.user,f'/attendance/corrections/{x.pk}/review/',x.created_at,'◷'
         )
 
-    # Device issues not resolved
-    device_qs=DeviceIssue.objects.filter(reporter_id__in=user_ids).exclude(status='resolved').select_related('reporter','branch')
-    for x in device_qs:
-        priority='high' if x.status=='new' else 'medium'
+    # Open device issues
+    for x in DeviceIssue.objects.filter(reporter_id__in=user_ids).exclude(status='resolved').select_related('reporter','branch'):
         add_item(
-            'device',priority,f'خرابی دستگاه: {x.device_name}',
-            x.description[:110],x.reporter,f'/device-issues/{x.pk}/review/',x.created_at,'⚒',
+            'device','high' if x.status=='new' else 'medium',
+            f'خرابی دستگاه: {x.device_name}',
+            (x.description or '')[:110],
+            x.reporter,f'/device-issues/{x.pk}/review/',x.created_at,'⚒',
             {'status':x.get_status_display()}
         )
 
@@ -1670,24 +1670,30 @@ def action_center(request):
     ).select_related('assigned_to','assigned_to__profile')
     for x in overdue_qs:
         days=(day-x.due_date).days if x.due_date else 0
-        priority='high' if days>=3 else 'medium'
         add_item(
-            'task',priority,'وظیفه عقب‌افتاده',
+            'task','high' if days>=3 else 'medium',
+            'وظیفه عقب‌افتاده',
             f'{x.title} · {days} روز تأخیر',
-            x.assigned_to,f'/employees/{x.assigned_to.profile.pk}/360/',timezone.make_aware(datetime.combine(x.due_date,datetime.min.time())) if x.due_date else timezone.now(),'✓',
-            {'days':days}
+            x.assigned_to,
+            f'/employees/{x.assigned_to.profile.pk}/360/' if hasattr(x.assigned_to,'profile') else '/tasks/',
+            timezone.now(),'✓',{'days':days}
         )
 
-    # Attendance exceptions today, but ignore approved leave
+    # Attendance exceptions today
     recs={r.user_id:r for r in Attendance.objects.filter(user_id__in=user_ids,date=day).select_related('user')}
     approved_leave_ids=set(LeaveRequest.objects.filter(
         user_id__in=user_ids,status='approved',start_date__lte=day,end_date__gte=day
     ).values_list('user_id',flat=True))
+
     for u in users:
         if u.id in approved_leave_ids:
             continue
         rec=recs.get(u.id)
-        shift=shift_rule(u,day)
+        try:
+            shift=shift_rule(u,day) or {}
+        except Exception:
+            shift={}
+
         if rec and rec.check_in:
             current_status=attendance_status_for(u,day,rec.check_in)
             if current_status=='late':
@@ -1703,7 +1709,6 @@ def action_center(request):
                     {'late_minutes':late_mins}
                 )
         else:
-            # Don't call it absence early if shift start is still in future.
             is_due=True
             if shift.get('start'):
                 due_dt=timezone.make_aware(datetime.combine(day,shift['start']),timezone.get_current_timezone())
@@ -1712,18 +1717,27 @@ def action_center(request):
                 add_item(
                     'missing_attendance','critical','ورود امروز ثبت نشده',
                     'از زمان شروع شیفت گذشته و ورود ثبت نشده است.',
-                    u,f'/employees/{u.profile.pk}/360/',timezone.now(),'!',
+                    u,f'/employees/{u.profile.pk}/360/',timezone.now(),'!'
                 )
 
-    # Missing daily report after end-of-day threshold is intentionally not guessed.
-    # Show missing report only for past required day (yesterday), avoiding false alerts during current day.
+    # Missing report from yesterday, computed directly from DailyReport to avoid helper coupling.
     yesterday=day-timedelta(days=1)
+    submitted_ids=set(DailyReport.objects.filter(
+        user_id__in=user_ids,
+        created_at__date=yesterday
+    ).values_list('user_id',flat=True))
     for u in users:
-        if report_required(u,yesterday) and not report_exists(u,yesterday):
+        # Only create the alert when the user had an expected workday.
+        try:
+            shift=shift_rule(u,yesterday) or {}
+            should_report=bool(shift) and not shift.get('is_off',False)
+        except Exception:
+            should_report=True
+        if should_report and u.id not in submitted_ids:
             add_item(
                 'report','medium','گزارش روزانه ارسال نشده',
                 f'گزارش {format_jalali(yesterday)} ثبت نشده است.',
-                u,f'/employees/{u.profile.pk}/360/',timezone.make_aware(datetime.combine(yesterday,datetime.max.time().replace(microsecond=0))),'▤'
+                u,f'/employees/{u.profile.pk}/360/',timezone.now(),'▤'
             )
 
     items.sort(key=lambda x:(x['rank'],-x['created_at'].timestamp()))
@@ -1751,9 +1765,6 @@ def action_center(request):
         'today':day,
     })
 
-
-from django.http import HttpResponse
-
 @login_required
 def service_worker(request):
-    return HttpResponse("const CACHE='greenlife-staff-v31';\nconst STATIC=[\n  '/static/core/app.css',\n  '/static/core/icon-192.png',\n  '/static/core/icon-512.png',\n  '/static/core/manifest.webmanifest'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
+    return HttpResponse("const CACHE='greenlife-staff-v32.1';\nconst STATIC=[\n  '/static/core/app.css',\n  '/static/core/icon-192.png',\n  '/static/core/icon-512.png',\n  '/static/core/manifest.webmanifest'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
