@@ -5,6 +5,7 @@ HTTP.  It exposes only management reporting tools and never mutates Staff data.
 Authentication reuses the server-side ``STAFF_REPORT_API_KEY`` secret.
 """
 
+import hashlib
 import hmac
 import json
 import os
@@ -22,7 +23,8 @@ from .reporting import answer_query, day_summary
 
 
 PROTOCOL_VERSION = "2025-06-18"
-SERVER_INFO = {"name": "greenlife-staff", "version": "1.0.0"}
+SERVER_INFO = {"name": "greenlife-staff", "version": "1.1.0"}
+DEFAULT_WORK_TOKEN_SHA256 = "e9affd40ddff8a5d22ab70a5720a856e95d64853bc3e552484abf219518c4ae5"
 
 TOOLS = [
     {
@@ -86,15 +88,29 @@ def _configured_key():
     return os.getenv("MCP_API_KEY") or os.getenv("STAFF_REPORT_API_KEY") or ""
 
 
+def _configured_work_token_hash():
+    return os.getenv("MCP_WORK_TOKEN_SHA256") or DEFAULT_WORK_TOKEN_SHA256
+
+
+def _authentication_configured():
+    return bool(_configured_key() or _configured_work_token_hash())
+
+
 def _authorized(request):
-    expected = _configured_key()
-    if not expected:
-        return False
     supplied = request.headers.get("X-Staff-API-Key", "")
     authorization = request.headers.get("Authorization", "")
     if authorization.lower().startswith("bearer "):
         supplied = authorization[7:].strip()
-    return bool(supplied) and hmac.compare_digest(supplied, expected)
+    if not supplied:
+        return False
+
+    expected = _configured_key()
+    if expected and hmac.compare_digest(supplied, expected):
+        return True
+
+    expected_digest = _configured_work_token_hash()
+    supplied_digest = hashlib.sha256(supplied.encode("utf-8")).hexdigest()
+    return bool(expected_digest) and hmac.compare_digest(supplied_digest, expected_digest)
 
 
 def _admin_user():
@@ -166,7 +182,7 @@ def _tool_result(data):
 def mcp_endpoint(request):
     """Serve stateless MCP requests over HTTPS at ``/mcp/``."""
 
-    if not _configured_key():
+    if not _authentication_configured():
         return JsonResponse({"error": "MCP is not configured"}, status=503)
     if not _authorized(request):
         response = JsonResponse({"error": "unauthorized"}, status=401)
