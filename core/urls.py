@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import camp_views
+from .mcp import mcp_endpoint
 urlpatterns=[path('service-worker.js',views.service_worker,name='service_worker'),path('camp/',camp_views.camp_dashboard,name='camp_dashboard'),
 path('camp/purchases/',camp_views.purchase_list,name='camp_purchase_list'),
 path('camp/purchases/new/',camp_views.purchase_create,name='camp_purchase_create'),
@@ -24,7 +25,7 @@ path('camp/photos/new/',camp_views.photo_create,name='camp_photo_create'),
 path('camp/reports/',camp_views.reports,name='camp_reports'),
 path('camp/commander/',camp_views.commander,name='camp_commander'),
 path('camp/api/summary/',camp_views.camp_api_summary,name='camp_api_summary'),path('camp/demo/seed/',camp_views.seed_demo,name='camp_seed_demo'),path('ceo-score/',views.ceo_score_view,name='ceo_score'),path('trends/',views.trend_dashboard,name='trend_dashboard'),path('calendar/',views.management_calendar,name='management_calendar'),path('calendar/new/',views.management_event_add,name='management_event_add'),path('audit/',views.audit_log_view,name='audit_log'),path('api/ceo-score/',views.ceo_score_api,name='ceo_score_api'),path('brief/',views.morning_brief,name='morning_brief'),path('command/',views.command_center,name='command_center'),path('action-center/',views.action_center,name='action_center'),path('employees/<int:pk>/360/',views.employee_360,name='employee_360'),path('employees/<int:pk>/action/',views.personnel_action_add,name='personnel_action_add'),path('actions/<int:pk>/ack/',views.personnel_action_ack,name='personnel_action_ack'),path('goals/',views.goals,name='goals'),path('goals/new/',views.goal_add,name='goal_add'),path('service-requests/',views.internal_requests,name='internal_requests'),path('service-requests/new/',views.internal_request_add,name='internal_request_add'),
-path('api/health/',views.health_check,name='health_check'),path('api/attendance/today/',views.attendance_api_today,name='attendance_api_today'),
+path('mcp/',mcp_endpoint,name='mcp_endpoint'),path('api/health/',views.health_check,name='health_check'),path('api/attendance/today/',views.attendance_api_today,name='attendance_api_today'),
 path('api/management/attendance/summary/',views.management_attendance_summary_api,name='management_attendance_summary_api'),path('api/management/query/',views.management_query_api,name='management_query_api'),path('api/management/finance/summary/',views.management_finance_summary_api,name='management_finance_summary_api'),
 
 path('api/management/employee/status/',views.management_employee_status_api,name='management_employee_status_api'),
