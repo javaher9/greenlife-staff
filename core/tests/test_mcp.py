@@ -1,3 +1,4 @@
+import hashlib
 import json
 from unittest.mock import patch
 
@@ -27,6 +28,25 @@ class MCPServerTests(SimpleTestCase):
         response = self.post({"jsonrpc": "2.0", "id": 1, "method": "initialize"})
         self.assertEqual(response.status_code, 401)
         self.assertIn("Bearer", response["WWW-Authenticate"])
+
+    def test_accepts_hashed_work_token(self):
+        token = "test-work-token"
+        digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
+        with patch.dict(
+            "os.environ",
+            {
+                "MCP_API_KEY": "",
+                "STAFF_REPORT_API_KEY": "",
+                "MCP_WORK_TOKEN_SHA256": digest,
+            },
+            clear=False,
+        ):
+            response = self.post(
+                {"jsonrpc": "2.0", "id": 10, "method": "initialize", "params": {}},
+                key=token,
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["result"]["serverInfo"]["version"], "1.1.0")
 
     @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
     def test_initialize(self):
