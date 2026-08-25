@@ -1,1 +1,39 @@
-{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}<section class="panel"><h1>شرح وظایف و دستورالعمل‌ها</h1>{% for d in documents %}<article class="document"><h3>{{ d.title }}</h3>{% if d.description %}<p>{{ d.description }}</p>{% endif %}{% if d.content %}<div class="docbody">{{ d.content|linebreaksbr }}</div>{% endif %}{% if d.file %}<a class="primary" href="{{ d.file.url }}">مشاهده فایل</a>{% endif %}</article>{% empty %}<p class="muted">هنوز سندی برای سمت شما ثبت نشده است.</p>{% endfor %}</section>{% endblock %}
+{% extends 'core/base.html' %}{% load jalali_tags %}
+{% block content %}
+<div class="gl-page-shell-v36 gl-sop-page-v36">
+  <section class="gl-page-hero-v36">
+    <div class="gl-page-hero-copy-v36">
+      <span class="gl-page-eyebrow-v36">GREENLIFE LEARNING</span>
+      <h1>آموزش و دستورالعمل‌ها</h1>
+      <p>اسناد آموزشی و دستورالعمل‌های مرتبط با شعبه و سمت شما در این بخش قرار می‌گیرند.</p>
+    </div>
+    <span class="gl-hero-symbol-v36">◇</span>
+  </section>
+
+  <section class="gl-content-card-v36">
+    <div class="gl-card-heading-v36">
+      <div><h2>کتابخانه من</h2><p>{{ documents|length }} سند در دسترس شماست.</p></div>
+      <span class="gl-heading-icon-v36">▤</span>
+    </div>
+    <div class="gl-document-grid-v36">
+      {% for d in documents %}
+      <article class="gl-document-v36">
+        <span class="gl-document-icon-v36">▤</span>
+        <div>
+          <h3>{{ d.title }}</h3>
+          {% if d.description %}<p>{{ d.description }}</p>{% endif %}
+          {% if d.content %}<div class="gl-document-body-v36">{{ d.content|linebreaksbr }}</div>{% endif %}
+        </div>
+        {% if d.file %}<a class="gl-button-v36 gl-button-secondary-v36" href="{{ d.file.url }}">مشاهده فایل <b>↗</b></a>{% endif %}
+      </article>
+      {% empty %}
+      <div class="gl-empty-state-v36 gl-empty-wide-v36">
+        <span>▤</span>
+        <h2>هنوز سندی منتشر نشده</h2>
+        <p>به محض ثبت آموزش یا دستورالعمل مرتبط با سمت شما، اینجا نمایش داده می‌شود.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

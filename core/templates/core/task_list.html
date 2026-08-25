@@ -1,1 +1,44 @@
-{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}<section class="panel"><div class="sectionhead"><h1>وظایف من</h1>{% if can_manage %}<a class="primary" href="/tasks/new/">تعریف وظیفه</a>{% endif %}</div>{% for t in tasks %}<a class="task" href="/tasks/{{ t.id }}/"><div><strong>{{ t.title }}</strong><small>{{ t.description|truncatechars:100 }}</small></div><span class="badge {{ t.status }}">{{ t.get_status_display }}</span></a>{% empty %}<p class="muted">وظیفه‌ای ندارید.</p>{% endfor %}</section>{% endblock %}
+{% extends 'core/base.html' %}{% load jalali_tags %}
+{% block content %}
+<div class="gl-page-shell-v36 gl-task-page-v36">
+  <section class="gl-page-hero-v36">
+    <div class="gl-page-hero-copy-v36">
+      <span class="gl-page-eyebrow-v36">GREENLIFE WORKSPACE</span>
+      <h1>وظایف من</h1>
+      <p>کارهای جاری، مهلت انجام و وضعیت هر وظیفه را یک‌جا پیگیری کنید.</p>
+    </div>
+    <div class="gl-page-hero-side-v36">
+      <span class="gl-page-count-v36"><b>{{ tasks|length }}</b><small>وظیفه</small></span>
+      {% if can_manage %}<a class="gl-button-v36" href="/tasks/new/"><b>＋</b> تعریف وظیفه</a>{% endif %}
+    </div>
+  </section>
+
+  <section class="gl-content-card-v36">
+    <div class="gl-card-heading-v36">
+      <div><h2>فهرست وظایف</h2><p>برای مشاهده جزئیات یا تغییر وضعیت، روی هر مورد بزنید.</p></div>
+      <span class="gl-heading-icon-v36">✓</span>
+    </div>
+    <div class="gl-task-list-v36">
+      {% for t in tasks %}
+      <a class="gl-task-item-v36 status-{{ t.status }}" href="/tasks/{{ t.id }}/">
+        <span class="gl-task-state-v36">{% if t.status == 'done' %}✓{% elif t.status == 'doing' %}◌{% else %}○{% endif %}</span>
+        <div class="gl-task-copy-v36">
+          <strong>{{ t.title }}</strong>
+          <p>{{ t.description|default:'بدون توضیحات'|truncatechars:120 }}</p>
+          <small>{{ t.get_priority_display }}{% if t.due_date %} · مهلت {{ t.due_date|jdate }}{% endif %}</small>
+        </div>
+        <span class="gl-status-pill-v36 {{ t.status }}">{{ t.get_status_display }}</span>
+        <span class="gl-row-arrow-v36">‹</span>
+      </a>
+      {% empty %}
+      <div class="gl-empty-state-v36">
+        <span>✓</span>
+        <h2>همه‌چیز مرتب است</h2>
+        <p>در حال حاضر وظیفه‌ای برای شما ثبت نشده است.</p>
+        {% if can_manage %}<a class="gl-button-v36" href="/tasks/new/">تعریف اولین وظیفه</a>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

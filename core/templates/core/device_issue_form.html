@@ -1,5 +1,49 @@
-{% extends 'core/base.html' %}{% block content %}
-<div class="device-issue-page">
-<section class="hero device-issue-hero"><div><span class="eyebrow">GREENLIFE SUPPORT</span><h1>گزارش خرابی دستگاه</h1><p>نام دستگاه و مشکل را کوتاه و دقیق ثبت کنید تا برای مدیر و مسئول مربوطه ارسال شود.</p></div><span class="device-issue-big-icon">🛠️</span></section>
-<section class="panel device-issue-form-card"><form method="post">{% csrf_token %}{{ form.as_p }}<div class="device-issue-actions"><button class="primary" type="submit">ارسال گزارش خرابی</button><a class="primary ghost" href="/device-issues/mine/">گزارش‌های من</a></div></form></section>
-</div>{% endblock %}
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="gl-page-shell-v36 gl-device-page-v36">
+  <section class="gl-page-hero-v36 gl-device-hero-v36">
+    <div class="gl-page-hero-copy-v36">
+      <span class="gl-page-eyebrow-v36">GREENLIFE SUPPORT</span>
+      <h1>گزارش خرابی دستگاه</h1>
+      <p>نام دستگاه و شرح دقیق مشکل را ثبت کنید تا گزارش مستقیم برای مدیر و مسئول مربوطه ارسال شود.</p>
+    </div>
+    <span class="gl-hero-symbol-v36 gl-device-symbol-v36">🛠</span>
+  </section>
+
+  <div class="gl-device-layout-v36">
+    <section class="gl-content-card-v36 gl-form-card-v36">
+      <div class="gl-card-heading-v36">
+        <div><h2>مشخصات خرابی</h2><p>هرچه توضیحات دقیق‌تر باشد، رسیدگی سریع‌تر انجام می‌شود.</p></div>
+        <span class="gl-heading-icon-v36">⚒</span>
+      </div>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="gl-form-field-v36 {% if field.name == 'description' %}gl-form-field-wide-v36{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<b>*</b>{% endif %}</label>
+          {{ field }}
+          {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+          {% for error in field.errors %}<span class="gl-field-error-v36">{{ error }}</span>{% endfor %}
+        </div>
+        {% endfor %}
+        {% if form.non_field_errors %}<div class="gl-field-error-v36">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="gl-device-actions-v36">
+          <button class="gl-button-v36" type="submit"><span>ارسال گزارش خرابی</span><b>←</b></button>
+          <a class="gl-button-v36 gl-button-secondary-v36" href="/device-issues/mine/">گزارش‌های من</a>
+        </div>
+      </form>
+    </section>
+
+    <section class="gl-support-tips-v36">
+      <span class="gl-tip-icon-v36">!</span>
+      <h2>قبل از ارسال</h2>
+      <ul>
+        <li>نام یا محل دستگاه را مشخص کنید.</li>
+        <li>نشانه‌های خرابی و زمان شروع آن را بنویسید.</li>
+        <li>اگر استفاده خطرناک است، دستگاه را خاموش نگه دارید.</li>
+      </ul>
+      <small>وضعیت پیگیری از بخش «گزارش‌های من» قابل مشاهده است.</small>
+    </section>
+  </div>
+</div>
+{% endblock %}

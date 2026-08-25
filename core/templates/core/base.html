@@ -4,18 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>GreenLife Staff</title>
-  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v35.1">
+  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v36">
 
-<link rel="manifest" href="/static/core/manifest.webmanifest?v=v35.1">
+<link rel="manifest" href="/static/core/manifest.webmanifest?v=v36">
 <meta name="theme-color" content="#15945f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GreenLife Staff">
-<link rel="apple-touch-icon" href="/static/core/icon-192.png?v=v35.1">
+<link rel="apple-touch-icon" href="/static/core/icon-192.png?v=v36">
 
 </head>
-<body class="gl-app gl-premium-dark {% if user.is_authenticated %}gl-authenticated{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
+<body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
 <div class="mobile-more-backdrop" hidden></div>
 <aside class="app-sidebar">
   <div class="brand brand-premium">
@@ -31,21 +31,21 @@
     </a>
     {% endif %}
     {% if user.profile.role == 'employee' %}
-    <a href="/tasks/" class="employee-tasks-nav"><span class="nav-ico">✓</span><span>وظایف</span></a>
+    <a href="/tasks/" class="employee-tasks-nav {% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>وظایف</span></a>
     {% endif %}
     {% if user.profile.role != 'employee' %}<a href="/live/"><span class="nav-ico">⌘</span><span>{% if user.profile.role == "manager" %}مدیریت شعبه{% else %}پنل مدیریتی{% endif %}</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/action-center/"><span class="nav-ico">⚡</span><span>مرکز اقدام</span></a>{% endif %}
     <a href="/employees/"><span class="nav-ico">♙</span><span>پرسنل</span></a>
     <a href="/attendance/" class="{% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور و غیاب</span></a>
     {% if user.profile.role != 'employee' %}<a href="/kpi/"><span class="nav-ico">◎</span><span>عملکرد و KPI</span></a>{% endif %}
-    <a href="/sop/"><span class="nav-ico">◇</span><span>آموزش</span></a>
-    <a href="/guidelines/"><span class="nav-ico">▤</span><span>شرح وظایف و دستورالعمل‌ها</span></a>
+    <a href="/sop/" class="{% if request.path|slice:':5' == '/sop/' %}is-active{% endif %}"><span class="nav-ico">◇</span><span>آموزش</span></a>
+    <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>شرح وظایف و دستورالعمل‌ها</span></a>
     <a href="/service-requests/"><span class="nav-ico">✓</span><span>درخواست‌ها</span></a>
     <a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌ها</span></a>
     {% if user.profile.role != 'employee' %}<a href="/finance/"><span class="nav-ico">▧</span><span>مالی و درآمد</span></a>{% endif %}
     <a href="/notifications/" class="{% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico">⚙</span><span>اعلان‌ها</span></a>
 
-    <a href="/device-issues/mine/"><span class="nav-ico">🛠</span><span>خرابی دستگاه</span></a>
+    <a href="/device-issues/mine/" class="{% if request.path|slice:':15' == '/device-issues/' %}is-active{% endif %}"><span class="nav-ico">🛠</span><span>خرابی دستگاه</span></a>
     {% if user.profile.role == 'admin' or user.profile.role == 'manager' or user.username == 'sadeghi' %}
     <a href="/device-issues/manage/"><span class="nav-ico">⚒</span><span>مدیریت خرابی‌ها</span></a>
     {% endif %}
@@ -159,7 +159,7 @@
 <script>
 (function(){
   if('serviceWorker' in navigator){
-    window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js?v=v35.1',{updateViaCache:'none'}).catch(()=>{}));
+    window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js?v=v36',{updateViaCache:'none'}).catch(()=>{}));
   }
   let deferredPrompt=null;
   const bar=document.getElementById('pwaInstallBar');
@@ -206,7 +206,7 @@
 
 
 <div class="gl-version-footer">
-  GreenLife Staff <strong>v35.1 Premium Dark</strong>
+  GreenLife Staff <strong>v36 Unified Dark</strong>
 </div>
 
 </body></html>
