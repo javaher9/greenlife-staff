@@ -43,6 +43,30 @@ docker compose logs -f web
 - فایل `.env` وارد Git نشود.
 - دسترسی PostgreSQL فقط برای IP/شبکه مورد نیاز باز باشد.
 
+## اتصال فقط‌خواندنی MCP برای ChatGPT
+
+این نسخه یک endpoint استاندارد و بدون Session برای گزارش‌های مدیریتی دارد:
+
+```text
+https://report.greenlifeclinics.com/mcp/
+```
+
+احراز هویت با یکی از هدرهای زیر انجام می‌شود. مقدار کلید فقط در `.env` سرور
+نگهداری می‌شود و نباید داخل Git قرار گیرد:
+
+```text
+Authorization: Bearer <MCP_API_KEY-or-STAFF_REPORT_API_KEY>
+X-Staff-API-Key: <MCP_API_KEY-or-STAFF_REPORT_API_KEY>
+```
+
+ابزارهای منتشرشده فقط‌خواندنی هستند:
+
+- `get_attendance_summary`: خلاصه حضور، تأخیر و افراد بدون ورود برای یک تاریخ
+- `ask_management`: پرسش مدیریتی فارسی درباره داده‌های ثبت‌شده Staff
+
+اگر `MCP_API_KEY` خالی باشد، endpoint از `STAFF_REPORT_API_KEY` استفاده می‌کند.
+اگر هر دو خالی باشند، سرویس با وضعیت `503` غیرفعال می‌ماند.
+
 
 ## Temporary local-IP CSRF bypass
 For local testing at `http://192.168.40.96:8085`, set these values in `.env`:
