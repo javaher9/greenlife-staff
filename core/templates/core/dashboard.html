@@ -19,26 +19,29 @@
   </header>
 
   <section class="gl-quick-actions">
-    <a href="/attendance/" class="gl-quick-card">
+    <a href="/attendance/" class="gl-quick-card gl-quick-attendance">
       <svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2h2V2Zm12 8H5v9h14v-9Zm-7 1a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7Zm0 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"/></svg>
       <span>حضور و غیاب</span>
     </a>
-    <a href="/checklists/" class="gl-quick-card">
-      <svg viewBox="0 0 24 24"><path d="M9 3h6l1 2h3v17H5V5h3l1-2Zm1.2 2-.4 1h4.4l-.4-1h-3.6ZM8 10l2 2 4-4 1.4 1.4L10 14.8 6.6 11.4 8 10Zm0 6 2 2 4-4 1.4 1.4L10 20.8 6.6 17.4 8 16Z"/></svg>
-      <span>چک‌لیست</span>
+    <a href="/tasks/" class="gl-quick-card gl-quick-work">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 3h6l1 2h3v17H5V5h3l1-2Zm1.2 2-.4 1h4.4l-.4-1h-3.6ZM8 10l2 2 4-4 1.4 1.4L10 14.8 6.6 11.4 8 10Zm0 6 2 2 4-4 1.4 1.4L10 20.8 6.6 17.4 8 16Z"/>
+        <circle class="gl-work-purple" cx="17.7" cy="17.8" r="1.35"/>
+      </svg>
+      <span>کارهای من</span>
     </a>
     <a href="/reports/new/" class="gl-quick-card">
       <svg viewBox="0 0 24 24"><path d="M12 15a4 4 0 0 0 4-4V5a4 4 0 1 0-8 0v6a4 4 0 0 0 4 4Zm-7-4h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.9V22h-2v-4.1A7 7 0 0 1 5 11Z"/></svg>
       <span>گزارش صوتی</span>
     </a>
-    <a href="/profile/" class="gl-quick-card">
-      <svg viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-5.1 0-8 2.55-8 5.25V21h16v-1.75C20 16.55 17.1 14 12 14Z"/></svg>
-      <span>پروفایل من</span>
+    <a href="/guidelines/" class="gl-quick-card gl-quick-guidelines">
+      <svg viewBox="0 0 24 24"><path d="M6 2h9l4 4v16H6V2Zm8 2v4h4l-4-4ZM9 11h7v2H9v-2Zm0 4h7v2H9v-2Z"/></svg>
+      <span>شرح وظایف</span>
     </a>
   </section>
 
   <section class="gl-dashboard-pair">
-    <article class="gl-dash-card gl-attendance-card">
+    <a class="gl-dash-card gl-attendance-card" href="/attendance/">
       <div class="gl-card-title"><h2>وضعیت امروز</h2><span>◷</span></div>
       {% if attendance_today.check_in %}
         <span class="gl-state-pill ok">✓ حضور ثبت شده</span>
@@ -46,28 +49,24 @@
         <small>ساعت ورود</small>
       {% else %}
         <span class="gl-state-pill warning">هنوز ورود ثبت نشده</span>
-        <a class="gl-card-action solid" href="/attendance/">ثبت ورود</a>
+        <strong class="gl-entry-time gl-entry-empty">--:--</strong>
+        <small>برای ثبت ورود لمس کنید</small>
       {% endif %}
       {% if today_shift.start %}<p class="gl-shift-line">شیفت: {{ today_shift.start|time:'H:i' }} - {{ today_shift.end|time:'H:i' }}</p>{% endif %}
-      <a class="gl-card-action" href="/attendance/"><span>جزئیات بیشتر</span><b>‹</b></a>
-    </article>
+    </a>
 
-    <article class="gl-dash-card gl-report-card">
+    <a class="gl-dash-card gl-report-card" href="{% if today_report_exists %}/reports/{% else %}/reports/new/{% endif %}">
       <div class="gl-card-title"><h2>گزارش امروز</h2><span>▤</span></div>
       <div class="gl-report-body">
         <div class="gl-ring" style="--progress:{{ overall_progress }};">
           <span>{{ overall_progress }}%</span>
         </div>
         <div class="gl-report-lines">
-          <p class="{% if today_report_exists %}ok{% endif %}">{% if today_report_exists %}●{% else %}○{% endif %} گزارش {% if today_report_exists %}ارسال شده{% else %}ارسال نشده{% endif %}</p>
-          <p><b>{{ checklist_done }}/{{ checklist_total }}</b> چک‌لیست</p>
-          <p><b>{{ task_done }}/{{ task_total }}</b> وظایف</p>
+          <p class="{% if today_report_exists %}ok{% endif %}">{% if today_report_exists %}✓ گزارش ارسال شده{% else %}گزارش هنوز ارسال نشده{% endif %}</p>
+          <small>{% if today_report_exists %}برای مشاهده گزارش لمس کنید{% else %}برای ثبت گزارش لمس کنید{% endif %}</small>
         </div>
       </div>
-      <a class="gl-card-action" href="{% if today_report_exists %}/reports/{% else %}/reports/new/{% endif %}">
-        <span>{% if today_report_exists %}مشاهده گزارش{% else %}ثبت گزارش{% endif %}</span><b>▤</b>
-      </a>
-    </article>
+    </a>
   </section>
 
   <section class="gl-month-banner {% if missing_reports %}has-missing{% endif %}">

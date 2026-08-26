@@ -4,18 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>GreenLife Staff</title>
-  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v36">
+  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v37">
 
-<link rel="manifest" href="/static/core/manifest.webmanifest?v=v36">
+<link rel="manifest" href="/static/core/manifest.webmanifest?v=v37">
 <meta name="theme-color" content="#15945f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GreenLife Staff">
-<link rel="apple-touch-icon" href="/static/core/icon-192.png?v=v36">
+<link rel="apple-touch-icon" href="/static/core/icon-192.png?v=v37">
 
 </head>
-<body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
+<body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' %}gl-role-employee{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
 <div class="mobile-more-backdrop" hidden></div>
 <aside class="app-sidebar">
   <div class="brand brand-premium">
@@ -23,7 +23,7 @@
     <span><b>GreenLife</b><small>STAFF APP</small></span>
   </div>
   <nav class="app-nav">
-    <a href="/" class="nav-main {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico">⌂</span><span>داشبورد اصلی</span></a>
+    <a href="/" class="nav-main {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 11.2 12 3l9 8.2V21h-6v-6H9v6H3v-9.8Z"/></svg></span><span class="nav-label nav-label-desktop">داشبورد اصلی</span><span class="nav-label nav-label-mobile">خانه</span></a>
     {% if user.profile.role == 'employee' %}
     <a href="/profile/" class="employee-profile-nav {% if request.resolver_match.url_name == 'profile' %}is-active{% endif %}" aria-label="پروفایل من">
       <span class="nav-ico profile-nav-icon"><svg viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-5.1 0-8 2.55-8 5.25V21h16v-1.75C20 16.55 17.1 14 12 14Z"/></svg></span>
@@ -31,19 +31,19 @@
     </a>
     {% endif %}
     {% if user.profile.role == 'employee' %}
-    <a href="/tasks/" class="employee-tasks-nav {% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>وظایف</span></a>
+    <a href="/tasks/" class="employee-tasks-nav {% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 4h11v2H4V4Zm0 7h11v2H4v-2Zm0 7h11v2H4v-2Zm14-14h2v2h-2V4Zm0 7h2v2h-2v-2Zm0 7h2v2h-2v-2Z"/></svg></span><span>وظایف</span></a>
     {% endif %}
     {% if user.profile.role != 'employee' %}<a href="/live/"><span class="nav-ico">⌘</span><span>{% if user.profile.role == "manager" %}مدیریت شعبه{% else %}پنل مدیریتی{% endif %}</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/action-center/"><span class="nav-ico">⚡</span><span>مرکز اقدام</span></a>{% endif %}
     <a href="/employees/"><span class="nav-ico">♙</span><span>پرسنل</span></a>
-    <a href="/attendance/" class="{% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور و غیاب</span></a>
+    <a href="/attendance/" class="attendance-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2h2V2Zm12 7H5v10h14V9Zm-8 2h2v4h3v2h-5v-6Z"/></svg></span><span class="nav-label nav-label-desktop">حضور و غیاب</span><span class="nav-label nav-label-mobile">حضور</span></a>
     {% if user.profile.role != 'employee' %}<a href="/kpi/"><span class="nav-ico">◎</span><span>عملکرد و KPI</span></a>{% endif %}
     <a href="/sop/" class="{% if request.path|slice:':5' == '/sop/' %}is-active{% endif %}"><span class="nav-ico">◇</span><span>آموزش</span></a>
     <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>شرح وظایف و دستورالعمل‌ها</span></a>
     <a href="/service-requests/"><span class="nav-ico">✓</span><span>درخواست‌ها</span></a>
     <a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌ها</span></a>
     {% if user.profile.role != 'employee' %}<a href="/finance/"><span class="nav-ico">▧</span><span>مالی و درآمد</span></a>{% endif %}
-    <a href="/notifications/" class="{% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico">⚙</span><span>اعلان‌ها</span></a>
+    <a href="/notifications/" class="notifications-nav {% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 6.2-3 7-3 9h18c0-2-3-2.8-3-9Zm-8 11h4a2 2 0 0 1-4 0Z"/></svg></span><span>اعلان‌ها</span></a>
 
     <a href="/device-issues/mine/" class="{% if request.path|slice:':15' == '/device-issues/' %}is-active{% endif %}"><span class="nav-ico">🛠</span><span>خرابی دستگاه</span></a>
     {% if user.profile.role == 'admin' or user.profile.role == 'manager' or user.username == 'sadeghi' %}
@@ -52,24 +52,33 @@
 
 
     <button type="button" class="mobile-more-toggle" aria-expanded="false" aria-controls="mobileMoreMenu">
-      <span class="nav-ico">☰</span><span>بیشتر</span>
+      <span class="nav-ico mobile-more-grid"><svg viewBox="0 0 24 24"><path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z"/></svg></span><span>بیشتر</span>
     </button>
 
     <div class="mobile-more-menu" id="mobileMoreMenu" hidden>
       <div class="mobile-more-head">
-        <strong>منوی کامل</strong>
+        <strong>{% if user.profile.role == 'employee' %}منوی بیشتر{% else %}منوی کامل{% endif %}</strong>
         <button type="button" class="mobile-more-close" aria-label="بستن">×</button>
       </div>
       <div class="mobile-more-links">
-        {% if user.profile.role != 'employee' %}<a href="/live/"><span>⌘</span>پنل مدیریتی</a>{% endif %}
-        <a href="/employees/"><span>♙</span>پرسنل</a>
-        <a href="/attendance/"><span>◷</span>حضور و غیاب</a>
-        {% if user.profile.role != 'employee' %}<a href="/kpi/"><span>◎</span>عملکرد و KPI</a>{% endif %}
-        <a href="/sop/"><span>◇</span>آموزش</a>
-        <a href="/service-requests/"><span>✓</span>درخواست‌ها</a>
-        <a href="/notifications/"><span>⚙</span>اعلان‌ها</a>
-        <a href="/profile/"><span>◉</span>پروفایل</a>
-        <a href="/logout/"><span>↪</span>خروج</a>
+        {% if user.profile.role == 'employee' %}
+          <a href="/reports/"><span>▥</span>گزارش‌ها</a>
+          <a href="/sop/"><span>◇</span>آموزش</a>
+          <a href="/service-requests/"><span>✓</span>درخواست‌ها</a>
+          <a href="/device-issues/mine/"><span>⚒</span>خرابی دستگاه</a>
+          <a href="/profile/"><span>◉</span>پروفایل من</a>
+          <a href="/logout/" class="employee-more-logout"><span>↪</span>خروج</a>
+        {% else %}
+          <a href="/live/"><span>⌘</span>پنل مدیریتی</a>
+          <a href="/employees/"><span>♙</span>پرسنل</a>
+          <a href="/attendance/"><span>◷</span>حضور و غیاب</a>
+          <a href="/kpi/"><span>◎</span>عملکرد و KPI</a>
+          <a href="/sop/"><span>◇</span>آموزش</a>
+          <a href="/service-requests/"><span>✓</span>درخواست‌ها</a>
+          <a href="/notifications/"><span>⚙</span>اعلان‌ها</a>
+          <a href="/profile/"><span>◉</span>پروفایل</a>
+          <a href="/logout/"><span>↪</span>خروج</a>
+        {% endif %}
       </div>
     </div>
 
@@ -159,7 +168,7 @@
 <script>
 (function(){
   if('serviceWorker' in navigator){
-    window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js?v=v36',{updateViaCache:'none'}).catch(()=>{}));
+    window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js?v=v37',{updateViaCache:'none'}).catch(()=>{}));
   }
   let deferredPrompt=null;
   const bar=document.getElementById('pwaInstallBar');
@@ -206,7 +215,7 @@
 
 
 <div class="gl-version-footer">
-  GreenLife Staff <strong>v36 Unified Dark</strong>
+  GreenLife Staff <strong>v37 Mobile Staff</strong>
 </div>
 
 </body></html>

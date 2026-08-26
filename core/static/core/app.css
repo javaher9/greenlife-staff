@@ -1586,6 +1586,232 @@ body.gl-premium-dark .gl-version-footer strong{color:#71dda9!important}
 }
 
 /* =========================================================
+   v37 — Approved employee mobile dashboard
+   Exact five-tab navigation, readable RTL type and restrained
+   GreenLife purple micro-accents from the approved reference.
+   ========================================================= */
+:root{--gl-purple:#9b6bd3;--gl-purple-soft:rgba(155,107,211,.14)}
+.nav-label-mobile{display:none}
+.nav-ico svg{width:100%;height:100%;display:block;fill:currentColor}
+body.gl-authenticated{
+  font-family:"Vazirmatn",Tahoma,"Noto Sans Arabic",Arial,sans-serif!important;
+  font-kerning:normal;
+  text-rendering:optimizeLegibility;
+}
+body.gl-page-dashboard .gl-quick-card svg{fill:#78e15d!important}
+body.gl-page-dashboard .gl-quick-work{
+  border-color:#43b868!important;
+  box-shadow:0 0 0 1px rgba(66,189,105,.12),0 12px 28px rgba(0,0,0,.22),inset 0 0 24px rgba(55,170,90,.055)!important;
+}
+body.gl-page-dashboard .gl-quick-work .gl-work-purple{fill:var(--gl-purple)!important}
+body.gl-page-dashboard .gl-head-bell b{
+  background:var(--gl-purple)!important;color:#fff!important;
+  box-shadow:0 0 0 2px #0d1921!important;
+}
+body.gl-page-dashboard .gl-month-banner.has-missing{
+  background:linear-gradient(145deg,#111f29,#09151d)!important;
+  border-color:#30404b!important;
+}
+body.gl-page-dashboard .has-missing .gl-month-icon{
+  border-color:rgba(155,107,211,.38)!important;
+  color:#b78be5!important;
+  background:rgba(155,107,211,.09)!important;
+}
+body.gl-page-dashboard .has-missing .gl-month-copy strong{color:#b88ce6!important}
+body.gl-page-dashboard .gl-notification-dot{background:var(--gl-purple)!important}
+
+@media(max-width:639px){
+  body.gl-role-employee{padding-bottom:88px!important}
+  body.gl-role-employee .app-main{
+    margin:0!important;width:100%!important;min-height:100dvh!important;
+    padding:0 0 96px!important;background:#060e14!important;
+  }
+  body.gl-role-employee .topbar{display:none!important}
+  body.gl-role-employee .gl-version-footer{padding-bottom:104px!important}
+
+  body.gl-role-employee .app-sidebar{
+    position:fixed!important;z-index:500!important;
+    left:8px!important;right:8px!important;bottom:7px!important;top:auto!important;
+    width:auto!important;height:72px!important;padding:5px 6px calc(5px + env(safe-area-inset-bottom))!important;
+    overflow:visible!important;border-radius:20px!important;
+    border:1px solid #2e3e49!important;background:#08151e!important;
+    box-shadow:0 15px 38px rgba(0,0,0,.42),inset 0 1px rgba(255,255,255,.04)!important;
+  }
+  body.gl-role-employee .brand-premium,
+  body.gl-role-employee .nav-section-title,
+  body.gl-role-employee .camp-side-subnav,
+  body.gl-role-employee .sidebar-footer{display:none!important}
+  body.gl-role-employee .app-nav{
+    margin:0!important;width:100%!important;height:100%!important;
+    display:flex!important;flex-direction:row!important;direction:rtl!important;
+    justify-content:space-between!important;align-items:center!important;gap:2px!important;
+    overflow:visible!important;
+  }
+  body.gl-role-employee .app-nav>a,
+  body.gl-role-employee .app-nav>button{display:none!important}
+  body.gl-role-employee .app-nav>.nav-main,
+  body.gl-role-employee .app-nav>.attendance-nav,
+  body.gl-role-employee .app-nav>.employee-tasks-nav,
+  body.gl-role-employee .app-nav>.notifications-nav,
+  body.gl-role-employee .app-nav>.mobile-more-toggle{
+    flex:1 1 20%!important;min-width:0!important;max-width:none!important;height:60px!important;
+    margin:0!important;padding:5px 2px!important;border:0!important;border-radius:15px!important;
+    display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;
+    color:#c4ced3!important;background:transparent!important;box-shadow:none!important;
+    font-family:inherit!important;text-decoration:none!important;
+  }
+  body.gl-role-employee .app-nav>.nav-main{order:1}
+  body.gl-role-employee .app-nav>.attendance-nav{order:2}
+  body.gl-role-employee .app-nav>.employee-tasks-nav{order:3}
+  body.gl-role-employee .app-nav>.notifications-nav{order:4}
+  body.gl-role-employee .app-nav>.mobile-more-toggle{order:5}
+  body.gl-role-employee .app-nav>.is-active,
+  body.gl-role-employee .app-nav>.nav-main.is-active{
+    color:#83e76a!important;background:linear-gradient(145deg,rgba(58,130,70,.52),rgba(21,55,39,.68))!important;
+    border:1px solid #56a95b!important;
+    box-shadow:0 0 18px rgba(83,211,92,.14),inset 0 1px rgba(255,255,255,.08)!important;
+  }
+  body.gl-role-employee .app-nav .nav-ico{
+    position:relative;width:23px!important;height:23px!important;min-width:23px!important;
+    border:0!important;border-radius:0!important;background:none!important;color:inherit!important;
+    font-size:20px!important;line-height:1!important;box-shadow:none!important;
+  }
+  body.gl-role-employee .app-nav>a>span:last-child,
+  body.gl-role-employee .app-nav>button>span:last-child{
+    max-width:100%!important;color:inherit!important;font-size:11px!important;font-weight:750!important;
+    line-height:1.25!important;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important;
+  }
+  body.gl-role-employee .nav-label-desktop{display:none!important}
+  body.gl-role-employee .nav-label-mobile{display:block!important}
+  body.gl-role-employee .mobile-more-grid:after{
+    content:"";position:absolute;left:-1px;top:-2px;width:6px;height:6px;border-radius:2px;
+    background:var(--gl-purple);box-shadow:0 0 7px rgba(155,107,211,.32);
+  }
+
+  body.gl-role-employee .mobile-more-menu{
+    display:block!important;position:fixed!important;z-index:620!important;
+    left:9px!important;right:9px!important;bottom:84px!important;top:auto!important;
+    width:auto!important;max-height:min(68vh,570px)!important;overflow-y:auto!important;
+    padding:23px 14px 15px!important;border-radius:22px!important;
+    border:1px solid #344753!important;background:linear-gradient(160deg,#122331,#08151e)!important;
+    box-shadow:0 -12px 44px rgba(0,0,0,.5),inset 0 1px rgba(255,255,255,.045)!important;
+    direction:rtl!important;
+  }
+  body.gl-role-employee .mobile-more-menu[hidden]{display:none!important}
+  body.gl-role-employee .mobile-more-menu:before{
+    content:"";position:absolute;top:9px;left:50%;transform:translateX(-50%);
+    width:54px;height:5px;border-radius:9px;background:var(--gl-purple);
+  }
+  body.gl-role-employee .mobile-more-head{
+    display:flex!important;align-items:center!important;justify-content:space-between!important;
+    min-height:45px!important;padding:4px 2px 11px!important;border-bottom:1px solid #2a3a45!important;
+  }
+  body.gl-role-employee .mobile-more-head strong{color:#f5f7f8!important;font-size:18px!important;font-weight:850!important}
+  body.gl-role-employee .mobile-more-close{
+    width:38px!important;height:38px!important;padding:0!important;border:0!important;border-radius:12px!important;
+    background:transparent!important;color:#f1f4f5!important;font-size:30px!important;line-height:1!important;box-shadow:none!important;
+  }
+  body.gl-role-employee .mobile-more-links{
+    display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:9px!important;padding-top:12px!important;
+  }
+  body.gl-role-employee .mobile-more-links a{
+    min-height:92px!important;padding:12px 8px!important;border-radius:15px!important;
+    border:1px solid #31424e!important;background:#0b1923!important;color:#edf2f4!important;
+    display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;gap:8px!important;
+    font-size:13px!important;font-weight:800!important;text-align:center!important;
+  }
+  body.gl-role-employee .mobile-more-links a span{
+    width:35px!important;height:35px!important;border-radius:11px!important;
+    display:grid!important;place-items:center!important;background:rgba(113,225,91,.08)!important;
+    color:#77df62!important;font-size:22px!important;
+  }
+  body.gl-role-employee .mobile-more-links .employee-more-logout span{color:#b98ce5!important;background:var(--gl-purple-soft)!important}
+  body.gl-role-employee .mobile-more-backdrop{
+    position:fixed!important;inset:0!important;z-index:490!important;display:block;
+    background:rgba(1,7,11,.66)!important;backdrop-filter:blur(2px)!important;
+  }
+  body.gl-role-employee .mobile-more-backdrop[hidden]{display:none!important}
+
+  body.gl-role-employee.gl-page-dashboard .gl-employee-dashboard{
+    width:calc(100% - 20px)!important;max-width:440px!important;margin:8px auto 22px!important;
+    padding:0!important;gap:10px!important;
+  }
+  body.gl-role-employee.gl-page-dashboard .gl-employee-mobile-head{
+    min-height:88px!important;padding:10px 4px 11px!important;gap:11px!important;
+    border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+  }
+  body.gl-role-employee.gl-page-dashboard .gl-head-avatar,
+  body.gl-role-employee.gl-page-dashboard .gl-head-avatar img{width:58px!important;height:58px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-head-avatar{
+    border:2px solid #dfe8e4!important;background:#12272a!important;
+    color:#86e56b!important;font-size:22px!important;
+  }
+  body.gl-role-employee.gl-page-dashboard .gl-head-avatar i{width:13px;height:13px;right:0;bottom:1px;border:3px solid #07131b!important}
+  body.gl-role-employee.gl-page-dashboard .gl-head-copy h1{
+    margin:0 0 5px!important;color:#fff!important;font-size:21px!important;font-weight:850!important;line-height:1.35!important;
+  }
+  body.gl-role-employee.gl-page-dashboard .gl-head-copy p{color:#a3b0b7!important;font-size:12px!important;line-height:1.5!important}
+  body.gl-role-employee.gl-page-dashboard .gl-head-bell{
+    width:43px!important;height:43px!important;min-width:43px!important;border-radius:13px!important;
+    background:#091720!important;border:1px solid #344650!important;color:#e8edef!important;
+  }
+  body.gl-role-employee.gl-page-dashboard .gl-head-bell svg{width:24px;height:24px}
+  body.gl-role-employee.gl-page-dashboard .gl-head-bell b{right:-2px!important;top:-4px!important;min-width:17px!important;height:17px!important;font-size:9px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-quick-actions{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;direction:rtl!important;
+  }
+  body.gl-role-employee.gl-page-dashboard .gl-quick-card{
+    height:112px!important;min-width:0!important;border-radius:16px!important;gap:10px!important;
+    background:linear-gradient(145deg,#111f29,#09151d)!important;border:1px solid #30404b!important;
+    color:#f0f4f5!important;box-shadow:0 12px 27px rgba(0,0,0,.22)!important;
+  }
+  body.gl-role-employee.gl-page-dashboard .gl-quick-work{
+    border-color:#43b868!important;
+    box-shadow:0 0 0 1px rgba(66,189,105,.11),0 12px 27px rgba(0,0,0,.23),inset 0 0 23px rgba(55,170,90,.05)!important;
+  }
+  body.gl-role-employee.gl-page-dashboard .gl-quick-card svg{width:36px!important;height:36px!important;fill:#78e15d!important}
+  body.gl-role-employee.gl-page-dashboard .gl-quick-card span{color:#f3f6f7!important;font-size:15px!important;font-weight:800!important;line-height:1.4!important}
+  body.gl-role-employee.gl-page-dashboard .gl-dashboard-pair{display:grid!important;grid-template-columns:1fr!important;gap:10px!important}
+  body.gl-role-employee.gl-page-dashboard :is(.gl-dash-card,.gl-list-card,.gl-month-banner){
+    border-radius:17px!important;border-color:#30404b!important;padding:17px!important;
+  }
+  body.gl-role-employee.gl-page-dashboard .gl-card-title h2,
+  body.gl-role-employee.gl-page-dashboard .gl-list-head h2{font-size:17px!important;font-weight:850!important}
+  body.gl-role-employee.gl-page-dashboard .gl-state-pill{font-size:13px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-entry-time{font-size:38px!important;letter-spacing:.5px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-report-body{direction:ltr!important;grid-template-columns:104px 1fr!important;gap:15px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-report-lines{direction:rtl!important;text-align:right!important}
+  body.gl-role-employee.gl-page-dashboard .gl-ring{width:98px!important;height:98px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-ring:after{width:75px!important;height:75px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-ring span{font-size:23px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-report-lines p{font-size:13px!important;line-height:1.55!important;margin-bottom:9px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-card-action{min-height:48px!important;font-size:13px!important;border-radius:12px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-month-banner{min-height:82px!important;padding:14px 16px!important;align-items:center!important}
+  body.gl-role-employee.gl-page-dashboard .gl-month-icon{width:48px!important;height:48px!important;border-width:4px!important;font-size:22px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-month-copy{gap:11px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-month-copy small{font-size:12px!important;line-height:1.55!important;color:#dce4e7!important}
+  body.gl-role-employee.gl-page-dashboard .gl-month-copy strong{font-size:18px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-month-copy p{font-size:10px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-month-result{display:none!important}
+  body.gl-role-employee.gl-page-dashboard .gl-list-card{padding:16px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-list-head a{font-size:12px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-task-row strong,
+  body.gl-role-employee.gl-page-dashboard .gl-notification-row strong{font-size:14px!important;line-height:1.55!important}
+  body.gl-role-employee.gl-page-dashboard .gl-task-row small,
+  body.gl-role-employee.gl-page-dashboard .gl-notification-row small{font-size:12px!important;line-height:1.6!important}
+}
+
+@media(max-width:359px){
+  body.gl-role-employee .app-sidebar{left:4px!important;right:4px!important}
+  body.gl-role-employee .app-nav>a>span:last-child,
+  body.gl-role-employee .app-nav>button>span:last-child{font-size:10px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-employee-dashboard{width:calc(100% - 14px)!important}
+  body.gl-role-employee.gl-page-dashboard .gl-quick-card{height:104px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-quick-card span{font-size:14px!important}
+}
+
+/* =========================================================
    v35 — Owner-approved Premium Dark dashboard
    This is a structural match, not a recolour of the v32 dashboard.
    ========================================================= */
