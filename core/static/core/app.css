@@ -1586,6 +1586,80 @@ body.gl-premium-dark .gl-version-footer strong{color:#71dda9!important}
 }
 
 /* =========================================================
+   v37.1 — Employee phone compatibility hotfix
+   Keep the approved five-tab dock and dark empty/table states on
+   phones whose browser reports a 640–700px CSS viewport.
+   Dedicated selectors prevent legacy mobile rules from re-enabling old tabs.
+   ========================================================= */
+@media(max-width:700px){
+  body.gl-role-employee{padding-bottom:88px!important}
+  body.gl-role-employee .app-main{
+    margin:0!important;width:100%!important;min-height:100dvh!important;
+    padding:0 0 96px!important;background:#060e14!important;
+  }
+  body.gl-role-employee .topbar{display:none!important}
+  body.gl-role-employee .app-sidebar{
+    position:fixed!important;z-index:500!important;
+    left:8px!important;right:8px!important;bottom:7px!important;top:auto!important;
+    width:auto!important;height:72px!important;padding:5px 6px calc(5px + env(safe-area-inset-bottom))!important;
+    overflow:visible!important;border-radius:20px!important;
+    border:1px solid #2e3e49!important;background:#08151e!important;
+    box-shadow:0 15px 38px rgba(0,0,0,.42),inset 0 1px rgba(255,255,255,.04)!important;
+  }
+  body.gl-role-employee .app-sidebar .brand-premium,
+  body.gl-role-employee .app-sidebar .nav-section-title,
+  body.gl-role-employee .app-sidebar .camp-side-subnav,
+  body.gl-role-employee .app-sidebar .sidebar-footer{display:none!important}
+  body.gl-role-employee .app-sidebar .app-nav{
+    margin:0!important;padding:0!important;width:100%!important;height:100%!important;
+    display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    align-items:center!important;gap:2px!important;overflow:visible!important;direction:rtl!important;
+  }
+  body.gl-role-employee .app-sidebar .app-nav>a,
+  body.gl-role-employee .app-sidebar .app-nav>button{display:none!important}
+  body.gl-role-employee .app-sidebar .app-nav>.employee-bottom-nav{
+    min-width:0!important;width:auto!important;height:60px!important;margin:0!important;padding:5px 2px!important;
+    display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;
+    border:0!important;border-radius:15px!important;color:#c4ced3!important;background:transparent!important;
+    box-shadow:none!important;font-family:inherit!important;text-decoration:none!important;
+  }
+  body.gl-role-employee .app-sidebar .app-nav>.nav-main{order:1!important}
+  body.gl-role-employee .app-sidebar .app-nav>.attendance-nav{order:2!important}
+  body.gl-role-employee .app-sidebar .app-nav>.employee-tasks-nav{order:3!important}
+  body.gl-role-employee .app-sidebar .app-nav>.notifications-nav{order:4!important}
+  body.gl-role-employee .app-sidebar .app-nav>.mobile-more-toggle{order:5!important}
+  body.gl-role-employee .app-sidebar .app-nav>.employee-bottom-nav.is-active{
+    color:#83e76a!important;background:linear-gradient(145deg,rgba(58,130,70,.52),rgba(21,55,39,.68))!important;
+    border:1px solid #56a95b!important;box-shadow:0 0 18px rgba(83,211,92,.14),inset 0 1px rgba(255,255,255,.08)!important;
+  }
+  body.gl-role-employee .app-sidebar .app-nav>.employee-bottom-nav .nav-ico{
+    position:relative!important;width:23px!important;height:23px!important;min-width:23px!important;
+    border:0!important;border-radius:0!important;background:none!important;color:inherit!important;
+    font-size:20px!important;line-height:1!important;box-shadow:none!important;
+  }
+  body.gl-role-employee .app-sidebar .app-nav>.employee-bottom-nav>span:last-child{
+    display:block!important;max-width:100%!important;color:inherit!important;font-size:11px!important;font-weight:750!important;
+    line-height:1.25!important;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important;
+  }
+  body.gl-role-employee .nav-label-desktop{display:none!important}
+  body.gl-role-employee .nav-label-mobile{display:block!important}
+  body.gl-role-employee.gl-page-dashboard .gl-employee-dashboard{
+    width:calc(100% - 20px)!important;max-width:440px!important;margin:8px auto 22px!important;padding:0!important;gap:10px!important;
+  }
+  body.gl-role-employee.gl-page-dashboard .gl-quick-actions{
+    display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;direction:rtl!important;
+  }
+  body.gl-role-employee.gl-page-dashboard .gl-quick-card{height:112px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-quick-card svg{fill:#78e15d!important}
+  body.gl-role-employee.gl-page-dashboard .gl-quick-work .gl-work-purple{fill:var(--gl-purple)!important}
+  body.gl-role-employee :is(.gl-empty-row,.employee-empty,.exec-empty){
+    border:1px dashed #31434e!important;background:#0a171f!important;color:#9dabb2!important;box-shadow:none!important;
+  }
+  body.gl-role-employee :is(.tablewrap,table,thead,tbody,tr,th,td){background-color:transparent!important}
+  body.gl-role-employee .tablewrap{border-color:#30404b!important;background:#0a171f!important}
+}
+
+/* =========================================================
    v37 — Approved employee mobile dashboard
    Exact five-tab navigation, readable RTL type and restrained
    GreenLife purple micro-accents from the approved reference.
@@ -1620,7 +1694,7 @@ body.gl-page-dashboard .has-missing .gl-month-icon{
 body.gl-page-dashboard .has-missing .gl-month-copy strong{color:#b88ce6!important}
 body.gl-page-dashboard .gl-notification-dot{background:var(--gl-purple)!important}
 
-@media(max-width:639px){
+@media(max-width:700px){
   body.gl-role-employee{padding-bottom:88px!important}
   body.gl-role-employee .app-main{
     margin:0!important;width:100%!important;min-height:100dvh!important;
@@ -2039,4 +2113,15 @@ body.gl-authenticated:not(.gl-manager-dashboard) :is(.primary,button):not(.mobil
   .gl-page-hero-v36{min-height:145px;padding:21px;border-radius:17px;align-items:flex-start}.gl-page-hero-copy-v36 h1{font-size:24px!important}.gl-page-hero-copy-v36 p{font-size:12px!important}.gl-page-eyebrow-v36{font-size:10px}.gl-hero-symbol-v36{width:56px;height:56px;border-radius:17px;font-size:28px}.gl-page-hero-side-v36{align-items:flex-end;flex-direction:column}.gl-page-count-v36{min-width:58px;min-height:54px;padding:6px 10px}.gl-page-count-v36 b{font-size:20px!important}.gl-content-card-v36{padding:17px;border-radius:17px}.gl-card-heading-v36{padding-bottom:14px}.gl-card-heading-v36 h2{font-size:16px!important}.gl-heading-icon-v36{width:39px;height:39px}.gl-task-item-v36{grid-template-columns:39px minmax(0,1fr) 16px;gap:10px;padding:14px 2px}.gl-task-state-v36{width:37px;height:37px}.gl-status-pill-v36{grid-column:2;justify-self:start;min-width:0;padding:6px 9px}.gl-row-arrow-v36{grid-column:3;grid-row:1}.gl-document-grid-v36{grid-template-columns:1fr}.gl-document-v36{grid-template-columns:40px 1fr;padding:15px}.gl-empty-state-v36{min-height:230px;padding:27px 12px}.gl-device-actions-v36{display:grid}.gl-device-actions-v36>*{width:100%}.gl-form-field-v36 textarea{min-height:150px}
   body.gl-page-dashboard .gl-employee-mobile-head{min-height:100px;padding:17px!important}body.gl-page-dashboard .gl-head-avatar,body.gl-page-dashboard .gl-head-avatar img{width:58px!important;height:58px!important}body.gl-page-dashboard .gl-head-copy h1{font-size:21px!important}body.gl-page-dashboard .gl-head-copy p{font-size:11px!important}body.gl-page-dashboard .gl-quick-actions{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}body.gl-page-dashboard .gl-quick-card{height:92px!important}body.gl-page-dashboard .gl-quick-card span{font-size:12px!important}.gl-dashboard-pair{grid-template-columns:1fr!important}.gl-month-result{display:none!important}
   body.gl-page-profile .gl-profile-header{padding:18px!important}.gl-profile-main{align-items:flex-start}.gl-profile-photo{width:82px!important;height:82px!important}.gl-profile-identity h1{font-size:22px!important}.gl-profile-photo-actions{grid-template-columns:1fr 1fr!important}.gl-profile-row{align-items:flex-start;flex-direction:column;gap:5px;padding:10px 0}.gl-profile-row strong{max-width:100%;text-align:right}
+}
+
+/* v37.1 final priority guards: these must remain after every legacy rule. */
+@media(max-width:700px){
+  body.gl-role-employee.gl-page-dashboard .gl-quick-card svg{fill:#78e15d!important}
+  body.gl-role-employee.gl-page-dashboard .gl-quick-work .gl-work-purple{fill:var(--gl-purple)!important}
+  body.gl-role-employee :is(.gl-empty-row,.employee-empty,.exec-empty){
+    border-color:#31434e!important;background:#0a171f!important;color:#9dabb2!important;box-shadow:none!important;
+  }
+  body.gl-role-employee :is(.tablewrap,table,thead,tbody,tr,th,td){background-color:transparent!important}
+  body.gl-role-employee .tablewrap{border-color:#30404b!important;background:#0a171f!important}
 }
