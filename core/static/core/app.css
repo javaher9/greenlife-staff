@@ -2131,10 +2131,10 @@ body.gl-role-employee,
 body.gl-role-employee :is(button,input,textarea,select){font-family:Tahoma,Arial,sans-serif!important}
 @media(max-width:700px){
   body.gl-role-employee.gl-page-dashboard .gl-attendance-card{
-    height:270px!important;min-height:270px!important;padding:16px 17px!important;overflow:hidden!important;
+    height:190px!important;min-height:190px!important;padding:13px 17px!important;overflow:hidden!important;
   }
   body.gl-role-employee.gl-page-dashboard .gl-attendance-card .gl-state-pill{
-    margin:11px auto 7px!important;padding:8px 14px!important;border-radius:11px!important;
+    margin:7px auto 5px!important;padding:7px 13px!important;border-radius:11px!important;
   }
   body.gl-role-employee.gl-page-dashboard .gl-attendance-card .gl-state-pill.ok{
     color:#a1f18d!important;background:linear-gradient(145deg,rgba(40,105,62,.72),rgba(17,54,39,.86))!important;
@@ -2145,8 +2145,8 @@ body.gl-role-employee :is(button,input,textarea,select){font-family:Tahoma,Arial
     color:#d4b3ef!important;background:rgba(111,72,148,.20)!important;border:1px solid rgba(170,120,211,.34)!important;
   }
   body.gl-role-employee.gl-page-dashboard .gl-attendance-card .gl-entry-time{
-    margin:3px 0 0!important;font-size:36px!important;line-height:1.15!important;
+    margin:1px 0 0!important;font-size:32px!important;line-height:1.1!important;
   }
-  body.gl-role-employee.gl-page-dashboard .gl-attendance-card>small{line-height:1.35!important}
-  body.gl-role-employee.gl-page-dashboard .gl-attendance-card .gl-shift-line{margin:7px 0 0!important;line-height:1.45!important}
+  body.gl-role-employee.gl-page-dashboard .gl-attendance-card>small{line-height:1.25!important}
+  body.gl-role-employee.gl-page-dashboard .gl-attendance-card .gl-shift-line{margin:4px 0 0!important;line-height:1.3!important}
 }
