@@ -1668,7 +1668,7 @@ body.gl-premium-dark .gl-version-footer strong{color:#71dda9!important}
 .nav-label-mobile{display:none}
 .nav-ico svg{width:100%;height:100%;display:block;fill:currentColor}
 body.gl-authenticated{
-  font-family:"Vazirmatn",Tahoma,"Noto Sans Arabic",Arial,sans-serif!important;
+  font-family:Tahoma,Arial,sans-serif!important;
   font-kerning:normal;
   text-rendering:optimizeLegibility;
 }
@@ -2124,4 +2124,29 @@ body.gl-authenticated:not(.gl-manager-dashboard) :is(.primary,button):not(.mobil
   }
   body.gl-role-employee :is(.tablewrap,table,thead,tbody,tr,th,td){background-color:transparent!important}
   body.gl-role-employee .tablewrap{border-color:#30404b!important;background:#0a171f!important}
+}
+
+/* v37.2 — compact attendance card, dark status badge and Tahoma UI. */
+body.gl-role-employee,
+body.gl-role-employee :is(button,input,textarea,select){font-family:Tahoma,Arial,sans-serif!important}
+@media(max-width:700px){
+  body.gl-role-employee.gl-page-dashboard .gl-attendance-card{
+    height:270px!important;min-height:270px!important;padding:16px 17px!important;overflow:hidden!important;
+  }
+  body.gl-role-employee.gl-page-dashboard .gl-attendance-card .gl-state-pill{
+    margin:11px auto 7px!important;padding:8px 14px!important;border-radius:11px!important;
+  }
+  body.gl-role-employee.gl-page-dashboard .gl-attendance-card .gl-state-pill.ok{
+    color:#a1f18d!important;background:linear-gradient(145deg,rgba(40,105,62,.72),rgba(17,54,39,.86))!important;
+    border:1px solid rgba(112,221,96,.42)!important;
+    box-shadow:0 8px 20px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.07)!important;
+  }
+  body.gl-role-employee.gl-page-dashboard .gl-attendance-card .gl-state-pill.warning{
+    color:#d4b3ef!important;background:rgba(111,72,148,.20)!important;border:1px solid rgba(170,120,211,.34)!important;
+  }
+  body.gl-role-employee.gl-page-dashboard .gl-attendance-card .gl-entry-time{
+    margin:3px 0 0!important;font-size:36px!important;line-height:1.15!important;
+  }
+  body.gl-role-employee.gl-page-dashboard .gl-attendance-card>small{line-height:1.35!important}
+  body.gl-role-employee.gl-page-dashboard .gl-attendance-card .gl-shift-line{margin:7px 0 0!important;line-height:1.45!important}
 }
