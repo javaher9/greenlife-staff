@@ -2,11 +2,15 @@ from datetime import timedelta
 from django.contrib.auth.models import User
 from django.db.models import Sum
 from django.utils import timezone
-from .models import Attendance, ScoreEvent, KPIRecord, LeaveRequest
+from .models import Attendance, DailyReport, ScoreEvent, KPIRecord, LeaveRequest
 from .jalali import format_jalali, to_persian_digits
 from .operations import missing_report_days, shift_rule
 
 def full_name(u): return u.get_full_name() or u.username
+
+def _clean_report_text(value):
+    if not isinstance(value,str): return ''
+    return value.replace(r'\u200c','‌').replace(r'\u200f','‏').replace(r'\u200e','‎').replace(r'\n','\n').replace(r'\t','\t').strip()
 
 def scope_users(user):
     qs=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
@@ -37,6 +41,72 @@ def leaderboard(user, days=30):
     scores=ScoreEvent.objects.filter(user__in=users,event_date__gte=start).values('user').annotate(total=Sum('points')).order_by('-total')
     umap={u.id:u for u in users}; return [{'name':full_name(umap[x['user']]),'points':x['total'] or 0} for x in scores if x['user'] in umap]
 
+def daily_reports_summary(user, day=None, branch=None, employee=None, include_raw=False):
+    """Return report content for one local day without exposing media URLs.
+
+    The MCP caller is authenticated as an active administrator, but this helper
+    still applies the normal Staff role/branch scope.  AI summaries are preferred
+    for the compact ``content`` field; unprocessed reports safely fall back to
+    their typed text or transcript so management can still review them.
+    """
+    day=day or timezone.localdate(); users=scope_users(user)
+    qs=DailyReport.objects.filter(user__in=users,created_at__date=day).select_related(
+        'user','branch','manager_comment_by'
+    ).order_by('created_at','id')
+    if branch: qs=qs.filter(branch__name=branch)
+    if employee is not None: qs=qs.filter(user=employee)
+
+    rows=[]
+    for report in qs:
+        typed_text=_clean_report_text(report.text)
+        transcript=_clean_report_text(report.transcript)
+        ai_summary=_clean_report_text(report.ai_summary)
+        if ai_summary:
+            content=ai_summary; content_source='ai_summary'
+        elif typed_text and transcript:
+            content=f'{typed_text}\n{transcript}'; content_source='text_and_transcript'
+        elif typed_text:
+            content=typed_text; content_source='text'
+        elif transcript:
+            content=transcript; content_source='transcript'
+        elif report.audio:
+            content='گزارش صوتی ثبت شده ولی متن آن هنوز آماده نیست.'; content_source='audio_pending'
+        else:
+            content='گزارش بدون متن ثبت شده است.'; content_source='empty'
+
+        item={
+            'id':report.id,
+            'name':full_name(report.user),
+            'branch':report.branch.name if report.branch else None,
+            'submitted_at':timezone.localtime(report.created_at).strftime('%H:%M'),
+            'content':content[:12000],
+            'content_source':content_source,
+            'tags':report.ai_tags if isinstance(report.ai_tags,list) else [],
+            'follow_up':_clean_report_text(report.follow_up)[:4000],
+            'manager_comment':_clean_report_text(report.manager_comment)[:1000],
+            'process_status':report.process_status,
+            'process_status_fa':report.get_process_status_display(),
+            'has_audio':bool(report.audio),
+        }
+        if include_raw:
+            item['text']=typed_text[:12000]
+            item['transcript']=transcript[:12000]
+            item['ai_summary']=ai_summary[:12000]
+        rows.append(item)
+
+    reporters=[]
+    for row in rows:
+        if row['name'] not in reporters: reporters.append(row['name'])
+    return {
+        'date':format_jalali(day),
+        'gregorian_date':str(day),
+        'report_count':len(rows),
+        'reporter_count':len(reporters),
+        'reporters':reporters,
+        'needs_processing':sum(1 for row in rows if row['content_source']=='audio_pending'),
+        'reports':rows,
+    }
+
 def answer_query(user, query):
     q=(query or '').strip(); today=timezone.localdate(); day=today
     if 'دیروز' in q: day=today-timedelta(days=1)
@@ -52,6 +122,26 @@ def answer_query(user, query):
         label=branch.name if branch else 'کل شعب'
         amount=to_persian_digits(f"{fs['total']:,.0f}")
         return {'answer':f"درآمد {label} در {fs['date']} برابر {amount} است و {to_persian_digits(fs['count'])} تراکنش ثبت شده است.",'data':{'total':str(fs['total']),'count':fs['count'],'by_branch':fs['by_branch']},'date':fs['date']}
+    missing_report_query=('گزارش نداد' in q or 'گزارش نداده' in q or 'گزارش ارسال نکرد' in q or 'چند شب گزارش' in q)
+    report_content_query=(
+        ('گزارش' in q and any(x in q for x in ('امروز','دیروز','روزانه','شبانه','ثبت شده','ثبت‌شده','خلاصه','متن','محتوا')))
+        and not missing_report_query
+    )
+    if report_content_query:
+        target=None
+        for u in scope_users(user):
+            parts=[p for p in full_name(u).split() if len(p)>1]
+            if any(p in q for p in parts): target=u; break
+        branch=None
+        for b in set(x for x in scope_users(user).values_list('profile__branch__name',flat=True) if x):
+            if b in q: branch=b; break
+        result=daily_reports_summary(user,day,branch=branch,employee=target)
+        names='، '.join(result['reporters']) or 'هیچ‌کس'
+        if result['report_count']:
+            answer=f"در {result['date']}، {to_persian_digits(result['report_count'])} گزارش توسط {to_persian_digits(result['reporter_count'])} نفر ثبت شده است: {names}."
+        else:
+            answer=f"در {result['date']} گزارشی ثبت نشده است."
+        return {'answer':answer,'data':result,'date':result['date']}
     # Employee-name specific query
     matches=[]
     for row in summary['rows']:
@@ -70,7 +160,7 @@ def answer_query(user, query):
     if 'غایب' in q or 'نیامد' in q or 'نیومد' in q or 'بدون ورود' in q:
         names='، '.join(x['name'] for x in summary['missing_people']) or 'هیچ‌کس'
         return {'answer':f"افراد بدون ورود در {summary['date']}: {names}",'data':summary['missing_people'],'date':summary['date']}
-    if 'گزارش نداد' in q or 'گزارش نداده' in q or 'گزارش ارسال نکرد' in q or 'چند شب گزارش' in q:
+    if missing_report_query:
         target=None
         for u in scope_users(user):
             parts=[p for p in full_name(u).split() if len(p)>1]

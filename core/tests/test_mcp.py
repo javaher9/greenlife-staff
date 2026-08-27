@@ -4,6 +4,8 @@ from unittest.mock import patch
 
 from django.test import SimpleTestCase, override_settings
 
+from core.reporting import answer_query
+
 
 @override_settings(ROOT_URLCONF="greenlife.urls")
 class MCPServerTests(SimpleTestCase):
@@ -46,7 +48,7 @@ class MCPServerTests(SimpleTestCase):
                 key=token,
             )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["result"]["serverInfo"]["version"], "1.1.0")
+        self.assertEqual(response.json()["result"]["serverInfo"]["version"], "1.2.0")
 
     @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
     def test_initialize(self):
@@ -70,7 +72,7 @@ class MCPServerTests(SimpleTestCase):
         tools = response.json()["result"]["tools"]
         self.assertEqual(
             [tool["name"] for tool in tools],
-            ["get_attendance_summary", "ask_management"],
+            ["get_attendance_summary", "get_daily_reports", "ask_management"],
         )
         self.assertTrue(all(tool["annotations"]["readOnlyHint"] for tool in tools))
 
@@ -120,6 +122,34 @@ class MCPServerTests(SimpleTestCase):
         answer.assert_called_once_with("دیروز چند نفر دیر آمدند؟")
 
     @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
+    @patch("core.mcp._daily_reports")
+    def test_calls_daily_reports_tool(self, reports):
+        reports.return_value = {
+            "date": "1405/06/05",
+            "report_count": 1,
+            "reports": [{"name": "Test User", "content": "کارهای امروز انجام شد."}],
+        }
+        response = self.post(
+            {
+                "jsonrpc": "2.0",
+                "id": 5,
+                "method": "tools/call",
+                "params": {
+                    "name": "get_daily_reports",
+                    "arguments": {
+                        "date": "1405/06/05",
+                        "branch": "نیاوران",
+                        "include_raw": True,
+                    },
+                },
+            },
+            key=self.key,
+        )
+        result = response.json()["result"]["structuredContent"]
+        self.assertEqual(result["report_count"], 1)
+        reports.assert_called_once_with("1405/06/05", "نیاوران", True)
+
+    @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
     def test_notification_has_no_body(self):
         response = self.post(
             {"jsonrpc": "2.0", "method": "notifications/initialized"},
@@ -127,3 +157,34 @@ class MCPServerTests(SimpleTestCase):
         )
         self.assertEqual(response.status_code, 202)
         self.assertEqual(response.content, b"")
+
+
+class ManagementReportRoutingTests(SimpleTestCase):
+    class EmptyScopedUsers(list):
+        def values_list(self, *args, **kwargs):
+            return []
+
+    @patch("core.reporting.daily_reports_summary")
+    @patch("core.reporting.scope_users")
+    @patch("core.reporting.day_summary")
+    def test_today_reports_question_returns_report_content_not_attendance(
+        self, attendance, scoped_users, reports
+    ):
+        attendance.return_value = {"date": "۱۴۰۵/۰۶/۰۵", "rows": []}
+        scoped_users.return_value = self.EmptyScopedUsers()
+        reports.return_value = {
+            "date": "۱۴۰۵/۰۶/۰۵",
+            "report_count": 2,
+            "reporter_count": 2,
+            "reporters": ["کارمند اول", "کارمند دوم"],
+            "reports": [
+                {"name": "کارمند اول", "content": "خلاصه اول"},
+                {"name": "کارمند دوم", "content": "خلاصه دوم"},
+            ],
+        }
+
+        result = answer_query(object(), "خلاصه گزارش‌های امروز را بده")
+
+        self.assertEqual(result["data"]["report_count"], 2)
+        self.assertIn("۲ گزارش", result["answer"])
+        reports.assert_called_once()

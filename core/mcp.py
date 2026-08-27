@@ -19,11 +19,11 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from .jalali import parse_jalali
-from .reporting import answer_query, day_summary
+from .reporting import answer_query, daily_reports_summary, day_summary
 
 
 PROTOCOL_VERSION = "2025-06-18"
-SERVER_INFO = {"name": "greenlife-staff", "version": "1.1.0"}
+SERVER_INFO = {"name": "greenlife-staff", "version": "1.2.0"}
 DEFAULT_WORK_TOKEN_SHA256 = "e9affd40ddff8a5d22ab70a5720a856e95d64853bc3e552484abf219518c4ae5"
 
 TOOLS = [
@@ -44,6 +44,45 @@ TOOLS = [
                         "or today/yesterday (امروز/دیروز). Defaults to today in Tehran."
                     ),
                 }
+            },
+            "additionalProperties": False,
+        },
+        "annotations": {
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": False,
+        },
+    },
+    {
+        "name": "get_daily_reports",
+        "title": "GreenLife daily staff reports",
+        "description": (
+            "Read the content of Staff daily or nightly reports for one date, "
+            "including AI summaries, transcripts, follow-up items and manager comments."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "description": (
+                        "Optional date: Jalali YYYY/MM/DD, Gregorian YYYY-MM-DD, "
+                        "or today/yesterday (امروز/دیروز). Defaults to today in Tehran."
+                    ),
+                },
+                "branch": {
+                    "type": "string",
+                    "maxLength": 80,
+                    "description": "Optional exact GreenLife branch name.",
+                },
+                "include_raw": {
+                    "type": "boolean",
+                    "description": (
+                        "Include separate typed-text, transcript and AI-summary fields. "
+                        "Defaults to false; compact content is always returned."
+                    ),
+                },
             },
             "additionalProperties": False,
         },
@@ -152,6 +191,24 @@ def _management_answer(question):
     return answer_query(admin, text)
 
 
+def _daily_reports(raw_date=None, branch=None, include_raw=False):
+    day = _resolve_date(raw_date)
+    branch = (branch or "").strip() or None
+    if branch and len(branch) > 80:
+        raise ValueError("branch is too long")
+    if not isinstance(include_raw, bool):
+        raise ValueError("include_raw must be a boolean")
+    admin = _admin_user()
+    if not admin:
+        raise RuntimeError("No active GreenLife admin user is configured.")
+    return daily_reports_summary(
+        admin,
+        day,
+        branch=branch,
+        include_raw=include_raw,
+    )
+
+
 def _rpc_result(request_id, result):
     return JsonResponse({"jsonrpc": "2.0", "id": request_id, "result": result})
 
@@ -241,6 +298,12 @@ def mcp_endpoint(request):
     try:
         if tool_name == "get_attendance_summary":
             data = _attendance_summary(arguments.get("date"))
+        elif tool_name == "get_daily_reports":
+            data = _daily_reports(
+                arguments.get("date"),
+                arguments.get("branch"),
+                arguments.get("include_raw", False),
+            )
         elif tool_name == "ask_management":
             data = _management_answer(arguments.get("question"))
         else:

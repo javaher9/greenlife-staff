@@ -62,6 +62,7 @@ X-Staff-API-Key: <MCP_API_KEY-or-STAFF_REPORT_API_KEY>
 ابزارهای منتشرشده فقط‌خواندنی هستند:
 
 - `get_attendance_summary`: خلاصه حضور، تأخیر و افراد بدون ورود برای یک تاریخ
+- `get_daily_reports`: محتوای گزارش‌های روزانه، خلاصه هوش مصنوعی، متن صوت، پیگیری و کامنت مدیر
 - `ask_management`: پرسش مدیریتی فارسی درباره داده‌های ثبت‌شده Staff
 
 اگر `MCP_API_KEY` خالی باشد، endpoint از `STAFF_REPORT_API_KEY` استفاده می‌کند.
