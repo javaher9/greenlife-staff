@@ -1,4 +1,50 @@
-/* Login field alignment fix — keep text safely inside artwork inputs on desktop, Fold and mobile. */
+/* Login page refinements — keep fields aligned while making the artwork edge-to-edge. */
+body.login-fixed-page{
+  width:100vw!important;
+  min-height:100svh!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  background:#f4f4ee!important;
+}
+.login-fixed-stage{
+  position:relative!important;
+  width:100vw!important;
+  height:100svh!important;
+  min-height:100svh!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  max-width:none!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  outline:0!important;
+  background:transparent!important;
+}
+.login-fixed-art{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+.login-fixed-art img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  object-fit:cover!important;
+  object-position:center center!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
 .login-fixed-form>input:not([type=hidden]){
   box-sizing:border-box!important;
   max-width:100%!important;
@@ -17,6 +63,14 @@
 .login-fixed-form>input[name=password]{
   transform:translateY(-1px);
 }
+
+/* Galaxy Tab / Fold landscape: the artwork ratio is already ~1.60, so cover
+   removes the visible side gutters with only negligible cropping. */
+@media (min-width:701px) and (max-width:1400px){
+  .login-fixed-stage{width:100vw!important;height:100svh!important}
+  .login-fixed-art img{object-fit:cover!important;object-position:center!important}
+}
+
 @media(max-width:700px){
   .login-fixed-form>input:not([type=hidden]){
     font-size:11px!important;
