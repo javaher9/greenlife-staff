@@ -105,16 +105,19 @@ class EmployeeAvatarForm(forms.ModelForm):
     class Meta:
         model=EmployeeProfile
         fields=['avatar']
-        widgets={'avatar': forms.ClearableFileInput(attrs={'accept':'image/jpeg,image/png,image/webp'})}
+        widgets={'avatar': forms.ClearableFileInput(attrs={'accept':'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp'})}
 
     def clean_avatar(self):
         avatar=self.cleaned_data.get('avatar')
         if avatar:
-            if getattr(avatar,'size',0) > 5*1024*1024:
-                raise forms.ValidationError('حجم عکس باید کمتر از ۵ مگابایت باشد.')
-            content_type=getattr(avatar,'content_type','')
-            if content_type and content_type not in ('image/jpeg','image/png','image/webp'):
-                raise forms.ValidationError('فرمت عکس باید JPG، PNG یا WEBP باشد.')
+            # Nginx accepts up to 30 MB. Keep a lower app-level guard while
+            # allowing normal modern phone photos, which are often >5 MB.
+            if getattr(avatar,'size',0) > 15*1024*1024:
+                raise forms.ValidationError('حجم عکس باید کمتر از ۱۵ مگابایت باشد.')
+            content_type=(getattr(avatar,'content_type','') or '').lower()
+            allowed=('image/jpeg','image/jpg','image/pjpeg','image/png','image/webp')
+            if content_type and content_type not in allowed:
+                raise forms.ValidationError('فرمت عکس باید JPG، PNG یا WEBP باشد. عکس‌های HEIC/HEIF را ابتدا به JPG تبدیل کنید.')
         return avatar
 
 
