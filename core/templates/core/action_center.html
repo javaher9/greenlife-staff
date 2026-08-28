@@ -20,20 +20,14 @@
     <a class="owner-kpi green" href="/employees/"><span class="owner-kpi-icon">♟</span><div><small>افراد درگیر</small><strong>{{ counts.people }}</strong><em>پرسنل مرتبط</em></div></a>
   </section>
 
-  <section class="owner-main-grid-v35 action-center-main-v35">
-    <article class="owner-card-v35 owner-activity-card action-center-queue-v35">
-      <div class="owner-card-head action-center-head-v35">
-        <div>
-          <h2>صف اقدامات</h2>
-          <span>روی هر مورد بزنید تا مستقیماً وارد جریان بررسی شوید.</span>
-        </div>
-        <label class="action-center-search-v35">
-          <span aria-hidden="true">⌕</span>
-          <input id="actionCenterSearchV35" type="search" placeholder="جستجو نام، شعبه یا موضوع..." autocomplete="off">
-        </label>
+  <section class="action-center-main-v36">
+    <article class="action-center-queue-v36">
+      <div class="action-center-head-v36">
+        <div><h2>صف اقدامات</h2><span>تصمیم‌های روزانه را همین‌جا نهایی کنید؛ بدون خروج از صفحه.</span></div>
+        <label class="action-center-search-v36"><span aria-hidden="true">⌕</span><input id="actionCenterSearchV36" type="search" placeholder="جستجو نام، شعبه یا موضوع..." autocomplete="off"></label>
       </div>
 
-      <div class="action-center-filters-v35" aria-label="فیلتر نوع اقدام">
+      <div class="action-center-filters-v36" aria-label="فیلتر نوع اقدام">
         <a href="/action-center/" class="{% if not priority_filter and not kind_filter %}active{% endif %}">همه</a>
         <a href="?kind=correction" class="{% if kind_filter == 'correction' %}active{% endif %}">اصلاح حضور</a>
         <a href="?kind=leave" class="{% if kind_filter == 'leave' %}active{% endif %}">مرخصی</a>
@@ -42,55 +36,87 @@
         <a href="?kind=report" class="{% if kind_filter == 'report' %}active{% endif %}">گزارش</a>
       </div>
 
-      <div class="owner-activity-list action-center-list-v35" id="actionCenterListV35">
+      <form class="action-center-csrf" aria-hidden="true">{% csrf_token %}</form>
+      <div class="action-center-list-v36" id="actionCenterListV36">
         {% for item in items %}
-        <a class="owner-activity-row action-center-row-v35 {{ item.priority }}" href="{{ item.url }}" data-search="{{ item.title }} {{ item.subtitle }} {% if item.user %}{{ item.user.get_full_name|default:item.user.username }} {{ item.user.profile.branch|default:'' }}{% endif %}">
-          <span class="action-center-priority-line" aria-hidden="true"></span>
-          <span class="owner-activity-dot action-center-dot-v35 {{ item.priority }}"></span>
-          <span class="action-center-icon-v35">{{ item.icon }}</span>
-          <div class="action-center-copy-v35">
-            <div class="action-center-title-v35">
-              <strong>{{ item.title }}</strong>
-              <em class="{{ item.priority }}">{% if item.priority == 'critical' %}فوری{% elif item.priority == 'high' %}مهم{% elif item.priority == 'medium' %}پیگیری{% else %}عادی{% endif %}</em>
-            </div>
+        <div class="action-center-row-v36 {{ item.priority }}" data-kind="{{ item.kind }}" data-url="{{ item.url }}" data-search="{{ item.title }} {{ item.subtitle }} {% if item.user %}{{ item.user.get_full_name|default:item.user.username }} {{ item.user.profile.branch|default:'' }}{% endif %}">
+          {% if item.user %}
+          <a class="action-person-v36" href="{% url 'employee_file' item.user.profile.pk %}" title="پرونده {{ item.user.get_full_name|default:item.user.username }}">
+            <span class="action-avatar-v36">{% if item.user.profile.avatar %}<img src="{{ item.user.profile.avatar.url }}" alt="{{ item.user.get_full_name|default:item.user.username }}">{% else %}{{ item.user.first_name|first|default:item.user.username|first }}{% endif %}</span>
+            <span class="action-person-copy-v36"><b>{{ item.user.get_full_name|default:item.user.username }}</b>{% if item.user.profile.branch %}<small>{{ item.user.profile.branch }}</small>{% endif %}</span>
+          </a>
+          {% else %}
+          <span class="action-icon-only-v36">{{ item.icon }}</span>
+          {% endif %}
+
+          <div class="action-center-copy-v36">
+            <div class="action-center-title-v36"><strong>{{ item.title }}</strong><em class="{{ item.priority }}">{% if item.priority == 'critical' %}فوری{% elif item.priority == 'high' %}مهم{% elif item.priority == 'medium' %}پیگیری{% else %}عادی{% endif %}</em></div>
             <p>{{ item.subtitle }}</p>
-            {% if item.user %}<small>{{ item.user.get_full_name|default:item.user.username }}{% if item.user.profile.branch %} · {{ item.user.profile.branch }}{% endif %}</small>{% endif %}
           </div>
-          <span class="action-center-open-v35">اقدام ‹</span>
-        </a>
-        {% empty %}<div class="owner-empty-v35 action-center-empty-v35">مورد بازی با فیلتر فعلی باقی نمانده است.</div>{% endfor %}
-        <div class="owner-empty-v35 action-center-no-results-v35" id="actionCenterNoResultsV35">موردی با این جستجو پیدا نشد.</div>
+
+          <div class="action-center-buttons-v36">
+            {% if item.kind == 'leave' or item.kind == 'correction' %}
+              <button type="button" class="action-quick-v36 approve" data-action="approved">تأیید شد</button>
+              <button type="button" class="action-quick-v36 reject" data-action="rejected">رد شد</button>
+            {% elif item.kind == 'device' %}
+              <button type="button" class="action-quick-v36 done" data-action="resolved">رفع شد</button>
+              <button type="button" class="action-quick-v36 review" data-action="reviewing">در حال بررسی</button>
+            {% elif item.kind == 'task' %}
+              <button type="button" class="action-quick-v36 done" data-action="done">انجام شد</button>
+            {% else %}
+              <a class="action-open-v36" href="{{ item.url }}">مشاهده</a>
+            {% endif %}
+          </div>
+        </div>
+        {% empty %}<div class="action-center-empty-v36">مورد بازی با فیلتر فعلی باقی نمانده است.</div>{% endfor %}
+        <div class="action-center-empty-v36" id="actionCenterNoResultsV36" hidden>موردی با این جستجو پیدا نشد.</div>
       </div>
     </article>
 
-    <aside class="action-center-side-v35">
-      <article class="owner-card-v35 owner-shortcut-card action-center-shortcuts-v35">
-        <div class="owner-card-head"><h2>دسترسی سریع</h2><span>↗</span></div>
-        <div class="owner-shortcuts">
-          <a href="?priority=critical"><i class="amber">⚡</i><span>فوری‌ها</span><b>{{ counts.critical }}</b></a>
-          <a href="?priority=high"><i class="purple">◆</i><span>مهم‌ها</span><b>{{ counts.high }}</b></a>
-          <a href="?kind=device"><i class="teal">▣</i><span>خرابی دستگاه</span></a>
-          <a href="?kind=correction"><i class="green">◷</i><span>اصلاح حضور</span></a>
-        </div>
-      </article>
-
-      <article class="owner-card-v35 owner-alert-card action-center-guide-v35">
-        <div class="owner-card-head"><h2>راهنمای اولویت</h2><span>!</span></div>
-        <div class="action-center-guide-list-v35">
-          <p><i class="critical"></i><span><b>فوری</b><small>بهتر است همین امروز رسیدگی شود.</small></span></p>
-          <p><i class="high"></i><span><b>مهم</b><small>اولویت بالا و نیازمند پیگیری نزدیک.</small></span></p>
-          <p><i class="medium"></i><span><b>پیگیری</b><small>مهم است، اما فوریت کمتری دارد.</small></span></p>
-        </div>
-      </article>
-    </aside>
+    <div class="action-center-bottom-v36">
+      <article class="action-center-mini-v36"><h3>راهنمای اقدام</h3><p>تأیید، رد، انجام شد و رفع شد مستقیماً همین صفحه ثبت می‌شوند و ردیف انجام‌شده از صف حذف می‌شود.</p></article>
+      <article class="action-center-mini-v36"><h3>رنگ و رابط</h3><p>سطح، حاشیه، متن و رنگ تأکیدی این صفحه مستقیماً از پالت ثابت داشبورد استفاده می‌کند.</p></article>
+    </div>
   </section>
 </div>
 
+<div class="action-toast-v36" id="actionToastV36" role="status" aria-live="polite"></div>
+
 <style>
-/* Action Center intentionally reuses the exact Manager Dashboard v35 surfaces/components. */
-.action-center-dashboard-v35{font-family:inherit}.action-center-kpis-v35 a{text-decoration:none;color:inherit}.action-center-main-v35{align-items:start}.action-center-queue-v35{min-width:0}.action-center-side-v35{display:grid;gap:16px;min-width:0}.action-center-head-v35{align-items:center;gap:18px}.action-center-head-v35>div>span{display:block;margin-top:6px;color:var(--muted);font-size:12px;line-height:1.7}.action-center-search-v35{position:relative;width:min(330px,100%);flex:0 1 330px}.action-center-search-v35>span{position:absolute;right:13px;top:50%;transform:translateY(-50%);color:#9d7ad8;font-size:20px;line-height:1}.action-center-search-v35 input{min-height:44px;padding:0 42px 0 13px;font-family:inherit;font-size:13px;line-height:1.6}.action-center-search-v35 input::placeholder{color:#8296a1}.action-center-filters-v35{display:flex;gap:8px;flex-wrap:wrap;padding:15px 0 14px;border-bottom:1px solid var(--line)}.action-center-filters-v35 a{padding:8px 12px;border-radius:11px;background:var(--panel2);border:1px solid var(--line);color:#c5d2d8;font-size:12px;font-weight:700;text-decoration:none;line-height:1.5}.action-center-filters-v35 a:hover,.action-center-filters-v35 a.active{color:#fff;border-color:#6f52a6;background:rgba(111,82,166,.22)}.action-center-list-v35{padding-top:4px}.action-center-row-v35{position:relative;display:grid!important;grid-template-columns:8px 12px 44px minmax(0,1fr) auto;gap:11px;align-items:center;padding:14px 4px!important;min-height:76px}.action-center-row-v35:last-of-type{border-bottom:0}.action-center-priority-line{width:3px;height:38px;border-radius:99px;background:#8069bd}.action-center-row-v35.critical .action-center-priority-line{background:#ef737d}.action-center-row-v35.high .action-center-priority-line{background:#e7b54f}.action-center-row-v35.medium .action-center-priority-line{background:#8d72d0}.action-center-dot-v35{width:8px!important;height:8px!important;margin:0!important;align-self:center}.action-center-dot-v35.critical{background:#ef737d!important}.action-center-dot-v35.high{background:#e7b54f!important}.action-center-dot-v35.medium{background:#8d72d0!important}.action-center-icon-v35{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:var(--panel2);border:1px solid var(--line);color:#bd9dea;font-size:18px;font-weight:800}.action-center-copy-v35{min-width:0}.action-center-title-v35{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.action-center-title-v35 strong{font-size:14px;line-height:1.6;color:var(--text)}.action-center-title-v35 em{font-style:normal;padding:4px 8px;border-radius:99px;background:rgba(141,114,208,.15);color:#c7b7ec;font-size:10px;font-weight:800;line-height:1.4}.action-center-title-v35 em.critical{background:rgba(239,115,125,.13);color:#ff9ca5}.action-center-title-v35 em.high{background:rgba(231,181,79,.13);color:#f2ce78}.action-center-copy-v35 p{margin:4px 0 3px;color:#c0cdd3;font-size:12px;line-height:1.75}.action-center-copy-v35 small{display:block;color:#8fa3af;font-size:11px;line-height:1.6}.action-center-open-v35{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:7px 12px;border-radius:11px;background:rgba(119,82,177,.18);border:1px solid rgba(146,110,200,.38);color:#d9c8f4;font-size:12px;font-weight:800;white-space:nowrap}.action-center-shortcuts-v35 .owner-shortcuts a{position:relative}.action-center-shortcuts-v35 .owner-shortcuts b{margin-right:auto;color:#d9c8f4;font-size:12px}.action-center-guide-list-v35{display:grid;gap:4px;margin-top:5px}.action-center-guide-list-v35 p{display:flex;align-items:flex-start;gap:10px;padding:11px 0;margin:0;border-bottom:1px solid var(--line)}.action-center-guide-list-v35 p:last-child{border-bottom:0}.action-center-guide-list-v35 i{width:9px;height:9px;border-radius:50%;margin-top:7px;flex:0 0 auto}.action-center-guide-list-v35 i.critical{background:#ef737d}.action-center-guide-list-v35 i.high{background:#e7b54f}.action-center-guide-list-v35 i.medium{background:#8d72d0}.action-center-guide-list-v35 span{display:grid;gap:3px}.action-center-guide-list-v35 b{font-size:13px;color:var(--text)}.action-center-guide-list-v35 small{font-size:11px;color:#9fb0b8;line-height:1.7}.action-center-empty-v35,.action-center-no-results-v35{padding:32px 14px;text-align:center}.action-center-no-results-v35{display:none}
-@media(max-width:1100px){.action-center-main-v35{grid-template-columns:1fr!important}.action-center-side-v35{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:700px){.action-center-head-v35{display:grid;gap:12px}.action-center-search-v35{width:100%;max-width:none}.action-center-filters-v35{overflow-x:auto;flex-wrap:nowrap;padding-bottom:12px}.action-center-filters-v35 a{white-space:nowrap;font-size:12px}.action-center-row-v35{grid-template-columns:5px 38px minmax(0,1fr)!important;gap:9px;padding:13px 0!important}.action-center-priority-line{height:34px}.action-center-dot-v35{display:none}.action-center-icon-v35{width:36px;height:36px;border-radius:11px;font-size:16px}.action-center-title-v35 strong{font-size:13px}.action-center-copy-v35 p{font-size:12px}.action-center-copy-v35 small{font-size:10px}.action-center-open-v35{grid-column:3;justify-self:start;min-height:34px;margin-top:3px}.action-center-side-v35{grid-template-columns:1fr}.action-center-kpis-v35 .owner-kpi small{font-size:11px!important}.action-center-kpis-v35 .owner-kpi em{font-size:10px!important}}
+.action-center-dashboard-v35{font-family:inherit;max-width:none!important;width:100%!important}.action-center-kpis-v35 a{text-decoration:none;color:inherit}.action-center-main-v36{display:grid;grid-template-columns:1fr;gap:16px;width:100%;min-width:0}.action-center-queue-v36{width:100%;min-width:0;background:rgba(16,29,41,.94);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 10px 32px rgba(0,0,0,.14)}.action-center-head-v36{display:flex;align-items:center;justify-content:space-between;gap:18px}.action-center-head-v36 h2{margin:0;color:var(--text);font-size:19px}.action-center-head-v36>div>span{display:block;margin-top:6px;color:var(--muted);font-size:13px;line-height:1.7}.action-center-search-v36{position:relative;width:min(360px,100%);flex:0 1 360px}.action-center-search-v36>span{position:absolute;right:13px;top:50%;transform:translateY(-50%);color:var(--green);font-size:20px}.action-center-search-v36 input{min-height:46px;padding:0 42px 0 13px;font-family:inherit;font-size:14px;background:#0b1721;border:1px solid #2a4152;color:var(--text);border-radius:12px}.action-center-search-v36 input::placeholder{color:var(--muted)}.action-center-filters-v36{display:flex;gap:8px;flex-wrap:wrap;padding:16px 0;border-bottom:1px solid var(--line)}.action-center-filters-v36 a{padding:9px 13px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);color:#c7d5dc;font-size:13px;font-weight:700;text-decoration:none}.action-center-filters-v36 a:hover,.action-center-filters-v36 a.active{background:#113c2c;border-color:#315244;color:#77e6ae}.action-center-csrf{display:none}.action-center-list-v36{width:100%}.action-center-row-v36{display:grid;grid-template-columns:minmax(190px,235px) minmax(260px,1fr) auto;gap:18px;align-items:center;min-height:92px;padding:14px 4px;border-bottom:1px solid var(--line);transition:opacity .18s ease,transform .18s ease}.action-center-row-v36:last-child{border-bottom:0}.action-center-row-v36.is-removing{opacity:0;transform:translateY(-5px)}.action-person-v36{display:flex;align-items:center;gap:12px;min-width:0;color:inherit;text-decoration:none}.action-avatar-v36{width:54px;height:54px;min-width:54px;border-radius:16px;background:#183226;color:#85eab7;display:grid;place-items:center;overflow:hidden;font-size:18px;font-weight:900}.action-avatar-v36 img{width:100%;height:100%;object-fit:cover}.action-person-copy-v36{min-width:0}.action-person-copy-v36 b{display:block;color:var(--text);font-size:15px;line-height:1.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.action-person-copy-v36 small{display:block;margin-top:3px;color:var(--muted);font-size:12px}.action-icon-only-v36{width:54px;height:54px;border-radius:16px;background:var(--panel2);display:grid;place-items:center;color:var(--green);font-size:20px}.action-center-copy-v36{min-width:0}.action-center-title-v36{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.action-center-title-v36 strong{font-size:15px;line-height:1.65;color:var(--text)}.action-center-title-v36 em{font-style:normal;padding:4px 8px;border-radius:99px;background:#243747;color:#dce7ea;font-size:10px;font-weight:800}.action-center-title-v36 em.critical{background:#451d25;color:#ff9baa}.action-center-title-v36 em.high{background:#40360e;color:#ffe48a}.action-center-title-v36 em.medium{background:#203650;color:#9dc8ff}.action-center-copy-v36 p{margin:5px 0 0;color:#c2d1d8;font-size:14px;line-height:1.8}.action-center-buttons-v36{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}.action-quick-v36,.action-open-v36{min-height:39px;padding:8px 13px;border-radius:11px;border:1px solid var(--line);font-family:inherit;font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.action-quick-v36.approve,.action-quick-v36.done{background:#113c2c;color:#77e6ae;border-color:#315244}.action-quick-v36.reject{background:#451d25;color:#ff9baa;border-color:#64303a}.action-quick-v36.review{background:#243747;color:#dce7ea}.action-open-v36{background:var(--panel2);color:var(--green)}.action-quick-v36:disabled{opacity:.55;cursor:wait}.action-center-empty-v36{padding:34px 14px;text-align:center;color:var(--muted)}.action-center-bottom-v36{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.action-center-mini-v36{background:rgba(16,29,41,.94);border:1px solid var(--line);border-radius:20px;padding:18px}.action-center-mini-v36 h3{margin:0 0 7px;color:var(--text);font-size:15px}.action-center-mini-v36 p{margin:0;color:var(--muted);font-size:12px;line-height:1.8}.action-toast-v36{position:fixed;left:24px;bottom:24px;z-index:9999;max-width:340px;padding:11px 15px;border-radius:12px;background:#113c2c;color:#77e6ae;border:1px solid #315244;box-shadow:0 12px 34px rgba(0,0,0,.28);opacity:0;pointer-events:none;transform:translateY(8px);transition:.18s ease;font-size:13px;font-weight:700}.action-toast-v36.show{opacity:1;transform:none}.action-toast-v36.error{background:#451d25;color:#ff9baa;border-color:#64303a}
+@media(min-width:700px) and (max-width:1180px){.action-center-main-v36{width:100%!important}.action-center-queue-v36{width:100%!important;padding:17px}.action-center-row-v36{grid-template-columns:minmax(160px,210px) minmax(220px,1fr) auto;gap:12px;min-height:88px}.action-person-copy-v36 b{font-size:15px}.action-center-copy-v36 p{font-size:13px}.action-center-title-v36 strong{font-size:14px}.action-avatar-v36{width:50px;height:50px;min-width:50px}.action-quick-v36,.action-open-v36{padding:8px 10px;font-size:11px}}
+@media(max-width:699px){.action-center-head-v36{display:grid;gap:12px}.action-center-search-v36{width:100%;max-width:none}.action-center-filters-v36{overflow-x:auto;flex-wrap:nowrap}.action-center-filters-v36 a{white-space:nowrap}.action-center-row-v36{grid-template-columns:1fr;gap:10px;padding:14px 0}.action-person-v36{order:1}.action-center-copy-v36{order:2}.action-center-buttons-v36{order:3;justify-content:flex-start}.action-center-bottom-v36{grid-template-columns:1fr}.action-center-queue-v36{padding:15px}.action-person-copy-v36 b{font-size:15px}.action-center-copy-v36 p{font-size:13px}.action-toast-v36{left:14px;right:14px;bottom:80px;max-width:none}}
 </style>
-<script>(function(){const input=document.getElementById('actionCenterSearchV35');const rows=[...document.querySelectorAll('.action-center-row-v35')];const empty=document.getElementById('actionCenterNoResultsV35');if(!input)return;input.addEventListener('input',function(){const q=this.value.trim().toLowerCase();let visible=0;rows.forEach(row=>{const show=!q||(row.dataset.search||'').toLowerCase().includes(q);row.style.display=show?'':'none';if(show)visible++;});if(empty)empty.style.display=(q&&visible===0)?'block':'none';});})();</script>
+
+<script>
+(function(){
+  const input=document.getElementById('actionCenterSearchV36');
+  const list=document.getElementById('actionCenterListV36');
+  const empty=document.getElementById('actionCenterNoResultsV36');
+  const toast=document.getElementById('actionToastV36');
+  const csrf=document.querySelector('.action-center-csrf input[name="csrfmiddlewaretoken"]');
+  function rows(){return [...document.querySelectorAll('.action-center-row-v36')];}
+  function showToast(message,isError){if(!toast)return;toast.textContent=message;toast.classList.toggle('error',!!isError);toast.classList.add('show');clearTimeout(window.__actionToastTimer);window.__actionToastTimer=setTimeout(()=>toast.classList.remove('show'),2400);}
+  function filterRows(){if(!input)return;const q=input.value.trim().toLowerCase();let visible=0;rows().forEach(row=>{const show=!q||(row.dataset.search||'').toLowerCase().includes(q);row.style.display=show?'':'none';if(show)visible++;});if(empty)empty.hidden=!(q&&visible===0);}
+  if(input)input.addEventListener('input',filterRows);
+  if(!list)return;
+  list.addEventListener('click',async function(e){
+    const btn=e.target.closest('.action-quick-v36');if(!btn)return;
+    const row=btn.closest('.action-center-row-v36');if(!row)return;
+    e.preventDefault();e.stopPropagation();
+    const match=(row.dataset.url||'').match(/\/(\d+)\/(?:review\/)?$/);const pk=match?match[1]:'';
+    if(!pk){showToast('شناسه این اقدام پیدا نشد.',true);return;}
+    const buttons=[...row.querySelectorAll('.action-quick-v36')];buttons.forEach(b=>b.disabled=true);
+    try{
+      const body=new URLSearchParams({kind:row.dataset.kind||'',pk:pk,action:btn.dataset.action||''});
+      const res=await fetch('/action-center/quick/',{method:'POST',headers:{'X-CSRFToken':csrf?csrf.value:'','X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:body.toString(),credentials:'same-origin'});
+      const data=await res.json();
+      if(!res.ok||!data.ok)throw new Error(data.message||'ثبت اقدام انجام نشد.');
+      showToast(data.message||'اقدام ثبت شد.');
+      if(data.keep){buttons.forEach(b=>b.disabled=false);btn.textContent='ثبت شد';btn.disabled=true;return;}
+      row.classList.add('is-removing');setTimeout(()=>{row.remove();filterRows();if(rows().length===0&&empty){empty.hidden=false;empty.textContent='صف اقدام خالی است.';}},190);
+    }catch(err){buttons.forEach(b=>b.disabled=false);showToast(err.message||'خطا در ثبت اقدام.',true);}
+  });
+})();
+</script>
 {% endblock %}
