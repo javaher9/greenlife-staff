@@ -1,215 +1,45 @@
 /* GreenLife Staff — shared desktop sidebar design system.
    This file owns the right navigation UI across every authenticated page. */
 @media (min-width: 801px){
-  .gl-authenticated .app-sidebar{
-    width:250px!important;
-    background:linear-gradient(180deg,#0b1620 0%,#09131c 100%)!important;
-    border-left:1px solid rgba(255,255,255,.07)!important;
-    box-shadow:-18px 0 45px rgba(0,0,0,.13)!important;
-    padding:22px 14px 18px!important;
-    color:#eef7f2!important;
-  }
-  .gl-authenticated .app-main{
-    margin-right:250px!important;
-    width:calc(100% - 250px)!important;
-  }
-  .gl-authenticated .brand-premium{
-    min-height:68px!important;
-    padding:8px 10px 18px!important;
-    margin:0 0 10px!important;
-    display:flex!important;
-    align-items:center!important;
-    gap:11px!important;
-    border-bottom:1px solid rgba(255,255,255,.065)!important;
-  }
+  .gl-authenticated .app-sidebar{width:250px!important;background:linear-gradient(180deg,#0b1620 0%,#09131c 100%)!important;border-left:1px solid rgba(255,255,255,.07)!important;box-shadow:-18px 0 45px rgba(0,0,0,.13)!important;padding:22px 14px 18px!important;color:#eef7f2!important}
+  .gl-authenticated .app-main{margin-right:250px!important;width:calc(100% - 250px)!important}
+  .gl-authenticated .brand-premium{min-height:68px!important;padding:8px 10px 18px!important;margin:0 0 10px!important;display:flex!important;align-items:center!important;gap:11px!important;border-bottom:1px solid rgba(255,255,255,.065)!important}
   .gl-authenticated .brand-premium b{font-size:16px!important;line-height:1.2!important;color:#f4f1ff!important;letter-spacing:.2px!important}
-  .gl-authenticated .brand-premium small{font-size:10px!important;line-height:1.4!important;color:#a996d4!important;letter-spacing:1.1px!important;margin-top:3px!important}
+  .gl-authenticated .brand-premium small{font-size:11px!important;line-height:1.5!important;color:#c2b5df!important;letter-spacing:.7px!important;margin-top:3px!important}
   .gl-authenticated .app-nav{display:grid!important;gap:4px!important;margin-top:8px!important}
-  .gl-authenticated .app-nav>a,
-  .gl-authenticated .app-nav>button.mobile-more-toggle{
-    min-height:44px!important;
-    padding:9px 11px!important;
-    border:1px solid transparent!important;
-    border-radius:12px!important;
-    background:transparent!important;
-    color:#d2dde2!important;
-    font-family:Tahoma,Arial,sans-serif!important;
-    font-size:13px!important;
-    font-weight:700!important;
-    line-height:1.5!important;
-    display:flex!important;
-    align-items:center!important;
-    gap:10px!important;
-    text-decoration:none!important;
-    transition:background .16s ease,border-color .16s ease,color .16s ease!important;
-    box-shadow:none!important;
-  }
-  .gl-authenticated .app-nav>a:hover{
-    background:rgba(255,255,255,.035)!important;
-    border-color:rgba(255,255,255,.055)!important;
-    color:#fff!important;
-  }
-  .gl-authenticated .app-nav>a.is-active{
-    background:linear-gradient(135deg,rgba(99,66,153,.40),rgba(67,45,108,.28))!important;
-    border-color:rgba(157,119,219,.34)!important;
-    color:#fff!important;
-    box-shadow:inset -3px 0 0 #8a62c6!important;
-  }
-  .gl-authenticated .app-nav .nav-ico{
-    width:30px!important;
-    height:30px!important;
-    min-width:30px!important;
-    display:grid!important;
-    place-items:center!important;
-    border-radius:9px!important;
-    background:rgba(255,255,255,.035)!important;
-    color:#b7a0e5!important;
-    font-size:15px!important;
-    line-height:1!important;
-  }
-  .gl-authenticated .app-nav>a.is-active .nav-ico{
-    background:rgba(130,86,199,.22)!important;
-    color:#d9c8ff!important;
-  }
+  .gl-authenticated .app-nav>a,.gl-authenticated .app-nav>button.mobile-more-toggle{min-height:44px!important;padding:9px 11px!important;border:1px solid transparent!important;border-radius:12px!important;background:transparent!important;color:#e0e7ea!important;font-family:Tahoma,Arial,sans-serif!important;font-size:14px!important;font-weight:700!important;line-height:1.55!important;display:flex!important;align-items:center!important;gap:10px!important;text-decoration:none!important;transition:background .16s ease,border-color .16s ease,color .16s ease!important;box-shadow:none!important}
+  .gl-authenticated .app-nav>a:hover{background:rgba(255,255,255,.035)!important;border-color:rgba(255,255,255,.055)!important;color:#fff!important}
+  .gl-authenticated .app-nav>a.is-active{background:linear-gradient(135deg,rgba(99,66,153,.40),rgba(67,45,108,.28))!important;border-color:rgba(157,119,219,.34)!important;color:#fff!important;box-shadow:inset -3px 0 0 #8a62c6!important}
+  .gl-authenticated .app-nav .nav-ico{width:30px!important;height:30px!important;min-width:30px!important;display:grid!important;place-items:center!important;border-radius:9px!important;background:rgba(255,255,255,.035)!important;color:#b7a0e5!important;font-size:15px!important;line-height:1!important}
+  .gl-authenticated .app-nav>a.is-active .nav-ico{background:rgba(130,86,199,.22)!important;color:#d9c8ff!important}
   .gl-authenticated .app-nav .nav-ico svg{width:18px!important;height:18px!important;fill:currentColor!important;stroke:currentColor!important}
-  .gl-authenticated .nav-section-title{
-    margin:15px 10px 5px!important;
-    padding-top:12px!important;
-    border-top:1px solid rgba(255,255,255,.06)!important;
-    color:#8da0aa!important;
-    font-size:10px!important;
-    font-weight:800!important;
-    letter-spacing:.4px!important;
-  }
-  .gl-authenticated .app-nav>a.muted-module{opacity:.62!important}
+  .gl-authenticated .nav-section-title{margin:15px 10px 5px!important;padding-top:12px!important;border-top:1px solid rgba(255,255,255,.06)!important;color:#b3c0c6!important;font-size:11px!important;font-weight:800!important;letter-spacing:.3px!important}
+  .gl-authenticated .app-nav>a.muted-module{opacity:.78!important}
   .gl-authenticated .camp-side-subnav{margin:0 40px 5px 0!important;padding:3px 9px 5px!important;border-right:1px solid rgba(135,96,194,.25)!important;display:grid!important;gap:2px!important}
-  .gl-authenticated .camp-side-subnav a{color:#9aabb4!important;font-size:11px!important;padding:6px!important;text-decoration:none!important}
-  .gl-authenticated .camp-side-subnav a:hover{color:#d8c8f3!important}
-  .gl-authenticated .sidebar-footer{
-    border-top:1px solid rgba(255,255,255,.06)!important;
-    margin-top:14px!important;
-    padding:13px 9px 0!important;
-    display:flex!important;
-    justify-content:space-between!important;
-    gap:8px!important;
-  }
-  .gl-authenticated .sidebar-footer a{color:#9babb4!important;font-size:11px!important;text-decoration:none!important}
-  .gl-authenticated .sidebar-footer a:hover{color:#d8c8f3!important}
+  .gl-authenticated .camp-side-subnav a{color:#bdc8cd!important;font-size:12px!important;padding:6px!important;text-decoration:none!important}
+  .gl-authenticated .camp-side-subnav a:hover{color:#eee8fb!important}
+  .gl-authenticated .sidebar-footer{border-top:1px solid rgba(255,255,255,.06)!important;margin-top:14px!important;padding:13px 9px 0!important;display:flex!important;justify-content:space-between!important;gap:8px!important}
+  .gl-authenticated .sidebar-footer a{color:#bdc8cd!important;font-size:12px!important;text-decoration:none!important}
+  .gl-authenticated .sidebar-footer a:hover{color:#eee8fb!important}
 }
 
-/* Readability pass — typography/contrast only; layout and component geometry stay unchanged. */
-.gl-authenticated .app-main{
-  color:#f5f8f6!important;
-  font-size:16px;
-}
-.gl-authenticated .app-main p,
-.gl-authenticated .app-main label,
-.gl-authenticated .app-main td,
-.gl-authenticated .app-main li,
-.gl-authenticated .app-main .muted{
-  line-height:1.78;
-}
-.gl-authenticated .app-main p,
-.gl-authenticated .app-main label,
-.gl-authenticated .app-main .muted,
-.gl-authenticated .app-main .hero p,
-.gl-authenticated .app-main .sectionhead p{
-  color:#b8c7c0!important;
-  font-weight:500;
-}
-.gl-authenticated .app-main small{
-  color:#aabbb3!important;
-  font-size:12px;
-  line-height:1.65;
-  font-weight:500;
-}
-.gl-authenticated .app-main h1{font-weight:800!important}
-.gl-authenticated .app-main h2,
-.gl-authenticated .app-main h3,
-.gl-authenticated .app-main h4{font-weight:700!important}
-.gl-authenticated .app-main th{
-  color:#cbd6d1!important;
-  font-weight:700!important;
-}
-.gl-authenticated .app-main td{color:#e3ebe7!important}
-.gl-authenticated .app-main input,
-.gl-authenticated .app-main textarea,
-.gl-authenticated .app-main select,
-.gl-authenticated .app-main button{
-  font-size:14px;
-  line-height:1.55;
-}
-.gl-authenticated .app-main input::placeholder,
-.gl-authenticated .app-main textarea::placeholder{color:#91a39a!important}
-.gl-authenticated .topbar strong{font-size:14px!important}
-.gl-authenticated .topbar span,
-.gl-authenticated .topbar input{font-size:12px!important}
+/* Global readability: brighten and enlarge secondary/grey text without changing layout. */
+.gl-authenticated .app-main{color:#f7faf8!important;font-size:16.5px;font-family:Tahoma,"Segoe UI",Arial,sans-serif!important;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.gl-authenticated .app-main p,.gl-authenticated .app-main label,.gl-authenticated .app-main td,.gl-authenticated .app-main li,.gl-authenticated .app-main .muted{line-height:1.82}
+.gl-authenticated .app-main p,.gl-authenticated .app-main label,.gl-authenticated .app-main .muted,.gl-authenticated .app-main .hero p,.gl-authenticated .app-main .sectionhead p,.gl-authenticated .app-main [class*="muted"],.gl-authenticated .app-main [class*="subtitle"],.gl-authenticated .app-main [class*="caption"],.gl-authenticated .app-main [class*="meta"]{color:#c8d3ce!important;font-weight:550!important}
+.gl-authenticated .app-main small{color:#becbc5!important;font-size:13px!important;line-height:1.72;font-weight:550!important}
+.gl-authenticated .app-main h1{font-weight:800!important}.gl-authenticated .app-main h2,.gl-authenticated .app-main h3,.gl-authenticated .app-main h4{font-weight:700!important}
+.gl-authenticated .app-main th{color:#d9e2de!important;font-weight:700!important}.gl-authenticated .app-main td{color:#edf2ef!important}
+.gl-authenticated .app-main input,.gl-authenticated .app-main textarea,.gl-authenticated .app-main select,.gl-authenticated .app-main button{font-size:14.5px;line-height:1.6;font-family:inherit!important}
+.gl-authenticated .app-main input::placeholder,.gl-authenticated .app-main textarea::placeholder{color:#aebdb6!important;opacity:1}
+.gl-authenticated .topbar strong{font-size:14.5px!important}.gl-authenticated .topbar span,.gl-authenticated .topbar input{font-size:13px!important;color:#c4d0ca!important}
+@media (min-width:650px) and (max-width:1100px){.gl-authenticated .app-main{font-size:17px}.gl-authenticated .app-main small{font-size:13.5px!important}}
 
-@media (min-width: 650px) and (max-width: 1100px){
-  .gl-authenticated .app-main{font-size:16.5px}
-  .gl-authenticated .app-main small{font-size:12.5px}
-}
-
-/* Touch performance pass — keep the premium look, remove GPU-heavy effects on coarse pointers. */
+/* Touch performance pass — keep premium look while avoiding GPU-heavy effects. */
 @media (hover:none) and (pointer:coarse), (max-width:1100px){
-  html{scroll-behavior:auto!important}
-  .gl-authenticated,
-  .gl-authenticated .app-main,
-  .gl-authenticated .content-shell{
-    background-attachment:scroll!important;
-  }
-  .gl-authenticated .topbar,
-  .gl-authenticated .app-sidebar,
-  .gl-authenticated .glass-card,
-  .gl-authenticated .panel,
-  .gl-authenticated .hero,
-  .gl-authenticated .ref-card,
-  .gl-authenticated .exec-panel,
-  .gl-authenticated .exec-kpi,
-  .gl-authenticated .metric-card,
-  .gl-authenticated .p360-card,
-  .gl-authenticated .p360-hero,
-  .gl-authenticated .ac-panel,
-  .gl-authenticated .ac-hero,
-  .gl-authenticated .device-manage-card,
-  .gl-authenticated .guideline-card,
-  .gl-authenticated .gl-profile-header,
-  .gl-authenticated .gl-profile-card{
-    -webkit-backdrop-filter:none!important;
-    backdrop-filter:none!important;
-    filter:none!important;
-    box-shadow:0 8px 22px rgba(0,0,0,.16)!important;
-  }
-  .gl-authenticated .app-nav>a,
-  .gl-authenticated .app-nav>button,
-  .gl-authenticated a,
-  .gl-authenticated button,
-  .gl-authenticated input,
-  .gl-authenticated select,
-  .gl-authenticated textarea{
-    touch-action:manipulation;
-    -webkit-tap-highlight-color:rgba(255,255,255,.04);
-    transition-duration:.08s!important;
-  }
-  .gl-authenticated .app-nav>a:hover,
-  .gl-authenticated .app-nav>button:hover,
-  .gl-authenticated .device-manage-card:hover,
-  .gl-authenticated .guideline-card:hover,
-  .gl-authenticated .ref-kpis article:hover{
-    transform:none!important;
-  }
-  .gl-authenticated *{
-    will-change:auto!important;
-  }
+ html{scroll-behavior:auto!important}.gl-authenticated,.gl-authenticated .app-main,.gl-authenticated .content-shell{background-attachment:scroll!important}
+ .gl-authenticated .topbar,.gl-authenticated .app-sidebar,.gl-authenticated .glass-card,.gl-authenticated .panel,.gl-authenticated .hero,.gl-authenticated .ref-card,.gl-authenticated .exec-panel,.gl-authenticated .exec-kpi,.gl-authenticated .metric-card,.gl-authenticated .p360-card,.gl-authenticated .p360-hero,.gl-authenticated .ac-panel,.gl-authenticated .ac-hero,.gl-authenticated .device-manage-card,.gl-authenticated .guideline-card,.gl-authenticated .gl-profile-header,.gl-authenticated .gl-profile-card{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;filter:none!important;box-shadow:0 8px 22px rgba(0,0,0,.16)!important}
+ .gl-authenticated .app-nav>a,.gl-authenticated .app-nav>button,.gl-authenticated a,.gl-authenticated button,.gl-authenticated input,.gl-authenticated select,.gl-authenticated textarea{touch-action:manipulation;-webkit-tap-highlight-color:rgba(255,255,255,.04);transition-duration:.08s!important}
+ .gl-authenticated .app-nav>a:hover,.gl-authenticated .app-nav>button:hover,.gl-authenticated .device-manage-card:hover,.gl-authenticated .guideline-card:hover,.gl-authenticated .ref-kpis article:hover{transform:none!important}.gl-authenticated *{will-change:auto!important}
 }
-
-@media (prefers-reduced-motion:reduce){
-  .gl-authenticated *,
-  .gl-authenticated *::before,
-  .gl-authenticated *::after{
-    animation-duration:.001ms!important;
-    animation-iteration-count:1!important;
-    transition-duration:.001ms!important;
-    scroll-behavior:auto!important;
-  }
-}
+@media (prefers-reduced-motion:reduce){.gl-authenticated *,.gl-authenticated *::before,.gl-authenticated *::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
