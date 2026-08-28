@@ -149,3 +149,67 @@
   .gl-authenticated .app-main{font-size:16.5px}
   .gl-authenticated .app-main small{font-size:12.5px}
 }
+
+/* Touch performance pass — keep the premium look, remove GPU-heavy effects on coarse pointers. */
+@media (hover:none) and (pointer:coarse), (max-width:1100px){
+  html{scroll-behavior:auto!important}
+  .gl-authenticated,
+  .gl-authenticated .app-main,
+  .gl-authenticated .content-shell{
+    background-attachment:scroll!important;
+  }
+  .gl-authenticated .topbar,
+  .gl-authenticated .app-sidebar,
+  .gl-authenticated .glass-card,
+  .gl-authenticated .panel,
+  .gl-authenticated .hero,
+  .gl-authenticated .ref-card,
+  .gl-authenticated .exec-panel,
+  .gl-authenticated .exec-kpi,
+  .gl-authenticated .metric-card,
+  .gl-authenticated .p360-card,
+  .gl-authenticated .p360-hero,
+  .gl-authenticated .ac-panel,
+  .gl-authenticated .ac-hero,
+  .gl-authenticated .device-manage-card,
+  .gl-authenticated .guideline-card,
+  .gl-authenticated .gl-profile-header,
+  .gl-authenticated .gl-profile-card{
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+    filter:none!important;
+    box-shadow:0 8px 22px rgba(0,0,0,.16)!important;
+  }
+  .gl-authenticated .app-nav>a,
+  .gl-authenticated .app-nav>button,
+  .gl-authenticated a,
+  .gl-authenticated button,
+  .gl-authenticated input,
+  .gl-authenticated select,
+  .gl-authenticated textarea{
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:rgba(255,255,255,.04);
+    transition-duration:.08s!important;
+  }
+  .gl-authenticated .app-nav>a:hover,
+  .gl-authenticated .app-nav>button:hover,
+  .gl-authenticated .device-manage-card:hover,
+  .gl-authenticated .guideline-card:hover,
+  .gl-authenticated .ref-kpis article:hover{
+    transform:none!important;
+  }
+  .gl-authenticated *{
+    will-change:auto!important;
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .gl-authenticated *,
+  .gl-authenticated *::before,
+  .gl-authenticated *::after{
+    animation-duration:.001ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.001ms!important;
+    scroll-behavior:auto!important;
+  }
+}
