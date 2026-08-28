@@ -2150,3 +2150,17 @@ body.gl-role-employee :is(button,input,textarea,select){font-family:Tahoma,Arial
   body.gl-role-employee.gl-page-dashboard .gl-attendance-card>small{line-height:1.25!important}
   body.gl-role-employee.gl-page-dashboard .gl-attendance-card .gl-shift-line{margin:4px 0 0!important;line-height:1.3!important}
 }
+
+/* v38.1 login — full artwork, zero image cropping */
+body.login-fixed-page{display:grid!important;place-items:center!important;min-height:100svh!important;margin:0!important;padding:0!important;overflow:hidden!important;background:#f5f5ef!important}
+.login-fixed-stage{position:relative!important;width:min(100vw,calc(100svh * 1.6032))!important;height:min(100svh,calc(100vw / 1.6032))!important;min-height:0!important;margin:0!important;padding:0!important;overflow:visible!important;max-width:none!important;background:#f5f5ef!important}
+.login-fixed-art,.login-fixed-art img{display:block;width:100%;height:100%}.login-fixed-art img{object-fit:contain;object-position:center}
+.login-fixed-form{position:absolute;z-index:3;left:51.25%;top:16.2%;width:38.3%;height:64.7%;margin:0;padding:0;background:transparent;border:0;box-shadow:none}
+.login-fixed-form>input:not([type=hidden]){position:absolute;left:6.5%;width:87%;height:10%;min-height:0;padding:0 4%;border:0!important;border-radius:14px;background:transparent!important;color:#17362d!important;font:clamp(12px,1.2vw,18px) Tahoma,Arial,sans-serif!important;direction:ltr;text-align:left;outline:0;box-shadow:none!important}
+.login-fixed-form>input:not([type=hidden]):focus{box-shadow:0 0 0 4px rgba(24,157,103,.18)!important;background:rgba(255,255,255,.32)!important}
+.login-fixed-form>input[name=username]{top:40.7%}.login-fixed-form>input[name=password]{top:60.8%}
+.login-fixed-form>button{position:absolute;left:12.5%;top:77.4%;width:75%;height:11.5%;padding:0;border:0;border-radius:14px;background:transparent!important;color:transparent!important;box-shadow:none!important;cursor:pointer}
+.login-fixed-form>button:hover,.login-fixed-form>button:focus{background:rgba(255,255,255,.12)!important;box-shadow:0 0 0 3px rgba(255,255,255,.22)!important}
+.login-sr{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.login-fixed-error{position:absolute;left:5%;right:5%;bottom:1%;padding:6px 8px;border-radius:9px;background:rgba(124,58,237,.92);color:#fff;text-align:center;font:11px Tahoma,Arial,sans-serif}
+@media(max-width:700px){body.login-fixed-page{background:#f4f4ee!important}.login-fixed-stage{width:min(100vw,calc(100svh * .5628))!important;height:min(100svh,calc(100vw / .5628))!important}.login-fixed-form{left:53.2%;top:53.65%;width:43.7%;height:33.5%}.login-fixed-form>input:not([type=hidden]){left:7%;width:86%;height:10.8%;border-radius:9px;font-size:12px!important}.login-fixed-form>input[name=username]{top:36.8%}.login-fixed-form>input[name=password]{top:59.3%}.login-fixed-form>button{left:7%;top:78%;width:86%;height:12.2%;border-radius:10px}.login-fixed-error{font-size:8px;padding:3px 4px}}
