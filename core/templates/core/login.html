@@ -1,1 +1,42 @@
-{% load static jalali_tags %}<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="{% static 'core/app.css' %}"><title>ورود</title></head><body class="login"><form method="post" class="panel auth">{% csrf_token %}<h1>GreenLife Staff</h1><p>ورود به سامانه پرسنل</p>{{ form.as_p }}<button>ورود</button></form></body></html>
+{% load static %}
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#123f31">
+  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v38-login">
+  <title>ورود | GreenLife Staff</title>
+</head>
+<body class="login-page">
+  <main class="login-stage">
+    <div class="login-portrait" aria-hidden="true">
+      <picture>
+        <source media="(max-width: 700px)" srcset="{% static 'core/login/staff-login-mobile.webp' %}?v=v38-login">
+        <img src="{% static 'core/login/staff-login-wide.webp' %}?v=v38-login" alt="" fetchpriority="high">
+      </picture>
+    </div>
+
+    <form method="post" class="login-card" novalidate>
+      {% csrf_token %}
+      <div class="login-heading">
+        <h1>GreenLife Staff</h1>
+        <p>ورود به سامانه پرسنل</p>
+      </div>
+      {% if form.non_field_errors %}<div class="login-error" role="alert">{{ form.non_field_errors|striptags }}</div>{% endif %}
+      <div class="login-field">
+        <label for="{{ form.username.id_for_label }}">نام کاربری</label>
+        {{ form.username }}
+        {% if form.username.errors %}<small class="login-field-error">{{ form.username.errors|striptags }}</small>{% endif %}
+      </div>
+      <div class="login-field">
+        <label for="{{ form.password.id_for_label }}">گذرواژه</label>
+        {{ form.password }}
+        {% if form.password.errors %}<small class="login-field-error">{{ form.password.errors|striptags }}</small>{% endif %}
+      </div>
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      <button type="submit" class="login-submit">ورود</button>
+    </form>
+  </main>
+</body>
+</html>
