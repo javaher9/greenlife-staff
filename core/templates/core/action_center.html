@@ -1,9 +1,15 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
 <div class="owner-dashboard-v35 action-center-dashboard-v35">
   <section class="owner-hero-v35">
-    <div class="owner-hero-copy"><h1>مرکز اقدام مدیر</h1><p>{{ today|jdate }} · مواردی که امروز نیاز به تصمیم یا پیگیری دارند</p></div>
+    <div class="owner-hero-copy">
+      <h1>مرکز اقدام مدیر</h1>
+      <p>{{ today|jdate }} · مواردی که امروز نیاز به تصمیم یا پیگیری دارند</p>
+    </div>
     <div class="owner-hero-orb" aria-hidden="true"></div>
-    <div class="owner-hero-actions"><a class="owner-new-request" href="?priority=critical"><span>⚡</span> موارد فوری</a><a class="owner-action-back-v35" href="/live/">بازگشت به داشبورد</a></div>
+    <div class="owner-hero-actions">
+      <a class="owner-new-request" href="?priority=critical"><span>⚡</span> فقط موارد فوری</a>
+      <a class="owner-action-back-v35" href="/live/">بازگشت به داشبورد</a>
+    </div>
   </section>
 
   <section class="owner-kpis-v35 action-center-kpis-v35">
@@ -14,38 +20,77 @@
     <a class="owner-kpi green" href="/employees/"><span class="owner-kpi-icon">♟</span><div><small>افراد درگیر</small><strong>{{ counts.people }}</strong><em>پرسنل مرتبط</em></div></a>
   </section>
 
-  <section class="owner-card-v35 action-center-card-v35">
-    <div class="owner-card-head action-center-head-v35">
-      <div><h2>صف اقدامات</h2><span>روی هر مورد بزنید تا مستقیماً وارد جریان بررسی شوید.</span></div>
-      <label class="action-center-search-v35"><span>⌕</span><input id="actionCenterSearchV35" type="search" placeholder="جستجو نام، شعبه یا موضوع..." autocomplete="off"></label>
-    </div>
-    <div class="action-center-filters-v35">
-      <a href="/action-center/" class="{% if not priority_filter and not kind_filter %}active{% endif %}">همه</a><a href="?kind=correction" class="{% if kind_filter == 'correction' %}active{% endif %}">اصلاح حضور</a><a href="?kind=leave" class="{% if kind_filter == 'leave' %}active{% endif %}">مرخصی</a><a href="?kind=device" class="{% if kind_filter == 'device' %}active{% endif %}">خرابی دستگاه</a><a href="?kind=task" class="{% if kind_filter == 'task' %}active{% endif %}">وظایف</a><a href="?kind=report" class="{% if kind_filter == 'report' %}active{% endif %}">گزارش</a>
-    </div>
-    <div class="action-center-list-v35" id="actionCenterListV35">
-      {% for item in items %}
-      <a class="action-center-row-v35 {{ item.priority }}" href="{{ item.url }}" data-search="{{ item.title }} {{ item.subtitle }} {% if item.user %}{{ item.user.get_full_name|default:item.user.username }} {{ item.user.profile.branch|default:'' }}{% endif %}">
-        <span class="action-center-icon-v35">{{ item.icon }}</span>
-        <div class="action-center-copy-v35"><div class="action-center-title-v35"><strong>{{ item.title }}</strong><em class="{{ item.priority }}">{% if item.priority == 'critical' %}فوری{% elif item.priority == 'high' %}مهم{% elif item.priority == 'medium' %}پیگیری{% else %}عادی{% endif %}</em></div><p>{{ item.subtitle }}</p>{% if item.user %}<small>{{ item.user.get_full_name|default:item.user.username }}{% if item.user.profile.branch %} · {{ item.user.profile.branch }}{% endif %}</small>{% endif %}</div>
-        <span class="action-center-open-v35">اقدام ‹</span>
-      </a>
-      {% empty %}<div class="owner-empty-v35 action-center-empty-v35">مورد بازی با فیلتر فعلی باقی نمانده است.</div>{% endfor %}
-      <div class="owner-empty-v35 action-center-no-results-v35" id="actionCenterNoResultsV35">موردی با این جستجو پیدا نشد.</div>
-    </div>
+  <section class="owner-main-grid-v35 action-center-main-v35">
+    <article class="owner-card-v35 owner-activity-card action-center-queue-v35">
+      <div class="owner-card-head action-center-head-v35">
+        <div>
+          <h2>صف اقدامات</h2>
+          <span>روی هر مورد بزنید تا مستقیماً وارد جریان بررسی شوید.</span>
+        </div>
+        <label class="action-center-search-v35">
+          <span aria-hidden="true">⌕</span>
+          <input id="actionCenterSearchV35" type="search" placeholder="جستجو نام، شعبه یا موضوع..." autocomplete="off">
+        </label>
+      </div>
+
+      <div class="action-center-filters-v35" aria-label="فیلتر نوع اقدام">
+        <a href="/action-center/" class="{% if not priority_filter and not kind_filter %}active{% endif %}">همه</a>
+        <a href="?kind=correction" class="{% if kind_filter == 'correction' %}active{% endif %}">اصلاح حضور</a>
+        <a href="?kind=leave" class="{% if kind_filter == 'leave' %}active{% endif %}">مرخصی</a>
+        <a href="?kind=device" class="{% if kind_filter == 'device' %}active{% endif %}">خرابی دستگاه</a>
+        <a href="?kind=task" class="{% if kind_filter == 'task' %}active{% endif %}">وظایف</a>
+        <a href="?kind=report" class="{% if kind_filter == 'report' %}active{% endif %}">گزارش</a>
+      </div>
+
+      <div class="owner-activity-list action-center-list-v35" id="actionCenterListV35">
+        {% for item in items %}
+        <a class="owner-activity-row action-center-row-v35 {{ item.priority }}" href="{{ item.url }}" data-search="{{ item.title }} {{ item.subtitle }} {% if item.user %}{{ item.user.get_full_name|default:item.user.username }} {{ item.user.profile.branch|default:'' }}{% endif %}">
+          <span class="action-center-priority-line" aria-hidden="true"></span>
+          <span class="owner-activity-dot action-center-dot-v35 {{ item.priority }}"></span>
+          <span class="action-center-icon-v35">{{ item.icon }}</span>
+          <div class="action-center-copy-v35">
+            <div class="action-center-title-v35">
+              <strong>{{ item.title }}</strong>
+              <em class="{{ item.priority }}">{% if item.priority == 'critical' %}فوری{% elif item.priority == 'high' %}مهم{% elif item.priority == 'medium' %}پیگیری{% else %}عادی{% endif %}</em>
+            </div>
+            <p>{{ item.subtitle }}</p>
+            {% if item.user %}<small>{{ item.user.get_full_name|default:item.user.username }}{% if item.user.profile.branch %} · {{ item.user.profile.branch }}{% endif %}</small>{% endif %}
+          </div>
+          <span class="action-center-open-v35">اقدام ‹</span>
+        </a>
+        {% empty %}<div class="owner-empty-v35 action-center-empty-v35">مورد بازی با فیلتر فعلی باقی نمانده است.</div>{% endfor %}
+        <div class="owner-empty-v35 action-center-no-results-v35" id="actionCenterNoResultsV35">موردی با این جستجو پیدا نشد.</div>
+      </div>
+    </article>
+
+    <aside class="action-center-side-v35">
+      <article class="owner-card-v35 owner-shortcut-card action-center-shortcuts-v35">
+        <div class="owner-card-head"><h2>دسترسی سریع</h2><span>↗</span></div>
+        <div class="owner-shortcuts">
+          <a href="?priority=critical"><i class="amber">⚡</i><span>فوری‌ها</span><b>{{ counts.critical }}</b></a>
+          <a href="?priority=high"><i class="purple">◆</i><span>مهم‌ها</span><b>{{ counts.high }}</b></a>
+          <a href="?kind=device"><i class="teal">▣</i><span>خرابی دستگاه</span></a>
+          <a href="?kind=correction"><i class="green">◷</i><span>اصلاح حضور</span></a>
+        </div>
+      </article>
+
+      <article class="owner-card-v35 owner-alert-card action-center-guide-v35">
+        <div class="owner-card-head"><h2>راهنمای اولویت</h2><span>!</span></div>
+        <div class="action-center-guide-list-v35">
+          <p><i class="critical"></i><span><b>فوری</b><small>بهتر است همین امروز رسیدگی شود.</small></span></p>
+          <p><i class="high"></i><span><b>مهم</b><small>اولویت بالا و نیازمند پیگیری نزدیک.</small></span></p>
+          <p><i class="medium"></i><span><b>پیگیری</b><small>مهم است، اما فوریت کمتری دارد.</small></span></p>
+        </div>
+      </article>
+    </aside>
   </section>
 </div>
+
 <style>
-/* Keep the upper dashboard controls unchanged; only the work area below is dark like Manager Dashboard. */
-.action-center-dashboard-v35{font-family:inherit}.action-center-kpis-v35 a{text-decoration:none;color:inherit}
-.action-center-card-v35{padding:20px!important;background:linear-gradient(145deg,#101d29 0%,#0c1721 100%)!important;border:1px solid #233747!important;box-shadow:0 18px 45px rgba(0,0,0,.20)!important;color:#eef7f2!important}
-.action-center-head-v35{align-items:flex-start;gap:14px}.action-center-head-v35 h2{color:#f3f7f8!important}.action-center-head-v35>div>span{display:block;margin-top:5px;color:#8fa3af!important;font-size:8px}
-.action-center-search-v35{position:relative;width:min(320px,100%)}.action-center-search-v35>span{position:absolute;right:12px;top:10px;color:#a98ae4;font-size:15px}.action-center-search-v35 input{height:40px;padding:0 36px 0 12px;background:#0b1721!important;border:1px solid #2a4152!important;border-radius:12px;color:#fff!important;font-family:inherit;font-size:9px;outline:none}.action-center-search-v35 input::placeholder{color:#738896}.action-center-search-v35 input:focus{border-color:#7252aa!important;box-shadow:0 0 0 3px rgba(119,82,177,.14)}
-.action-center-filters-v35{display:flex;gap:7px;flex-wrap:wrap;padding:13px 0 15px;border-bottom:1px solid #233747}.action-center-filters-v35 a{padding:7px 11px;border-radius:10px;background:#162635;border:1px solid #294050;color:#aebdc5;font-size:8px;font-weight:800;text-decoration:none}.action-center-filters-v35 a:hover,.action-center-filters-v35 a.active{background:linear-gradient(135deg,#593b91,#7650b5);border-color:#8060b7;color:#fff;box-shadow:0 5px 14px rgba(79,49,130,.24)}
-.action-center-list-v35{display:grid;gap:8px;padding-top:13px}.action-center-row-v35{display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px 13px;background:linear-gradient(145deg,#14242f,#101d27);border:1px solid #263a48;border-radius:14px;color:#eef7f2;text-decoration:none;transition:.15s ease;box-shadow:0 4px 14px rgba(0,0,0,.10)}.action-center-row-v35:hover{background:linear-gradient(145deg,#182b38,#13232e);border-color:#3c5060;box-shadow:0 8px 20px rgba(0,0,0,.18);transform:translateY(-1px)}.action-center-row-v35.critical{border-right:3px solid #ef6f78}.action-center-row-v35.high{border-right:3px solid #e7b54f}.action-center-row-v35.medium{border-right:3px solid #8d72d0}
-.action-center-icon-v35{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,#2c2340,#3a2857);color:#c4a8f2;font-size:17px;font-weight:800;border:1px solid rgba(185,151,238,.12)}.action-center-row-v35.critical .action-center-icon-v35{background:#3b2229;color:#ff9aa3}.action-center-row-v35.high .action-center-icon-v35{background:#3a3118;color:#f5cf74}
-.action-center-copy-v35{min-width:0}.action-center-title-v35{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.action-center-title-v35 strong{font-size:10px;color:#f2f7f8}.action-center-title-v35 em{font-style:normal;padding:3px 7px;border-radius:99px;background:#2d2440;color:#c6a9f0;font-size:7px;font-weight:700}.action-center-title-v35 em.critical{background:#40232a;color:#ff9da6}.action-center-title-v35 em.high{background:#3c3219;color:#f6d174}.action-center-title-v35 em.medium{background:#2c2746;color:#b6a1ed}.action-center-copy-v35 p{margin:4px 0;color:#a7b6be;font-size:8px;line-height:1.65}.action-center-copy-v35 small{color:#7f939f;font-size:7px}.action-center-open-v35{padding:7px 10px;border-radius:9px;background:linear-gradient(135deg,#5d3d95,#7650b5);color:#fff;font-size:8px;font-weight:800;white-space:nowrap;box-shadow:0 5px 13px rgba(64,39,105,.25)}
-.action-center-empty-v35,.action-center-no-results-v35{padding:35px 15px;text-align:center;background:#101f2a;border:1px dashed #334957;border-radius:13px;color:#91a4af}.action-center-no-results-v35{display:none}
-@media(max-width:700px){.action-center-card-v35{padding:14px!important}.action-center-head-v35{display:grid}.action-center-search-v35{width:100%}.action-center-filters-v35{overflow-x:auto;flex-wrap:nowrap}.action-center-filters-v35 a{white-space:nowrap}.action-center-row-v35{grid-template-columns:38px minmax(0,1fr);gap:9px;padding:11px 10px}.action-center-icon-v35{width:36px;height:36px}.action-center-open-v35{grid-column:2;justify-self:start}}
+/* Action Center intentionally reuses the exact Manager Dashboard v35 surfaces/components. */
+.action-center-dashboard-v35{font-family:inherit}.action-center-kpis-v35 a{text-decoration:none;color:inherit}.action-center-main-v35{align-items:start}.action-center-queue-v35{min-width:0}.action-center-side-v35{display:grid;gap:16px;min-width:0}.action-center-head-v35{align-items:center;gap:18px}.action-center-head-v35>div>span{display:block;margin-top:6px;color:var(--muted);font-size:12px;line-height:1.7}.action-center-search-v35{position:relative;width:min(330px,100%);flex:0 1 330px}.action-center-search-v35>span{position:absolute;right:13px;top:50%;transform:translateY(-50%);color:#9d7ad8;font-size:20px;line-height:1}.action-center-search-v35 input{min-height:44px;padding:0 42px 0 13px;font-family:inherit;font-size:13px;line-height:1.6}.action-center-search-v35 input::placeholder{color:#8296a1}.action-center-filters-v35{display:flex;gap:8px;flex-wrap:wrap;padding:15px 0 14px;border-bottom:1px solid var(--line)}.action-center-filters-v35 a{padding:8px 12px;border-radius:11px;background:var(--panel2);border:1px solid var(--line);color:#c5d2d8;font-size:12px;font-weight:700;text-decoration:none;line-height:1.5}.action-center-filters-v35 a:hover,.action-center-filters-v35 a.active{color:#fff;border-color:#6f52a6;background:rgba(111,82,166,.22)}.action-center-list-v35{padding-top:4px}.action-center-row-v35{position:relative;display:grid!important;grid-template-columns:8px 12px 44px minmax(0,1fr) auto;gap:11px;align-items:center;padding:14px 4px!important;min-height:76px}.action-center-row-v35:last-of-type{border-bottom:0}.action-center-priority-line{width:3px;height:38px;border-radius:99px;background:#8069bd}.action-center-row-v35.critical .action-center-priority-line{background:#ef737d}.action-center-row-v35.high .action-center-priority-line{background:#e7b54f}.action-center-row-v35.medium .action-center-priority-line{background:#8d72d0}.action-center-dot-v35{width:8px!important;height:8px!important;margin:0!important;align-self:center}.action-center-dot-v35.critical{background:#ef737d!important}.action-center-dot-v35.high{background:#e7b54f!important}.action-center-dot-v35.medium{background:#8d72d0!important}.action-center-icon-v35{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:var(--panel2);border:1px solid var(--line);color:#bd9dea;font-size:18px;font-weight:800}.action-center-copy-v35{min-width:0}.action-center-title-v35{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.action-center-title-v35 strong{font-size:14px;line-height:1.6;color:var(--text)}.action-center-title-v35 em{font-style:normal;padding:4px 8px;border-radius:99px;background:rgba(141,114,208,.15);color:#c7b7ec;font-size:10px;font-weight:800;line-height:1.4}.action-center-title-v35 em.critical{background:rgba(239,115,125,.13);color:#ff9ca5}.action-center-title-v35 em.high{background:rgba(231,181,79,.13);color:#f2ce78}.action-center-copy-v35 p{margin:4px 0 3px;color:#c0cdd3;font-size:12px;line-height:1.75}.action-center-copy-v35 small{display:block;color:#8fa3af;font-size:11px;line-height:1.6}.action-center-open-v35{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:7px 12px;border-radius:11px;background:rgba(119,82,177,.18);border:1px solid rgba(146,110,200,.38);color:#d9c8f4;font-size:12px;font-weight:800;white-space:nowrap}.action-center-shortcuts-v35 .owner-shortcuts a{position:relative}.action-center-shortcuts-v35 .owner-shortcuts b{margin-right:auto;color:#d9c8f4;font-size:12px}.action-center-guide-list-v35{display:grid;gap:4px;margin-top:5px}.action-center-guide-list-v35 p{display:flex;align-items:flex-start;gap:10px;padding:11px 0;margin:0;border-bottom:1px solid var(--line)}.action-center-guide-list-v35 p:last-child{border-bottom:0}.action-center-guide-list-v35 i{width:9px;height:9px;border-radius:50%;margin-top:7px;flex:0 0 auto}.action-center-guide-list-v35 i.critical{background:#ef737d}.action-center-guide-list-v35 i.high{background:#e7b54f}.action-center-guide-list-v35 i.medium{background:#8d72d0}.action-center-guide-list-v35 span{display:grid;gap:3px}.action-center-guide-list-v35 b{font-size:13px;color:var(--text)}.action-center-guide-list-v35 small{font-size:11px;color:#9fb0b8;line-height:1.7}.action-center-empty-v35,.action-center-no-results-v35{padding:32px 14px;text-align:center}.action-center-no-results-v35{display:none}
+@media(max-width:1100px){.action-center-main-v35{grid-template-columns:1fr!important}.action-center-side-v35{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.action-center-head-v35{display:grid;gap:12px}.action-center-search-v35{width:100%;max-width:none}.action-center-filters-v35{overflow-x:auto;flex-wrap:nowrap;padding-bottom:12px}.action-center-filters-v35 a{white-space:nowrap;font-size:12px}.action-center-row-v35{grid-template-columns:5px 38px minmax(0,1fr)!important;gap:9px;padding:13px 0!important}.action-center-priority-line{height:34px}.action-center-dot-v35{display:none}.action-center-icon-v35{width:36px;height:36px;border-radius:11px;font-size:16px}.action-center-title-v35 strong{font-size:13px}.action-center-copy-v35 p{font-size:12px}.action-center-copy-v35 small{font-size:10px}.action-center-open-v35{grid-column:3;justify-self:start;min-height:34px;margin-top:3px}.action-center-side-v35{grid-template-columns:1fr}.action-center-kpis-v35 .owner-kpi small{font-size:11px!important}.action-center-kpis-v35 .owner-kpi em{font-size:10px!important}}
 </style>
 <script>(function(){const input=document.getElementById('actionCenterSearchV35');const rows=[...document.querySelectorAll('.action-center-row-v35')];const empty=document.getElementById('actionCenterNoResultsV35');if(!input)return;input.addEventListener('input',function(){const q=this.value.trim().toLowerCase();let visible=0;rows.forEach(row=>{const show=!q||(row.dataset.search||'').toLowerCase().includes(q);row.style.display=show?'':'none';if(show)visible++;});if(empty)empty.style.display=(q&&visible===0)?'block':'none';});})();</script>
 {% endblock %}
