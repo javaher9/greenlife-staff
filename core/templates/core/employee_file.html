@@ -1,4 +1,15 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<style>
+/* Personnel file polish only. */
+.personnel-file-head .avatar-xl{width:98px!important;height:98px!important;min-width:98px;border:0!important;border-radius:24px!important;background:#242b31!important;color:#c7d0d4!important;box-shadow:none!important;font-size:32px!important}
+.personnel-file-head .avatar-xl img{width:100%;height:100%;object-fit:cover;border:0!important;outline:0!important}
+.personnel-file-head .person-cell{gap:16px!important}
+.personnel-doc-list{display:grid;gap:10px;margin-top:14px}
+.personnel-doc-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 15px;border:1px solid rgba(255,255,255,.07);border-radius:14px;background:rgba(255,255,255,.025)}
+.personnel-doc-main{min-width:0}.personnel-doc-titleline{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:6px}.personnel-doc-titleline strong{font-size:15px;color:#f3f7f5}.personnel-doc-type{display:inline-flex;align-items:center;min-height:25px;padding:3px 9px;border-radius:999px;background:#202d34;border:1px solid rgba(255,255,255,.07);color:#c7d2cd;font-size:11px;font-weight:700}.personnel-doc-row.is-education .personnel-doc-type{background:rgba(99,66,153,.22);border-color:rgba(157,119,219,.25);color:#dbcaff}.personnel-doc-meta{display:flex;gap:8px 14px;flex-wrap:wrap;color:#b8c5bf;font-size:12.5px;line-height:1.7}.personnel-doc-note{margin:7px 0 0;color:#c8d3ce;font-size:12.5px;line-height:1.75}.personnel-doc-open{white-space:nowrap;margin:0!important}
+.personnel-doc-guide{margin:6px 0 0;color:#aebcb5;font-size:12.5px;line-height:1.7}
+@media(max-width:800px){.personnel-file-head .avatar-xl{width:88px!important;height:88px!important;min-width:88px}.personnel-doc-row{grid-template-columns:1fr}.personnel-doc-open{justify-self:start}.personnel-doc-meta{gap:5px 10px}}
+</style>
 <section class="hero personnel-file-head">
   <div class="person-cell">
     <div class="avatar-xl">{% if employee.avatar %}<img src="{{ employee.avatar.url }}">{% else %}<span>{{ employee.user.first_name|first|default:employee.user.username|first }}</span>{% endif %}</div>
@@ -15,8 +26,10 @@
 </section>
 
 <div class="grid">
-<section class="panel"><div class="sectionhead"><h2>مدارک و قراردادها</h2><a href="/employees/{{ employee.id }}/documents/new/">افزودن</a></div>
-{% for d in documents %}<div class="row"><div><strong>{{ d.title }}</strong><small>{{ d.get_document_type_display }}{% if d.issue_date %} · صدور {{ d.issue_date|jdate }}{% endif %}{% if d.expiry_date %} · انقضا {{ d.expiry_date|jdate }}{% endif %}</small></div><a class="mini" href="{{ d.file.url }}" target="_blank">مشاهده</a></div>{% empty %}<p class="muted">هنوز مدرکی ثبت نشده است.</p>{% endfor %}</section>
+<section class="panel"><div class="sectionhead"><div><h2>سوابق تحصیلی، آموزشی و مدارک</h2><p class="personnel-doc-guide">مدارک تحصیلی و آموزشی با برچسب مشخص‌تر نمایش داده می‌شوند تا مرور پرونده سریع‌تر باشد.</p></div><a href="/employees/{{ employee.id }}/documents/new/">افزودن</a></div>
+<div class="personnel-doc-list">
+{% for d in documents %}<div class="personnel-doc-row {% if d.document_type == 'certificate' or d.document_type == 'training' %}is-education{% endif %}"><div class="personnel-doc-main"><div class="personnel-doc-titleline"><strong>{{ d.title }}</strong><span class="personnel-doc-type">{{ d.get_document_type_display }}</span></div><div class="personnel-doc-meta">{% if d.issue_date %}<span>تاریخ صدور: {{ d.issue_date|jdate }}</span>{% endif %}{% if d.expiry_date %}<span>تاریخ انقضا: {{ d.expiry_date|jdate }}</span>{% endif %}{% if not d.issue_date and not d.expiry_date %}<span>تاریخ ثبت نشده</span>{% endif %}</div>{% if d.note %}<p class="personnel-doc-note">{{ d.note }}</p>{% endif %}</div><a class="mini personnel-doc-open" href="{{ d.file.url }}" target="_blank">مشاهده</a></div>{% empty %}<p class="muted">هنوز مدرکی ثبت نشده است.</p>{% endfor %}
+</div></section>
 <section class="panel"><h2>وضعیت عملکرد</h2><p>امتیاز خودکار: <strong>{{ kpi.score|fa }}/۱۰۰</strong></p><p class="muted">دوره {{ start|jdate }} تا {{ today|jdate }}</p><div class="metric-line"><span>حضور</span><b>{{ kpi.attendance|fa }}/۱۰۰</b></div>
 <div class="metric-line"><span>Taskها</span><b>{{ kpi.tasks|fa }}/۱۰۰</b></div>
 <div class="metric-line"><span>گزارش روزانه</span><b>{{ kpi.reports|fa }}/۱۰۰</b></div>
