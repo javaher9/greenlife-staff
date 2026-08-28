@@ -26,9 +26,9 @@
             <span class="personnel-branch">{{ employee.branch|default:'بدون شعبه' }}</span>
           </div>
           <div class="personnel-line2">
-            <span class="personnel-address">{{ employee.address|default:'نشانی ثبت نشده' }}</span>
+            <span class="personnel-address">{% if employee.address %}{{ employee.address }}{% else %}نشانی ثبت نشده{% endif %}</span>
             <span class="personnel-dot">•</span>
-            <span class="personnel-education">{{ employee.education|default:'تحصیلات ثبت نشده' }}</span>
+            <span class="personnel-education">{% if employee.education %}{{ employee.education }}{% else %}تحصیلات ثبت نشده{% endif %}</span>
           </div>
         </div>
       </div>
