@@ -23,7 +23,7 @@
     border-bottom:1px solid rgba(255,255,255,.065)!important;
   }
   .gl-authenticated .brand-premium b{font-size:16px!important;line-height:1.2!important;color:#f4f1ff!important;letter-spacing:.2px!important}
-  .gl-authenticated .brand-premium small{font-size:9px!important;line-height:1.4!important;color:#9981ca!important;letter-spacing:1.1px!important;margin-top:3px!important}
+  .gl-authenticated .brand-premium small{font-size:10px!important;line-height:1.4!important;color:#a996d4!important;letter-spacing:1.1px!important;margin-top:3px!important}
   .gl-authenticated .app-nav{display:grid!important;gap:4px!important;margin-top:8px!important}
   .gl-authenticated .app-nav>a,
   .gl-authenticated .app-nav>button.mobile-more-toggle{
@@ -32,11 +32,11 @@
     border:1px solid transparent!important;
     border-radius:12px!important;
     background:transparent!important;
-    color:#b9c7cf!important;
+    color:#d2dde2!important;
     font-family:Tahoma,Arial,sans-serif!important;
-    font-size:12px!important;
+    font-size:13px!important;
     font-weight:700!important;
-    line-height:1.45!important;
+    line-height:1.5!important;
     display:flex!important;
     align-items:center!important;
     gap:10px!important;
@@ -76,14 +76,14 @@
     margin:15px 10px 5px!important;
     padding-top:12px!important;
     border-top:1px solid rgba(255,255,255,.06)!important;
-    color:#71838f!important;
-    font-size:9px!important;
+    color:#8da0aa!important;
+    font-size:10px!important;
     font-weight:800!important;
     letter-spacing:.4px!important;
   }
-  .gl-authenticated .app-nav>a.muted-module{opacity:.52!important}
+  .gl-authenticated .app-nav>a.muted-module{opacity:.62!important}
   .gl-authenticated .camp-side-subnav{margin:0 40px 5px 0!important;padding:3px 9px 5px!important;border-right:1px solid rgba(135,96,194,.25)!important;display:grid!important;gap:2px!important}
-  .gl-authenticated .camp-side-subnav a{color:#8699a4!important;font-size:10px!important;padding:6px!important;text-decoration:none!important}
+  .gl-authenticated .camp-side-subnav a{color:#9aabb4!important;font-size:11px!important;padding:6px!important;text-decoration:none!important}
   .gl-authenticated .camp-side-subnav a:hover{color:#d8c8f3!important}
   .gl-authenticated .sidebar-footer{
     border-top:1px solid rgba(255,255,255,.06)!important;
@@ -93,6 +93,59 @@
     justify-content:space-between!important;
     gap:8px!important;
   }
-  .gl-authenticated .sidebar-footer a{color:#81939e!important;font-size:10px!important;text-decoration:none!important}
+  .gl-authenticated .sidebar-footer a{color:#9babb4!important;font-size:11px!important;text-decoration:none!important}
   .gl-authenticated .sidebar-footer a:hover{color:#d8c8f3!important}
+}
+
+/* Readability pass — typography/contrast only; layout and component geometry stay unchanged. */
+.gl-authenticated .app-main{
+  color:#f5f8f6!important;
+  font-size:16px;
+}
+.gl-authenticated .app-main p,
+.gl-authenticated .app-main label,
+.gl-authenticated .app-main td,
+.gl-authenticated .app-main li,
+.gl-authenticated .app-main .muted{
+  line-height:1.78;
+}
+.gl-authenticated .app-main p,
+.gl-authenticated .app-main label,
+.gl-authenticated .app-main .muted,
+.gl-authenticated .app-main .hero p,
+.gl-authenticated .app-main .sectionhead p{
+  color:#b8c7c0!important;
+  font-weight:500;
+}
+.gl-authenticated .app-main small{
+  color:#aabbb3!important;
+  font-size:12px;
+  line-height:1.65;
+  font-weight:500;
+}
+.gl-authenticated .app-main h1{font-weight:800!important}
+.gl-authenticated .app-main h2,
+.gl-authenticated .app-main h3,
+.gl-authenticated .app-main h4{font-weight:700!important}
+.gl-authenticated .app-main th{
+  color:#cbd6d1!important;
+  font-weight:700!important;
+}
+.gl-authenticated .app-main td{color:#e3ebe7!important}
+.gl-authenticated .app-main input,
+.gl-authenticated .app-main textarea,
+.gl-authenticated .app-main select,
+.gl-authenticated .app-main button{
+  font-size:14px;
+  line-height:1.55;
+}
+.gl-authenticated .app-main input::placeholder,
+.gl-authenticated .app-main textarea::placeholder{color:#91a39a!important}
+.gl-authenticated .topbar strong{font-size:14px!important}
+.gl-authenticated .topbar span,
+.gl-authenticated .topbar input{font-size:12px!important}
+
+@media (min-width: 650px) and (max-width: 1100px){
+  .gl-authenticated .app-main{font-size:16.5px}
+  .gl-authenticated .app-main small{font-size:12.5px}
 }
