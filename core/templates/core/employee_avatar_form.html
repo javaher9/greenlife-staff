@@ -1,5 +1,68 @@
 {% extends 'core/base.html' %}{% block content %}
 <section class="panel formbox">
-  <div class="person-cell photo-edit-head"><div class="avatar-lg">{% if employee.avatar %}<img src="{{ employee.avatar.url }}">{% else %}<span>{{ employee.user.first_name|first|default:employee.user.username|first }}</span>{% endif %}</div><div><h1>عکس {{ employee.user.get_full_name|default:employee.user.username }}</h1><p class="muted">{{ employee.job_title|default:'—' }} · {{ employee.branch|default:'—' }}</p></div></div>
-  <form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button>ذخیره عکس</button></form>
-</section>{% endblock %}
+  <div class="person-cell photo-edit-head">
+    <div class="avatar-lg" id="avatarPreview">
+      {% if employee.avatar %}<img src="{{ employee.avatar.url }}" alt="عکس پرسنل">{% else %}<span>{{ employee.user.first_name|first|default:employee.user.username|first }}</span>{% endif %}
+    </div>
+    <div>
+      <h1>عکس {{ employee.user.get_full_name|default:employee.user.username }}</h1>
+      <p class="muted">{{ employee.job_title|default:'—' }} · {{ employee.branch|default:'—' }}</p>
+    </div>
+  </div>
+
+  <form id="employeeAvatarForm" method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="msg error">{{ form.non_field_errors }}</div>{% endif %}
+    <p>
+      {{ form.avatar.label_tag }}
+      {{ form.avatar }}
+      {% if form.avatar.errors %}<span style="display:block;margin-top:8px;color:#ffb2b2;font-weight:700;line-height:1.8">{{ form.avatar.errors|striptags }}</span>{% endif %}
+      <small id="avatarHelp" style="display:block;margin-top:8px">فرمت‌های JPG، PNG و WEBP تا ۱۵ مگابایت.</small>
+    </p>
+    <button id="avatarSaveBtn" type="submit">ذخیره عکس</button>
+  </form>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const form=document.getElementById('employeeAvatarForm');
+  const input=document.getElementById('id_avatar');
+  const button=document.getElementById('avatarSaveBtn');
+  const help=document.getElementById('avatarHelp');
+  const preview=document.getElementById('avatarPreview');
+  if(!form||!input||!button)return;
+
+  input.addEventListener('change',function(){
+    const file=input.files&&input.files[0];
+    if(!file)return;
+    const sizeMb=(file.size/1024/1024).toFixed(1);
+    help.textContent='عکس انتخاب شد: '+file.name+' — '+sizeMb+' مگابایت';
+    if(file.type && file.type.startsWith('image/')){
+      const url=URL.createObjectURL(file);
+      preview.innerHTML='<img src="'+url+'" alt="پیش‌نمایش عکس">';
+    }
+  });
+
+  form.addEventListener('submit',function(e){
+    const file=input.files&&input.files[0];
+    if(!file && !input.closest('p').querySelector('input[type="checkbox"]')){
+      e.preventDefault();
+      help.textContent='ابتدا یک عکس انتخاب کنید.';
+      help.style.color='#ffb2b2';
+      return;
+    }
+    if(file && file.size>15*1024*1024){
+      e.preventDefault();
+      help.textContent='حجم عکس بیشتر از ۱۵ مگابایت است؛ لطفاً عکس کوچک‌تری انتخاب کنید.';
+      help.style.color='#ffb2b2';
+      return;
+    }
+    button.disabled=true;
+    button.textContent='در حال ذخیره…';
+    help.textContent='لطفاً چند لحظه صبر کنید؛ عکس در حال بارگذاری است.';
+  });
+})();
+</script>
+{% endblock %}
