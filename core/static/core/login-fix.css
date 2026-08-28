@@ -1,0 +1,35 @@
+/* Login field alignment fix — keep text safely inside artwork inputs on desktop, Fold and mobile. */
+.login-fixed-form>input:not([type=hidden]){
+  box-sizing:border-box!important;
+  max-width:100%!important;
+  padding-block:0!important;
+  padding-inline:4%!important;
+  line-height:1.15!important;
+  font-size:clamp(11px,1.05vw,16px)!important;
+  font-weight:500!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  -webkit-appearance:none;
+  appearance:none;
+}
+.login-fixed-form>input[name=username],
+.login-fixed-form>input[name=password]{
+  transform:translateY(-1px);
+}
+@media(max-width:700px){
+  .login-fixed-form>input:not([type=hidden]){
+    font-size:11px!important;
+    line-height:1.1!important;
+    padding-inline:5%!important;
+  }
+  .login-fixed-form>input[name=username],
+  .login-fixed-form>input[name=password]{
+    transform:translateY(-1px);
+  }
+}
+@media(max-width:420px){
+  .login-fixed-form>input:not([type=hidden]){
+    font-size:10.5px!important;
+  }
+}
