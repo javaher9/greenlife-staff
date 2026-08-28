@@ -1,21 +1,69 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
 <style>
-/* Personnel-only photo refinement: charcoal empty state, larger image, no ring. */
-.personnel-row .avatar-sm{width:58px;height:58px;min-width:58px;border:0!important;background:#242b31!important;color:#c7d0d4!important;box-shadow:none!important;font-size:18px!important}
-.personnel-row .avatar-sm img{width:100%;height:100%;object-fit:cover;border:0!important;outline:0!important}
-.personnel-row .person-cell{gap:14px}
-@media(max-width:800px){
-  .personnel-row .avatar-sm{width:54px;height:54px;min-width:54px}
-  .personnel-row .person-cell{gap:11px}
-}
+.personnel-page{display:grid;gap:18px}
+.personnel-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:18px 20px;border:1px solid rgba(255,255,255,.075);border-radius:20px;background:linear-gradient(145deg,rgba(24,34,43,.94),rgba(14,23,31,.96));box-shadow:0 14px 34px rgba(0,0,0,.18)}
+.personnel-head h1{margin:0 0 5px;font-size:27px;color:#f7fbf9}
+.personnel-head p{margin:0;color:#bfcac5!important;font-size:13px}
+.personnel-add{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border-radius:12px;background:linear-gradient(135deg,#7651ad,#5d3c8f);border:1px solid rgba(188,154,237,.26);color:#fff!important;text-decoration:none;font-weight:800;white-space:nowrap;box-shadow:0 8px 20px rgba(45,27,73,.26)}
+.personnel-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px}
+.personnel-card{position:relative;overflow:hidden;min-width:0;border:1px solid rgba(255,255,255,.075);border-radius:19px;background:linear-gradient(155deg,rgba(25,35,43,.98),rgba(13,21,28,.98));box-shadow:0 12px 30px rgba(0,0,0,.16);padding:17px;display:grid;gap:15px}
+.personnel-card::before{content:"";position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,transparent,rgba(137,98,198,.55),transparent);opacity:.8}
+.personnel-card-top{display:flex;align-items:center;gap:14px;min-width:0}
+.personnel-avatar{width:72px;height:72px;min-width:72px;border:0!important;border-radius:17px;overflow:hidden;background:linear-gradient(145deg,#2e3439,#20262b)!important;color:#d7dedb;box-shadow:none!important;display:grid;place-items:center;font-size:23px;font-weight:800}
+.personnel-avatar img{width:100%;height:100%;object-fit:cover;display:block;border:0!important;outline:0!important;box-shadow:none!important}
+.personnel-name{min-width:0;display:grid;gap:5px}
+.personnel-name strong{font-size:16px;color:#f5f8f6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.personnel-name small{display:block;color:#bcc8c2!important;font-size:12.5px!important;line-height:1.6!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.personnel-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.personnel-meta div{min-width:0;padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.05)}
+.personnel-meta span{display:block;color:#9eada6;font-size:10.5px;margin-bottom:3px}
+.personnel-meta b{display:block;color:#e4ebe7;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.personnel-card-foot{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)}
+.personnel-status{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.065);color:#b6c1bc;font-size:11.5px;font-weight:800}
+.personnel-status::before{content:"";width:7px;height:7px;border-radius:50%;background:#69736e}
+.personnel-status.active{color:#bfe3cf;background:rgba(69,137,101,.12);border-color:rgba(85,158,118,.18)}
+.personnel-status.active::before{background:#62b985}
+.personnel-action{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:0 10px;border-radius:10px;border:1px solid rgba(255,255,255,.075);background:rgba(255,255,255,.035);color:#d9e1dd!important;text-decoration:none;font-size:11.5px;font-weight:700}
+.personnel-empty{padding:34px;text-align:center;border:1px dashed rgba(255,255,255,.1);border-radius:18px;color:#aebbb5}
+@media(max-width:1280px){.personnel-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:1000px){.personnel-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.personnel-card{padding:15px}.personnel-avatar{width:68px;height:68px;min-width:68px}}
+@media(max-width:620px){.personnel-head{align-items:stretch;flex-direction:column}.personnel-add{width:100%}.personnel-grid{grid-template-columns:1fr}.personnel-avatar{width:66px;height:66px;min-width:66px}.personnel-meta{grid-template-columns:1fr 1fr}.personnel-status{margin-left:0;margin-right:auto}}
 </style>
-<section class="panel"><div class="sectionhead"><h1>پرسنل</h1><a class="primary" href="/employees/new/">افزودن کارمند</a></div>
-{% for e in employees %}
-<article class="row personnel-row">
-  <div class="person-cell">
-    <div class="avatar-sm">{% if e.avatar %}<img src="{{ e.avatar.url }}" alt="{{ e.user.get_full_name|default:e.user.username }}">{% else %}<span>{{ e.user.first_name|first|default:e.user.username|first }}</span>{% endif %}</div>
-    <div><strong>{{ e.user.get_full_name|default:e.user.username }}</strong><small>{{ e.job_title|default:'بدون سمت' }} · {{ e.branch|default:'بدون شعبه' }} · {{ e.get_role_display }}</small></div>
+
+<section class="personnel-page">
+  <div class="personnel-head">
+    <div><h1>پرسنل</h1><p>نمای کارت‌به‌کارت اعضای تیم و دسترسی سریع به پرونده هر نفر</p></div>
+    <a class="personnel-add" href="/employees/new/">＋ افزودن کارمند</a>
   </div>
-  <div class="person-actions"><span class="badge {% if e.is_active %}done{% endif %}">{% if e.is_active %}فعال{% else %}غیرفعال{% endif %}</span><a class="mini" href="/employees/{{ e.id }}/360/">۳۶۰°</a><a class="mini" href="/employees/{{ e.id }}/file/">پرونده</a><a class="mini" href="/employees/{{ e.id }}/photo/">عکس</a></div>
-</article>
-{% empty %}<p class="muted">پرسنلی ثبت نشده است.</p>{% endfor %}</section>{% endblock %}
+
+  <div class="personnel-grid">
+    {% for e in employees %}
+    <article class="personnel-card">
+      <div class="personnel-card-top">
+        <div class="personnel-avatar">
+          {% if e.avatar %}<img src="{{ e.avatar.url }}" alt="{{ e.user.get_full_name|default:e.user.username }}">{% else %}<span>{{ e.user.first_name|first|default:e.user.username|first }}</span>{% endif %}
+        </div>
+        <div class="personnel-name">
+          <strong>{{ e.user.get_full_name|default:e.user.username }}</strong>
+          <small>{{ e.job_title|default:'بدون سمت' }}</small>
+        </div>
+      </div>
+
+      <div class="personnel-meta">
+        <div><span>شعبه</span><b>{{ e.branch|default:'بدون شعبه' }}</b></div>
+        <div><span>سطح دسترسی</span><b>{{ e.get_role_display }}</b></div>
+      </div>
+
+      <div class="personnel-card-foot">
+        <span class="personnel-status {% if e.is_active %}active{% endif %}">{% if e.is_active %}فعال{% else %}غیرفعال{% endif %}</span>
+        <a class="personnel-action" href="/employees/{{ e.id }}/360/">۳۶۰°</a>
+        <a class="personnel-action" href="/employees/{{ e.id }}/file/">پرونده</a>
+        <a class="personnel-action" href="/employees/{{ e.id }}/photo/">عکس</a>
+      </div>
+    </article>
+    {% empty %}
+    <div class="personnel-empty">پرسنلی ثبت نشده است.</div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
