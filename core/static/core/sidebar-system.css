@@ -1,0 +1,98 @@
+/* GreenLife Staff — shared desktop sidebar design system.
+   This file owns the right navigation UI across every authenticated page. */
+@media (min-width: 801px){
+  .gl-authenticated .app-sidebar{
+    width:250px!important;
+    background:linear-gradient(180deg,#0b1620 0%,#09131c 100%)!important;
+    border-left:1px solid rgba(255,255,255,.07)!important;
+    box-shadow:-18px 0 45px rgba(0,0,0,.13)!important;
+    padding:22px 14px 18px!important;
+    color:#eef7f2!important;
+  }
+  .gl-authenticated .app-main{
+    margin-right:250px!important;
+    width:calc(100% - 250px)!important;
+  }
+  .gl-authenticated .brand-premium{
+    min-height:68px!important;
+    padding:8px 10px 18px!important;
+    margin:0 0 10px!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:11px!important;
+    border-bottom:1px solid rgba(255,255,255,.065)!important;
+  }
+  .gl-authenticated .brand-premium b{font-size:16px!important;line-height:1.2!important;color:#f4f1ff!important;letter-spacing:.2px!important}
+  .gl-authenticated .brand-premium small{font-size:9px!important;line-height:1.4!important;color:#9981ca!important;letter-spacing:1.1px!important;margin-top:3px!important}
+  .gl-authenticated .app-nav{display:grid!important;gap:4px!important;margin-top:8px!important}
+  .gl-authenticated .app-nav>a,
+  .gl-authenticated .app-nav>button.mobile-more-toggle{
+    min-height:44px!important;
+    padding:9px 11px!important;
+    border:1px solid transparent!important;
+    border-radius:12px!important;
+    background:transparent!important;
+    color:#b9c7cf!important;
+    font-family:Tahoma,Arial,sans-serif!important;
+    font-size:12px!important;
+    font-weight:700!important;
+    line-height:1.45!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:10px!important;
+    text-decoration:none!important;
+    transition:background .16s ease,border-color .16s ease,color .16s ease!important;
+    box-shadow:none!important;
+  }
+  .gl-authenticated .app-nav>a:hover{
+    background:rgba(255,255,255,.035)!important;
+    border-color:rgba(255,255,255,.055)!important;
+    color:#fff!important;
+  }
+  .gl-authenticated .app-nav>a.is-active{
+    background:linear-gradient(135deg,rgba(99,66,153,.40),rgba(67,45,108,.28))!important;
+    border-color:rgba(157,119,219,.34)!important;
+    color:#fff!important;
+    box-shadow:inset -3px 0 0 #8a62c6!important;
+  }
+  .gl-authenticated .app-nav .nav-ico{
+    width:30px!important;
+    height:30px!important;
+    min-width:30px!important;
+    display:grid!important;
+    place-items:center!important;
+    border-radius:9px!important;
+    background:rgba(255,255,255,.035)!important;
+    color:#b7a0e5!important;
+    font-size:15px!important;
+    line-height:1!important;
+  }
+  .gl-authenticated .app-nav>a.is-active .nav-ico{
+    background:rgba(130,86,199,.22)!important;
+    color:#d9c8ff!important;
+  }
+  .gl-authenticated .app-nav .nav-ico svg{width:18px!important;height:18px!important;fill:currentColor!important;stroke:currentColor!important}
+  .gl-authenticated .nav-section-title{
+    margin:15px 10px 5px!important;
+    padding-top:12px!important;
+    border-top:1px solid rgba(255,255,255,.06)!important;
+    color:#71838f!important;
+    font-size:9px!important;
+    font-weight:800!important;
+    letter-spacing:.4px!important;
+  }
+  .gl-authenticated .app-nav>a.muted-module{opacity:.52!important}
+  .gl-authenticated .camp-side-subnav{margin:0 40px 5px 0!important;padding:3px 9px 5px!important;border-right:1px solid rgba(135,96,194,.25)!important;display:grid!important;gap:2px!important}
+  .gl-authenticated .camp-side-subnav a{color:#8699a4!important;font-size:10px!important;padding:6px!important;text-decoration:none!important}
+  .gl-authenticated .camp-side-subnav a:hover{color:#d8c8f3!important}
+  .gl-authenticated .sidebar-footer{
+    border-top:1px solid rgba(255,255,255,.06)!important;
+    margin-top:14px!important;
+    padding:13px 9px 0!important;
+    display:flex!important;
+    justify-content:space-between!important;
+    gap:8px!important;
+  }
+  .gl-authenticated .sidebar-footer a{color:#81939e!important;font-size:10px!important;text-decoration:none!important}
+  .gl-authenticated .sidebar-footer a:hover{color:#d8c8f3!important}
+}
