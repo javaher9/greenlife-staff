@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>GreenLife Staff</title>
   <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v37.3">
+  <link rel="stylesheet" href="{% static 'core/sidebar-system.css' %}?v=v1">
 
 <link rel="manifest" href="/static/core/manifest.webmanifest?v=v37.3">
 <meta name="theme-color" content="#15945f">
@@ -49,7 +50,6 @@
     {% if user.profile.role == 'admin' or user.profile.role == 'manager' or user.username == 'sadeghi' %}
     <a href="/device-issues/manage/"><span class="nav-ico">⚒</span><span>مدیریت خرابی‌ها</span></a>
     {% endif %}
-
 
     <button type="button" class="mobile-more-toggle employee-bottom-nav" aria-expanded="false" aria-controls="mobileMoreMenu">
       <span class="nav-ico mobile-more-grid"><svg viewBox="0 0 24 24"><path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z"/></svg></span><span>بیشتر</span>
@@ -150,6 +150,20 @@
   document.addEventListener('keydown', function(e){
     if (e.key === 'Escape') closeMenu();
   });
+})();
+
+(function(){
+  const path=window.location.pathname;
+  const links=[...document.querySelectorAll('.app-nav > a[href]')].filter(a=>a.getAttribute('href')!=='#');
+  let best=null;
+  links.forEach(a=>{
+    const href=a.getAttribute('href');
+    if(!href)return;
+    const matches=href==='/'?path==='/':path===href||path.startsWith(href);
+    if(matches&&(!best||href.length>best.getAttribute('href').length))best=a;
+  });
+  links.forEach(a=>a.classList.remove('is-active'));
+  if(best)best.classList.add('is-active');
 })();
 </script>
 
