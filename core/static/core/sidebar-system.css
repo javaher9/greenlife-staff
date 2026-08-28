@@ -43,3 +43,78 @@
  .gl-authenticated .app-nav>a:hover,.gl-authenticated .app-nav>button:hover,.gl-authenticated .device-manage-card:hover,.gl-authenticated .guideline-card:hover,.gl-authenticated .ref-kpis article:hover{transform:none!important}.gl-authenticated *{will-change:auto!important}
 }
 @media (prefers-reduced-motion:reduce){.gl-authenticated *,.gl-authenticated *::before,.gl-authenticated *::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+
+/* v38 — one management sidebar everywhere: exact visual language of the approved owner dashboard. */
+@media (min-width:801px){
+  body.gl-authenticated:not(.gl-role-employee) .app-sidebar{
+    position:fixed!important;inset:0 0 0 auto!important;width:255px!important;height:100vh!important;
+    padding:18px 13px 12px!important;overflow-y:auto!important;overflow-x:hidden!important;
+    background:linear-gradient(180deg,#0a141d 0%,#071018 100%)!important;
+    border:0!important;border-left:1px solid #21303d!important;
+    box-shadow:-16px 0 42px rgba(0,0,0,.34)!important;z-index:80!important;
+  }
+  body.gl-authenticated:not(.gl-role-employee) .app-main{margin-right:255px!important;width:calc(100% - 255px)!important}
+  body.gl-authenticated:not(.gl-role-employee) .brand-premium{min-height:72px!important;padding:4px 17px 17px!important;margin-bottom:7px!important;color:#edf6f1!important;border-color:#1e2b35!important}
+  body.gl-authenticated:not(.gl-role-employee) .brand-premium b{font-size:21px!important;color:#ecf5f1!important}
+  body.gl-authenticated:not(.gl-role-employee) .brand-premium small{font-size:9px!important;color:#a7b2b9!important;letter-spacing:3px!important}
+  body.gl-authenticated:not(.gl-role-employee) .brand-mark{transform:scale(1.06)}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav{display:grid!important;gap:5px!important;margin-top:8px!important}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a,
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>button.mobile-more-toggle{
+    min-height:39px!important;margin:0!important;padding:6px 12px!important;border-radius:8px!important;
+    display:flex!important;align-items:center!important;gap:11px!important;font-size:11.5px!important;font-weight:750!important;line-height:1.5!important;
+    color:#d0d7dc!important;background:linear-gradient(180deg,rgba(26,38,49,.92),rgba(13,24,33,.96))!important;
+    border:1px solid #33414d!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 3px 8px rgba(0,0,0,.18)!important;
+  }
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a:hover{color:#fff!important;background:linear-gradient(180deg,#243440,#14232e)!important;border-color:#52606b!important;transform:translateX(-2px)}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a.is-active{color:#bafc79!important;background:linear-gradient(115deg,rgba(44,91,66,.82),rgba(15,31,27,.98))!important;border-color:#6aa34b!important;box-shadow:inset 0 1px 0 rgba(222,255,195,.20),0 0 19px rgba(116,232,80,.23)!important}
+  body.gl-authenticated:not(.gl-role-employee) .nav-ico{width:25px!important;height:25px!important;min-width:25px!important;border:0!important;border-radius:7px!important;display:grid!important;place-items:center!important;font-size:18px!important;background:transparent!important;box-shadow:none!important}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a:nth-of-type(1) .nav-ico{color:#82ee42!important;text-shadow:0 0 13px #65ef30}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a:nth-of-type(2) .nav-ico{color:#a457ff!important;text-shadow:0 0 12px #853ce5}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a:nth-of-type(3) .nav-ico{color:#ffbb1f!important;text-shadow:0 0 12px #ff9d00}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a:nth-of-type(4) .nav-ico{color:#2b94ff!important;text-shadow:0 0 12px #1674ff}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a:nth-of-type(5) .nav-ico{color:#63dd5d!important;text-shadow:0 0 12px #39c747}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a:nth-of-type(6) .nav-ico{color:#a741ff!important;text-shadow:0 0 12px #8e24f4}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a:nth-of-type(7) .nav-ico{color:#188fff!important;text-shadow:0 0 12px #1677ff}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a:nth-of-type(8) .nav-ico{color:#ffc32d!important;text-shadow:0 0 12px #e8a400}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a:nth-of-type(9) .nav-ico{color:#42da72!important;text-shadow:0 0 12px #20bd58}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a:nth-of-type(10) .nav-ico{color:#25a7ff!important;text-shadow:0 0 12px #148fe8}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a:nth-of-type(11) .nav-ico{color:#a7db30!important;text-shadow:0 0 12px #76b81d}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a:nth-of-type(12) .nav-ico{color:#ff6a1f!important;text-shadow:0 0 12px #f04d10}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a:nth-of-type(13) .nav-ico{color:#ff9b1c!important;text-shadow:0 0 12px #e77800}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a:nth-of-type(14) .nav-ico{color:#39d6a0!important;text-shadow:0 0 12px #15b485}
+  body.gl-authenticated:not(.gl-role-employee) .nav-section-title{margin:8px 5px 1px!important;padding-top:8px!important;border-top:1px solid #26333e!important;color:#8d9aa3!important;font-size:10px!important}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a.nav-module{direction:ltr!important;justify-content:flex-start!important;font-size:11px!important}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a.muted-module{color:#d9dde0!important;opacity:1!important}
+  body.gl-authenticated:not(.gl-role-employee) .app-nav>a.camp-nav-entry{border-color:#527b32!important;background:linear-gradient(100deg,rgba(39,79,53,.75),#101d24)!important;box-shadow:0 0 17px rgba(103,211,62,.14),inset 0 1px rgba(255,255,255,.06)!important}
+  body.gl-authenticated:not(.gl-role-employee) .sidebar-footer{margin-top:8px!important;border-color:#22303a!important}
+}
+
+/* Reports readability + clearer card geometry. */
+body.gl-page-report_list .reports-head p{color:#d0dad5!important;font-size:14px!important;font-weight:600!important}
+body.gl-page-report_list .rk,
+body.gl-page-report_list .reports-search,
+body.gl-page-report_list .reports-toolbar select,
+body.gl-page-report_list .reports-view-toggle,
+body.gl-page-report_list .report-person-card,
+body.gl-page-report_list .rpc-mini-stats>span,
+body.gl-page-report_list .reports-empty,
+body.gl-page-report_list .reports-no-match{border-color:#41515d!important}
+body.gl-page-report_list .rk small{color:#dbe3df!important;font-size:12.5px!important;font-weight:700!important}
+body.gl-page-report_list .rk em{color:#bdcbc4!important;font-size:11.5px!important;font-weight:600!important}
+body.gl-page-report_list .rpc-person-meta strong{color:#fff!important;font-size:15px!important;font-weight:800!important}
+body.gl-page-report_list .rpc-person-meta span{color:#dce5e0!important;font-size:12.5px!important;font-weight:650!important}
+body.gl-page-report_list .rpc-person-meta small{color:#c1cec8!important;font-size:11.5px!important;font-weight:600!important}
+body.gl-page-report_list .rpc-time-status time{color:#eef3f0!important;font-size:12.5px!important;font-weight:650!important}
+body.gl-page-report_list .rpc-label{color:#e5ece8!important;font-size:12.5px!important;font-weight:800!important}
+body.gl-page-report_list .rpc-body p{color:#edf2ef!important;font-size:13.5px!important;line-height:1.95!important;font-weight:600!important}
+body.gl-page-report_list .rpc-mini-stats small{color:#c6d2cc!important;font-size:10.5px!important;font-weight:650!important}
+body.gl-page-report_list .rpc-mini-stats b{color:#f0f5f2!important;font-size:10.5px!important;font-weight:750!important}
+body.gl-page-report_list .rpc-open{color:#f0f5f2!important;font-size:12.5px!important;font-weight:750!important;border-top-color:#41515d!important}
+body.gl-page-report_list .rpc-head{border-bottom-color:#41515d!important}
+body.gl-page-report_list .reports-search input::placeholder{color:#b7c4be!important;opacity:1!important}
+body.gl-page-report_list .reports-toolbar select{color:#eef3f1!important;font-size:13px!important;font-weight:650!important}
+@media (min-width:650px) and (max-width:1100px){
+  body.gl-page-report_list .rpc-body p{font-size:14px!important}
+  body.gl-page-report_list .rpc-person-meta strong{font-size:15.5px!important}
+}
