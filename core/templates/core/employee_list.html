@@ -9,36 +9,19 @@
     <div><h1>پرسنل</h1><p class="muted">فهرست پرسنل و دسترسی سریع به پرونده هر فرد</p></div>
     <div class="personnel-actions">{% if can_manage %}<a class="primary" href="{% url 'employee_create' %}">افزودن پرسنل</a>{% endif %}</div>
   </div>
-
   <div class="personnel-grid">
     {% for employee in employees %}
     <article class="personnel-card">
       <span class="personnel-status {% if employee.is_active %}is-active{% endif %}"></span>
       <div class="personnel-top">
-        <div class="personnel-avatar">
-          {% if employee.avatar %}<img src="{{ employee.avatar.url }}" alt="عکس {{ employee.user.get_full_name|default:employee.user.username }}">{% else %}<span>{{ employee.user.first_name|first|default:employee.user.username|first }}</span>{% endif %}
-        </div>
+        <div class="personnel-avatar">{% if employee.avatar %}<img src="{{ employee.avatar.url }}" alt="عکس {{ employee.user.get_full_name|default:employee.user.username }}">{% else %}<span>{{ employee.user.first_name|first|default:employee.user.username|first }}</span>{% endif %}</div>
         <div class="personnel-primary">
-          <div class="personnel-line1">
-            <span class="personnel-name">{{ employee.user.get_full_name|default:employee.user.username }}</span>
-            <span class="personnel-role">{{ employee.job_title|default:'بدون سمت' }}</span>
-            <span class="personnel-branch">{{ employee.branch|default:'بدون شعبه' }}</span>
-          </div>
-          <div class="personnel-line2">
-            <span class="personnel-address">{% if employee.address %}{{ employee.address }}{% else %}نشانی ثبت نشده{% endif %}</span>
-            <span class="personnel-dot">•</span>
-            <span class="personnel-education">{% if employee.education %}{{ employee.education }}{% else %}تحصیلات ثبت نشده{% endif %}</span>
-          </div>
+          <div class="personnel-line1"><span class="personnel-name">{{ employee.user.get_full_name|default:employee.user.username }}</span><span class="personnel-role">{{ employee.job_title|default:'بدون سمت' }}</span><span class="personnel-branch">{{ employee.branch|default:'بدون شعبه' }}</span></div>
+          <div class="personnel-line2"><span class="personnel-address">{% if employee.address %}{{ employee.address }}{% else %}نشانی ثبت نشده{% endif %}</span><span class="personnel-dot">•</span><span class="personnel-education">{% if employee.education %}{{ employee.education }}{% else %}تحصیلات ثبت نشده{% endif %}</span></div>
         </div>
       </div>
-      <div class="personnel-meta">
-        {% if employee.employee_code %}<span class="personnel-chip">کد {{ employee.employee_code }}</span>{% endif %}
-        {% if employee.phone %}<span class="personnel-chip">{{ employee.phone }}</span>{% endif %}
-      </div>
-      <div class="personnel-card-actions">
-        <a class="mini" href="{% url 'employee_file' employee.pk %}">پرونده</a>
-        {% if can_manage %}<a class="mini" href="{% url 'employee_avatar_edit' employee.pk %}">تغییر عکس</a>{% endif %}
-      </div>
+      <div class="personnel-meta">{% if employee.employee_code %}<span class="personnel-chip">کد {{ employee.employee_code }}</span>{% endif %}{% if employee.phone %}<span class="personnel-chip">{{ employee.phone }}</span>{% endif %}</div>
+      <div class="personnel-card-actions"><a class="mini" href="{% url 'employee_file' employee.pk %}">پرونده</a>{% if can_manage %}<a class="mini" href="{% url 'employee_avatar_edit' employee.pk %}">تغییر عکس</a>{% endif %}</div>
     </article>
     {% empty %}<div class="personnel-empty">هنوز پرسنلی ثبت نشده است.</div>{% endfor %}
   </div>
