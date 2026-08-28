@@ -1,93 +1,47 @@
-{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+{% extends 'core/base.html' %}{% block content %}
 <style>
-.personnel-page{display:grid;gap:16px}
-.personnel-head{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:17px 20px;border:1px solid rgba(255,255,255,.12);border-radius:20px;background:linear-gradient(135deg,rgba(45,58,70,.97),rgba(27,39,49,.97) 48%,rgba(20,31,41,.98));box-shadow:0 16px 36px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.08)}
-.personnel-head::before{content:"";position:absolute;z-index:-2;inset:0;background:radial-gradient(circle at 14% 0%,rgba(158,121,222,.18),transparent 34%),radial-gradient(circle at 84% 18%,rgba(120,205,181,.11),transparent 31%),linear-gradient(115deg,transparent 0 38%,rgba(255,255,255,.025) 38% 39%,transparent 39% 100%)}
-.personnel-head::after{content:"";position:absolute;z-index:-1;inset:-70% -10%;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.08) 49%,transparent 60%);transform:translateX(-58%);opacity:.5;pointer-events:none}
-.personnel-head h1{margin:0 0 4px;font-size:28px;color:#fff;text-shadow:0 0 20px rgba(255,255,255,.12);letter-spacing:-.2px}
-.personnel-head p{margin:0;color:#dde6e2!important;font-size:13px;font-weight:500}
-.personnel-add{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 16px;border-radius:12px;background:linear-gradient(135deg,#8a63c3,#67439d);border:1px solid rgba(211,185,248,.34);color:#fff!important;text-decoration:none;font-weight:800;white-space:nowrap;box-shadow:0 9px 24px rgba(58,36,92,.3),inset 0 1px 0 rgba(255,255,255,.14)}
-.personnel-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-.personnel-card{position:relative;overflow:hidden;min-width:0;border:1px solid rgba(255,255,255,.075);border-radius:18px;background:linear-gradient(155deg,rgba(25,35,43,.98),rgba(13,21,28,.98));box-shadow:0 12px 28px rgba(0,0,0,.16);padding:14px;display:grid;gap:11px}
-.personnel-card::before{content:"";position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,transparent,rgba(137,98,198,.6),transparent);opacity:.85}
-.personnel-card-top{display:flex;align-items:center;gap:13px;min-width:0}
-.personnel-avatar{width:76px;height:76px;min-width:76px;border:0!important;border-radius:17px;overflow:hidden;background:#20272c!important;color:#d7dedb;box-shadow:none!important;display:grid;place-items:center;font-size:24px;font-weight:800}
-.personnel-avatar img{width:100%;height:100%;object-fit:cover;display:block;border:0!important;outline:0!important;box-shadow:none!important}
-.personnel-name{min-width:0;display:grid;gap:4px}
-.personnel-name strong{font-size:16px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.personnel-name small{display:block;color:#cbd6d1!important;font-size:12.5px!important;line-height:1.5!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.personnel-meta{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.personnel-meta div{min-width:0;min-height:34px;padding:6px 9px;border-radius:11px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.055);display:flex;align-items:center;justify-content:space-between;gap:8px}
-.personnel-meta .wide{grid-column:1/-1}
-.personnel-meta span{flex:0 0 auto;color:#b8c4be;font-size:10.8px;font-weight:750;white-space:nowrap}
-.personnel-meta b{min-width:0;display:block;color:#f3f7f5;font-size:12.2px;line-height:1.4;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.personnel-meta .wide b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:0;display:block}
-.personnel-card-foot{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-top:9px;border-top:1px solid rgba(255,255,255,.06)}
-.personnel-status{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.065);color:#b6c1bc;font-size:11.2px;font-weight:800}
-.personnel-status::before{content:"";width:7px;height:7px;border-radius:50%;background:#69736e}
-.personnel-status.active{color:#c7ead6;background:rgba(69,137,101,.12);border-color:rgba(85,158,118,.18)}
-.personnel-status.active::before{background:#62b985}
-.personnel-action{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:0 9px;border-radius:9px;border:1px solid rgba(255,255,255,.075);background:rgba(255,255,255,.035);color:#e3e9e6!important;text-decoration:none;font-size:11.3px;font-weight:700}
-.personnel-empty{padding:34px;text-align:center;border:1px dashed rgba(255,255,255,.1);border-radius:18px;color:#aebbb5}
-@media(max-width:1100px){.personnel-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.personnel-card{padding:13px}.personnel-avatar{width:72px;height:72px;min-width:72px}}
-@media(max-width:700px){.personnel-head{align-items:stretch;flex-direction:column}.personnel-add{width:100%}.personnel-grid{grid-template-columns:1fr}.personnel-avatar{width:70px;height:70px;min-width:70px}.personnel-meta{grid-template-columns:1fr}.personnel-meta .wide{grid-column:auto}.personnel-status{margin-left:0;margin-right:auto}.personnel-meta div{min-height:33px}}
+.personnel-page{display:grid;gap:18px}.personnel-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap}.personnel-head h1{margin:0 0 5px}.personnel-head p{margin:0}.personnel-actions{display:flex;gap:9px;flex-wrap:wrap}.personnel-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.personnel-card{position:relative;min-width:0;padding:16px;border:1px solid rgba(255,255,255,.075);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.02));box-shadow:0 10px 26px rgba(0,0,0,.13);overflow:hidden}.personnel-card:hover{border-color:rgba(160,125,220,.22)}.personnel-top{display:grid;grid-template-columns:72px minmax(0,1fr);gap:13px;align-items:center}.personnel-avatar{width:72px;height:72px;min-width:72px;border:0!important;outline:0!important;border-radius:19px;background:#242b31;color:#c7d0d4;display:grid;place-items:center;overflow:hidden;font-size:23px;font-weight:800;box-shadow:none!important}.personnel-avatar img{width:100%;height:100%;object-fit:cover;border:0!important;outline:0!important;box-shadow:none!important}.personnel-primary{min-width:0}.personnel-line1{display:flex;align-items:center;gap:7px;min-width:0;white-space:nowrap;overflow:hidden}.personnel-name{font-size:15px;font-weight:800;color:#f5f8f6;overflow:hidden;text-overflow:ellipsis}.personnel-role{font-size:12px;font-weight:700;color:#c7d1cc;overflow:hidden;text-overflow:ellipsis}.personnel-branch{margin-right:auto;flex:0 0 auto;max-width:38%;padding:3px 8px;border-radius:999px;background:rgba(122,88,176,.18);border:1px solid rgba(160,125,220,.18);color:#d9c9fa;font-size:10.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis}.personnel-line2{display:flex;align-items:center;gap:8px;margin-top:9px;min-width:0;color:#b9c6c0;font-size:11.5px;line-height:1.6;white-space:nowrap}.personnel-line2 span{min-width:0;overflow:hidden;text-overflow:ellipsis}.personnel-line2 .personnel-address{flex:1 1 58%}.personnel-line2 .personnel-education{flex:1 1 42%}.personnel-dot{flex:0 0 auto!important;opacity:.45}.personnel-meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.personnel-chip{display:inline-flex;align-items:center;min-height:26px;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);color:#bdc8c3;font-size:10.5px;font-weight:700}.personnel-card-actions{display:flex;gap:8px;margin-top:13px;flex-wrap:wrap}.personnel-card-actions a{font-size:11.5px}.personnel-empty{grid-column:1/-1;padding:30px;text-align:center;border:1px dashed rgba(255,255,255,.08);border-radius:18px;color:#aebcb5}.personnel-status{position:absolute;top:10px;left:10px;width:8px;height:8px;border-radius:999px;background:#5c6c65;box-shadow:0 0 0 4px rgba(92,108,101,.10)}.personnel-status.is-active{background:#6fb695;box-shadow:0 0 0 4px rgba(111,182,149,.10)}
+@media(max-width:1280px){.personnel-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:980px){.personnel-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.personnel-card{padding:15px}}
+@media(max-width:620px){.personnel-grid{grid-template-columns:1fr}.personnel-top{grid-template-columns:68px minmax(0,1fr)}.personnel-avatar{width:68px;height:68px;min-width:68px}.personnel-line1{flex-wrap:wrap;white-space:normal}.personnel-branch{margin-right:0;max-width:100%}.personnel-line2{white-space:normal;flex-wrap:wrap}.personnel-dot{display:none}.personnel-line2 .personnel-address,.personnel-line2 .personnel-education{flex:1 1 100%}}
 </style>
-
 <section class="personnel-page">
   <div class="personnel-head">
-    <div><h1>پرسنل</h1><p>نمای مدیریتی اطلاعات کلیدی اعضای تیم و دسترسی سریع به پرونده هر نفر</p></div>
-    <a class="personnel-add" href="/employees/new/">＋ افزودن کارمند</a>
+    <div><h1>پرسنل</h1><p class="muted">فهرست پرسنل و دسترسی سریع به پرونده هر فرد</p></div>
+    <div class="personnel-actions">{% if can_manage %}<a class="primary" href="{% url 'employee_create' %}">افزودن پرسنل</a>{% endif %}</div>
   </div>
 
   <div class="personnel-grid">
-    {% for e in employees %}
+    {% for employee in employees %}
     <article class="personnel-card">
-      <div class="personnel-card-top">
+      <span class="personnel-status {% if employee.is_active %}is-active{% endif %}"></span>
+      <div class="personnel-top">
         <div class="personnel-avatar">
-          {% if e.avatar %}<img src="{{ e.avatar.url }}" alt="{{ e.user.get_full_name|default:e.user.username }}">{% else %}<span>{{ e.user.first_name|first|default:e.user.username|first }}</span>{% endif %}
+          {% if employee.avatar %}<img src="{{ employee.avatar.url }}" alt="عکس {{ employee.user.get_full_name|default:employee.user.username }}">{% else %}<span>{{ employee.user.first_name|first|default:employee.user.username|first }}</span>{% endif %}
         </div>
-        <div class="personnel-name">
-          <strong>{{ e.user.get_full_name|default:e.user.username }}</strong>
-          <small>{{ e.job_title|default:'بدون سمت' }}</small>
+        <div class="personnel-primary">
+          <div class="personnel-line1">
+            <span class="personnel-name">{{ employee.user.get_full_name|default:employee.user.username }}</span>
+            <span class="personnel-role">{{ employee.job_title|default:'بدون سمت' }}</span>
+            <span class="personnel-branch">{{ employee.branch|default:'بدون شعبه' }}</span>
+          </div>
+          <div class="personnel-line2">
+            <span class="personnel-address">{{ employee.address|default:'نشانی ثبت نشده' }}</span>
+            <span class="personnel-dot">•</span>
+            <span class="personnel-education">{{ employee.education|default:'تحصیلات ثبت نشده' }}</span>
+          </div>
         </div>
       </div>
-
       <div class="personnel-meta">
-        <div><span>شعبه</span><b>{{ e.branch|default:'بدون شعبه' }}</b></div>
-        <div><span>سطح دسترسی</span><b>{{ e.get_role_display }}</b></div>
-        <div><span>سن</span><b class="personnel-age" data-birth="{% if e.birth_date %}{{ e.birth_date|date:'Y-m-d' }}{% endif %}">—</b></div>
-        <div><span>تاریخ تولد</span><b>{% if e.birth_date %}{{ e.birth_date|jdate }}{% else %}ثبت نشده{% endif %}</b></div>
-        <div><span>شروع همکاری</span><b>{% if e.start_date %}{{ e.start_date|jdate }}{% else %}ثبت نشده{% endif %}</b></div>
-        <div><span>تلفن</span><b>{{ e.phone|default:'ثبت نشده' }}</b></div>
-        <div class="wide"><span>تحصیلات</span><b>{{ e.education|default:'ثبت نشده' }}</b></div>
-        <div class="wide"><span>نشانی</span><b>{{ e.address|default:'ثبت نشده' }}</b></div>
+        {% if employee.employee_code %}<span class="personnel-chip">کد {{ employee.employee_code }}</span>{% endif %}
+        {% if employee.phone %}<span class="personnel-chip">{{ employee.phone }}</span>{% endif %}
       </div>
-
-      <div class="personnel-card-foot">
-        <span class="personnel-status {% if e.is_active %}active{% endif %}">{% if e.is_active %}فعال{% else %}غیرفعال{% endif %}</span>
-        <a class="personnel-action" href="/employees/{{ e.id }}/360/">۳۶۰°</a>
-        <a class="personnel-action" href="/employees/{{ e.id }}/file/">پرونده</a>
-        <a class="personnel-action" href="/employees/{{ e.id }}/photo/">عکس</a>
+      <div class="personnel-card-actions">
+        <a class="mini" href="{% url 'employee_file' employee.pk %}">پرونده</a>
+        {% if can_manage %}<a class="mini" href="{% url 'employee_avatar_edit' employee.pk %}">تغییر عکس</a>{% endif %}
       </div>
     </article>
-    {% empty %}
-    <div class="personnel-empty">پرسنلی ثبت نشده است.</div>
-    {% endfor %}
+    {% empty %}<div class="personnel-empty">هنوز پرسنلی ثبت نشده است.</div>{% endfor %}
   </div>
 </section>
-<script>
-(function(){
-  const today=new Date();
-  document.querySelectorAll('.personnel-age').forEach(function(el){
-    const raw=el.dataset.birth;
-    if(!raw){el.textContent='ثبت نشده';return;}
-    const parts=raw.split('-').map(Number);
-    if(parts.length!==3||!parts[0]){el.textContent='ثبت نشده';return;}
-    let age=today.getFullYear()-parts[0];
-    const beforeBirthday=(today.getMonth()+1<parts[1])||((today.getMonth()+1===parts[1])&&today.getDate()<parts[2]);
-    if(beforeBirthday) age--;
-    el.textContent=age>=0 ? age.toLocaleString('fa-IR')+' سال' : 'ثبت نشده';
-  });
-})();
-</script>
 {% endblock %}
