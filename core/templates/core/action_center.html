@@ -29,6 +29,8 @@
 
       <div class="action-center-filters-v36" aria-label="فیلتر نوع اقدام">
         <a href="/action-center/" class="{% if not priority_filter and not kind_filter %}active{% endif %}">همه</a>
+        <a href="?kind=missing_attendance" class="{% if kind_filter == 'missing_attendance' %}active{% endif %}">عدم ثبت ورود</a>
+        <a href="?kind=late" class="{% if kind_filter == 'late' %}active{% endif %}">تأخیر</a>
         <a href="?kind=correction" class="{% if kind_filter == 'correction' %}active{% endif %}">اصلاح حضور</a>
         <a href="?kind=leave" class="{% if kind_filter == 'leave' %}active{% endif %}">مرخصی</a>
         <a href="?kind=device" class="{% if kind_filter == 'device' %}active{% endif %}">خرابی دستگاه</a>

@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<div class="personnel-file-page">
 <style>
 /* Personnel file polish only. */
 .personnel-file-head .avatar-xl{width:98px!important;height:98px!important;min-width:98px;border:0!important;border-radius:24px!important;background:#242b31!important;color:#c7d0d4!important;box-shadow:none!important;font-size:32px!important}
@@ -18,11 +19,11 @@
   <div><a class="primary" href="/employees/{{ employee.id }}/documents/new/">افزودن مدرک</a> <a class="mini" href="/employees/{{ employee.id }}/photo/">تغییر عکس</a></div>
 </section>
 
-<section class="stats">
- <div><b>{{ kpi.score|fa }}</b><span>KPI سی‌روزه</span></div>
- <div><b>{{ stats.attendance_days|fa }}</b><span>روز حضور</span></div>
- <div><b>{{ stats.late_days|fa }}</b><span>روز تأخیر</span></div>
- <div><b>{{ stats.reports|fa }}</b><span>گزارش ۳۰ روز</span></div>
+<section class="stats personnel-file-kpis">
+ <div class="purple"><b>{{ kpi.score|fa }}</b><span>KPI سی‌روزه</span></div>
+ <div class="green"><b>{{ stats.attendance_days|fa }}</b><span>روز حضور</span></div>
+ <div class="amber"><b>{{ stats.late_days|fa }}</b><span>روز تأخیر</span></div>
+ <div class="blue"><b>{{ stats.reports|fa }}</b><span>گزارش ۳۰ روز</span></div>
 </section>
 
 <div class="grid">
@@ -44,5 +45,6 @@
 <div class="grid">
 <section class="panel"><h2>Taskها</h2>{% for t in tasks %}<div class="row"><strong>{{ t.title }}</strong><span>{{ t.get_status_display }}{% if t.due_date %} · {{ t.due_date|jdate }}{% endif %}</span></div>{% empty %}<p class="muted">Task ثبت نشده.</p>{% endfor %}</section>
 <section class="panel"><h2>امتیازها</h2>{% for s in scores %}<div class="row"><strong>{{ s.points|fa }}</strong><span>{{ s.description|default:s.get_reason_display }} · {{ s.event_date|jdate }}</span></div>{% empty %}<p class="muted">امتیازی ثبت نشده.</p>{% endfor %}</section>
+</div>
 </div>
 {% endblock %}

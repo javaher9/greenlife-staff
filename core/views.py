@@ -1695,7 +1695,12 @@ def action_center(request):
     profile=getattr(request.user,'profile',None)
     day=timezone.localdate()
 
-    users=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
+    # Operational alerts belong to employee accounts. Manager/admin accounts
+    # must not appear as absent or missing-report staff in their own queue.
+    users=User.objects.filter(
+        profile__is_active=True,
+        profile__role='employee',
+    ).select_related('profile','profile__branch')
     if role=='manager':
         users=users.filter(profile__branch=getattr(profile,'branch',None))
     user_ids=list(users.values_list('id',flat=True))
@@ -1844,6 +1849,6 @@ def action_center(request):
 
 @login_required
 def service_worker(request):
-    response=HttpResponse("const CACHE='greenlife-staff-v37.3';\nconst STATIC=[\n  '/static/core/app.css?v=v37.3',\n  '/static/core/icon-192.png?v=v37.3',\n  '/static/core/icon-512.png?v=v37.3',\n  '/static/core/manifest.webmanifest?v=v37.3'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
+    response=HttpResponse("const CACHE='greenlife-staff-v38.3';\nconst STATIC=[\n  '/static/core/app.css?v=v38.3',\n  '/static/core/icon-192.png?v=v38.3',\n  '/static/core/icon-512.png?v=v38.3',\n  '/static/core/manifest.webmanifest?v=v38.3'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
     response['Cache-Control']='no-cache, no-store, must-revalidate'
     return response
