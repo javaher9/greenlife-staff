@@ -351,7 +351,7 @@ class ChecklistCompletion(models.Model):
 
 
 class PersonnelAction(models.Model):
-    TYPES=[('praise','تشویق'),('notice','تذکر'),('warning','اخطار')]
+    TYPES=[('praise','تشویق'),('notice','تذکر'),('warning','اخطار'),('note','یادداشت مدیریتی')]
     user=models.ForeignKey(User,on_delete=models.CASCADE,related_name='personnel_actions')
     action_type=models.CharField(max_length=20,choices=TYPES)
     title=models.CharField(max_length=160)

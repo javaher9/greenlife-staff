@@ -553,10 +553,20 @@ def attendance_edit(request,pk):
 
 @manager_required
 def attendance_create(request):
-    form=AttendanceManualForm(request.POST or None)
+    employee=None
+    employee_pk=request.GET.get('employee')
+    if employee_pk:
+        employee=_employee_or_redirect(request,employee_pk)
+        if employee is None:
+            return redirect('employee_list')
+    form=AttendanceManualForm(request.POST or None,initial={'user':employee.user} if employee else None)
     if role_of(request.user)=='manager': form.fields['user'].queryset=User.objects.filter(profile__branch=request.user.profile.branch)
+    if employee:
+        form.fields['user'].disabled=True
     if request.method=='POST' and form.is_valid():
         obj=form.save(commit=False)
+        if employee:
+            obj.user=employee.user
         obj.branch=getattr(getattr(obj.user,'profile',None),'branch',None)
         obj.check_in_location_status='manual'
         obj.save()
@@ -570,8 +580,13 @@ def attendance_create(request):
             },obj
         )
         messages.success(request,'رکورد حضور و غیاب ثبت شد.')
+        if employee:
+            return redirect('employee_attendance',pk=employee.pk)
         return redirect('attendance_team')
-    return render(request,'core/generic_form.html',{'form':form,'title':'ثبت دستی حضور و غیاب','button':'ثبت'})
+    title='ثبت دستی حضور و غیاب'
+    if employee:
+        title+=f' برای {employee.user.get_full_name() or employee.user.username}'
+    return render(request,'core/generic_form.html',{'form':form,'title':title,'button':'ثبت'})
 
 @login_required
 def attendance_api_today(request):
@@ -1023,6 +1038,94 @@ def _employee_access(request, employee):
     return employee.user_id == request.user.id
 
 
+def _employee_or_redirect(request, pk):
+    employee=get_object_or_404(
+        EmployeeProfile.objects.select_related('user','branch'),pk=pk
+    )
+    if not _employee_access(request,employee):
+        messages.error(request,'به اطلاعات این پرسنل دسترسی ندارید.')
+        return None
+    return employee
+
+
+@manager_required
+def employee_reports(request,pk):
+    employee=_employee_or_redirect(request,pk)
+    if employee is None:
+        return redirect('employee_list')
+    reports=(DailyReport.objects.select_related('user','branch','user__profile')
+             .filter(user=employee.user).order_by('-created_at')[:200])
+    return render(request,'core/report_list.html',{
+        'reports':reports,
+        'filtered_employee':employee,
+    })
+
+
+@manager_required
+def employee_attendance(request,pk):
+    employee=_employee_or_redirect(request,pk)
+    if employee is None:
+        return redirect('employee_list')
+    try:
+        period=int(request.GET.get('days','30'))
+    except (TypeError,ValueError):
+        period=30
+    if period not in (30,60,90):
+        period=30
+    today=timezone.localdate()
+    start=today-timedelta(days=period-1)
+    records=list(
+        Attendance.objects.filter(user=employee.user,date__range=(start,today))
+        .select_related('branch').order_by('-date')
+    )
+    worked_total=0
+    for record in records:
+        minutes=record.worked_minutes
+        if minutes is not None:
+            worked_total+=minutes
+            record.worked_label=f'{minutes//60:02d}:{minutes%60:02d}'
+        else:
+            record.worked_label='—'
+    stats={
+        'present':sum(1 for r in records if r.check_in),
+        'on_time':sum(1 for r in records if r.check_in and r.status=='present'),
+        'late':sum(1 for r in records if r.status=='late'),
+        'worked':f'{worked_total//60:02d}:{worked_total%60:02d}',
+    }
+    return render(request,'core/employee_attendance.html',{
+        'employee':employee,
+        'records':records,
+        'stats':stats,
+        'period':period,
+        'start':start,
+        'today':today,
+    })
+
+
+@manager_required
+def employee_task_create(request,pk):
+    employee=_employee_or_redirect(request,pk)
+    if employee is None:
+        return redirect('employee_list')
+    form=TaskForm(request.POST or None)
+    form.fields.pop('assigned_to',None)
+    if request.method=='POST' and form.is_valid():
+        obj=form.save(commit=False)
+        obj.assigned_to=employee.user
+        obj.created_by=request.user
+        obj.save()
+        messages.success(request,f'وظیفه جدید برای {employee.user.get_full_name() or employee.user.username} ثبت شد.')
+        return redirect('employee_file',pk=employee.pk)
+    return render(request,'core/employee_management_form.html',{
+        'form':form,
+        'employee':employee,
+        'title':'وظیفه جدید',
+        'subtitle':'وظیفه مستقیماً برای همین پرسنل ثبت می‌شود.',
+        'button':'ثبت وظیفه',
+        'form_kind':'task',
+    })
+
+
 @manager_required
 def employee_file(request,pk):
     employee=get_object_or_404(EmployeeProfile.objects.select_related('user','branch'),pk=pk)
@@ -1395,13 +1498,23 @@ def employee_360(request,pk):
 
 @manager_required
 def personnel_action_add(request,pk):
-    employee=get_object_or_404(EmployeeProfile,pk=pk)
+    employee=_employee_or_redirect(request,pk)
+    if employee is None:
+        return redirect('employee_list')
     form=PersonnelActionForm(request.POST or None)
     if request.method=='POST' and form.is_valid():
         x=form.save(commit=False); x.user=employee.user; x.created_by=request.user; x.save()
         StaffNotification.objects.create(user=employee.user,title=x.get_action_type_display(),message=x.title,notification_type='personnel_action',related_date=x.event_date)
+        messages.success(request,f'اقدام مدیریتی برای {employee.user.get_full_name() or employee.user.username} ثبت شد.')
         return redirect('employee_360',pk=pk)
-    return render(request,'core/generic_form.html',{'form':form,'title':'ثبت تشویق / تذکر / اخطار','button':'ثبت'})
+    return render(request,'core/employee_management_form.html',{
+        'form':form,
+        'employee':employee,
+        'title':'اقدام مدیریتی',
+        'subtitle':'تشویق، تذکر، اخطار یا یادداشت مدیریتی را با شرح روشن ثبت کنید.',
+        'button':'ثبت اقدام',
+        'form_kind':'management',
+    })
 
 @login_required
 def personnel_action_ack(request,pk):
@@ -1849,6 +1962,6 @@ def action_center(request):
 
 @login_required
 def service_worker(request):
-    response=HttpResponse("const CACHE='greenlife-staff-v38.3';\nconst STATIC=[\n  '/static/core/app.css?v=v38.3',\n  '/static/core/icon-192.png?v=v38.3',\n  '/static/core/icon-512.png?v=v38.3',\n  '/static/core/manifest.webmanifest?v=v38.3'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
+    response=HttpResponse("const CACHE='greenlife-staff-v38.4';\nconst STATIC=[\n  '/static/core/app.css?v=v38.4',\n  '/static/core/icon-192.png?v=v38.4',\n  '/static/core/icon-512.png?v=v38.4',\n  '/static/core/manifest.webmanifest?v=v38.4'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
     response['Cache-Control']='no-cache, no-store, must-revalidate'
     return response

@@ -3,10 +3,10 @@
 <section class="reports-premium" id="reportsPremium">
   <div class="reports-head">
     <div>
-      <h1>گزارش‌های روزانه</h1>
-      <p>مرور سریع گزارش‌های پرسنل با همان استاندارد مدیریتی گرین‌لایف</p>
+      <h1>{% if filtered_employee %}گزارش‌های {{ filtered_employee.user.get_full_name|default:filtered_employee.user.username }}{% else %}گزارش‌های روزانه{% endif %}</h1>
+      <p>{% if filtered_employee %}تمام گزارش‌های ثبت‌شده این پرسنل، مرتب‌شده از جدیدترین گزارش{% else %}مرور سریع گزارش‌های پرسنل با همان استاندارد مدیریتی گرین‌لایف{% endif %}</p>
     </div>
-    <a class="reports-new" href="/reports/new/">＋ گزارش جدید</a>
+    {% if filtered_employee %}<a class="reports-new" href="{% url 'employee_list' %}">بازگشت به پرسنل</a>{% else %}<a class="reports-new" href="/reports/new/">＋ گزارش جدید</a>{% endif %}
   </div>
 
   <div class="reports-kpis">

@@ -36,7 +36,9 @@ class TaskStatusForm(forms.ModelForm):
 class TaskForm(forms.ModelForm):
     due_date=JalaliDateField(label='مهلت',required=False)
     class Meta:
-        model=Task; fields=['title','description','assigned_to','due_date','priority']; widgets={'description':forms.Textarea(attrs={'rows':4})}
+        model=Task; fields=['title','description','assigned_to','due_date','priority']
+        labels={'title':'عنوان وظیفه','description':'شرح وظیفه','assigned_to':'مسئول انجام','priority':'اولویت'}
+        widgets={'description':forms.Textarea(attrs={'rows':4,'placeholder':'انتظار مدیریت، جزئیات اجرا و نتیجه موردنظر را بنویسید.'})}
 
 class LeaveRequestForm(forms.ModelForm):
     start_date=JalaliDateField(label='از تاریخ')
@@ -155,7 +157,11 @@ class PersonnelActionForm(forms.ModelForm):
     class Meta:
         model=PersonnelAction
         fields=['action_type','title','description','event_date']
-        widgets={'description':forms.Textarea(attrs={'rows':4})}
+        labels={'action_type':'نوع اقدام','title':'عنوان','description':'شرح کامل'}
+        widgets={
+            'title':forms.TextInput(attrs={'placeholder':'عنوان کوتاه و روشن اقدام'}),
+            'description':forms.Textarea(attrs={'rows':4,'placeholder':'دلیل اقدام، انتظار مدیریت و توضیحات لازم را ثبت کنید.'}),
+        }
 
 class PerformanceGoalForm(forms.ModelForm):
     start_date=JalaliDateField(label='از تاریخ',required=True)

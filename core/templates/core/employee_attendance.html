@@ -1,0 +1,48 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="employee-attendance-page">
+  <header class="employee-attendance-hero">
+    <div class="employee-attendance-person">
+      <span class="employee-attendance-avatar">{% if employee.avatar %}<img src="{{ employee.avatar.url }}" alt="{{ employee.user.get_full_name|default:employee.user.username }}">{% else %}{{ employee.user.first_name|first|default:employee.user.username|first }}{% endif %}</span>
+      <div><span class="employee-attendance-eyebrow">حضور و غیاب</span><h1>حضور و غیاب {{ employee.user.get_full_name|default:employee.user.username }}</h1><p>{{ employee.job_title|default:'بدون سمت' }}{% if employee.branch %} · {{ employee.branch }}{% endif %} · از {{ start|jdate }} تا {{ today|jdate }}</p></div>
+    </div>
+    <div class="employee-attendance-actions"><a class="primary" href="{% url 'attendance_create' %}?employee={{ employee.pk }}">ثبت دستی</a><a class="mini" href="{% url 'employee_list' %}">بازگشت به پرسنل</a></div>
+  </header>
+
+  <nav class="employee-attendance-period" aria-label="بازه نمایش">
+    <span>بازه:</span>
+    <a class="{% if period == 30 %}is-active{% endif %}" href="?days=30">۳۰ روز</a>
+    <a class="{% if period == 60 %}is-active{% endif %}" href="?days=60">۶۰ روز</a>
+    <a class="{% if period == 90 %}is-active{% endif %}" href="?days=90">۹۰ روز</a>
+  </nav>
+
+  <div class="employee-attendance-stats">
+    <article class="green"><small>روز ورود ثبت‌شده</small><strong>{{ stats.present|fa }}</strong><span>در بازه انتخابی</span></article>
+    <article class="blue"><small>حضور به‌موقع</small><strong>{{ stats.on_time|fa }}</strong><span>بدون تأخیر</span></article>
+    <article class="amber"><small>تعداد تأخیر</small><strong>{{ stats.late|fa }}</strong><span>نیازمند بررسی</span></article>
+    <article class="purple"><small>مجموع ساعت ثبت‌شده</small><strong dir="ltr">{{ stats.worked }}</strong><span>ورود تا خروج</span></article>
+  </div>
+
+  <article class="employee-attendance-card">
+    <div class="employee-attendance-card-head"><div><h2>سوابق حضور و غیاب</h2><p>زمان ورود، خروج، مدت کار و نحوه ثبت هر روز</p></div><span>{{ records|length|fa }} رکورد</span></div>
+    <div class="employee-attendance-tablewrap">
+      <table>
+        <thead><tr><th>تاریخ</th><th>ورود</th><th>خروج</th><th>مدت</th><th>وضعیت</th><th>نحوه ثبت</th><th></th></tr></thead>
+        <tbody>{% for record in records %}<tr>
+          <td><strong>{{ record.date|jdate }}</strong></td>
+          <td dir="ltr">{{ record.check_in|date:'H:i'|default:'—' }}</td>
+          <td dir="ltr">{{ record.check_out|date:'H:i'|default:'—' }}</td>
+          <td dir="ltr">{{ record.worked_label }}</td>
+          <td><span class="employee-attendance-status {{ record.status }}">{{ record.get_status_display }}</span></td>
+          <td><span class="employee-attendance-location">{{ record.get_check_in_location_status_display }}</span></td>
+          <td><a href="{% url 'attendance_edit' record.pk %}">اصلاح</a></td>
+        </tr>{% empty %}<tr><td colspan="7"><div class="employee-attendance-empty">در این بازه سابقه‌ای ثبت نشده است.</div></td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </article>
+</section>
+<style>
+.employee-attendance-page{display:grid;gap:14px;max-width:1480px;margin:0 auto}.employee-attendance-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px 22px;border:1px solid #35434e;border-radius:20px;background:linear-gradient(145deg,#111d27,#09131b);box-shadow:0 15px 35px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.05)}.employee-attendance-person{display:flex;align-items:center;gap:15px;min-width:0}.employee-attendance-avatar{width:74px;height:74px;min-width:74px;display:grid;place-items:center;overflow:hidden;border-radius:19px;background:#162635;color:#eef7f2;font-size:25px;font-weight:900}.employee-attendance-avatar img{width:100%;height:100%;object-fit:cover}.employee-attendance-eyebrow{display:block;margin-bottom:4px;color:#70dda9;font-size:10px;font-weight:900}.employee-attendance-hero h1{margin:0;color:#f4f8f6;font-size:24px}.employee-attendance-hero p{margin:6px 0 0;color:#aebdc5;font-size:12px}.employee-attendance-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.employee-attendance-period{display:flex;align-items:center;gap:7px;padding:9px 11px;border:1px solid #2c3b46;border-radius:13px;background:#0a151e;width:max-content;max-width:100%}.employee-attendance-period span{color:#91a3ad;font-size:11px}.employee-attendance-period a{padding:7px 11px;border-radius:9px;color:#b9c7c0;font-size:11px;font-weight:800}.employee-attendance-period a.is-active{background:rgba(57,217,138,.14);color:#77e6ae}.employee-attendance-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}.employee-attendance-stats article{position:relative;min-height:112px;padding:17px;border:1px solid #35434e;border-radius:16px;background:linear-gradient(145deg,#111d27,#09131b);overflow:hidden;box-shadow:0 13px 28px rgba(0,0,0,.22),inset 0 1px rgba(255,255,255,.045)}.employee-attendance-stats article:after{content:"";position:absolute;width:88px;height:88px;left:-35px;top:-35px;border-radius:50%;background:currentColor;opacity:.075}.employee-attendance-stats small,.employee-attendance-stats span{display:block;color:#aebbc2;font-size:11px}.employee-attendance-stats strong{display:block;margin:8px 0 6px;color:#f7fafb;font-size:27px}.employee-attendance-stats .green{color:#77e44d}.employee-attendance-stats .blue{color:#2ea8ff}.employee-attendance-stats .amber{color:#ffbd24}.employee-attendance-stats .purple{color:#bd58ff}.employee-attendance-card{padding:19px;border:1px solid #35434e;border-radius:18px;background:linear-gradient(145deg,#111d27,#09131b);box-shadow:0 15px 35px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.045)}.employee-attendance-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}.employee-attendance-card-head h2{margin:0;color:#f2f6f4;font-size:16px}.employee-attendance-card-head p{margin:5px 0 0;color:#9faeb6;font-size:11px}.employee-attendance-card-head>span{padding:6px 9px;border:1px solid #35434e;border-radius:9px;color:#aebdc5;font-size:10px}.employee-attendance-tablewrap{overflow:auto;border:1px solid #2b3944;border-radius:13px}.employee-attendance-tablewrap table{width:100%;min-width:780px;border-collapse:collapse;background:#0a151e}.employee-attendance-tablewrap th,.employee-attendance-tablewrap td{padding:12px 13px;text-align:right;border-bottom:1px solid #26343f;font-size:11px}.employee-attendance-tablewrap th{color:#8fa1aa;background:#0c1821;font-size:10px}.employee-attendance-tablewrap td{color:#dce5e1}.employee-attendance-tablewrap tr:last-child td{border-bottom:0}.employee-attendance-tablewrap td>a{color:#72dfaa;font-weight:800}.employee-attendance-status,.employee-attendance-location{display:inline-flex;padding:5px 8px;border-radius:8px;font-size:10px;white-space:nowrap}.employee-attendance-status.present{background:rgba(57,217,138,.12);color:#77e6ae}.employee-attendance-status.late{background:rgba(255,189,36,.12);color:#ffca55}.employee-attendance-status.absent{background:rgba(239,90,103,.12);color:#ff9ca5}.employee-attendance-status.leave{background:rgba(46,168,255,.12);color:#83caff}.employee-attendance-location{background:rgba(255,255,255,.045);color:#b8c5ca}.employee-attendance-empty{padding:36px;text-align:center;color:#8fa1aa}
+@media(max-width:850px){.employee-attendance-hero{align-items:flex-start;flex-direction:column}.employee-attendance-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.employee-attendance-actions{width:100%}.employee-attendance-actions a{flex:1;text-align:center}.employee-attendance-tablewrap{margin:0 -4px}}
+@media(max-width:520px){.employee-attendance-hero{padding:16px}.employee-attendance-avatar{width:62px;height:62px;min-width:62px}.employee-attendance-hero h1{font-size:19px}.employee-attendance-stats{gap:8px}.employee-attendance-stats article{min-height:100px;padding:14px}.employee-attendance-stats strong{font-size:23px}.employee-attendance-period{width:100%;justify-content:center}.employee-attendance-card{padding:14px}}
+</style>
+{% endblock %}
