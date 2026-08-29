@@ -38,13 +38,16 @@ class PersonnelQuickActionTests(TestCase):
         )[0]
         self.client.force_login(self.admin)
 
-    def test_personnel_card_has_all_five_real_actions(self):
+    def test_personnel_card_has_all_six_real_actions(self):
         response=self.client.get(reverse('employee_list'))
         self.assertContains(response,reverse('employee_file',args=[self.employee.pk]))
         self.assertContains(response,reverse('employee_reports',args=[self.employee.pk]))
         self.assertContains(response,reverse('employee_attendance',args=[self.employee.pk]))
         self.assertContains(response,reverse('employee_task_create',args=[self.employee.pk]))
         self.assertContains(response,reverse('personnel_action_add',args=[self.employee.pk]))
+        self.assertContains(response,reverse('employee_360',args=[self.employee.pk]))
+        for label in ('پرونده','گزارش‌ها','حضور','وظیفه','اقدام','عملکرد'):
+            self.assertContains(response,f'>{label}</a>')
 
     def test_employee_reports_are_scoped_to_selected_employee(self):
         selected=DailyReport.objects.create(user=self.employee_user,branch=self.branch,text='گزارش انتخاب‌شده')
@@ -108,6 +111,6 @@ class PersonnelQuickActionTests(TestCase):
             defaults={'role':'manager','branch':self.branch,'is_active':True},
         )
         self.client.force_login(manager)
-        for name in ('employee_reports','employee_attendance','employee_task_create','personnel_action_add'):
+        for name in ('employee_reports','employee_attendance','employee_task_create','personnel_action_add','employee_360'):
             response=self.client.get(reverse(name,args=[self.other_employee.pk]))
             self.assertRedirects(response,reverse('employee_list'))
