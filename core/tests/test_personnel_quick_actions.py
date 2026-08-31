@@ -49,6 +49,21 @@ class PersonnelQuickActionTests(TestCase):
         for label in ('پرونده','گزارش‌ها','حضور','وظیفه','اقدام','عملکرد'):
             self.assertContains(response,f'>{label}</a>')
 
+    def test_admin_and_manager_can_see_add_personnel_action(self):
+        response=self.client.get(reverse('employee_list'))
+        self.assertContains(response,reverse('employee_create'))
+        self.assertContains(response,'افزودن پرسنل')
+
+        manager=User.objects.create_user('manager-add-test',password='pass')
+        EmployeeProfile.objects.update_or_create(
+            user=manager,
+            defaults={'role':'manager','branch':self.branch,'is_active':True},
+        )
+        self.client.force_login(manager)
+        response=self.client.get(reverse('employee_list'))
+        self.assertContains(response,reverse('employee_create'))
+        self.assertContains(response,'افزودن پرسنل')
+
     def test_admin_navigation_prioritizes_reports_and_hides_personal_actions(self):
         response=self.client.get(reverse('employee_list'))
         self.assertContains(response,'href="/reports/"')

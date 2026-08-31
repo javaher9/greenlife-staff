@@ -329,9 +329,13 @@ def sop_list(request):
 
 @manager_required
 def employee_list(request):
+    role=role_of(request.user)
     qs=EmployeeProfile.objects.select_related('user','branch').order_by('branch__name','user__last_name')
-    if role_of(request.user)=='manager': qs=qs.filter(branch=request.user.profile.branch)
-    return render(request,'core/employee_list.html',{'employees':qs})
+    if role=='manager': qs=qs.filter(branch=request.user.profile.branch)
+    return render(request,'core/employee_list.html',{
+        'employees':qs,
+        'can_manage':role in ('admin','manager'),
+    })
 
 @manager_required
 def employee_create(request):
