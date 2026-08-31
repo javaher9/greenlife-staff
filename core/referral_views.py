@@ -1,5 +1,6 @@
 import csv
 import io
+import os
 import uuid
 from functools import wraps
 
@@ -96,6 +97,11 @@ def _photo_url(profile):
     return image.url if image else ''
 
 
+def _public_referral_url(profile):
+    base=os.getenv('PUBLIC_BASE_URL','https://staff.greenlifeclinics.com').rstrip('/')
+    return base+reverse('public_referral_lead',args=[profile.referral_code])
+
+
 @login_required
 def referral_dashboard(request):
     current=_ensure_profile(request.user)
@@ -112,7 +118,13 @@ def referral_dashboard(request):
         ) + (
             ReferralSale.objects.filter(lead__referrer__sponsor=current, status__in=('approved','paid')).aggregate(x=Sum('level_two_commission'))['x'] or 0
         )
-    base_url=request.build_absolute_uri(reverse('public_referral_lead', args=[current.referral_code]))
+    base_url=_public_referral_url(current)
+    today=timezone.localdate()
+    active_leads=leads.exclude(status__in=('won','lost'))
+    followups=active_leads.filter(next_follow_up__lte=today).order_by('next_follow_up','created_at')
+    pending_commission=sales.filter(status='approved').aggregate(
+        x=Sum('direct_commission')+Sum('level_two_commission')
+    )['x'] or 0
     context={
         'referral':current,'referral_link':base_url,'referral_qr':reverse('referral_qr',args=[current.referral_code]),
         'network_count':profiles.exclude(pk=current.pk).count(),'lead_count':leads.count(),
@@ -120,6 +132,18 @@ def referral_dashboard(request):
         'sales_total':approved.aggregate(x=Sum('amount'))['x'] or 0,'commission_total':income,
         'recent_leads':leads[:6],'recent_members':profiles.exclude(pk=current.pk)[:6],
         'can_add_member':current.level<2,'is_manager':_role(request.user) in ('admin','manager'),
+        'today_count':leads.filter(created_at__date=today).count(),
+        'action_count':active_leads.filter(Q(status__in=('new','contacted'))|Q(next_follow_up__lte=today)).distinct().count(),
+        'followup_count':followups.count(),'recent_followups':followups[:5],
+        'pending_commission':pending_commission,
+        'conversion_rate':round(leads.filter(status='won').count()*100/max(1,leads.count())),
+        'pipeline':{
+            'new':leads.filter(status='new').count(),
+            'contacted':leads.filter(status='contacted').count(),
+            'appointment':leads.filter(status='appointment').count(),
+            'visited':leads.filter(status='visited').count(),
+            'won':leads.filter(status='won').count(),
+        },
     }
     return render(request, 'core/referrals/dashboard.html', context)
 
@@ -226,7 +250,7 @@ def referral_qr(request,code):
         import qrcode
     except ImportError:
         return HttpResponse('QR service unavailable',status=503,content_type='text/plain')
-    target=request.build_absolute_uri(reverse('public_referral_lead',args=[referrer.referral_code]))+'?src=qr'
+    target=_public_referral_url(referrer)+'?src=qr'
     qr=qrcode.QRCode(version=None,box_size=10,border=3,error_correction=qrcode.constants.ERROR_CORRECT_M)
     qr.add_data(target); qr.make(fit=True)
     image=qr.make_image(fill_color='#142c24',back_color='white')

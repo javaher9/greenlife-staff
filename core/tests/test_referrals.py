@@ -36,6 +36,21 @@ class ReferralModuleTests(TestCase):
         for label in ('لیدها','اعضای شبکه','فروش موفق','درآمد من','لینک و QR شما'):
             self.assertContains(response,label)
 
+    def test_admin_gets_management_command_dashboard_not_personal_qr_card(self):
+        self.profile(self.staff)
+        self.client.force_login(self.admin)
+        response=self.client.get(reverse('referral_dashboard'))
+        self.assertEqual(response.status_code,200)
+        for label in ('مرکز مدیریت معرفی مشتری','قیف تبدیل مشتری','پیگیری‌های سررسیدشده','پورسانت معوق'):
+            self.assertContains(response,label)
+        self.assertNotContains(response,'لینک و QR شما')
+
+    def test_public_referral_link_uses_external_canonical_domain(self):
+        self.profile(self.staff,code='GLCANONICAL')
+        response=self.client.get(reverse('referral_dashboard'))
+        self.assertContains(response,'https://staff.greenlifeclinics.com/r/GLCANONICAL/')
+        self.assertNotContains(response,'http://testserver/r/GLCANONICAL/')
+
     def test_network_is_limited_to_two_levels(self):
         root=self.profile(self.staff)
         first=self.member('level-one',root)
