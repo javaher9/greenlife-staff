@@ -96,3 +96,27 @@ class DeviceIssueAdmin(admin.ModelAdmin):
     list_display=('device_name','reporter','branch','status','created_at','resolved_at')
     list_filter=('status','branch','created_at')
     search_fields=('device_name','description','reporter__username','reporter__first_name','reporter__last_name')
+
+
+from .models import ReferralProfile, ReferralLead, ReferralSale
+
+@admin.register(ReferralProfile)
+class ReferralProfileAdmin(admin.ModelAdmin):
+    list_display=('user','referral_code','sponsor','phone','is_active','sync_status','created_at')
+    list_filter=('is_active','sync_status','created_at')
+    search_fields=('user__first_name','user__last_name','user__username','phone','referral_code','crm_id')
+    autocomplete_fields=('user','sponsor','created_by')
+
+@admin.register(ReferralLead)
+class ReferralLeadAdmin(admin.ModelAdmin):
+    list_display=('full_name','phone','referrer','status','source','assigned_to','next_follow_up','sync_status','created_at')
+    list_filter=('status','source','sync_status','created_at')
+    search_fields=('full_name','phone','alternate_phone','referrer__referral_code','referrer__user__first_name','referrer__user__last_name','crm_id')
+    autocomplete_fields=('referrer','assigned_to','created_by')
+
+@admin.register(ReferralSale)
+class ReferralSaleAdmin(admin.ModelAdmin):
+    list_display=('lead','sale_date','amount','direct_commission','level_two_commission','status','sync_status')
+    list_filter=('status','sync_status','sale_date')
+    search_fields=('lead__full_name','lead__phone','crm_id')
+    autocomplete_fields=('lead','recorded_by')

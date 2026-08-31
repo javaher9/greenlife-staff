@@ -1,0 +1,13 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="rf-shell">
+  {% include 'core/referrals/_nav.html' %}
+  <header class="rf-page-head"><div><span class="rf-eyebrow">شبکه دو سطحی</span><h1>اعضای شبکه من</h1><p>عکس، لید و فروش هر عضو را یکجا ببینید.</p></div>{% if can_add_member %}<a class="rf-btn primary" href="{% url 'referral_member_create' %}">＋ افزودن عضو</a>{% endif %}</header>
+  <div class="rf-level-note"><span>سطح ۱</span> مستقیماً توسط شما معرفی شده‌اند <i></i><span>سطح ۲</span> زیرمجموعه اعضای سطح اول هستند.</div>
+  <div class="rf-network-grid">{% for row in rows %}<article class="rf-member-card level-{{ row.level }}">
+    <div class="rf-member-top"><div class="rf-avatar rf-avatar-lg">{% if row.photo %}<img src="{{ row.photo }}" alt="{{ row.profile }}">{% else %}<span>{{ row.profile.user.first_name|first|default:row.profile.user.username|first }}</span>{% endif %}</div><span class="rf-level">سطح {{ row.level|fa }}</span></div>
+    <h2>{{ row.profile }}</h2><p>{{ row.profile.phone|default:'شماره ثبت نشده' }}</p>
+    <div class="rf-member-stats"><span><b>{{ row.leads|fa }}</b> لید</span><span><b>{{ row.won|fa }}</b> فروش</span><span><b>{{ row.sales|toman }}</b></span></div>
+    <div class="rf-member-actions"><a href="{% url 'referral_lead_create' %}?referrer={{ row.profile.pk }}">ثبت لید</a>{% if row.level < 2 %}<a href="{% url 'referral_member_create' %}?sponsor={{ row.profile.pk }}">افزودن زیرمجموعه</a>{% endif %}</div>
+  </article>{% empty %}<div class="rf-empty rf-empty-large">شبکه شما هنوز خالی است. اولین عضو را اضافه کنید.</div>{% endfor %}</div>
+</section>
+{% endblock %}

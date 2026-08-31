@@ -1,0 +1,38 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="rf-shell">
+  {% include 'core/referrals/_nav.html' %}
+  <header class="rf-hero">
+    <div class="rf-hero-person">
+      <div class="rf-avatar rf-avatar-xl">{% if referral.display_photo %}<img src="{{ referral.display_photo.url }}" alt="{{ referral }}">{% else %}<span>{{ referral.user.first_name|first|default:referral.user.username|first }}</span>{% endif %}</div>
+      <div><span class="rf-eyebrow">شبکه فروش من</span><h1>{{ referral }}</h1><p>کد اختصاصی <b dir="ltr">{{ referral.referral_code }}</b> · سطح {{ referral.level|fa }}</p></div>
+    </div>
+    <div class="rf-hero-actions"><a class="rf-btn primary" href="{% url 'referral_lead_create' %}">＋ ثبت لید</a>{% if can_add_member %}<a class="rf-btn" href="{% url 'referral_member_create' %}">＋ عضو شبکه</a>{% endif %}</div>
+  </header>
+
+  <div class="rf-kpis">
+    <a href="{% url 'referral_lead_list' %}" class="rf-kpi green"><span>لیدها</span><strong>{{ lead_count|fa }}</strong><small>{{ new_count|fa }} لید جدید</small></a>
+    <a href="{% url 'referral_network' %}" class="rf-kpi purple"><span>اعضای شبکه</span><strong>{{ network_count|fa }}</strong><small>حداکثر دو سطح</small></a>
+    <a href="{% url 'referral_sales' %}" class="rf-kpi cyan"><span>فروش موفق</span><strong>{{ won_count|fa }}</strong><small>{{ sales_total|toman }}</small></a>
+    <a href="{% url 'referral_sales' %}" class="rf-kpi gold"><span>درآمد من</span><strong class="money">{{ commission_total|toman }}</strong><small>تأییدشده و پرداختی</small></a>
+  </div>
+
+  <div class="rf-grid rf-grid-main">
+    <article class="rf-card rf-link-card">
+      <div class="rf-card-head"><div><span class="rf-card-kicker">دعوت اختصاصی</span><h2>لینک و QR شما</h2></div><span class="rf-neon-dot"></span></div>
+      <div class="rf-qr-wrap"><img src="{{ referral_qr }}" alt="QR اختصاصی {{ referral }}"><div><strong>هر معرفی، دقیقاً به نام شما</strong><p>این لینک را برای مشتری بفرستید یا QR را نمایش دهید.</p></div></div>
+      <div class="rf-copy-row"><input id="referralLink" value="{{ referral_link }}" readonly dir="ltr"><button type="button" onclick="navigator.clipboard.writeText(document.getElementById('referralLink').value);this.textContent='کپی شد'">کپی لینک</button></div>
+      <a class="rf-download" href="{{ referral_qr }}" download="greenlife-{{ referral.referral_code }}.png">دانلود QR اختصاصی</a>
+    </article>
+
+    <article class="rf-card">
+      <div class="rf-card-head"><div><span class="rf-card-kicker">آخرین ورودی‌ها</span><h2>لیدهای جدید</h2></div><a href="{% url 'referral_lead_list' %}">مشاهده همه</a></div>
+      <div class="rf-list">{% for lead in recent_leads %}<a class="rf-list-row" href="{% if is_manager %}{% url 'referral_lead_manage' lead.pk %}{% else %}{% url 'referral_lead_list' %}{% endif %}"><div class="rf-avatar"><span>{{ lead.full_name|first }}</span></div><div><strong>{{ lead.full_name }}</strong><small>{{ lead.interested_service|default:'خدمت مشخص نشده' }} · {{ lead.created_at|jdate }}</small></div><em class="rf-status status-{{ lead.status }}">{{ lead.get_status_display }}</em></a>{% empty %}<div class="rf-empty">هنوز لیدی ثبت نشده است.</div>{% endfor %}</div>
+    </article>
+  </div>
+
+  <article class="rf-card">
+    <div class="rf-card-head"><div><span class="rf-card-kicker">تیم شما</span><h2>اعضای شبکه</h2></div><a href="{% url 'referral_network' %}">مدیریت شبکه</a></div>
+    <div class="rf-people">{% for member in recent_members %}<div class="rf-person"><div class="rf-avatar rf-avatar-lg">{% if member.display_photo %}<img src="{{ member.display_photo.url }}" alt="{{ member }}">{% else %}<span>{{ member.user.first_name|first|default:member.user.username|first }}</span>{% endif %}</div><strong>{{ member }}</strong><small>سطح {{ member.level|fa }}</small></div>{% empty %}<div class="rf-empty">هنوز عضوی به شبکه اضافه نشده است.</div>{% endfor %}</div>
+  </article>
+</section>
+{% endblock %}

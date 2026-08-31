@@ -2,8 +2,21 @@ from django.urls import path
 from . import views
 from . import action_center_views
 from . import camp_views
+from . import referral_views
 from .mcp import mcp_endpoint
 urlpatterns=[path('service-worker.js',views.service_worker,name='service_worker'),path('camp/',camp_views.camp_dashboard,name='camp_dashboard'),
+path('referrals/',referral_views.referral_dashboard,name='referral_dashboard'),
+path('referrals/network/',referral_views.referral_network,name='referral_network'),
+path('referrals/network/new/',referral_views.referral_member_create,name='referral_member_create'),
+path('referrals/leads/',referral_views.referral_lead_list,name='referral_lead_list'),
+path('referrals/leads/new/',referral_views.referral_lead_create,name='referral_lead_create'),
+path('referrals/leads/<int:pk>/manage/',referral_views.referral_lead_manage,name='referral_lead_manage'),
+path('referrals/sales/',referral_views.referral_sales,name='referral_sales'),
+path('referrals/sales/<int:lead_pk>/',referral_views.referral_sale_edit,name='referral_sale_edit'),
+path('referrals/export/leads.csv',referral_views.referral_export_csv,name='referral_export_csv'),
+path('referrals/export/crm.json',referral_views.referral_crm_export,name='referral_crm_export'),
+path('r/<str:code>/',referral_views.public_referral_lead,name='public_referral_lead'),
+path('r/<str:code>/qr/',referral_views.referral_qr,name='referral_qr'),
 path('camp/purchases/',camp_views.purchase_list,name='camp_purchase_list'),
 path('camp/purchases/new/',camp_views.purchase_create,name='camp_purchase_create'),
 path('camp/purchases/<int:pk>/<str:action>/',camp_views.purchase_review,name='camp_purchase_review'),

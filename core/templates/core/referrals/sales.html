@@ -1,0 +1,12 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="rf-shell">
+  {% include 'core/referrals/_nav.html' %}
+  <header class="rf-page-head"><div><span class="rf-eyebrow">فروش شفاف</span><h1>فروش و پورسانت</h1><p>سهم معرف مستقیم و معرف بالادستی جدا و قابل پیگیری است.</p></div><div class="rf-total"><small>فروش تأییدشده</small><strong>{{ sales_total|toman }}</strong></div></header>
+  <div class="rf-sales-grid">{% for sale in sales %}<article class="rf-sale-card">
+    <div class="rf-sale-head"><div><strong>{{ sale.lead.full_name }}</strong><small>{{ sale.sale_date|jdate }} · {{ sale.lead.interested_service|default:'خدمت ثبت نشده' }}</small></div><em class="rf-status sale-{{ sale.status }}">{{ sale.get_status_display }}</em></div>
+    <div class="rf-sale-amount"><span>مبلغ فروش</span><b>{{ sale.amount|toman }}</b></div>
+    <div class="rf-commission"><div><span>معرف مستقیم</span><strong>{{ sale.lead.referrer }}</strong><b>{{ sale.direct_commission|toman }}</b></div><div><span>معرف بالادستی</span><strong>{{ sale.lead.referrer.sponsor|default:'—' }}</strong><b>{{ sale.level_two_commission|toman }}</b></div></div>
+    {% if is_manager %}<a class="rf-edit-sale" href="{% url 'referral_sale_edit' sale.lead.pk %}">ویرایش فروش و پورسانت</a>{% endif %}
+  </article>{% empty %}<div class="rf-empty rf-empty-large">هنوز فروش ثبت‌شده‌ای وجود ندارد.</div>{% endfor %}</div>
+</section>
+{% endblock %}

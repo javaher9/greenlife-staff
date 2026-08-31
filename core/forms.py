@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.utils import timezone
-from .models import DailyReport, Task, LeaveRequest, Announcement, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, Branch, JobDutyTemplate, Guideline, DeviceIssue
+from .models import DailyReport, Task, LeaveRequest, Announcement, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, Branch, JobDutyTemplate, Guideline, DeviceIssue, ReferralProfile, ReferralLead, ReferralSale
 from .jalali import parse_jalali, format_jalali
 
 class JalaliDateInput(forms.TextInput):
@@ -61,6 +61,85 @@ class EmployeeCreateForm(forms.Form):
         value=self.cleaned_data['username'].strip()
         if User.objects.filter(username__iexact=value).exists(): raise forms.ValidationError('این نام کاربری قبلاً ثبت شده است.')
         return value
+
+
+class ReferralMemberForm(forms.Form):
+    first_name=forms.CharField(label='نام')
+    last_name=forms.CharField(label='نام خانوادگی')
+    phone=forms.CharField(label='شماره موبایل')
+    username=forms.CharField(label='نام کاربری',help_text='برای ورود معرف به پنل')
+    password=forms.CharField(label='رمز ورود',widget=forms.PasswordInput)
+    photo=forms.ImageField(label='عکس فرد',required=False,widget=forms.ClearableFileInput(attrs={'accept':'image/jpeg,image/png,image/webp'}))
+
+    def clean_username(self):
+        value=self.cleaned_data['username'].strip()
+        if User.objects.filter(username__iexact=value).exists():
+            raise forms.ValidationError('این نام کاربری قبلاً ثبت شده است.')
+        return value
+
+    def clean_photo(self):
+        photo=self.cleaned_data.get('photo')
+        if photo and getattr(photo,'size',0)>10*1024*1024:
+            raise forms.ValidationError('حجم عکس باید کمتر از ۱۰ مگابایت باشد.')
+        return photo
+
+
+class ReferralLeadForm(forms.ModelForm):
+    class Meta:
+        model=ReferralLead
+        fields=['full_name','phone','alternate_phone','interested_service','notes']
+        labels={
+            'full_name':'نام و نام خانوادگی مشتری','phone':'شماره موبایل',
+            'alternate_phone':'شماره جایگزین','interested_service':'خدمت موردنظر','notes':'توضیحات',
+        }
+        widgets={'notes':forms.Textarea(attrs={'rows':4,'placeholder':'نیاز مشتری یا بهترین زمان تماس را بنویسید.'})}
+
+    def clean_phone(self):
+        value=''.join(ch for ch in self.cleaned_data['phone'] if ch.isdigit() or ch=='+')
+        if len(value)<10: raise forms.ValidationError('شماره موبایل معتبر وارد کنید.')
+        return value
+
+
+class PublicReferralLeadForm(ReferralLeadForm):
+    consent=forms.BooleanField(label='اجازه می‌دهم کارشناسان گرین‌لایف برای راهنمایی با من تماس بگیرند.')
+
+
+class ReferralLeadManageForm(forms.ModelForm):
+    next_follow_up=JalaliDateField(label='پیگیری بعدی',required=False)
+    class Meta:
+        model=ReferralLead
+        fields=['status','assigned_to','next_follow_up','interested_service','notes']
+        labels={'status':'وضعیت','assigned_to':'مسئول پیگیری','interested_service':'خدمت موردنظر','notes':'یادداشت پیگیری'}
+        widgets={'notes':forms.Textarea(attrs={'rows':5})}
+
+    def __init__(self,*args,branch=None,**kwargs):
+        super().__init__(*args,**kwargs)
+        qs=EmployeeProfile.objects.filter(is_active=True).exclude(role='referrer').select_related('user','branch')
+        if branch: qs=qs.filter(branch=branch)
+        self.fields['assigned_to'].queryset=qs.order_by('branch__name','user__last_name')
+
+
+class ReferralSaleForm(forms.ModelForm):
+    sale_date=JalaliDateField(label='تاریخ فروش')
+    class Meta:
+        model=ReferralSale
+        fields=['sale_date','amount','direct_commission','level_two_commission','status','note']
+        labels={
+            'amount':'مبلغ فروش (تومان)','direct_commission':'پورسانت معرف مستقیم (تومان)',
+            'level_two_commission':'پورسانت معرف بالادستی (تومان)','status':'وضعیت','note':'توضیحات',
+        }
+        widgets={'note':forms.Textarea(attrs={'rows':4})}
+
+    def clean(self):
+        data=super().clean()
+        amount=data.get('amount') or 0
+        direct=data.get('direct_commission') or 0
+        level_two=data.get('level_two_commission') or 0
+        if amount<0 or direct<0 or level_two<0:
+            raise forms.ValidationError('مبلغ فروش و پورسانت نمی‌تواند منفی باشد.')
+        if direct+level_two>amount:
+            raise forms.ValidationError('جمع پورسانت‌ها نمی‌تواند از مبلغ فروش بیشتر باشد.')
+        return data
 
 class EmployeeEditForm(forms.Form):
     first_name=forms.CharField(label='نام')

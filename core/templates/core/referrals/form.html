@@ -1,0 +1,12 @@
+{% extends 'core/base.html' %}{% block content %}
+<section class="rf-shell rf-form-shell">
+  {% include 'core/referrals/_nav.html' %}
+  <article class="rf-form-card"><div class="rf-form-head"><a href="javascript:history.back()">← بازگشت</a><span class="rf-eyebrow">GreenLife Referral</span><h1>{{ title }}</h1><p>{{ subtitle }}</p></div>
+    <form method="post" enctype="multipart/form-data" class="rf-form">{% csrf_token %}{% if sponsor %}<input type="hidden" name="sponsor" value="{{ sponsor.pk }}">{% endif %}{% if referrer %}<input type="hidden" name="referrer" value="{{ referrer.pk }}">{% endif %}
+      {% if form.non_field_errors %}<div class="rf-form-errors">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="rf-fields">{% for field in form %}<label class="rf-field {% if field.name == 'notes' or field.name == 'note' %}wide{% endif %}"><span>{{ field.label }}</span>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<em>{{ error }}</em>{% endfor %}</label>{% endfor %}</div>
+      <button class="rf-submit" type="submit">{{ button }}</button>
+    </form>
+  </article>
+</section>
+{% endblock %}

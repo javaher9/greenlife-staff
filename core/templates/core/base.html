@@ -4,16 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>GreenLife Staff</title>
-  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v38.9">
+  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v39.0">
   <link rel="stylesheet" href="{% static 'core/sidebar-system.css' %}?v=v1">
+  <link rel="stylesheet" href="{% static 'core/referral.css' %}?v=v39.0">
 
-<link rel="manifest" href="/static/core/manifest.webmanifest?v=v38.9">
+<link rel="manifest" href="/static/core/manifest.webmanifest?v=v39.0">
 <meta name="theme-color" content="#15945f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GreenLife Staff">
-<link rel="apple-touch-icon" href="/static/core/icon-192.png?v=v38.9">
+<link rel="apple-touch-icon" href="/static/core/icon-192.png?v=v39.0">
 
 </head>
 <body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' %}gl-role-employee{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
@@ -24,6 +25,13 @@
     <span><b>GreenLife</b><small>STAFF APP</small></span>
   </div>
   <nav class="app-nav">
+    {% if user.profile.role == 'referrer' %}
+    <a href="/referrals/" class="{% if request.path == '/referrals/' %}is-active{% endif %}"><span class="nav-ico">✦</span><span>شبکه فروش من</span></a>
+    <a href="/referrals/leads/" class="{% if '/referrals/leads/' in request.path %}is-active{% endif %}"><span class="nav-ico">◈</span><span>لیدهای من</span></a>
+    <a href="/referrals/network/" class="{% if '/referrals/network/' in request.path %}is-active{% endif %}"><span class="nav-ico">⌘</span><span>شبکه من</span></a>
+    <a href="/referrals/sales/" class="{% if '/referrals/sales/' in request.path %}is-active{% endif %}"><span class="nav-ico">◇</span><span>فروش و درآمد</span></a>
+    <a href="/logout/"><span class="nav-ico">↪</span><span>خروج</span></a>
+    {% else %}
     <a href="/" class="nav-main employee-bottom-nav {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 11.2 12 3l9 8.2V21h-6v-6H9v6H3v-9.8Z"/></svg></span><span class="nav-label nav-label-desktop">داشبورد اصلی</span><span class="nav-label nav-label-mobile">خانه</span></a>
     {% if user.profile.role == 'employee' %}
     <a href="/profile/" class="employee-profile-nav {% if request.resolver_match.url_name == 'profile' %}is-active{% endif %}" aria-label="پروفایل من">
@@ -38,6 +46,7 @@
     {% if user.profile.role != 'employee' %}<a href="/action-center/"><span class="nav-ico">⚡</span><span>مرکز اقدام</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌های پرسنل</span></a>{% endif %}
     <a href="/employees/"><span class="nav-ico">♙</span><span>پرسنل</span></a>
+    <a href="/referrals/" class="{% if '/referrals/' in request.path %}is-active{% endif %}"><span class="nav-ico">✦</span><span>{% if user.profile.role == 'employee' %}شبکه فروش من{% else %}معرفی مشتری{% endif %}</span></a>
     {% if user.profile.role == 'employee' %}<a href="/attendance/" class="attendance-nav employee-bottom-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2h2V2Zm12 7H5v10h14V9Zm-8 2h2v4h3v2h-5v-6Z"/></svg></span><span class="nav-label nav-label-desktop">حضور و غیاب</span><span class="nav-label nav-label-mobile">حضور</span></a>{% elif user.profile.role == 'manager' %}<a href="/attendance/team/" class="{% if request.path|slice:':17' == '/attendance/team/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور تیم</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/kpi/"><span class="nav-ico">◎</span><span>عملکرد و KPI</span></a>{% endif %}
     <a href="/sop/" class="{% if request.path|slice:':5' == '/sop/' %}is-active{% endif %}"><span class="nav-ico">◇</span><span>آموزش</span></a>
@@ -102,6 +111,7 @@
         <a href="/camp/reports/">Reports</a>
         {% if request.camp_role == 'owner' %}<a href="/camp/commander/">Camp Commander</a>{% endif %}
       </div>
+    {% endif %}
     {% endif %}
   </nav>
   <div class="sidebar-footer">
@@ -184,7 +194,7 @@
 <script>
 (function(){
   if('serviceWorker' in navigator){
-    window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js?v=v38.9',{updateViaCache:'none'}).catch(()=>{}));
+    window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js?v=v39.0',{updateViaCache:'none'}).catch(()=>{}));
   }
   let deferredPrompt=null;
   const bar=document.getElementById('pwaInstallBar');
@@ -231,7 +241,7 @@
 
 
 <div class="gl-version-footer">
-  GreenLife Staff <strong>v38.9 Add Personnel Fix</strong>
+  GreenLife Staff <strong>v39.0 Referral Network</strong>
 </div>
 
 </body></html>

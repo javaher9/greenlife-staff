@@ -6,3 +6,4 @@ whitenoise>=6.8,<7
 openai>=1.40,<3
 
 Pillow==11.1.0
+qrcode>=8.0,<9

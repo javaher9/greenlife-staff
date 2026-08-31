@@ -1,0 +1,12 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="rf-shell">
+  {% include 'core/referrals/_nav.html' %}
+  <header class="rf-page-head"><div><span class="rf-eyebrow">مسیر مشتری</span><h1>لیدهای معرفی‌شده</h1><p>از اولین معرفی تا مراجعه و فروش، هیچ پیگیری گم نمی‌شود.</p></div><a class="rf-btn primary" href="{% url 'referral_lead_create' %}">＋ ثبت لید</a></header>
+  <div class="rf-filters"><a class="{% if not status_filter %}active{% endif %}" href="{% url 'referral_lead_list' %}">همه</a>{% for value,label in statuses %}<a class="{% if status_filter == value %}active{% endif %}" href="?status={{ value }}">{{ label }}</a>{% endfor %}</div>
+  <article class="rf-card rf-table-card"><div class="rf-table">
+    <div class="rf-tr rf-th"><span>مشتری</span><span>معرف</span><span>خدمت</span><span>وضعیت</span><span>پیگیری</span></div>
+    {% for lead in leads %}<div class="rf-tr"><span data-label="مشتری"><strong>{{ lead.full_name }}</strong><small dir="ltr">{{ lead.phone }}</small></span><span data-label="معرف"><strong>{{ lead.referrer }}</strong><small>سطح {{ lead.referrer.level|fa }} · {{ lead.get_source_display }}</small></span><span data-label="خدمت">{{ lead.interested_service|default:'—' }}</span><span data-label="وضعیت"><em class="rf-status status-{{ lead.status }}">{{ lead.get_status_display }}</em></span><span data-label="پیگیری">{% if is_manager %}<a class="rf-mini-btn" href="{% url 'referral_lead_manage' lead.pk %}">پیگیری</a><a class="rf-mini-btn sale" href="{% url 'referral_sale_edit' lead.pk %}">{% if lead.sale %}ویرایش فروش{% else %}ثبت فروش{% endif %}</a>{% else %}<small>{{ lead.next_follow_up|jdate|default:'در انتظار کال‌سنتر' }}</small>{% endif %}</span></div>{% empty %}<div class="rf-empty rf-empty-large">در این وضعیت لیدی وجود ندارد.</div>{% endfor %}
+  </div></article>
+  {% if is_manager %}<div class="rf-export-row"><a href="{% url 'referral_export_csv' %}">خروجی Excel / CSV</a><a href="{% url 'referral_crm_export' %}">خروجی استاندارد CRM (JSON)</a></div>{% endif %}
+</section>
+{% endblock %}

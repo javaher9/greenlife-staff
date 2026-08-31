@@ -25,7 +25,7 @@ class ShiftGroup(models.Model):
         return f'{self.branch} - {self.name}'
 
 class EmployeeProfile(models.Model):
-    ROLE_CHOICES=[('admin','مدیر سیستم'),('manager','مدیر شعبه'),('employee','کارمند')]
+    ROLE_CHOICES=[('admin','مدیر سیستم'),('manager','مدیر شعبه'),('employee','کارمند'),('referrer','معرف مشتری')]
     user=models.OneToOneField(User,on_delete=models.CASCADE,related_name='profile')
     branch=models.ForeignKey(Branch,on_delete=models.SET_NULL,null=True,blank=True)
     role=models.CharField(max_length=20,choices=ROLE_CHOICES,default='employee')
@@ -41,6 +41,97 @@ class EmployeeProfile(models.Model):
     avatar=models.ImageField(upload_to='avatars/',null=True,blank=True)
     is_active=models.BooleanField(default=True)
     def __str__(self): return self.user.get_full_name() or self.user.username
+
+
+class ReferralProfile(models.Model):
+    """A staff member or external partner who can introduce customers.
+
+    A root profile belongs to a staff user. External members may sit at level 1
+    or 2 below that root; deeper networks are rejected by ``clean`` and by the
+    application forms.
+    """
+    SYNC_STATUS=[('local','محلی'),('pending','در صف ارسال'),('synced','همگام‌شده'),('error','خطای همگام‌سازی')]
+    user=models.OneToOneField(User,on_delete=models.CASCADE,related_name='referral_profile')
+    sponsor=models.ForeignKey('self',on_delete=models.PROTECT,null=True,blank=True,related_name='members')
+    referral_code=models.CharField(max_length=24,unique=True,db_index=True)
+    phone=models.CharField(max_length=30,blank=True)
+    photo=models.ImageField(upload_to='referrals/people/%Y/%m/',null=True,blank=True)
+    is_active=models.BooleanField(default=True)
+    crm_id=models.CharField(max_length=120,blank=True,null=True,db_index=True)
+    sync_status=models.CharField(max_length=20,choices=SYNC_STATUS,default='local',db_index=True)
+    created_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='created_referral_profiles')
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+    class Meta:
+        ordering=['user__last_name','user__first_name','id']
+    def __str__(self): return self.user.get_full_name() or self.user.username
+    @property
+    def level(self):
+        if not self.sponsor_id: return 0
+        return 2 if self.sponsor.sponsor_id else 1
+    @property
+    def display_photo(self):
+        if self.photo: return self.photo
+        employee=getattr(self.user,'profile',None)
+        return getattr(employee,'avatar',None)
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.sponsor_id:
+            if self.pk and self.sponsor_id==self.pk:
+                raise ValidationError({'sponsor':'هر فرد نمی‌تواند معرف خودش باشد.'})
+            if self.sponsor.sponsor_id and self.sponsor.sponsor.sponsor_id:
+                raise ValidationError({'sponsor':'شبکه معرفی حداکثر دو سطح دارد.'})
+    def save(self,*args,**kwargs):
+        self.full_clean()
+        return super().save(*args,**kwargs)
+
+
+class ReferralLead(models.Model):
+    STATUS=[
+        ('new','جدید'),('contacted','تماس گرفته شد'),('appointment','نوبت ثبت شد'),
+        ('visited','مراجعه کرد'),('won','فروش موفق'),('lost','ناموفق'),
+    ]
+    SOURCE=[('panel','ثبت در پنل'),('link','لینک اختصاصی'),('qr','QR اختصاصی'),('import','ورودی فایل')]
+    SYNC_STATUS=ReferralProfile.SYNC_STATUS
+    referrer=models.ForeignKey(ReferralProfile,on_delete=models.PROTECT,related_name='leads')
+    full_name=models.CharField(max_length=140)
+    phone=models.CharField(max_length=30,db_index=True)
+    alternate_phone=models.CharField(max_length=30,blank=True)
+    interested_service=models.CharField(max_length=160,blank=True)
+    status=models.CharField(max_length=20,choices=STATUS,default='new',db_index=True)
+    source=models.CharField(max_length=20,choices=SOURCE,default='panel')
+    assigned_to=models.ForeignKey(EmployeeProfile,on_delete=models.SET_NULL,null=True,blank=True,related_name='assigned_referral_leads')
+    next_follow_up=models.DateField(null=True,blank=True)
+    notes=models.TextField(blank=True)
+    crm_id=models.CharField(max_length=120,blank=True,null=True,db_index=True)
+    sync_status=models.CharField(max_length=20,choices=SYNC_STATUS,default='local',db_index=True)
+    source_url=models.URLField(max_length=500,blank=True)
+    created_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='created_referral_leads')
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+    class Meta:
+        ordering=['-created_at']
+        indexes=[models.Index(fields=['referrer','status','-created_at'],name='reflead_ref_status_idx')]
+    def __str__(self): return f'{self.full_name} - {self.phone}'
+
+
+class ReferralSale(models.Model):
+    STATUS=[('draft','در انتظار تأیید'),('approved','تأیید شده'),('paid','پورسانت پرداخت شد'),('cancelled','لغو شده')]
+    SYNC_STATUS=ReferralProfile.SYNC_STATUS
+    lead=models.OneToOneField(ReferralLead,on_delete=models.PROTECT,related_name='sale')
+    sale_date=models.DateField(default=timezone.localdate)
+    amount=models.DecimalField(max_digits=18,decimal_places=0)
+    direct_commission=models.DecimalField(max_digits=18,decimal_places=0,default=0,help_text='سهم معرف مستقیم به تومان')
+    level_two_commission=models.DecimalField(max_digits=18,decimal_places=0,default=0,help_text='سهم معرف بالادستی به تومان')
+    status=models.CharField(max_length=20,choices=STATUS,default='draft',db_index=True)
+    note=models.TextField(blank=True)
+    crm_id=models.CharField(max_length=120,blank=True,null=True,db_index=True)
+    sync_status=models.CharField(max_length=20,choices=SYNC_STATUS,default='local',db_index=True)
+    recorded_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='recorded_referral_sales')
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+    class Meta: ordering=['-sale_date','-created_at']
+    def __str__(self): return f'{self.lead} - {self.amount}'
 
 class Task(models.Model):
     STATUS=[('todo','انجام نشده'),('doing','در حال انجام'),('done','انجام شده')]

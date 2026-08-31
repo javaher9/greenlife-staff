@@ -104,6 +104,8 @@ def logout_view(request): logout(request); return redirect('login')
 @login_required
 def dashboard(request):
     role=role_of(request.user)
+    if role=='referrer':
+        return redirect('referral_dashboard')
     if role in ('admin','manager'):
         return redirect('branch_live_dashboard')
     user_tasks=Task.objects.filter(assigned_to=request.user)
@@ -330,7 +332,7 @@ def sop_list(request):
 @manager_required
 def employee_list(request):
     role=role_of(request.user)
-    qs=EmployeeProfile.objects.select_related('user','branch').order_by('branch__name','user__last_name')
+    qs=EmployeeProfile.objects.exclude(role='referrer').select_related('user','branch').order_by('branch__name','user__last_name')
     if role=='manager': qs=qs.filter(branch=request.user.profile.branch)
     return render(request,'core/employee_list.html',{
         'employees':qs,
@@ -1992,6 +1994,6 @@ def action_center(request):
 
 @login_required
 def service_worker(request):
-    response=HttpResponse("const CACHE='greenlife-staff-v38.8';\nconst STATIC=[\n  '/static/core/app.css?v=v38.8',\n  '/static/core/icon-192.png?v=v38.8',\n  '/static/core/icon-512.png?v=v38.8',\n  '/static/core/manifest.webmanifest?v=v38.8'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
+    response=HttpResponse("const CACHE='greenlife-staff-v39.0';\nconst STATIC=[\n  '/static/core/app.css?v=v39.0',\n  '/static/core/referral.css?v=v39.0',\n  '/static/core/icon-192.png?v=v39.0',\n  '/static/core/icon-512.png?v=v39.0',\n  '/static/core/manifest.webmanifest?v=v39.0'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
     response['Cache-Control']='no-cache, no-store, must-revalidate'
     return response
