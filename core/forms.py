@@ -62,6 +62,67 @@ class EmployeeCreateForm(forms.Form):
         if User.objects.filter(username__iexact=value).exists(): raise forms.ValidationError('این نام کاربری قبلاً ثبت شده است.')
         return value
 
+class EmployeeEditForm(forms.Form):
+    first_name=forms.CharField(label='نام')
+    last_name=forms.CharField(label='نام خانوادگی')
+    username=forms.CharField(label='نام کاربری')
+    email=forms.EmailField(label='ایمیل',required=False)
+    employee_code=forms.CharField(label='کد پرسنلی',required=False)
+    job_title=forms.CharField(label='سمت',required=False)
+    phone=forms.CharField(label='تلفن',required=False)
+    birth_date=JalaliDateField(label='تاریخ تولد',required=False)
+    start_date=JalaliDateField(label='شروع همکاری',required=False)
+    branch=forms.ModelChoiceField(label='شعبه',queryset=Branch.objects.filter(is_active=True),required=False)
+    role=forms.ChoiceField(label='نقش',choices=EmployeeProfile.ROLE_CHOICES)
+    shift_group=forms.ModelChoiceField(label='گروه شیفت',queryset=None,required=False)
+    address=forms.CharField(label='آدرس',required=False,widget=forms.Textarea(attrs={'rows':3}))
+    education=forms.CharField(label='تحصیلات',required=False)
+    is_insured=forms.TypedChoiceField(
+        label='وضعیت بیمه',required=False,coerce=lambda value: {'True':True,'False':False}.get(value),
+        empty_value=None,choices=(('', 'نامشخص'),('True', 'بیمه شده'),('False', 'بیمه نشده')),
+    )
+    is_active=forms.BooleanField(label='فعال',required=False)
+    new_password=forms.CharField(label='رمز عبور جدید',required=False,widget=forms.PasswordInput,help_text='اگر نمی‌خواهید رمز تغییر کند، خالی بگذارید.')
+
+    def __init__(self,*args,employee,**kwargs):
+        super().__init__(*args,**kwargs)
+        from .models import ShiftGroup
+        self.employee=employee
+        self.fields['shift_group'].queryset=ShiftGroup.objects.filter(is_active=True).select_related('branch').order_by('branch__name','name')
+        if not self.is_bound:
+            self.initial.update({
+                'first_name':employee.user.first_name,'last_name':employee.user.last_name,
+                'username':employee.user.username,'email':employee.user.email,
+                'employee_code':employee.employee_code or '','job_title':employee.job_title,
+                'phone':employee.phone,'birth_date':employee.birth_date,'start_date':employee.start_date,
+                'branch':employee.branch,'role':employee.role,'shift_group':employee.shift_group,
+                'address':employee.address,'education':employee.education,
+                'is_insured':employee.is_insured,'is_active':employee.is_active,
+            })
+
+    def clean_username(self):
+        value=self.cleaned_data['username'].strip()
+        if User.objects.filter(username__iexact=value).exclude(pk=self.employee.user_id).exists():
+            raise forms.ValidationError('این نام کاربری قبلاً ثبت شده است.')
+        return value
+
+    def clean_employee_code(self):
+        value=(self.cleaned_data.get('employee_code') or '').strip()
+        if value and EmployeeProfile.objects.filter(employee_code=value).exclude(pk=self.employee.pk).exists():
+            raise forms.ValidationError('این کد پرسنلی قبلاً ثبت شده است.')
+        return value
+
+    def save(self):
+        d=self.cleaned_data; employee=self.employee; user=employee.user
+        user.first_name=d['first_name']; user.last_name=d['last_name']; user.username=d['username']; user.email=d['email']; user.is_active=d['is_active']
+        if d.get('new_password'): user.set_password(d['new_password'])
+        user.save()
+        for field in ('branch','role','shift_group','job_title','phone','birth_date','start_date','address','education','is_insured','is_active'):
+            setattr(employee,field,d.get(field))
+        employee.employee_code=d['employee_code'] or None
+        employee.save()
+        return employee
+
 class AttendanceManualForm(forms.ModelForm):
     date=JalaliDateField(label='تاریخ')
     class Meta:

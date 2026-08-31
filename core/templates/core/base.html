@@ -4,16 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>GreenLife Staff</title>
-  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v38.6">
+  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v38.8">
   <link rel="stylesheet" href="{% static 'core/sidebar-system.css' %}?v=v1">
 
-<link rel="manifest" href="/static/core/manifest.webmanifest?v=v38.6">
+<link rel="manifest" href="/static/core/manifest.webmanifest?v=v38.8">
 <meta name="theme-color" content="#15945f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GreenLife Staff">
-<link rel="apple-touch-icon" href="/static/core/icon-192.png?v=v38.6">
+<link rel="apple-touch-icon" href="/static/core/icon-192.png?v=v38.8">
 
 </head>
 <body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' %}gl-role-employee{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
@@ -36,13 +36,14 @@
     {% endif %}
     {% if user.profile.role != 'employee' %}<a href="/live/"><span class="nav-ico">⌘</span><span>{% if user.profile.role == "manager" %}مدیریت شعبه{% else %}پنل مدیریتی{% endif %}</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/action-center/"><span class="nav-ico">⚡</span><span>مرکز اقدام</span></a>{% endif %}
+    {% if user.profile.role != 'employee' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌های پرسنل</span></a>{% endif %}
     <a href="/employees/"><span class="nav-ico">♙</span><span>پرسنل</span></a>
-    <a href="/attendance/" class="attendance-nav employee-bottom-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2h2V2Zm12 7H5v10h14V9Zm-8 2h2v4h3v2h-5v-6Z"/></svg></span><span class="nav-label nav-label-desktop">حضور و غیاب</span><span class="nav-label nav-label-mobile">حضور</span></a>
+    {% if user.profile.role == 'employee' %}<a href="/attendance/" class="attendance-nav employee-bottom-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2h2V2Zm12 7H5v10h14V9Zm-8 2h2v4h3v2h-5v-6Z"/></svg></span><span class="nav-label nav-label-desktop">حضور و غیاب</span><span class="nav-label nav-label-mobile">حضور</span></a>{% elif user.profile.role == 'manager' %}<a href="/attendance/team/" class="{% if request.path|slice:':17' == '/attendance/team/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور تیم</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/kpi/"><span class="nav-ico">◎</span><span>عملکرد و KPI</span></a>{% endif %}
     <a href="/sop/" class="{% if request.path|slice:':5' == '/sop/' %}is-active{% endif %}"><span class="nav-ico">◇</span><span>آموزش</span></a>
     <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>شرح وظایف و دستورالعمل‌ها</span></a>
     <a href="/service-requests/"><span class="nav-ico">✓</span><span>درخواست‌ها</span></a>
-    <a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌ها</span></a>
+    {% if user.profile.role == 'employee' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌ها</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/finance/"><span class="nav-ico">▧</span><span>مالی و درآمد</span></a>{% endif %}
     <a href="/notifications/" class="notifications-nav employee-bottom-nav {% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 6.2-3 7-3 9h18c0-2-3-2.8-3-9Zm-8 11h4a2 2 0 0 1-4 0Z"/></svg></span><span>اعلان‌ها</span></a>
 
@@ -70,8 +71,9 @@
           <a href="/logout/" class="employee-more-logout"><span>↪</span>خروج</a>
         {% else %}
           <a href="/live/"><span>⌘</span>پنل مدیریتی</a>
+          <a href="/reports/"><span>▥</span>گزارش‌های پرسنل</a>
           <a href="/employees/"><span>♙</span>پرسنل</a>
-          <a href="/attendance/"><span>◷</span>حضور و غیاب</a>
+          {% if user.profile.role == 'manager' %}<a href="/attendance/team/"><span>◷</span>حضور تیم</a>{% endif %}
           <a href="/kpi/"><span>◎</span>عملکرد و KPI</a>
           <a href="/sop/"><span>◇</span>آموزش</a>
           <a href="/service-requests/"><span>✓</span>درخواست‌ها</a>
@@ -182,7 +184,7 @@
 <script>
 (function(){
   if('serviceWorker' in navigator){
-    window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js?v=v38.6',{updateViaCache:'none'}).catch(()=>{}));
+    window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js?v=v38.8',{updateViaCache:'none'}).catch(()=>{}));
   }
   let deferredPrompt=null;
   const bar=document.getElementById('pwaInstallBar');
@@ -229,7 +231,7 @@
 
 
 <div class="gl-version-footer">
-  GreenLife Staff <strong>v38.6 Avatar Framing</strong>
+  GreenLife Staff <strong>v38.8 Personnel Dashboard</strong>
 </div>
 
 </body></html>

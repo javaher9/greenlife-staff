@@ -9,14 +9,26 @@
 .personnel-doc-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 15px;border:1px solid rgba(255,255,255,.07);border-radius:14px;background:rgba(255,255,255,.025)}
 .personnel-doc-main{min-width:0}.personnel-doc-titleline{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:6px}.personnel-doc-titleline strong{font-size:15px;color:#f3f7f5}.personnel-doc-type{display:inline-flex;align-items:center;min-height:25px;padding:3px 9px;border-radius:999px;background:#202d34;border:1px solid rgba(255,255,255,.07);color:#c7d2cd;font-size:11px;font-weight:700}.personnel-doc-row.is-education .personnel-doc-type{background:rgba(99,66,153,.22);border-color:rgba(157,119,219,.25);color:#dbcaff}.personnel-doc-meta{display:flex;gap:8px 14px;flex-wrap:wrap;color:#b8c5bf;font-size:12.5px;line-height:1.7}.personnel-doc-note{margin:7px 0 0;color:#c8d3ce;font-size:12.5px;line-height:1.75}.personnel-doc-open{white-space:nowrap;margin:0!important}
 .personnel-doc-guide{margin:6px 0 0;color:#aebcb5;font-size:12.5px;line-height:1.7}
-@media(max-width:800px){.personnel-file-head .avatar-xl{width:88px!important;height:88px!important;min-width:88px}.personnel-doc-row{grid-template-columns:1fr}.personnel-doc-open{justify-self:start}.personnel-doc-meta{gap:5px 10px}}
+.personnel-file-head-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.personnel-dashboard-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.personnel-dashboard-card{position:relative;min-height:116px;padding:15px;border:1px solid #2b3d49;border-radius:16px;background:linear-gradient(145deg,#101e28,#0b161f);color:#edf4f1;text-decoration:none;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between}.personnel-dashboard-card:after{content:"";position:absolute;width:78px;height:78px;left:-29px;bottom:-34px;border-radius:50%;background:currentColor;opacity:.07}.personnel-dashboard-icon{width:35px;height:35px;border-radius:11px;background:rgba(255,255,255,.055);display:grid;place-items:center;font-size:17px;color:#7ee4aa}.personnel-dashboard-card:nth-child(2) .personnel-dashboard-icon{color:#62baff}.personnel-dashboard-card:nth-child(3) .personnel-dashboard-icon{color:#56d3c4}.personnel-dashboard-card:nth-child(4) .personnel-dashboard-icon{color:#f1b85e}.personnel-dashboard-card:nth-child(5) .personnel-dashboard-icon{color:#c29aef}.personnel-dashboard-card:nth-child(6) .personnel-dashboard-icon{color:#8ee966}.personnel-dashboard-copy small{display:block;color:#9eb0b8;font-size:10.5px;margin-bottom:4px}.personnel-dashboard-copy strong{display:block;color:#f4f8f6;font-size:17px;line-height:1.3}.personnel-dashboard-copy em{display:block;margin-top:4px;color:#aebdc4;font-size:9.5px;font-style:normal}.personnel-section-link{font-size:11px!important}.personnel-recent-report p,.personnel-recent-action p{margin:4px 0 0;color:#afbdc4;font-size:11px;line-height:1.65}.personnel-recent-report small,.personnel-recent-action small{color:#879ba5;font-size:10px}
+@media(max-width:1180px){.personnel-dashboard-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:800px){.personnel-file-head{align-items:flex-start!important}.personnel-file-head .avatar-xl{width:88px!important;height:88px!important;min-width:88px}.personnel-file-head-actions{width:100%;justify-content:stretch}.personnel-file-head-actions a{flex:1;text-align:center}.personnel-doc-row{grid-template-columns:1fr}.personnel-doc-open{justify-self:start}.personnel-doc-meta{gap:5px 10px}}
+@media(max-width:520px){.personnel-dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.personnel-dashboard-card{min-height:105px;padding:12px}}
 </style>
 <section class="hero personnel-file-head">
   <div class="person-cell">
     <div class="avatar-xl">{% if employee.avatar %}<img src="{{ employee.avatar.url }}">{% else %}<span>{{ employee.user.first_name|first|default:employee.user.username|first }}</span>{% endif %}</div>
     <div><h1>{{ employee.user.get_full_name|default:employee.user.username }}</h1><p>{{ employee.job_title|default:'بدون سمت' }} · {{ employee.branch|default:'بدون شعبه' }} · کد {{ employee.employee_code|default:'—' }}</p><p>{{ employee.phone|default:'بدون تلفن' }}{% if employee.start_date %} · شروع همکاری {{ employee.start_date|jdate }}{% endif %}</p></div>
   </div>
-  <div><a class="primary" href="/employees/{{ employee.id }}/documents/new/">افزودن مدرک</a> <a class="mini" href="/employees/{{ employee.id }}/photo/">تغییر عکس</a></div>
+  <div class="personnel-file-head-actions"><a class="primary" href="{% url 'employee_edit' employee.id %}">ویرایش مشخصات</a><a class="mini" href="/employees/{{ employee.id }}/documents/new/">افزودن مدرک</a><a class="mini" href="/employees/{{ employee.id }}/photo/">تغییر عکس</a></div>
+</section>
+
+<section class="personnel-dashboard-grid" aria-label="داشبورد پرسنل">
+  <a class="personnel-dashboard-card" href="#personnel-documents"><span class="personnel-dashboard-icon">♙</span><span class="personnel-dashboard-copy"><small>پرونده</small><strong>{{ stats.documents|fa }} مدرک</strong><em>مشخصات و مستندات</em></span></a>
+  <a class="personnel-dashboard-card" href="{% url 'employee_reports' employee.id %}"><span class="personnel-dashboard-icon">▥</span><span class="personnel-dashboard-copy"><small>گزارش‌ها</small><strong>{{ stats.reports|fa }} گزارش</strong><em>در ۳۰ روز اخیر</em></span></a>
+  <a class="personnel-dashboard-card" href="{% url 'employee_attendance' employee.id %}"><span class="personnel-dashboard-icon">◷</span><span class="personnel-dashboard-copy"><small>حضور</small><strong>{{ stats.attendance_days|fa }} روز</strong><em>{{ stats.late_days|fa }} روز تأخیر</em></span></a>
+  <a class="personnel-dashboard-card" href="{% url 'employee_task_create' employee.id %}"><span class="personnel-dashboard-icon">✓</span><span class="personnel-dashboard-copy"><small>وظایف</small><strong>{{ stats.task_open|fa }} باز</strong><em>{{ stats.task_done|fa }} انجام‌شده در ۳۰ روز</em></span></a>
+  <a class="personnel-dashboard-card" href="{% url 'personnel_action_add' employee.id %}"><span class="personnel-dashboard-icon">⚑</span><span class="personnel-dashboard-copy"><small>اقدامات</small><strong>{{ stats.actions|fa }} مورد</strong><em>تشویق، تذکر و یادداشت</em></span></a>
+  <a class="personnel-dashboard-card" href="{% url 'employee_360' employee.id %}"><span class="personnel-dashboard-icon">◎</span><span class="personnel-dashboard-copy"><small>عملکرد</small><strong>{{ kpi.score|fa }}/۱۰۰</strong><em>نمای ۳۶۰ درجه</em></span></a>
 </section>
 
 <section class="stats personnel-file-kpis">
@@ -27,7 +39,7 @@
 </section>
 
 <div class="grid">
-<section class="panel"><div class="sectionhead"><div><h2>سوابق تحصیلی، آموزشی و مدارک</h2><p class="personnel-doc-guide">مدارک تحصیلی و آموزشی با برچسب مشخص‌تر نمایش داده می‌شوند تا مرور پرونده سریع‌تر باشد.</p></div><a href="/employees/{{ employee.id }}/documents/new/">افزودن</a></div>
+<section class="panel" id="personnel-documents"><div class="sectionhead"><div><h2>سوابق تحصیلی، آموزشی و مدارک</h2><p class="personnel-doc-guide">مدارک تحصیلی و آموزشی با برچسب مشخص‌تر نمایش داده می‌شوند تا مرور پرونده سریع‌تر باشد.</p></div><a href="/employees/{{ employee.id }}/documents/new/">افزودن</a></div>
 <div class="personnel-doc-list">
 {% for d in documents %}<div class="personnel-doc-row {% if d.document_type == 'certificate' or d.document_type == 'training' %}is-education{% endif %}"><div class="personnel-doc-main"><div class="personnel-doc-titleline"><strong>{{ d.title }}</strong><span class="personnel-doc-type">{{ d.get_document_type_display }}</span></div><div class="personnel-doc-meta">{% if d.issue_date %}<span>تاریخ صدور: {{ d.issue_date|jdate }}</span>{% endif %}{% if d.expiry_date %}<span>تاریخ انقضا: {{ d.expiry_date|jdate }}</span>{% endif %}{% if not d.issue_date and not d.expiry_date %}<span>تاریخ ثبت نشده</span>{% endif %}</div>{% if d.note %}<p class="personnel-doc-note">{{ d.note }}</p>{% endif %}</div><a class="mini personnel-doc-open" href="{{ d.file.url }}" target="_blank">مشاهده</a></div>{% empty %}<p class="muted">هنوز مدرکی ثبت نشده است.</p>{% endfor %}
 </div></section>
@@ -45,6 +57,11 @@
 <div class="grid">
 <section class="panel"><h2>Taskها</h2>{% for t in tasks %}<div class="row"><strong>{{ t.title }}</strong><span>{{ t.get_status_display }}{% if t.due_date %} · {{ t.due_date|jdate }}{% endif %}</span></div>{% empty %}<p class="muted">Task ثبت نشده.</p>{% endfor %}</section>
 <section class="panel"><h2>امتیازها</h2>{% for s in scores %}<div class="row"><strong>{{ s.points|fa }}</strong><span>{{ s.description|default:s.get_reason_display }} · {{ s.event_date|jdate }}</span></div>{% empty %}<p class="muted">امتیازی ثبت نشده.</p>{% endfor %}</section>
+</div>
+
+<div class="grid">
+<section class="panel"><div class="sectionhead"><h2>گزارش‌های اخیر</h2><a class="personnel-section-link" href="{% url 'employee_reports' employee.id %}">مشاهده همه</a></div>{% for r in reports|slice:':6' %}<div class="row personnel-recent-report"><div><strong>{{ r.created_at|jdatetime }}</strong><p>{{ r.ai_summary|default:r.text|default:r.transcript|truncatechars:110 }}</p></div><span>{{ r.get_process_status_display }}</span></div>{% empty %}<p class="muted">گزارشی ثبت نشده.</p>{% endfor %}</section>
+<section class="panel"><div class="sectionhead"><h2>اقدامات مدیریتی اخیر</h2><a class="personnel-section-link" href="{% url 'personnel_action_add' employee.id %}">ثبت اقدام</a></div>{% for action in actions|slice:':6' %}<div class="row personnel-recent-action"><div><strong>{{ action.get_action_type_display }} · {{ action.title }}</strong><p>{{ action.description|truncatechars:110 }}</p></div><span>{{ action.event_date|jdate }}</span></div>{% empty %}<p class="muted">اقدامی ثبت نشده.</p>{% endfor %}</section>
 </div>
 </div>
 {% endblock %}

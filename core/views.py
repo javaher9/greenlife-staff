@@ -9,9 +9,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect, render
+from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
-from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, EmployeeCreateForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm
+from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, EmployeeCreateForm, EmployeeEditForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm
 from .models import Announcement, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue
 from .ai import process_report
 from .jalali import format_jalali, gregorian_to_jalali, jalali_to_gregorian, parse_jalali
@@ -346,6 +347,27 @@ def employee_create(request):
         })
         messages.success(request,'کارمند ایجاد شد.'); return redirect('employee_list')
     return render(request,'core/generic_form.html',{'form':form,'title':'افزودن کارمند','button':'ساخت حساب'})
+
+@manager_required
+def employee_edit(request,pk):
+    employee=get_object_or_404(EmployeeProfile.objects.select_related('user','branch','shift_group'),pk=pk)
+    if role_of(request.user)=='manager' and employee.branch_id!=request.user.profile.branch_id:
+        messages.error(request,'به این پرسنل دسترسی ندارید.')
+        return redirect('employee_list')
+    form=EmployeeEditForm(request.POST or None,employee=employee)
+    if role_of(request.user)=='manager':
+        form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=request.user.profile.branch_id)
+        form.fields['role'].choices=[('employee','کارمند')]
+        form.fields['shift_group'].queryset=form.fields['shift_group'].queryset.filter(branch=request.user.profile.branch)
+    if request.method=='POST' and form.is_valid():
+        with transaction.atomic(): form.save()
+        messages.success(request,'مشخصات پرسنل به‌روزرسانی شد.')
+        return redirect('employee_file',pk=pk)
+    return render(request,'core/employee_management_form.html',{
+        'form':form,'employee':employee,'title':'ویرایش مشخصات',
+        'subtitle':'اطلاعات هویتی، شغلی، تماس، بیمه و شیفت این پرسنل را به‌روزرسانی کنید.',
+        'button':'ذخیره تغییرات','form_kind':'edit',
+    })
 
 @login_required
 def profile_view(request):
@@ -1140,6 +1162,7 @@ def employee_file(request,pk):
     tasks=Task.objects.filter(assigned_to=user).order_by('status','due_date')[:30]
     reports=DailyReport.objects.filter(user=user).order_by('-created_at')[:20]
     scores=ScoreEvent.objects.filter(user=user).order_by('-event_date','-created_at')[:30]
+    actions=PersonnelAction.objects.filter(user=user).order_by('-event_date','-created_at')
     kpi=auto_kpi(user,start,today)
     documents=employee.documents.all()
     stats={
@@ -1147,10 +1170,13 @@ def employee_file(request,pk):
         'late_days':attendance.filter(status='late').count(),
         'reports':DailyReport.objects.filter(user=user,created_at__date__range=(start,today)).count(),
         'task_done':Task.objects.filter(assigned_to=user,status='done',updated_at__date__range=(start,today)).count(),
+        'task_open':Task.objects.filter(assigned_to=user,status__in=('todo','doing')).count(),
+        'documents':documents.count(),
+        'actions':actions.count(),
     }
     return render(request,'core/employee_file.html',{
         'employee':employee,'attendance':attendance[:15],'leaves':leaves,'tasks':tasks,
-        'reports':reports,'scores':scores,'documents':documents,'kpi':kpi,'stats':stats,
+        'reports':reports,'scores':scores,'actions':actions[:12],'documents':documents,'kpi':kpi,'stats':stats,
         'start':start,'today':today
     })
 
@@ -1962,6 +1988,6 @@ def action_center(request):
 
 @login_required
 def service_worker(request):
-    response=HttpResponse("const CACHE='greenlife-staff-v38.6';\nconst STATIC=[\n  '/static/core/app.css?v=v38.6',\n  '/static/core/icon-192.png?v=v38.6',\n  '/static/core/icon-512.png?v=v38.6',\n  '/static/core/manifest.webmanifest?v=v38.6'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
+    response=HttpResponse("const CACHE='greenlife-staff-v38.8';\nconst STATIC=[\n  '/static/core/app.css?v=v38.8',\n  '/static/core/icon-192.png?v=v38.8',\n  '/static/core/icon-512.png?v=v38.8',\n  '/static/core/manifest.webmanifest?v=v38.8'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
     response['Cache-Control']='no-cache, no-store, must-revalidate'
     return response

@@ -49,6 +49,41 @@ class PersonnelQuickActionTests(TestCase):
         for label in ('پرونده','گزارش‌ها','حضور','وظیفه','اقدام','عملکرد'):
             self.assertContains(response,f'>{label}</a>')
 
+    def test_admin_navigation_prioritizes_reports_and_hides_personal_actions(self):
+        response=self.client.get(reverse('employee_list'))
+        self.assertContains(response,'href="/reports/"')
+        self.assertContains(response,'گزارش‌های پرسنل')
+        self.assertNotContains(response,'href="/attendance/"')
+        self.assertNotContains(response,'href="/attendance/team/"')
+
+        reports_response=self.client.get(reverse('report_list'))
+        self.assertNotContains(reports_response,'href="/reports/new/"')
+
+    def test_personnel_file_is_dashboard_and_contains_edit_action(self):
+        response=self.client.get(reverse('employee_file',args=[self.employee.pk]))
+        self.assertEqual(response.status_code,200)
+        for name in ('employee_edit','employee_reports','employee_attendance','employee_task_create','personnel_action_add','employee_360'):
+            self.assertContains(response,reverse(name,args=[self.employee.pk]))
+        for label in ('ویرایش مشخصات','پرونده','گزارش‌ها','حضور','وظایف','اقدامات','عملکرد'):
+            self.assertContains(response,label)
+
+    def test_employee_details_can_be_edited_from_personnel_file(self):
+        response=self.client.post(reverse('employee_edit',args=[self.employee.pk]),{
+            'first_name':'معصومه','last_name':'حضرتی','username':'employee-test',
+            'email':'masoumeh@example.com','employee_code':'GL-009','job_title':'منشی',
+            'phone':'09120000000','birth_date':'۱۳۷۵/۰۲/۰۳','start_date':'۱۴۰۴/۰۱/۱۵',
+            'branch':str(self.branch.pk),'role':'employee','shift_group':'',
+            'address':'تهران، نیاوران','education':'کارشناسی','is_insured':'True','is_active':'on',
+            'new_password':'',
+        })
+        self.assertRedirects(response,reverse('employee_file',args=[self.employee.pk]))
+        self.employee.refresh_from_db(); self.employee_user.refresh_from_db()
+        self.assertEqual(self.employee_user.get_full_name(),'معصومه حضرتی')
+        self.assertEqual(self.employee.employee_code,'GL-009')
+        self.assertEqual(self.employee.address,'تهران، نیاوران')
+        self.assertEqual(self.employee.education,'کارشناسی')
+        self.assertIs(self.employee.is_insured,True)
+
     def test_employee_reports_are_scoped_to_selected_employee(self):
         selected=DailyReport.objects.create(user=self.employee_user,branch=self.branch,text='گزارش انتخاب‌شده')
         DailyReport.objects.create(user=self.other_user,branch=self.other_branch,text='گزارش فرد دیگر')
@@ -111,6 +146,9 @@ class PersonnelQuickActionTests(TestCase):
             defaults={'role':'manager','branch':self.branch,'is_active':True},
         )
         self.client.force_login(manager)
-        for name in ('employee_reports','employee_attendance','employee_task_create','personnel_action_add','employee_360'):
+        navigation=self.client.get(reverse('employee_list'))
+        self.assertContains(navigation,'href="/attendance/team/"')
+        self.assertNotContains(navigation,'href="/attendance/"')
+        for name in ('employee_edit','employee_reports','employee_attendance','employee_task_create','personnel_action_add','employee_360'):
             response=self.client.get(reverse(name,args=[self.other_employee.pk]))
             self.assertRedirects(response,reverse('employee_list'))
