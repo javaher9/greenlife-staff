@@ -12,8 +12,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
-from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, EmployeeCreateForm, EmployeeEditForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm
-from .models import Announcement, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue
+from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, BlackboardMessageForm, EmployeeCreateForm, EmployeeEditForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm
+from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue
 from .ai import process_report
 from .jalali import format_jalali, gregorian_to_jalali, jalali_to_gregorian, parse_jalali
 from .reporting import day_summary, leaderboard, answer_query
@@ -112,6 +112,9 @@ def dashboard(request):
     tasks=user_tasks.order_by('status','due_date')[:8]
     profile=getattr(request.user,'profile',None)
     announcements=Announcement.objects.filter(is_active=True).filter(Q(branch__isnull=True)|Q(branch=getattr(profile,'branch',None))).order_by('-created_at')[:4]
+    blackboard_qs=BlackboardMessage.objects.filter(is_active=True)
+    profile_branch=getattr(profile,'branch',None)
+    blackboard=(blackboard_qs.filter(branch=profile_branch).first() if profile_branch else None) or blackboard_qs.filter(branch__isnull=True).first()
     counts=user_tasks.values('status').annotate(n=Count('id')); stats={x['status']:x['n'] for x in counts}
     pending_leave=LeaveRequest.objects.filter(user=request.user,status='pending').count()
     attendance_today=Attendance.objects.filter(user=request.user,date=timezone.localdate()).first()
@@ -168,6 +171,7 @@ def dashboard(request):
     return render(request,'core/dashboard.html',{
         'tasks':tasks,
         'announcements':announcements,
+        'blackboard':blackboard,
         'stats':stats,
         'pending_leave':pending_leave,
         'manager_stats':manager_stats,
@@ -299,6 +303,36 @@ def announcement_create(request):
     if request.method=='POST' and form.is_valid():
         obj=form.save(commit=False); obj.created_by=request.user; obj.save(); messages.success(request,'اطلاعیه منتشر شد.'); return redirect('announcement_list')
     return render(request,'core/generic_form.html',{'form':form,'title':'اطلاعیه جدید','button':'انتشار'})
+
+@manager_required
+def blackboard_manage(request):
+    qs=BlackboardMessage.objects.select_related('branch','created_by')
+    if role_of(request.user)=='manager':
+        qs=qs.filter(branch=request.user.profile.branch)
+    return render(request,'core/blackboard_manage.html',{'blackboards':qs})
+
+@manager_required
+def blackboard_edit(request,pk=None):
+    item=get_object_or_404(BlackboardMessage,pk=pk) if pk else None
+    role=role_of(request.user)
+    if item and role=='manager' and item.branch_id!=request.user.profile.branch_id:
+        messages.error(request,'دسترسی به پیام این شعبه مجاز نیست.')
+        return redirect('blackboard_manage')
+    form=BlackboardMessageForm(request.POST or None,instance=item)
+    if role=='manager':
+        form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=request.user.profile.branch_id)
+        form.fields['branch'].initial=request.user.profile.branch
+        form.fields['branch'].required=True
+    if request.method=='POST' and form.is_valid():
+        obj=form.save(commit=False)
+        if role=='manager': obj.branch=request.user.profile.branch
+        if not obj.created_by_id: obj.created_by=request.user
+        obj.save()
+        messages.success(request,'پیام تخته‌سیاه ذخیره و برای پرسنل منتشر شد.' if obj.is_active else 'پیام تخته‌سیاه ذخیره شد.')
+        return redirect('blackboard_manage')
+    return render(request,'core/generic_form.html',{
+        'form':form,'title':'ویرایش تخته‌سیاه' if item else 'پیام جدید تخته‌سیاه','button':'ذخیره و انتشار',
+    })
 
 @login_required
 def leave_list(request):
@@ -1994,6 +2028,6 @@ def action_center(request):
 
 @login_required
 def service_worker(request):
-    response=HttpResponse("const CACHE='greenlife-staff-v39.3';\nconst STATIC=[\n  '/static/core/app.css?v=v39.3',\n  '/static/core/referral.css?v=v39.3',\n  '/static/core/icon-192.png?v=v39.3',\n  '/static/core/icon-512.png?v=v39.3',\n  '/static/core/manifest.webmanifest?v=v39.3'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
+    response=HttpResponse("const CACHE='greenlife-staff-v39.4';\nconst STATIC=[\n  '/static/core/app.css?v=v39.4',\n  '/static/core/referral.css?v=v39.4',\n  '/static/core/icon-192.png?v=v39.4',\n  '/static/core/icon-512.png?v=v39.4',\n  '/static/core/manifest.webmanifest?v=v39.4'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
     response['Cache-Control']='no-cache, no-store, must-revalidate'
     return response

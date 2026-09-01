@@ -1,0 +1,14 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="panel blackboard-admin-panel">
+  <div class="sectionhead"><div><h1>تخته‌سیاه پرسنل</h1><p>پیام کوتاه و مهمی که در بالای داشبورد پرسنل دیده می‌شود.</p></div><a class="primary" href="{% url 'blackboard_create' %}">پیام جدید</a></div>
+  <div class="blackboard-admin-grid">
+    {% for board in blackboards %}
+      <article class="blackboard-admin-card {% if board.is_active %}active{% endif %}">
+        <div><span>{% if board.branch %}{{ board.branch.name }}{% else %}همه شعب{% endif %}</span><i>{% if board.is_active %}فعال{% else %}غیرفعال{% endif %}</i></div>
+        <h2>{{ board.title }}</h2><p>{{ board.message|linebreaksbr }}</p>
+        <footer><small>آخرین ویرایش: {{ board.updated_at|jdatetime }}</small><a href="{% url 'blackboard_edit' board.pk %}">ویرایش</a></footer>
+      </article>
+    {% empty %}<div class="gl-empty-row">هنوز پیامی ثبت نشده؛ تا آن زمان شعار پیش‌فرض نمایش داده می‌شود.</div>{% endfor %}
+  </div>
+</section>
+{% endblock %}

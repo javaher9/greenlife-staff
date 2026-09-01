@@ -18,6 +18,15 @@
     </a>
   </header>
 
+  <section class="gl-blackboard" aria-label="پیام امروز مجموعه">
+    <span class="gl-blackboard-pin pin-a"></span><span class="gl-blackboard-pin pin-b"></span>
+    <div class="gl-blackboard-copy">
+      <small>{{ blackboard.title|default:'پیام امروز' }}</small>
+      <strong>{{ blackboard.message|default:'امروز می‌ترکونیم! شبکه فروشت یادت نره.'|linebreaksbr }}</strong>
+    </div>
+    <span class="gl-blackboard-chalk" aria-hidden="true"></span>
+  </section>
+
   <section class="gl-quick-actions">
     <a href="/attendance/" class="gl-quick-card gl-quick-attendance">
       <svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2h2V2Zm12 8H5v9h14v-9Zm-7 1a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7Zm0 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"/></svg>

@@ -156,6 +156,20 @@ class Announcement(models.Model):
     created_at=models.DateTimeField(auto_now_add=True)
     def __str__(self): return self.title
 
+class BlackboardMessage(models.Model):
+    title=models.CharField(max_length=120,default='پیام امروز')
+    message=models.TextField()
+    branch=models.ForeignKey(Branch,on_delete=models.SET_NULL,null=True,blank=True)
+    is_active=models.BooleanField(default=True)
+    created_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True)
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+    class Meta:
+        ordering=['-updated_at']
+    def __str__(self):
+        scope=self.branch.name if self.branch_id else 'همه شعب'
+        return f'{self.title} — {scope}'
+
 class SOPDocument(models.Model):
     title=models.CharField(max_length=200)
     description=models.TextField(blank=True)

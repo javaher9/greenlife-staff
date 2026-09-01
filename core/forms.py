@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.utils import timezone
-from .models import DailyReport, Task, LeaveRequest, Announcement, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, Branch, JobDutyTemplate, Guideline, DeviceIssue, ReferralProfile, ReferralLead, ReferralSale
+from .models import DailyReport, Task, LeaveRequest, Announcement, BlackboardMessage, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, Branch, JobDutyTemplate, Guideline, DeviceIssue, ReferralProfile, ReferralLead, ReferralSale
 from .jalali import parse_jalali, format_jalali
 
 class JalaliDateInput(forms.TextInput):
@@ -51,6 +51,16 @@ class LeaveReviewForm(forms.ModelForm):
 
 class AnnouncementForm(forms.ModelForm):
     class Meta: model=Announcement; fields=['title','body','branch','is_active']; widgets={'body':forms.Textarea(attrs={'rows':5})}
+
+class BlackboardMessageForm(forms.ModelForm):
+    class Meta:
+        model=BlackboardMessage
+        fields=['title','message','branch','is_active']
+        labels={'title':'عنوان کوتاه','message':'متن روی تخته','branch':'شعبه','is_active':'نمایش داده شود'}
+        widgets={
+            'title':forms.TextInput(attrs={'placeholder':'مثلاً پیام امروز'}),
+            'message':forms.Textarea(attrs={'rows':4,'maxlength':320,'placeholder':'مثلاً امروز می‌ترکونیم! شبکه فروشت یادت نره.'}),
+        }
 
 class EmployeeCreateForm(forms.Form):
     username=forms.CharField(label='نام کاربری'); first_name=forms.CharField(label='نام'); last_name=forms.CharField(label='نام خانوادگی')
