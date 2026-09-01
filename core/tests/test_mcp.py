@@ -50,7 +50,7 @@ class MCPServerTests(SimpleTestCase):
                 key=token,
             )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["result"]["serverInfo"]["version"], "1.3.1")
+        self.assertEqual(response.json()["result"]["serverInfo"]["version"], "1.3.2")
 
     @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
     def test_initialize(self):
@@ -241,6 +241,23 @@ class MCPRoleManagementTests(TestCase):
         audit = AuditLog.objects.get(action="mcp_operational_role")
         self.assertEqual(audit.actor, self.admin)
         self.assertEqual(audit.metadata["role"], "call_center")
+
+    @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
+    def test_changes_operational_role_to_consultant(self):
+        response = self.post_tool(
+            "set_operational_role",
+            {
+                "profile_ids": [self.profile.id],
+                "role": "consultant",
+                "job_title": "مشاور",
+                "confirm": True,
+            },
+        )
+        result = response.json()["result"]["structuredContent"]
+        self.assertEqual(result["updated_count"], 1)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.role, "consultant")
+        self.assertEqual(self.profile.job_title, "مشاور")
 
     @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
     def test_cannot_grant_admin_role(self):

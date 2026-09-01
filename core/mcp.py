@@ -26,7 +26,7 @@ from .reporting import answer_query, daily_reports_summary, day_summary
 
 
 PROTOCOL_VERSION = "2025-06-18"
-SERVER_INFO = {"name": "greenlife-staff", "version": "1.3.1"}
+SERVER_INFO = {"name": "greenlife-staff", "version": "1.3.2"}
 DEFAULT_WORK_TOKEN_SHA256 = "e9affd40ddff8a5d22ab70a5720a856e95d64853bc3e552484abf219518c4ae5"
 
 TOOLS = [
@@ -154,7 +154,7 @@ TOOLS = [
         "name": "set_operational_role",
         "title": "Set GreenLife operational staff role",
         "description": (
-            "Set an exact Staff account to employee or call center. "
+            "Set an exact Staff account to employee, call center or consultant. "
             "Requires exact profile IDs and explicit confirmation; every change is audited."
         ),
         "inputSchema": {
@@ -169,7 +169,7 @@ TOOLS = [
                 },
                 "role": {
                     "type": "string",
-                    "enum": ["employee", "call_center"],
+                    "enum": ["employee", "call_center", "consultant"],
                 },
                 "job_title": {"type": "string", "maxLength": 120},
                 "confirm": {
@@ -317,7 +317,7 @@ def _find_staff(query):
 def _set_operational_role(profile_ids, role, job_title=None, confirm=False):
     if confirm is not True:
         raise ValueError("confirm must be true")
-    if role not in {"employee", "call_center"}:
+    if role not in {"employee", "call_center", "consultant"}:
         raise ValueError("role is not an allowed operational role")
     if not isinstance(profile_ids, list) or not profile_ids or len(profile_ids) > 25:
         raise ValueError("profile_ids must contain between 1 and 25 exact IDs")
@@ -354,6 +354,8 @@ def _set_operational_role(profile_ids, role, job_title=None, confirm=False):
                 profile.job_title = job_title
             elif role == "call_center" and not profile.job_title:
                 profile.job_title = "کارشناس کال‌سنتر"
+            elif role == "consultant" and not profile.job_title:
+                profile.job_title = "مشاور"
             profile.save(update_fields=["role", "job_title"])
             changes.append(
                 {

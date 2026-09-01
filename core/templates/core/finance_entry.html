@@ -1,0 +1,40 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="hero">
+  <div><span class="eyebrow">ثبت مالی شعبه</span><h1>ثبت تراکنش مالی</h1><p>مبلغ را دقیق و عددی وارد کنید؛ تصویر تراکنش و نام فرد اجباری است.</p></div>
+</section>
+
+<section class="panel">
+  <div class="sectionhead"><div><h2>تراکنش جدید</h2><small>شعبه: {{ user.profile.branch|default:'تعیین نشده' }} · ثبت‌کننده: {{ user.get_full_name|default:user.username }}</small></div></div>
+  <form method="post" enctype="multipart/form-data" class="finance-entry-form">
+    {% csrf_token %}{{ form.non_field_errors }}
+    <div class="grid">
+      <label>{{ form.date.label }}{{ form.date }}{{ form.date.errors }}</label>
+      <label>{{ form.entry_type.label }}{{ form.entry_type }}{{ form.entry_type.errors }}</label>
+      <label>{{ form.person_name.label }}{{ form.person_name }}{{ form.person_name.errors }}</label>
+      <label>{{ form.amount.label }}{{ form.amount }}{{ form.amount.errors }}</label>
+      <label>{{ form.payment_method.label }}{{ form.payment_method }}{{ form.payment_method.errors }}</label>
+      <label>{{ form.service.label }}{{ form.service }}{{ form.service.errors }}</label>
+      <label>{{ form.account_heading.label }}{{ form.account_heading }}{{ form.account_heading.errors }}</label>
+      <label>{{ form.terminal_or_payee.label }}{{ form.terminal_or_payee }}{{ form.terminal_or_payee.errors }}</label>
+      <label>{{ form.tracking_number.label }}{{ form.tracking_number }}{{ form.tracking_number.errors }}</label>
+      <label>{{ form.destination_card.label }}{{ form.destination_card }}{{ form.destination_card.errors }}</label>
+    </div>
+    <label>{{ form.description.label }}{{ form.description }}{{ form.description.errors }}</label>
+    <label>{{ form.receipt_image.label }}{{ form.receipt_image }}{{ form.receipt_image.errors }}<small>عکس رسید، کارت‌به‌کارت یا صفحه تراکنش؛ حداکثر ۱۰ مگابایت</small></label>
+    <button class="primary" type="submit">ثبت و ارسال برای بررسی</button>
+  </form>
+</section>
+
+<section class="panel">
+  <div class="sectionhead"><h2>ثبت‌های اخیر من</h2><small>رکوردها حذف نمی‌شوند و نتیجه بررسی کنار هر مورد نمایش داده می‌شود.</small></div>
+  <div class="tablewrap"><table>
+    <tr><th>تاریخ</th><th>نام فرد</th><th>نوع</th><th>مبلغ</th><th>روش</th><th>سند</th><th>وضعیت</th></tr>
+    {% for x in entries %}<tr>
+      <td>{{ x.occurred_at|jdate }}</td><td>{{ x.person_name }}</td><td>{{ x.get_entry_type_display }}</td>
+      <td>{{ x.amount|floatformat:0|fa }}</td><td>{{ x.payment_method }}</td>
+      <td>{% if x.receipt_image %}<a href="{{ x.receipt_image.url }}" target="_blank" rel="noopener">مشاهده</a>{% else %}—{% endif %}</td>
+      <td><span class="badge {{ x.review_status }}">{{ x.get_review_status_display }}</span>{% if x.review_note %}<small>{{ x.review_note }}</small>{% endif %}</td>
+    </tr>{% empty %}<tr><td colspan="7">هنوز تراکنشی ثبت نکرده‌اید.</td></tr>{% endfor %}
+  </table></div>
+</section>
+{% endblock %}

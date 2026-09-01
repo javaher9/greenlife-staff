@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.utils import timezone
-from .models import DailyReport, Task, LeaveRequest, Announcement, BlackboardMessage, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, Branch, JobDutyTemplate, Guideline, DeviceIssue, ReferralProfile, ReferralLead, ReferralSale
+from .models import DailyReport, Task, LeaveRequest, Announcement, BlackboardMessage, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, Branch, JobDutyTemplate, Guideline, DeviceIssue, ReferralProfile, ReferralLead, ReferralSale, FinancialTransaction
 from .jalali import parse_jalali, format_jalali
 
 class JalaliDateInput(forms.TextInput):
@@ -224,9 +224,70 @@ class EmployeeEditForm(forms.Form):
             setattr(employee,field,d.get(field))
         if employee.role=='call_center' and not employee.job_title:
             employee.job_title='کارشناس کال‌سنتر'
+        if employee.role=='consultant' and not employee.job_title:
+            employee.job_title='مشاور'
         employee.employee_code=d['employee_code'] or None
         employee.save()
         return employee
+
+
+class ConsultantFinanceEntryForm(forms.ModelForm):
+    PAYMENT_METHODS=[
+        ('POS1','کارتخوان اصلی سرمایه'),
+        ('POSFH','کارتخوان فیلم و هنر'),
+        ('CLEN','کارت‌به‌کارت اقتصاد نوین توسط پرسنل'),
+        ('C2CP','کارت‌به‌کارت مشتری از تلفن خودش'),
+        ('C2CT','کارت‌به‌کارت تلفنی کال‌سنتر'),
+    ]
+    date=JalaliDateField(label='تاریخ تراکنش',initial=timezone.localdate)
+    payment_method=forms.ChoiceField(label='روش پرداخت',choices=PAYMENT_METHODS)
+    receipt_image=forms.ImageField(
+        label='تصویر تراکنش',required=True,
+        widget=forms.ClearableFileInput(attrs={'accept':'image/jpeg,image/png,image/webp'}),
+    )
+
+    class Meta:
+        model=FinancialTransaction
+        fields=[
+            'entry_type','person_name','amount','payment_method','service',
+            'account_heading','terminal_or_payee','tracking_number',
+            'destination_card','description','receipt_image',
+        ]
+        labels={
+            'entry_type':'نوع ثبت','person_name':'نام فرد','amount':'مبلغ (ریال)',
+            'service':'خدمت یا پکیج','account_heading':'سرفصل دستگاه یا حساب',
+            'terminal_or_payee':'نام پایانه یا دریافت‌کننده','tracking_number':'شماره پیگیری',
+            'destination_card':'کارت مقصد','description':'توضیحات',
+        }
+        widgets={
+            'amount':forms.NumberInput(attrs={'min':'1','step':'1','inputmode':'numeric','placeholder':'مبلغ را دقیق و عددی وارد کنید'}),
+            'person_name':forms.TextInput(attrs={'placeholder':'نام و نام خانوادگی فرد'}),
+            'description':forms.Textarea(attrs={'rows':3}),
+        }
+
+    def clean_amount(self):
+        amount=self.cleaned_data['amount']
+        if amount<=0:
+            raise forms.ValidationError('مبلغ باید بیشتر از صفر باشد.')
+        return amount
+
+    def clean_date(self):
+        value=self.cleaned_data['date']
+        if value>timezone.localdate():
+            raise forms.ValidationError('تاریخ تراکنش نمی‌تواند در آینده باشد.')
+        return value
+
+    def clean_person_name(self):
+        value=(self.cleaned_data.get('person_name') or '').strip()
+        if len(value)<2:
+            raise forms.ValidationError('نام فرد را کامل وارد کنید.')
+        return value
+
+    def clean_receipt_image(self):
+        image=self.cleaned_data['receipt_image']
+        if getattr(image,'size',0)>10*1024*1024:
+            raise forms.ValidationError('حجم تصویر تراکنش باید کمتر از ۱۰ مگابایت باشد.')
+        return image
 
 class AttendanceManualForm(forms.ModelForm):
     date=JalaliDateField(label='تاریخ')

@@ -30,6 +30,7 @@ class EmployeeProfile(models.Model):
         ('internal_manager','مدیر داخلی'),
         ('manager','مدیر شعبه'),
         ('call_center','کال‌سنتر'),
+        ('consultant','مشاور'),
         ('employee','کارمند'),
         ('referrer','معرف مشتری'),
     ]
@@ -331,14 +332,32 @@ class KPIRecord(models.Model):
 
 class FinancialTransaction(models.Model):
     SOURCE=[('crm','CRM'),('sheet','Google Sheet'),('manual','دستی')]
+    ENTRY_TYPE=[('inc','درآمد'),('exp','هزینه')]
+    REVIEW_STATUS=[
+        ('pending','در انتظار بررسی'),('approved','تأییدشده'),
+        ('needs_correction','نیازمند اصلاح'),('cancelled','ابطال‌شده'),
+    ]
     external_id=models.CharField(max_length=120,blank=True,null=True)
     source=models.CharField(max_length=20,choices=SOURCE,default='crm')
     branch=models.ForeignKey(Branch,on_delete=models.SET_NULL,null=True,blank=True,related_name='financial_transactions')
     occurred_at=models.DateTimeField()
     amount=models.DecimalField(max_digits=18,decimal_places=2)
+    entry_type=models.CharField(max_length=10,choices=ENTRY_TYPE,default='inc')
     payment_method=models.CharField(max_length=80,blank=True)
     service=models.CharField(max_length=160,blank=True)
     patient_ref=models.CharField(max_length=120,blank=True)
+    person_name=models.CharField(max_length=160,blank=True)
+    account_heading=models.CharField(max_length=120,blank=True)
+    terminal_or_payee=models.CharField(max_length=160,blank=True)
+    tracking_number=models.CharField(max_length=100,blank=True)
+    destination_card=models.CharField(max_length=80,blank=True)
+    description=models.TextField(blank=True)
+    receipt_image=models.ImageField(upload_to='finance/receipts/%Y/%m/%d/',null=True,blank=True)
+    review_status=models.CharField(max_length=20,choices=REVIEW_STATUS,default='approved')
+    recorded_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='recorded_financial_transactions')
+    reviewed_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='reviewed_financial_transactions')
+    reviewed_at=models.DateTimeField(null=True,blank=True)
+    review_note=models.CharField(max_length=300,blank=True)
     raw_data=models.JSONField(default=dict,blank=True)
     synced_at=models.DateTimeField(auto_now=True)
     created_at=models.DateTimeField(auto_now_add=True)

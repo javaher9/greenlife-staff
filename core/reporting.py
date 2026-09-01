@@ -16,7 +16,7 @@ def scope_users(user):
     qs=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
     role=getattr(getattr(user,'profile',None),'role','employee')
     if role=='manager': qs=qs.filter(profile__branch=user.profile.branch)
-    elif role in ('employee','call_center'): qs=qs.filter(pk=user.pk)
+    elif role in ('employee','call_center','consultant'): qs=qs.filter(pk=user.pk)
     return qs
 
 def day_summary(user, day=None):

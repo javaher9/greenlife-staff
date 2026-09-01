@@ -3,7 +3,7 @@ from datetime import datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Q
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime, parse_date
 from .models import Branch, FinancialTransaction, IntegrationSyncLog
@@ -78,9 +78,27 @@ def sync_crm(start=None,end=None):
 
 def finance_summary(day=None,branch=None):
     day=day or timezone.localdate(); start=timezone.make_aware(datetime.combine(day,time.min)); end=start+timedelta(days=1)
-    qs=FinancialTransaction.objects.filter(occurred_at__gte=start,occurred_at__lt=end)
+    qs=FinancialTransaction.objects.filter(
+        occurred_at__gte=start,occurred_at__lt=end,review_status='approved'
+    )
     if branch: qs=qs.filter(branch=branch)
-    total=qs.aggregate(v=Sum('amount'))['v'] or Decimal('0')
-    by_branch=list(qs.values('branch__name').annotate(total=Sum('amount'),count=Count('id')).order_by('-total'))
-    by_payment=list(qs.values('payment_method').annotate(total=Sum('amount'),count=Count('id')).order_by('-total'))
-    return {'date':format_jalali(day),'total':total,'count':qs.count(),'by_branch':by_branch,'by_payment':by_payment}
+    income=qs.filter(entry_type='inc')
+    expenses=qs.filter(entry_type='exp')
+    total=income.aggregate(v=Sum('amount'))['v'] or Decimal('0')
+    expense_total=expenses.aggregate(v=Sum('amount'))['v'] or Decimal('0')
+    by_branch=list(qs.values('branch__name').annotate(
+        total=Sum('amount',filter=Q(entry_type='inc')),
+        expenses=Sum('amount',filter=Q(entry_type='exp')),
+        count=Count('id'),
+    ).order_by('-total'))
+    for row in by_branch:
+        row['total']=row['total'] or Decimal('0')
+        row['expenses']=row['expenses'] or Decimal('0')
+        row['net']=row['total']-row['expenses']
+    by_payment=list(income.values('payment_method').annotate(total=Sum('amount'),count=Count('id')).order_by('-total'))
+    return {
+        'date':format_jalali(day),'total':total,'expense_total':expense_total,
+        'net_total':total-expense_total,'count':qs.count(),
+        'income_count':income.count(),'expense_count':expenses.count(),
+        'by_branch':by_branch,'by_payment':by_payment,
+    }
