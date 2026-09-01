@@ -36,6 +36,17 @@ class ReferralModuleTests(TestCase):
         for label in ('لیدها','اعضای شبکه','فروش موفق','درآمد من','لینک و QR شما'):
             self.assertContains(response,label)
 
+    def test_employee_home_promotes_sales_network_and_uses_distinct_mobile_navigation(self):
+        response=self.client.get(reverse('dashboard'))
+        self.assertEqual(response.status_code,200)
+        html=response.content.decode()
+        self.assertIn('href="/referrals/" class="gl-quick-card gl-quick-referral"',html)
+        self.assertIn('<span>شبکه فروش من</span>',html)
+        self.assertIn('employee-profile-nav employee-bottom-nav',html)
+        self.assertIn('employee-guidelines-nav employee-bottom-nav',html)
+        self.assertNotIn('employee-tasks-nav employee-bottom-nav',html)
+        self.assertNotIn('attendance-nav employee-bottom-nav',html)
+
     def test_admin_gets_management_command_dashboard_not_personal_qr_card(self):
         self.profile(self.staff)
         self.client.force_login(self.admin)

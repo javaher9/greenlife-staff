@@ -1624,8 +1624,8 @@ body.gl-premium-dark .gl-version-footer strong{color:#71dda9!important}
     box-shadow:none!important;font-family:inherit!important;text-decoration:none!important;
   }
   body.gl-role-employee .app-sidebar .app-nav>.nav-main{order:1!important}
-  body.gl-role-employee .app-sidebar .app-nav>.attendance-nav{order:2!important}
-  body.gl-role-employee .app-sidebar .app-nav>.employee-tasks-nav{order:3!important}
+  body.gl-role-employee .app-sidebar .app-nav>.employee-profile-nav{order:2!important}
+  body.gl-role-employee .app-sidebar .app-nav>.employee-guidelines-nav{order:3!important}
   body.gl-role-employee .app-sidebar .app-nav>.notifications-nav{order:4!important}
   body.gl-role-employee .app-sidebar .app-nav>.mobile-more-toggle{order:5!important}
   body.gl-role-employee .app-sidebar .app-nav>.employee-bottom-nav.is-active{
@@ -1724,8 +1724,8 @@ body.gl-page-dashboard .gl-notification-dot{background:var(--gl-purple)!importan
   body.gl-role-employee .app-nav>a,
   body.gl-role-employee .app-nav>button{display:none!important}
   body.gl-role-employee .app-nav>.nav-main,
-  body.gl-role-employee .app-nav>.attendance-nav,
-  body.gl-role-employee .app-nav>.employee-tasks-nav,
+  body.gl-role-employee .app-nav>.employee-profile-nav,
+  body.gl-role-employee .app-nav>.employee-guidelines-nav,
   body.gl-role-employee .app-nav>.notifications-nav,
   body.gl-role-employee .app-nav>.mobile-more-toggle{
     flex:1 1 20%!important;min-width:0!important;max-width:none!important;height:60px!important;
@@ -1735,8 +1735,8 @@ body.gl-page-dashboard .gl-notification-dot{background:var(--gl-purple)!importan
     font-family:inherit!important;text-decoration:none!important;
   }
   body.gl-role-employee .app-nav>.nav-main{order:1}
-  body.gl-role-employee .app-nav>.attendance-nav{order:2}
-  body.gl-role-employee .app-nav>.employee-tasks-nav{order:3}
+  body.gl-role-employee .app-nav>.employee-profile-nav{order:2}
+  body.gl-role-employee .app-nav>.employee-guidelines-nav{order:3}
   body.gl-role-employee .app-nav>.notifications-nav{order:4}
   body.gl-role-employee .app-nav>.mobile-more-toggle{order:5}
   body.gl-role-employee .app-nav>.is-active,
@@ -2129,6 +2129,24 @@ body.gl-authenticated:not(.gl-manager-dashboard) :is(.primary,button):not(.mobil
 /* v37.2 — compact attendance card, dark status badge and Tahoma UI. */
 body.gl-role-employee,
 body.gl-role-employee :is(button,input,textarea,select){font-family:Tahoma,Arial,sans-serif!important}
+
+/* v39.2 — promote the staff sales network without changing the dashboard system. */
+body.gl-role-employee.gl-page-dashboard .gl-quick-referral{
+  position:relative!important;overflow:hidden!important;
+  border-color:rgba(176,112,241,.58)!important;
+  background:linear-gradient(145deg,#111f29,#241834)!important;
+  box-shadow:0 14px 30px rgba(0,0,0,.22),0 0 22px rgba(176,112,241,.13)!important;
+}
+body.gl-role-employee.gl-page-dashboard .gl-quick-referral:after{
+  content:"";position:absolute;left:-24px;top:-24px;width:76px;height:76px;border-radius:50%;
+  background:rgba(176,112,241,.10);pointer-events:none;
+}
+body.gl-role-employee.gl-page-dashboard .gl-quick-referral svg{fill:#ba73ff!important;filter:drop-shadow(0 6px 8px rgba(176,112,241,.20))}
+body.gl-role-employee.gl-page-dashboard .gl-quick-referral small{
+  position:absolute;left:10px;bottom:9px;padding:3px 8px;border-radius:999px;
+  color:#c795f5!important;background:rgba(176,112,241,.14)!important;
+  font-size:10px!important;font-weight:800!important;line-height:1.25!important;
+}
 @media(max-width:700px){
   body.gl-role-employee.gl-page-dashboard .gl-attendance-card{
     height:190px!important;min-height:190px!important;padding:13px 17px!important;overflow:hidden!important;
