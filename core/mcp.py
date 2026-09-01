@@ -26,7 +26,7 @@ from .reporting import answer_query, daily_reports_summary, day_summary
 
 
 PROTOCOL_VERSION = "2025-06-18"
-SERVER_INFO = {"name": "greenlife-staff", "version": "1.3.0"}
+SERVER_INFO = {"name": "greenlife-staff", "version": "1.3.1"}
 DEFAULT_WORK_TOKEN_SHA256 = "e9affd40ddff8a5d22ab70a5720a856e95d64853bc3e552484abf219518c4ae5"
 
 TOOLS = [
@@ -337,7 +337,7 @@ def _set_operational_role(profile_ids, role, job_title=None, confirm=False):
     with transaction.atomic():
         profiles = list(
             EmployeeProfile.objects.select_for_update()
-            .select_related("user", "branch")
+            .select_related("user")
             .filter(pk__in=profile_ids, user__is_active=True, is_active=True)
             .order_by("pk")
         )

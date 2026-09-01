@@ -50,7 +50,7 @@ class MCPServerTests(SimpleTestCase):
                 key=token,
             )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["result"]["serverInfo"]["version"], "1.3.0")
+        self.assertEqual(response.json()["result"]["serverInfo"]["version"], "1.3.1")
 
     @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
     def test_initialize(self):
