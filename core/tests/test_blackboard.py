@@ -18,6 +18,7 @@ class StaffBlackboardTests(TestCase):
     def test_default_blackboard_is_visible_without_database_message(self):
         response=self.client.get(reverse('dashboard'))
         self.assertContains(response,'gl-blackboard')
+        self.assertContains(response,'تخته‌سیاه')
         self.assertContains(response,'امروز می‌ترکونیم! شبکه فروشت یادت نره.')
 
     def test_branch_message_overrides_global_and_other_branch(self):
@@ -25,7 +26,7 @@ class StaffBlackboardTests(TestCase):
         BlackboardMessage.objects.create(title='پیام پونک',message='فقط پونک',branch=self.other_branch,created_by=self.admin)
         BlackboardMessage.objects.create(title='پیام نیاوران',message='هدف امروز نیاوران',branch=self.branch,created_by=self.admin)
         response=self.client.get(reverse('dashboard'))
-        self.assertContains(response,'پیام نیاوران')
+        self.assertContains(response,'تخته‌سیاه')
         self.assertContains(response,'هدف امروز نیاوران')
         self.assertNotContains(response,'فقط پونک')
         self.assertNotContains(response,'برای همه شعب')

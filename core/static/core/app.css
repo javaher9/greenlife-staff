@@ -2218,7 +2218,9 @@ body.gl-role-employee.gl-page-dashboard .gl-blackboard:before{
 }
 body.gl-role-employee.gl-page-dashboard .gl-blackboard-copy{position:relative;z-index:2;display:grid;gap:9px;max-width:850px}
 body.gl-role-employee.gl-page-dashboard .gl-blackboard-copy small{
-  color:#a5db9a!important;font-size:12px!important;font-weight:800;letter-spacing:.1px;
+  color:#dce8d2!important;font-size:18px!important;font-weight:900;letter-spacing:.2px;
+  text-shadow:0 0 1px #fff,1px 1px 0 rgba(255,255,255,.16),0 3px 8px rgba(0,0,0,.32);
+  transform:rotate(-1deg);
 }
 body.gl-role-employee.gl-page-dashboard .gl-blackboard-copy strong{
   color:#f2f0df!important;font-family:Tahoma,Arial,sans-serif!important;font-size:23px!important;font-weight:800!important;line-height:1.75!important;
@@ -2231,7 +2233,7 @@ body.gl-role-employee.gl-page-dashboard .gl-blackboard-chalk{position:absolute;z
 @media(max-width:700px){
   body.gl-role-employee.gl-page-dashboard .gl-blackboard{min-height:118px;padding:19px 30px 18px;border-width:6px}
   body.gl-role-employee.gl-page-dashboard .gl-blackboard-copy{gap:6px}
-  body.gl-role-employee.gl-page-dashboard .gl-blackboard-copy small{font-size:10px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-blackboard-copy small{font-size:15px!important}
   body.gl-role-employee.gl-page-dashboard .gl-blackboard-copy strong{font-size:17px!important;line-height:1.75!important}
   body.gl-role-employee.gl-page-dashboard .gl-blackboard-chalk{left:20px;width:43px}
   .blackboard-admin-grid{grid-template-columns:1fr}
