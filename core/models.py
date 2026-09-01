@@ -29,6 +29,7 @@ class EmployeeProfile(models.Model):
         ('admin','مدیر سیستم'),
         ('internal_manager','مدیر داخلی'),
         ('manager','مدیر شعبه'),
+        ('call_center','کال‌سنتر'),
         ('employee','کارمند'),
         ('referrer','معرف مشتری'),
     ]

@@ -1,0 +1,9 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<style>
+.cc-detail{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:18px}.cc-card{padding:22px;border:1px solid #263b4b;border-radius:22px;background:#10212e}.cc-card h1{margin:5px 0}.cc-phone{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0;padding:14px;border-radius:15px;background:#162b39}.cc-phone b{direction:ltr}.cc-phone a{padding:9px 14px;border-radius:11px;background:#15945f;color:white;font-weight:900}.cc-meta{display:grid;gap:10px}.cc-meta div{display:flex;justify-content:space-between;gap:12px;padding-bottom:9px;border-bottom:1px solid #263b4b}.cc-meta span{color:#9fb2bd}.cc-form form{display:grid;gap:13px}.cc-form input,.cc-form select,.cc-form textarea{width:100%}.cc-form button{padding:12px;border:0;border-radius:12px;background:#7458a6;color:#fff;font-weight:900}.cc-back{display:inline-block;margin-top:14px;color:#aebec7}@media(max-width:760px){.cc-detail{grid-template-columns:1fr}}
+</style>
+<section class="cc-detail">
+  <article class="cc-card"><span class="eyebrow">تماس با مشتری</span><h1>{{ lead.full_name }}</h1><div class="cc-phone"><b>{{ lead.phone }}</b><a href="tel:{{ lead.phone }}">☎ تماس مستقیم</a></div><div class="cc-meta"><div><span>خدمت موردنظر</span><b>{{ lead.interested_service|default:'—' }}</b></div><div><span>وضعیت فعلی</span><b>{{ lead.get_status_display }}</b></div><div><span>پیگیری بعدی</span><b>{{ lead.next_follow_up|jdate|default:'تعیین نشده' }}</b></div></div><a class="cc-back" href="{% url 'call_center_dashboard' %}">بازگشت به لیدهای من ←</a></article>
+  <article class="cc-card cc-form"><h2>ثبت نتیجه تماس</h2><form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">ذخیره نتیجه و پیگیری</button></form></article>
+</section>
+{% endblock %}

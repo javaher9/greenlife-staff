@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import Count, Q, Sum
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -17,9 +17,9 @@ from django.utils import timezone
 
 from .forms import (
     PublicReferralLeadForm, ReferralLeadForm, ReferralLeadManageForm,
-    ReferralMemberForm, ReferralSaleForm,
+    ReferralMemberForm, ReferralSaleForm, CallCenterLeadForm,
 )
-from .models import EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale
+from .models import EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification
 
 
 def _role(user):
@@ -45,8 +45,8 @@ def _new_code():
 
 
 def _ensure_profile(user):
-    if _role(user)=='internal_manager':
-        raise PermissionDenied('دسترسی شبکه فروش برای نقش مدیر داخلی فعال نیست.')
+    if _role(user) in ('internal_manager','call_center'):
+        raise PermissionDenied('دسترسی شبکه معرفی برای این نقش فعال نیست.')
     profile, _=ReferralProfile.objects.get_or_create(
         user=user,
         defaults={
@@ -105,6 +105,35 @@ def _public_referral_url(profile):
     return base+reverse('public_referral_lead',args=[profile.referral_code])
 
 
+def _auto_assign_call_center(lead):
+    """Assign new leads to the active operator with the lightest open queue."""
+    if lead.assigned_to_id:
+        return lead.assigned_to
+    operator=(EmployeeProfile.objects.filter(role='call_center',is_active=True,user__is_active=True)
+              .annotate(open_leads=Count(
+                  'assigned_referral_leads',
+                  filter=Q(assigned_referral_leads__status__in=('new','contacted','appointment')),
+              ))
+              .order_by('open_leads','id').first())
+    if operator:
+        lead.assigned_to=operator
+        lead.save(update_fields=['assigned_to','updated_at'])
+        _notify_call_center_assignment(lead)
+    return operator
+
+
+def _notify_call_center_assignment(lead):
+    if not lead.assigned_to_id:
+        return
+    StaffNotification.objects.create(
+        user=lead.assigned_to.user,
+        title='لید جدید برای تماس',
+        message=f'{lead.full_name} با شماره {lead.phone} به صف پیگیری شما اضافه شد.',
+        notification_type='call_center_lead',
+        related_date=timezone.localdate(),
+    )
+
+
 @login_required
 def referral_dashboard(request):
     current=_ensure_profile(request.user)
@@ -153,6 +182,8 @@ def referral_dashboard(request):
 
 @login_required
 def referral_guide(request):
+    if _role(request.user) in ('internal_manager','call_center'):
+        raise PermissionDenied('دسترسی شبکه معرفی برای این نقش فعال نیست.')
     return render(request,'core/referrals/guide.html',{
         'is_manager':_role(request.user) in ('admin','manager'),
     })
@@ -232,6 +263,7 @@ def referral_lead_create(request):
     form=ReferralLeadForm(request.POST or None)
     if request.method=='POST' and form.is_valid():
         lead=form.save(commit=False); lead.referrer=referrer; lead.source='panel'; lead.created_by=request.user; lead.save()
+        _auto_assign_call_center(lead)
         messages.success(request,'لید ثبت شد و در صف پیگیری قرار گرفت.')
         return redirect('referral_lead_list')
     return render(request,'core/referrals/form.html',{
@@ -248,7 +280,7 @@ def public_referral_lead(request,code):
         lead=form.save(commit=False); lead.referrer=referrer
         lead.source='qr' if request.GET.get('src')=='qr' else 'link'
         lead.source_url=request.build_absolute_uri()[:500]
-        lead.save(); completed=True; form=PublicReferralLeadForm()
+        lead.save(); _auto_assign_call_center(lead); completed=True; form=PublicReferralLeadForm()
     return render(request,'core/referrals/public_lead.html',{
         'form':form,'referrer':referrer,'completed':completed,'photo':_photo_url(referrer),
     })
@@ -279,12 +311,61 @@ def referral_lead_manage(request,pk):
     branch=request.user.profile.branch if _role(request.user)=='manager' else None
     form=ReferralLeadManageForm(request.POST or None,instance=lead,branch=branch)
     if request.method=='POST' and form.is_valid():
-        form.save(); messages.success(request,'وضعیت پیگیری لید به‌روزرسانی شد.')
+        previous_assignee=lead.assigned_to_id
+        updated=form.save()
+        if updated.assigned_to_id and updated.assigned_to_id!=previous_assignee:
+            _notify_call_center_assignment(updated)
+        messages.success(request,'وضعیت پیگیری لید به‌روزرسانی شد.')
         return redirect('referral_lead_list')
     return render(request,'core/referrals/form.html',{
         'form':form,'title':f'پیگیری {lead.full_name}','subtitle':f'{lead.phone} · معرف: {lead.referrer}',
         'button':'ذخیره پیگیری','lead':lead,
     })
+
+
+def call_center_required(view):
+    @wraps(view)
+    @login_required
+    def wrapper(request,*args,**kwargs):
+        if _role(request.user)!='call_center':
+            messages.error(request,'این بخش فقط برای کارشناسان کال‌سنتر قابل دسترسی است.')
+            return redirect('dashboard')
+        return view(request,*args,**kwargs)
+    return wrapper
+
+
+@call_center_required
+def call_center_dashboard(request):
+    leads=ReferralLead.objects.filter(assigned_to=request.user.profile).select_related('assigned_to')
+    status=request.GET.get('status','')
+    if status in dict(ReferralLead.STATUS):
+        leads=leads.filter(status=status)
+    today=timezone.localdate()
+    all_leads=ReferralLead.objects.filter(assigned_to=request.user.profile)
+    stats={
+        'all':all_leads.count(),
+        'new':all_leads.filter(status='new').count(),
+        'follow_up':all_leads.filter(next_follow_up__lte=today).exclude(status__in=('won','lost')).count(),
+        'appointment':all_leads.filter(status='appointment').count(),
+    }
+    return render(request,'core/call_center/dashboard.html',{
+        'leads':leads,'statuses':ReferralLead.STATUS,'status_filter':status,
+        'stats':stats,'today':today,
+    })
+
+
+@call_center_required
+def call_center_lead(request,pk):
+    lead=get_object_or_404(
+        ReferralLead.objects.select_related('assigned_to'),
+        pk=pk,assigned_to=request.user.profile,
+    )
+    form=CallCenterLeadForm(request.POST or None,instance=lead)
+    if request.method=='POST' and form.is_valid():
+        form.save()
+        messages.success(request,'نتیجه تماس و پیگیری بعدی ذخیره شد.')
+        return redirect('call_center_dashboard')
+    return render(request,'core/call_center/lead.html',{'lead':lead,'form':form})
 
 
 @login_required

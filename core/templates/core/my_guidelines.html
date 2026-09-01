@@ -1,6 +1,6 @@
 {% extends 'core/base.html' %}{% block content %}
 <div class="guideline-page">
-<section class="hero"><div><h1>شرح وظایف و دستورالعمل‌های من</h1><p>موارد مربوط به سمت و شعبه شما</p></div>{% if user.profile.role != 'employee' %}<a class="primary ghost" href="/guidelines/manage/">مدیریت محتوا</a>{% endif %}</section>
+<section class="hero"><div><h1>شرح وظایف و دستورالعمل‌های من</h1><p>موارد مربوط به سمت و شعبه شما</p></div>{% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}<a class="primary ghost" href="/guidelines/manage/">مدیریت محتوا</a>{% endif %}</section>
 
 <section class="panel rf-guideline-embed">
 <div class="sectionhead"><div><h2>دستورالعمل رسمی شبکه فروش من</h2><p>روش مجاز جذب لید جدید از خارج مجموعه</p></div><a class="rf-guide-open" href="{% url 'referral_guide' %}">بازکردن صفحه راهنما ←</a></div>

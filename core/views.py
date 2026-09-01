@@ -127,6 +127,8 @@ def logout_view(request): logout(request); return redirect('login')
 @login_required
 def dashboard(request):
     role=role_of(request.user)
+    if role=='call_center':
+        return redirect('call_center_dashboard')
     if role=='referrer':
         return redirect('referral_dashboard')
     if role in MANAGEMENT_ROLES:
@@ -253,7 +255,7 @@ def report_create(request):
 @login_required
 def report_list(request):
     qs=DailyReport.objects.select_related('user','branch').order_by('-created_at'); role=role_of(request.user)
-    if role=='employee': qs=qs.filter(user=request.user)
+    if role in ('employee','call_center'): qs=qs.filter(user=request.user)
     elif role=='manager': qs=qs.filter(branch=getattr(request.user.profile,'branch',None))
     return render(request,'core/report_list.html',{'reports':qs[:200]})
 
@@ -261,7 +263,7 @@ def report_list(request):
 def report_detail(request,pk):
     obj=get_object_or_404(DailyReport,pk=pk)
     role=role_of(request.user)
-    if role=='employee' and obj.user_id!=request.user.id:
+    if role in ('employee','call_center') and obj.user_id!=request.user.id:
         messages.error(request,'دسترسی مجاز نیست.')
         return redirect('report_list')
     if role=='manager' and getattr(obj.user.profile,'branch_id',None)!=getattr(request.user.profile,'branch_id',None):
@@ -293,7 +295,7 @@ def report_detail(request,pk):
 def task_list(request):
     role=role_of(request.user)
     qs=Task.objects.select_related('assigned_to').order_by('status','due_date')
-    if role=='employee': qs=qs.filter(assigned_to=request.user)
+    if role in ('employee','call_center'): qs=qs.filter(assigned_to=request.user)
     elif role=='manager': qs=qs.filter(assigned_to__profile__branch=request.user.profile.branch)
     return render(request,'core/task_list.html',{'tasks':qs,'can_manage':role in MANAGEMENT_ROLES})
 
@@ -308,7 +310,7 @@ def task_update(request,pk):
 def task_create(request):
     form=TaskForm(request.POST or None)
     if role_of(request.user)=='manager': form.fields['assigned_to'].queryset=User.objects.filter(profile__branch=request.user.profile.branch,profile__is_active=True)
-    elif role_of(request.user)=='internal_manager': form.fields['assigned_to'].queryset=User.objects.filter(profile__role='employee',profile__is_active=True)
+    elif role_of(request.user)=='internal_manager': form.fields['assigned_to'].queryset=User.objects.filter(profile__role__in=('employee','call_center'),profile__is_active=True)
     if request.method=='POST' and form.is_valid():
         obj=form.save(commit=False); obj.created_by=request.user; obj.save(); messages.success(request,'وظیفه ایجاد شد.'); return redirect('task_list')
     return render(request,'core/generic_form.html',{'form':form,'title':'تعریف وظیفه جدید','button':'ثبت وظیفه'})
@@ -364,7 +366,7 @@ def blackboard_edit(request,pk=None):
 @login_required
 def leave_list(request):
     role=role_of(request.user); qs=LeaveRequest.objects.select_related('user').order_by('-created_at')
-    if role=='employee': qs=qs.filter(user=request.user)
+    if role in ('employee','call_center'): qs=qs.filter(user=request.user)
     elif role=='manager': qs=qs.filter(user__profile__branch=request.user.profile.branch)
     return render(request,'core/leave_list.html',{'requests':qs,'can_review':role in MANAGEMENT_ROLES})
 
@@ -395,7 +397,7 @@ def employee_list(request):
     role=role_of(request.user)
     qs=EmployeeProfile.objects.exclude(role='referrer').select_related('user','branch').order_by('branch__name','user__last_name')
     if role=='manager': qs=qs.filter(branch=request.user.profile.branch)
-    elif role=='internal_manager': qs=qs.filter(role='employee')
+    elif role=='internal_manager': qs=qs.filter(role__in=('employee','call_center'))
     return render(request,'core/employee_list.html',{
         'employees':qs,
         'can_manage':role in MANAGEMENT_ROLES,
@@ -407,11 +409,12 @@ def employee_create(request):
     if role_of(request.user)=='manager':
         form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=request.user.profile.branch_id); form.fields['branch'].initial=request.user.profile.branch; form.fields['role'].choices=[('employee','کارمند')]
     elif role_of(request.user)=='internal_manager':
-        form.fields['role'].choices=[('employee','کارمند')]
+        form.fields['role'].choices=[('employee','کارمند'),('call_center','کال‌سنتر')]
     if request.method=='POST' and form.is_valid():
         d=form.cleaned_data; user=User.objects.create_user(username=d['username'],password=d['password'],first_name=d['first_name'],last_name=d['last_name'])
         EmployeeProfile.objects.update_or_create(user=user,defaults={
-            'branch':d['branch'],'role':d['role'],'job_title':d['job_title'],
+            'branch':d['branch'],'role':d['role'],
+            'job_title':d['job_title'] or ('کارشناس کال‌سنتر' if d['role']=='call_center' else ''),
             'employee_code':d['employee_code'] or None,'phone':d['phone'],
             'birth_date':d.get('birth_date'),'is_active':user.is_active,
         })
@@ -430,7 +433,7 @@ def employee_edit(request,pk):
         form.fields['role'].choices=[('employee','کارمند')]
         form.fields['shift_group'].queryset=form.fields['shift_group'].queryset.filter(branch=request.user.profile.branch)
     elif role_of(request.user)=='internal_manager':
-        form.fields['role'].choices=[('employee','کارمند')]
+        form.fields['role'].choices=[('employee','کارمند'),('call_center','کال‌سنتر')]
     if request.method=='POST' and form.is_valid():
         with transaction.atomic(): form.save()
         messages.success(request,'مشخصات پرسنل به‌روزرسانی شد.')
@@ -625,7 +628,7 @@ def attendance_edit(request,pk):
     if role_of(request.user)=='internal_manager' and obj.user.profile.role!='employee': return redirect('attendance_team')
     form=AttendanceManualForm(request.POST or None,instance=obj)
     if role_of(request.user)=='manager': form.fields['user'].queryset=User.objects.filter(profile__branch=request.user.profile.branch)
-    elif role_of(request.user)=='internal_manager': form.fields['user'].queryset=User.objects.filter(profile__role='employee',profile__is_active=True)
+    elif role_of(request.user)=='internal_manager': form.fields['user'].queryset=User.objects.filter(profile__role__in=('employee','call_center'),profile__is_active=True)
     if request.method=='POST' and form.is_valid():
         before={
             'user_id':obj.user_id,'date':str(obj.date),
@@ -657,7 +660,7 @@ def attendance_create(request):
             return redirect('employee_list')
     form=AttendanceManualForm(request.POST or None,initial={'user':employee.user} if employee else None)
     if role_of(request.user)=='manager': form.fields['user'].queryset=User.objects.filter(profile__branch=request.user.profile.branch)
-    elif role_of(request.user)=='internal_manager': form.fields['user'].queryset=User.objects.filter(profile__role='employee',profile__is_active=True)
+    elif role_of(request.user)=='internal_manager': form.fields['user'].queryset=User.objects.filter(profile__role__in=('employee','call_center'),profile__is_active=True)
     if employee:
         form.fields['user'].disabled=True
     if request.method=='POST' and form.is_valid():
@@ -709,7 +712,7 @@ def kpi_list(request):
 def kpi_create(request):
     form=KPIRecordForm(request.POST or None)
     if role_of(request.user)=='manager': form.fields['user'].queryset=User.objects.filter(profile__branch=request.user.profile.branch,profile__is_active=True)
-    elif role_of(request.user)=='internal_manager': form.fields['user'].queryset=User.objects.filter(profile__role='employee',profile__is_active=True)
+    elif role_of(request.user)=='internal_manager': form.fields['user'].queryset=User.objects.filter(profile__role__in=('employee','call_center'),profile__is_active=True)
     if request.method=='POST' and form.is_valid():
         obj=form.save(commit=False); obj.created_by=request.user; obj.save()
         ScoreEvent.objects.create(user=obj.user,points=max(0,int(obj.score//10)),reason='kpi',description=f'KPI: {obj.title}',event_date=obj.period_end,created_by=request.user)
@@ -720,7 +723,7 @@ def kpi_create(request):
 def score_create(request):
     form=ScoreEventForm(request.POST or None)
     if role_of(request.user)=='manager': form.fields['user'].queryset=User.objects.filter(profile__branch=request.user.profile.branch,profile__is_active=True)
-    elif role_of(request.user)=='internal_manager': form.fields['user'].queryset=User.objects.filter(profile__role='employee',profile__is_active=True)
+    elif role_of(request.user)=='internal_manager': form.fields['user'].queryset=User.objects.filter(profile__role__in=('employee','call_center'),profile__is_active=True)
     if request.method=='POST' and form.is_valid():
         obj=form.save(commit=False); obj.created_by=request.user; obj.save(); messages.success(request,'امتیاز ثبت شد.'); return redirect('analytics_dashboard')
     return render(request,'core/generic_form.html',{'form':form,'title':'امتیاز تشویقی/اصلاحی','button':'ثبت امتیاز'})
@@ -835,7 +838,7 @@ def shift_assign(request):
         form.fields['user'].queryset=User.objects.filter(profile__branch=request.user.profile.branch,profile__is_active=True)
         form.fields['shift'].queryset=WorkShift.objects.filter(branch=request.user.profile.branch,is_active=True)
     elif role_of(request.user)=='internal_manager':
-        form.fields['user'].queryset=User.objects.filter(profile__role='employee',profile__is_active=True)
+        form.fields['user'].queryset=User.objects.filter(profile__role__in=('employee','call_center'),profile__is_active=True)
     if request.method=='POST' and form.is_valid():
         obj=form.save(commit=False); obj.created_by=request.user; obj.save(); messages.success(request,'شیفت روزانه تخصیص داده شد.'); return redirect('shift_list')
     return render(request,'core/generic_form.html',{'form':form,'title':'تخصیص شیفت','button':'ثبت تخصیص'})
@@ -843,7 +846,7 @@ def shift_assign(request):
 @login_required
 def correction_list(request):
     role=role_of(request.user); qs=AttendanceCorrectionRequest.objects.select_related('user','attendance').all()
-    if role=='employee': qs=qs.filter(user=request.user)
+    if role in ('employee','call_center'): qs=qs.filter(user=request.user)
     elif role=='manager': qs=qs.filter(user__profile__branch=request.user.profile.branch)
     return render(request,'core/correction_list.html',{'items':qs[:100],'can_review':role in MANAGEMENT_ROLES})
 
@@ -871,7 +874,7 @@ def automatic_kpi_dashboard(request):
     end=timezone.localdate(); start=end-timedelta(days=29)
     users=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
     if role_of(request.user)=='manager': users=users.filter(profile__branch=request.user.profile.branch)
-    elif role_of(request.user)=='internal_manager': users=users.filter(profile__role='employee')
+    elif role_of(request.user)=='internal_manager': users=users.filter(profile__role__in=('employee','call_center'))
     rows=[]
     for u in users:
         data=auto_kpi(u,start,end); data['user']=u; rows.append(data)
@@ -883,7 +886,7 @@ def management_employee_status_api(request):
     uid=request.GET.get('user_id'); name=(request.GET.get('name') or '').strip()
     users=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
     if request.user.is_authenticated and role_of(request.user)=='internal_manager':
-        users=users.filter(profile__role='employee')
+        users=users.filter(profile__role__in=('employee','call_center'))
     if uid: users=users.filter(pk=uid)
     elif name: users=users.filter(Q(first_name__icontains=name)|Q(last_name__icontains=name)|Q(username__icontains=name))
     user=users.first()
@@ -1145,7 +1148,7 @@ def _employee_access(request, employee):
     if role_of(request.user)=='admin':
         return True
     if role_of(request.user)=='internal_manager':
-        return employee.role=='employee'
+        return employee.role in ('employee','call_center')
     if role_of(request.user)=='manager':
         return employee.branch_id == getattr(request.user.profile,'branch_id',None)
     return employee.user_id == request.user.id
@@ -1656,7 +1659,7 @@ def goal_add(request):
 @login_required
 def internal_requests(request):
     qs=InternalRequest.objects.select_related('requester','assigned_to')
-    if role_of(request.user)=='employee': qs=qs.filter(requester=request.user)
+    if role_of(request.user) in ('employee','call_center'): qs=qs.filter(requester=request.user)
     elif role_of(request.user)=='manager': qs=qs.filter(Q(requester__profile__branch=request.user.profile.branch)|Q(assigned_to=request.user))
     return render(request,'core/internal_requests.html',{'requests':qs[:100]})
 
@@ -1933,7 +1936,7 @@ def action_center(request):
     # must not appear as absent or missing-report staff in their own queue.
     users=User.objects.filter(
         profile__is_active=True,
-        profile__role='employee',
+        profile__role__in=('employee','call_center'),
     ).select_related('profile','profile__branch')
     if role=='manager':
         users=users.filter(profile__branch=getattr(profile,'branch',None))
@@ -2083,6 +2086,6 @@ def action_center(request):
 
 @login_required
 def service_worker(request):
-    response=HttpResponse("const CACHE='greenlife-staff-v39.6';\nconst STATIC=[\n  '/static/core/app.css?v=v39.6',\n  '/static/core/referral.css?v=v39.6',\n  '/static/core/icon-192.png?v=v39.6',\n  '/static/core/icon-512.png?v=v39.6',\n  '/static/core/manifest.webmanifest?v=v39.6'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
+    response=HttpResponse("const CACHE='greenlife-staff-v39.7';\nconst STATIC=[\n  '/static/core/app.css?v=v39.7',\n  '/static/core/referral.css?v=v39.7',\n  '/static/core/icon-192.png?v=v39.7',\n  '/static/core/icon-512.png?v=v39.7',\n  '/static/core/manifest.webmanifest?v=v39.7'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
     response['Cache-Control']='no-cache, no-store, must-revalidate'
     return response

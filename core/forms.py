@@ -124,9 +124,23 @@ class ReferralLeadManageForm(forms.ModelForm):
 
     def __init__(self,*args,branch=None,**kwargs):
         super().__init__(*args,**kwargs)
-        qs=EmployeeProfile.objects.filter(is_active=True).exclude(role='referrer').select_related('user','branch')
-        if branch: qs=qs.filter(branch=branch)
+        qs=EmployeeProfile.objects.filter(is_active=True,role='call_center').select_related('user','branch')
         self.fields['assigned_to'].queryset=qs.order_by('branch__name','user__last_name')
+
+
+class CallCenterLeadForm(forms.ModelForm):
+    next_follow_up=JalaliDateField(label='پیگیری بعدی',required=False)
+    class Meta:
+        model=ReferralLead
+        fields=['status','next_follow_up','interested_service','notes']
+        labels={
+            'status':'نتیجه تماس','interested_service':'خدمت موردنظر',
+            'notes':'گزارش تماس و توضیحات مشتری',
+        }
+        widgets={'notes':forms.Textarea(attrs={
+            'rows':6,
+            'placeholder':'نتیجه تماس، درخواست مشتری و زمان مناسب پیگیری بعدی را ثبت کنید.',
+        })}
 
 
 class ReferralSaleForm(forms.ModelForm):
@@ -208,6 +222,8 @@ class EmployeeEditForm(forms.Form):
         user.save()
         for field in ('branch','role','shift_group','job_title','phone','birth_date','start_date','address','education','is_insured','is_active'):
             setattr(employee,field,d.get(field))
+        if employee.role=='call_center' and not employee.job_title:
+            employee.job_title='کارشناس کال‌سنتر'
         employee.employee_code=d['employee_code'] or None
         employee.save()
         return employee
