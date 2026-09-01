@@ -46,7 +46,7 @@
 <section class="panel"><h2>وضعیت عملکرد</h2><p>امتیاز خودکار: <strong>{{ kpi.score|fa }}/۱۰۰</strong></p><p class="muted">دوره {{ start|jdate }} تا {{ today|jdate }}</p><div class="metric-line"><span>حضور</span><b>{{ kpi.attendance|fa }}/۱۰۰</b></div>
 <div class="metric-line"><span>Taskها</span><b>{{ kpi.tasks|fa }}/۱۰۰</b></div>
 <div class="metric-line"><span>گزارش روزانه</span><b>{{ kpi.reports|fa }}/۱۰۰</b></div>
-<div class="metric-line"><span>درآمد شعبه</span><b>{{ kpi.revenue|fa }}/۱۰۰</b></div></section>
+{% if user.profile.role != 'internal_manager' %}<div class="metric-line"><span>درآمد شعبه</span><b>{{ kpi.revenue|fa }}/۱۰۰</b></div>{% endif %}</section>
 </div>
 
 <div class="grid">

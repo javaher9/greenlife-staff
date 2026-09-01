@@ -10,7 +10,7 @@
       <a class="owner-new-request" href="/service-requests/new/"><span>＋</span> درخواست جدید</a>
       <form method="get" class="owner-branch-filter">
         <select name="branch" onchange="this.form.submit()">
-          {% if user.profile.role == 'admin' %}<option value="">همه شعب</option>{% endif %}
+          {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' %}<option value="">همه شعب</option>{% endif %}
           {% for b in branches %}<option value="{{ b.id }}" {% if selected_branch and selected_branch.id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
         </select>
       </form>

@@ -25,7 +25,13 @@ class ShiftGroup(models.Model):
         return f'{self.branch} - {self.name}'
 
 class EmployeeProfile(models.Model):
-    ROLE_CHOICES=[('admin','مدیر سیستم'),('manager','مدیر شعبه'),('employee','کارمند'),('referrer','معرف مشتری')]
+    ROLE_CHOICES=[
+        ('admin','مدیر سیستم'),
+        ('internal_manager','مدیر داخلی'),
+        ('manager','مدیر شعبه'),
+        ('employee','کارمند'),
+        ('referrer','معرف مشتری'),
+    ]
     user=models.OneToOneField(User,on_delete=models.CASCADE,related_name='profile')
     branch=models.ForeignKey(Branch,on_delete=models.SET_NULL,null=True,blank=True)
     role=models.CharField(max_length=20,choices=ROLE_CHOICES,default='employee')

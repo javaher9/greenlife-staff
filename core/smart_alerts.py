@@ -8,9 +8,12 @@ from .operations import auto_kpi, attendance_status_for, approved_leave, shift_r
 
 
 def manager_users_for_branch(branch):
-    qs = User.objects.filter(profile__is_active=True, profile__role__in=("admin", "manager"))
+    qs = User.objects.filter(profile__is_active=True, profile__role__in=("admin", "internal_manager", "manager"))
     if branch:
-        qs = qs.filter(Q(profile__role="admin") | Q(profile__branch=branch))
+        qs = qs.filter(
+            Q(profile__role__in=("admin", "internal_manager")) |
+            Q(profile__role="manager", profile__branch=branch)
+        )
     return qs.distinct()
 
 

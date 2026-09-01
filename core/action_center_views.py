@@ -12,6 +12,8 @@ def _allowed_manager(request, user):
     role = role_of(request.user)
     if role == 'admin':
         return True
+    if role == 'internal_manager':
+        return getattr(getattr(user, 'profile', None), 'role', None) == 'employee'
     if role != 'manager':
         return False
     manager_branch = getattr(getattr(request.user, 'profile', None), 'branch_id', None)
@@ -23,7 +25,7 @@ def _allowed_manager(request, user):
 def quick_action(request):
     if request.method != 'POST':
         return JsonResponse({'ok': False, 'message': 'درخواست نامعتبر است.'}, status=405)
-    if role_of(request.user) not in ('admin', 'manager'):
+    if role_of(request.user) not in ('admin', 'internal_manager', 'manager'):
         return JsonResponse({'ok': False, 'message': 'دسترسی مجاز نیست.'}, status=403)
 
     kind = (request.POST.get('kind') or '').strip()

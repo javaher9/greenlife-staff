@@ -112,6 +112,12 @@ def answer_query(user, query):
     if 'دیروز' in q: day=today-timedelta(days=1)
     summary=day_summary(user,day)
     if 'درآمد' in q or 'فروش' in q or 'مالی' in q:
+        if getattr(getattr(user,'profile',None),'role','employee')=='internal_manager':
+            return {
+                'answer':'دسترسی بخش مالی برای نقش مدیر داخلی فعال نیست.',
+                'data':{},
+                'date':format_jalali(day),
+            }
         from .finance import finance_summary
         from .models import Branch
         branch=None

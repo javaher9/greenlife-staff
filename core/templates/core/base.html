@@ -4,17 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>GreenLife Staff</title>
-  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v39.5">
+  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v39.6">
   <link rel="stylesheet" href="{% static 'core/sidebar-system.css' %}?v=v1">
-  <link rel="stylesheet" href="{% static 'core/referral.css' %}?v=v39.5">
+  <link rel="stylesheet" href="{% static 'core/referral.css' %}?v=v39.6">
 
-<link rel="manifest" href="/static/core/manifest.webmanifest?v=v39.5">
+<link rel="manifest" href="/static/core/manifest.webmanifest?v=v39.6">
 <meta name="theme-color" content="#15945f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GreenLife Staff">
-<link rel="apple-touch-icon" href="/static/core/icon-192.png?v=v39.5">
+<link rel="apple-touch-icon" href="/static/core/icon-192.png?v=v39.6">
 
 </head>
 <body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' %}gl-role-employee{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
@@ -42,23 +42,23 @@
     {% if user.profile.role == 'employee' %}
     <a href="/tasks/" class="employee-tasks-nav {% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 4h11v2H4V4Zm0 7h11v2H4v-2Zm0 7h11v2H4v-2Zm14-14h2v2h-2V4Zm0 7h2v2h-2v-2Zm0 7h2v2h-2v-2Z"/></svg></span><span>وظایف</span></a>
     {% endif %}
-    {% if user.profile.role != 'employee' %}<a href="/live/"><span class="nav-ico">⌘</span><span>{% if user.profile.role == "manager" %}مدیریت شعبه{% else %}پنل مدیریتی{% endif %}</span></a>{% endif %}
+    {% if user.profile.role != 'employee' %}<a href="/live/"><span class="nav-ico">⌘</span><span>{% if user.profile.role == "manager" %}مدیریت شعبه{% elif user.profile.role == "internal_manager" %}مدیریت داخلی{% else %}پنل مدیریتی{% endif %}</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/action-center/"><span class="nav-ico">⚡</span><span>مرکز اقدام</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/blackboard/" class="{% if '/blackboard/' in request.path %}is-active{% endif %}"><span class="nav-ico">▰</span><span>تخته‌سیاه پرسنل</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌های پرسنل</span></a>{% endif %}
     <a href="/employees/"><span class="nav-ico">♙</span><span>پرسنل</span></a>
-    <a href="/referrals/" class="{% if '/referrals/' in request.path %}is-active{% endif %}"><span class="nav-ico">✦</span><span>{% if user.profile.role == 'employee' %}شبکه فروش من{% else %}معرفی مشتری{% endif %}</span></a>
-    {% if user.profile.role == 'employee' %}<a href="/attendance/" class="attendance-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2h2V2Zm12 7H5v10h14V9Zm-8 2h2v4h3v2h-5v-6Z"/></svg></span><span class="nav-label nav-label-desktop">حضور و غیاب</span><span class="nav-label nav-label-mobile">حضور</span></a>{% elif user.profile.role == 'manager' %}<a href="/attendance/team/" class="{% if request.path|slice:':17' == '/attendance/team/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور تیم</span></a>{% endif %}
+    {% if user.profile.role != 'internal_manager' %}<a href="/referrals/" class="{% if '/referrals/' in request.path %}is-active{% endif %}"><span class="nav-ico">✦</span><span>{% if user.profile.role == 'employee' %}شبکه فروش من{% else %}معرفی مشتری{% endif %}</span></a>{% endif %}
+    {% if user.profile.role == 'employee' %}<a href="/attendance/" class="attendance-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2h2V2Zm12 7H5v10h14V9Zm-8 2h2v4h3v2h-5v-6Z"/></svg></span><span class="nav-label nav-label-desktop">حضور و غیاب</span><span class="nav-label nav-label-mobile">حضور</span></a>{% elif user.profile.role == 'manager' or user.profile.role == 'internal_manager' %}<a href="/attendance/team/" class="{% if request.path|slice:':17' == '/attendance/team/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور تیم</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/kpi/"><span class="nav-ico">◎</span><span>عملکرد و KPI</span></a>{% endif %}
     <a href="/sop/" class="{% if request.path|slice:':5' == '/sop/' %}is-active{% endif %}"><span class="nav-ico">◇</span><span>آموزش</span></a>
     <a href="/guidelines/" class="{% if user.profile.role == 'employee' %}employee-guidelines-nav employee-bottom-nav {% endif %}{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>{% if user.profile.role == 'employee' %}شرح وظایف{% else %}شرح وظایف و دستورالعمل‌ها{% endif %}</span></a>
     <a href="/service-requests/"><span class="nav-ico">✓</span><span>درخواست‌ها</span></a>
     {% if user.profile.role == 'employee' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌ها</span></a>{% endif %}
-    {% if user.profile.role != 'employee' %}<a href="/finance/"><span class="nav-ico">▧</span><span>مالی و درآمد</span></a>{% endif %}
+    {% if user.profile.role == 'admin' or user.profile.role == 'manager' %}<a href="/finance/"><span class="nav-ico">▧</span><span>مالی و درآمد</span></a>{% endif %}
     <a href="/notifications/" class="notifications-nav employee-bottom-nav {% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 6.2-3 7-3 9h18c0-2-3-2.8-3-9Zm-8 11h4a2 2 0 0 1-4 0Z"/></svg></span><span>اعلان‌ها</span></a>
 
     <a href="/device-issues/mine/" class="{% if request.path|slice:':15' == '/device-issues/' %}is-active{% endif %}"><span class="nav-ico">🛠</span><span>خرابی دستگاه</span></a>
-    {% if user.profile.role == 'admin' or user.profile.role == 'manager' or user.username == 'sadeghi' %}
+    {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' or user.username == 'sadeghi' %}
     <a href="/device-issues/manage/"><span class="nav-ico">⚒</span><span>مدیریت خرابی‌ها</span></a>
     {% endif %}
 
@@ -82,7 +82,7 @@
           <a href="/live/"><span>⌘</span>پنل مدیریتی</a>
           <a href="/reports/"><span>▥</span>گزارش‌های پرسنل</a>
           <a href="/employees/"><span>♙</span>پرسنل</a>
-          {% if user.profile.role == 'manager' %}<a href="/attendance/team/"><span>◷</span>حضور تیم</a>{% endif %}
+          {% if user.profile.role == 'manager' or user.profile.role == 'internal_manager' %}<a href="/attendance/team/"><span>◷</span>حضور تیم</a>{% endif %}
           <a href="/kpi/"><span>◎</span>عملکرد و KPI</a>
           <a href="/sop/"><span>◇</span>آموزش</a>
           <a href="/service-requests/"><span>✓</span>درخواست‌ها</a>
@@ -96,9 +96,9 @@
     <div class="nav-section-title">ماژول‌ها</div>
     <a href="#" class="nav-module muted-module"><span class="nav-ico">⌂</span><span>Clinic</span></a>
     <a href="#" class="nav-module muted-module"><span class="nav-ico">☎</span><span>Call Center</span></a>
-    {% if user.profile.role != 'employee' %}<a href="/finance/" class="nav-module"><span class="nav-ico">▥</span><span>Finance</span></a>{% endif %}
-    <a href="/camp/" class="nav-module camp-nav-entry"><span class="nav-ico">△</span><span>Camp</span><b>⌄</b></a>
-    {% if request.path|slice:':6' == '/camp/' %}
+    {% if user.profile.role == 'admin' or user.profile.role == 'manager' %}<a href="/finance/" class="nav-module"><span class="nav-ico">▥</span><span>Finance</span></a>{% endif %}
+    {% if user.profile.role != 'internal_manager' %}<a href="/camp/" class="nav-module camp-nav-entry"><span class="nav-ico">△</span><span>Camp</span><b>⌄</b></a>{% endif %}
+    {% if request.path|slice:':6' == '/camp/' and user.profile.role != 'internal_manager' %}
       <div class="camp-side-subnav">
         <a href="/camp/">Dashboard</a>
         <a href="/camp/purchases/">Purchase Requests</a>
@@ -194,7 +194,7 @@
 <script>
 (function(){
   if('serviceWorker' in navigator){
-    window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js?v=v39.5',{updateViaCache:'none'}).catch(()=>{}));
+    window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js?v=v39.6',{updateViaCache:'none'}).catch(()=>{}));
   }
   let deferredPrompt=null;
   const bar=document.getElementById('pwaInstallBar');
@@ -241,7 +241,7 @@
 
 
 <div class="gl-version-footer">
-  GreenLife Staff <strong>v39.5 Chalkboard Title</strong>
+  GreenLife Staff <strong>v39.6 Internal Manager Role</strong>
 </div>
 
 </body></html>

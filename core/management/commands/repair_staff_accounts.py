@@ -121,7 +121,7 @@ class Command(BaseCommand):
                         errors[f'HTTP_{response.status_code}'] += 1
 
                     profile_role = getattr(getattr(user, 'profile', None), 'role', '')
-                    if profile_role in ('admin', 'manager'):
+                    if profile_role in ('admin', 'internal_manager', 'manager'):
                         app_admin_checked += 1
                         response = client.get('/live/', follow=True, secure=True, HTTP_HOST=host)
                         if response.status_code >= 500:

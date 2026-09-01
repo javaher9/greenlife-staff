@@ -9,6 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Q, Sum
+from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -44,6 +45,8 @@ def _new_code():
 
 
 def _ensure_profile(user):
+    if _role(user)=='internal_manager':
+        raise PermissionDenied('دسترسی شبکه فروش برای نقش مدیر داخلی فعال نیست.')
     profile, _=ReferralProfile.objects.get_or_create(
         user=user,
         defaults={
