@@ -3,4 +3,5 @@
   <a href="{% url 'referral_lead_list' %}" class="{% if 'lead' in request.resolver_match.url_name %}active{% endif %}">لیدها</a>
   <a href="{% url 'referral_network' %}" class="{% if 'network' in request.resolver_match.url_name or 'member' in request.resolver_match.url_name %}active{% endif %}">شبکه من</a>
   <a href="{% url 'referral_sales' %}" class="{% if 'sale' in request.resolver_match.url_name %}active{% endif %}">فروش و پورسانت</a>
+  <a href="{% url 'referral_guide' %}" class="{% if request.resolver_match.url_name == 'referral_guide' %}active{% endif %}">راهنمای جذب لید</a>
 </nav>

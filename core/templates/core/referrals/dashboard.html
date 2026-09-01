@@ -10,7 +10,7 @@
       <div class="rf-avatar rf-avatar-xl">{% if referral.display_photo %}<img src="{{ referral.display_photo.url }}" alt="{{ referral }}">{% else %}<span>{{ referral.user.first_name|first|default:referral.user.username|first }}</span>{% endif %}</div>
       <div><span class="rf-eyebrow">شبکه فروش من</span><h1>{{ referral }}</h1><p>کد اختصاصی <b dir="ltr">{{ referral.referral_code }}</b> · سطح {{ referral.level|fa }}</p></div>
     </div>
-    <div class="rf-hero-actions"><a class="rf-btn primary" href="{% url 'referral_lead_create' %}">＋ ثبت لید</a>{% if can_add_member %}<a class="rf-btn" href="{% url 'referral_member_create' %}">＋ عضو شبکه</a>{% endif %}</div>
+    <div class="rf-hero-actions"><a class="rf-btn primary" href="{% url 'referral_lead_create' %}">＋ ثبت لید</a>{% if can_add_member %}<a class="rf-btn" href="{% url 'referral_member_create' %}">＋ عضو شبکه</a>{% endif %}<a class="rf-btn rf-guide-btn" href="{% url 'referral_guide' %}">؟ چطور لید بگیرم</a></div>
     {% endif %}
   </header>
 

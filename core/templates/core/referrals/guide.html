@@ -1,0 +1,10 @@
+{% extends 'core/base.html' %}{% block content %}
+<section class="rf-shell rf-guide-shell">
+  {% include 'core/referrals/_nav.html' %}
+  <header class="rf-page-head rf-guide-head">
+    <div><span class="rf-eyebrow">GREENLIFE SALES PLAYBOOK</span><h1>راهنمای عملی جذب لید</h1><p>لید جدید، معتبر و خارج از کانال‌های رسمی مجموعه</p></div>
+    <a class="rf-btn primary" href="{% url 'referral_lead_create' %}">＋ ثبت لید جدید</a>
+  </header>
+  {% include 'core/referrals/_guide_content.html' %}
+</section>
+{% endblock %}

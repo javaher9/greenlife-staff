@@ -6,6 +6,7 @@ from . import referral_views
 from .mcp import mcp_endpoint
 urlpatterns=[path('service-worker.js',views.service_worker,name='service_worker'),path('camp/',camp_views.camp_dashboard,name='camp_dashboard'),
 path('referrals/',referral_views.referral_dashboard,name='referral_dashboard'),
+path('referrals/guide/',referral_views.referral_guide,name='referral_guide'),
 path('referrals/network/',referral_views.referral_network,name='referral_network'),
 path('referrals/network/new/',referral_views.referral_member_create,name='referral_member_create'),
 path('referrals/leads/',referral_views.referral_lead_list,name='referral_lead_list'),

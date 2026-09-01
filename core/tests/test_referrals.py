@@ -62,6 +62,19 @@ class ReferralModuleTests(TestCase):
         self.assertContains(response,'https://staff.greenlifeclinics.com/r/GLCANONICAL/')
         self.assertNotContains(response,'http://testserver/r/GLCANONICAL/')
 
+    def test_staff_sales_guide_defines_external_leads_and_protects_company_channels(self):
+        response=self.client.get(reverse('referral_guide'))
+        self.assertEqual(response.status_code,200)
+        for label in (
+            'فردی کاملاً جدید از خارج مجموعه','همراهان مراجعه‌کنندگان','روش روزانه ۳-۱-۱',
+            'واتساپ رسمی گرین‌لایف','اینستاگرام مجموعه','بانک مشتریان',
+        ):
+            self.assertContains(response,label)
+
+        guidelines=self.client.get(reverse('my_guidelines'))
+        self.assertContains(guidelines,'دستورالعمل رسمی شبکه فروش من')
+        self.assertContains(guidelines,'واتساپ رسمی گرین‌لایف')
+
     def test_network_is_limited_to_two_levels(self):
         root=self.profile(self.staff)
         first=self.member('level-one',root)

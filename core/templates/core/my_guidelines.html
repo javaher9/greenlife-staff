@@ -2,6 +2,11 @@
 <div class="guideline-page">
 <section class="hero"><div><h1>شرح وظایف و دستورالعمل‌های من</h1><p>موارد مربوط به سمت و شعبه شما</p></div>{% if user.profile.role != 'employee' %}<a class="primary ghost" href="/guidelines/manage/">مدیریت محتوا</a>{% endif %}</section>
 
+<section class="panel rf-guideline-embed">
+<div class="sectionhead"><div><h2>دستورالعمل رسمی شبکه فروش من</h2><p>روش مجاز جذب لید جدید از خارج مجموعه</p></div><a class="rf-guide-open" href="{% url 'referral_guide' %}">بازکردن صفحه راهنما ←</a></div>
+{% include 'core/referrals/_guide_content.html' %}
+</section>
+
 <section class="panel">
 <div class="sectionhead"><h2>شرح وظایف من</h2></div>
 {% for d in duties %}

@@ -149,6 +149,13 @@ def referral_dashboard(request):
 
 
 @login_required
+def referral_guide(request):
+    return render(request,'core/referrals/guide.html',{
+        'is_manager':_role(request.user) in ('admin','manager'),
+    })
+
+
+@login_required
 def referral_network(request):
     current=_ensure_profile(request.user)
     profiles=_visible_profiles(request,current)
