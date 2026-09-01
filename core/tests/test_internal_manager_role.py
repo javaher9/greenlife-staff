@@ -31,7 +31,9 @@ class InternalManagerRoleTests(TestCase):
             user=user,
             defaults={'role': role, 'branch': branch, 'is_active': True, **profile_fields},
         )
-        return user
+        # User creation signals may have cached the default employee profile.
+        # Return a fresh instance so permission tests exercise the stored role.
+        return User.objects.get(pk=user.pk)
 
     def test_role_has_distinct_persian_label(self):
         self.assertIn(('internal_manager', 'مدیر داخلی'), EmployeeProfile.ROLE_CHOICES)
