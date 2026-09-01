@@ -2,8 +2,10 @@ import hashlib
 import json
 from unittest.mock import patch
 
-from django.test import SimpleTestCase, override_settings
+from django.contrib.auth.models import User
+from django.test import SimpleTestCase, TestCase, override_settings
 
+from core.models import AuditLog, EmployeeProfile
 from core.reporting import answer_query
 
 
@@ -48,7 +50,7 @@ class MCPServerTests(SimpleTestCase):
                 key=token,
             )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["result"]["serverInfo"]["version"], "1.2.0")
+        self.assertEqual(response.json()["result"]["serverInfo"]["version"], "1.3.0")
 
     @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
     def test_initialize(self):
@@ -63,7 +65,7 @@ class MCPServerTests(SimpleTestCase):
         self.assertIn("no-cache", response["Cache-Control"])
 
     @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
-    def test_lists_only_read_only_tools(self):
+    def test_lists_reporting_and_role_tools(self):
         response = self.post(
             {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
             key=self.key,
@@ -72,9 +74,16 @@ class MCPServerTests(SimpleTestCase):
         tools = response.json()["result"]["tools"]
         self.assertEqual(
             [tool["name"] for tool in tools],
-            ["get_attendance_summary", "get_daily_reports", "ask_management"],
+            [
+                "get_attendance_summary",
+                "get_daily_reports",
+                "ask_management",
+                "find_staff",
+                "set_operational_role",
+            ],
         )
-        self.assertTrue(all(tool["annotations"]["readOnlyHint"] for tool in tools))
+        self.assertTrue(tools[3]["annotations"]["readOnlyHint"])
+        self.assertFalse(tools[4]["annotations"]["readOnlyHint"])
 
     @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
     @patch("core.mcp._attendance_summary")
@@ -157,6 +166,105 @@ class MCPServerTests(SimpleTestCase):
         )
         self.assertEqual(response.status_code, 202)
         self.assertEqual(response.content, b"")
+
+
+@override_settings(ROOT_URLCONF="greenlife.urls")
+class MCPRoleManagementTests(TestCase):
+    key = "test-private-mcp-key"
+
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            "admin-user", first_name="مدیر", last_name="سیستم", is_active=True
+        )
+        self.admin.profile.role = "admin"
+        self.admin.profile.is_active = True
+        self.admin.profile.save(update_fields=["role", "is_active"])
+        self.employee = User.objects.create_user(
+            "narges", first_name="نرگس", last_name="نمونه", is_active=True
+        )
+        self.profile = self.employee.profile
+        self.profile.role = "employee"
+        self.profile.job_title = "کارمند"
+        self.profile.phone = "09120000000"
+        self.profile.is_active = True
+        self.profile.save(update_fields=["role", "job_title", "phone", "is_active"])
+
+    def post_tool(self, name, arguments):
+        return self.client.post(
+            "/mcp/",
+            data=json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 20,
+                    "method": "tools/call",
+                    "params": {"name": name, "arguments": arguments},
+                }
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.key}",
+        )
+
+    @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
+    def test_finds_exact_staff_candidates_before_change(self):
+        response = self.post_tool("find_staff", {"query": "نرگس"})
+        result = response.json()["result"]["structuredContent"]
+        self.assertEqual(result["match_count"], 1)
+        self.assertEqual(result["matches"][0]["profile_id"], self.profile.id)
+        self.assertEqual(result["matches"][0]["role"], "employee")
+
+    @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
+    def test_role_change_requires_explicit_confirmation(self):
+        response = self.post_tool(
+            "set_operational_role",
+            {"profile_ids": [self.profile.id], "role": "call_center", "confirm": False},
+        )
+        self.assertEqual(response.json()["error"]["code"], -32602)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.role, "employee")
+
+    @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
+    def test_changes_operational_role_and_writes_audit_log(self):
+        response = self.post_tool(
+            "set_operational_role",
+            {
+                "profile_ids": [self.profile.id],
+                "role": "call_center",
+                "job_title": "کارشناس کال‌سنتر",
+                "confirm": True,
+            },
+        )
+        result = response.json()["result"]["structuredContent"]
+        self.assertEqual(result["updated_count"], 1)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.role, "call_center")
+        self.assertEqual(self.profile.job_title, "کارشناس کال‌سنتر")
+        audit = AuditLog.objects.get(action="mcp_operational_role")
+        self.assertEqual(audit.actor, self.admin)
+        self.assertEqual(audit.metadata["role"], "call_center")
+
+    @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
+    def test_cannot_grant_admin_role(self):
+        response = self.post_tool(
+            "set_operational_role",
+            {"profile_ids": [self.profile.id], "role": "admin", "confirm": True},
+        )
+        self.assertEqual(response.json()["error"]["code"], -32602)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.role, "employee")
+
+    @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
+    def test_cannot_grant_internal_manager_role(self):
+        response = self.post_tool(
+            "set_operational_role",
+            {
+                "profile_ids": [self.profile.id],
+                "role": "internal_manager",
+                "confirm": True,
+            },
+        )
+        self.assertEqual(response.json()["error"]["code"], -32602)
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.role, "employee")
 
 
 class ManagementReportRoutingTests(SimpleTestCase):

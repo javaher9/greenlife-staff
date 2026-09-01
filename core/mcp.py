@@ -1,8 +1,8 @@
-"""Read-only Model Context Protocol endpoint for GreenLife Staff.
+"""Private Model Context Protocol endpoint for GreenLife Staff.
 
 The endpoint intentionally implements a small, stateless subset of Streamable
-HTTP.  It exposes only management reporting tools and never mutates Staff data.
-Authentication reuses the server-side ``STAFF_REPORT_API_KEY`` secret.
+HTTP. Authentication reuses the server-side ``STAFF_REPORT_API_KEY`` secret.
+Operational role changes are deliberately narrow, explicit and audited.
 """
 
 import hashlib
@@ -12,6 +12,8 @@ import os
 from datetime import date, timedelta
 
 from django.contrib.auth.models import User
+from django.db import transaction
+from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
@@ -19,11 +21,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from .jalali import parse_jalali
+from .models import AuditLog, EmployeeProfile
 from .reporting import answer_query, daily_reports_summary, day_summary
 
 
 PROTOCOL_VERSION = "2025-06-18"
-SERVER_INFO = {"name": "greenlife-staff", "version": "1.2.0"}
+SERVER_INFO = {"name": "greenlife-staff", "version": "1.3.0"}
 DEFAULT_WORK_TOKEN_SHA256 = "e9affd40ddff8a5d22ab70a5720a856e95d64853bc3e552484abf219518c4ae5"
 
 TOOLS = [
@@ -120,6 +123,70 @@ TOOLS = [
             "openWorldHint": False,
         },
     },
+    {
+        "name": "find_staff",
+        "title": "Find GreenLife staff accounts",
+        "description": (
+            "Find active Staff accounts by name, username, phone or job title before "
+            "an exact operational role change."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 80,
+                    "description": "A staff name, surname, username, phone or job title fragment.",
+                }
+            },
+            "required": ["query"],
+            "additionalProperties": False,
+        },
+        "annotations": {
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": False,
+        },
+    },
+    {
+        "name": "set_operational_role",
+        "title": "Set GreenLife operational staff role",
+        "description": (
+            "Set an exact Staff account to employee or call center. "
+            "Requires exact profile IDs and explicit confirmation; every change is audited."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "profile_ids": {
+                    "type": "array",
+                    "items": {"type": "integer", "minimum": 1},
+                    "minItems": 1,
+                    "maxItems": 25,
+                    "description": "Exact EmployeeProfile IDs returned by find_staff.",
+                },
+                "role": {
+                    "type": "string",
+                    "enum": ["employee", "call_center"],
+                },
+                "job_title": {"type": "string", "maxLength": 120},
+                "confirm": {
+                    "type": "boolean",
+                    "description": "Must be true after the user explicitly authorizes the change.",
+                },
+            },
+            "required": ["profile_ids", "role", "confirm"],
+            "additionalProperties": False,
+        },
+        "annotations": {
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": False,
+        },
+    },
 ]
 
 
@@ -209,6 +276,108 @@ def _daily_reports(raw_date=None, branch=None, include_raw=False):
     )
 
 
+def _staff_row(profile):
+    user = profile.user
+    return {
+        "profile_id": profile.id,
+        "user_id": user.id,
+        "name": user.get_full_name() or user.username,
+        "username": user.username,
+        "phone": profile.phone,
+        "branch": profile.branch.name if profile.branch else None,
+        "role": profile.role,
+        "role_display": profile.get_role_display(),
+        "job_title": profile.job_title,
+        "is_active": bool(profile.is_active and user.is_active),
+    }
+
+
+def _find_staff(query):
+    value = (query or "").strip()
+    if len(value) < 2:
+        raise ValueError("query must contain at least 2 characters")
+    if len(value) > 80:
+        raise ValueError("query is too long")
+    profiles = (
+        EmployeeProfile.objects.select_related("user", "branch")
+        .filter(user__is_active=True, is_active=True)
+        .filter(
+            Q(user__first_name__icontains=value)
+            | Q(user__last_name__icontains=value)
+            | Q(user__username__icontains=value)
+            | Q(phone__icontains=value)
+            | Q(job_title__icontains=value)
+        )
+        .order_by("user__last_name", "user__first_name", "user__username")[:20]
+    )
+    matches = [_staff_row(profile) for profile in profiles]
+    return {"query": value, "match_count": len(matches), "matches": matches}
+
+
+def _set_operational_role(profile_ids, role, job_title=None, confirm=False):
+    if confirm is not True:
+        raise ValueError("confirm must be true")
+    if role not in {"employee", "call_center"}:
+        raise ValueError("role is not an allowed operational role")
+    if not isinstance(profile_ids, list) or not profile_ids or len(profile_ids) > 25:
+        raise ValueError("profile_ids must contain between 1 and 25 exact IDs")
+    if any(isinstance(value, bool) or not isinstance(value, int) or value < 1 for value in profile_ids):
+        raise ValueError("profile_ids must contain positive integers")
+    profile_ids = list(dict.fromkeys(profile_ids))
+    if job_title is not None and not isinstance(job_title, str):
+        raise ValueError("job_title must be a string")
+    job_title = (job_title or "").strip()
+    if len(job_title) > 120:
+        raise ValueError("job_title is too long")
+
+    actor = _admin_user()
+    if not actor:
+        raise RuntimeError("No active GreenLife admin user is configured.")
+
+    with transaction.atomic():
+        profiles = list(
+            EmployeeProfile.objects.select_for_update()
+            .select_related("user", "branch")
+            .filter(pk__in=profile_ids, user__is_active=True, is_active=True)
+            .order_by("pk")
+        )
+        found_ids = {profile.id for profile in profiles}
+        missing_ids = [profile_id for profile_id in profile_ids if profile_id not in found_ids]
+        if missing_ids:
+            raise ValueError(f"active profiles not found: {missing_ids}")
+
+        changes = []
+        for profile in profiles:
+            before = {"role": profile.role, "job_title": profile.job_title}
+            profile.role = role
+            if job_title:
+                profile.job_title = job_title
+            elif role == "call_center" and not profile.job_title:
+                profile.job_title = "کارشناس کال‌سنتر"
+            profile.save(update_fields=["role", "job_title"])
+            changes.append(
+                {
+                    "profile_id": profile.id,
+                    "name": profile.user.get_full_name() or profile.user.username,
+                    "before": before,
+                    "after": {"role": profile.role, "job_title": profile.job_title},
+                }
+            )
+
+        AuditLog.objects.create(
+            actor=actor,
+            action="mcp_operational_role",
+            path="/mcp/",
+            method="POST",
+            object_type="EmployeeProfile",
+            object_id=",".join(str(profile_id) for profile_id in profile_ids),
+            summary=f"Operational role changed to {role} for {len(profiles)} staff",
+            metadata={"role": role, "changes": changes},
+        )
+
+    return {"updated_count": len(changes), "role": role, "updated": changes}
+
+
 def _rpc_result(request_id, result):
     return JsonResponse({"jsonrpc": "2.0", "id": request_id, "result": result})
 
@@ -278,8 +447,9 @@ def mcp_endpoint(request):
                 "capabilities": {"tools": {"listChanged": False}},
                 "serverInfo": SERVER_INFO,
                 "instructions": (
-                    "Use these read-only tools for GreenLife Staff management reporting. "
-                    "Never infer attendance values when a tool call can retrieve them."
+                    "Use reporting tools for live GreenLife data. Before changing a role, "
+                    "resolve exact staff accounts with find_staff and call set_operational_role "
+                    "only after explicit user authorization."
                 ),
             },
         )
@@ -306,6 +476,15 @@ def mcp_endpoint(request):
             )
         elif tool_name == "ask_management":
             data = _management_answer(arguments.get("question"))
+        elif tool_name == "find_staff":
+            data = _find_staff(arguments.get("query"))
+        elif tool_name == "set_operational_role":
+            data = _set_operational_role(
+                arguments.get("profile_ids"),
+                arguments.get("role"),
+                arguments.get("job_title"),
+                arguments.get("confirm", False),
+            )
         else:
             return _rpc_error(request_id, -32602, f"Unknown tool: {tool_name}")
     except (ValueError, TypeError) as exc:
