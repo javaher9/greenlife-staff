@@ -1,0 +1,73 @@
+{% extends 'core/base.html' %}{% load static %}{% block content %}
+<section class="rf-tree-shell">
+  <header class="rf-tree-head">
+    <div>
+      <a href="{% url 'referral_network' %}" class="rf-tree-back">← بازگشت به شبکه</a>
+      <span class="rf-tree-kicker">GREENLIFE SALES NETWORK</span>
+      <h1>{{ tree_title }}</h1>
+      <p>{{ tree_subtitle }}</p>
+    </div>
+    <div class="rf-tree-actions">
+      {% if not is_full_tree %}<a href="{% url 'referral_tree_all' %}" class="rf-tree-btn accent">نمایش کل شبکه</a>{% endif %}
+      <button type="button" id="treeReset" class="rf-tree-btn">بازنشانی</button>
+    </div>
+  </header>
+
+  <div class="rf-tree-toolbar">
+    <label class="rf-tree-search"><span>⌕</span><input id="treeSearch" type="search" placeholder="جستجو در شبکه..." autocomplete="off"></label>
+    <div class="rf-tree-zoom">
+      <button type="button" id="zoomIn" aria-label="بزرگ‌نمایی">＋</button>
+      <span id="zoomLabel">100٪</span>
+      <button type="button" id="zoomOut" aria-label="کوچک‌نمایی">−</button>
+    </div>
+    <div class="rf-tree-count"><b id="nodeCount">0</b><span>عضو در این نما</span></div>
+  </div>
+
+  <div class="rf-tree-stage" id="treeStage" tabindex="0" aria-label="درخت شبکه فروش؛ برای جابه‌جایی بکشید و برای زوم از دکمه‌ها استفاده کنید">
+    <div class="rf-tree-world" id="treeWorld">
+      <svg id="treeLines" class="rf-tree-lines" aria-hidden="true"></svg>
+      <div id="treeNodes" class="rf-tree-nodes"></div>
+    </div>
+  </div>
+  <div class="rf-tree-hint">برای جابه‌جایی، صفحه را بکشید. روی هر کارت بزنید تا شبکه همان فرد باز شود.</div>
+</section>
+{{ tree_nodes|json_script:"referral-tree-data" }}
+<style>
+.rf-tree-shell{width:min(1500px,calc(100% - 34px));margin:18px auto 70px;color:#f5faf8;font-family:Tahoma,Arial,sans-serif}.rf-tree-head{display:flex;align-items:end;justify-content:space-between;gap:22px;padding:22px 24px;border:1px solid #28414d;border-radius:22px;background:radial-gradient(circle at 85% 0,rgba(105,237,135,.11),transparent 28%),radial-gradient(circle at 15% 0,rgba(188,104,255,.11),transparent 28%),linear-gradient(145deg,#10232d,#08131b)}.rf-tree-back{display:inline-block;margin-bottom:12px;color:#8ceca0;text-decoration:none;font-size:12px;font-weight:800}.rf-tree-kicker{display:block;color:#66e58a;font-size:10px;font-weight:900;letter-spacing:.8px}.rf-tree-head h1{margin:7px 0 0;font-size:28px}.rf-tree-head p{margin:7px 0 0;color:#b6c7cc;font-size:13px}.rf-tree-actions{display:flex;gap:9px;flex-wrap:wrap}.rf-tree-btn{min-height:43px;padding:9px 15px;border:1px solid #38515d;border-radius:12px;background:#0b1a23;color:#e8f1ef;text-decoration:none;font:800 12px Tahoma;cursor:pointer}.rf-tree-btn.accent{border-color:rgba(188,104,255,.5);background:rgba(125,66,164,.25);color:#e5bcff}.rf-tree-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) auto auto;gap:12px;align-items:center;margin:13px 0;padding:12px 14px;border:1px solid #263d48;border-radius:16px;background:#0a1720}.rf-tree-search{display:flex;align-items:center;gap:8px;min-height:42px;padding:0 12px;border:1px solid #304954;border-radius:12px;background:#07131b}.rf-tree-search input{width:100%;border:0;outline:0;background:transparent;color:#f4f8f7;font:13px Tahoma}.rf-tree-search input::placeholder{color:#7f969f}.rf-tree-zoom{display:flex;align-items:center;gap:6px}.rf-tree-zoom button{width:42px;height:42px;border:1px solid #35505b;border-radius:11px;background:#10232c;color:#fff;font-size:20px;cursor:pointer}.rf-tree-zoom span{min-width:58px;text-align:center;color:#b9c9cd;font-size:12px;font-weight:800}.rf-tree-count{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid rgba(105,237,135,.25);border-radius:11px;background:rgba(105,237,135,.06)}.rf-tree-count b{color:#7cf09b;font-size:18px}.rf-tree-count span{color:#a9bdc2;font-size:10px}.rf-tree-stage{position:relative;min-height:650px;overflow:hidden;border:1px solid #29424d;border-radius:22px;background:radial-gradient(circle at 50% 20%,rgba(45,123,92,.11),transparent 36%),radial-gradient(circle at 20% 65%,rgba(111,63,145,.08),transparent 28%),#050c12;cursor:grab;touch-action:none}.rf-tree-stage.dragging{cursor:grabbing}.rf-tree-world{position:absolute;left:0;top:0;transform-origin:0 0;width:2400px;height:1600px}.rf-tree-lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible}.rf-tree-nodes{position:absolute;inset:0}.rf-tree-line{fill:none;stroke:#2d7d72;stroke-width:2;opacity:.62}.rf-tree-node{position:absolute;width:172px;min-height:178px;padding:12px;border:1px solid #335565;border-radius:17px;background:linear-gradient(155deg,#122630,#08151d);box-shadow:0 12px 30px rgba(0,0,0,.24);text-align:center;color:#eef6f3;text-decoration:none;transition:border-color .18s,box-shadow .18s,opacity .18s}.rf-tree-node.root{border-color:#9b5bd1;box-shadow:0 0 0 1px rgba(188,104,255,.18),0 14px 36px rgba(0,0,0,.28)}.rf-tree-node.match{border-color:#71f090;box-shadow:0 0 0 3px rgba(105,237,135,.14),0 0 28px rgba(105,237,135,.16)}.rf-tree-node.dim{opacity:.22}.rf-tree-avatar{width:68px;height:68px;margin:0 auto 8px;border:2px solid #4c6d78;border-radius:50%;overflow:hidden;background:#18303a;display:grid;place-items:center;color:#7cf09b;font-size:23px;font-weight:900}.rf-tree-node.root .rf-tree-avatar{border-color:#b86aff}.rf-tree-avatar img{width:100%;height:100%;object-fit:cover}.rf-tree-name{display:block;font-size:13px;line-height:1.5}.rf-tree-level{display:inline-flex;margin-top:5px;padding:3px 7px;border-radius:7px;background:rgba(53,215,208,.09);color:#6de1dd;font-size:9px;font-weight:800}.rf-tree-node.root .rf-tree-level{background:rgba(188,104,255,.1);color:#d8a8fb}.rf-tree-stats{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:9px}.rf-tree-stats span{padding:6px 3px;border:1px solid #29414c;border-radius:8px;color:#8fa6ad;font-size:8px}.rf-tree-stats b{display:block;margin-bottom:2px;color:#e8f0ee;font-size:10px}.rf-tree-sales{display:block;margin-top:7px;color:#80e99a;font-size:9px;font-weight:800}.rf-tree-hint{padding:10px 4px;color:#8ca2a9;font-size:10px;text-align:center}
+@media(max-width:760px){.rf-tree-shell{width:min(100% - 18px,1500px)}.rf-tree-head{align-items:stretch;flex-direction:column;padding:18px}.rf-tree-head h1{font-size:22px}.rf-tree-toolbar{grid-template-columns:1fr auto}.rf-tree-count{grid-column:1/-1}.rf-tree-stage{min-height:560px}.rf-tree-node{width:158px;min-height:168px}.rf-tree-avatar{width:60px;height:60px}}
+</style>
+<script>
+(function(){
+  const stage=document.getElementById('treeStage'), world=document.getElementById('treeWorld'), nodesEl=document.getElementById('treeNodes'), svg=document.getElementById('treeLines');
+  if(!stage||stage.dataset.ready) return; stage.dataset.ready='1';
+  const raw=JSON.parse(document.getElementById('referral-tree-data').textContent||'[]');
+  document.getElementById('nodeCount').textContent=raw.length.toLocaleString('fa-IR');
+  const byId=new Map(raw.map(n=>[n.id,{...n,children:[]}]));
+  const roots=[]; byId.forEach(n=>{if(n.parent_id&&byId.has(n.parent_id))byId.get(n.parent_id).children.push(n);else roots.push(n)});
+  let leafIndex=0; const levelGap=270, nodeW=172, leafGap=205, topPad=80;
+  function place(n,depth){n.depth=depth;if(!n.children.length){n.x=80+(leafIndex++)*leafGap}else{n.children.forEach(c=>place(c,depth+1));n.x=(n.children[0].x+n.children[n.children.length-1].x)/2}n.y=topPad+depth*levelGap}
+  roots.forEach((r,i)=>{if(i&&leafIndex)leafIndex+=1;place(r,0)});
+  const maxX=Math.max(900,...Array.from(byId.values()).map(n=>n.x))+300,maxY=Math.max(700,...Array.from(byId.values()).map(n=>n.y))+280;
+  world.style.width=maxX+'px';world.style.height=maxY+'px';svg.setAttribute('viewBox',`0 0 ${maxX} ${maxY}`);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  function fmt(v){return Number(v||0).toLocaleString('fa-IR')}
+  byId.forEach(n=>{
+    const a=document.createElement('a');a.className='rf-tree-node'+(!n.parent_id||!byId.has(n.parent_id)?' root':'');a.href=n.tree_url;a.dataset.name=(n.name||'').toLowerCase();a.style.left=(n.x-nodeW/2)+'px';a.style.top=n.y+'px';
+    const avatar=n.photo?`<img src="${esc(n.photo)}" alt="${esc(n.name)}">`:`<span>${esc((n.name||'؟').trim().charAt(0))}</span>`;
+    a.innerHTML=`<div class="rf-tree-avatar">${avatar}</div><strong class="rf-tree-name">${esc(n.name)}</strong><span class="rf-tree-level">سطح ${fmt(n.level)}</span><div class="rf-tree-stats"><span><b>${fmt(n.leads)}</b>لید</span><span><b>${fmt(n.won)}</b>فروش</span></div><span class="rf-tree-sales">${fmt(n.sales)} تومان</span>`;nodesEl.appendChild(a);
+    if(n.parent_id&&byId.has(n.parent_id)){const p=byId.get(n.parent_id),x1=p.x,y1=p.y+178,x2=n.x,y2=n.y;const mid=(y1+y2)/2;const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('class','rf-tree-line');path.setAttribute('d',`M ${x1} ${y1} C ${x1} ${mid}, ${x2} ${mid}, ${x2} ${y2}`);svg.appendChild(path)}
+  });
+  let scale=1,tx=20,ty=20,drag=false,sx=0,sy=0,startX=0,startY=0;
+  const apply=()=>{world.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;document.getElementById('zoomLabel').textContent=Math.round(scale*100).toLocaleString('fa-IR')+'٪'};
+  function fit(){const sw=stage.clientWidth,sh=stage.clientHeight;scale=Math.min(.95,Math.max(.28,Math.min((sw-80)/maxX,(sh-80)/maxY)));tx=(sw-maxX*scale)/2;ty=30;apply()}
+  function zoom(delta){const old=scale;scale=Math.min(1.8,Math.max(.25,scale+delta));const cx=stage.clientWidth/2,cy=stage.clientHeight/2;tx=cx-(cx-tx)*(scale/old);ty=cy-(cy-ty)*(scale/old);apply()}
+  document.getElementById('zoomIn').addEventListener('click',()=>zoom(.12));document.getElementById('zoomOut').addEventListener('click',()=>zoom(-.12));document.getElementById('treeReset').addEventListener('click',fit);
+  stage.addEventListener('pointerdown',e=>{if(e.target.closest('.rf-tree-node'))return;drag=true;stage.classList.add('dragging');stage.setPointerCapture(e.pointerId);sx=e.clientX;sy=e.clientY;startX=tx;startY=ty});
+  stage.addEventListener('pointermove',e=>{if(!drag)return;tx=startX+(e.clientX-sx);ty=startY+(e.clientY-sy);apply()});
+  stage.addEventListener('pointerup',()=>{drag=false;stage.classList.remove('dragging')});stage.addEventListener('pointercancel',()=>{drag=false;stage.classList.remove('dragging')});
+  stage.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY<0?.08:-.08)},{passive:false});
+  document.getElementById('treeSearch').addEventListener('input',e=>{const q=e.target.value.trim().toLowerCase();document.querySelectorAll('.rf-tree-node').forEach(el=>{const hit=!q||el.dataset.name.includes(q);el.classList.toggle('match',!!q&&hit);el.classList.toggle('dim',!!q&&!hit)})});
+  requestAnimationFrame(fit);
+})();
+</script>
+{% endblock %}
