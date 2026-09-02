@@ -1,3 +1,4 @@
+{% include 'core/referrals/_internal_manager_readability.html' %}
 <nav class="rf-tabs" aria-label="بخش‌های شبکه فروش">
   <a href="{% url 'referral_dashboard' %}" class="{% if request.resolver_match.url_name == 'referral_dashboard' %}active{% endif %}">داشبورد</a>
   <a href="{% url 'referral_lead_list' %}" class="{% if 'lead' in request.resolver_match.url_name %}active{% endif %}">لیدها</a>
