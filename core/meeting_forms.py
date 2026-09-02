@@ -8,12 +8,19 @@ from .models import MeetingActionItem, MeetingMinute
 
 
 def active_staff():
-    return User.objects.filter(profile__is_active=True).exclude(profile__role='referrer').select_related('profile').order_by(
+    return User.objects.filter(profile__is_active=True).exclude(profile__role='referrer').select_related('profile','profile__branch').order_by(
         'first_name','last_name','username'
     )
 
 
-class StaffPhotoSelect(forms.Select):
+def persian_staff_name(user):
+    name=(user.get_full_name() or '').strip()
+    # Never fall back to the login username on meeting screens; usernames are
+    # technical identifiers and made the attendee list look English/confusing.
+    return name or 'نام فارسی ثبت نشده'
+
+
+class StaffOptionMixin:
     def create_option(self,name,value,label,selected,index,subindex=None,attrs=None):
         option=super().create_option(name,value,label,selected,index,subindex=subindex,attrs=attrs)
         instance=getattr(value,'instance',None)
@@ -25,21 +32,37 @@ class StaffPhotoSelect(forms.Select):
             photo=''
         if photo:
             option['attrs']['data-photo']=photo
+        if profile:
+            option['attrs']['data-job']=profile.job_title or profile.get_role_display() or ''
+            option['attrs']['data-branch']=str(profile.branch or '')
         return option
+
+
+class StaffPhotoSelect(StaffOptionMixin,forms.Select):
+    pass
+
+
+class StaffPhotoSelectMultiple(StaffOptionMixin,forms.SelectMultiple):
+    pass
 
 
 class PersianStaffChoiceField(forms.ModelChoiceField):
     widget=StaffPhotoSelect
     def label_from_instance(self,obj):
-        name=(obj.get_full_name() or '').strip()
-        return name or 'نام فارسی ثبت نشده'
+        return persian_staff_name(obj)
+
+
+class PersianStaffMultipleChoiceField(forms.ModelMultipleChoiceField):
+    widget=StaffPhotoSelectMultiple
+    def label_from_instance(self,obj):
+        return persian_staff_name(obj)
 
 
 class MeetingMinuteForm(forms.ModelForm):
     meeting_date=JalaliDateField(label='تاریخ جلسه')
-    attendees=forms.ModelMultipleChoiceField(
+    attendees=PersianStaffMultipleChoiceField(
         label='افراد حاضر',queryset=User.objects.none(),required=False,
-        widget=forms.SelectMultiple(attrs={'size':8}),
+        widget=StaffPhotoSelectMultiple(attrs={'size':8,'class':'mtg-attendees-native'}),
     )
     class Meta:
         model=MeetingMinute
@@ -55,7 +78,6 @@ class MeetingMinuteForm(forms.ModelForm):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.fields['attendees'].queryset=active_staff()
-        self.fields['attendees'].label_from_instance=lambda obj: (obj.get_full_name() or '').strip() or 'نام فارسی ثبت نشده'
         if not self.is_bound and not self.instance.pk:
             self.fields['meeting_date'].initial=timezone.localdate()
             self.fields['start_time'].initial=timezone.localtime().strftime('%H:%M')
