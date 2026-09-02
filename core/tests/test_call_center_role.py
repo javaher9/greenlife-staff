@@ -51,6 +51,16 @@ class CallCenterRoleTests(TestCase):
         self.assertNotContains(response,'شبکه فروش من')
         self.assertNotContains(response,'/referrals/')
 
+    def test_dashboard_keeps_call_center_mobile_navigation_and_isolated_layout(self):
+        response=self.client.get(reverse('call_center_dashboard'))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'cc-mobile-leads')
+        self.assertContains(response,'cc-mobile-notifications')
+        self.assertContains(response,'<div class="cc-hero">',html=False)
+        self.assertContains(response,'<div class="cc-filters">',html=False)
+        self.assertNotContains(response,'<header class="cc-hero">',html=False)
+        self.assertNotContains(response,'<nav class="cc-filters">',html=False)
+
     def test_operator_can_record_result_only_for_own_lead(self):
         response=self.client.post(reverse('call_center_lead',args=[self.lead_one.pk]),{
             'status':'contacted','next_follow_up':'','interested_service':'لاغری موضعی',
