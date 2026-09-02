@@ -58,6 +58,11 @@ def _photo_url(profile):
         return ''
 
 
+def _display_name(profile):
+    name = (profile.user.get_full_name() or '').strip()
+    return name or 'نام ثبت نشده'
+
+
 def _node(profile):
     approved = ReferralSale.objects.filter(
         lead__referrer=profile, status__in=('approved', 'paid')
@@ -66,7 +71,7 @@ def _node(profile):
     return {
         'id': profile.pk,
         'parent_id': profile.sponsor_id,
-        'name': str(profile),
+        'name': _display_name(profile),
         'phone': profile.phone or '',
         'photo': _photo_url(profile),
         'level': profile.level,
@@ -118,7 +123,7 @@ def referral_tree_person(request, pk):
     nodes = [_node(p) for p in profiles]
     return render(request, 'core/referrals/tree.html', {
         'tree_nodes': nodes,
-        'tree_title': f'درخت شبکه {focus}',
+        'tree_title': f'درخت شبکه {_display_name(focus)}',
         'tree_subtitle': 'خود فرد و زیرمجموعه‌های مستقیم و سطح بعدی او.',
         'focus_profile': focus,
         'is_full_tree': False,
