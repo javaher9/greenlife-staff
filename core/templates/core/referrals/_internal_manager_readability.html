@@ -1,0 +1,53 @@
+{% if user.profile.role == 'internal_manager' %}
+<style>
+/* Internal manager readability boost: referral module only */
+.rf-shell{font-size:15px;color:#f7fbfa}
+.rf-tabs a{font-size:14px!important;color:#d5e0e4!important;padding:13px 18px!important}
+.rf-tabs a.active{color:#07130d!important}
+.rf-eyebrow,.rf-card-kicker{font-size:12px!important;color:#82f09a!important}
+.rf-hero h1,.rf-page-head h1,.rf-form-head h1{font-size:30px!important;color:#fff!important}
+.rf-hero p,.rf-page-head p,.rf-form-head p{font-size:14px!important;color:#d0dde1!important;line-height:1.9}
+.rf-btn{font-size:13px!important;min-height:47px!important;color:#f4f8f7!important}
+.rf-kpi span,.rf-kpi small{font-size:13px!important;color:#cbd7db!important}
+.rf-kpi strong{font-size:34px!important;color:#fff!important}
+.rf-card-head h2{font-size:19px!important;color:#fff!important}
+.rf-card-head a,.rf-download{font-size:12px!important;color:#87f0a0!important}
+.rf-list-row strong{font-size:14px!important;color:#fff!important}
+.rf-list-row small{font-size:12px!important;color:#bac8cd!important;line-height:1.7}
+.rf-status{font-size:11px!important}
+.rf-person strong{font-size:13px!important;color:#fff!important}
+.rf-person small{font-size:11px!important;color:#bdc9cd!important}
+.rf-level-note{font-size:12px!important;color:#d0dade!important}
+.rf-member-card h2{font-size:17px!important;color:#fff!important}
+.rf-member-card>p{font-size:12px!important;color:#c2cfd3!important}
+.rf-member-stats span{font-size:11px!important;color:#bdc9cd!important;padding:11px 6px!important}
+.rf-member-stats b{font-size:13px!important;color:#fff!important}
+.rf-member-actions a{font-size:11px!important;color:#e0eaed!important;padding:10px!important}
+.rf-filters a{font-size:11px!important;color:#c9d5d9!important}
+.rf-tr{font-size:12px!important;color:#e0e8ea!important}
+.rf-th{font-size:11px!important;color:#aebec4!important}
+.rf-tr strong{font-size:14px!important;color:#fff!important}
+.rf-tr small{font-size:11px!important;color:#b6c5ca!important}
+.rf-mini-btn,.rf-export-row a{font-size:10px!important}
+.rf-sale-head strong{font-size:15px!important;color:#fff!important}
+.rf-sale-head small,.rf-sale-amount span{font-size:11px!important;color:#b8c7cc!important}
+.rf-sale-amount b{font-size:20px!important;color:#fff!important}
+.rf-commission span{font-size:10px!important;color:#b7c6cb!important}
+.rf-commission strong,.rf-commission b{font-size:12px!important}
+.rf-edit-sale{font-size:11px!important}
+.rf-field{font-size:13px!important;color:#edf4f2!important;gap:9px!important}
+.rf-field input:not([type=checkbox]),.rf-field select,.rf-field textarea{font-size:14px!important;min-height:50px!important;color:#fff!important;background:#0b1b24!important;border-color:#48606b!important}
+.rf-field input::placeholder,.rf-field textarea::placeholder{color:#aab9bf!important;opacity:1}
+.rf-field small{font-size:11px!important;color:#b1c0c5!important;line-height:1.7}
+.rf-field em,.rf-form-errors{font-size:11px!important}
+.rf-submit{font-size:14px!important;min-height:50px!important}
+.rf-empty,.rf-manager-empty small{font-size:12px!important;color:#bcc9cd!important}
+.rf-manager-empty strong{font-size:14px!important;color:#fff!important}
+@media(max-width:760px){
+  .rf-shell{font-size:14px}
+  .rf-hero h1,.rf-page-head h1,.rf-form-head h1{font-size:25px!important}
+  .rf-tabs a{font-size:13px!important}
+  .rf-field input:not([type=checkbox]),.rf-field select,.rf-field textarea{font-size:14px!important}
+}
+</style>
+{% endif %}
