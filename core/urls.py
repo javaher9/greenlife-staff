@@ -3,6 +3,7 @@ from . import views
 from . import action_center_views
 from . import camp_views
 from . import referral_views
+from . import meeting_views
 from .mcp import mcp_endpoint
 urlpatterns=[path('service-worker.js',views.service_worker,name='service_worker'),path('camp/',camp_views.camp_dashboard,name='camp_dashboard'),
 path('call-center/',referral_views.call_center_dashboard,name='call_center_dashboard'),
@@ -54,6 +55,13 @@ path('kpi/automatic/',views.automatic_kpi_dashboard,name='automatic_kpi_dashboar
 path('login/',views.login_view,name='login'),path('logout/',views.logout_view,name='logout'),path('',views.dashboard,name='dashboard'),
 path('reports/',views.report_list,name='report_list'),path('reports/new/',views.report_create,name='report_create'),path('reports/<int:pk>/',views.report_detail,name='report_detail'),
 path('tasks/',views.task_list,name='task_list'),path('tasks/new/',views.task_create,name='task_create'),path('tasks/<int:pk>/',views.task_update,name='task_update'),
+path('meeting-minutes/',meeting_views.meeting_minute_list,name='meeting_minute_list'),
+path('meeting-minutes/new/',meeting_views.meeting_minute_create,name='meeting_minute_create'),
+path('meeting-minutes/dashboard/',meeting_views.meeting_dashboard,name='meeting_dashboard'),
+path('meeting-minutes/<int:pk>/',meeting_views.meeting_minute_detail,name='meeting_minute_detail'),
+path('meeting-actions/<int:pk>/',meeting_views.meeting_action_update,name='meeting_action_update'),
+path('meeting-actions/<int:pk>/steps/new/',meeting_views.meeting_step_add,name='meeting_step_add'),
+path('meeting-steps/<int:pk>/toggle/',meeting_views.meeting_step_toggle,name='meeting_step_toggle'),
 path('announcements/',views.announcement_list,name='announcement_list'),path('announcements/new/',views.announcement_create,name='announcement_create'),
 path('blackboard/',views.blackboard_manage,name='blackboard_manage'),path('blackboard/new/',views.blackboard_edit,name='blackboard_create'),path('blackboard/<int:pk>/edit/',views.blackboard_edit,name='blackboard_edit'),
 path('requests/',views.leave_list,name='leave_list'),path('requests/new/',views.leave_create,name='leave_create'),path('requests/<int:pk>/review/',views.leave_review,name='leave_review'),

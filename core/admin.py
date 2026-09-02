@@ -120,3 +120,11 @@ class ReferralSaleAdmin(admin.ModelAdmin):
     list_filter=('status','sync_status','sale_date')
     search_fields=('lead__full_name','lead__phone','crm_id')
     autocomplete_fields=('lead','recorded_by')
+
+
+from .models import MeetingMinute, MeetingActionItem, MeetingActionStep, MeetingActionUpdate
+
+admin.site.register(MeetingMinute)
+admin.site.register(MeetingActionItem)
+admin.site.register(MeetingActionStep)
+admin.site.register(MeetingActionUpdate)

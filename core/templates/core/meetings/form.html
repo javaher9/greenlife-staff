@@ -1,0 +1,36 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}
+{% block content %}
+<main class="mtg-page mtg-form-page">
+  <header class="mtg-page-head"><div><span>MEETING MINUTES</span><h1>صورت‌جلسه جدید</h1><p>اطلاعات جلسه را ثبت کنید و هر مصوبه را مستقیماً به مسئول آن بسپارید.</p></div><a href="/meeting-minutes/">لیست صورت‌جلسات ←</a></header>
+  <form method="post" class="mtg-create-form">{% csrf_token %}
+    {% if form.non_field_errors %}<div class="mtg-error">{{ form.non_field_errors }}</div>{% endif %}
+    <section class="mtg-surface mtg-meeting-fields">
+      <div class="mtg-section-title"><b>۱</b><div><h2>مشخصات جلسه</h2><p>تاریخ امروز به‌صورت پیش‌فرض انتخاب شده است.</p></div></div>
+      <div class="mtg-form-grid">
+        {% for field in form %}<label class="{% if field.name == 'summary' or field.name == 'attendees' %}mtg-wide{% endif %}"><span>{{ field.label }}</span>{{ field }}{% for error in field.errors %}<em>{{ error }}</em>{% endfor %}</label>{% endfor %}
+      </div>
+    </section>
+    <section class="mtg-surface">
+      <div class="mtg-section-title"><b>۲</b><div><h2>مصوبات و مسئولان اجرا</h2><p>هر مصوبه پس از ثبت، خودکار در «کارهای من» مسئول نمایش داده می‌شود.</p></div><button type="button" class="mtg-add-action" id="addMeetingAction">＋ افزودن مصوبه</button></div>
+      {{ action_forms.management_form }}
+      {% if action_forms.non_form_errors %}<div class="mtg-error">{{ action_forms.non_form_errors }}</div>{% endif %}
+      <div class="mtg-action-forms" id="meetingActionForms">
+        {% for action_form in action_forms %}<article class="mtg-action-form {% if not action_form.title.value and forloop.counter > 1 %}is-optional{% endif %}">
+          <header><strong>مصوبه <span>{{ forloop.counter }}</span></strong><button type="button" class="mtg-remove-action" aria-label="حذف مصوبه">×</button></header>
+          <div class="mtg-form-grid">
+            {% for field in action_form %}<label class="{% if field.name == 'description' %}mtg-wide{% endif %}"><span>{{ field.label }}</span>{{ field }}{% for error in field.errors %}<em>{{ error }}</em>{% endfor %}</label>{% endfor %}
+          </div>
+        </article>{% endfor %}
+      </div>
+      <template id="emptyMeetingAction"><article class="mtg-action-form"><header><strong>مصوبه <span></span></strong><button type="button" class="mtg-remove-action" aria-label="حذف مصوبه">×</button></header><div class="mtg-form-grid">{% for field in action_forms.empty_form %}<label class="{% if field.name == 'description' %}mtg-wide{% endif %}"><span>{{ field.label }}</span>{{ field }}</label>{% endfor %}</div></article></template>
+    </section>
+    <footer class="mtg-submit-bar"><div><strong>ثبت و تفویض هم‌زمان</strong><small>برای مسئولان اعلان ایجاد می‌شود.</small></div><button type="submit">ثبت نهایی صورت‌جلسه</button></footer>
+  </form>
+</main>
+<script>
+(()=>{const list=document.getElementById('meetingActionForms'),total=document.getElementById('id_actions-TOTAL_FORMS'),tpl=document.getElementById('emptyMeetingAction');
+const refresh=()=>[...list.querySelectorAll('.mtg-action-form')].forEach((row,i)=>{row.hidden=false;row.querySelector('header span').textContent=i+1});
+document.getElementById('addMeetingAction').addEventListener('click',()=>{const i=Number(total.value);if(i>=12)return;list.insertAdjacentHTML('beforeend',tpl.innerHTML.replaceAll('__prefix__',i));total.value=i+1;refresh()});
+list.addEventListener('click',e=>{const btn=e.target.closest('.mtg-remove-action');if(!btn)return;const row=btn.closest('.mtg-action-form'),rows=[...list.querySelectorAll('.mtg-action-form')];if(rows.length===1){row.querySelectorAll('input,textarea,select').forEach(x=>x.value='');return}row.remove();refresh()});refresh()})();
+</script>
+{% endblock %}

@@ -20,12 +20,12 @@
     </div>
     <div class="gl-task-list-v36">
       {% for t in tasks %}
-      <a class="gl-task-item-v36 status-{{ t.status }}" href="/tasks/{{ t.id }}/">
+      <a class="gl-task-item-v36 status-{{ t.status }}" href="{% if t.meeting_action %}/meeting-actions/{{ t.meeting_action.id }}/{% else %}/tasks/{{ t.id }}/{% endif %}">
         <span class="gl-task-state-v36">{% if t.status == 'done' %}✓{% elif t.status == 'doing' %}◌{% else %}○{% endif %}</span>
         <div class="gl-task-copy-v36">
           <strong>{{ t.title }}</strong>
           <p>{{ t.description|default:'بدون توضیحات'|truncatechars:120 }}</p>
-          <small>{{ t.get_priority_display }}{% if t.due_date %} · مهلت {{ t.due_date|jdate }}{% endif %}</small>
+          <small>{% if t.meeting_action %}مصوبه جلسه · {% endif %}{{ t.get_priority_display }}{% if t.due_date %} · مهلت {{ t.due_date|jdate }}{% endif %}</small>
         </div>
         <span class="gl-status-pill-v36 {{ t.status }}">{{ t.get_status_display }}</span>
         <span class="gl-row-arrow-v36">‹</span>

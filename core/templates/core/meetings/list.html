@@ -1,0 +1,14 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}
+{% block content %}
+<main class="mtg-page">
+  <header class="mtg-page-head"><div><span>MEETING ARCHIVE</span><h1>لیست صورت‌جلسات</h1><p>آرشیو جلسات، حاضرین و وضعیت اجرای مصوبات</p></div><div class="mtg-head-actions"><a href="/meeting-minutes/dashboard/">داشبورد پیگیری</a><a class="is-primary" href="/meeting-minutes/new/">＋ صورت‌جلسه جدید</a></div></header>
+  <nav class="mtg-filter-tabs"><a class="{% if not selected_status %}is-active{% endif %}" href="/meeting-minutes/">همه</a><a class="{% if selected_status == 'open' %}is-active{% endif %}" href="?status=open">باز</a><a class="{% if selected_status == 'closed' %}is-active{% endif %}" href="?status=closed">بسته‌شده</a></nav>
+  <section class="mtg-meeting-list">
+    {% for meeting in meetings %}<a class="mtg-meeting-card" href="/meeting-minutes/{{ meeting.id }}/">
+      <div class="mtg-date-block"><strong>جلسه</strong><span>{{ meeting.meeting_date|jdate }}</span></div>
+      <div class="mtg-meeting-copy"><div><span class="mtg-status status-{{ meeting.status }}">{{ meeting.get_status_display }}</span><h2>{{ meeting.title }}</h2></div><p>{% if meeting.location %}{{ meeting.location }} · {% endif %}ثبت توسط {{ meeting.created_by.get_full_name|default:meeting.created_by.username }}</p><div class="mtg-attendees">{% for person in meeting.attendees.all|slice:':4' %}<i>{{ person.first_name|first|default:person.username|first }}</i>{% endfor %}<small>{{ meeting.attendees.count }} نفر حاضر</small></div></div>
+      <div class="mtg-meeting-progress"><div><b>{{ meeting.progress_percent }}٪</b><span>{{ meeting.done_count }} از {{ meeting.action_count }} مصوبه</span></div><div class="mtg-progress"><i style="width:{{ meeting.progress_percent }}%"></i></div></div>
+    </a>{% empty %}<div class="mtg-empty"><b>هنوز صورت‌جلسه‌ای ثبت نشده است.</b><a href="/meeting-minutes/new/">ثبت اولین صورت‌جلسه</a></div>{% endfor %}
+  </section>
+</main>
+{% endblock %}

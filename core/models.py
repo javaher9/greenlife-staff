@@ -155,6 +155,83 @@ class Task(models.Model):
     updated_at=models.DateTimeField(auto_now=True)
     def __str__(self): return self.title
 
+
+class MeetingMinute(models.Model):
+    STATUS=[('open','باز'),('closed','بسته‌شده')]
+    title=models.CharField(max_length=200)
+    meeting_date=models.DateField(default=timezone.localdate,db_index=True)
+    start_time=models.TimeField(null=True,blank=True)
+    location=models.CharField(max_length=160,blank=True)
+    summary=models.TextField(blank=True)
+    attendees=models.ManyToManyField(User,blank=True,related_name='attended_meeting_minutes')
+    status=models.CharField(max_length=20,choices=STATUS,default='open',db_index=True)
+    created_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,related_name='created_meeting_minutes')
+    closed_at=models.DateTimeField(null=True,blank=True)
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+    class Meta: ordering=['-meeting_date','-created_at']
+    def __str__(self): return self.title
+    @property
+    def progress_percent(self):
+        items=list(self.action_items.all())
+        if not items: return 0
+        return round(sum(item.progress_percent for item in items)/len(items))
+
+
+class MeetingActionItem(models.Model):
+    STATUS=[
+        ('todo','انجام‌نشده'),('doing','در حال انجام'),
+        ('awaiting_approval','منتظر تأیید'),('done','انجام‌شده'),('blocked','متوقف'),
+    ]
+    PRIORITY=[('normal','عادی'),('high','مهم'),('urgent','فوری')]
+    meeting=models.ForeignKey(MeetingMinute,on_delete=models.CASCADE,related_name='action_items')
+    title=models.CharField(max_length=220)
+    description=models.TextField(blank=True)
+    assigned_to=models.ForeignKey(User,on_delete=models.PROTECT,related_name='assigned_meeting_actions')
+    collaborators=models.ManyToManyField(User,blank=True,related_name='collaborating_meeting_actions')
+    due_date=models.DateField(null=True,blank=True,db_index=True)
+    priority=models.CharField(max_length=20,choices=PRIORITY,default='normal')
+    status=models.CharField(max_length=24,choices=STATUS,default='todo',db_index=True)
+    task=models.OneToOneField(Task,on_delete=models.SET_NULL,null=True,blank=True,related_name='meeting_action')
+    completion_note=models.TextField(blank=True)
+    approved_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='approved_meeting_actions')
+    approved_at=models.DateTimeField(null=True,blank=True)
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+    class Meta: ordering=['status','due_date','-priority','id']
+    def __str__(self): return self.title
+    @property
+    def is_overdue(self):
+        return bool(self.due_date and self.due_date<timezone.localdate() and self.status!='done')
+    @property
+    def progress_percent(self):
+        steps=list(self.steps.all())
+        if steps:
+            return round(sum(1 for step in steps if step.is_done)*100/len(steps))
+        return {'todo':0,'blocked':25,'doing':50,'awaiting_approval':90,'done':100}.get(self.status,0)
+
+
+class MeetingActionStep(models.Model):
+    action=models.ForeignKey(MeetingActionItem,on_delete=models.CASCADE,related_name='steps')
+    title=models.CharField(max_length=180)
+    is_done=models.BooleanField(default=False)
+    sort_order=models.PositiveSmallIntegerField(default=0)
+    completed_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='completed_meeting_steps')
+    completed_at=models.DateTimeField(null=True,blank=True)
+    class Meta: ordering=['sort_order','id']
+    def __str__(self): return self.title
+
+
+class MeetingActionUpdate(models.Model):
+    action=models.ForeignKey(MeetingActionItem,on_delete=models.CASCADE,related_name='updates')
+    user=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,related_name='meeting_action_updates')
+    previous_status=models.CharField(max_length=24,blank=True)
+    new_status=models.CharField(max_length=24,choices=MeetingActionItem.STATUS)
+    note=models.TextField(blank=True)
+    created_at=models.DateTimeField(auto_now_add=True)
+    class Meta: ordering=['-created_at']
+    def __str__(self): return f'{self.action} - {self.get_new_status_display()}'
+
 class Announcement(models.Model):
     title=models.CharField(max_length=200)
     body=models.TextField()

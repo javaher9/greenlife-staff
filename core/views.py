@@ -13,7 +13,7 @@ from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, BlackboardMessageForm, EmployeeCreateForm, EmployeeEditForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm, ConsultantFinanceEntryForm
-from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction
+from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction, MeetingActionUpdate
 from .ai import analyze_finance_receipt, process_report
 from .jalali import format_jalali, gregorian_to_jalali, jalali_to_gregorian, parse_jalali
 from .reporting import day_summary, leaderboard, answer_query
@@ -318,7 +318,7 @@ def report_detail(request,pk):
 @login_required
 def task_list(request):
     role=role_of(request.user)
-    qs=Task.objects.select_related('assigned_to').order_by('status','due_date')
+    qs=Task.objects.select_related('assigned_to','meeting_action').order_by('status','due_date')
     if role in PERSONNEL_ROLES: qs=qs.filter(assigned_to=request.user)
     elif role=='manager': qs=qs.filter(assigned_to__profile__branch=request.user.profile.branch)
     return render(request,'core/task_list.html',{'tasks':qs,'can_manage':role in MANAGEMENT_ROLES})
@@ -327,7 +327,26 @@ def task_list(request):
 def task_update(request,pk):
     task=get_object_or_404(Task,pk=pk,assigned_to=request.user); form=TaskStatusForm(request.POST or None,instance=task)
     if request.method=='POST' and form.is_valid():
-        obj=form.save(); award_task(obj); messages.success(request,'وضعیت وظیفه به‌روزرسانی شد.'); return redirect('task_list')
+        obj=form.save()
+        meeting_action=getattr(obj,'meeting_action',None)
+        if meeting_action:
+            before=meeting_action.status
+            requested=obj.status
+            meeting_action.status={'todo':'todo','doing':'doing','done':'awaiting_approval'}[requested]
+            meeting_action.save(update_fields=['status','updated_at'])
+            MeetingActionUpdate.objects.create(
+                action=meeting_action,user=request.user,previous_status=before,
+                new_status=meeting_action.status,
+                note='از بخش کارهای من به‌روزرسانی شد.',
+            )
+            if requested=='done':
+                obj.status='doing'; obj.save(update_fields=['status','updated_at'])
+                messages.success(request,'انجام کار ثبت شد و برای تأیید مدیر داخلی ارسال شد.')
+            else:
+                messages.success(request,'پیشرفت مصوبه به‌روزرسانی شد.')
+        else:
+            award_task(obj); messages.success(request,'وضعیت وظیفه به‌روزرسانی شد.')
+        return redirect('task_list')
     return render(request,'core/task_update.html',{'form':form,'task':task})
 
 @manager_required
@@ -2205,6 +2224,6 @@ def action_center(request):
 
 @login_required
 def service_worker(request):
-    response=HttpResponse("const CACHE='greenlife-staff-v40.1';\nconst STATIC=[\n  '/static/core/app.css?v=v40.1',\n  '/static/core/referral.css?v=v40.1',\n  '/static/core/icon-192.png?v=v40.1',\n  '/static/core/icon-512.png?v=v40.1',\n  '/static/core/manifest.webmanifest?v=v40.1'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
+    response=HttpResponse("const CACHE='greenlife-staff-v40.2';\nconst STATIC=[\n  '/static/core/app.css?v=v40.2',\n  '/static/core/referral.css?v=v40.2',\n  '/static/core/icon-192.png?v=v40.2',\n  '/static/core/icon-512.png?v=v40.2',\n  '/static/core/manifest.webmanifest?v=v40.2'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
     response['Cache-Control']='no-cache, no-store, must-revalidate'
     return response

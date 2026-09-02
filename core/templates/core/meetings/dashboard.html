@@ -1,0 +1,19 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}
+{% block content %}
+<main class="mtg-page mtg-dashboard">
+  <header class="mtg-page-head"><div><span>EXECUTIVE CONTROL</span><h1>پیگیری مصوبات جلسات</h1><p>تصویر زنده از مسئول، مرحله و پیشرفت تمام کارهای مصوب</p></div><div class="mtg-head-actions"><a href="/meeting-minutes/">لیست صورت‌جلسات</a><a class="is-primary" href="/meeting-minutes/new/">＋ صورت‌جلسه جدید</a></div></header>
+  <section class="mtg-kpis">
+    <a class="mtg-kpi kpi-purple" href="?status=all"><span><i>◈</i>مصوبات باز</span><strong>{{ counts.open }}</strong><small>تمام کارهای تکمیل‌نشده</small></a>
+    <a class="mtg-kpi kpi-blue" href="?status=doing"><span><i>↻</i>در حال انجام</span><strong>{{ counts.doing }}</strong><small>در مرحله اجرا</small></a>
+    <a class="mtg-kpi kpi-gold" href="?status=awaiting_approval"><span><i>✓</i>منتظر تأیید</span><strong>{{ counts.awaiting }}</strong><small>نیازمند بررسی خانم هاشمی</small></a>
+    <a class="mtg-kpi kpi-red" href="?status=overdue"><span><i>!</i>عقب‌افتاده</span><strong>{{ counts.overdue }}</strong><small>نیازمند اقدام فوری</small></a>
+  </section>
+  <section class="mtg-dashboard-grid">
+    <article class="mtg-surface mtg-overall"><div class="mtg-panel-head"><h2>وضعیت کلی مصوبات</h2><span>همه جلسات</span></div><div class="mtg-donut-row"><div class="mtg-donut" style="--done:{{ overall_progress }}"><div><strong>{{ overall_progress }}٪</strong><span>پیشرفت کل</span></div></div><div class="mtg-dashboard-legend"><p><i class="is-green"></i><span>انجام‌شده</span><b>{{ counts.done }}</b></p><p><i class="is-purple"></i><span>در حال انجام</span><b>{{ counts.doing }}</b></p><p><i class="is-gold"></i><span>منتظر تأیید</span><b>{{ counts.awaiting }}</b></p><p><i class="is-red"></i><span>عقب‌افتاده</span><b>{{ counts.overdue }}</b></p></div></div></article>
+    <article class="mtg-surface mtg-owner-panel"><div class="mtg-panel-head"><h2>پیشرفت بر اساس مسئول</h2><span>{{ owners|length }} نفر</span></div><div class="mtg-owner-list">{% for row in owners %}<div><i>{{ row.user.first_name|first|default:row.user.username|first }}</i><span><strong>{{ row.user.get_full_name|default:row.user.username }}</strong><small>{{ row.count }} مصوبه</small><em><b style="width:{{ row.progress }}%"></b></em></span><b>{{ row.progress }}٪</b></div>{% empty %}<p>هنوز مصوبه‌ای وجود ندارد.</p>{% endfor %}</div></article>
+    <article class="mtg-surface mtg-control-queue"><div class="mtg-panel-head"><div><h2>صف پیگیری مدیر سیستم</h2><p>موارد مهم‌تر در ابتدای فهرست قرار گرفته‌اند.</p></div><nav><a class="{% if selected_status == 'all' %}is-active{% endif %}" href="?status=all">همه</a><a class="{% if selected_status == 'overdue' %}is-active{% endif %}" href="?status=overdue">عقب‌افتاده</a><a class="{% if selected_status == 'awaiting_approval' %}is-active{% endif %}" href="?status=awaiting_approval">منتظر تأیید</a></nav></div>
+      <div class="mtg-queue-list">{% for item in actions %}<a href="/meeting-actions/{{ item.id }}/" class="{% if item.is_overdue %}is-overdue{% endif %}"><i class="mtg-priority priority-{{ item.priority }}"></i><div><strong>{{ item.title }}</strong><small>{{ item.meeting.title }} · ثبت توسط {{ item.meeting.created_by.get_full_name|default:item.meeting.created_by.username }}</small></div><span class="mtg-queue-owner"><i>{{ item.assigned_to.first_name|first|default:item.assigned_to.username|first }}</i>{{ item.assigned_to.get_full_name|default:item.assigned_to.username }}</span><span class="mtg-queue-progress"><b>{{ item.progress_percent }}٪</b><i><em style="width:{{ item.progress_percent }}%"></em></i></span><span class="mtg-status status-{{ item.status }}">{% if item.is_overdue %}عقب‌افتاده{% else %}{{ item.get_status_display }}{% endif %}</span></a>{% empty %}<div class="mtg-empty">موردی در این وضعیت وجود ندارد.</div>{% endfor %}</div>
+    </article>
+  </section>
+</main>
+{% endblock %}
