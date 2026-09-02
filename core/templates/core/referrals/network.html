@@ -7,7 +7,7 @@
     <div class="rf-member-top"><div class="rf-avatar rf-avatar-lg">{% if row.photo %}<img src="{{ row.photo }}" alt="{{ row.profile }}">{% else %}<span>{{ row.profile.user.first_name|first|default:row.profile.user.username|first }}</span>{% endif %}</div><span class="rf-level">سطح {{ row.level|fa }}</span></div>
     <h2>{{ row.profile }}</h2><p>{{ row.profile.phone|default:'شماره ثبت نشده' }}</p>
     <div class="rf-member-stats"><span><b>{{ row.leads|fa }}</b> لید</span><span><b>{{ row.won|fa }}</b> فروش</span><span><b>{{ row.sales|toman }}</b></span></div>
-    <div class="rf-member-actions"><a href="{% url 'referral_lead_create' %}?referrer={{ row.profile.pk }}">ثبت لید</a>{% if row.level < 2 %}<a href="{% url 'referral_member_create' %}?sponsor={{ row.profile.pk }}">افزودن زیرمجموعه</a>{% endif %}</div>
+    <div class="rf-member-actions"><a href="{% url 'referral_lead_create' %}?referrer={{ row.profile.pk }}">ثبت لید</a>{% if row.level < 2 %}<a href="{% url 'referral_member_create' %}?sponsor={{ row.profile.pk }}">افزودن زیرمجموعه</a>{% endif %}{% if user.is_superuser or user.profile.role == 'admin' %}<form method="post" action="{% url 'referral_member_delete' row.profile.pk %}" onsubmit="return confirm('این معرف از شبکه حذف شود؟ اگر سابقه واقعی داشته باشد، سوابق حفظ و حساب او غیرفعال می‌شود.');" style="display:inline;margin:0">{% csrf_token %}<button type="submit" style="background:rgba(239,68,68,.1);border:1px solid rgba(248,113,113,.35);color:#ff9b9b;border-radius:10px;padding:8px 11px;font-family:inherit;font-weight:700;cursor:pointer">حذف</button></form>{% endif %}</div>
   </article>{% empty %}<div class="rf-empty rf-empty-large">شبکه شما هنوز خالی است. اولین عضو را اضافه کنید.</div>{% endfor %}</div>
 </section>
 {% endblock %}
