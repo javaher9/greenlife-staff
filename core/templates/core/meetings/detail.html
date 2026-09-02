@@ -1,13 +1,13 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}
 {% block content %}
-<main class="mtg-page">
-  <header class="mtg-detail-head"><div><a href="/meeting-minutes/">صورت‌جلسات ‹</a><span class="mtg-status status-{{ meeting.status }}">{{ meeting.get_status_display }}</span><h1>{{ meeting.title }}</h1><p>{{ meeting.meeting_date|jdate }}{% if meeting.start_time %} · {{ meeting.start_time|time:'H:i' }}{% endif %}{% if meeting.location %} · {{ meeting.location }}{% endif %}</p></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="toggle_close"><button class="mtg-outline-button">{% if meeting.status == 'open' %}بستن صورت‌جلسه{% else %}بازکردن مجدد{% endif %}</button></form></header>
-  <section class="mtg-detail-grid">
+<div class="mtg-page">
+  <div class="mtg-detail-head"><div><a href="/meeting-minutes/">صورت‌جلسات ‹</a><span class="mtg-status status-{{ meeting.status }}">{{ meeting.get_status_display }}</span><h1>{{ meeting.title }}</h1><p>{{ meeting.meeting_date|jdate }}{% if meeting.start_time %} · {{ meeting.start_time|time:'H:i' }}{% endif %}{% if meeting.location %} · {{ meeting.location }}{% endif %}</p></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="toggle_close"><button class="mtg-outline-button">{% if meeting.status == 'open' %}بستن صورت‌جلسه{% else %}بازکردن مجدد{% endif %}</button></form></div>
+  <div class="mtg-detail-grid">
     <article class="mtg-surface"><div class="mtg-panel-head"><h2>جمع‌بندی جلسه</h2><span>{{ meeting.created_by.get_full_name|default:meeting.created_by.username }}</span></div><div class="mtg-summary">{{ meeting.summary|default:'توضیحی ثبت نشده است.'|linebreaksbr }}</div></article>
     <article class="mtg-surface"><div class="mtg-panel-head"><h2>افراد حاضر</h2><span>{{ meeting.attendees.count }} نفر</span></div><div class="mtg-people-grid">{% for person in meeting.attendees.all %}<div><i>{{ person.first_name|first|default:person.username|first }}</i><span>{{ person.get_full_name|default:person.username }}<small>{{ person.profile.job_title|default:person.profile.get_role_display }}</small></span></div>{% empty %}<p>فردی انتخاب نشده است.</p>{% endfor %}</div></article>
-  </section>
-  <section class="mtg-surface mtg-actions-panel"><div class="mtg-panel-head"><div><h2>مصوبات جلسه</h2><p>برای مشاهده تاریخچه و تغییر وضعیت، روی هر مصوبه بزنید.</p></div><strong>{{ meeting.progress_percent }}٪ پیشرفت کل</strong></div>
+  </div>
+  <div class="mtg-surface mtg-actions-panel"><div class="mtg-panel-head"><div><h2>مصوبات جلسه</h2><p>برای مشاهده تاریخچه و تغییر وضعیت، روی هر مصوبه بزنید.</p></div><strong>{{ meeting.progress_percent }}٪ پیشرفت کل</strong></div>
     <div class="mtg-detail-actions">{% for item in meeting.action_items.all %}<a class="mtg-detail-action {% if item.is_overdue %}is-overdue{% endif %}" href="/meeting-actions/{{ item.id }}/"><span class="mtg-priority priority-{{ item.priority }}"></span><div class="mtg-action-copy"><strong>{{ item.title }}</strong><small>{{ item.assigned_to.get_full_name|default:item.assigned_to.username }}{% if item.due_date %} · مهلت {{ item.due_date|jdate }}{% endif %}</small></div><div class="mtg-action-meter"><b>{{ item.progress_percent }}٪</b><div class="mtg-progress"><i style="width:{{ item.progress_percent }}%"></i></div></div><span class="mtg-status status-{{ item.status }}">{% if item.is_overdue %}عقب‌افتاده{% else %}{{ item.get_status_display }}{% endif %}</span></a>{% endfor %}</div>
-  </section>
-</main>
+  </div>
+</div>
 {% endblock %}
