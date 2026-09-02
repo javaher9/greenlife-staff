@@ -1,0 +1,239 @@
+/* GreenLife Sales Network UI Polish v40.3.4 */
+.rf-shell{
+  --rf-text:#f8fbfa;
+  --rf-muted:#c7d4d8;
+  --rf-line:#34505c;
+  gap:22px;
+  color:var(--rf-text);
+}
+
+/* Top module tabs */
+.rf-tabs{
+  padding:9px !important;
+  gap:9px !important;
+  border:1px solid #314b58 !important;
+  border-radius:20px !important;
+  background:linear-gradient(180deg,rgba(15,34,44,.98),rgba(7,20,29,.98)) !important;
+  box-shadow:0 14px 34px rgba(0,0,0,.24),inset 0 1px rgba(255,255,255,.04) !important;
+}
+.rf-tabs a{
+  min-height:48px !important;
+  padding:13px 18px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  color:#d5e0e3 !important;
+  font-size:14px !important;
+  line-height:1.5 !important;
+  font-weight:900 !important;
+  border:1px solid transparent !important;
+  border-radius:13px !important;
+  transition:.18s ease !important;
+}
+.rf-tabs a:hover{
+  color:#fff !important;
+  background:#132b36 !important;
+  border-color:#395763 !important;
+}
+.rf-tabs a.active{
+  color:#07140d !important;
+  background:linear-gradient(135deg,#79f19a,#49d17a) !important;
+  border-color:#88f4a5 !important;
+  box-shadow:0 9px 24px rgba(67,213,118,.26),inset 0 1px rgba(255,255,255,.45) !important;
+}
+
+/* Kill accidental light/white strips and keep headers premium dark */
+.rf-page-head,
+.rf-hero,
+.rf-card,
+.rf-member-card,
+.rf-sale-card,
+.rf-form-card,
+.rf-table-card{
+  color:#f7fbfa !important;
+  border-color:#314c58 !important;
+  background:radial-gradient(circle at 88% 0,rgba(91,235,135,.10),transparent 32%),radial-gradient(circle at 8% 100%,rgba(178,91,255,.07),transparent 34%),linear-gradient(145deg,#122934,#091820) !important;
+  box-shadow:0 18px 46px rgba(0,0,0,.28),inset 0 1px rgba(255,255,255,.04) !important;
+}
+.rf-page-head{
+  min-height:96px !important;
+  padding:24px 28px !important;
+  border-radius:22px !important;
+}
+.rf-page-head h1,.rf-hero h1,.rf-form-head h1{
+  color:#fff !important;
+  font-size:27px !important;
+  line-height:1.45 !important;
+  font-weight:900 !important;
+}
+.rf-page-head p,.rf-hero p,.rf-form-head p{
+  color:#c9d6da !important;
+  font-size:13px !important;
+  line-height:1.8 !important;
+}
+.rf-eyebrow,.rf-card-kicker{
+  color:#72ee94 !important;
+  font-size:12px !important;
+  font-weight:900 !important;
+}
+
+/* Buttons */
+.rf-btn,
+.rf-submit,
+.rf-download,
+.rf-export-row a,
+.rf-mini-btn,
+.rf-member-actions a{
+  font-size:13px !important;
+  font-weight:900 !important;
+}
+.rf-btn{
+  min-height:46px !important;
+  padding:11px 18px !important;
+  border-radius:12px !important;
+  color:#ecf4f2 !important;
+  background:linear-gradient(180deg,#142c37,#0c1e27) !important;
+}
+.rf-btn.primary,.rf-submit{
+  color:#07140d !important;
+  background:linear-gradient(135deg,#74ef97,#42c973) !important;
+  box-shadow:0 10px 26px rgba(63,206,112,.24) !important;
+}
+
+/* Status/filter pills */
+.rf-filters{
+  gap:9px !important;
+  padding:3px 0 !important;
+}
+.rf-filters a{
+  min-height:38px !important;
+  padding:9px 14px !important;
+  display:flex !important;
+  align-items:center !important;
+  color:#d0dde0 !important;
+  background:#10242e !important;
+  border-color:#36515d !important;
+  border-radius:999px !important;
+  font-size:12px !important;
+  font-weight:900 !important;
+}
+.rf-filters a.active{
+  color:#07140d !important;
+  background:linear-gradient(135deg,#78ef99,#46cf77) !important;
+  border-color:#8af3a7 !important;
+  box-shadow:0 7px 20px rgba(65,210,114,.18) !important;
+}
+
+/* KPI cards */
+.rf-kpi{
+  min-height:160px !important;
+  padding:21px !important;
+  border-color:#314b57 !important;
+  background:linear-gradient(145deg,#122a35,#0a1921) !important;
+}
+.rf-kpi span,.rf-kpi small{color:#c5d3d7 !important;font-size:13px !important;line-height:1.7 !important;}
+.rf-kpi strong{font-size:34px !important;color:#fff !important;}
+.rf-kpi strong.money{font-size:21px !important;}
+
+/* Card content */
+.rf-card{padding:24px !important;}
+.rf-card-head{margin-bottom:18px !important;}
+.rf-card-head h2{color:#fff !important;font-size:19px !important;line-height:1.5 !important;}
+.rf-card-head a,.rf-download{color:#83ee9d !important;font-size:12px !important;}
+.rf-list-row{min-height:76px !important;padding:14px 2px !important;gap:13px !important;}
+.rf-list-row strong{color:#f7fbfa !important;font-size:14px !important;line-height:1.6 !important;}
+.rf-list-row small{color:#b8c8cd !important;font-size:11px !important;line-height:1.7 !important;}
+.rf-status{padding:7px 10px !important;font-size:11px !important;}
+
+/* Lead table */
+.rf-table-card{padding:10px 20px !important;border-radius:20px !important;}
+.rf-tr{
+  min-height:78px !important;
+  gap:15px !important;
+  padding:14px 8px !important;
+  color:#dde7e9 !important;
+  font-size:13px !important;
+  border-bottom-color:#2f4854 !important;
+}
+.rf-th{
+  min-height:50px !important;
+  color:#b8c8cd !important;
+  font-size:12px !important;
+  font-weight:900 !important;
+}
+.rf-tr strong{color:#fff !important;font-size:14px !important;}
+.rf-tr small{color:#b6c5ca !important;font-size:11px !important;line-height:1.7 !important;}
+.rf-mini-btn{
+  min-height:34px !important;
+  padding:8px 11px !important;
+  border-radius:9px !important;
+}
+
+/* Network members */
+.rf-level-note{color:#c7d4d8 !important;font-size:12px !important;padding:13px 17px !important;}
+.rf-member-card{padding:22px !important;border-radius:20px !important;}
+.rf-member-card h2{color:#fff !important;font-size:17px !important;}
+.rf-member-card>p{color:#bdcbd0 !important;font-size:12px !important;}
+.rf-level{font-size:11px !important;padding:6px 9px !important;}
+.rf-member-stats span{color:#bac9cd !important;font-size:10px !important;padding:11px 6px !important;}
+.rf-member-stats b{color:#fff !important;font-size:13px !important;}
+.rf-member-actions a{min-height:38px !important;display:flex !important;align-items:center !important;justify-content:center !important;}
+.rf-person{min-width:128px !important;}
+.rf-person strong{color:#fff !important;font-size:13px !important;}
+.rf-person small{color:#bccbd0 !important;font-size:11px !important;}
+
+/* Sales */
+.rf-sale-head strong{color:#fff !important;font-size:15px !important;}
+.rf-sale-head small{color:#bccbd0 !important;font-size:11px !important;}
+.rf-sale-amount span{color:#bdcbd0 !important;font-size:11px !important;}
+.rf-sale-amount b{color:#fff !important;font-size:20px !important;}
+.rf-commission span{color:#bdcbd0 !important;font-size:10px !important;}
+.rf-commission strong{color:#edf4f2 !important;font-size:11px !important;}
+.rf-commission b{font-size:12px !important;}
+.rf-edit-sale{font-size:12px !important;}
+
+/* Forms */
+.rf-form-head{padding:28px 29px 22px !important;}
+.rf-form-head>a{color:#c3d0d4 !important;font-size:12px !important;}
+.rf-form{padding:27px 29px !important;}
+.rf-fields{gap:17px !important;}
+.rf-field{gap:8px !important;color:#eef4f2 !important;font-size:13px !important;}
+.rf-field input:not([type=checkbox]),.rf-field select,.rf-field textarea{
+  min-height:50px !important;
+  padding:12px 14px !important;
+  border-color:#3a5864 !important;
+  background:#0a1a23 !important;
+  color:#fff !important;
+  font:14px Tahoma,Arial,sans-serif !important;
+}
+.rf-field input::placeholder,.rf-field textarea::placeholder{color:#93a7ae !important;opacity:1 !important;}
+.rf-field small{color:#acbec4 !important;font-size:11px !important;line-height:1.7 !important;}
+.rf-field em,.rf-form-errors{font-size:11px !important;}
+.rf-submit{min-height:50px !important;padding:12px 22px !important;}
+
+/* Guide/readability */
+.rf-shell p,.rf-shell li,.rf-shell label{line-height:1.85;}
+
+/* Tablet and mobile */
+@media(max-width:900px){
+  .rf-shell{width:min(100% - 24px,1260px) !important;gap:16px !important;}
+  .rf-tabs a{font-size:13px !important;min-height:44px !important;padding:11px 14px !important;}
+  .rf-page-head h1,.rf-hero h1,.rf-form-head h1{font-size:23px !important;}
+  .rf-page-head{padding:20px !important;}
+  .rf-tr{font-size:12px !important;}
+}
+@media(max-width:620px){
+  .rf-shell{width:calc(100% - 16px) !important;margin-top:12px !important;}
+  .rf-tabs{padding:7px !important;}
+  .rf-tabs a{font-size:12px !important;min-height:42px !important;}
+  .rf-page-head,.rf-hero{padding:17px !important;}
+  .rf-page-head h1,.rf-hero h1,.rf-form-head h1{font-size:21px !important;}
+  .rf-page-head p,.rf-hero p,.rf-form-head p{font-size:12px !important;}
+  .rf-card{padding:17px !important;}
+  .rf-kpi span,.rf-kpi small{font-size:11px !important;}
+  .rf-list-row strong{font-size:13px !important;}
+  .rf-list-row small{font-size:10px !important;}
+  .rf-form{padding:18px !important;}
+  .rf-field{font-size:12px !important;}
+  .rf-field input:not([type=checkbox]),.rf-field select,.rf-field textarea{font-size:13px !important;}
+}
