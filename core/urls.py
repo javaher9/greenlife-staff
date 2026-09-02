@@ -3,6 +3,7 @@ from . import views
 from . import action_center_views
 from . import camp_views
 from . import referral_views
+from . import referral_admin_views
 from . import meeting_views
 from .mcp import mcp_endpoint
 urlpatterns=[path('service-worker.js',views.service_worker,name='service_worker'),path('camp/',camp_views.camp_dashboard,name='camp_dashboard'),
@@ -12,6 +13,7 @@ path('referrals/',referral_views.referral_dashboard,name='referral_dashboard'),
 path('referrals/guide/',referral_views.referral_guide,name='referral_guide'),
 path('referrals/network/',referral_views.referral_network,name='referral_network'),
 path('referrals/network/new/',referral_views.referral_member_create,name='referral_member_create'),
+path('referrals/network/<int:pk>/delete/',referral_admin_views.referral_member_delete,name='referral_member_delete'),
 path('referrals/leads/',referral_views.referral_lead_list,name='referral_lead_list'),
 path('referrals/leads/new/',referral_views.referral_lead_create,name='referral_lead_create'),
 path('referrals/leads/<int:pk>/manage/',referral_views.referral_lead_manage,name='referral_lead_manage'),
