@@ -172,6 +172,15 @@ def dashboard(request):
     notifications=notifications_qs[:5]
     notification_count=notifications_qs.count()
     today_shift=shift_rule(request.user,timezone.localdate())
+    finance_stats={}
+    if role=='consultant':
+        finance_qs=FinancialTransaction.objects.filter(source='manual',recorded_by=request.user)
+        finance_stats={
+            'today':finance_qs.filter(created_at__date=today_local).count(),
+            'pending':finance_qs.filter(review_status='pending').count(),
+            'correction':finance_qs.filter(review_status='needs_correction').count(),
+            'last':finance_qs.order_by('-created_at').first(),
+        }
 
     # Real employee-dashboard status (no mock values).
     today_report_exists=DailyReport.objects.filter(
@@ -220,6 +229,7 @@ def dashboard(request):
         'notifications':notifications,
         'notification_count':notification_count,
         'today_shift':today_shift,
+        'finance_stats':finance_stats,
         'today_report_exists':today_report_exists,
         'checklist_total':checklist_total,
         'checklist_done':checklist_done,
@@ -2195,6 +2205,6 @@ def action_center(request):
 
 @login_required
 def service_worker(request):
-    response=HttpResponse("const CACHE='greenlife-staff-v40.0';\nconst STATIC=[\n  '/static/core/app.css?v=v40.0',\n  '/static/core/referral.css?v=v40.0',\n  '/static/core/icon-192.png?v=v40.0',\n  '/static/core/icon-512.png?v=v40.0',\n  '/static/core/manifest.webmanifest?v=v40.0'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
+    response=HttpResponse("const CACHE='greenlife-staff-v40.1';\nconst STATIC=[\n  '/static/core/app.css?v=v40.1',\n  '/static/core/referral.css?v=v40.1',\n  '/static/core/icon-192.png?v=v40.1',\n  '/static/core/icon-512.png?v=v40.1',\n  '/static/core/manifest.webmanifest?v=v40.1'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
     response['Cache-Control']='no-cache, no-store, must-revalidate'
     return response

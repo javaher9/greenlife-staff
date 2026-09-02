@@ -97,6 +97,33 @@ class ConsultantFinanceEntryTests(TestCase):
         self.assertContains(response, 'ثبت تراکنش مالی')
         self.assertContains(response, format_jalali(timezone.localdate()))
 
+    def test_consultant_dashboard_has_prominent_finance_entry_and_stats(self):
+        occurred=timezone.make_aware(datetime.combine(timezone.localdate(),time(10,0)))
+        FinancialTransaction.objects.create(
+            source='manual',branch=self.branch,occurred_at=occurred,amount=500,
+            person_name='مشتری',review_status='pending',recorded_by=self.consultant,
+        )
+        FinancialTransaction.objects.create(
+            source='manual',branch=self.branch,occurred_at=occurred,amount=700,
+            person_name='مشتری دوم',review_status='needs_correction',recorded_by=self.consultant,
+        )
+        self.client.force_login(self.consultant)
+        response=self.client.get('/')
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'ثبت مالی جدید')
+        self.assertContains(response,'class="gl-finance-launch-main"')
+        self.assertContains(response,'در انتظار تأیید')
+        self.assertContains(response,'نیازمند اصلاح')
+        self.assertContains(response,'consultant-finance-nav')
+
+    def test_consultant_sees_only_destination_codes_not_internal_meanings(self):
+        self.client.force_login(self.consultant)
+        response=self.client.get('/finance/entry/')
+        for code in ('Pos S','Pos H','CC P','CC D','CC S'):
+            self.assertContains(response,code)
+        for internal_label in ('پوز اصلی','فیلم و هنر','دکتر جواهریان','ساره'):
+            self.assertNotContains(response,internal_label)
+
     def test_consultant_submits_exact_manual_amount_name_and_receipt(self):
         self.client.force_login(self.consultant)
         response=self.client.post('/finance/entry/', data=self.valid_payload())
