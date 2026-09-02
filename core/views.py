@@ -14,7 +14,7 @@ from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, BlackboardMessageForm, EmployeeCreateForm, EmployeeEditForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm, ConsultantFinanceEntryForm
 from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction
-from .ai import process_report
+from .ai import analyze_finance_receipt, process_report
 from .jalali import format_jalali, gregorian_to_jalali, jalali_to_gregorian, parse_jalali
 from .reporting import day_summary, leaderboard, answer_query
 from .operations import shift_rule, attendance_status_for, overtime_minutes, award_report, award_task, missing_report_days, auto_kpi, approve_correction, report_required, report_exists
@@ -808,18 +808,28 @@ def finance_entry(request):
         obj.branch=request.user.profile.branch
         obj.source='manual'
         obj.review_status='pending'
+        obj.analysis_status='pending'
         obj.recorded_by=request.user
         obj.patient_ref=obj.person_name
+        obj.receipt_original_size=getattr(form,'receipt_original_size',0)
+        obj.receipt_compressed_size=getattr(form,'receipt_compressed_size',0)
         obj.raw_data={'entry_channel':'staff_consultant'}
         obj.save()
         AuditLog.objects.create(
             actor=request.user,action='finance_entry',path=request.path,method='POST',
             object_type='FinancialTransaction',object_id=str(obj.pk),
             summary=f'ثبت مالی مشاور برای {obj.person_name}'[:250],
-            metadata={'amount':str(obj.amount),'branch_id':obj.branch_id,'status':obj.review_status},
+            metadata={
+                'amount':str(obj.amount),'branch_id':obj.branch_id,'status':obj.review_status,
+                'receipt_original_size':obj.receipt_original_size,
+                'receipt_compressed_size':obj.receipt_compressed_size,
+            },
             ip_address=_request_ip(request),
         )
         messages.success(request,'تراکنش ثبت شد و برای بررسی مالی ارسال شد.')
+        ok,analysis_message=analyze_finance_receipt(obj)
+        if ok: messages.success(request,analysis_message)
+        else: messages.warning(request,analysis_message+' ثبت مالی شما محفوظ است و مدیر می‌تواند تحلیل را دوباره اجرا کند.')
         return redirect('finance_entry')
     entries=FinancialTransaction.objects.filter(
         source='manual',recorded_by=request.user,
@@ -856,6 +866,25 @@ def finance_entry_review(request,pk,action):
             notification_type='finance_review',related_date=timezone.localdate(),
         )
     messages.success(request,'وضعیت تراکنش به‌روزرسانی شد.')
+    return redirect('finance_dashboard')
+
+@finance_required
+def finance_entry_analyze(request,pk):
+    if request.method!='POST': return redirect('finance_dashboard')
+    entry=get_object_or_404(FinancialTransaction,pk=pk,source='manual')
+    if role_of(request.user)=='manager' and entry.branch_id!=request.user.profile.branch_id:
+        messages.error(request,'این تراکنش مربوط به شعبه شما نیست.')
+        return redirect('finance_dashboard')
+    entry.analysis_status='pending'; entry.analysis_error=''
+    entry.save(update_fields=['analysis_status','analysis_error'])
+    ok,message=analyze_finance_receipt(entry)
+    if ok: messages.success(request,message)
+    else: messages.warning(request,message)
+    AuditLog.objects.create(
+        actor=request.user,action='finance_receipt_analysis',path=request.path,method='POST',
+        object_type='FinancialTransaction',object_id=str(entry.pk),summary=message[:250],
+        metadata={'analysis_status':entry.analysis_status},ip_address=_request_ip(request),
+    )
     return redirect('finance_dashboard')
 
 @finance_required
@@ -2166,6 +2195,6 @@ def action_center(request):
 
 @login_required
 def service_worker(request):
-    response=HttpResponse("const CACHE='greenlife-staff-v39.9';\nconst STATIC=[\n  '/static/core/app.css?v=v39.9',\n  '/static/core/referral.css?v=v39.9',\n  '/static/core/icon-192.png?v=v39.9',\n  '/static/core/icon-512.png?v=v39.9',\n  '/static/core/manifest.webmanifest?v=v39.9'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
+    response=HttpResponse("const CACHE='greenlife-staff-v40.0';\nconst STATIC=[\n  '/static/core/app.css?v=v40.0',\n  '/static/core/referral.css?v=v40.0',\n  '/static/core/icon-192.png?v=v40.0',\n  '/static/core/icon-512.png?v=v40.0',\n  '/static/core/manifest.webmanifest?v=v40.0'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
     response['Cache-Control']='no-cache, no-store, must-revalidate'
     return response

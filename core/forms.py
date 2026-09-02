@@ -1,6 +1,11 @@
+from io import BytesIO
+from uuid import uuid4
+
 from django import forms
 from django.contrib.auth.models import User
+from django.core.files.base import ContentFile
 from django.utils import timezone
+from PIL import Image, ImageOps
 from .models import DailyReport, Task, LeaveRequest, Announcement, BlackboardMessage, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, Branch, JobDutyTemplate, Guideline, DeviceIssue, ReferralProfile, ReferralLead, ReferralSale, FinancialTransaction
 from .jalali import parse_jalali, format_jalali
 
@@ -233,14 +238,14 @@ class EmployeeEditForm(forms.Form):
 
 class ConsultantFinanceEntryForm(forms.ModelForm):
     PAYMENT_METHODS=[
-        ('POS1','کارتخوان اصلی سرمایه'),
-        ('POSFH','کارتخوان فیلم و هنر'),
-        ('CLEN','کارت‌به‌کارت اقتصاد نوین توسط پرسنل'),
-        ('C2CP','کارت‌به‌کارت مشتری از تلفن خودش'),
-        ('C2CT','کارت‌به‌کارت تلفنی کال‌سنتر'),
+        ('Pos S','Pos S'),
+        ('Pos H','Pos H'),
+        ('CC P','CC P'),
+        ('CC D','CC D'),
+        ('CC S','CC S'),
     ]
     date=JalaliDateField(label='تاریخ تراکنش',initial=timezone.localdate)
-    payment_method=forms.ChoiceField(label='روش پرداخت',choices=PAYMENT_METHODS)
+    payment_method=forms.ChoiceField(label='مقصد واریز',choices=PAYMENT_METHODS)
     receipt_image=forms.ImageField(
         label='تصویر تراکنش',required=True,
         widget=forms.ClearableFileInput(attrs={'accept':'image/jpeg,image/png,image/webp'}),
@@ -256,7 +261,7 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
         labels={
             'entry_type':'نوع ثبت','person_name':'نام فرد','amount':'مبلغ (ریال)',
             'service':'خدمت یا پکیج','account_heading':'سرفصل دستگاه یا حساب',
-            'terminal_or_payee':'نام پایانه یا دریافت‌کننده','tracking_number':'شماره پیگیری',
+            'terminal_or_payee':'نام پایانه یا شخص دریافت‌کننده','tracking_number':'شماره پیگیری',
             'destination_card':'کارت مقصد','description':'توضیحات',
         }
         widgets={
@@ -285,9 +290,47 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
 
     def clean_receipt_image(self):
         image=self.cleaned_data['receipt_image']
-        if getattr(image,'size',0)>10*1024*1024:
+        original_size=getattr(image,'size',0)
+        if original_size>10*1024*1024:
             raise forms.ValidationError('حجم تصویر تراکنش باید کمتر از ۱۰ مگابایت باشد.')
-        return image
+        try:
+            image.seek(0)
+            source=Image.open(image)
+            source=ImageOps.exif_transpose(source)
+            source.load()
+            source.thumbnail((2000,2000),Image.Resampling.LANCZOS)
+
+            # Receipts need a light background so text remains legible after
+            # converting transparent PNG screenshots to compact WebP.
+            if source.mode in ('RGBA','LA'):
+                rgba=source.convert('RGBA')
+                background=Image.new('RGBA',rgba.size,'white')
+                background.alpha_composite(rgba)
+                source=background.convert('RGB')
+            elif source.mode!='RGB':
+                source=source.convert('RGB')
+
+            output=BytesIO()
+            target_bytes=1500*1024
+            for quality in (84,78,72,66):
+                output.seek(0); output.truncate(0)
+                source.save(output,format='WEBP',quality=quality,method=6)
+                if output.tell()<=target_bytes:
+                    break
+            data=output.getvalue()
+            compressed=ContentFile(data,name=f'receipt-{uuid4().hex[:16]}.webp')
+            compressed.content_type='image/webp'
+            self.receipt_original_size=original_size
+            self.receipt_compressed_size=len(data)
+            return compressed
+        except Exception as exc:
+            raise forms.ValidationError('فشرده‌سازی تصویر انجام نشد؛ یک عکس JPG، PNG یا WEBP معتبر ارسال کنید.') from exc
+
+    def clean(self):
+        data=super().clean()
+        if data.get('payment_method')=='CC P' and not (data.get('terminal_or_payee') or '').strip():
+            self.add_error('terminal_or_payee','برای CC P نام شخص دریافت‌کننده الزامی است.')
+        return data
 
 class AttendanceManualForm(forms.ModelForm):
     date=JalaliDateField(label='تاریخ')

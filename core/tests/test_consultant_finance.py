@@ -1,4 +1,6 @@
 import tempfile
+from io import BytesIO
+from unittest.mock import Mock, patch
 from datetime import datetime, time
 from decimal import Decimal
 
@@ -6,6 +8,7 @@ from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.utils import timezone
+from PIL import Image, ImageDraw
 
 from core.finance import finance_summary
 from core.jalali import format_jalali
@@ -28,6 +31,9 @@ class ConsultantFinanceEntryTests(TestCase):
         super().tearDownClass()
 
     def setUp(self):
+        self.env_patcher=patch.dict('os.environ',{'OPENAI_API_KEY':''},clear=False)
+        self.env_patcher.start()
+        self.addCleanup(self.env_patcher.stop)
         self.branch=Branch.objects.create(name='نیاوران')
         self.other_branch=Branch.objects.create(name='پونک')
         self.consultant=self.make_user('consultant', 'consultant', self.branch, 'نازنین', 'مرادی')
@@ -55,13 +61,23 @@ class ConsultantFinanceEntryTests(TestCase):
         )
         return SimpleUploadedFile(name, content, content_type='image/gif')
 
+    @staticmethod
+    def large_receipt():
+        image=Image.new('RGB',(2600,1900),'white')
+        draw=ImageDraw.Draw(image)
+        for y in range(50,1850,45):
+            draw.line((80,y,2520,y),fill=(80+(y%120),90,100),width=3)
+        output=BytesIO()
+        image.save(output,format='JPEG',quality=96)
+        return SimpleUploadedFile('large-receipt.jpg',output.getvalue(),content_type='image/jpeg')
+
     def valid_payload(self, **overrides):
         data={
             'date':format_jalali(timezone.localdate()),
             'entry_type':'inc',
             'person_name':'مشتری نمونه',
             'amount':'1234567',
-            'payment_method':'POS1',
+            'payment_method':'Pos S',
             'service':'پکیج مشاوره',
             'account_heading':'فروش پکیج',
             'terminal_or_payee':'کارتخوان نیاوران',
@@ -92,7 +108,11 @@ class ConsultantFinanceEntryTests(TestCase):
         self.assertEqual(entry.branch, self.branch)
         self.assertEqual(entry.recorded_by, self.consultant)
         self.assertEqual(entry.review_status, 'pending')
+        self.assertEqual(entry.analysis_status, 'skipped')
         self.assertTrue(entry.receipt_image.name)
+        self.assertTrue(entry.receipt_image.name.endswith('.webp'))
+        self.assertGreater(entry.receipt_original_size,0)
+        self.assertGreater(entry.receipt_compressed_size,0)
         self.assertEqual(entry.raw_data['entry_channel'], 'staff_consultant')
         self.assertTrue(AuditLog.objects.filter(action='finance_entry',object_id=str(entry.pk)).exists())
 
@@ -108,6 +128,32 @@ class ConsultantFinanceEntryTests(TestCase):
         response=self.client.post('/finance/entry/', data=self.valid_payload(amount='0'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'مبلغ باید بیشتر از صفر باشد')
+        self.assertFalse(FinancialTransaction.objects.exists())
+
+    def test_large_receipt_is_resized_and_compressed(self):
+        self.client.force_login(self.consultant)
+        response=self.client.post(
+            '/finance/entry/',data=self.valid_payload(receipt_image=self.large_receipt()),
+        )
+        self.assertRedirects(response,'/finance/entry/',fetch_redirect_response=False)
+        entry=FinancialTransaction.objects.get(source='manual')
+        self.assertLess(entry.receipt_compressed_size,entry.receipt_original_size)
+        entry.receipt_image.open('rb')
+        try:
+            stored=Image.open(entry.receipt_image)
+            self.assertLessEqual(max(stored.size),2000)
+            self.assertEqual(stored.format,'WEBP')
+        finally:
+            entry.receipt_image.close()
+
+
+    def test_cc_p_requires_other_recipient_name(self):
+        self.client.force_login(self.consultant)
+        response=self.client.post('/finance/entry/',data=self.valid_payload(
+            payment_method='CC P',terminal_or_payee='',
+        ))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'برای CC P نام شخص دریافت‌کننده الزامی است')
         self.assertFalse(FinancialTransaction.objects.exists())
 
     def test_employee_cannot_open_or_submit_consultant_finance(self):
@@ -160,3 +206,30 @@ class ConsultantFinanceEntryTests(TestCase):
         self.assertEqual(summary['total'], Decimal('1000'))
         self.assertEqual(summary['expense_total'], Decimal('250'))
         self.assertEqual(summary['net_total'], Decimal('750'))
+
+    def test_ai_analysis_flags_mismatch_without_changing_manual_amount(self):
+        client=Mock()
+        client.responses.create.return_value.output_text='''{
+          "readable": true,
+          "document_type": "pos_receipt",
+          "detected_amount": "999000",
+          "currency_unit": "rial",
+          "detected_date": "1405/06/10",
+          "tracking_number": "12345",
+          "destination_card_last4": null,
+          "payer_or_payee": null,
+          "confidence": "high",
+          "warnings": []
+        }'''
+        self.client.force_login(self.consultant)
+        with patch.dict('os.environ',{'OPENAI_API_KEY':'test-key'},clear=False), \
+             patch('core.ai.OpenAI',return_value=client):
+            response=self.client.post('/finance/entry/',data=self.valid_payload())
+        self.assertRedirects(response,'/finance/entry/',fetch_redirect_response=False)
+        entry=FinancialTransaction.objects.get(source='manual')
+        self.assertEqual(entry.amount,Decimal('1234567'))
+        self.assertEqual(entry.analysis_status,'processed')
+        self.assertFalse(entry.receipt_analysis['manual_amount_match'])
+        self.assertEqual(entry.receipt_analysis['tracking_number'],'12345')
+        self.assertIn('اختلاف',entry.receipt_analysis['warnings'][0])
+        client.responses.create.assert_called_once()

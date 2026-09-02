@@ -20,7 +20,7 @@
       <label>{{ form.destination_card.label }}{{ form.destination_card }}{{ form.destination_card.errors }}</label>
     </div>
     <label>{{ form.description.label }}{{ form.description }}{{ form.description.errors }}</label>
-    <label>{{ form.receipt_image.label }}{{ form.receipt_image }}{{ form.receipt_image.errors }}<small>عکس رسید، کارت‌به‌کارت یا صفحه تراکنش؛ حداکثر ۱۰ مگابایت</small></label>
+    <label>{{ form.receipt_image.label }}{{ form.receipt_image }}{{ form.receipt_image.errors }}<small>عکس رسید، کارت‌به‌کارت یا صفحه تراکنش؛ حداکثر ۱۰ مگابایت. تصویر خودکار فشرده و تحلیل می‌شود، اما مبلغ دستی تغییر نمی‌کند.</small></label>
     <button class="primary" type="submit">ثبت و ارسال برای بررسی</button>
   </form>
 </section>
@@ -28,13 +28,14 @@
 <section class="panel">
   <div class="sectionhead"><h2>ثبت‌های اخیر من</h2><small>رکوردها حذف نمی‌شوند و نتیجه بررسی کنار هر مورد نمایش داده می‌شود.</small></div>
   <div class="tablewrap"><table>
-    <tr><th>تاریخ</th><th>نام فرد</th><th>نوع</th><th>مبلغ</th><th>روش</th><th>سند</th><th>وضعیت</th></tr>
+    <tr><th>تاریخ</th><th>نام فرد</th><th>نوع</th><th>مبلغ</th><th>مقصد واریز</th><th>سند</th><th>تحلیل عکس</th><th>وضعیت</th></tr>
     {% for x in entries %}<tr>
       <td>{{ x.occurred_at|jdate }}</td><td>{{ x.person_name }}</td><td>{{ x.get_entry_type_display }}</td>
       <td>{{ x.amount|floatformat:0|fa }}</td><td>{{ x.payment_method }}</td>
-      <td>{% if x.receipt_image %}<a href="{{ x.receipt_image.url }}" target="_blank" rel="noopener">مشاهده</a>{% else %}—{% endif %}</td>
+      <td>{% if x.receipt_image %}<a href="{{ x.receipt_image.url }}" target="_blank" rel="noopener">مشاهده</a><small>{{ x.receipt_compressed_size|filesizeformat }}</small>{% else %}—{% endif %}</td>
+      <td><span class="badge {{ x.analysis_status }}">{{ x.get_analysis_status_display }}</span>{% if x.receipt_analysis.manual_amount_match == False %}<small class="warning-text">اختلاف مبلغ؛ نیازمند بررسی</small>{% elif x.receipt_analysis.manual_amount_match == True %}<small>مبلغ تصویر تأیید شد</small>{% endif %}</td>
       <td><span class="badge {{ x.review_status }}">{{ x.get_review_status_display }}</span>{% if x.review_note %}<small>{{ x.review_note }}</small>{% endif %}</td>
-    </tr>{% empty %}<tr><td colspan="7">هنوز تراکنشی ثبت نکرده‌اید.</td></tr>{% endfor %}
+    </tr>{% empty %}<tr><td colspan="8">هنوز تراکنشی ثبت نکرده‌اید.</td></tr>{% endfor %}
   </table></div>
 </section>
 {% endblock %}

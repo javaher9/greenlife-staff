@@ -337,6 +337,10 @@ class FinancialTransaction(models.Model):
         ('pending','در انتظار بررسی'),('approved','تأییدشده'),
         ('needs_correction','نیازمند اصلاح'),('cancelled','ابطال‌شده'),
     ]
+    ANALYSIS_STATUS=[
+        ('pending','در صف تحلیل'),('processed','تحلیل‌شده'),
+        ('failed','خطای تحلیل'),('skipped','تحلیل‌نشده'),
+    ]
     external_id=models.CharField(max_length=120,blank=True,null=True)
     source=models.CharField(max_length=20,choices=SOURCE,default='crm')
     branch=models.ForeignKey(Branch,on_delete=models.SET_NULL,null=True,blank=True,related_name='financial_transactions')
@@ -353,6 +357,12 @@ class FinancialTransaction(models.Model):
     destination_card=models.CharField(max_length=80,blank=True)
     description=models.TextField(blank=True)
     receipt_image=models.ImageField(upload_to='finance/receipts/%Y/%m/%d/',null=True,blank=True)
+    receipt_original_size=models.PositiveIntegerField(default=0)
+    receipt_compressed_size=models.PositiveIntegerField(default=0)
+    analysis_status=models.CharField(max_length=20,choices=ANALYSIS_STATUS,default='skipped')
+    receipt_analysis=models.JSONField(default=dict,blank=True)
+    analysis_error=models.CharField(max_length=500,blank=True)
+    analyzed_at=models.DateTimeField(null=True,blank=True)
     review_status=models.CharField(max_length=20,choices=REVIEW_STATUS,default='approved')
     recorded_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='recorded_financial_transactions')
     reviewed_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='reviewed_financial_transactions')
