@@ -23,7 +23,9 @@ from .models import EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale
 
 
 def _role(user):
-    return getattr(getattr(user, 'profile', None), 'role', 'employee')
+    role=getattr(getattr(user, 'profile', None), 'role', 'employee')
+    # Internal manager has full referral-management visibility, like system admin.
+    return 'admin' if role=='internal_manager' else role
 
 
 def referral_manager_required(view):
@@ -45,7 +47,7 @@ def _new_code():
 
 
 def _ensure_profile(user):
-    if _role(user) in ('internal_manager','call_center'):
+    if _role(user)=='call_center':
         raise PermissionDenied('دسترسی شبکه معرفی برای این نقش فعال نیست.')
     profile, _=ReferralProfile.objects.get_or_create(
         user=user,
@@ -182,7 +184,7 @@ def referral_dashboard(request):
 
 @login_required
 def referral_guide(request):
-    if _role(request.user) in ('internal_manager','call_center'):
+    if _role(request.user)=='call_center':
         raise PermissionDenied('دسترسی شبکه معرفی برای این نقش فعال نیست.')
     return render(request,'core/referrals/guide.html',{
         'is_manager':_role(request.user) in ('admin','manager'),
