@@ -4,17 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>GreenLife Staff</title>
-  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v40.2">
+  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v40.3">
   <link rel="stylesheet" href="{% static 'core/sidebar-system.css' %}?v=v1">
-  <link rel="stylesheet" href="{% static 'core/referral.css' %}?v=v40.2">
+  <link rel="stylesheet" href="{% static 'core/referral.css' %}?v=v40.3">
 
-<link rel="manifest" href="/static/core/manifest.webmanifest?v=v40.2">
+<link rel="manifest" href="/static/core/manifest.webmanifest?v=v40.3">
 <meta name="theme-color" content="#15945f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="GreenLife Staff">
-<link rel="apple-touch-icon" href="/static/core/icon-192.png?v=v40.2">
+<link rel="apple-touch-icon" href="/static/core/icon-192.png?v=v40.3">
 
 </head>
 <body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' %}gl-role-employee{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
