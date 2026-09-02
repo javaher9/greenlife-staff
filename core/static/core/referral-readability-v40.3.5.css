@@ -1,0 +1,67 @@
+/* GreenLife Sales Network readability pass v40.3.5 */
+.rf-shell,
+.rf-shell *{
+  text-rendering:optimizeLegibility;
+}
+
+/* Make every person/member name clearly readable */
+.rf-person strong,
+.rf-member-card h2,
+.rf-member-card h3,
+.rf-member-card strong,
+.rf-list-row strong,
+.rf-tr strong,
+.rf-sale-head strong,
+.rf-card-head h2{
+  color:#ffffff !important;
+  opacity:1 !important;
+  font-weight:900 !important;
+  text-shadow:0 1px 10px rgba(255,255,255,.06) !important;
+}
+
+.rf-person strong{font-size:14px !important;line-height:1.65 !important;}
+.rf-member-card h2,.rf-member-card h3{font-size:17px !important;line-height:1.6 !important;}
+
+/* Secondary identity/details stay bright enough without competing with names */
+.rf-person small,
+.rf-member-card>p,
+.rf-member-stats span,
+.rf-list-row small,
+.rf-tr small,
+.rf-sale-head small{
+  color:#d5e1e4 !important;
+  opacity:1 !important;
+}
+
+/* Photos/avatars stand out from the dark surface */
+.rf-person img,
+.rf-member-card img,
+.rf-avatar,
+.rf-person-avatar{
+  opacity:1 !important;
+  filter:none !important;
+  border-color:#607985 !important;
+  box-shadow:0 0 0 1px rgba(255,255,255,.08),0 8px 22px rgba(0,0,0,.28) !important;
+}
+
+/* The selected top menu used to be a very bright green: keep it dark/premium */
+.rf-tabs a.active{
+  color:#ffffff !important;
+  background:linear-gradient(135deg,#4e2f67,#2b2039) !important;
+  border-color:#76528d !important;
+  box-shadow:0 8px 22px rgba(133,83,170,.18),inset 0 1px rgba(255,255,255,.08) !important;
+}
+.rf-tabs a.active:hover{
+  color:#ffffff !important;
+  background:linear-gradient(135deg,#5a3675,#302343) !important;
+}
+
+/* Keep inactive menu labels bright too */
+.rf-tabs a{
+  color:#eef5f6 !important;
+}
+
+@media(max-width:620px){
+  .rf-person strong{font-size:13px !important;}
+  .rf-member-card h2,.rf-member-card h3{font-size:16px !important;}
+}
