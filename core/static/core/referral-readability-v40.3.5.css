@@ -44,7 +44,7 @@
   box-shadow:0 0 0 1px rgba(255,255,255,.08),0 8px 22px rgba(0,0,0,.28) !important;
 }
 
-/* The selected top menu used to be a very bright green: keep it dark/premium */
+/* Selected referral tabs: dark purple, not bright green */
 .rf-tabs a.active{
   color:#ffffff !important;
   background:linear-gradient(135deg,#4e2f67,#2b2039) !important;
@@ -55,10 +55,24 @@
   color:#ffffff !important;
   background:linear-gradient(135deg,#5a3675,#302343) !important;
 }
+.rf-tabs a{color:#eef5f6 !important;}
 
-/* Keep inactive menu labels bright too */
-.rf-tabs a{
-  color:#eef5f6 !important;
+/* The first sidebar entry used to glow bright green on referral pages. Keep it dark/premium too. */
+.app-sidebar .app-nav a[href="/referrals/"].is-active,
+.app-sidebar .app-nav a[href="/referrals/network/"].is-active,
+.app-sidebar .app-nav a[href="/referrals/leads/"].is-active,
+.app-sidebar .app-nav a[href="/referrals/sales/"].is-active{
+  color:#ffffff !important;
+  background:linear-gradient(135deg,#432c58,#241c31) !important;
+  border-color:#6d4c82 !important;
+  box-shadow:0 8px 24px rgba(120,77,153,.18),inset 0 1px rgba(255,255,255,.07) !important;
+}
+.app-sidebar .app-nav a[href="/referrals/"].is-active .nav-ico,
+.app-sidebar .app-nav a[href="/referrals/network/"].is-active .nav-ico,
+.app-sidebar .app-nav a[href="/referrals/leads/"].is-active .nav-ico,
+.app-sidebar .app-nav a[href="/referrals/sales/"].is-active .nav-ico{
+  color:#e8c7ff !important;
+  filter:none !important;
 }
 
 @media(max-width:620px){
