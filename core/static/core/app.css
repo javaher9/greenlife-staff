@@ -2321,3 +2321,22 @@ body.gl-page-finance_dashboard small{color:#91a1aa!important}
   body.gl-page-finance_entry .app-nav>.consultant-finance-nav{display:flex!important}
   body.gl-page-finance_entry .app-nav>.consultant-finance-nav.is-active{color:#8b5cf6!important;background:rgba(139,92,246,.13)!important;border-radius:14px!important}
 }
+
+/* v40.3.2 — isolated call-center mobile navigation. */
+@media(max-width:700px){
+  body.gl-page-call_center_dashboard .app-nav>.cc-mobile-leads,
+  body.gl-page-call_center_dashboard .app-nav>.cc-mobile-attendance,
+  body.gl-page-call_center_dashboard .app-nav>.cc-mobile-tasks,
+  body.gl-page-call_center_dashboard .app-nav>.cc-mobile-reports,
+  body.gl-page-call_center_dashboard .app-nav>.cc-mobile-notifications,
+  body.gl-page-call_center_lead .app-nav>.cc-mobile-leads,
+  body.gl-page-call_center_lead .app-nav>.cc-mobile-attendance,
+  body.gl-page-call_center_lead .app-nav>.cc-mobile-tasks,
+  body.gl-page-call_center_lead .app-nav>.cc-mobile-reports,
+  body.gl-page-call_center_lead .app-nav>.cc-mobile-notifications{display:flex!important}
+  body.gl-role-employee .app-nav>.cc-mobile-leads{order:1!important}
+  body.gl-role-employee .app-nav>.cc-mobile-attendance{order:2!important}
+  body.gl-role-employee .app-nav>.cc-mobile-tasks{order:3!important}
+  body.gl-role-employee .app-nav>.cc-mobile-reports{order:4!important}
+  body.gl-role-employee .app-nav>.cc-mobile-notifications{order:5!important}
+}
