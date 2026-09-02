@@ -8,9 +8,31 @@ from .models import MeetingActionItem, MeetingMinute
 
 
 def active_staff():
-    return User.objects.filter(profile__is_active=True).exclude(profile__role='referrer').order_by(
+    return User.objects.filter(profile__is_active=True).exclude(profile__role='referrer').select_related('profile').order_by(
         'first_name','last_name','username'
     )
+
+
+class StaffPhotoSelect(forms.Select):
+    def create_option(self,name,value,label,selected,index,subindex=None,attrs=None):
+        option=super().create_option(name,value,label,selected,index,subindex=subindex,attrs=attrs)
+        instance=getattr(value,'instance',None)
+        profile=getattr(instance,'profile',None) if instance else None
+        avatar=getattr(profile,'avatar',None)
+        try:
+            photo=avatar.url if avatar else ''
+        except Exception:
+            photo=''
+        if photo:
+            option['attrs']['data-photo']=photo
+        return option
+
+
+class PersianStaffChoiceField(forms.ModelChoiceField):
+    widget=StaffPhotoSelect
+    def label_from_instance(self,obj):
+        name=(obj.get_full_name() or '').strip()
+        return name or 'نام فارسی ثبت نشده'
 
 
 class MeetingMinuteForm(forms.ModelForm):
@@ -33,12 +55,14 @@ class MeetingMinuteForm(forms.ModelForm):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.fields['attendees'].queryset=active_staff()
+        self.fields['attendees'].label_from_instance=lambda obj: (obj.get_full_name() or '').strip() or 'نام فارسی ثبت نشده'
         if not self.is_bound and not self.instance.pk:
             self.fields['meeting_date'].initial=timezone.localdate()
             self.fields['start_time'].initial=timezone.localtime().strftime('%H:%M')
 
 
 class MeetingActionForm(forms.ModelForm):
+    assigned_to=PersianStaffChoiceField(label='مسئول انجام',queryset=User.objects.none())
     due_date=JalaliDateField(label='مهلت انجام',required=False)
     class Meta:
         model=MeetingActionItem
@@ -82,6 +106,7 @@ class MeetingActionProgressForm(forms.Form):
 
 
 class MeetingActionManageForm(forms.ModelForm):
+    assigned_to=PersianStaffChoiceField(label='مسئول انجام',queryset=User.objects.none())
     due_date=JalaliDateField(label='مهلت انجام',required=False)
     class Meta:
         model=MeetingActionItem
