@@ -77,6 +77,18 @@ jobs:
 
           chmod +x "$DEPLOY_PATH"/scripts/*.sh "$DEPLOY_PATH"/entrypoint.sh
 
+      - name: Set public referral base URL
+        shell: bash
+        env:
+          DEPLOY_PATH: /home/ubuntu/greenlife-staff-runtime
+        run: |
+          set -Eeuo pipefail
+          if grep -q '^PUBLIC_BASE_URL=' "$DEPLOY_PATH/.env"; then
+            sed -i 's#^PUBLIC_BASE_URL=.*#PUBLIC_BASE_URL=https://staff.greenlifeclinics.com#' "$DEPLOY_PATH/.env"
+          else
+            printf '\nPUBLIC_BASE_URL=https://staff.greenlifeclinics.com\n' >> "$DEPLOY_PATH/.env"
+          fi
+
       - name: Deploy containers
         shell: bash
         env:
