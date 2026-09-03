@@ -5,6 +5,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from core.models import ReferralLead, ReferralProfile
+from public_network.models import PublicNetworkMember
 
 register = template.Library()
 
@@ -59,10 +60,24 @@ def _initial(user):
     return (user.first_name or user.last_name or user.username or '?')[:1]
 
 
+def _public_network_summary():
+    today = timezone.localdate()
+    month_start = today.replace(day=1)
+    qs = PublicNetworkMember.objects.filter(is_active=True)
+    latest = qs.select_related('user', 'sponsor__user').order_by('-created_at')[:4]
+    return {
+        'public_total': qs.count(),
+        'public_today': qs.filter(created_at__date=today).count(),
+        'public_month': qs.filter(created_at__date__gte=month_start).count(),
+        'public_story': qs.filter(source='story').count(),
+        'public_latest': latest,
+    }
+
+
 def _empty_payload():
     today = timezone.localdate()
     start = today - timedelta(days=29)
-    return {
+    payload = {
         'member_today': 0,
         'member_month': 0,
         'lead_today': 0,
@@ -75,7 +90,17 @@ def _empty_payload():
             'members': [0] * 30,
             'leads': [0] * 30,
         },
+        'public_total': 0,
+        'public_today': 0,
+        'public_month': 0,
+        'public_story': 0,
+        'public_latest': [],
     }
+    try:
+        payload.update(_public_network_summary())
+    except Exception:
+        pass
+    return payload
 
 
 @register.inclusion_tag('core/referrals/_manager_live_dashboard.html', takes_context=True)
@@ -183,7 +208,7 @@ def referral_manager_live_dashboard(context):
             for person, new_members, lead_total in ranking[:6]
         ]
 
-        return {
+        payload = {
             'member_today': sum(1 for p in recent_profile_rows if timezone.localtime(p.created_at).date() == today and p.user_id != request.user.id),
             'member_month': profiles_qs.filter(created_at__date__gte=month_start).exclude(user=request.user).count(),
             'lead_today': sum(1 for l in recent_lead_rows if timezone.localtime(l.created_at).date() == today),
@@ -197,5 +222,7 @@ def referral_manager_live_dashboard(context):
                 'leads': lead_series,
             },
         }
+        payload.update(_public_network_summary())
+        return payload
     except Exception:
         return _empty_payload()
