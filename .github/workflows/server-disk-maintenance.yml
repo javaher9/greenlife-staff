@@ -1,0 +1,70 @@
+name: Safe Server Disk Maintenance
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '20 2 * * 0'
+
+concurrency:
+  group: greenlife-staff-server-maintenance
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: [self-hosted, linux, greenlife-prod]
+    timeout-minutes: 20
+
+    steps:
+      - name: Disk usage before cleanup
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo '=== Filesystem before ==='
+          df -h /
+          echo
+          echo '=== Docker usage before ==='
+          docker system df || true
+          echo
+          echo '=== Journal usage before ==='
+          journalctl --disk-usage || true
+
+      - name: Safe cleanup
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          echo 'Pruning unused Docker images...'
+          docker image prune -af
+
+          echo 'Pruning Docker build cache...'
+          docker builder prune -af
+
+          echo 'Cleaning apt cache...'
+          sudo apt-get clean
+
+          echo 'Vacuuming system journal to 300 MB...'
+          sudo journalctl --vacuum-size=300M
+
+          echo 'Removing old GitHub runner diagnostic logs...'
+          RUNNER_ROOT="${RUNNER_ROOT:-$HOME/actions-runner}"
+          if [ -d "$RUNNER_ROOT/_diag" ]; then
+            find "$RUNNER_ROOT/_diag" -type f -name '*.log' -mtime +14 -print -delete || true
+          fi
+
+          echo 'Safety check: Docker volumes are intentionally NOT pruned.'
+
+      - name: Disk usage after cleanup
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo '=== Filesystem after ==='
+          df -h /
+          echo
+          echo '=== Docker usage after ==='
+          docker system df || true
+          echo
+          echo '=== Journal usage after ==='
+          journalctl --disk-usage || true
