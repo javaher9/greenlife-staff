@@ -19,6 +19,29 @@ jobs:
     timeout-minutes: 30
 
     steps:
+      - name: Safe production disk cleanup
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          FREE_KB=$(df -Pk / | awk 'NR==2 {print $4}')
+          USED_PERCENT=$(df -Pk / | awk 'NR==2 {gsub(/%/,"",$5); print $5}')
+          FREE_GB=$((FREE_KB / 1024 / 1024))
+          echo "Disk before cleanup: ${FREE_GB} GB free, ${USED_PERCENT}% used"
+
+          # Only reclaim disposable caches/logs. Never prune Docker volumes or app data.
+          if [ "$FREE_GB" -lt 20 ] || [ "$USED_PERCENT" -ge 82 ]; then
+            echo "Low disk detected; reclaiming safe disposable space..."
+            sudo journalctl --vacuum-size=200M || true
+            sudo apt-get clean || true
+            docker image prune -af || true
+            docker builder prune -af || true
+            find "$HOME/actions-runner/_diag" -type f -mtime +7 -delete 2>/dev/null || true
+          fi
+
+          df -h / || true
+          docker system df || true
+
       - name: Production disk safety gate
         shell: bash
         run: |
