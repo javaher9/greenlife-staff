@@ -51,7 +51,6 @@
 
 <div class="glp-page">
   <section class="glp-card">
-    <!-- ردیف ۱: نام، سمت، شعبه و عکس -->
     <div class="glp-row glp-hero">
       <div class="glp-name">{{ user.get_full_name|default:user.username }}</div>
 
@@ -67,7 +66,7 @@
 
       <div class="glp-photo-wrap">
         <div class="glp-photo">
-          <div class="glp-photo-inner">
+          <div class="glp-photo-inner" id="profilePhotoPreview">
             {% if profile.avatar %}<img src="{{ profile.avatar.url }}" alt="{{ user.get_full_name|default:user.username }}">{% else %}<span>{{ user.first_name|first|default:user.username|first }}</span>{% endif %}
           </div>
         </div>
@@ -75,7 +74,6 @@
       </div>
     </div>
 
-    <!-- ردیف ۲: فقط سن -->
     <div class="glp-row glp-age">
       <div class="glp-item">
         <span class="glp-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-5 0-8 2.5-8 5.2V21h16v-1.8C20 16.5 17 14 12 14Z"/></svg></span>
@@ -84,7 +82,6 @@
       </div>
     </div>
 
-    <!-- ردیف ۳: تحصیلات و نشانی در یک خط -->
     <div class="glp-row">
       <div class="glp-pair">
         <div class="glp-item">
@@ -100,7 +97,6 @@
       </div>
     </div>
 
-    <!-- ردیف ۴: شماره تماس و ایمیل -->
     <div class="glp-row">
       <div class="glp-pair">
         <div class="glp-item">
@@ -122,8 +118,8 @@
     {% csrf_token %}
     <div class="glp-file-hidden">{{ avatar_form.avatar }}</div>
     <button type="button" class="glp-btn" id="profilePhotoSelect2">📷 انتخاب عکس جدید</button>
-    <button type="submit" class="glp-btn primary">ذخیره عکس</button>
-    <span class="glp-hint" id="profileFileName">JPG، PNG یا WEBP · حداکثر ۵ مگابایت</span>
+    <button type="submit" class="glp-btn primary" id="profilePhotoSave">ذخیره عکس</button>
+    <span class="glp-hint" id="profileFileName">JPG، PNG یا WEBP · پس از انتخاب، خودکار ذخیره می‌شود</span>
     {{ avatar_form.avatar.errors }}
   </form>
   {% endif %}
@@ -148,14 +144,29 @@
       ageEl.textContent=age>=0 ? age+' سال' : '—';
     }
   }
+  const form=document.getElementById('profilePhotoForm');
   const fileInput=document.getElementById('{{ avatar_form.avatar.id_for_label }}');
   const select1=document.getElementById('profilePhotoSelect');
   const select2=document.getElementById('profilePhotoSelect2');
+  const saveBtn=document.getElementById('profilePhotoSave');
   const fileName=document.getElementById('profileFileName');
+  const preview=document.getElementById('profilePhotoPreview');
   function pick(e){if(e)e.preventDefault();if(fileInput)fileInput.click();}
   if(select1)select1.addEventListener('click',pick);
   if(select2)select2.addEventListener('click',pick);
-  if(fileInput){fileInput.addEventListener('change',function(){if(this.files&&this.files[0]&&fileName)fileName.textContent='فایل انتخاب‌شده: '+this.files[0].name;});}
+  if(fileInput){
+    fileInput.addEventListener('change',function(){
+      const file=this.files&&this.files[0];
+      if(!file)return;
+      if(fileName)fileName.textContent='در حال آپلود: '+file.name;
+      if(preview && file.type && file.type.startsWith('image/')){
+        const url=URL.createObjectURL(file);
+        preview.innerHTML='<img src="'+url+'" alt="پیش‌نمایش عکس">';
+      }
+      if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='در حال ذخیره…';}
+      if(form)setTimeout(function(){form.submit();},120);
+    });
+  }
 })();
 </script>
 {% endblock %}
