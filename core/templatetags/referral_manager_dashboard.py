@@ -67,7 +67,7 @@ def _public_network_summary():
     days = [start + timedelta(days=i) for i in range(30)]
     day_index = {day: i for i, day in enumerate(days)}
     qs = PublicNetworkMember.objects.filter(is_active=True)
-    latest = qs.select_related('user', 'sponsor__user').order_by('-created_at')[:4]
+    latest = list(qs.select_related('user', 'sponsor__user').order_by('-created_at')[:8])
     series = [0] * 30
     for member in qs.filter(created_at__date__gte=start).only('created_at'):
         local_day = timezone.localtime(member.created_at).date()
@@ -92,6 +92,10 @@ def _empty_payload():
     start = today - timedelta(days=29)
     labels = [(start + timedelta(days=i)).strftime('%m/%d') for i in range(30)]
     payload = {
+        'internal_total': 0,
+        'internal_lead_total': 0,
+        'combined_members': 0,
+        'combined_today': 0,
         'member_today': 0,
         'member_month': 0,
         'lead_today': 0,
@@ -109,6 +113,8 @@ def _empty_payload():
     }
     try:
         payload.update(_public_network_summary())
+        payload['combined_members'] = payload['public_total']
+        payload['combined_today'] = payload['public_today']
     except Exception:
         pass
     return payload
@@ -116,13 +122,14 @@ def _empty_payload():
 
 @register.inclusion_tag('core/referrals/_manager_live_dashboard.html', takes_context=True)
 def referral_manager_live_dashboard(context):
-    """Render the management live dashboard defensively with person avatars."""
     try:
         request = context.get('request')
         if request is None:
             return _empty_payload()
 
         profiles_qs = _manager_profiles(request.user)
+        current_profile_id = getattr(getattr(request.user, 'referral_profile', None), 'id', None)
+        member_qs = profiles_qs.exclude(pk=current_profile_id) if current_profile_id else profiles_qs
         profile_ids = list(profiles_qs.values_list('id', flat=True))
         leads_qs = ReferralLead.objects.filter(referrer_id__in=profile_ids).select_related(
             'referrer', 'referrer__user', 'referrer__user__profile',
@@ -138,18 +145,14 @@ def referral_manager_live_dashboard(context):
         member_series = [0] * 30
         lead_series = [0] * 30
 
-        recent_profile_rows = list(
-            profiles_qs.filter(created_at__date__gte=start).order_by('-created_at')
-        )
+        recent_profile_rows = list(member_qs.filter(created_at__date__gte=start).order_by('-created_at'))
         for profile in recent_profile_rows:
             local_day = timezone.localtime(profile.created_at).date()
             idx = day_index.get(local_day)
             if idx is not None:
                 member_series[idx] += 1
 
-        recent_lead_rows = list(
-            leads_qs.filter(created_at__date__gte=start).order_by('-created_at')
-        )
+        recent_lead_rows = list(leads_qs.filter(created_at__date__gte=start).order_by('-created_at'))
         for lead in recent_lead_rows:
             local_day = timezone.localtime(lead.created_at).date()
             idx = day_index.get(local_day)
@@ -158,11 +161,10 @@ def referral_manager_live_dashboard(context):
 
         activities = []
         for member in recent_profile_rows[:8]:
-            if member.user_id == request.user.id:
-                continue
             creator = member.created_by.get_full_name() if member.created_by_id else ''
             activities.append({
                 'kind': 'member',
+                'profile_id': member.pk,
                 'title': f'عضو جدید: {member}',
                 'detail': f'توسط {creator or "نامشخص"} · سطح {member.level}',
                 'when': member.created_at,
@@ -173,6 +175,7 @@ def referral_manager_live_dashboard(context):
             creator = lead.created_by.get_full_name() if lead.created_by_id else ''
             activities.append({
                 'kind': 'lead',
+                'lead_id': lead.pk,
                 'title': f'لید جدید: {lead.full_name}',
                 'detail': f'معرف: {lead.referrer} · ثبت‌کننده: {creator or "ورودی لینک/QR"}',
                 'when': lead.created_at,
@@ -181,9 +184,7 @@ def referral_manager_live_dashboard(context):
             })
         activities.sort(key=lambda item: item['when'], reverse=True)
 
-        recent_members = list(
-            profiles_qs.exclude(user=request.user).order_by('-created_at')[:10]
-        )
+        recent_members = list(member_qs.order_by('-created_at')[:10])
         recent_member_rows = []
         for member in recent_members:
             sponsor = member.sponsor
@@ -216,17 +217,24 @@ def referral_manager_live_dashboard(context):
             for person, new_members, lead_total in ranking[:6]
         ]
 
+        public = _public_network_summary()
+        internal_total = member_qs.count()
+        internal_today = member_qs.filter(created_at__date=today).count()
         payload = {
-            'member_today': sum(1 for p in recent_profile_rows if timezone.localtime(p.created_at).date() == today and p.user_id != request.user.id),
-            'member_month': profiles_qs.filter(created_at__date__gte=month_start).exclude(user=request.user).count(),
-            'lead_today': sum(1 for l in recent_lead_rows if timezone.localtime(l.created_at).date() == today),
+            'internal_total': internal_total,
+            'internal_lead_total': leads_qs.count(),
+            'combined_members': internal_total + public['public_total'],
+            'combined_today': internal_today + public['public_today'],
+            'member_today': internal_today,
+            'member_month': member_qs.filter(created_at__date__gte=month_start).count(),
+            'lead_today': leads_qs.filter(created_at__date=today).count(),
             'lead_month': leads_qs.filter(created_at__date__gte=month_start).count(),
             'activities': activities[:10],
             'recent_member_rows': recent_member_rows,
             'top_recruiter_rows': top_recruiter_rows,
             'chart_payload': {'labels': labels, 'members': member_series, 'leads': lead_series},
         }
-        payload.update(_public_network_summary())
+        payload.update(public)
         return payload
     except Exception:
         return _empty_payload()
