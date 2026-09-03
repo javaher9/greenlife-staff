@@ -1,4 +1,4 @@
-SENSITIVE_KEYS={'password','csrfmiddlewaretoken','token','api_key','secret','authorization'}
+SENSITIVE_KEYS={'password','password_confirm','new_password','csrfmiddlewaretoken','token','api_key','secret','authorization'}
 
 def _safe_payload(request):
     data={}
