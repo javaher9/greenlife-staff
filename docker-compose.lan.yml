@@ -1,0 +1,26 @@
+services:
+  web_lan:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      LAN_MODE: "1"
+      ALLOWED_HOSTS: "192.168.40.96,localhost,127.0.0.1"
+      CSRF_TRUSTED_ORIGINS: "http://192.168.40.96:8086"
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    expose:
+      - "8005"
+
+  nginx_lan:
+    image: nginx:1.31.3-alpine
+    restart: unless-stopped
+    depends_on:
+      - web_lan
+    ports:
+      - "8086:80"
+    volumes:
+      - ./deploy/nginx-lan.conf:/etc/nginx/conf.d/default.conf:ro
+      - media_data:/app/media:ro
+      - static_data:/app/staticfiles:ro
