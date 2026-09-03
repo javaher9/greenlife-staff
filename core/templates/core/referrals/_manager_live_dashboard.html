@@ -1,100 +1,71 @@
 {% load jalali_tags %}
-<section class="rf-live-admin">
+<section class="rf-live-admin" id="rfDualNetwork">
   <style>
-    .rf-live-admin{margin:18px 0;direction:rtl;font-family:Tahoma,sans-serif}.rf-live-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}.rf-live-kpi,.rf-live-card{background:linear-gradient(145deg,rgba(16,17,27,.99),rgba(24,18,39,.97));border:1px solid rgba(182,108,255,.26);box-shadow:0 16px 38px rgba(0,0,0,.26),inset 0 1px 0 rgba(255,255,255,.025);border-radius:17px}.rf-live-kpi{padding:17px 18px;min-height:112px;position:relative;overflow:hidden}.rf-live-kpi:after{content:"";position:absolute;width:86px;height:86px;border-radius:50%;left:-34px;top:-36px;background:radial-gradient(circle,rgba(155,103,255,.17),transparent 70%)}.rf-live-kpi span{display:block;color:#d4cfdd;font-size:13px;font-weight:800}.rf-live-kpi strong{display:block;margin-top:9px;color:#fff;font-size:31px;line-height:1;text-shadow:0 0 18px rgba(169,112,255,.16)}.rf-live-kpi small{display:block;margin-top:9px;color:#88f1b7;font-size:11px;font-weight:700}.rf-live-grid{display:grid;grid-template-columns:1.45fr .85fr;gap:14px;margin-bottom:14px}.rf-live-card{padding:17px}.rf-live-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.rf-live-head h3{margin:0;color:#fff;font-size:18px}.rf-live-head small,.rf-live-head a{color:#c8b7da;font-size:12px;text-decoration:none}.rf-live-head a:hover{color:#eadcff}.rf-live-chart{height:265px;position:relative;border-radius:13px;background:radial-gradient(circle at 50% 0,rgba(119,58,200,.17),transparent 48%),rgba(8,10,18,.58);overflow:hidden;border:1px solid rgba(255,255,255,.065)}.rf-live-chart svg{width:100%;height:100%}.rf-live-legend{display:flex;gap:18px;font-size:12px;color:#ddd6e8;margin-top:10px}.rf-live-legend i{width:9px;height:9px;border-radius:50%;display:inline-block;margin-left:5px;box-shadow:0 0 10px currentColor}.rf-live-legend .m i{background:#8f5cff}.rf-live-legend .l i{background:#27d4ff}.rf-activity{display:flex;flex-direction:column;gap:8px}.rf-activity-row{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;padding:10px 11px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.055);transition:.18s ease}.rf-activity-row:hover{transform:translateY(-1px);background:rgba(155,103,255,.07);border-color:rgba(182,108,255,.18)}.rf-person-mini{width:40px;height:40px;border-radius:50%;overflow:hidden;display:grid;place-items:center;position:relative;flex:0 0 auto;background:linear-gradient(145deg,#51317d,#22283b);border:1px solid rgba(212,173,255,.38);box-shadow:0 0 0 3px rgba(143,92,255,.06)}.rf-person-mini img{width:100%;height:100%;object-fit:cover}.rf-person-mini span{font-weight:900;color:#fff;font-size:13px}.rf-person-mini.sm{width:31px;height:31px;box-shadow:none}.rf-person-mini.sm span{font-size:11px}.rf-person-line{display:flex;align-items:center;gap:8px;min-width:0}.rf-person-line strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rf-activity-row strong{display:block;color:#fff;font-size:13px}.rf-activity-row small{display:block;color:#b5aec0;font-size:11px;margin-top:4px;line-height:1.55}.rf-activity-row time{color:#938a9f;font-size:10px;white-space:nowrap}.rf-live-bottom{display:grid;grid-template-columns:1.25fr .75fr;gap:14px}.rf-member-table{width:100%;border-collapse:collapse}.rf-member-table th{color:#aaa1b8;font-size:11px;text-align:right;font-weight:800;padding:8px;border-bottom:1px solid rgba(255,255,255,.075)}.rf-member-table td{color:#e2ddea;font-size:12px;padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.055)}.rf-member-table tbody tr{transition:.16s ease}.rf-member-table tbody tr:hover{background:rgba(155,103,255,.045)}.rf-member-table td strong{color:#fff;font-size:12px}.rf-member-table .level{color:#ddb8ff;font-weight:900}.rf-rank{display:flex;flex-direction:column;gap:8px}.rf-rank-row{display:grid;grid-template-columns:27px 38px 1fr auto;gap:8px;align-items:center;padding:9px 10px;border-radius:11px;background:rgba(255,255,255,.038);border:1px solid transparent;transition:.18s ease}.rf-rank-row:hover{background:rgba(155,103,255,.065);border-color:rgba(182,108,255,.12)}.rf-rank-row b{color:#bd91ff;font-size:14px}.rf-rank-row strong{color:#fff;font-size:12px}.rf-rank-row small{color:#b0a8ba;font-size:10px;margin-top:2px;display:block}.rf-rank-row em{font-style:normal;color:#86efb8;font-size:11px;font-weight:800;white-space:nowrap}.rf-public-zone{margin-top:16px;padding:20px;background:radial-gradient(circle at 85% 0,rgba(34,197,94,.12),transparent 34%),linear-gradient(145deg,rgba(11,20,24,.98),rgba(13,17,31,.98));border:1px solid rgba(74,222,128,.25);border-radius:20px;box-shadow:0 18px 42px rgba(0,0,0,.25)}.rf-public-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}.rf-public-title h3{margin:0;font-size:19px;color:#fff}.rf-public-title p{margin:5px 0 0;color:#9fb4aa;font-size:11px}.rf-public-title a{color:#86efac;text-decoration:none;font-size:12px;font-weight:800}.rf-public-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:12px}.rf-public-stat{padding:11px 12px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(134,239,172,.10)}.rf-public-stat span{display:block;color:#a9b8b0;font-size:10px}.rf-public-stat strong{display:block;color:#fff;font-size:22px;margin-top:5px}.rf-public-chart{height:205px;border-radius:14px;background:rgba(4,12,14,.58);border:1px solid rgba(74,222,128,.12);overflow:hidden}.rf-public-chart svg{width:100%;height:100%}.rf-public-legend{margin-top:9px;color:#bbf7d0;font-size:11px}.rf-public-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;background:#4ade80;margin-left:6px;box-shadow:0 0 10px rgba(74,222,128,.6)}
-    @media(max-width:900px){.rf-live-kpis{grid-template-columns:repeat(2,1fr)}.rf-live-grid,.rf-live-bottom{grid-template-columns:1fr}.rf-live-chart{height:230px}.rf-public-stats{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.rf-live-kpis{grid-template-columns:1fr 1fr;gap:8px}.rf-live-kpi{padding:13px;min-height:96px}.rf-live-kpi span{font-size:11px}.rf-live-kpi strong{font-size:26px}.rf-live-card{padding:12px}.rf-member-table th:nth-child(3),.rf-member-table td:nth-child(3){display:none}.rf-activity-row{grid-template-columns:38px 1fr}.rf-activity-row time{grid-column:2;font-size:9px}.rf-person-mini{width:36px;height:36px}.rf-public-zone{padding:14px}.rf-public-stats{grid-template-columns:1fr 1fr}.rf-public-title{align-items:flex-start;flex-direction:column}}
+    .rf-shell:has(.rf-live-admin)>article.rf-card:last-child{display:none}
+    .rf-live-admin{margin:18px 0;direction:rtl;font-family:Tahoma,sans-serif}
+    .rf-overview{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:10px;margin-bottom:12px}.rf-overview-card{border-radius:15px;padding:13px 15px;background:#101522;border:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;align-items:center;gap:12px}.rf-overview-card strong{font-size:22px;color:#fff}.rf-overview-card span{color:#b9c0cd;font-size:11px}.rf-overview-card.total{border-color:rgba(255,255,255,.12)}.rf-overview-card.staff{border-color:rgba(162,110,255,.25)}.rf-overview-card.public{border-color:rgba(74,222,128,.25)}
+    .rf-network-tabs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}.rf-network-tab{min-height:86px;border-radius:18px;border:1px solid rgba(255,255,255,.09);background:#0f1626;color:#fff;padding:16px 18px;text-align:right;cursor:pointer;font-family:inherit;transition:.18s}.rf-network-tab b{display:block;font-size:17px}.rf-network-tab small{display:block;margin-top:6px;color:#9ca6b7}.rf-network-tab.staff.active{background:linear-gradient(135deg,rgba(103,56,194,.42),rgba(21,24,38,.98));border-color:rgba(178,119,255,.55);box-shadow:inset 0 0 0 1px rgba(188,134,255,.10)}.rf-network-tab.public.active{background:linear-gradient(135deg,rgba(22,101,52,.42),rgba(17,27,29,.98));border-color:rgba(74,222,128,.48);box-shadow:inset 0 0 0 1px rgba(74,222,128,.08)}
+    .rf-panel[hidden]{display:none}.rf-live-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}.rf-live-kpi,.rf-live-card{background:linear-gradient(145deg,rgba(16,17,27,.99),rgba(24,18,39,.97));border:1px solid rgba(182,108,255,.26);border-radius:17px}.rf-live-kpi{padding:17px 18px;min-height:108px}.rf-live-kpi span{display:block;color:#d4cfdd;font-size:13px;font-weight:800}.rf-live-kpi strong{display:block;margin-top:9px;color:#fff;font-size:29px}.rf-live-kpi small{display:block;margin-top:8px;color:#88f1b7;font-size:11px}.rf-live-kpi.clickable,.rf-person-link,.rf-activity-row.clickable,.rf-rank-row.clickable{cursor:pointer;text-decoration:none;color:inherit}.rf-live-kpi.clickable:hover,.rf-person-link:hover,.rf-activity-row.clickable:hover,.rf-rank-row.clickable:hover{border-color:rgba(205,168,255,.45);background:rgba(155,103,255,.07)}
+    .rf-live-grid{display:grid;grid-template-columns:1.45fr .85fr;gap:14px;margin-bottom:14px}.rf-live-card{padding:17px}.rf-live-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.rf-live-head h3{margin:0;color:#fff;font-size:18px}.rf-live-head small,.rf-live-head a{color:#c8b7da;font-size:12px;text-decoration:none}.rf-live-chart,.rf-public-chart{height:250px;border-radius:13px;background:rgba(8,10,18,.58);overflow:hidden;border:1px solid rgba(255,255,255,.065)}.rf-live-chart svg,.rf-public-chart svg{width:100%;height:100%}.rf-live-legend{display:flex;gap:18px;font-size:12px;color:#ddd6e8;margin-top:10px}.rf-live-legend i{width:9px;height:9px;border-radius:50%;display:inline-block;margin-left:5px}.rf-live-legend .m i{background:#8f5cff}.rf-live-legend .l i{background:#27d4ff}.rf-live-legend .p i{background:#4ade80}
+    .rf-activity{display:flex;flex-direction:column;gap:8px}.rf-activity-row{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;padding:10px 11px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.055)}.rf-person-mini{width:40px;height:40px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:linear-gradient(145deg,#51317d,#22283b);border:1px solid rgba(212,173,255,.38);flex:0 0 auto}.rf-person-mini img{width:100%;height:100%;object-fit:cover}.rf-person-mini span{font-weight:900;color:#fff;font-size:13px}.rf-person-mini.sm{width:31px;height:31px}.rf-person-line{display:flex;align-items:center;gap:8px;min-width:0}.rf-activity-row strong{display:block;color:#fff;font-size:13px}.rf-activity-row small{display:block;color:#b5aec0;font-size:11px;margin-top:4px}.rf-activity-row time{color:#938a9f;font-size:10px;white-space:nowrap}
+    .rf-live-bottom{display:grid;grid-template-columns:1.25fr .75fr;gap:14px}.rf-member-table{width:100%;border-collapse:collapse}.rf-member-table th{color:#aaa1b8;font-size:11px;text-align:right;padding:8px;border-bottom:1px solid rgba(255,255,255,.075)}.rf-member-table td{color:#e2ddea;font-size:12px;padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.055)}.rf-member-table a{color:inherit;text-decoration:none}.rf-member-table tbody tr:hover{background:rgba(155,103,255,.045)}.rf-member-table .level{color:#ddb8ff;font-weight:900}.rf-rank{display:flex;flex-direction:column;gap:8px}.rf-rank-row{display:grid;grid-template-columns:27px 38px 1fr auto;gap:8px;align-items:center;padding:9px 10px;border-radius:11px;background:rgba(255,255,255,.038);border:1px solid transparent}.rf-rank-row b{color:#bd91ff}.rf-rank-row strong{color:#fff;font-size:12px}.rf-rank-row small{color:#b0a8ba;font-size:10px;display:block}.rf-rank-row em{font-style:normal;color:#86efb8;font-size:11px;font-weight:800}
+    .rf-public-panel .rf-live-kpi,.rf-public-panel .rf-live-card{border-color:rgba(74,222,128,.22);background:linear-gradient(145deg,rgba(9,24,20,.98),rgba(13,18,30,.98))}.rf-public-panel .rf-live-kpi small{color:#86efac}.rf-public-list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.rf-public-person{display:flex;align-items:center;gap:10px;padding:11px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(74,222,128,.10);text-decoration:none;color:#fff}.rf-public-person img{width:42px;height:42px;border-radius:50%;object-fit:cover}.rf-public-person small{display:block;color:#9fb4aa;margin-top:3px}.rf-public-actions{display:flex;gap:10px;flex-wrap:wrap}.rf-public-actions a{padding:10px 13px;border-radius:11px;border:1px solid rgba(74,222,128,.25);color:#bbf7d0;text-decoration:none;font-size:12px;font-weight:800}
+    @media(max-width:900px){.rf-overview{grid-template-columns:1fr 1fr}.rf-overview-card.total{grid-column:1/-1}.rf-live-kpis{grid-template-columns:repeat(2,1fr)}.rf-live-grid,.rf-live-bottom{grid-template-columns:1fr}.rf-public-list{grid-template-columns:1fr}}@media(max-width:560px){.rf-network-tabs{grid-template-columns:1fr}.rf-overview{grid-template-columns:1fr}.rf-overview-card.total{grid-column:auto}.rf-live-kpis{grid-template-columns:1fr 1fr;gap:8px}.rf-live-kpi{padding:13px;min-height:94px}.rf-live-kpi strong{font-size:25px}.rf-activity-row{grid-template-columns:38px 1fr}.rf-activity-row time{grid-column:2}.rf-member-table th:nth-child(3),.rf-member-table td:nth-child(3){display:none}}
   </style>
 
-  <div class="rf-live-kpis">
-    <div class="rf-live-kpi"><span>عضوهای جدید امروز</span><strong>{{ member_today|fa }}</strong><small>ثبت واقعی اعضای شبکه</small></div>
-    <div class="rf-live-kpi"><span>عضوهای جدید این ماه</span><strong>{{ member_month|fa }}</strong><small>رشد شبکه در ماه جاری</small></div>
-    <div class="rf-live-kpi"><span>لیدهای جدید امروز</span><strong>{{ lead_today|fa }}</strong><small>ورودی شبکه امروز</small></div>
-    <div class="rf-live-kpi"><span>لیدهای جدید این ماه</span><strong>{{ lead_month|fa }}</strong><small>کل ورودی ماه جاری</small></div>
+  <div class="rf-overview" aria-label="خلاصه کل دو شبکه">
+    <div class="rf-overview-card total"><div><span>کل اکوسیستم شبکه فروش</span><strong>{{ combined_members|fa }}</strong></div><span>{{ combined_today|fa }} عضو جدید امروز</span></div>
+    <div class="rf-overview-card staff"><div><span>شبکه فروش پرسنل</span><strong>{{ internal_total|fa }}</strong></div><span>{{ internal_lead_total|fa }} لید</span></div>
+    <div class="rf-overview-card public"><div><span>شبکه اختصاصی Green Life</span><strong>{{ public_total|fa }}</strong></div><span>{{ public_story|fa }} ورودی استوری</span></div>
   </div>
 
-  <div class="rf-live-grid">
-    <article class="rf-live-card">
-      <div class="rf-live-head"><div><h3>روند رشد شبکه و لیدها</h3><small>۳۰ روز اخیر</small></div><a href="{% url 'referral_tree_all' %}">نمایش درخت کامل</a></div>
-      <div class="rf-live-chart"><svg id="rfLiveChart" viewBox="0 0 760 260" preserveAspectRatio="none" aria-label="نمودار رشد شبکه و لیدها"></svg></div>
-      <div class="rf-live-legend"><span class="m"><i></i>اعضای جدید</span><span class="l"><i></i>لیدهای جدید</span></div>
-    </article>
-
-    <article class="rf-live-card">
-      <div class="rf-live-head"><div><h3>فعالیت‌های لحظه‌ای شبکه</h3><small>چه کسی چه کاری کرده</small></div></div>
-      <div class="rf-activity">
-        {% for item in activities %}
-        <div class="rf-activity-row">
-          <span class="rf-person-mini">{% if item.avatar %}<img src="{{ item.avatar }}" alt="">{% else %}<span>{{ item.initial }}</span>{% endif %}</span>
-          <div><strong>{{ item.title }}</strong><small>{{ item.detail }}</small></div>
-          <time>{{ item.when|jdate }}</time>
-        </div>
-        {% empty %}<div class="rf-manager-empty"><strong>هنوز فعالیتی ثبت نشده</strong></div>{% endfor %}
-      </div>
-    </article>
+  <div class="rf-network-tabs" role="tablist" aria-label="انتخاب شبکه">
+    <button type="button" class="rf-network-tab staff active" data-tab="staff" role="tab" aria-selected="true"><b>شبکه فروش پرسنل</b><small>{{ internal_total|fa }} عضو · {{ internal_lead_total|fa }} لید</small></button>
+    <button type="button" class="rf-network-tab public" data-tab="public" role="tab" aria-selected="false"><b>شبکه اختصاصی Green Life</b><small>{{ public_total|fa }} عضو · {{ public_month|fa }} عضو جدید این ماه</small></button>
   </div>
 
-  <div class="rf-live-bottom">
-    <article class="rf-live-card">
-      <div class="rf-live-head"><div><h3>آخرین اعضای ثبت‌شده</h3><small>با نمایش فرد ثبت‌کننده</small></div><a href="{% url 'referral_network' %}">مشاهده همه</a></div>
-      <div style="overflow:auto"><table class="rf-member-table"><thead><tr><th>عضو</th><th>عضو شده توسط</th><th>تاریخ</th><th>سطح</th></tr></thead><tbody>
-        {% for row in recent_member_rows %}
-        <tr>
-          <td><div class="rf-person-line"><span class="rf-person-mini sm">{% if row.avatar %}<img src="{{ row.avatar }}" alt="">{% else %}<span>{{ row.initial }}</span>{% endif %}</span><strong>{{ row.profile }}</strong></div></td>
-          <td><div class="rf-person-line">{% if row.actor_name != '—' %}<span class="rf-person-mini sm">{% if row.actor_avatar %}<img src="{{ row.actor_avatar }}" alt="">{% else %}<span>{{ row.actor_initial }}</span>{% endif %}</span>{% endif %}<span>{{ row.actor_name }}</span></div></td>
-          <td>{{ row.profile.created_at|jdate }}</td><td class="level">سطح {{ row.profile.level|fa }}</td>
-        </tr>
-        {% empty %}<tr><td colspan="4">عضوی ثبت نشده است.</td></tr>{% endfor %}
-      </tbody></table></div>
-    </article>
-
-    <article class="rf-live-card">
-      <div class="rf-live-head"><div><h3>فعال‌ترین معرف‌ها</h3><small>بر اساس عضو و لید</small></div></div>
-      <div class="rf-rank">
-        {% for row in top_recruiter_rows %}
-        <div class="rf-rank-row"><b>{{ forloop.counter|fa }}</b><span class="rf-person-mini sm">{% if row.avatar %}<img src="{{ row.avatar }}" alt="">{% else %}<span>{{ row.initial }}</span>{% endif %}</span><div><strong>{{ row.profile }}</strong><small>{{ row.lead_total|fa }} لید</small></div><em>{{ row.new_members|fa }} عضو</em></div>
-        {% empty %}<div class="rf-manager-empty">داده‌ای موجود نیست.</div>{% endfor %}
-      </div>
-    </article>
-  </div>
-
-  <section class="rf-public-zone">
-    <div class="rf-public-title"><div><h3>شبکه اختصاصی Green Life</h3><p>این بخش کاملاً جدا از شبکه فروش پرسنل است و فقط عضویت‌های عمومی را نشان می‌دهد.</p></div><a href="{% url 'public_network:management' %}">مدیریت شبکه اختصاصی ←</a></div>
-    <div class="rf-public-stats">
-      <div class="rf-public-stat"><span>کل اعضای اختصاصی</span><strong>{{ public_total|fa }}</strong></div>
-      <div class="rf-public-stat"><span>عضو جدید امروز</span><strong>{{ public_today|fa }}</strong></div>
-      <div class="rf-public-stat"><span>عضو جدید این ماه</span><strong>{{ public_month|fa }}</strong></div>
-      <div class="rf-public-stat"><span>ورودی استوری</span><strong>{{ public_story|fa }}</strong></div>
+  <div class="rf-panel rf-staff-panel" data-panel="staff">
+    <div class="rf-live-kpis">
+      <a class="rf-live-kpi clickable" href="{% url 'referral_network' %}"><span>کل اعضای شبکه</span><strong>{{ internal_total|fa }}</strong><small>مشاهده اعضا ←</small></a>
+      <a class="rf-live-kpi clickable" href="{% url 'referral_network' %}"><span>عضو جدید امروز</span><strong>{{ member_today|fa }}</strong><small>ورودی امروز</small></a>
+      <a class="rf-live-kpi clickable" href="{% url 'referral_lead_list' %}"><span>لیدهای جدید امروز</span><strong>{{ lead_today|fa }}</strong><small>مشاهده لیدها ←</small></a>
+      <a class="rf-live-kpi clickable" href="{% url 'referral_lead_list' %}"><span>لیدهای جدید این ماه</span><strong>{{ lead_month|fa }}</strong><small>کل ورودی ماه</small></a>
     </div>
-    <div class="rf-public-chart"><svg id="rfPublicChart" viewBox="0 0 760 200" preserveAspectRatio="none" aria-label="منحنی رشد شبکه اختصاصی Green Life"></svg></div>
-    <div class="rf-public-legend"><i></i>منحنی رشد اعضای شبکه اختصاصی در ۳۰ روز اخیر</div>
-  </section>
+
+    <div class="rf-live-grid">
+      <article class="rf-live-card"><div class="rf-live-head"><div><h3>روند رشد شبکه و لیدها</h3><small>۳۰ روز اخیر</small></div><a href="{% url 'referral_tree_all' %}">نمایش درخت کامل</a></div><div class="rf-live-chart"><svg id="rfLiveChart" viewBox="0 0 760 260" preserveAspectRatio="none"></svg></div><div class="rf-live-legend"><span class="m"><i></i>اعضای جدید</span><span class="l"><i></i>لیدهای جدید</span></div></article>
+      <article class="rf-live-card"><div class="rf-live-head"><div><h3>فعالیت‌های لحظه‌ای</h3><small>برای جزئیات روی مورد بزنید</small></div></div><div class="rf-activity">{% for item in activities %}{% if item.kind == 'member' %}<a class="rf-activity-row clickable" href="{% url 'referral_tree_person' item.profile_id %}">{% else %}<a class="rf-activity-row clickable" href="{% url 'referral_lead_manage' item.lead_id %}">{% endif %}<span class="rf-person-mini">{% if item.avatar %}<img src="{{ item.avatar }}" alt="">{% else %}<span>{{ item.initial }}</span>{% endif %}</span><div><strong>{{ item.title }}</strong><small>{{ item.detail }}</small></div><time>{{ item.when|jdate }}</time></a>{% empty %}<div class="rf-manager-empty">هنوز فعالیتی ثبت نشده</div>{% endfor %}</div></article>
+    </div>
+
+    <div class="rf-live-bottom">
+      <article class="rf-live-card"><div class="rf-live-head"><div><h3>آخرین اعضای ثبت‌شده</h3><small>روی هر فرد بزنید تا درخت او باز شود</small></div><a href="{% url 'referral_network' %}">مشاهده همه</a></div><div style="overflow:auto"><table class="rf-member-table"><thead><tr><th>عضو</th><th>عضو شده توسط</th><th>تاریخ</th><th>سطح</th></tr></thead><tbody>{% for row in recent_member_rows %}<tr><td><a class="rf-person-line" href="{% url 'referral_tree_person' row.profile.pk %}"><span class="rf-person-mini sm">{% if row.avatar %}<img src="{{ row.avatar }}" alt="">{% else %}<span>{{ row.initial }}</span>{% endif %}</span><strong>{{ row.profile }}</strong></a></td><td>{{ row.actor_name }}</td><td>{{ row.profile.created_at|jdate }}</td><td class="level">سطح {{ row.profile.level|fa }}</td></tr>{% empty %}<tr><td colspan="4">عضوی ثبت نشده است.</td></tr>{% endfor %}</tbody></table></div></article>
+      <article class="rf-live-card"><div class="rf-live-head"><div><h3>فعال‌ترین معرف‌ها</h3><small>برای دیدن شبکه روی فرد بزنید</small></div></div><div class="rf-rank">{% for row in top_recruiter_rows %}<a class="rf-rank-row clickable" href="{% url 'referral_tree_person' row.profile.pk %}"><b>{{ forloop.counter|fa }}</b><span class="rf-person-mini sm">{% if row.avatar %}<img src="{{ row.avatar }}" alt="">{% else %}<span>{{ row.initial }}</span>{% endif %}</span><div><strong>{{ row.profile }}</strong><small>{{ row.lead_total|fa }} لید</small></div><em>{{ row.new_members|fa }} عضو</em></a>{% empty %}<div class="rf-manager-empty">داده‌ای موجود نیست.</div>{% endfor %}</div></article>
+    </div>
+  </div>
+
+  <div class="rf-panel rf-public-panel" data-panel="public" hidden>
+    <div class="rf-live-kpis">
+      <a class="rf-live-kpi clickable" href="{% url 'public_network:management' %}"><span>کل اعضای اختصاصی</span><strong>{{ public_total|fa }}</strong><small>مدیریت شبکه ←</small></a>
+      <a class="rf-live-kpi clickable" href="{% url 'public_network:management' %}"><span>عضو جدید امروز</span><strong>{{ public_today|fa }}</strong><small>ورودی امروز</small></a>
+      <a class="rf-live-kpi clickable" href="{% url 'public_network:management' %}"><span>عضو جدید این ماه</span><strong>{{ public_month|fa }}</strong><small>رشد ماه جاری</small></a>
+      <a class="rf-live-kpi clickable" href="{% url 'public_network:management' %}"><span>ورودی مستقیم استوری</span><strong>{{ public_story|fa }}</strong><small>منبع مستقیم</small></a>
+    </div>
+    <div class="rf-live-grid">
+      <article class="rf-live-card"><div class="rf-live-head"><div><h3>منحنی رشد شبکه اختصاصی</h3><small>۳۰ روز اخیر</small></div><a href="{% url 'public_network:management' %}">مدیریت کامل</a></div><div class="rf-public-chart"><svg id="rfPublicChart" viewBox="0 0 760 260" preserveAspectRatio="none"></svg></div><div class="rf-live-legend"><span class="p"><i></i>عضویت‌های شبکه اختصاصی</span></div></article>
+      <article class="rf-live-card"><div class="rf-live-head"><div><h3>آخرین اعضای اختصاصی</h3><small>شبکه مستقل Green Life</small></div></div><div class="rf-public-list">{% for item in public_latest %}<a class="rf-public-person" href="{% url 'public_network:management' %}"><img src="{{ item.photo.url }}" alt=""><div><strong>{{ item.display_name }}</strong><small>{% if item.sponsor %}معرف: {{ item.sponsor.display_name }}{% else %}عضویت مستقیم Green Life{% endif %}</small></div></a>{% empty %}<div class="rf-manager-empty">هنوز عضوی ثبت نشده است.</div>{% endfor %}</div></article>
+    </div>
+    <article class="rf-live-card"><div class="rf-live-head"><div><h3>دسترسی‌های شبکه اختصاصی</h3><small>این شبکه از شبکه فروش پرسنل جداست</small></div></div><div class="rf-public-actions"><a href="{% url 'public_network:management' %}">مدیریت کامل شبکه</a><a href="{% url 'public_network:signup' %}">لینک عضویت عمومی</a></div></article>
+  </div>
 
   {{ chart_payload|json_script:"rf-manager-chart-data" }}
   {{ public_chart_payload|json_script:"rf-public-chart-data" }}
   <script>
   (function(){
-    function drawTwo(){
-      const el=document.getElementById('rf-manager-chart-data'), svg=document.getElementById('rfLiveChart');
-      if(!el||!svg)return; const d=JSON.parse(el.textContent), W=760,H=260,p={l:30,r:16,t:18,b:30};
-      const all=[...(d.members||[]),...(d.leads||[])], max=Math.max(1,...all), n=Math.max(2,(d.labels||[]).length);
-      const x=i=>p.l+i*((W-p.l-p.r)/(n-1)), y=v=>H-p.b-(v/max)*(H-p.t-p.b);
-      let out=''; for(let i=0;i<5;i++){const yy=p.t+i*((H-p.t-p.b)/4);out+=`<line x1="${p.l}" y1="${yy}" x2="${W-p.r}" y2="${yy}" stroke="rgba(255,255,255,.085)"/>`;}
-      function path(a){return (a||[]).map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ')}
-      const mp=path(d.members), lp=path(d.leads);
-      if(mp)out+=`<path d="${mp}" fill="none" stroke="#a873ff" stroke-width="3.2" vector-effect="non-scaling-stroke"/><path d="${mp} L ${x((d.members||[]).length-1)} ${H-p.b} L ${x(0)} ${H-p.b} Z" fill="rgba(168,115,255,.10)"/>`;
-      if(lp)out+=`<path d="${lp}" fill="none" stroke="#39dcff" stroke-width="3.2" vector-effect="non-scaling-stroke"/>`;
-      const labels=d.labels||[]; [0,7,14,21,29].forEach(i=>{if(labels[i])out+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" fill="#9a91a5" font-size="10">${labels[i]}</text>`}); svg.innerHTML=out;
-    }
-    function drawPublic(){
-      const el=document.getElementById('rf-public-chart-data'), svg=document.getElementById('rfPublicChart');
-      if(!el||!svg)return; const d=JSON.parse(el.textContent), vals=d.members||[], W=760,H=200,p={l:28,r:16,t:18,b:28};
-      const max=Math.max(1,...vals), n=Math.max(2,(d.labels||[]).length), x=i=>p.l+i*((W-p.l-p.r)/(n-1)), y=v=>H-p.b-(v/max)*(H-p.t-p.b);
-      let out=''; for(let i=0;i<4;i++){const yy=p.t+i*((H-p.t-p.b)/3);out+=`<line x1="${p.l}" y1="${yy}" x2="${W-p.r}" y2="${yy}" stroke="rgba(134,239,172,.08)"/>`;}
-      const path=vals.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ');
-      if(path){out+=`<path d="${path}" fill="none" stroke="#4ade80" stroke-width="3.4" vector-effect="non-scaling-stroke"/><path d="${path} L ${x(vals.length-1)} ${H-p.b} L ${x(0)} ${H-p.b} Z" fill="rgba(74,222,128,.10)"/>`;}
-      const labels=d.labels||[]; [0,7,14,21,29].forEach(i=>{if(labels[i])out+=`<text x="${x(i)}" y="${H-7}" text-anchor="middle" fill="#8fa79a" font-size="10">${labels[i]}</text>`}); svg.innerHTML=out;
-    }
-    drawTwo();drawPublic();
+    const root=document.getElementById('rfDualNetwork'); if(!root||root.dataset.ready)return; root.dataset.ready='1';
+    const tabs=root.querySelectorAll('[data-tab]'), panels=root.querySelectorAll('[data-panel]');
+    tabs.forEach(btn=>btn.addEventListener('click',()=>{const key=btn.dataset.tab;tabs.forEach(x=>{x.classList.toggle('active',x===btn);x.setAttribute('aria-selected',x===btn?'true':'false')});panels.forEach(p=>p.hidden=p.dataset.panel!==key);if(key==='public')drawPublic();}));
+    function draw(svgId,dataId,keys,colors){const svg=document.getElementById(svgId),el=document.getElementById(dataId);if(!svg||!el)return;const d=JSON.parse(el.textContent),W=760,H=260,p={l:28,r:14,t:18,b:30};let all=[];keys.forEach(k=>all=all.concat(d[k]||[]));const max=Math.max(1,...all),n=Math.max(2,(d.labels||[]).length),x=i=>p.l+i*((W-p.l-p.r)/(n-1)),y=v=>H-p.b-(v/max)*(H-p.t-p.b);let out='';for(let i=0;i<5;i++){const yy=p.t+i*((H-p.t-p.b)/4);out+=`<line x1="${p.l}" y1="${yy}" x2="${W-p.r}" y2="${yy}" stroke="rgba(255,255,255,.08)"/>`;}keys.forEach((k,idx)=>{const arr=d[k]||[],path=arr.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ');if(path)out+=`<path d="${path}" fill="none" stroke="${colors[idx]}" stroke-width="3.2" vector-effect="non-scaling-stroke"/>`;});const labels=d.labels||[];[0,7,14,21,29].forEach(i=>{if(labels[i])out+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" fill="#9a91a5" font-size="10">${labels[i]}</text>`});svg.innerHTML=out;}
+    draw('rfLiveChart','rf-manager-chart-data',['members','leads'],['#a873ff','#39dcff']);let publicDrawn=false;function drawPublic(){if(publicDrawn)return;draw('rfPublicChart','rf-public-chart-data',['members'],['#4ade80']);publicDrawn=true;}
   })();
   </script>
 </section>
