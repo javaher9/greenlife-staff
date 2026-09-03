@@ -63,20 +63,34 @@ def _initial(user):
 def _public_network_summary():
     today = timezone.localdate()
     month_start = today.replace(day=1)
+    start = today - timedelta(days=29)
+    days = [start + timedelta(days=i) for i in range(30)]
+    day_index = {day: i for i, day in enumerate(days)}
     qs = PublicNetworkMember.objects.filter(is_active=True)
     latest = qs.select_related('user', 'sponsor__user').order_by('-created_at')[:4]
+    series = [0] * 30
+    for member in qs.filter(created_at__date__gte=start).only('created_at'):
+        local_day = timezone.localtime(member.created_at).date()
+        idx = day_index.get(local_day)
+        if idx is not None:
+            series[idx] += 1
     return {
         'public_total': qs.count(),
         'public_today': qs.filter(created_at__date=today).count(),
         'public_month': qs.filter(created_at__date__gte=month_start).count(),
         'public_story': qs.filter(source='story').count(),
         'public_latest': latest,
+        'public_chart_payload': {
+            'labels': [day.strftime('%m/%d') for day in days],
+            'members': series,
+        },
     }
 
 
 def _empty_payload():
     today = timezone.localdate()
     start = today - timedelta(days=29)
+    labels = [(start + timedelta(days=i)).strftime('%m/%d') for i in range(30)]
     payload = {
         'member_today': 0,
         'member_month': 0,
@@ -85,16 +99,13 @@ def _empty_payload():
         'activities': [],
         'recent_member_rows': [],
         'top_recruiter_rows': [],
-        'chart_payload': {
-            'labels': [(start + timedelta(days=i)).strftime('%m/%d') for i in range(30)],
-            'members': [0] * 30,
-            'leads': [0] * 30,
-        },
+        'chart_payload': {'labels': labels, 'members': [0] * 30, 'leads': [0] * 30},
         'public_total': 0,
         'public_today': 0,
         'public_month': 0,
         'public_story': 0,
         'public_latest': [],
+        'public_chart_payload': {'labels': labels, 'members': [0] * 30},
     }
     try:
         payload.update(_public_network_summary())
@@ -181,10 +192,7 @@ def referral_manager_live_dashboard(context):
                 'profile': member,
                 'avatar': _profile_avatar(member),
                 'initial': _initial(member.user),
-                'actor_name': (
-                    str(sponsor) if sponsor else
-                    (member.created_by.get_full_name() if member.created_by_id else '—')
-                ),
+                'actor_name': str(sponsor) if sponsor else (member.created_by.get_full_name() if member.created_by_id else '—'),
                 'actor_avatar': _profile_avatar(sponsor) if sponsor else _user_avatar(member.created_by),
                 'actor_initial': _initial(actor) if actor else '—',
             })
@@ -216,11 +224,7 @@ def referral_manager_live_dashboard(context):
             'activities': activities[:10],
             'recent_member_rows': recent_member_rows,
             'top_recruiter_rows': top_recruiter_rows,
-            'chart_payload': {
-                'labels': labels,
-                'members': member_series,
-                'leads': lead_series,
-            },
+            'chart_payload': {'labels': labels, 'members': member_series, 'leads': lead_series},
         }
         payload.update(_public_network_summary())
         return payload
