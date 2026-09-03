@@ -5,8 +5,13 @@ DEPLOY_PATH="${DEPLOY_PATH:-/home/ubuntu/greenlife-staff-runtime}"
 cd "$DEPLOY_PATH"
 
 COMPOSE_FILE="$DEPLOY_PATH/docker-compose.yml"
+LAN_COMPOSE_FILE="$DEPLOY_PATH/docker-compose.lan.yml"
 ENV_FILE="$DEPLOY_PATH/.env"
-COMPOSE=(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" --project-directory "$DEPLOY_PATH")
+COMPOSE=(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE")
+if [[ -f "$LAN_COMPOSE_FILE" ]]; then
+  COMPOSE+=( -f "$LAN_COMPOSE_FILE" )
+fi
+COMPOSE+=( --project-directory "$DEPLOY_PATH" )
 
 LOCKFILE="/tmp/greenlife_staff_deploy.lock"
 exec 9>"$LOCKFILE"
@@ -33,7 +38,10 @@ fi
 
 echo "== GreenLife Staff self-hosted deployment =="
 echo "Path: $DEPLOY_PATH"
-echo "NGINX port: ${NGINX_PORT:-8085}"
+echo "Public NGINX port: ${NGINX_PORT:-8085}"
+if [[ -f "$LAN_COMPOSE_FILE" ]]; then
+  echo "Private LAN call-center port: 8086"
+fi
 
 # The approved production Compose owns PostgreSQL. Start it before the first
 # backup so a clean server can bootstrap without deleting or replacing data.
@@ -70,12 +78,30 @@ echo "Repairing staff account integrity..."
 echo "Starting/replacing containers..."
 "${COMPOSE[@]}" up -d --remove-orphans
 
-if ./scripts/healthcheck.sh; then
-  echo "Deploy successful."
-  "${COMPOSE[@]}" ps
-  exit 0
+if ! ./scripts/healthcheck.sh; then
+  echo "Healthcheck failed. Existing database backup is available in backups/." >&2
+  echo "Code rollback is handled by the GitHub workflow source snapshot." >&2
+  exit 1
 fi
 
-echo "Healthcheck failed. Existing database backup is available in backups/." >&2
-echo "Code rollback is handled by the GitHub workflow source snapshot." >&2
-exit 1
+if [[ -f "$LAN_COMPOSE_FILE" ]]; then
+  echo "Checking private LAN login endpoint..."
+  lan_ok=0
+  for i in {1..30}; do
+    code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 5 -H 'Host: 192.168.40.96' http://127.0.0.1:8086/login/ || true)"
+    if [[ "$code" == "200" ]]; then
+      lan_ok=1
+      echo "LAN login endpoint OK: http://192.168.40.96:8086/login/"
+      break
+    fi
+    echo "Waiting for LAN login endpoint ($i/30), HTTP ${code:-none}..."
+    sleep 2
+  done
+  if [[ "$lan_ok" != "1" ]]; then
+    echo "LAN login healthcheck failed." >&2
+    exit 1
+  fi
+fi
+
+echo "Deploy successful."
+"${COMPOSE[@]}" ps
