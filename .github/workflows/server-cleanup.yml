@@ -1,0 +1,87 @@
+name: Safe Server Cleanup
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/server-cleanup.yml'
+
+# Never clean Docker while a production deploy is building/restarting containers.
+concurrency:
+  group: greenlife-staff-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: [self-hosted, linux, greenlife-prod]
+    timeout-minutes: 20
+
+    steps:
+      - name: Disk usage before cleanup
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo '=== Filesystem before ==='
+          df -h /
+          echo
+          echo '=== Docker usage before ==='
+          docker system df || true
+
+      - name: Safe Docker cleanup
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          # IMPORTANT: do not prune volumes or running containers.
+          # Remove only unused images older than 7 days.
+          docker image prune -af --filter 'until=168h'
+
+          # Build cache is reproducible and safe to recreate on the next deploy.
+          docker builder prune -af --filter 'until=72h'
+
+      - name: Safe OS log and package-cache cleanup
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          # Keep journald bounded. This does not touch application databases/media.
+          sudo journalctl --vacuum-time=7d --vacuum-size=200M || true
+
+          # APT package cache can always be downloaded again.
+          sudo apt-get clean || true
+
+          # Remove only old self-hosted runner diagnostic logs.
+          RUNNER_DIAG="$HOME/actions-runner/_diag"
+          if [ -d "$RUNNER_DIAG" ]; then
+            find "$RUNNER_DIAG" -maxdepth 1 -type f -mtime +14 -print -delete
+          fi
+
+      - name: Verify protected production data
+        shell: bash
+        env:
+          DEPLOY_PATH: /home/ubuntu/greenlife-staff-runtime
+        run: |
+          set -Eeuo pipefail
+          echo '=== Protected paths (never deleted by this workflow) ==='
+          for p in "$DEPLOY_PATH/.env" "$DEPLOY_PATH/media" "$DEPLOY_PATH/backups"; do
+            if [ -e "$p" ]; then
+              echo "OK: $p"
+            else
+              echo "INFO: not present: $p"
+            fi
+          done
+          echo 'Docker volumes are intentionally NOT pruned.'
+
+      - name: Disk usage after cleanup
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo '=== Filesystem after ==='
+          df -h /
+          echo
+          echo '=== Docker usage after ==='
+          docker system df || true
