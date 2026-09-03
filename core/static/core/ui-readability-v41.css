@@ -16,8 +16,6 @@
 html{color-scheme:dark}
 body.gl-premium-dark{color:var(--gl-readable-text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 
-/* Typography: many legacy screens used 10–12px helper text which was hard to
-   read on black panels, especially on tablets. Keep hierarchy but raise floors. */
 body.gl-premium-dark main{font-size:15px;line-height:1.72}
 body.gl-premium-dark p,
 body.gl-premium-dark li,
@@ -54,8 +52,86 @@ body.gl-premium-dark .mini-btn{
 body.gl-premium-dark h1{line-height:1.35}
 body.gl-premium-dark h2,body.gl-premium-dark h3{line-height:1.45}
 
-/* Forms: force native controls to stay dark. This removes white date/select/file
-   bars that slipped through older page-specific CSS. */
+/* Referral/network screens had the highest concentration of 8–11px text. */
+body.gl-premium-dark .rf-shell{--rf-muted:#b7c5cc}
+body.gl-premium-dark .rf-tabs a,
+body.gl-premium-dark .rf-btn,
+body.gl-premium-dark .rf-card-head a,
+body.gl-premium-dark .rf-download,
+body.gl-premium-dark .rf-level-note,
+body.gl-premium-dark .rf-member-actions a,
+body.gl-premium-dark .rf-filters a,
+body.gl-premium-dark .rf-export-row a,
+body.gl-premium-dark .rf-edit-sale,
+body.gl-premium-dark .rf-form-head>a,
+body.gl-premium-dark .rf-mini-btn,
+body.gl-premium-dark .rf-guide-open,
+body.gl-premium-dark .rf-guide-cta a,
+body.gl-premium-dark .rf-message-box button{font-size:13px!important;line-height:1.45!important}
+body.gl-premium-dark .rf-eyebrow,
+body.gl-premium-dark .rf-card-kicker,
+body.gl-premium-dark .rf-kpi span,
+body.gl-premium-dark .rf-kpi small,
+body.gl-premium-dark .rf-hero p,
+body.gl-premium-dark .rf-page-head p,
+body.gl-premium-dark .rf-form-head p,
+body.gl-premium-dark .rf-qr-wrap p,
+body.gl-premium-dark .rf-list-row strong,
+body.gl-premium-dark .rf-list-row small,
+body.gl-premium-dark .rf-person strong,
+body.gl-premium-dark .rf-person small,
+body.gl-premium-dark .rf-empty,
+body.gl-premium-dark .rf-member-card>p,
+body.gl-premium-dark .rf-member-stats span,
+body.gl-premium-dark .rf-member-stats b,
+body.gl-premium-dark .rf-tr,
+body.gl-premium-dark .rf-th,
+body.gl-premium-dark .rf-tr strong,
+body.gl-premium-dark .rf-tr small,
+body.gl-premium-dark .rf-total small,
+body.gl-premium-dark .rf-sale-head small,
+body.gl-premium-dark .rf-sale-amount span,
+body.gl-premium-dark .rf-commission span,
+body.gl-premium-dark .rf-commission strong,
+body.gl-premium-dark .rf-commission b,
+body.gl-premium-dark .rf-field,
+body.gl-premium-dark .rf-field small,
+body.gl-premium-dark .rf-field em,
+body.gl-premium-dark .rf-form-errors,
+body.gl-premium-dark .rf-pipeline span,
+body.gl-premium-dark .rf-manager-empty strong,
+body.gl-premium-dark .rf-manager-empty small,
+body.gl-premium-dark .rf-policy-alert p,
+body.gl-premium-dark .rf-guide-intro p,
+body.gl-premium-dark .rf-guide-title p,
+body.gl-premium-dark .rf-guide-grid b,
+body.gl-premium-dark .rf-guide-grid p,
+body.gl-premium-dark .rf-forbidden-grid span,
+body.gl-premium-dark .rf-policy-note,
+body.gl-premium-dark .rf-daily-method span,
+body.gl-premium-dark .rf-weekly-goal,
+body.gl-premium-dark .rf-message-box p,
+body.gl-premium-dark .rf-speaking-box strong,
+body.gl-premium-dark .rf-speaking-box p,
+body.gl-premium-dark .rf-guide-steps li,
+body.gl-premium-dark .rf-principles li,
+body.gl-premium-dark .rf-guide-cta p,
+body.gl-premium-dark .rf-guideline-embed>.sectionhead p{
+  font-size:13px!important;
+  line-height:1.72!important;
+}
+body.gl-premium-dark .rf-status,
+body.gl-premium-dark .rf-level{font-size:12.5px!important}
+body.gl-premium-dark .rf-field input:not([type=checkbox]),
+body.gl-premium-dark .rf-field select,
+body.gl-premium-dark .rf-field textarea,
+body.gl-premium-dark .rf-copy-row input{font-size:14px!important}
+body.gl-premium-dark .rf-copy-row button{font-size:13px!important}
+body.gl-premium-dark .rf-member-stats span{padding:10px 7px!important}
+body.gl-premium-dark .rf-th{color:#adbec6!important}
+body.gl-premium-dark .rf-tr{color:#d7e1e5!important}
+
+/* Forms: keep native controls dark and readable. */
 body.gl-premium-dark input:not([type="checkbox"]):not([type="radio"]),
 body.gl-premium-dark textarea,
 body.gl-premium-dark select{
@@ -131,12 +207,12 @@ body.gl-premium-dark .app-nav a{font-size:14px;line-height:1.45;color:#d2dde2}
 body.gl-premium-dark .app-nav a.is-active{color:#fff}
 body.gl-premium-dark .brand small{font-size:12px!important;color:#d9e7e1!important}
 
-/* Mobile/tablet readability. */
 @media(max-width:900px){
   body.gl-premium-dark main{font-size:15px}
   body.gl-premium-dark .app-nav a{font-size:13px}
   body.gl-premium-dark th,body.gl-premium-dark td{font-size:13.5px;padding:11px 10px}
   body.gl-premium-dark button,body.gl-premium-dark .btn,body.gl-premium-dark .primary{min-height:44px}
+  body.gl-premium-dark .rf-tabs a{font-size:12.5px!important}
 }
 @media(max-width:520px){
   body.gl-premium-dark main{font-size:14.5px}
@@ -146,7 +222,7 @@ body.gl-premium-dark .brand small{font-size:12px!important;color:#d9e7e1!importa
   body.gl-premium-dark .meta{font-size:12.5px!important}
 }
 
-/* Public-network pages also load this file, but do not carry gl-premium-dark. */
+/* Public-network pages can opt into this class as they are migrated. */
 body.gl-public-network{font-size:15px;line-height:1.72;color:#f7fafc}
 body.gl-public-network .brand,
 body.gl-public-network .badge,
