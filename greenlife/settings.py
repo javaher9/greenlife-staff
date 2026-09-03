@@ -3,6 +3,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'dev-only-change-me')
 DEBUG = os.getenv('DEBUG', '0') == '1'
+LAN_MODE = os.getenv('LAN_MODE', '0') == '1'
 _WEAK_SECRET_KEYS = {
     '',
     'change-me',
@@ -22,8 +23,17 @@ MIDDLEWARE = ['django.middleware.security.SecurityMiddleware','whitenoise.middle
 if DEBUG and os.getenv('DISABLE_CSRF', '0') == '1':
     MIDDLEWARE = [m for m in MIDDLEWARE if m != 'django.middleware.csrf.CsrfViewMiddleware']
 
-CSRF_COOKIE_SECURE = not DEBUG or os.getenv('CSRF_COOKIE_SECURE', '0') == '1'
-SESSION_COOKIE_SECURE = not DEBUG or os.getenv('SESSION_COOKIE_SECURE', '0') == '1'
+# Public production remains HTTPS-only. A dedicated LAN container can explicitly
+# enable LAN_MODE=1; it uses separate cookie names and permits HTTP only inside
+# the private call-center network. CSRF middleware stays enabled in both modes.
+if LAN_MODE:
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_NAME = 'greenlife_lan_csrftoken'
+    SESSION_COOKIE_NAME = 'greenlife_lan_sessionid'
+else:
+    CSRF_COOKIE_SECURE = not DEBUG or os.getenv('CSRF_COOKIE_SECURE', '0') == '1'
+    SESSION_COOKIE_SECURE = not DEBUG or os.getenv('SESSION_COOKIE_SECURE', '0') == '1'
 
 ROOT_URLCONF='greenlife.urls'
 TEMPLATES=[{'BACKEND':'django.template.backends.django.DjangoTemplates','DIRS':[BASE_DIR/'templates'],'APP_DIRS':True,'OPTIONS':{'context_processors':['django.template.context_processors.request','django.contrib.auth.context_processors.auth','django.contrib.messages.context_processors.messages']}}]
