@@ -1,0 +1,169 @@
+/* GreenLife v41 app-wide readability + dark-control audit
+   Purpose: remove accidental light/white controls on dark pages and establish
+   a readable minimum hierarchy without changing page structure/business logic. */
+
+:root{
+  --gl-readable-text:#eef6f8;
+  --gl-readable-muted:#b6c5cd;
+  --gl-readable-soft:#cad6dc;
+  --gl-control-bg:#0d1a24;
+  --gl-control-bg-2:#122430;
+  --gl-control-border:#355063;
+  --gl-control-focus:#8b5cf6;
+  --gl-table-line:#263b49;
+}
+
+html{color-scheme:dark}
+body.gl-premium-dark{color:var(--gl-readable-text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+
+/* Typography: many legacy screens used 10–12px helper text which was hard to
+   read on black panels, especially on tablets. Keep hierarchy but raise floors. */
+body.gl-premium-dark main{font-size:15px;line-height:1.72}
+body.gl-premium-dark p,
+body.gl-premium-dark li,
+body.gl-premium-dark td,
+body.gl-premium-dark th,
+body.gl-premium-dark label,
+body.gl-premium-dark .row,
+body.gl-premium-dark .task,
+body.gl-premium-dark .notice{color:var(--gl-readable-text)}
+body.gl-premium-dark small,
+body.gl-premium-dark .muted,
+body.gl-premium-dark .help,
+body.gl-premium-dark .subtitle,
+body.gl-premium-dark .subtle,
+body.gl-premium-dark .meta,
+body.gl-premium-dark .eyebrow,
+body.gl-premium-dark .field-help,
+body.gl-premium-dark .form-help,
+body.gl-premium-dark .section-subtitle,
+body.gl-premium-dark .profilegrid span,
+body.gl-premium-dark .manager-strip span,
+body.gl-premium-dark .live-kpis span,
+body.gl-premium-dark .exec-filter label{
+  color:var(--gl-readable-muted)!important;
+  font-size:max(13px,.84rem)!important;
+  line-height:1.7!important;
+}
+body.gl-premium-dark .badge,
+body.gl-premium-dark .status-pill,
+body.gl-premium-dark .mini-btn{
+  font-size:13px!important;
+  line-height:1.45!important;
+}
+body.gl-premium-dark h1{line-height:1.35}
+body.gl-premium-dark h2,body.gl-premium-dark h3{line-height:1.45}
+
+/* Forms: force native controls to stay dark. This removes white date/select/file
+   bars that slipped through older page-specific CSS. */
+body.gl-premium-dark input:not([type="checkbox"]):not([type="radio"]),
+body.gl-premium-dark textarea,
+body.gl-premium-dark select{
+  background:var(--gl-control-bg)!important;
+  color:#f8fbfc!important;
+  border:1px solid var(--gl-control-border)!important;
+  border-radius:12px;
+  min-height:44px;
+  font:500 15px/1.5 Tahoma,Arial,sans-serif!important;
+  caret-color:#fff;
+}
+body.gl-premium-dark textarea{min-height:110px}
+body.gl-premium-dark input::placeholder,
+body.gl-premium-dark textarea::placeholder{color:#93a6b2!important;opacity:1}
+body.gl-premium-dark input:focus,
+body.gl-premium-dark textarea:focus,
+body.gl-premium-dark select:focus{
+  outline:none!important;
+  border-color:var(--gl-control-focus)!important;
+  box-shadow:0 0 0 3px rgba(139,92,246,.18)!important;
+}
+body.gl-premium-dark input[type="date"],
+body.gl-premium-dark input[type="time"],
+body.gl-premium-dark input[type="datetime-local"],
+body.gl-premium-dark input[type="month"]{color-scheme:dark;background:var(--gl-control-bg)!important}
+body.gl-premium-dark input[type="file"]{padding:7px 9px!important}
+body.gl-premium-dark input[type="file"]::file-selector-button{
+  background:#253847!important;color:#f5f8fa!important;border:1px solid #465f70!important;
+  border-radius:9px!important;padding:8px 12px!important;margin-inline-end:10px!important;font:700 13px Tahoma,Arial,sans-serif!important;
+}
+body.gl-premium-dark option{background:#0d1a24;color:#f8fbfc}
+
+/* Buttons/links: neutral actions should never render as browser-white pills. */
+body.gl-premium-dark button,
+body.gl-premium-dark input[type="submit"],
+body.gl-premium-dark input[type="button"],
+body.gl-premium-dark .btn,
+body.gl-premium-dark .primary,
+body.gl-premium-dark a.button,
+body.gl-premium-dark a.btn{
+  min-height:42px;
+  font:700 14px/1.35 Tahoma,Arial,sans-serif;
+}
+body.gl-premium-dark button:not(.primary):not(.danger):not(.check-button),
+body.gl-premium-dark .btn:not(.primary):not(.danger){
+  background:linear-gradient(145deg,#173226,#102a22)!important;
+  color:#eaf8f1!important;
+  border:1px solid #315b49!important;
+}
+body.gl-premium-dark .ghost,
+body.gl-premium-dark .secondary,
+body.gl-premium-dark .outline,
+body.gl-premium-dark .exec-btn:not(.primary){
+  background:#111f29!important;color:#e5eef2!important;border-color:#354b59!important;
+}
+
+/* Tables: legacy attendance styles used a near-white divider. */
+body.gl-premium-dark table{color:var(--gl-readable-text)}
+body.gl-premium-dark th,
+body.gl-premium-dark td{border-bottom-color:var(--gl-table-line)!important;font-size:14px;line-height:1.55}
+body.gl-premium-dark th{color:#dfe9ee!important;font-weight:800;background:rgba(255,255,255,.018)}
+body.gl-premium-dark tbody tr:hover{background:rgba(139,92,246,.045)}
+
+/* Panels/cards with washed-out helper copy. */
+body.gl-premium-dark .panel p,
+body.gl-premium-dark .glass-card p,
+body.gl-premium-dark .document,
+body.gl-premium-dark .docbody,
+body.gl-premium-dark .smart-alert p{color:var(--gl-readable-soft)}
+
+/* Sidebar/navigation remains compact but readable. */
+body.gl-premium-dark .app-nav a{font-size:14px;line-height:1.45;color:#d2dde2}
+body.gl-premium-dark .app-nav a.is-active{color:#fff}
+body.gl-premium-dark .brand small{font-size:12px!important;color:#d9e7e1!important}
+
+/* Mobile/tablet readability. */
+@media(max-width:900px){
+  body.gl-premium-dark main{font-size:15px}
+  body.gl-premium-dark .app-nav a{font-size:13px}
+  body.gl-premium-dark th,body.gl-premium-dark td{font-size:13.5px;padding:11px 10px}
+  body.gl-premium-dark button,body.gl-premium-dark .btn,body.gl-premium-dark .primary{min-height:44px}
+}
+@media(max-width:520px){
+  body.gl-premium-dark main{font-size:14.5px}
+  body.gl-premium-dark small,
+  body.gl-premium-dark .muted,
+  body.gl-premium-dark .help,
+  body.gl-premium-dark .meta{font-size:12.5px!important}
+}
+
+/* Public-network pages also load this file, but do not carry gl-premium-dark. */
+body.gl-public-network{font-size:15px;line-height:1.72;color:#f7fafc}
+body.gl-public-network .brand,
+body.gl-public-network .badge,
+body.gl-public-network .help,
+body.gl-public-network .error,
+body.gl-public-network .login,
+body.gl-public-network .photo-note,
+body.gl-public-network .mini-title,
+body.gl-public-network .form-lead,
+body.gl-public-network .how-card p,
+body.gl-public-network .network-note,
+body.gl-public-network small{font-size:13px!important;line-height:1.75!important}
+body.gl-public-network .help,
+body.gl-public-network .login,
+body.gl-public-network .form-lead{color:#b6c5d3!important}
+body.gl-public-network input:not([type="checkbox"]):not([type="radio"]),
+body.gl-public-network textarea,
+body.gl-public-network select{min-height:44px;font-size:15px!important;background:#0b1220!important;color:#fff!important;border-color:#3a4b61!important}
+body.gl-public-network input[type="file"]::file-selector-button{background:#242d42;color:#fff;border:1px solid #495978;border-radius:9px;padding:8px 11px}
+body.gl-public-network button,.gl-public-network .btn{min-height:44px;font-size:15px!important}
