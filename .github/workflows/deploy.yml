@@ -19,6 +19,33 @@ jobs:
     timeout-minutes: 30
 
     steps:
+      - name: Production disk safety gate
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          # Never touch the live source if the server is close to running out of disk.
+          # This protects the staff app from half-built Docker images / failed writes.
+          MIN_FREE_GB=12
+          MAX_USED_PERCENT=88
+
+          FREE_KB=$(df -Pk / | awk 'NR==2 {print $4}')
+          USED_PERCENT=$(df -Pk / | awk 'NR==2 {gsub(/%/,"",$5); print $5}')
+          FREE_GB=$((FREE_KB / 1024 / 1024))
+
+          echo "Production disk: ${FREE_GB} GB free, ${USED_PERCENT}% used"
+
+          if [ "$FREE_GB" -lt "$MIN_FREE_GB" ] || [ "$USED_PERCENT" -ge "$MAX_USED_PERCENT" ]; then
+            echo "::error title=Production disk too full::Deploy stopped BEFORE changing production. Free space is ${FREE_GB} GB and disk usage is ${USED_PERCENT}%. Free disk space first, then rerun deployment."
+            echo "Largest Docker usage (diagnostic only):"
+            docker system df || true
+            echo "Filesystem usage:"
+            df -h / || true
+            exit 1
+          fi
+
+          echo "Disk safety gate passed."
+
       - name: Checkout approved main branch
         uses: actions/checkout@v5
         with:
