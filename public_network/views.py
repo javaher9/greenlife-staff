@@ -39,6 +39,10 @@ def _management_allowed(user):
     return getattr(getattr(user, 'profile', None), 'role', '') in ('admin', 'internal_manager')
 
 
+def terms(request):
+    return render(request, 'public_network/terms.html')
+
+
 def signup(request, code=None):
     sponsor = None
     if code:
