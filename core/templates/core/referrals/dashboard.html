@@ -1,10 +1,10 @@
-{% extends 'core/base.html' %}{% load jalali_tags referral_manager_dashboard %}{% block content %}
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
 <section class="rf-shell">
   {% include 'core/referrals/_nav.html' %}
   <header class="rf-hero {% if is_manager %}rf-admin-hero{% endif %}">
     {% if is_manager %}
-    <div class="rf-admin-title"><div class="rf-admin-symbol">✦</div><div><span class="rf-eyebrow">GREENLIFE REFERRAL COMMAND</span><h1>مرکز مدیریت شبکه فروش</h1><p>نظارت زنده بر رشد شبکه، لیدها، تبدیل و پورسانت‌ها</p></div></div>
-    <div class="rf-hero-actions"><a class="rf-btn primary" href="{% url 'referral_tree_all' %}">⌘ نمایش کل شبکه</a><a class="rf-btn" href="{% url 'referral_lead_list' %}">◎ گزارش لیدها</a><a class="rf-btn rf-export-btn" href="{% url 'referral_export_csv' %}">⇩ خروجی Excel</a></div>
+    <div class="rf-admin-title"><div class="rf-admin-symbol">✦</div><div><span class="rf-eyebrow">GREENLIFE REFERRAL COMMAND</span><h1>مرکز مدیریت معرفی مشتری</h1><p>کنترل یکپارچه لیدها، شبکه فروش، تبدیل و پورسانت‌ها</p></div></div>
+    <div class="rf-hero-actions"><a class="rf-btn primary" href="{% url 'referral_lead_create' %}">＋ ثبت لید</a><a class="rf-btn" href="{% url 'referral_member_create' %}">＋ افزودن معرف</a><a class="rf-btn rf-export-btn" href="{% url 'referral_export_csv' %}">⇩ خروجی Excel</a></div>
     {% else %}
     <div class="rf-hero-person">
       <div class="rf-avatar rf-avatar-xl">{% if referral.display_photo %}<img src="{{ referral.display_photo.url }}" alt="{{ referral.user.get_full_name|default:'نام ثبت نشده' }}">{% else %}<span>{{ referral.user.first_name|first|default:'؟' }}</span>{% endif %}</div>
@@ -22,17 +22,16 @@
   </div>
 
   {% if is_manager %}
-    {% referral_manager_live_dashboard %}
-    <article class="rf-card rf-pipeline-card">
-      <div class="rf-card-head"><div><span class="rf-card-kicker">وضعیت زنده فروش</span><h2>قیف تبدیل مشتری</h2></div><a href="{% url 'referral_lead_list' %}">{{ action_count|fa }} مورد نیازمند اقدام</a></div>
-      <div class="rf-pipeline">
-        <a href="{% url 'referral_lead_list' %}?status=new"><i>۱</i><span>لید جدید</span><strong>{{ pipeline.new|fa }}</strong></a>
-        <a href="{% url 'referral_lead_list' %}?status=contacted"><i>۲</i><span>تماس گرفته شد</span><strong>{{ pipeline.contacted|fa }}</strong></a>
-        <a href="{% url 'referral_lead_list' %}?status=appointment"><i>۳</i><span>نوبت ثبت شد</span><strong>{{ pipeline.appointment|fa }}</strong></a>
-        <a href="{% url 'referral_lead_list' %}?status=visited"><i>۴</i><span>مراجعه کرد</span><strong>{{ pipeline.visited|fa }}</strong></a>
-        <a href="{% url 'referral_lead_list' %}?status=won"><i>✓</i><span>فروش موفق</span><strong>{{ pipeline.won|fa }}</strong></a>
-      </div>
-    </article>
+  <article class="rf-card rf-pipeline-card">
+    <div class="rf-card-head"><div><span class="rf-card-kicker">وضعیت زنده فروش</span><h2>قیف تبدیل مشتری</h2></div><a href="{% url 'referral_lead_list' %}">{{ action_count|fa }} مورد نیازمند اقدام</a></div>
+    <div class="rf-pipeline">
+      <a href="{% url 'referral_lead_list' %}?status=new"><i>۱</i><span>لید جدید</span><strong>{{ pipeline.new|fa }}</strong></a>
+      <a href="{% url 'referral_lead_list' %}?status=contacted"><i>۲</i><span>تماس گرفته شد</span><strong>{{ pipeline.contacted|fa }}</strong></a>
+      <a href="{% url 'referral_lead_list' %}?status=appointment"><i>۳</i><span>نوبت ثبت شد</span><strong>{{ pipeline.appointment|fa }}</strong></a>
+      <a href="{% url 'referral_lead_list' %}?status=visited"><i>۴</i><span>مراجعه کرد</span><strong>{{ pipeline.visited|fa }}</strong></a>
+      <a href="{% url 'referral_lead_list' %}?status=won"><i>✓</i><span>فروش موفق</span><strong>{{ pipeline.won|fa }}</strong></a>
+    </div>
+  </article>
   {% endif %}
 
   <div class="rf-grid rf-grid-main">
@@ -52,13 +51,13 @@
 
     <article class="rf-card">
       <div class="rf-card-head"><div><span class="rf-card-kicker">آخرین ورودی‌ها</span><h2>لیدهای جدید</h2></div><a href="{% url 'referral_lead_list' %}">مشاهده همه</a></div>
-      <div class="rf-list">{% for lead in recent_leads %}<a class="rf-list-row" href="{% if is_manager %}{% url 'referral_lead_manage' lead.pk %}{% else %}{% url 'referral_lead_list' %}{% endif %}"><div class="rf-avatar"><span>{{ lead.full_name|first }}</span></div><div><strong>{{ lead.full_name }}</strong><small>{{ lead.interested_service|default:'خدمت مشخص نشده' }} · {{ lead.created_at|jdate }}</small></div><em class="rf-status status-{{ lead.status }}">{{ lead.get_status_display }}</em></a>{% empty %}{% if is_manager %}<div class="rf-manager-empty"><span>◎</span><strong>هنوز لیدی وارد شبکه نشده</strong><small>ورودی‌های کارکنان، لینک‌ها و QR اینجا نمایش داده می‌شوند.</small></div>{% else %}<div class="rf-manager-empty"><span>＋</span><strong>اولین لید را ثبت کنید</strong><small>لید می‌تواند از پنل، لینک یا QR وارد شود.</small><a href="{% url 'referral_lead_create' %}">ثبت لید جدید</a></div>{% endif %}{% endfor %}</div>
+      <div class="rf-list">{% for lead in recent_leads %}<a class="rf-list-row" href="{% if is_manager %}{% url 'referral_lead_manage' lead.pk %}{% else %}{% url 'referral_lead_list' %}{% endif %}"><div class="rf-avatar"><span>{{ lead.full_name|first }}</span></div><div><strong>{{ lead.full_name }}</strong><small>{{ lead.interested_service|default:'خدمت مشخص نشده' }} · {{ lead.created_at|jdate }}</small></div><em class="rf-status status-{{ lead.status }}">{{ lead.get_status_display }}</em></a>{% empty %}<div class="rf-manager-empty"><span>＋</span><strong>اولین لید را ثبت کنید</strong><small>لید می‌تواند از پنل، لینک یا QR وارد شود.</small><a href="{% url 'referral_lead_create' %}">ثبت لید جدید</a></div>{% endfor %}</div>
     </article>
   </div>
 
   <article class="rf-card">
     <div class="rf-card-head"><div><span class="rf-card-kicker">{% if is_manager %}شبکه فروش{% else %}تیم شما{% endif %}</span><h2>{% if is_manager %}معرف‌های فعال{% else %}اعضای شبکه{% endif %}</h2></div><div style="display:flex;gap:12px;align-items:center"><a href="{% url 'referral_tree_all' %}" style="color:#ddb0ff">⌘ نمایش کل شبکه</a><a href="{% url 'referral_network' %}">مدیریت شبکه</a></div></div>
-    <div class="rf-people">{% for member in recent_members %}{% if member.user.profile.role != 'call_center' %}<div class="rf-person"><div class="rf-avatar rf-avatar-lg">{% if member.display_photo %}<img src="{{ member.display_photo.url }}" alt="{{ member.user.get_full_name|default:'نام ثبت نشده' }}">{% else %}<span>{{ member.user.first_name|first|default:'؟' }}</span>{% endif %}</div><strong>{{ member.user.get_full_name|default:'نام ثبت نشده' }}</strong><small>سطح {{ member.level|fa }}</small><a href="{% url 'referral_tree_person' member.pk %}" style="display:block;margin-top:8px;padding:6px 8px;border:1px solid rgba(188,104,255,.35);border-radius:8px;color:#ddb0ff;text-decoration:none;font-size:10px;font-weight:800">مشاهده شبکه</a>{% if user.is_superuser or user.profile.role == 'admin' %}<form method="post" action="{% url 'referral_member_delete' member.pk %}" onsubmit="return confirm('این معرف از شبکه حذف شود؟ اگر سابقه واقعی داشته باشد، سوابق حفظ و حساب او غیرفعال می‌شود.');" style="margin-top:6px">{% csrf_token %}<button type="submit" style="background:rgba(239,68,68,.1);border:1px solid rgba(248,113,113,.35);color:#ff9b9b;border-radius:9px;padding:6px 10px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer">حذف</button></form>{% endif %}</div>{% endif %}{% empty %}<div class="rf-manager-empty rf-network-empty"><span>⌘</span><strong>شبکه فروش هنوز ساخته نشده</strong><small>{% if is_manager %}با ثبت عضو توسط معرف‌ها، شبکه و درخت اینجا ظاهر می‌شود.{% else %}اولین معرف را بسازید؛ هر معرف لینک و QR اختصاصی دریافت می‌کند.{% endif %}</small>{% if not is_manager %}<a href="{% url 'referral_member_create' %}">افزودن اولین معرف</a>{% endif %}</div>{% endfor %}</div>
+    <div class="rf-people">{% for member in recent_members %}{% if member.user.profile.role != 'call_center' %}<div class="rf-person"><div class="rf-avatar rf-avatar-lg">{% if member.display_photo %}<img src="{{ member.display_photo.url }}" alt="{{ member.user.get_full_name|default:'نام ثبت نشده' }}">{% else %}<span>{{ member.user.first_name|first|default:'؟' }}</span>{% endif %}</div><strong>{{ member.user.get_full_name|default:'نام ثبت نشده' }}</strong><small>سطح {{ member.level|fa }}</small><a href="{% url 'referral_tree_person' member.pk %}" style="display:block;margin-top:8px;padding:6px 8px;border:1px solid rgba(188,104,255,.35);border-radius:8px;color:#ddb0ff;text-decoration:none;font-size:10px;font-weight:800">مشاهده شبکه</a>{% if user.is_superuser or user.profile.role == 'admin' %}<form method="post" action="{% url 'referral_member_delete' member.pk %}" onsubmit="return confirm('این معرف از شبکه حذف شود؟ اگر سابقه واقعی داشته باشد، سوابق حفظ و حساب او غیرفعال می‌شود.');" style="margin-top:6px">{% csrf_token %}<button type="submit" style="background:rgba(239,68,68,.1);border:1px solid rgba(248,113,113,.35);color:#ff9b9b;border-radius:9px;padding:6px 10px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer">حذف</button></form>{% endif %}</div>{% endif %}{% empty %}<div class="rf-manager-empty rf-network-empty"><span>⌘</span><strong>شبکه فروش هنوز ساخته نشده</strong><small>اولین معرف را بسازید؛ هر معرف لینک و QR اختصاصی دریافت می‌کند.</small><a href="{% url 'referral_member_create' %}">افزودن اولین معرف</a></div>{% endfor %}</div>
   </article>
 </section>
 {% endblock %}
