@@ -6,6 +6,7 @@ app_name = 'public_network'
 
 urlpatterns = [
     path('join/greenlife/', views.signup, name='signup'),
+    path('join/greenlife/terms/', views.terms, name='terms'),
     path('join/greenlife/login/', views.member_login, name='login'),
     path('join/greenlife/logout/', views.member_logout, name='logout'),
     path('join/greenlife/<str:code>/', views.signup, name='signup_with_code'),
