@@ -22,8 +22,16 @@ class PublicNetworkSignupForm(forms.Form):
     last_name = forms.CharField(label='نام خانوادگی', max_length=100)
     phone = forms.CharField(label='شماره موبایل', max_length=30)
     username = forms.CharField(label='نام کاربری', max_length=80, help_text='برای ورود بعدی به شبکه')
-    password = forms.CharField(label='رمز عبور', widget=forms.PasswordInput, min_length=8)
-    password_confirm = forms.CharField(label='تکرار رمز عبور', widget=forms.PasswordInput)
+    password = forms.CharField(
+        label='رمز عبور (حداقل ۶ کاراکتر)',
+        widget=forms.PasswordInput(attrs={'autocomplete': 'new-password'}),
+        min_length=6,
+        help_text='حداقل ۶ کاراکتر؛ رمزی انتخاب کنید که یادتان بماند.',
+    )
+    password_confirm = forms.CharField(
+        label='تکرار رمز عبور',
+        widget=forms.PasswordInput(attrs={'autocomplete': 'new-password'}),
+    )
     photo = forms.ImageField(
         label='عکس پروفایل',
         required=True,
