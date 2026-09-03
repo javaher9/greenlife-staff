@@ -13,7 +13,9 @@ def _manager_profiles(user):
     qs = ReferralProfile.objects.filter(is_active=True).exclude(
         user__profile__role='call_center'
     ).select_related(
-        'user', 'user__profile', 'sponsor', 'sponsor__user', 'created_by'
+        'user', 'user__profile',
+        'sponsor', 'sponsor__user', 'sponsor__user__profile',
+        'created_by', 'created_by__profile',
     )
     role = getattr(getattr(user, 'profile', None), 'role', '')
     if role == 'manager' and not user.is_superuser:
@@ -26,6 +28,37 @@ def _manager_profiles(user):
     return qs
 
 
+def _image_url(image):
+    try:
+        return image.url if image else ''
+    except Exception:
+        return ''
+
+
+def _profile_avatar(profile):
+    if not profile:
+        return ''
+    try:
+        return _image_url(profile.display_photo)
+    except Exception:
+        return ''
+
+
+def _user_avatar(user):
+    if not user:
+        return ''
+    try:
+        return _image_url(getattr(getattr(user, 'profile', None), 'avatar', None))
+    except Exception:
+        return ''
+
+
+def _initial(user):
+    if not user:
+        return '?'
+    return (user.first_name or user.last_name or user.username or '?')[:1]
+
+
 def _empty_payload():
     today = timezone.localdate()
     start = today - timedelta(days=29)
@@ -35,8 +68,8 @@ def _empty_payload():
         'lead_today': 0,
         'lead_month': 0,
         'activities': [],
-        'recent_members_live': [],
-        'top_recruiters': [],
+        'recent_member_rows': [],
+        'top_recruiter_rows': [],
         'chart_payload': {
             'labels': [(start + timedelta(days=i)).strftime('%m/%d') for i in range(30)],
             'members': [0] * 30,
@@ -47,13 +80,7 @@ def _empty_payload():
 
 @register.inclusion_tag('core/referrals/_manager_live_dashboard.html', takes_context=True)
 def referral_manager_live_dashboard(context):
-    """Render the management live dashboard without ever taking the page down.
-
-    The previous implementation used several complex aggregate queries. A runtime
-    failure in this optional panel caused the entire referral dashboard to return
-    HTTP 500, so this version deliberately favors simple, defensive queries and
-    falls back to an empty live panel if data loading ever fails.
-    """
+    """Render the management live dashboard defensively with person avatars."""
     try:
         request = context.get('request')
         if request is None:
@@ -62,7 +89,8 @@ def referral_manager_live_dashboard(context):
         profiles_qs = _manager_profiles(request.user)
         profile_ids = list(profiles_qs.values_list('id', flat=True))
         leads_qs = ReferralLead.objects.filter(referrer_id__in=profile_ids).select_related(
-            'referrer', 'referrer__user', 'created_by'
+            'referrer', 'referrer__user', 'referrer__user__profile',
+            'created_by', 'created_by__profile'
         )
 
         today = timezone.localdate()
@@ -74,8 +102,6 @@ def referral_manager_live_dashboard(context):
         member_series = [0] * 30
         lead_series = [0] * 30
 
-        # Python-side grouping is intentionally used here. The live panel only
-        # needs 30 days and this avoids database-specific date aggregation bugs.
         recent_profile_rows = list(
             profiles_qs.filter(created_at__date__gte=start).order_by('-created_at')
         )
@@ -104,6 +130,8 @@ def referral_manager_live_dashboard(context):
                 'title': f'عضو جدید: {member}',
                 'detail': f'توسط {creator or "نامشخص"} · سطح {member.level}',
                 'when': member.created_at,
+                'avatar': _profile_avatar(member),
+                'initial': _initial(member.user),
             })
         for lead in recent_lead_rows[:8]:
             creator = lead.created_by.get_full_name() if lead.created_by_id else ''
@@ -112,23 +140,48 @@ def referral_manager_live_dashboard(context):
                 'title': f'لید جدید: {lead.full_name}',
                 'detail': f'معرف: {lead.referrer} · ثبت‌کننده: {creator or "ورودی لینک/QR"}',
                 'when': lead.created_at,
+                'avatar': _profile_avatar(lead.referrer),
+                'initial': _initial(lead.referrer.user),
             })
         activities.sort(key=lambda item: item['when'], reverse=True)
 
         recent_members = list(
             profiles_qs.exclude(user=request.user).order_by('-created_at')[:10]
         )
+        recent_member_rows = []
+        for member in recent_members:
+            sponsor = member.sponsor
+            actor = sponsor.user if sponsor else member.created_by
+            recent_member_rows.append({
+                'profile': member,
+                'avatar': _profile_avatar(member),
+                'initial': _initial(member.user),
+                'actor_name': (
+                    str(sponsor) if sponsor else
+                    (member.created_by.get_full_name() if member.created_by_id else '—')
+                ),
+                'actor_avatar': _profile_avatar(sponsor) if sponsor else _user_avatar(member.created_by),
+                'actor_initial': _initial(actor) if actor else '—',
+            })
 
-        # Build ranking defensively; the network is small enough that this is
-        # clearer and safer than a multi-join aggregate in the request path.
         ranking = []
         for person in list(profiles_qs.order_by('id')):
-            person.new_members = ReferralProfile.objects.filter(
+            new_members = ReferralProfile.objects.filter(
                 sponsor=person, is_active=True
             ).exclude(user__profile__role='call_center').count()
-            person.lead_total = ReferralLead.objects.filter(referrer=person).count()
-            ranking.append(person)
-        ranking.sort(key=lambda p: (p.new_members, p.lead_total), reverse=True)
+            lead_total = ReferralLead.objects.filter(referrer=person).count()
+            ranking.append((person, new_members, lead_total))
+        ranking.sort(key=lambda row: (row[1], row[2]), reverse=True)
+        top_recruiter_rows = [
+            {
+                'profile': person,
+                'avatar': _profile_avatar(person),
+                'initial': _initial(person.user),
+                'new_members': new_members,
+                'lead_total': lead_total,
+            }
+            for person, new_members, lead_total in ranking[:6]
+        ]
 
         return {
             'member_today': sum(1 for p in recent_profile_rows if timezone.localtime(p.created_at).date() == today and p.user_id != request.user.id),
@@ -136,8 +189,8 @@ def referral_manager_live_dashboard(context):
             'lead_today': sum(1 for l in recent_lead_rows if timezone.localtime(l.created_at).date() == today),
             'lead_month': leads_qs.filter(created_at__date__gte=month_start).count(),
             'activities': activities[:10],
-            'recent_members_live': recent_members,
-            'top_recruiters': ranking[:6],
+            'recent_member_rows': recent_member_rows,
+            'top_recruiter_rows': top_recruiter_rows,
             'chart_payload': {
                 'labels': labels,
                 'members': member_series,
