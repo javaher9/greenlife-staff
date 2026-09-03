@@ -4,7 +4,6 @@
 <link rel="stylesheet" href="{% static 'core/referral-readability-v40.3.5.css' %}?v=v40.3.5">
 <nav class="rf-tabs" aria-label="بخش‌های شبکه فروش">
   <a href="{% url 'referral_dashboard' %}" class="{% if request.resolver_match.url_name == 'referral_dashboard' %}active{% endif %}">داشبورد</a>
-  {% if user.is_superuser or user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}<a href="{% url 'digital_referral_dashboard' %}">جذب دیجیتال</a>{% endif %}
   <a href="{% url 'referral_lead_list' %}" class="{% if 'lead' in request.resolver_match.url_name %}active{% endif %}">لیدها</a>
   <a href="{% url 'referral_network' %}" class="{% if 'network' in request.resolver_match.url_name or 'member' in request.resolver_match.url_name %}active{% endif %}">شبکه من</a>
   <a href="{% url 'referral_sales' %}" class="{% if 'sale' in request.resolver_match.url_name %}active{% endif %}">فروش و پورسانت</a>
