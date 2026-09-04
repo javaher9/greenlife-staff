@@ -2,6 +2,8 @@ import math
 import uuid
 from datetime import date, datetime, timedelta
 from django.http import JsonResponse
+from django.conf import settings
+from django.core.exceptions import PermissionDenied
 from functools import wraps
 from django.contrib import messages
 from django.contrib.auth import login, logout
@@ -26,6 +28,23 @@ def role_of(user): return getattr(getattr(user,'profile',None),'role','employee'
 MANAGEMENT_ROLES=('admin','internal_manager','manager')
 FINANCE_ROLES=('admin','manager')
 PERSONNEL_ROLES=('employee','call_center','consultant')
+
+
+def _is_executive_user(user):
+    return bool(
+        getattr(user,'is_authenticated',False)
+        and (getattr(user,'username','') or '').lower() in settings.EXECUTIVE_USERNAMES
+    )
+
+
+def executive_required(view):
+    @wraps(view)
+    @login_required
+    def wrapper(request,*args,**kwargs):
+        if not _is_executive_user(request.user):
+            raise PermissionDenied('Executive workspace access denied.')
+        return view(request,*args,**kwargs)
+    return wrapper
 
 def _request_ip(request):
     forwarded=request.META.get('HTTP_X_FORWARDED_FOR','')
@@ -141,6 +160,8 @@ def logout_view(request): logout(request); return redirect('login')
 @login_required
 def dashboard(request):
     role=role_of(request.user)
+    if _is_executive_user(request.user):
+        return redirect('executive_workspace')
     if role=='call_center':
         return redirect('call_center_dashboard')
     if role=='referrer':
@@ -2220,6 +2241,149 @@ def action_center(request):
         'priority_filter':priority_filter,
         'kind_filter':kind_filter,
         'today':day,
+    })
+
+
+@executive_required
+def executive_workspace(request):
+    """Private application-level command center for the configured executive account.
+
+    It deliberately reuses the normal Task model, so delegated items instantly appear
+    in the assignee's existing Staff task cartable. This is UI/application isolation,
+    not encryption against server/database administrators.
+    """
+    today=timezone.localdate()
+    active_people=User.objects.filter(
+        is_active=True,
+        profile__is_active=True,
+    ).select_related('profile','profile__branch').order_by('first_name','last_name','username')
+
+    if request.method=='POST':
+        action=(request.POST.get('action') or '').strip()
+
+        if action=='create':
+            title=(request.POST.get('title') or '').strip()
+            description=(request.POST.get('description') or '').strip()
+            priority=(request.POST.get('priority') or 'normal').strip()
+            if priority not in {'low','normal','high'}:
+                priority='normal'
+            bucket=(request.POST.get('bucket') or 'inbox').strip()
+            due_date=None
+            due_raw=(request.POST.get('due_date') or '').strip()
+            if due_raw:
+                try:
+                    due_date=parse_jalali(due_raw)
+                except Exception:
+                    messages.error(request,'تاریخ مهلت معتبر نیست. نمونه: ۱۴۰۵/۰۶/۱۳')
+                    return redirect('executive_workspace')
+            elif bucket=='today':
+                due_date=today
+
+            assigned_to=request.user
+            assigned_raw=(request.POST.get('assigned_to') or '').strip()
+            if assigned_raw and assigned_raw!='self':
+                assigned_to=get_object_or_404(active_people,pk=assigned_raw)
+
+            if not title:
+                messages.error(request,'عنوان کار را بنویسید.')
+                return redirect('executive_workspace')
+
+            task=Task.objects.create(
+                title=title,
+                description=description,
+                assigned_to=assigned_to,
+                created_by=request.user,
+                due_date=due_date,
+                priority=priority,
+            )
+            if assigned_to.pk!=request.user.pk:
+                StaffNotification.objects.create(
+                    user=assigned_to,
+                    title='وظیفه جدید از دفتر دکتر',
+                    message=title[:240],
+                    notification_type='task',
+                    related_date=due_date or today,
+                )
+                messages.success(request,f'کار به {assigned_to.get_full_name() or assigned_to.username} واگذار شد.')
+            else:
+                messages.success(request,'کار به دفتر من اضافه شد.')
+            return redirect('executive_workspace')
+
+        if action=='delegate':
+            task=get_object_or_404(Task,pk=request.POST.get('task_id'),created_by=request.user)
+            assignee=get_object_or_404(active_people,pk=request.POST.get('assigned_to'))
+            task.assigned_to=assignee
+            if task.status=='done':
+                task.status='todo'
+            task.save(update_fields=['assigned_to','status','updated_at'])
+            StaffNotification.objects.create(
+                user=assignee,
+                title='وظیفه جدید از دفتر دکتر',
+                message=task.title[:240],
+                notification_type='task',
+                related_date=task.due_date or today,
+            )
+            messages.success(request,f'«{task.title}» به {assignee.get_full_name() or assignee.username} واگذار شد.')
+            return redirect('executive_workspace')
+
+        if action=='reclaim':
+            task=get_object_or_404(Task,pk=request.POST.get('task_id'),created_by=request.user)
+            task.assigned_to=request.user
+            if task.status=='done':
+                task.status='todo'
+            task.save(update_fields=['assigned_to','status','updated_at'])
+            messages.success(request,'کار به دفتر من برگشت.')
+            return redirect('executive_workspace')
+
+        if action=='done':
+            task=get_object_or_404(Task,pk=request.POST.get('task_id'),created_by=request.user,assigned_to=request.user)
+            task.status='done'
+            task.save(update_fields=['status','updated_at'])
+            award_task(task)
+            messages.success(request,'انجام شد ✓')
+            return redirect('executive_workspace')
+
+    own_open=list(Task.objects.filter(
+        created_by=request.user,
+        assigned_to=request.user,
+        status__in=('todo','doing'),
+    ).order_by('due_date','-priority','-updated_at'))
+    delegated=list(Task.objects.filter(
+        created_by=request.user,
+        status__in=('todo','doing'),
+    ).exclude(assigned_to=request.user).select_related('assigned_to','assigned_to__profile').order_by('due_date','-priority','-updated_at'))
+
+    today_tasks=[t for t in own_open if t.due_date and t.due_date<=today]
+    inbox_tasks=[t for t in own_open if not t.due_date]
+    later_tasks=[t for t in own_open if t.due_date and t.due_date>today]
+
+    def task_rank(t):
+        return ({'high':0,'normal':1,'low':2}.get(t.priority,1), t.due_date or date.max, -int(t.updated_at.timestamp()))
+
+    candidates=sorted(today_tasks+inbox_tasks,key=task_rank)
+    the_thing=candidates[0] if candidates else (sorted(later_tasks,key=task_rank)[0] if later_tasks else None)
+    would_be_nice=[t for t in candidates if not the_thing or t.pk!=the_thing.pk][:2]
+    on_fire=sorted(later_tasks,key=task_rank)[:3]
+
+    delegated_overdue=sum(1 for t in delegated if t.due_date and t.due_date<today)
+    done_today=Task.objects.filter(
+        created_by=request.user,
+        status='done',
+        updated_at__date=today,
+    ).count()
+
+    return render(request,'core/executive_workspace.html',{
+        'today':today,
+        'the_thing':the_thing,
+        'would_be_nice':would_be_nice,
+        'on_fire':on_fire,
+        'today_tasks':today_tasks,
+        'inbox_tasks':inbox_tasks,
+        'later_tasks':later_tasks,
+        'delegated':delegated,
+        'delegated_overdue':delegated_overdue,
+        'done_today':done_today,
+        'assignees':active_people.exclude(pk=request.user.pk),
     })
 
 @login_required
