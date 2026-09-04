@@ -15,5 +15,7 @@ classes = collections.Counter(re.findall(
     text,
 ))
 internal_errors = len(re.findall(r'Internal Server Error:', text))
+bad_requests = len(re.findall(r'Bad Request:', text))
+disallowed_hosts = len(re.findall(r'DisallowedHost', text))
 summary = ','.join(f'{name}:{count}' for name, count in sorted(classes.items())) or 'none'
-print(f'Previous web runtime errors: internal_server_errors={internal_errors}, classes={summary}')
+print(f'Previous web runtime errors: internal_server_errors={internal_errors}, bad_requests={bad_requests}, disallowed_hosts={disallowed_hosts}, classes={summary}')
