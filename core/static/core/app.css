@@ -2420,3 +2420,94 @@ body.gl-premium-dark.gl-manager-dashboard :is(
   color:#b7c9c0!important;
   opacity:1!important;
 }
+
+
+/* =========================================================
+   v41.2 — GLOBAL DARK UI READABILITY STANDARD
+   One contrast floor for every dark page so text never becomes
+   unreadably dim. Keep hierarchy through size/weight, not darkness.
+   ========================================================= */
+body.gl-premium-dark{
+  --dp-text:#f4fbf7!important;
+  --dp-muted:#bccdc5!important;
+  --dp-muted-2:#a9bbb2!important;
+  --dp-faint:#93a79d!important;
+}
+
+/* Primary titles and important labels */
+body.gl-premium-dark :is(
+  h1,h2,h3,h4,h5,h6,
+  .sectionhead h1,.sectionhead h2,.sectionhead h3,
+  .card-head h1,.card-head h2,.card-head h3,
+  .gl-card-title h1,.gl-card-title h2,.gl-card-title h3,
+  .ref-live-head h1,.ref-live-head h2,.ref-live-head h3,
+  .rf-live-head h1,.rf-live-head h2,.rf-live-head h3,
+  .page-title,.panel-title,.dashboard-title,.manager-section-title,
+  legend
+){
+  color:#f7fff9!important;
+  opacity:1!important;
+}
+
+/* Normal body copy: never darker than this on dark surfaces */
+body.gl-premium-dark :is(
+  p,li,dd,dt,
+  .description,.subtitle,.helper-text,.hint,
+  .notice p,.document p,.panel p,.hero p,
+  .task span,.row span
+){
+  color:#c8d8d1!important;
+  opacity:1!important;
+}
+
+/* Secondary text and metadata */
+body.gl-premium-dark :is(
+  small,.muted,.meta,.eyebrow,
+  .ref-welcome p,.ref-kpis span,.staff-person small,
+  .gl-exec-section-head>small,.gl-exec-focus-label small,
+  .gl-exec-focus-body p,.gl-exec-meta span,
+  .rf-live-head small,.rf-activity-row small,.rf-rank-row small,
+  .gl-month-copy small,.gl-list-head small,
+  .profilegrid span,.manager-strip span,
+  .chart-days,.chart-legend
+){
+  color:var(--dp-muted)!important;
+  opacity:1!important;
+}
+
+/* Table and form readability */
+body.gl-premium-dark :is(th,label,.form-label){
+  color:#dce9e3!important;
+  opacity:1!important;
+}
+body.gl-premium-dark td{
+  color:#e7f0eb!important;
+  opacity:1!important;
+}
+body.gl-premium-dark :is(input,textarea,select){
+  color:#f4faf7!important;
+}
+body.gl-premium-dark :is(input,textarea)::placeholder{
+  color:#9fb3a9!important;
+  opacity:1!important;
+}
+
+/* Navigation and utility copy should stay readable too */
+body.gl-premium-dark :is(
+  .app-nav>a,.app-nav>button,
+  .sidebar-footer a,.nav-section-title,
+  .brand-premium small,
+  .header-person span,.topbar-meta
+){
+  color:#b8cbc1!important;
+  opacity:1!important;
+}
+body.gl-premium-dark .app-nav>a:hover,
+body.gl-premium-dark .app-nav>button:hover{
+  color:#f1fbf6!important;
+}
+
+/* Preserve intentional disabled states only */
+body.gl-premium-dark :is([disabled],.is-disabled,.disabled){
+  opacity:.55!important;
+}
