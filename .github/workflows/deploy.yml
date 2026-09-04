@@ -162,16 +162,23 @@ jobs:
               -exec rm -rf {} +
             tar -xzf "$DEPLOY_PATH/.rollback/source_previous.tar.gz" -C "$DEPLOY_PATH"
             chmod +x "$DEPLOY_PATH"/scripts/*.sh "$DEPLOY_PATH"/entrypoint.sh 2>/dev/null || true
-            docker compose \
-              --env-file "$DEPLOY_PATH/.env" \
-              -f "$DEPLOY_PATH/docker-compose.yml" \
+
+            # Restore the exact previously running local images. Do not rebuild
+            # or contact Docker Hub during rollback.
+            if docker image inspect greenlife-staff-rollback-web:latest >/dev/null 2>&1; then
+              docker tag greenlife-staff-rollback-web:latest greenlife-staff-runtime-web:latest
+            fi
+            if docker image inspect greenlife-staff-rollback-web_lan:latest >/dev/null 2>&1; then
+              docker tag greenlife-staff-rollback-web_lan:latest greenlife-staff-runtime-web_lan:latest
+            fi
+
+            COMPOSE_ARGS=(--env-file "$DEPLOY_PATH/.env" -f "$DEPLOY_PATH/docker-compose.yml")
+            if [ -f "$DEPLOY_PATH/docker-compose.lan.yml" ]; then
+              COMPOSE_ARGS+=(-f "$DEPLOY_PATH/docker-compose.lan.yml")
+            fi
+            docker compose "${COMPOSE_ARGS[@]}" \
               --project-directory "$DEPLOY_PATH" \
-              build
-            docker compose \
-              --env-file "$DEPLOY_PATH/.env" \
-              -f "$DEPLOY_PATH/docker-compose.yml" \
-              --project-directory "$DEPLOY_PATH" \
-              up -d --remove-orphans
+              up -d --no-build --remove-orphans
             cd "$DEPLOY_PATH"
             ./scripts/healthcheck.sh || true
           else
