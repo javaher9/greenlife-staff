@@ -213,27 +213,6 @@
   if(best)best.classList.add('is-active');
 })();
 
-/* Warm likely internal navigation only when the user shows intent. This avoids
-   preloading every screen while reducing the delay felt after menu clicks. */
-(function(){
-  const warmed=new Set();
-  function warm(a){
-    if(!a || warmed.has(a.href)) return;
-    const u=new URL(a.href,location.href);
-    if(u.origin!==location.origin || u.pathname==='/logout/' || u.href===location.href) return;
-    warmed.add(a.href);
-    const l=document.createElement('link');
-    l.rel='prefetch';
-    l.href=u.href;
-    l.as='document';
-    document.head.appendChild(l);
-  }
-  document.querySelectorAll('.app-nav a[href], .mobile-more-links a[href]').forEach(a=>{
-    a.addEventListener('pointerenter',()=>warm(a),{passive:true,once:true});
-    a.addEventListener('focus',()=>warm(a),{passive:true,once:true});
-    a.addEventListener('touchstart',()=>warm(a),{passive:true,once:true});
-  });
-})();
 </script>
 
 {% block extra_js %}{% endblock %}
