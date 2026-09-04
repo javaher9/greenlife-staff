@@ -30,6 +30,9 @@
     <span><b>GreenLife</b><small>STAFF APP</small></span>
   </div>
   <nav class="app-nav">
+    {% if executive_access %}
+    <a href="/my-office/" class="gl-executive-nav {% if request.path|slice:':11' == '/my-office/' %}is-active{% endif %}"><span class="nav-ico">✦</span><span>دفتر من</span><b class="gl-private-badge">PRIVATE</b></a>
+    {% endif %}
     {% if user.profile.role == 'consultant' %}
     <a href="/" class="nav-main {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico">⌂</span><span>داشبورد من</span></a>
     <a href="/finance/entry/" class="consultant-finance-nav {% if request.path|slice:':15' == '/finance/entry/' %}is-active{% endif %}"><span class="nav-ico">▧</span><span>ثبت مالی</span></a>
