@@ -84,6 +84,50 @@ if ! ./scripts/healthcheck.sh; then
   exit 1
 fi
 
+echo "Checking public login + CSRF path through production nginx..."
+public_cookie_jar="$(mktemp)"
+public_login_html="$(mktemp)"
+trap 'rm -f "$public_cookie_jar" "$public_login_html"' EXIT
+
+public_get_code="$(curl -sS -o "$public_login_html" -c "$public_cookie_jar" -w '%{http_code}' --max-time 8 \
+  -H 'Host: staff.greenlifeclinics.com' \
+  -H 'X-Forwarded-Proto: https' \
+  http://127.0.0.1:8085/login/ || true)"
+
+if [[ "$public_get_code" != "200" ]]; then
+  echo "Public login GET healthcheck failed with HTTP $public_get_code." >&2
+  exit 1
+fi
+
+csrf_token="$(python3 - "$public_login_html" <<'PY'
+import re, sys
+html = open(sys.argv[1], encoding='utf-8').read()
+m = re.search(r'name=["\x27]csrfmiddlewaretoken["\x27]\s+value=["\x27]([^"\x27]+)', html)
+print(m.group(1) if m else "")
+PY
+)"
+
+if [[ -z "$csrf_token" ]]; then
+  echo "Public login CSRF token was not rendered." >&2
+  exit 1
+fi
+
+public_post_code="$(curl -sS -o /dev/null -b "$public_cookie_jar" -w '%{http_code}' --max-time 8 \
+  -H 'Host: staff.greenlifeclinics.com' \
+  -H 'X-Forwarded-Proto: https' \
+  -H 'Origin: https://staff.greenlifeclinics.com' \
+  -H 'Referer: https://staff.greenlifeclinics.com/login/' \
+  --data-urlencode "csrfmiddlewaretoken=$csrf_token" \
+  --data-urlencode "username=__deploy_smoke_test__" \
+  --data-urlencode "password=__invalid__" \
+  http://127.0.0.1:8085/login/ || true)"
+
+if [[ "$public_post_code" != "200" ]]; then
+  echo "Public login CSRF POST healthcheck failed with HTTP $public_post_code." >&2
+  exit 1
+fi
+echo "Public login + CSRF healthcheck OK."
+
 if [[ -f "$LAN_COMPOSE_FILE" ]]; then
   echo "Checking private LAN login endpoint..."
   lan_ok=0
