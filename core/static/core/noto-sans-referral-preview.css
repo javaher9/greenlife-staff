@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700;800&display=swap');
-
 /* GreenLife app-wide typography.
    Noto Sans Arabic is applied globally, but only four weights are requested to
    keep payload and rendering cost low. */
