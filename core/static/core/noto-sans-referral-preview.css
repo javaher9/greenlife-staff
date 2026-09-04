@@ -37,14 +37,3 @@ body.gl-app label {
   letter-spacing:0;
 }
 
-/* Avoid expensive typography/layout work for off-screen content on modern
-   browsers while preserving full fallback behavior elsewhere. */
-@supports (content-visibility:auto) {
-  body.gl-app .panel,
-  body.gl-app .glass-card,
-  body.gl-app .rf-card,
-  body.gl-app .document {
-    content-visibility:auto;
-    contain-intrinsic-size:1px 220px;
-  }
-}
