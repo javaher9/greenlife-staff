@@ -126,7 +126,20 @@
     </section>
 
     <section class="gl-exec-panel">
-      <div class="gl-exec-panel-head"><div><span>▤</span><h2>Inbox</h2></div><b>{{ inbox_tasks|length }}</b></div>
+      <div class="gl-exec-panel-head"><div><span>◷</span><h2>همه کارهای امروز</h2></div><b>{{ today_tasks|length }}</b></div>
+      <div class="gl-exec-stack">
+        {% for t in today_tasks %}
+        <article class="gl-exec-stack-item">
+          <div><strong>{{ t.title }}</strong><small>{% if t.due_date < today %}عقب‌افتاده · {% endif %}{{ t.due_date|jdate }} · {{ t.get_priority_display }}</small></div>
+          <div class="gl-exec-inline-actions">
+            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="done"><input type="hidden" name="task_id" value="{{ t.pk }}"><button title="انجام شد">✓</button></form>
+            <form method="post" class="gl-exec-delegate-form mini">{% csrf_token %}<input type="hidden" name="action" value="delegate"><input type="hidden" name="task_id" value="{{ t.pk }}"><select name="assigned_to" required><option value="">واگذاری…</option>{% for p in assignees %}<option value="{{ p.pk }}">{{ p.get_full_name|default:p.username }}</option>{% endfor %}</select><button>→</button></form>
+          </div>
+        </article>
+        {% empty %}<div class="gl-exec-empty compact"><span>کار زمان‌دار امروز نداری.</span></div>{% endfor %}
+      </div>
+
+      <div class="gl-exec-panel-subhead"><span>Inbox</span><b>{{ inbox_tasks|length }}</b></div>
       <div class="gl-exec-stack">
         {% for t in inbox_tasks %}
         <article class="gl-exec-stack-item">
