@@ -119,9 +119,10 @@ fi
 echo "Checking public login + CSRF path through production nginx..."
 public_cookie_jar="$(mktemp)"
 public_login_html="$(mktemp)"
-trap 'rm -f "$public_cookie_jar" "$public_login_html"' EXIT
+public_login_headers="$(mktemp)"
+trap 'rm -f "$public_cookie_jar" "$public_login_html" "$public_login_headers"' EXIT
 
-public_get_code="$(curl -sS -o "$public_login_html" -c "$public_cookie_jar" -w '%{http_code}' --max-time 8 \
+public_get_code="$(curl -sS -D "$public_login_headers" -o "$public_login_html" -c "$public_cookie_jar" -w '%{http_code}' --max-time 8 \
   -H 'Host: staff.greenlifeclinics.com' \
   -H 'X-Forwarded-Proto: https' \
   http://127.0.0.1:8085/login/ || true)"
@@ -150,9 +151,23 @@ fi
 # from the jar and send it explicitly; this tests Django's real CSRF origin,
 # referer and cookie validation instead of failing only because the probe itself
 # is not using TLS.
-csrf_cookie="$(awk '$6 ~ /csrftoken$/ {print $7}' "$public_cookie_jar" | tail -1)"
+# Read the CSRF cookie from the actual Set-Cookie header first. Curl may decline
+# to persist a Secure cookie in its jar when this internal probe reaches nginx
+# through plain http://127.0.0.1 even though X-Forwarded-Proto correctly marks
+# the original request as HTTPS.
+csrf_cookie="$(python3 - "$public_login_headers" <<'PY'
+import re, sys
+headers = open(sys.argv[1], encoding='iso-8859-1').read()
+m = re.search(r'(?im)^set-cookie:\s*csrftoken=([^;\r\n]+)', headers)
+print(m.group(1) if m else "")
+PY
+)"
+if [[ -z "$csrf_cookie" ]]; then
+  csrf_cookie="$(awk '$6 ~ /csrftoken$/ {print $7}' "$public_cookie_jar" | tail -1)"
+fi
 if [[ -z "$csrf_cookie" ]]; then
   echo "Public login CSRF cookie was not issued." >&2
+  echo "Set-Cookie headers seen: $(grep -ic '^Set-Cookie:' "$public_login_headers" || true)" >&2
   exit 1
 fi
 
