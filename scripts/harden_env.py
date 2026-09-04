@@ -58,7 +58,7 @@ def main():
             ("DISABLE_CSRF", "0"),
             ("CSRF_COOKIE_SECURE", "1"),
             ("SESSION_COOKIE_SECURE", "1"),
-            ("ALLOWED_HOSTS", "staff.greenlifeclinics.com,localhost,127.0.0.1"),
+            ("ALLOWED_HOSTS", "staff.greenlifeclinics.com,.greenlifeclinics.com,localhost,127.0.0.1"),
             ("CSRF_TRUSTED_ORIGINS", "https://staff.greenlifeclinics.com"),
         ):
             if values.get(key) != value:
