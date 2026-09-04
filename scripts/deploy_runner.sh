@@ -60,6 +60,18 @@ fi
 # Data backup happens before migrations/container replacement.
 ./scripts/backup.sh
 
+# Snapshot the currently running application images before any build replaces
+# their normal tags. These local rollback tags make recovery independent of
+# Docker Hub/network availability.
+if docker ps --format '{{.Names}}' | grep -qx 'greenlife-staff-runtime-web-1'; then
+  docker tag "$(docker inspect -f '{{.Image}}' greenlife-staff-runtime-web-1)" greenlife-staff-rollback-web:latest
+  echo "Snapshot saved: public web image."
+fi
+if docker ps --format '{{.Names}}' | grep -qx 'greenlife-staff-runtime-web_lan-1'; then
+  docker tag "$(docker inspect -f '{{.Image}}' greenlife-staff-runtime-web_lan-1)" greenlife-staff-rollback-web_lan:latest
+  echo "Snapshot saved: LAN web image."
+fi
+
 echo "Building application image..."
 if ! "${COMPOSE[@]}" build --pull; then
   echo "WARNING: Registry refresh failed; retrying with the locally cached base image." >&2
