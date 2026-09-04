@@ -1,0 +1,164 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}
+{% block content %}
+<div class="gl-exec-office">
+  <section class="gl-exec-hero">
+    <div class="gl-exec-hero-copy">
+      <span class="gl-exec-kicker">PERSONAL COMMAND CENTER</span>
+      <h1>دفتر من</h1>
+      <p>فقط چیزی که باید جلو برود: انتخاب، انجام، تفویض و پیگیری.</p>
+    </div>
+    <div class="gl-exec-hero-metrics">
+      <div><strong>{{ delegated|length }}</strong><span>منتظر دیگران</span></div>
+      <div class="{% if delegated_overdue %}is-alert{% endif %}"><strong>{{ delegated_overdue }}</strong><span>عقب‌افتاده</span></div>
+      <div><strong>{{ done_today }}</strong><span>انجام‌شده امروز</span></div>
+    </div>
+  </section>
+
+  <section class="gl-exec-capture">
+    <div class="gl-exec-section-head">
+      <div><span>⚡ ثبت سریع</span><h2>هر چیزی توی ذهنت هست، همین‌جا بنداز.</h2></div>
+      <small>بعداً تصمیم می‌گیری خودت انجام بدهی یا واگذار کنی.</small>
+    </div>
+    <form method="post" class="gl-exec-capture-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create">
+      <div class="gl-exec-title-field">
+        <input name="title" required autocomplete="off" placeholder="مثلاً: وضعیت مالیات ۱۴۰۲ را پیگیری کنم">
+      </div>
+      <div class="gl-exec-capture-grid">
+        <label><span>مسئول</span>
+          <select name="assigned_to">
+            <option value="self">خودم</option>
+            {% for p in assignees %}<option value="{{ p.pk }}">{{ p.get_full_name|default:p.username }}{% if p.profile.job_title %} — {{ p.profile.job_title }}{% endif %}</option>{% endfor %}
+          </select>
+        </label>
+        <label><span>اولویت</span>
+          <select name="priority">
+            <option value="normal">معمولی</option>
+            <option value="high">مهم</option>
+            <option value="low">کم</option>
+          </select>
+        </label>
+        <label><span>مهلت اختیاری</span><input name="due_date" dir="ltr" placeholder="۱۴۰۵/۰۶/۱۳"></label>
+      </div>
+      <textarea name="description" rows="2" placeholder="توضیح کوتاه یا نتیجه‌ای که انتظار داری..."></textarea>
+      <div class="gl-exec-capture-actions">
+        <button type="submit" name="bucket" value="today" class="gl-exec-btn primary">برای امروز</button>
+        <button type="submit" name="bucket" value="inbox" class="gl-exec-btn ghost">بفرست Inbox</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="gl-exec-focus-grid">
+    <article class="gl-exec-focus gl-exec-thing">
+      <div class="gl-exec-focus-label"><span>🔥</span><b>THE Thing</b><small>فقط یکی</small></div>
+      {% if the_thing %}
+      <div class="gl-exec-focus-body">
+        <h2>{{ the_thing.title }}</h2>
+        <p>{{ the_thing.description|default:'بدون توضیح'|truncatechars:180 }}</p>
+        <div class="gl-exec-meta">
+          <span>{{ the_thing.get_priority_display }}</span>
+          {% if the_thing.due_date %}<span>مهلت {{ the_thing.due_date|jdate }}</span>{% else %}<span>بدون مهلت</span>{% endif %}
+        </div>
+        <div class="gl-exec-task-actions">
+          <form method="post">{% csrf_token %}<input type="hidden" name="action" value="done"><input type="hidden" name="task_id" value="{{ the_thing.pk }}"><button class="gl-exec-mini done">✓ انجام شد</button></form>
+          <form method="post" class="gl-exec-delegate-form">{% csrf_token %}<input type="hidden" name="action" value="delegate"><input type="hidden" name="task_id" value="{{ the_thing.pk }}"><select name="assigned_to" required><option value="">واگذاری به…</option>{% for p in assignees %}<option value="{{ p.pk }}">{{ p.get_full_name|default:p.username }}</option>{% endfor %}</select><button class="gl-exec-mini">واگذار کن</button></form>
+        </div>
+      </div>
+      {% else %}
+      <div class="gl-exec-empty"><b>امروز هنوز کار اصلی انتخاب نشده.</b><span>یک کار مهم بالا ثبت کن؛ همین‌جا می‌آید.</span></div>
+      {% endif %}
+    </article>
+
+    <article class="gl-exec-focus gl-exec-nice">
+      <div class="gl-exec-focus-label"><span>◎</span><b>Would Be Nice</b><small>حداکثر دو کار</small></div>
+      <div class="gl-exec-small-list">
+        {% for t in would_be_nice %}
+        <div class="gl-exec-small-task">
+          <span class="gl-exec-dot"></span>
+          <div><strong>{{ t.title }}</strong><small>{% if t.due_date %}{{ t.due_date|jdate }}{% else %}Inbox{% endif %}</small></div>
+          <form method="post">{% csrf_token %}<input type="hidden" name="action" value="done"><input type="hidden" name="task_id" value="{{ t.pk }}"><button title="انجام شد">✓</button></form>
+        </div>
+        {% empty %}<div class="gl-exec-empty compact"><span>فعلاً چیزی اضافه نیست.</span></div>{% endfor %}
+      </div>
+    </article>
+
+    <article class="gl-exec-focus gl-exec-fire">
+      <div class="gl-exec-focus-label"><span>⚡</span><b>If I’m On Fire</b><small>فقط اگر انرژی اضافه داشتی</small></div>
+      <div class="gl-exec-small-list">
+        {% for t in on_fire %}
+        <div class="gl-exec-small-task">
+          <span class="gl-exec-dot"></span>
+          <div><strong>{{ t.title }}</strong><small>{{ t.due_date|jdate }}</small></div>
+        </div>
+        {% empty %}<div class="gl-exec-empty compact"><span>کار اضافه لازم نیست.</span></div>{% endfor %}
+      </div>
+    </article>
+  </section>
+
+  <div class="gl-exec-main-grid">
+    <section class="gl-exec-panel">
+      <div class="gl-exec-panel-head">
+        <div><span>👀</span><h2>منتظر دیگران</h2></div>
+        <b>{{ delegated|length }}</b>
+      </div>
+      <div class="gl-exec-waiting-list">
+        {% for t in delegated %}
+        <article class="gl-exec-waiting {% if t.due_date and t.due_date < today %}overdue{% endif %}">
+          <div class="gl-exec-person">
+            <span class="gl-exec-avatar">{% if t.assigned_to.profile.avatar %}<img src="{{ t.assigned_to.profile.avatar.url }}">{% else %}{{ t.assigned_to.first_name|first|default:t.assigned_to.username|first }}{% endif %}</span>
+            <div><strong>{{ t.assigned_to.get_full_name|default:t.assigned_to.username }}</strong><small>{{ t.assigned_to.profile.job_title|default:'پرسنل' }}</small></div>
+          </div>
+          <div class="gl-exec-wait-copy">
+            <h3>{{ t.title }}</h3>
+            <p>{{ t.description|default:'بدون توضیح'|truncatechars:130 }}</p>
+          </div>
+          <div class="gl-exec-wait-status">
+            <span class="status-{{ t.status }}">{{ t.get_status_display }}</span>
+            <small>{% if t.due_date %}{{ t.due_date|jdate }}{% else %}بدون مهلت{% endif %}</small>
+          </div>
+          <form method="post">{% csrf_token %}<input type="hidden" name="action" value="reclaim"><input type="hidden" name="task_id" value="{{ t.pk }}"><button class="gl-exec-mini subtle">برگردان به من</button></form>
+        </article>
+        {% empty %}
+        <div class="gl-exec-empty"><b>چیزی دست دیگران نمانده.</b><span>کارهایی که واگذار کنی اینجا برای پیگیری می‌مانند.</span></div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="gl-exec-panel">
+      <div class="gl-exec-panel-head"><div><span>◷</span><h2>همه کارهای امروز</h2></div><b>{{ today_tasks|length }}</b></div>
+      <div class="gl-exec-stack">
+        {% for t in today_tasks %}
+        <article class="gl-exec-stack-item">
+          <div><strong>{{ t.title }}</strong><small>{% if t.due_date < today %}عقب‌افتاده · {% endif %}{{ t.due_date|jdate }} · {{ t.get_priority_display }}</small></div>
+          <div class="gl-exec-inline-actions">
+            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="done"><input type="hidden" name="task_id" value="{{ t.pk }}"><button title="انجام شد">✓</button></form>
+            <form method="post" class="gl-exec-delegate-form mini">{% csrf_token %}<input type="hidden" name="action" value="delegate"><input type="hidden" name="task_id" value="{{ t.pk }}"><select name="assigned_to" required><option value="">واگذاری…</option>{% for p in assignees %}<option value="{{ p.pk }}">{{ p.get_full_name|default:p.username }}</option>{% endfor %}</select><button>→</button></form>
+          </div>
+        </article>
+        {% empty %}<div class="gl-exec-empty compact"><span>کار زمان‌دار امروز نداری.</span></div>{% endfor %}
+      </div>
+
+      <div class="gl-exec-panel-subhead"><span>Inbox</span><b>{{ inbox_tasks|length }}</b></div>
+      <div class="gl-exec-stack">
+        {% for t in inbox_tasks %}
+        <article class="gl-exec-stack-item">
+          <div><strong>{{ t.title }}</strong><small>{{ t.get_priority_display }}</small></div>
+          <div class="gl-exec-inline-actions">
+            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="done"><input type="hidden" name="task_id" value="{{ t.pk }}"><button title="انجام شد">✓</button></form>
+            <form method="post" class="gl-exec-delegate-form mini">{% csrf_token %}<input type="hidden" name="action" value="delegate"><input type="hidden" name="task_id" value="{{ t.pk }}"><select name="assigned_to" required><option value="">واگذاری…</option>{% for p in assignees %}<option value="{{ p.pk }}">{{ p.get_full_name|default:p.username }}</option>{% endfor %}</select><button>→</button></form>
+          </div>
+        </article>
+        {% empty %}<div class="gl-exec-empty compact"><span>Inbox خالی است.</span></div>{% endfor %}
+      </div>
+
+      <div class="gl-exec-panel-subhead"><span>بعداً</span><b>{{ later_tasks|length }}</b></div>
+      <div class="gl-exec-stack muted-stack">
+        {% for t in later_tasks %}
+        <article class="gl-exec-stack-item"><div><strong>{{ t.title }}</strong><small>{{ t.due_date|jdate }} · {{ t.get_priority_display }}</small></div></article>
+        {% empty %}<div class="gl-exec-empty compact"><span>برای بعد چیزی نچیده‌ای.</span></div>{% endfor %}
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

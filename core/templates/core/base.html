@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700;800&display=swap">
-  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v40.3.3">
+  <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v41.0.0">
   <link rel="stylesheet" href="{% static 'core/sidebar-system.css' %}?v=v1">
   <link rel="stylesheet" href="{% static 'core/referral.css' %}?v=v40.3.3">
   <link rel="stylesheet" href="{% static 'core/ui-readability-v41.css' %}?v=v41.0.0">
@@ -30,6 +30,9 @@
     <span><b>GreenLife</b><small>STAFF APP</small></span>
   </div>
   <nav class="app-nav">
+    {% if executive_access %}
+    <a href="/my-office/" class="gl-executive-nav {% if request.path|slice:':11' == '/my-office/' %}is-active{% endif %}"><span class="nav-ico">✦</span><span>دفتر من</span><b class="gl-private-badge">PRIVATE</b></a>
+    {% endif %}
     {% if user.profile.role == 'consultant' %}
     <a href="/" class="nav-main {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico">⌂</span><span>داشبورد من</span></a>
     <a href="/finance/entry/" class="consultant-finance-nav {% if request.path|slice:':15' == '/finance/entry/' %}is-active{% endif %}"><span class="nav-ico">▧</span><span>ثبت مالی</span></a>
@@ -77,6 +80,7 @@
     {% endif %}
     {% if user.profile.role != 'employee' %}<a href="/live/"><span class="nav-ico">⌘</span><span>{% if user.profile.role == "manager" %}مدیریت شعبه{% elif user.profile.role == "internal_manager" %}مدیریت داخلی{% else %}پنل مدیریتی{% endif %}</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/action-center/"><span class="nav-ico">⚡</span><span>مرکز اقدام</span></a>{% endif %}
+    {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}<a href="/my-tasks/" class="{% if request.path|slice:':10' == '/my-tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>وظایف من</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/blackboard/" class="{% if '/blackboard/' in request.path %}is-active{% endif %}"><span class="nav-ico">▰</span><span>تخته‌سیاه پرسنل</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌های پرسنل</span></a>{% endif %}
     <a href="/employees/"><span class="nav-ico">♙</span><span>پرسنل</span></a>
@@ -230,7 +234,7 @@
 <script>
 (function(){
   if('serviceWorker' in navigator){
-    window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js?v=v40.3.3',{updateViaCache:'none'}).catch(()=>{}));
+    window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js?v=v41.0.0',{updateViaCache:'none'}).catch(()=>{}));
   }
   let deferredPrompt=null;
   const bar=document.getElementById('pwaInstallBar');
@@ -275,7 +279,7 @@
 </script>
 
 <div class="gl-version-footer">
-  GreenLife Staff <strong>v40.3.3 Network & Meetings Fix</strong>
+  GreenLife Staff <strong>v41.0 Executive Workspace</strong>
 </div>
 
 </body></html>
