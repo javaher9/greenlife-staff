@@ -70,12 +70,28 @@ fi
 if docker ps --format '{{.Names}}' | grep -qx 'greenlife-staff-runtime-web_lan-1'; then
   docker tag "$(docker inspect -f '{{.Image}}' greenlife-staff-runtime-web_lan-1)" greenlife-staff-rollback-web_lan:latest
   echo "Snapshot saved: LAN web image."
+elif docker image inspect greenlife-staff-rollback-web:latest >/dev/null 2>&1; then
+  docker tag greenlife-staff-rollback-web:latest greenlife-staff-rollback-web_lan:latest
+  echo "Snapshot recovered: LAN image from public web image."
 fi
 
-echo "Building application image..."
-if ! "${COMPOSE[@]}" build --pull; then
-  echo "WARNING: Registry refresh failed; retrying with the locally cached base image." >&2
-  "${COMPOSE[@]}" build
+APP_BUILD_REQUIRED="${APP_BUILD_REQUIRED:-1}"
+if [[ "$APP_BUILD_REQUIRED" == "1" ]]; then
+  echo "Building application image..."
+  if ! DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 "${COMPOSE[@]}" build; then
+    echo "WARNING: Local-cache build failed; retrying with BuildKit without --pull." >&2
+    "${COMPOSE[@]}" build
+  fi
+else
+  echo "Infrastructure-only change detected; reusing approved local application image."
+  docker image inspect greenlife-staff-runtime-web:latest >/dev/null 2>&1 || {
+    echo "ERROR: approved local public web image is missing." >&2
+    exit 1
+  }
+  if ! docker image inspect greenlife-staff-runtime-web_lan:latest >/dev/null 2>&1; then
+    docker tag greenlife-staff-runtime-web:latest greenlife-staff-runtime-web_lan:latest
+    echo "Recovered LAN image tag from approved public web image."
+  fi
 fi
 
 echo "Validating production configuration..."
@@ -88,7 +104,11 @@ echo "Repairing staff account integrity..."
 "${COMPOSE[@]}" run --rm --entrypoint python web manage.py repair_staff_accounts --apply --verify-sessions
 
 echo "Starting/replacing containers..."
-"${COMPOSE[@]}" up -d --remove-orphans
+if [[ "$APP_BUILD_REQUIRED" == "1" ]]; then
+  "${COMPOSE[@]}" up -d --remove-orphans
+else
+  "${COMPOSE[@]}" up -d --no-build --remove-orphans
+fi
 
 if ! ./scripts/healthcheck.sh; then
   echo "Healthcheck failed. Existing database backup is available in backups/." >&2
