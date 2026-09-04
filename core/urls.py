@@ -59,7 +59,7 @@ path('attendance/corrections/',views.correction_list,name='correction_list'),pat
 path('kpi/automatic/',views.automatic_kpi_dashboard,name='automatic_kpi_dashboard'),
 path('login/',views.login_view,name='login'),path('logout/',views.logout_view,name='logout'),path('',views.dashboard,name='dashboard'),
 path('reports/',views.report_list,name='report_list'),path('reports/new/',views.report_create,name='report_create'),path('reports/<int:pk>/',views.report_detail,name='report_detail'),
-path('tasks/',views.task_list,name='task_list'),path('tasks/new/',views.task_create,name='task_create'),path('tasks/<int:pk>/',views.task_update,name='task_update'),
+path('tasks/',views.task_list,name='task_list'),path('my-tasks/',views.my_task_list,name='my_task_list'),path('tasks/new/',views.task_create,name='task_create'),path('tasks/<int:pk>/',views.task_update,name='task_update'),
 path('meeting-minutes/',meeting_views.meeting_minute_list,name='meeting_minute_list'),
 path('meeting-minutes/new/',meeting_views.meeting_minute_create,name='meeting_minute_create'),
 path('meeting-minutes/dashboard/',meeting_views.meeting_dashboard,name='meeting_dashboard'),
