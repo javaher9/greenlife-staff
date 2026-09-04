@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700;800;900&display=swap');
+
+/* Preview only: sales-network management page */
+body.gl-page-referral_dashboard,
+body.gl-page-referral_dashboard .app-sidebar,
+body.gl-page-referral_dashboard .app-main,
+body.gl-page-referral_dashboard .topbar,
+body.gl-page-referral_dashboard .rf-shell,
+body.gl-page-referral_dashboard .rf-shell *,
+body.gl-page-referral_dashboard .app-nav,
+body.gl-page-referral_dashboard .app-nav *,
+body.gl-page-referral_dashboard button,
+body.gl-page-referral_dashboard input,
+body.gl-page-referral_dashboard select,
+body.gl-page-referral_dashboard textarea {
+  font-family:'Noto Sans Arabic',Tahoma,Arial,sans-serif !important;
+}
+
+body.gl-page-referral_dashboard .rf-shell {
+  font-feature-settings:"kern" 1;
+  font-kerning:normal;
+}
+
+body.gl-page-referral_dashboard .rf-shell h1,
+body.gl-page-referral_dashboard .rf-shell h2,
+body.gl-page-referral_dashboard .rf-shell h3,
+body.gl-page-referral_dashboard .rf-shell strong,
+body.gl-page-referral_dashboard .rf-shell b {
+  font-weight:800;
+}
+
+body.gl-page-referral_dashboard .rf-shell p,
+body.gl-page-referral_dashboard .rf-shell small,
+body.gl-page-referral_dashboard .rf-shell span,
+body.gl-page-referral_dashboard .rf-shell a,
+body.gl-page-referral_dashboard .rf-shell button {
+  letter-spacing:0;
+}
