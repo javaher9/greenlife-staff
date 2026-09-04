@@ -111,6 +111,12 @@ else
   "${COMPOSE[@]}" up -d --no-build --remove-orphans
 fi
 
+# nginx.conf is bind-mounted. An infrastructure-only deploy may leave the
+# existing nginx container running, so reload it explicitly to apply proxy
+# header changes without rebuilding or contacting Docker Hub.
+"${COMPOSE[@]}" exec -T nginx nginx -t
+"${COMPOSE[@]}" exec -T nginx nginx -s reload
+
 if ! ./scripts/healthcheck.sh; then
   echo "Healthcheck failed. Existing database backup is available in backups/." >&2
   echo "Code rollback is handled by the GitHub workflow source snapshot." >&2
@@ -188,6 +194,14 @@ if [[ "$public_post_code" != "200" ]]; then
   exit 1
 fi
 echo "Public login + CSRF healthcheck OK."
+
+echo "Checking real public HTTPS endpoint..."
+external_code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 12 https://staff.greenlifeclinics.com/login/ || true)"
+if [[ "$external_code" != "200" ]]; then
+  echo "External public login healthcheck failed with HTTP ${external_code:-none}." >&2
+  exit 1
+fi
+echo "External public HTTPS login endpoint OK."
 
 if [[ -f "$LAN_COMPOSE_FILE" ]]; then
   echo "Checking private LAN login endpoint..."
