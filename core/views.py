@@ -345,6 +345,11 @@ def task_list(request):
     return render(request,'core/task_list.html',{'tasks':qs,'can_manage':role in MANAGEMENT_ROLES})
 
 @login_required
+def my_task_list(request):
+    qs=Task.objects.filter(assigned_to=request.user).select_related('assigned_to','meeting_action').order_by('status','due_date','-priority')
+    return render(request,'core/task_list.html',{'tasks':qs,'can_manage':False})
+
+@login_required
 def task_update(request,pk):
     task=get_object_or_404(Task,pk=pk,assigned_to=request.user); form=TaskStatusForm(request.POST or None,instance=task)
     if request.method=='POST' and form.is_valid():
@@ -367,7 +372,7 @@ def task_update(request,pk):
                 messages.success(request,'پیشرفت مصوبه به‌روزرسانی شد.')
         else:
             award_task(obj); messages.success(request,'وضعیت وظیفه به‌روزرسانی شد.')
-        return redirect('task_list')
+        return redirect('my_task_list' if role_of(request.user) in MANAGEMENT_ROLES else 'task_list')
     return render(request,'core/task_update.html',{'form':form,'task':task})
 
 @manager_required
