@@ -58,6 +58,7 @@ def main():
             ("DISABLE_CSRF", "0"),
             ("CSRF_COOKIE_SECURE", "1"),
             ("SESSION_COOKIE_SECURE", "1"),
+            ("CSRF_TRUSTED_ORIGINS", "https://staff.greenlifeclinics.com"),
         ):
             if values.get(key) != value:
                 set_value(lines, key, value)
