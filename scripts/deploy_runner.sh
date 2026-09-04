@@ -112,11 +112,24 @@ if [[ -z "$csrf_token" ]]; then
   exit 1
 fi
 
-public_post_code="$(curl -sS -o /dev/null -b "$public_cookie_jar" -w '%{http_code}' --max-time 8 \
+# The internal probe reaches nginx over plain HTTP while explicitly preserving the
+# external HTTPS scheme. Django correctly marks the CSRF cookie Secure, so curl
+# will not resend it to an http:// probe automatically. Read the cookie value
+# from the jar and send it explicitly; this tests Django's real CSRF origin,
+# referer and cookie validation instead of failing only because the probe itself
+# is not using TLS.
+csrf_cookie="$(awk '$6 ~ /csrftoken$/ {print $7}' "$public_cookie_jar" | tail -1)"
+if [[ -z "$csrf_cookie" ]]; then
+  echo "Public login CSRF cookie was not issued." >&2
+  exit 1
+fi
+
+public_post_code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 8 \
   -H 'Host: staff.greenlifeclinics.com' \
   -H 'X-Forwarded-Proto: https' \
   -H 'Origin: https://staff.greenlifeclinics.com' \
   -H 'Referer: https://staff.greenlifeclinics.com/login/' \
+  -H "Cookie: csrftoken=$csrf_cookie" \
   --data-urlencode "csrfmiddlewaretoken=$csrf_token" \
   --data-urlencode "username=__deploy_smoke_test__" \
   --data-urlencode "password=__invalid__" \
