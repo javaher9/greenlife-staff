@@ -80,6 +80,7 @@
     {% endif %}
     {% if user.profile.role != 'employee' %}<a href="/live/"><span class="nav-ico">⌘</span><span>{% if user.profile.role == "manager" %}مدیریت شعبه{% elif user.profile.role == "internal_manager" %}مدیریت داخلی{% else %}پنل مدیریتی{% endif %}</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/action-center/"><span class="nav-ico">⚡</span><span>مرکز اقدام</span></a>{% endif %}
+    {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}<a href="/my-tasks/" class="{% if request.path|slice:':10' == '/my-tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>وظایف من</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/blackboard/" class="{% if '/blackboard/' in request.path %}is-active{% endif %}"><span class="nav-ico">▰</span><span>تخته‌سیاه پرسنل</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌های پرسنل</span></a>{% endif %}
     <a href="/employees/"><span class="nav-ico">♙</span><span>پرسنل</span></a>
