@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+# Runtime diagnostic refresh marker.
 
 DEPLOY_PATH="${DEPLOY_PATH:-/home/ubuntu/greenlife-staff-runtime}"
 cd "$DEPLOY_PATH"
