@@ -372,6 +372,15 @@ def task_update(request,pk):
                 messages.success(request,'پیشرفت مصوبه به‌روزرسانی شد.')
         else:
             award_task(obj); messages.success(request,'وضعیت وظیفه به‌روزرسانی شد.')
+        if obj.created_by_id and obj.created_by_id!=request.user.id and _is_executive_user(obj.created_by):
+            actor=request.user.get_full_name() or request.user.username
+            StaffNotification.objects.create(
+                user=obj.created_by,
+                title=f'بروزرسانی کار: {obj.title[:120]}',
+                message=f'{actor} وضعیت کار را به «{obj.get_status_display()}» تغییر داد.',
+                notification_type='task_update',
+                related_date=obj.due_date or timezone.localdate(),
+            )
         return redirect('my_task_list' if role_of(request.user) in MANAGEMENT_ROLES else 'task_list')
     return render(request,'core/task_update.html',{'form':form,'task':task})
 
@@ -2258,6 +2267,23 @@ def executive_workspace(request):
     not encryption against server/database administrators.
     """
     today=timezone.localdate()
+
+    def audit_exec(action,task,metadata=None):
+        try:
+            AuditLog.objects.create(
+                actor=request.user,
+                action=f'executive_{action}',
+                path=request.path[:255],
+                method=request.method[:10],
+                object_type='Task',
+                object_id=str(task.pk),
+                summary=task.title[:250],
+                metadata=metadata or {},
+                ip_address=_request_ip(request),
+            )
+        except Exception:
+            pass
+
     active_people=User.objects.filter(
         is_active=True,
         profile__is_active=True,
@@ -2301,6 +2327,7 @@ def executive_workspace(request):
                 due_date=due_date,
                 priority=priority,
             )
+            audit_exec('create',task,{'assigned_to':assigned_to.username,'due_date':str(due_date or '')})
             if assigned_to.pk!=request.user.pk:
                 StaffNotification.objects.create(
                     user=assigned_to,
@@ -2321,6 +2348,7 @@ def executive_workspace(request):
             if task.status=='done':
                 task.status='todo'
             task.save(update_fields=['assigned_to','status','updated_at'])
+            audit_exec('delegate',task,{'assigned_to':assignee.username})
             StaffNotification.objects.create(
                 user=assignee,
                 title='وظیفه جدید از دفتر دکتر',
@@ -2337,6 +2365,7 @@ def executive_workspace(request):
             if task.status=='done':
                 task.status='todo'
             task.save(update_fields=['assigned_to','status','updated_at'])
+            audit_exec('reclaim',task)
             messages.success(request,'کار به دفتر من برگشت.')
             return redirect('executive_workspace')
 
@@ -2344,6 +2373,7 @@ def executive_workspace(request):
             task=get_object_or_404(Task,pk=request.POST.get('task_id'),created_by=request.user,assigned_to=request.user)
             task.status='done'
             task.save(update_fields=['status','updated_at'])
+            audit_exec('done',task)
             award_task(task)
             messages.success(request,'انجام شد ✓')
             return redirect('executive_workspace')
