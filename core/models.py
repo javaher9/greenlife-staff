@@ -167,6 +167,72 @@ class ReferralLead(models.Model):
     def __str__(self): return f'{self.full_name} - {self.phone}'
 
 
+class VisitAppointment(models.Model):
+    STATUS=[
+        ('booked','رزرو شده'),
+        ('arrived','مراجعه کرده'),
+        ('completed','انجام شد'),
+        ('cancelled','لغو شده'),
+    ]
+    SOURCE=[
+        ('call_center','کال‌سنتر'),
+        ('receptionist','منشی'),
+        ('admin','مدیریت'),
+    ]
+    lead=models.ForeignKey(
+        ReferralLead,on_delete=models.SET_NULL,null=True,blank=True,related_name='appointments'
+    )
+    branch=models.ForeignKey(
+        Branch,on_delete=models.PROTECT,related_name='visit_appointments'
+    )
+    full_name=models.CharField(max_length=140)
+    phone=models.CharField(max_length=30,db_index=True)
+    service=models.CharField(max_length=160,blank=True)
+    appointment_date=models.DateField(db_index=True)
+    appointment_time=models.TimeField()
+    status=models.CharField(max_length=20,choices=STATUS,default='booked',db_index=True)
+    notes=models.TextField(blank=True)
+    source=models.CharField(max_length=20,choices=SOURCE,default='call_center')
+    created_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='created_visit_appointments'
+    )
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering=['appointment_date','appointment_time','id']
+        constraints=[
+            models.UniqueConstraint(
+                fields=['branch','appointment_date','appointment_time'],
+                condition=~models.Q(status='cancelled'),
+                name='uniq_active_visit_appointment_slot',
+            ),
+        ]
+        indexes=[
+            models.Index(
+                fields=['branch','appointment_date','appointment_time'],
+                name='visitappt_branch_day_time_idx',
+            ),
+        ]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        minute=self.appointment_time.minute
+        if self.appointment_time.hour<9 or self.appointment_time.hour>18:
+            raise ValidationError({'appointment_time':'ساعت نوبت باید بین ۰۹:۰۰ تا ۱۸:۰۰ باشد.'})
+        if self.appointment_time.hour==18 and minute!=0:
+            raise ValidationError({'appointment_time':'آخرین نوبت مجاز ساعت ۱۸:۰۰ است.'})
+        if minute not in (0,15,30,45) or self.appointment_time.second or self.appointment_time.microsecond:
+            raise ValidationError({'appointment_time':'نوبت‌ها فقط در فاصله‌های ۱۵ دقیقه‌ای ثبت می‌شوند.'})
+
+    def save(self,*args,**kwargs):
+        self.full_clean(exclude=['branch','appointment_date','appointment_time'] if kwargs.pop('_skip_slot_unique_validation',False) else None)
+        return super().save(*args,**kwargs)
+
+    def __str__(self):
+        return f'{self.appointment_date} {self.appointment_time:%H:%M} - {self.full_name}'
+
+
 class ReferralSale(models.Model):
     STATUS=[('draft','در انتظار تأیید'),('approved','تأیید شده'),('paid','پورسانت پرداخت شد'),('cancelled','لغو شده')]
     SYNC_STATUS=ReferralProfile.SYNC_STATUS
