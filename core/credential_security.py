@@ -93,6 +93,13 @@ def verify_mobile_pin(user, pin):
     return False,status
 
 
+def record_mobile_login(user):
+    credential=credential_for(user)
+    credential.last_mobile_login=timezone.now()
+    credential.save(update_fields=['last_mobile_login','updated_at'])
+    return credential
+
+
 def record_desktop_login(user):
     credential=credential_for(user)
     credential.last_desktop_login=timezone.now()
