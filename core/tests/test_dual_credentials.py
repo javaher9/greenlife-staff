@@ -23,15 +23,17 @@ class DualCredentialTests(TestCase):
             username='drjavaherian',password='AdminDesktop123',
             first_name='مدیر',last_name='سیستم',
         )
-        EmployeeProfile.objects.create(
-            user=self.admin,role='admin',branch=self.branch,job_title='مدیر سیستم',is_active=True,
+        EmployeeProfile.objects.update_or_create(
+            user=self.admin,
+            defaults={'role':'admin','branch':self.branch,'job_title':'مدیر سیستم','is_active':True},
         )
         self.staff=User.objects.create_user(
             username='staff-dual',password='LegacyDesktop123',
             first_name='کارمند',last_name='آزمایشی',
         )
-        self.profile=EmployeeProfile.objects.create(
-            user=self.staff,role='employee',branch=self.branch,job_title='کارمند',is_active=True,
+        self.profile,_=EmployeeProfile.objects.update_or_create(
+            user=self.staff,
+            defaults={'role':'employee','branch':self.branch,'job_title':'کارمند','is_active':True},
         )
 
     def test_mobile_falls_back_to_existing_desktop_password_until_pin_is_set(self):
