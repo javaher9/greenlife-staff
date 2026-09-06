@@ -22,7 +22,7 @@
 <link rel="apple-touch-icon" href="/static/core/icon-192.png?v=v40.3.3">
 
 </head>
-<body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' %}gl-role-employee{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
+<body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'receptionist' %}gl-role-employee{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
 <div class="mobile-more-backdrop" hidden></div>
 <aside class="app-sidebar">
   <div class="brand brand-premium">
@@ -52,6 +52,17 @@
     <a href="/reports/" class="employee-bottom-nav cc-mobile-reports {% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش روزانه</span></a>
     <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>شرح وظایف</span></a>
     <a href="/notifications/" class="employee-bottom-nav cc-mobile-notifications {% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico">♢</span><span>اعلان‌ها</span></a>
+    <a href="/profile/"><span class="nav-ico">◉</span><span>پروفایل</span></a>
+    <a href="/logout/"><span class="nav-ico">↪</span><span>خروج</span></a>
+    {% elif user.profile.role == 'receptionist' %}
+    <a href="/" class="employee-bottom-nav {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico">⌂</span><span>خانه</span></a>
+    <a href="/attendance/" class="attendance-nav employee-bottom-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور و غیاب</span></a>
+    <a href="/tasks/" class="employee-bottom-nav {% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>وظایف من</span></a>
+    <a href="/reports/" class="employee-bottom-nav {% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش روزانه</span></a>
+    <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>شرح وظایف</span></a>
+    <a href="/service-requests/"><span class="nav-ico">✓</span><span>درخواست‌ها</span></a>
+    <a href="/device-issues/mine/"><span class="nav-ico">⚒</span><span>خرابی دستگاه</span></a>
+    <a href="/notifications/" class="employee-bottom-nav {% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico">♢</span><span>اعلان‌ها</span></a>
     <a href="/profile/"><span class="nav-ico">◉</span><span>پروفایل</span></a>
     <a href="/logout/"><span class="nav-ico">↪</span><span>خروج</span></a>
     {% elif user.profile.role == 'referrer' %}
