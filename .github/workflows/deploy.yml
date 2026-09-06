@@ -29,14 +29,51 @@ jobs:
           FREE_GB=$((FREE_KB / 1024 / 1024))
           echo "Disk before cleanup: ${FREE_GB} GB free, ${USED_PERCENT}% used"
 
-          # Only reclaim disposable caches/logs. Never prune Docker volumes or app data.
+          # Only reclaim disposable caches, stopped project containers and old backup copies.
+          # Never prune Docker volumes, the live PostgreSQL data, or the live media volume.
           if [ "$FREE_GB" -lt 20 ] || [ "$USED_PERCENT" -ge 82 ]; then
             echo "Low disk detected; reclaiming safe disposable space..."
             sudo journalctl --vacuum-size=200M || true
             sudo apt-get clean || true
+
+            # Stopped Compose containers can pin several-GB application images.
+            # Remove only stopped containers belonging to this GreenLife runtime.
+            stopped_ids="$(docker ps -aq --filter status=exited --filter name=greenlife-staff-runtime- || true)"
+            if [ -n "$stopped_ids" ]; then
+              echo "Removing stopped GreenLife runtime containers..."
+              docker rm $stopped_ids || true
+            fi
+
+            # Emergency backup retention: preserve recent recoverability while avoiding
+            # multiple full media copies exhausting the production disk.
+            BACKUP_DIR="/home/ubuntu/greenlife-staff-runtime/backups"
+            if [ -d "$BACKUP_DIR" ]; then
+              echo "Backup storage before emergency retention:"
+              du -sh "$BACKUP_DIR" || true
+              python3 - "$BACKUP_DIR" <<'PY'
+from pathlib import Path
+import sys
+
+root=Path(sys.argv[1])
+policies=(("media_*.tar.gz",3),("db_*.dump",7))
+for pattern,keep in policies:
+    files=sorted(
+        (p for p in root.glob(pattern) if p.is_file()),
+        key=lambda p:p.stat().st_mtime,
+        reverse=True,
+    )
+    for old in files[keep:]:
+        print(f"Deleting old backup copy: {old.name}")
+        old.unlink(missing_ok=True)
+PY
+              echo "Backup storage after emergency retention:"
+              du -sh "$BACKUP_DIR" || true
+            fi
+
             docker image prune -af || true
             docker builder prune -af || true
             find "$HOME/actions-runner/_diag" -type f -mtime +7 -delete 2>/dev/null || true
+            find "$HOME/actions-runner/_work/_temp" -mindepth 1 -mtime +1 -delete 2>/dev/null || true
           fi
 
           df -h / || true
