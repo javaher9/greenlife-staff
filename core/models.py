@@ -217,6 +217,8 @@ class VisitAppointment(models.Model):
 
     def clean(self):
         from django.core.exceptions import ValidationError
+        if not self.appointment_time:
+            return
         minute=self.appointment_time.minute
         if self.appointment_time.hour<9 or self.appointment_time.hour>18:
             raise ValidationError({'appointment_time':'ساعت نوبت باید بین ۰۹:۰۰ تا ۱۸:۰۰ باشد.'})
