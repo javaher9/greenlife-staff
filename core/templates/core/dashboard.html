@@ -1,6 +1,6 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}
 {% block content %}
-{% if user.profile.role == "employee" or user.profile.role == "consultant" %}
+{% if user.profile.role == "employee" or user.profile.role == "consultant" or user.profile.role == "receptionist" %}
 <div class="gl-employee-dashboard">
 
   <header class="gl-employee-mobile-head">

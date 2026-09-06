@@ -231,6 +231,8 @@ class EmployeeEditForm(forms.Form):
             employee.job_title='کارشناس کال‌سنتر'
         if employee.role=='consultant' and not employee.job_title:
             employee.job_title='مشاور'
+        if employee.role=='receptionist' and not employee.job_title:
+            employee.job_title='منشی'
         employee.employee_code=d['employee_code'] or None
         employee.save()
         return employee

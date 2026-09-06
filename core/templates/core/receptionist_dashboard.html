@@ -1,0 +1,168 @@
+{% load static jalali_tags %}
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>پنل منشی | Staff</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700;800&display=swap">
+  <style>
+    :root{
+      --bg:#f5f7fb;--card:#fff;--line:#e8ebf2;--ink:#17213d;--muted:#7b8499;
+      --purple:#7257e8;--purple-soft:#f0edff;--green:#20a06b;--green-soft:#eaf8f1;
+      --amber:#c98b16;--amber-soft:#fff7df;--red:#d34a68;--red-soft:#fff0f3;
+      --shadow:0 12px 36px rgba(34,43,74,.07);--r:22px;
+    }
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:"Noto Sans Arabic",Tahoma,sans-serif}
+    a{text-decoration:none;color:inherit}button,input{font:inherit}
+    .shell{display:grid;grid-template-columns:minmax(0,1fr) 232px;min-height:100vh}
+    .side{grid-column:2;background:#fff;border-right:1px solid var(--line);padding:24px 18px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+    .side-head{display:flex;align-items:center;gap:12px;padding:2px 6px 20px;border-bottom:1px solid var(--line)}
+    .side-mark{width:42px;height:42px;border-radius:15px;background:linear-gradient(145deg,#7860f3,#9a87ff);display:grid;place-items:center;color:white;font-weight:800;box-shadow:0 10px 22px rgba(114,87,232,.24)}
+    .side-head strong{display:block;font-size:15px}.side-head span{font-size:11px;color:var(--muted)}
+    .nav{display:flex;flex-direction:column;gap:6px;margin-top:20px}.nav a,.nav .disabled{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;font-size:13px;font-weight:600}
+    .nav a:hover{background:#f6f4ff}.nav a.active{background:var(--purple-soft);color:#5e43db}.nav .disabled{color:#a7adba;cursor:not-allowed}
+    .ico{width:29px;height:29px;border-radius:10px;background:#f4f5f9;display:grid;place-items:center;font-size:14px}.active .ico{background:#dfd8ff}
+    .side-foot{margin-top:auto;border-top:1px solid var(--line);padding-top:14px;display:grid;gap:6px}.side-foot a{padding:9px 11px;border-radius:11px;font-size:12px}.side-foot a:hover{background:#f6f7fa}
+    .main{grid-column:1;padding:22px 26px 34px;min-width:0}
+    .top{background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px 16px;display:grid;grid-template-columns:auto minmax(260px,1fr) auto;align-items:center;gap:18px;box-shadow:0 7px 24px rgba(34,43,74,.045)}
+    .hello h1{font-size:18px;margin:0 0 4px}.hello p{font-size:11px;color:var(--muted);margin:0}
+    .search{height:44px;border-radius:14px;background:#f6f7fa;border:1px solid #eff1f5;display:flex;align-items:center;gap:10px;padding:0 14px;color:#9aa2b2}
+    .search input{border:0;outline:0;background:transparent;width:100%;color:#949baa}.search input::placeholder{color:#a5acba}
+    .userbox{display:flex;align-items:center;gap:10px;white-space:nowrap}.avatar{width:42px;height:42px;border-radius:50%;overflow:hidden;background:#ece8ff;color:#6447db;display:grid;place-items:center;font-weight:800}
+    .avatar img{width:100%;height:100%;object-fit:cover}.userbox strong{font-size:13px;display:block}.userbox small{font-size:10px;color:var(--muted)}
+    .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:16px 0}
+    .kpi{background:#fff;border:1px solid var(--line);border-radius:19px;padding:16px;box-shadow:var(--shadow);min-height:116px;display:flex;justify-content:space-between;gap:12px}
+    .kpi-copy small{font-size:11px;color:var(--muted);font-weight:700}.kpi-copy strong{font-size:28px;display:block;line-height:1.4;margin-top:4px}.kpi-copy p{font-size:10px;color:#9ba3b3;margin:3px 0 0}
+    .kpi-icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-size:19px;background:var(--purple-soft);color:var(--purple)}
+    .kpi:nth-child(2) .kpi-icon{background:var(--green-soft);color:var(--green)}.kpi:nth-child(3) .kpi-icon{background:#eef3ff;color:#4c6adf}.kpi:nth-child(4) .kpi-icon{background:var(--red-soft);color:var(--red)}
+    .grid-main{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.8fr);gap:14px}
+    .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+    .card-head{padding:15px 17px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}.card-head h2{font-size:14px;margin:0}.card-head span,.card-head a{font-size:10px;color:var(--muted)}
+    .appointments{min-height:326px}.table-head{display:grid;grid-template-columns:72px 1.2fr 1fr 1fr 86px;gap:10px;padding:10px 17px;background:#fafbfc;color:#8c94a5;font-size:10px;font-weight:700}
+    .empty-big{min-height:245px;display:grid;place-items:center;text-align:center;padding:34px}.empty-big .symbol{width:60px;height:60px;border-radius:20px;background:var(--purple-soft);display:grid;place-items:center;margin:0 auto 13px;color:var(--purple);font-size:25px}
+    .empty-big strong{display:block;font-size:14px;margin-bottom:6px}.empty-big p{font-size:11px;line-height:2;color:var(--muted);margin:0;max-width:390px}
+    .urgent-list{padding:8px 15px 14px}.urgent-row{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid #f0f2f6}.urgent-row:last-child{border-bottom:0}.check{width:20px;height:20px;border:2px solid #cfd5e1;border-radius:6px;flex:0 0 20px;margin-top:2px}
+    .urgent-row strong{font-size:11px;display:block}.urgent-row small{display:block;color:var(--muted);font-size:9px;margin-top:3px}.empty-mini{padding:22px;text-align:center;color:var(--muted);font-size:11px}
+    .bottom-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:14px}.profile-card,.cem-card,.messages-card{min-height:300px}
+    .profile-body{padding:16px}.profile-placeholder{display:flex;align-items:center;gap:12px;padding:12px;border:1px dashed #dfe3eb;border-radius:16px;background:#fbfcfe}.patient-avatar{width:56px;height:56px;border-radius:18px;background:#eeeaff;display:grid;place-items:center;color:var(--purple);font-size:21px}
+    .profile-placeholder strong{font-size:12px;display:block}.profile-placeholder small{font-size:9px;color:var(--muted)}.tier-title{font-size:10px;color:var(--muted);margin:18px 0 9px}
+    .tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.tier{padding:7px 3px;text-align:center;border-radius:10px;background:#f5f6f9;font-size:9px;color:#7d8492}.tier.gold{background:#fff4d6;color:#a16a00}.tier.platinum{background:#eef0f4;color:#626b7a}.tier.diamond{background:#eee9ff;color:#6045d7}
+    .future-note{margin-top:14px;padding:10px 11px;background:#f8f7ff;border-radius:12px;color:#7d70b2;font-size:9px;line-height:1.9}
+    .cem-body{padding:13px 15px}.insight{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #f0f2f6}.insight:last-of-type{border-bottom:0}.insight-icon{width:31px;height:31px;border-radius:10px;background:#f5f3ff;display:grid;place-items:center;flex:0 0 31px}.insight strong{font-size:10px;display:block}.insight p{font-size:9px;color:var(--muted);line-height:1.7;margin:2px 0 0}
+    .disc{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}.disc-title{display:flex;justify-content:space-between;font-size:10px}.disc-title span{color:var(--muted);font-size:9px}.disc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}.disc-grid b{height:38px;border-radius:10px;background:#f4f5f8;display:grid;place-items:center;font-size:14px}.disc-grid b:nth-child(1){color:#15995f}.disc-grid b:nth-child(2){color:#d44364}.disc-grid b:nth-child(3){color:#356ac7}.disc-grid b:nth-child(4){color:#677080}
+    .messages{padding:9px 14px 13px}.msg{padding:10px 0;border-bottom:1px solid #f0f2f6}.msg:last-child{border-bottom:0}.msg strong{font-size:10px;display:block}.msg small{font-size:8px;color:#9aa2b2}.msg p{font-size:9px;line-height:1.8;color:#687187;margin:4px 0 0}
+    .composer{margin:0 14px 14px;height:40px;border:1px dashed #d7dce7;border-radius:12px;display:flex;align-items:center;padding:0 12px;color:#a1a8b7;font-size:9px}
+    .actions{display:flex;align-items:center;justify-content:space-between;margin-top:16px}.primary-action{border:0;border-radius:15px;background:linear-gradient(135deg,#7a5df0,#6448dc);color:#fff;padding:12px 20px;font-weight:800;font-size:12px;box-shadow:0 12px 24px rgba(110,80,226,.23);opacity:.65;cursor:not-allowed}
+    .attendance-pill{padding:8px 11px;border-radius:12px;background:var(--green-soft);color:#168456;font-size:10px;font-weight:700}.attendance-pill.off{background:var(--amber-soft);color:#9e7119}
+    .footnote{font-size:9px;color:#a1a8b5}
+    @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.bottom-grid{grid-template-columns:1fr}.grid-main{grid-template-columns:1fr}.side{width:210px}.shell{grid-template-columns:minmax(0,1fr) 210px}}
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="side-head">
+      <div class="side-mark">M</div>
+      <div><strong>پنل منشی</strong><span>{{ profile.branch|default:"پذیرش" }}</span></div>
+    </div>
+    <nav class="nav">
+      <a href="/" class="active"><span class="ico">⌂</span>داشبورد</a>
+      <span class="disabled" title="پس از اتصال CRM فعال می‌شود"><span class="ico">♙</span>مراجعین</span>
+      <span class="disabled" title="پس از اتصال CRM فعال می‌شود"><span class="ico">▣</span>نوبت‌دهی</span>
+      <span class="disabled" title="پس از اتصال CRM فعال می‌شود"><span class="ico">◎</span>پذیرش</span>
+      <span class="disabled" title="پس از اتصال مالی فعال می‌شود"><span class="ico">▤</span>پرداخت</span>
+      <a href="/tasks/"><span class="ico">✓</span>پیگیری</a>
+      <span class="disabled" title="در فاز بعدی فعال می‌شود"><span class="ico">◈</span>CRM / CEM</span>
+      <a href="/service-requests/"><span class="ico">✉</span>کارتابل داخلی</a>
+      <a href="/reports/"><span class="ico">▥</span>گزارش روزانه</a>
+    </nav>
+    <div class="side-foot">
+      <a href="/attendance/">◷ حضور و غیاب</a>
+      <a href="/profile/">◉ پرونده من</a>
+      <a href="/logout/">↪ خروج</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="top">
+      <div class="hello"><h1>سلام {{ user.first_name|default:user.username }} 👋</h1><p>{{ profile.branch|default:"مرکز پذیرش" }} · {{ jalali_dashboard_date }}</p></div>
+      <label class="search"><span>⌕</span><input disabled placeholder="جستجوی نام مراجعه‌کننده، تلفن یا کد پرونده"></label>
+      <div class="userbox">
+        <div class="avatar">{% if profile.avatar %}<img src="{{ profile.avatar.url }}" alt="">{% else %}{{ user.first_name|first|default:user.username|first }}{% endif %}</div>
+        <div><strong>{{ user.get_full_name|default:user.username }}</strong><small>{{ profile.job_title|default:"منشی" }}</small></div>
+      </div>
+    </header>
+
+    <section class="kpis">
+      <article class="kpi"><div class="kpi-copy"><small>نوبت‌های امروز</small><strong>—</strong><p>با اتصال سیستم نوبت‌دهی فعال می‌شود</p></div><div class="kpi-icon">▣</div></article>
+      <article class="kpi"><div class="kpi-copy"><small>مراجعین امروز</small><strong>—</strong><p>پس از اتصال پرونده مراجعین</p></div><div class="kpi-icon">♙</div></article>
+      <article class="kpi"><div class="kpi-copy"><small>پرداخت‌های امروز</small><strong>—</strong><p>بدون نمایش اطلاعات مالی ساختگی</p></div><div class="kpi-icon">▤</div></article>
+      <article class="kpi"><div class="kpi-copy"><small>پیگیری‌های باز</small><strong>{{ receptionist_task_count|default:0 }}</strong><p>بر اساس وظایف واقعی شما</p></div><div class="kpi-icon">✓</div></article>
+    </section>
+
+    <section class="grid-main">
+      <article class="card appointments">
+        <div class="card-head"><h2>لیست نوبت‌های امروز</h2><span>داده واقعی CRM</span></div>
+        <div class="table-head"><span>ساعت</span><span>نام مراجعه‌کننده</span><span>خدمت</span><span>پزشک / مشاور</span><span>وضعیت</span></div>
+        <div class="empty-big"><div><div class="symbol">▣</div><strong>نوبت‌ها آماده اتصال هستند</strong><p>این بخش از ابتدا برای اتصال به CRM و پنل مشاور/پزشک طراحی شده است. تا زمان اتصال، هیچ نام یا نوبت فرضی در محیط واقعی نشان داده نمی‌شود.</p></div></div>
+      </article>
+
+      <article class="card">
+        <div class="card-head"><h2>کارهای فوری امروز</h2><a href="/tasks/">نمایش همه</a></div>
+        <div class="urgent-list">
+          {% for task in receptionist_tasks %}
+          <a class="urgent-row" href="/tasks/"><span class="check"></span><div><strong>{{ task.title }}</strong><small>{{ task.get_priority_display }}{% if task.due_date %} · {{ task.due_date|jdate }}{% endif %}</small></div></a>
+          {% empty %}
+          <div class="empty-mini">در حال حاضر کار باز ثبت‌شده‌ای ندارید.</div>
+          {% endfor %}
+        </div>
+      </article>
+    </section>
+
+    <section class="bottom-grid">
+      <article class="card profile-card">
+        <div class="card-head"><h2>پروفایل مراجعه‌کننده</h2><span>Customer Tier</span></div>
+        <div class="profile-body">
+          <div class="profile-placeholder"><div class="patient-avatar">♙</div><div><strong>یک مراجعه‌کننده را انتخاب کنید</strong><small>پروفایل، سابقه و سطح مشتری اینجا نمایش داده می‌شود.</small></div></div>
+          <div class="tier-title">سطح مشتری</div>
+          <div class="tiers"><span class="tier">Silver</span><span class="tier gold">Gold</span><span class="tier platinum">Platinum</span><span class="tier diamond">Diamond</span></div>
+          <div class="future-note">سطح مشتری از الان در طراحی سیستم لحاظ شده و بعداً با قوانین ارزش مشتری و CEM به‌صورت واقعی محاسبه/ثبت می‌شود.</div>
+        </div>
+      </article>
+
+      <article class="card cem-card">
+        <div class="card-head"><h2>شناخت مراجعه‌کننده (CEM)</h2><span>Experience</span></div>
+        <div class="cem-body">
+          <div class="insight"><div class="insight-icon">◷</div><div><strong>ترجیحات و حساسیت‌ها</strong><p>نکاتی مثل حساسیت به معطلی، روش تماس ترجیحی و سبک تصمیم‌گیری اینجا ثبت می‌شود.</p></div></div>
+          <div class="insight"><div class="insight-icon">✎</div><div><strong>یادداشت مشترک تیم</strong><p>کال‌سنتر، منشی و سایر افراد مجاز می‌توانند نکته مرتبط با تجربه مراجعه را ثبت کنند.</p></div></div>
+          <div class="disc"><div class="disc-title"><strong>تیپ شخصیتی (DISC)</strong><span>تستی / تخمینی</span></div><div class="disc-grid"><b>D</b><b>I</b><b>S</b><b>C</b></div></div>
+        </div>
+      </article>
+
+      <article class="card messages-card">
+        <div class="card-head"><h2>کارتابل و پیام داخلی</h2><a href="/notifications/">اعلان‌ها</a></div>
+        <div class="messages">
+          {% for item in receptionist_notifications %}
+          <a class="msg" href="/notifications/"><strong>{{ item.title }}</strong><small>اعلان داخلی</small><p>{{ item.message|truncatechars:120 }}</p></a>
+          {% empty %}
+          <div class="empty-mini">پیام یا اعلان خوانده‌نشده‌ای ندارید.</div>
+          {% endfor %}
+        </div>
+        <div class="composer">چت پرونده‌محور در فاز CEM به این بخش متصل می‌شود.</div>
+      </article>
+    </section>
+
+    <div class="actions">
+      <button class="primary-action" type="button" disabled title="پس از اتصال CRM فعال می‌شود">＋ پذیرش / مراجعه‌کننده جدید</button>
+      <div>
+        {% if attendance_today.check_in %}<span class="attendance-pill">✓ ورود امروز {{ attendance_today.check_in|date:"H:i" }}</span>{% else %}<a href="/attendance/" class="attendance-pill off">ورود امروز هنوز ثبت نشده</a>{% endif %}
+      </div>
+      <span class="footnote">نسخه دسکتاپ منشی · تم سفید</span>
+    </div>
+  </main>
+</div>
+</body>
+</html>

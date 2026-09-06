@@ -1,0 +1,49 @@
+name: Validate GreenLife Staff PR
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  receptionist-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: greenlife
+          POSTGRES_USER: greenlife
+          POSTGRES_PASSWORD: test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U greenlife -d greenlife"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DEBUG: "1"
+      SECRET_KEY: "test-only-strong-secret-key-for-ci-receptionist-panel"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
+      POSTGRES_DB: greenlife
+      POSTGRES_USER: greenlife
+      POSTGRES_PASSWORD: test-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Compile changed application
+        run: python -m compileall -q core greenlife
+      - name: Django system check
+        run: python manage.py check
+      - name: Receptionist role regression tests
+        run: python manage.py test core.tests.test_receptionist_role --verbosity 2

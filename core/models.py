@@ -31,6 +31,7 @@ class EmployeeProfile(models.Model):
         ('manager','مدیر شعبه'),
         ('call_center','کال‌سنتر'),
         ('consultant','مشاور'),
+        ('receptionist','منشی'),
         ('employee','کارمند'),
         ('referrer','معرف مشتری'),
     ]

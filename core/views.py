@@ -27,7 +27,16 @@ def role_of(user): return getattr(getattr(user,'profile',None),'role','employee'
 
 MANAGEMENT_ROLES=('admin','internal_manager','manager')
 FINANCE_ROLES=('admin','manager')
-PERSONNEL_ROLES=('employee','call_center','consultant')
+PERSONNEL_ROLES=('employee','call_center','consultant','receptionist')
+
+
+def _is_mobile_request(request):
+    """Keep the established dark personnel experience on phones."""
+    if (request.META.get('HTTP_SEC_CH_UA_MOBILE') or '').strip() == '?1':
+        return True
+    ua=(request.META.get('HTTP_USER_AGENT') or '').lower()
+    mobile_tokens=('iphone','ipod','mobile','windows phone','opera mini')
+    return any(token in ua for token in mobile_tokens)
 
 
 def _is_executive_user(user):
@@ -162,6 +171,38 @@ def dashboard(request):
     role=role_of(request.user)
     if _is_executive_user(request.user):
         return redirect('executive_workspace')
+    if role=='receptionist' and not _is_mobile_request(request):
+        profile=getattr(request.user,'profile',None)
+        today_local=timezone.localdate()
+        jalali_year,jalali_month,jalali_day=gregorian_to_jalali(
+            today_local.year,today_local.month,today_local.day
+        )
+        weekday_names={0:'دوشنبه',1:'سه‌شنبه',2:'چهارشنبه',3:'پنجشنبه',4:'جمعه',5:'شنبه',6:'یکشنبه'}
+        jalali_month_names=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند']
+        jalali_dashboard_date=f"{weekday_names[today_local.weekday()]} {jalali_day} {jalali_month_names[jalali_month-1]} {jalali_year}"
+        receptionist_tasks=Task.objects.filter(
+            assigned_to=request.user
+        ).exclude(status='done').order_by('due_date','-priority','id')[:5]
+        receptionist_notifications=StaffNotification.objects.filter(
+            user=request.user,is_read=False
+        ).order_by('-created_at')[:4]
+        attendance_today=Attendance.objects.filter(
+            user=request.user,date=today_local
+        ).first()
+        return render(request,'core/receptionist_dashboard.html',{
+            'role':role,
+            'profile':profile,
+            'receptionist_tasks':receptionist_tasks,
+            'receptionist_task_count':Task.objects.filter(
+                assigned_to=request.user
+            ).exclude(status='done').count(),
+            'receptionist_notifications':receptionist_notifications,
+            'notification_count':StaffNotification.objects.filter(
+                user=request.user,is_read=False
+            ).count(),
+            'attendance_today':attendance_today,
+            'jalali_dashboard_date':jalali_dashboard_date,
+        })
     if role=='call_center':
         return redirect('call_center_dashboard')
     if role=='referrer':
