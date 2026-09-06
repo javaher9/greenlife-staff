@@ -210,7 +210,7 @@ if [[ -f "$LAN_COMPOSE_FILE" ]]; then
   echo "Checking private LAN login endpoint..."
   lan_ok=0
   for i in {1..30}; do
-    code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 5 -H 'Host: 192.168.40.96' http://127.0.0.1:8086/login/ || true)"
+    code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 5 -H 'Host: localhost' http://127.0.0.1:8086/login/ || true)"
     if [[ "$code" == "200" ]]; then
       lan_ok=1
       echo "LAN login endpoint OK: http://192.168.40.96:8086/login/"
