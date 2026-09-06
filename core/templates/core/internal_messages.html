@@ -1,0 +1,59 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<style>
+.msg-page{max-width:1400px;margin:0 auto 80px;display:grid;grid-template-columns:300px minmax(0,1fr);gap:12px;font-family:Tahoma,sans-serif}
+.msg-contacts,.msg-thread{border:1px solid #e1e6ee;border-radius:18px;background:#fff;box-shadow:0 8px 24px rgba(38,50,73,.06);overflow:hidden}
+.msg-contacts-head,.msg-thread-head{padding:16px 17px;border-bottom:1px solid #edf0f4}
+.msg-contacts-head h2,.msg-thread-head h1{margin:0 0 5px;color:#17223a}.msg-contacts-head h2{font-size:16px}.msg-thread-head h1{font-size:19px}
+.msg-contacts-head p,.msg-thread-head p{margin:0;color:#7c8798;font-size:10px;line-height:1.7}
+.msg-contact-list{max-height:680px;overflow:auto;padding:8px}
+.msg-contact{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;color:#344158;text-decoration:none;margin-bottom:3px}.msg-contact:hover,.msg-contact.active{background:#f3effa}.msg-contact.public{background:#eef8f3;color:#236c50}.msg-avatar{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:#eee9f7;color:#694a98;font-weight:900;flex:0 0 38px;overflow:hidden}.msg-avatar img{width:100%;height:100%;object-fit:cover}.msg-contact strong{display:block;font-size:11px}.msg-contact small{display:block;color:#8490a0;font-size:9px;margin-top:3px}.msg-unread{margin-right:auto;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#c73b59;color:#fff;display:grid;place-items:center;font-size:8px;font-weight:900}
+.msg-thread{display:grid;grid-template-rows:auto minmax(380px,1fr) auto;min-height:680px}.msg-thread-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.msg-thread-head .room-meta{min-width:0}.msg-room-pill{padding:6px 9px;border-radius:999px;background:#eef8f3;color:#237151;font-size:9px;font-weight:900;white-space:nowrap}
+.msg-stream{padding:18px;overflow:auto;background:#fafbfd;display:flex;flex-direction:column;gap:9px}.msg-bubble{max-width:72%;padding:10px 12px;border-radius:14px;background:#fff;border:1px solid #e4e8ef;box-shadow:0 3px 10px rgba(40,51,75,.035)}.msg-bubble.mine{align-self:flex-end;background:#efe8f8;border-color:#dfd1f0}.msg-bubble.theirs{align-self:flex-start}.msg-bubble strong{display:block;color:#38445a;font-size:9px;margin-bottom:5px}.msg-bubble p{margin:0;color:#202c3f;font-size:11px;line-height:1.9;white-space:pre-wrap;word-break:break-word}.msg-bubble small{display:block;margin-top:6px;color:#929baa;font-size:8px}.msg-empty{margin:auto;text-align:center;color:#8b95a5;font-size:11px}.msg-empty b{display:block;color:#6c4b9b;font-size:28px;margin-bottom:9px}
+.msg-compose{padding:12px;border-top:1px solid #e9edf3;background:#fff;display:grid;grid-template-columns:160px 1fr auto;gap:8px}.msg-compose select,.msg-compose textarea{border:1px solid #dce2eb;border-radius:11px;background:#fbfcfe;font-family:inherit;color:#26344a}.msg-compose select{height:44px;padding:0 10px}.msg-compose textarea{min-height:44px;max-height:100px;padding:10px 12px;resize:vertical}.msg-compose button{border:0;border-radius:11px;padding:0 16px;background:#6f50a3;color:#fff;font-family:inherit;font-weight:900;cursor:pointer}
+@media(min-width:821px){
+body.gl-page-internal_messages{background:#f4f7fb!important}body.gl-page-internal_messages .app-main{background:#f4f7fb!important}
+}
+@media(max-width:820px){.msg-page{grid-template-columns:1fr;margin-bottom:76px}.msg-contacts,.msg-thread{background:#101a26;border-color:#273a49;box-shadow:none}.msg-contacts-head,.msg-thread-head,.msg-compose{border-color:#273a49;background:#101a26}.msg-contacts-head h2,.msg-thread-head h1{color:#f1f5f8}.msg-contacts-head p,.msg-thread-head p{color:#9eb0bd}.msg-contact{color:#e7eef3}.msg-contact:hover,.msg-contact.active{background:#172536}.msg-contact small{color:#9aabb8}.msg-thread{min-height:560px}.msg-stream{background:#0b141e}.msg-bubble{background:#132231;border-color:#273d4e}.msg-bubble.mine{background:#3b2c56;border-color:#60478a}.msg-bubble p,.msg-bubble strong{color:#f0f4f7}.msg-compose{grid-template-columns:1fr}.msg-compose select,.msg-compose textarea{background:#0b141e;color:#fff;border-color:#2c4355}.msg-compose button{min-height:42px}.msg-bubble{max-width:88%}}
+</style>
+<section class="msg-page">
+  <aside class="msg-contacts">
+    <div class="msg-contacts-head"><h2>پیام داخلی</h2><p>گفتگوی عمومی یا پیام مستقیم به هر پرسنل</p></div>
+    <div class="msg-contact-list">
+      <a class="msg-contact public {% if not selected_contact %}active{% endif %}" href="{% url 'internal_messages' %}">
+        <span class="msg-avatar">◎</span><span><strong>گفتگوی عمومی پرسنل</strong><small>برای همه اعضای فعال</small></span>
+      </a>
+      {% for row in contact_rows %}
+      <a class="msg-contact {% if selected_contact and selected_contact.pk == row.user.pk %}active{% endif %}" href="{% url 'internal_messages' %}?with={{ row.user.pk }}">
+        <span class="msg-avatar">{% if row.user.profile.avatar %}<img src="{{ row.user.profile.avatar.url }}" alt="">{% else %}{{ row.user.first_name|first|default:row.user.username|first }}{% endif %}</span>
+        <span><strong>{{ row.user.get_full_name|default:row.user.username }}</strong><small>{{ row.user.profile.job_title|default:row.user.profile.get_role_display }}{% if row.user.profile.branch %} · {{ row.user.profile.branch }}{% endif %}</small></span>
+        {% if row.unread %}<b class="msg-unread">{{ row.unread }}</b>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <section class="msg-thread">
+    <header class="msg-thread-head"><div class="room-meta"><h1>{{ room_title }}</h1><p>{{ room_subtitle }}</p></div>{% if unread_total %}<span class="msg-room-pill">{{ unread_total }} پیام خوانده‌نشده</span>{% else %}<span class="msg-room-pill">کارتابل فعال</span>{% endif %}</header>
+    <div class="msg-stream" id="msgStream">
+      {% for item in thread %}
+      <article class="msg-bubble {% if item.sender_id == user.id %}mine{% else %}theirs{% endif %}">
+        <strong>{{ item.sender.get_full_name|default:item.sender.username }}</strong>
+        <p>{{ item.body }}</p>
+        <small>{{ item.created_at|jdatetime }}</small>
+      </article>
+      {% empty %}<div class="msg-empty"><b>✉</b>هنوز پیامی در این گفتگو نیست.</div>{% endfor %}
+    </div>
+    <form class="msg-compose" method="post">{% csrf_token %}
+      <select name="recipient" aria-label="گیرنده">
+        <option value="all" {% if not selected_contact %}selected{% endif %}>همه پرسنل</option>
+        {% for row in contact_rows %}<option value="{{ row.user.pk }}" {% if selected_contact and selected_contact.pk == row.user.pk %}selected{% endif %}>{{ row.user.get_full_name|default:row.user.username }}</option>{% endfor %}
+      </select>
+      <textarea name="body" maxlength="2000" required placeholder="پیام خود را بنویسید..."></textarea>
+      <button type="submit">ارسال</button>
+    </form>
+  </section>
+</section>
+<script>
+(function(){const stream=document.getElementById('msgStream');if(stream)stream.scrollTop=stream.scrollHeight;})();
+</script>
+{% endblock %}
