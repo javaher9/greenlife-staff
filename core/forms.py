@@ -54,6 +54,53 @@ class StaffLoginForm(forms.Form):
             self.fields['password'].widget.attrs['placeholder']='رمز دسکتاپ'
 
 
+class StaffParticipantChoiceField(forms.ModelMultipleChoiceField):
+    def label_from_instance(self,obj):
+        profile=getattr(obj,'profile',None)
+        name=obj.get_full_name() or obj.username
+        role=profile.get_role_display() if profile else ''
+        branch=str(profile.branch) if profile and profile.branch_id else ''
+        suffix=' · '.join(x for x in (role,branch) if x)
+        return f'{name} — {suffix}' if suffix else name
+
+
+class InternalConversationCreateForm(forms.Form):
+    title=forms.CharField(
+        label='عنوان گفتگو',required=False,max_length=160,
+        widget=forms.TextInput(attrs={'placeholder':'مثلاً هماهنگی نوبت‌های پونک'}),
+    )
+    participants=StaffParticipantChoiceField(
+        label='افراد گفتگو',
+        queryset=User.objects.none(),
+        widget=forms.SelectMultiple(attrs={'size':'10'}),
+        help_text='یک یا چند نفر را انتخاب کنید.',
+    )
+    first_message=forms.CharField(
+        label='پیام اول',
+        widget=forms.Textarea(attrs={'rows':5,'placeholder':'پیام خود را بنویسید...'}),
+    )
+
+    def __init__(self,*args,user=None,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.user=user
+        qs=User.objects.filter(
+            is_active=True,
+            profile__is_active=True,
+        ).exclude(profile__role='referrer').select_related('profile','profile__branch').order_by(
+            'first_name','last_name','username'
+        )
+        if user and user.pk:
+            qs=qs.exclude(pk=user.pk)
+        self.fields['participants'].queryset=qs
+
+    def clean_first_message(self):
+        value=(self.cleaned_data.get('first_message') or '').strip()
+        if not value:
+            raise forms.ValidationError('پیام نمی‌تواند خالی باشد.')
+        if len(value)>5000:
+            raise forms.ValidationError('پیام بیش از حد طولانی است.')
+        return value
+
 class StaffCredentialUpdateForm(forms.Form):
     desktop_password=forms.CharField(
         label='رمز دسکتاپ جدید',required=False,
