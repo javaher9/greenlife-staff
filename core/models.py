@@ -729,6 +729,34 @@ class InternalRequest(models.Model):
     class Meta: ordering=['-created_at']
 
 
+class InternalMessage(models.Model):
+    """Staff-to-staff messaging. recipient=NULL is the shared staff room."""
+    sender=models.ForeignKey(
+        User,on_delete=models.CASCADE,related_name='sent_internal_messages'
+    )
+    recipient=models.ForeignKey(
+        User,on_delete=models.CASCADE,null=True,blank=True,related_name='received_internal_messages'
+    )
+    body=models.TextField(max_length=2000)
+    read_at=models.DateTimeField(null=True,blank=True)
+    created_at=models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering=['created_at','id']
+        indexes=[
+            models.Index(fields=['recipient','read_at','-created_at'],name='imsg_rec_read_created_idx'),
+            models.Index(fields=['sender','recipient','-created_at'],name='imsg_pair_created_idx'),
+        ]
+
+    @property
+    def is_staff_room(self):
+        return self.recipient_id is None
+
+    def __str__(self):
+        target=self.recipient.get_full_name() if self.recipient_id else 'همه پرسنل'
+        return f'{self.sender} → {target}'
+
+
 class AuditLog(models.Model):
     actor=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='audit_logs')
     action=models.CharField(max_length=40)

@@ -1,3 +1,4 @@
+from core.tests.test_internal_messaging import InternalMessagingTests as InternalMessagingRegressionTests
 from core.tests.test_appointments import SharedAppointmentTests as SharedAppointmentRegressionTests
 from django.contrib.auth.models import User
 from django.test import TestCase

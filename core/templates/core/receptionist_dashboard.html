@@ -82,7 +82,7 @@
       <span class="disabled" title="پس از اتصال مالی فعال می‌شود"><span class="ico">▤</span>پرداخت</span>
       <a href="/tasks/"><span class="ico">✓</span>پیگیری</a>
       <span class="disabled" title="در فاز بعدی فعال می‌شود"><span class="ico">◈</span>CRM / CEM</span>
-      <a href="/service-requests/"><span class="ico">✉</span>کارتابل داخلی</a>
+      <a href="{% url 'internal_messages' %}"><span class="ico">✉</span>پیام داخلی</a>
       <a href="/reports/"><span class="ico">▥</span>گزارش روزانه</a>
     </nav>
     <div class="side-foot">
@@ -158,7 +158,7 @@
       </article>
 
       <article class="card messages-card">
-        <div class="card-head"><h2>کارتابل و پیام داخلی</h2><a href="/notifications/">اعلان‌ها</a></div>
+        <div class="card-head"><h2>کارتابل و پیام داخلی</h2><a href="{% url 'internal_messages' %}">باز کردن پیام‌ها</a></div>
         <div class="messages">
           {% for item in receptionist_notifications %}
           <a class="msg" href="/notifications/"><strong>{{ item.title }}</strong><small>اعلان داخلی</small><p>{{ item.message|truncatechars:120 }}</p></a>
@@ -166,7 +166,7 @@
           <div class="empty-mini">پیام یا اعلان خوانده‌نشده‌ای ندارید.</div>
           {% endfor %}
         </div>
-        <div class="composer">چت پرونده‌محور در فاز CEM به این بخش متصل می‌شود.</div>
+        <div class="composer"><a href="{% url 'internal_messages' %}" style="color:inherit;text-decoration:none;font-weight:900">✉ ورود به کارتابل پیام داخلی</a></div>
       </article>
     </section>
 
