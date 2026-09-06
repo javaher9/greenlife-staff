@@ -51,21 +51,21 @@ jobs:
               echo "Backup storage before emergency retention:"
               du -sh "$BACKUP_DIR" || true
               python3 - "$BACKUP_DIR" <<'PY'
-from pathlib import Path
-import sys
-
-root=Path(sys.argv[1])
-policies=(("media_*.tar.gz",3),("db_*.dump",7))
-for pattern,keep in policies:
-    files=sorted(
-        (p for p in root.glob(pattern) if p.is_file()),
-        key=lambda p:p.stat().st_mtime,
-        reverse=True,
-    )
-    for old in files[keep:]:
-        print(f"Deleting old backup copy: {old.name}")
-        old.unlink(missing_ok=True)
-PY
+          from pathlib import Path
+          import sys
+          
+          root=Path(sys.argv[1])
+          policies=(("media_*.tar.gz",3),("db_*.dump",7))
+          for pattern,keep in policies:
+              files=sorted(
+                  (p for p in root.glob(pattern) if p.is_file()),
+                  key=lambda p:p.stat().st_mtime,
+                  reverse=True,
+              )
+              for old in files[keep:]:
+                  print(f"Deleting old backup copy: {old.name}")
+                  old.unlink(missing_ok=True)
+          PY
               echo "Backup storage after emergency retention:"
               du -sh "$BACKUP_DIR" || true
             fi
