@@ -1,3 +1,5 @@
+"""Dual-device credential helpers; deployable without external runtime dependencies."""
+
 import base64
 import hashlib
 import hmac
