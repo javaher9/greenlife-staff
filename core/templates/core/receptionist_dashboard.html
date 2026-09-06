@@ -1,4 +1,4 @@
-{% load static %}
+{% load static jalali_tags %}
 <!doctype html>
 <html lang="fa" dir="rtl">
 <head>
@@ -114,7 +114,7 @@
         <div class="card-head"><h2>کارهای فوری امروز</h2><a href="/tasks/">نمایش همه</a></div>
         <div class="urgent-list">
           {% for task in receptionist_tasks %}
-          <a class="urgent-row" href="/tasks/"><span class="check"></span><div><strong>{{ task.title }}</strong><small>{{ task.get_priority_display }}{% if task.due_date %} · {{ task.due_date }}{% endif %}</small></div></a>
+          <a class="urgent-row" href="/tasks/"><span class="check"></span><div><strong>{{ task.title }}</strong><small>{{ task.get_priority_display }}{% if task.due_date %} · {{ task.due_date|jdate }}{% endif %}</small></div></a>
           {% empty %}
           <div class="empty-mini">در حال حاضر کار باز ثبت‌شده‌ای ندارید.</div>
           {% endfor %}
