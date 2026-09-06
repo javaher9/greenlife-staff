@@ -41,7 +41,7 @@
     .grid-main{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.8fr);gap:14px}
     .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
     .card-head{padding:15px 17px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}.card-head h2{font-size:14px;margin:0}.card-head span,.card-head a{font-size:10px;color:var(--muted)}
-    .appointments{min-height:326px}.table-head{display:grid;grid-template-columns:72px 1.2fr 1fr 1fr 86px;gap:10px;padding:10px 17px;background:#fafbfc;color:#8c94a5;font-size:10px;font-weight:700}
+    .appointments{min-height:326px}.table-head,.appointment-row{display:grid;grid-template-columns:72px 1.35fr 1fr 96px;gap:10px;padding:10px 17px;align-items:center}.table-head{background:#fafbfc;color:#8c94a5;font-size:10px;font-weight:700}.appointment-row{border-bottom:1px solid #f0f2f6;font-size:10px}.appointment-row:last-child{border-bottom:0}.appointment-row b{direction:ltr}.appointment-row strong{font-size:11px}.appointment-row small{display:block;color:var(--muted);font-size:9px;margin-top:3px}.appointment-status{display:inline-flex;width:max-content;padding:5px 7px;border-radius:999px;background:#eef8f3;color:#277457;font-size:9px;font-weight:900}
     .empty-big{min-height:245px;display:grid;place-items:center;text-align:center;padding:34px}.empty-big .symbol{width:60px;height:60px;border-radius:20px;background:var(--purple-soft);display:grid;place-items:center;margin:0 auto 13px;color:var(--purple);font-size:25px}
     .empty-big strong{display:block;font-size:14px;margin-bottom:6px}.empty-big p{font-size:11px;line-height:2;color:var(--muted);margin:0;max-width:390px}
     .urgent-list{padding:8px 15px 14px}.urgent-row{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid #f0f2f6}.urgent-row:last-child{border-bottom:0}.check{width:20px;height:20px;border:2px solid #cfd5e1;border-radius:6px;flex:0 0 20px;margin-top:2px}
@@ -77,7 +77,7 @@
     <nav class="nav">
       <a href="/" class="active"><span class="ico">⌂</span>داشبورد</a>
       <span class="disabled" title="پس از اتصال CRM فعال می‌شود"><span class="ico">♙</span>مراجعین</span>
-      <span class="disabled" title="پس از اتصال CRM فعال می‌شود"><span class="ico">▣</span>نوبت‌دهی</span>
+      <a href="{% url 'appointment_schedule' %}"><span class="ico">▣</span>نوبت‌دهی</a>
       <span class="disabled" title="پس از اتصال CRM فعال می‌شود"><span class="ico">◎</span>پذیرش</span>
       <span class="disabled" title="پس از اتصال مالی فعال می‌شود"><span class="ico">▤</span>پرداخت</span>
       <a href="/tasks/"><span class="ico">✓</span>پیگیری</a>
@@ -103,17 +103,26 @@
     </header>
 
     <section class="kpis">
-      <article class="kpi"><div class="kpi-copy"><small>نوبت‌های امروز</small><strong>—</strong><p>با اتصال سیستم نوبت‌دهی فعال می‌شود</p></div><div class="kpi-icon">▣</div></article>
-      <article class="kpi"><div class="kpi-copy"><small>مراجعین امروز</small><strong>—</strong><p>پس از اتصال پرونده مراجعین</p></div><div class="kpi-icon">♙</div></article>
+      <article class="kpi"><div class="kpi-copy"><small>نوبت‌های امروز</small><strong>{{ receptionist_appointment_count|default:0 }}</strong><p>نوبت‌های واقعی همین شعبه</p></div><div class="kpi-icon">▣</div></article>
+      <article class="kpi"><div class="kpi-copy"><small>مراجعین امروز</small><strong>{{ receptionist_arrived_count|default:0 }}</strong><p>بر اساس وضعیت نوبت‌های امروز</p></div><div class="kpi-icon">♙</div></article>
       <article class="kpi"><div class="kpi-copy"><small>پرداخت‌های امروز</small><strong>—</strong><p>بدون نمایش اطلاعات مالی ساختگی</p></div><div class="kpi-icon">▤</div></article>
       <article class="kpi"><div class="kpi-copy"><small>پیگیری‌های باز</small><strong>{{ receptionist_task_count|default:0 }}</strong><p>بر اساس وظایف واقعی شما</p></div><div class="kpi-icon">✓</div></article>
     </section>
 
     <section class="grid-main">
       <article class="card appointments">
-        <div class="card-head"><h2>لیست نوبت‌های امروز</h2><span>داده واقعی CRM</span></div>
-        <div class="table-head"><span>ساعت</span><span>نام مراجعه‌کننده</span><span>خدمت</span><span>پزشک / مشاور</span><span>وضعیت</span></div>
-        <div class="empty-big"><div><div class="symbol">▣</div><strong>نوبت‌ها آماده اتصال هستند</strong><p>این بخش از ابتدا برای اتصال به CRM و پنل مشاور/پزشک طراحی شده است. تا زمان اتصال، هیچ نام یا نوبت فرضی در محیط واقعی نشان داده نمی‌شود.</p></div></div>
+        <div class="card-head"><h2>لیست نوبت‌های امروز</h2><a href="{% url 'appointment_schedule' %}">نمایش برنامه کامل</a></div>
+        <div class="table-head"><span>ساعت</span><span>نام مراجعه‌کننده</span><span>خدمت</span><span>وضعیت</span></div>
+        {% for item in receptionist_appointments %}
+        <div class="appointment-row">
+          <b>{{ item.appointment_time|date:"H:i" }}</b>
+          <div><strong>{{ item.full_name }}</strong><small>{{ item.phone }} · {{ item.get_source_display }}</small></div>
+          <span>{{ item.service|default:"—" }}</span>
+          <span class="appointment-status">{{ item.get_status_display }}</span>
+        </div>
+        {% empty %}
+        <div class="empty-big"><div><div class="symbol">▣</div><strong>برای امروز نوبتی ثبت نشده</strong><p>نوبت‌هایی که کال‌سنتر یا منشی ثبت می‌کنند، همین‌جا نمایش داده می‌شوند.</p></div></div>
+        {% endfor %}
       </article>
 
       <article class="card">
@@ -162,7 +171,7 @@
     </section>
 
     <div class="actions">
-      <button class="primary-action" type="button" disabled title="پس از اتصال CRM فعال می‌شود">＋ پذیرش / مراجعه‌کننده جدید</button>
+      <a class="primary-action" href="{% url 'receptionist_appointment_create' %}">＋ نوبت جدید</a>
       <div>
         {% if attendance_today.check_in %}<span class="attendance-pill">✓ ورود امروز {{ attendance_today.check_in|date:"H:i" }}</span>{% else %}<a href="/attendance/" class="attendance-pill off">ورود امروز هنوز ثبت نشده</a>{% endif %}
       </div>

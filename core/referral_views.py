@@ -19,7 +19,7 @@ from .forms import (
     PublicReferralLeadForm, ReferralLeadForm, ReferralLeadManageForm,
     ReferralMemberForm, ReferralSaleForm, CallCenterLeadForm,
 )
-from .models import CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification
+from .models import CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification, VisitAppointment
 # Production rebuild marker after the previous deployment hit the workflow timeout.
 
 
@@ -409,7 +409,7 @@ def call_center_dashboard(request):
         'all':all_leads.count(),
         'new':all_leads.filter(status='new').count(),
         'follow_up':all_leads.filter(next_follow_up__lte=today).exclude(status__in=('won','lost')).count(),
-        'appointment':all_leads.filter(status='appointment').count(),
+        'appointment':VisitAppointment.objects.filter(lead__assigned_to=operator,appointment_date__gte=today).exclude(status='cancelled').count(),
         'ungrouped':all_leads.filter(group__isnull=True).count(),
     }
     return render(request,'core/call_center/dashboard.html',{
@@ -455,7 +455,10 @@ def call_center_lead(request,pk):
             f'نتیجه تماس ذخیره شد؛ این لید اکنون در گروه «{group_name}» و در صف شما قرار دارد.'
         )
         return redirect('call_center_dashboard')
-    return render(request,'core/call_center/lead.html',{'lead':lead,'form':form})
+    real_appointments=lead.appointments.exclude(status='cancelled').select_related('branch').order_by('-appointment_date','-appointment_time')[:5]
+    return render(request,'core/call_center/lead.html',{
+        'lead':lead,'form':form,'real_appointments':real_appointments,
+    })
 
 
 @login_required

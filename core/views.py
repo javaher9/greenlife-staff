@@ -14,7 +14,7 @@ from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, BlackboardMessageForm, EmployeeCreateForm, EmployeeEditForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm, ConsultantFinanceEntryForm, StaffLoginForm, StaffCredentialUpdateForm
-from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction, MeetingActionUpdate, StaffCredential
+from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction, MeetingActionUpdate, StaffCredential, VisitAppointment
 from .ai import analyze_finance_receipt, process_report
 from .jalali import format_jalali, gregorian_to_jalali, jalali_to_gregorian, parse_jalali
 from .reporting import day_summary, leaderboard, answer_query
@@ -350,6 +350,17 @@ def dashboard(request):
         attendance_today=Attendance.objects.filter(
             user=request.user,date=today_local
         ).first()
+        receptionist_branch=getattr(profile,'branch',None)
+        if receptionist_branch:
+            receptionist_appointments=VisitAppointment.objects.filter(
+                branch=receptionist_branch,appointment_date=today_local
+            ).exclude(status='cancelled').order_by('appointment_time')
+        else:
+            receptionist_appointments=VisitAppointment.objects.none()
+        receptionist_appointment_count=receptionist_appointments.count()
+        receptionist_arrived_count=receptionist_appointments.filter(
+            status__in=('arrived','completed')
+        ).count()
         return render(request,'core/receptionist_dashboard.html',{
             'role':role,
             'profile':profile,
@@ -363,6 +374,9 @@ def dashboard(request):
             ).count(),
             'attendance_today':attendance_today,
             'jalali_dashboard_date':jalali_dashboard_date,
+            'receptionist_appointments':receptionist_appointments,
+            'receptionist_appointment_count':receptionist_appointment_count,
+            'receptionist_arrived_count':receptionist_arrived_count,
         })
     if role=='call_center':
         return redirect('call_center_dashboard')

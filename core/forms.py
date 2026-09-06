@@ -1,4 +1,5 @@
 from io import BytesIO
+from datetime import time
 from uuid import uuid4
 
 from django import forms
@@ -6,7 +7,7 @@ from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.utils import timezone
 from PIL import Image, ImageOps
-from .models import DailyReport, Task, LeaveRequest, Announcement, BlackboardMessage, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, Branch, JobDutyTemplate, Guideline, DeviceIssue, ReferralProfile, ReferralLead, ReferralSale, FinancialTransaction, CallCenterLeadGroup
+from .models import DailyReport, Task, LeaveRequest, Announcement, BlackboardMessage, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, Branch, JobDutyTemplate, Guideline, DeviceIssue, ReferralProfile, ReferralLead, ReferralSale, FinancialTransaction, CallCenterLeadGroup, VisitAppointment
 from .jalali import parse_jalali, format_jalali
 
 class JalaliDateInput(forms.TextInput):
@@ -235,6 +236,95 @@ class CallCenterLeadForm(forms.ModelForm):
         if self.is_bound and 'group' not in self.data:
             return self.instance.group
         return self.cleaned_data.get('group')
+
+
+
+def visit_appointment_time_choices():
+    choices=[]
+    for hour in range(9,19):
+        minutes=(0,15,30,45) if hour<18 else (0,)
+        for minute in minutes:
+            value=f'{hour:02d}:{minute:02d}'
+            choices.append((value,value))
+    return choices
+
+
+class AppointmentFromLeadForm(forms.ModelForm):
+    appointment_date=JalaliDateField(label='تاریخ نوبت')
+    appointment_time=forms.TimeField(
+        label='ساعت نوبت',
+        input_formats=['%H:%M'],
+        widget=forms.Select(choices=visit_appointment_time_choices()),
+    )
+    class Meta:
+        model=VisitAppointment
+        fields=['branch','appointment_date','appointment_time','notes']
+        labels={'branch':'شعبه','notes':'یادداشت نوبت'}
+        widgets={'notes':forms.Textarea(attrs={'rows':3,'placeholder':'توضیح کوتاه برای منشی، در صورت نیاز'})}
+
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.fields['branch'].queryset=Branch.objects.filter(is_active=True).exclude(name__in=('کال‌سنتر','کال سنتر','Call Center')).order_by('name')
+
+    def clean_appointment_date(self):
+        value=self.cleaned_data['appointment_date']
+        if value<timezone.localdate():
+            raise forms.ValidationError('تاریخ نوبت نمی‌تواند قبل از امروز باشد.')
+        return value
+
+    def clean(self):
+        data=super().clean()
+        branch=data.get('branch')
+        day=data.get('appointment_date')
+        slot=data.get('appointment_time')
+        if branch and day and slot and VisitAppointment.objects.filter(
+            branch=branch,appointment_date=day,appointment_time=slot
+        ).exclude(status='cancelled').exists():
+            self.add_error('appointment_time','این ساعت برای این شعبه قبلاً رزرو شده است.')
+        return data
+
+
+class ReceptionistAppointmentForm(forms.ModelForm):
+    appointment_date=JalaliDateField(label='تاریخ نوبت')
+    appointment_time=forms.TimeField(
+        label='ساعت نوبت',
+        input_formats=['%H:%M'],
+        widget=forms.Select(choices=visit_appointment_time_choices()),
+    )
+    class Meta:
+        model=VisitAppointment
+        fields=['full_name','phone','service','appointment_date','appointment_time','notes']
+        labels={
+            'full_name':'نام مراجعه‌کننده','phone':'شماره موبایل','service':'خدمت موردنظر',
+            'notes':'یادداشت نوبت',
+        }
+        widgets={'notes':forms.Textarea(attrs={'rows':3})}
+
+    def __init__(self,*args,branch=None,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.branch=branch
+
+    def clean_appointment_date(self):
+        value=self.cleaned_data['appointment_date']
+        if value<timezone.localdate():
+            raise forms.ValidationError('تاریخ نوبت نمی‌تواند قبل از امروز باشد.')
+        return value
+
+    def clean_phone(self):
+        value=''.join(ch for ch in self.cleaned_data['phone'] if ch.isdigit() or ch=='+')
+        if len(value)<10:
+            raise forms.ValidationError('شماره موبایل معتبر وارد کنید.')
+        return value
+
+    def clean(self):
+        data=super().clean()
+        day=data.get('appointment_date')
+        slot=data.get('appointment_time')
+        if self.branch and day and slot and VisitAppointment.objects.filter(
+            branch=self.branch,appointment_date=day,appointment_time=slot
+        ).exclude(status='cancelled').exists():
+            self.add_error('appointment_time','این ساعت قبلاً رزرو شده است.')
+        return data
 
 
 class ReferralSaleForm(forms.ModelForm):

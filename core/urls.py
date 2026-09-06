@@ -6,11 +6,17 @@ from . import referral_views
 from . import referral_admin_views
 from . import referral_tree_views
 from . import meeting_views
+from . import appointment_views
 from .mcp import mcp_endpoint
 urlpatterns=[path('service-worker.js',views.service_worker,name='service_worker'),path('camp/',camp_views.camp_dashboard,name='camp_dashboard'),
 path('call-center/',referral_views.call_center_dashboard,name='call_center_dashboard'),
 path('call-center/groups/new/',referral_views.call_center_group_create,name='call_center_group_create'),
 path('call-center/leads/<int:pk>/',referral_views.call_center_lead,name='call_center_lead'),
+path('call-center/leads/<int:pk>/appointment/',appointment_views.call_center_appointment_create,name='call_center_appointment_create'),
+path('appointments/',appointment_views.appointment_schedule,name='appointment_schedule'),
+path('appointments/availability/',appointment_views.appointment_availability,name='appointment_availability'),
+path('appointments/new/',appointment_views.receptionist_appointment_create,name='receptionist_appointment_create'),
+path('appointments/<int:pk>/status/<str:status>/',appointment_views.receptionist_appointment_status,name='receptionist_appointment_status'),
 path('referrals/',referral_views.referral_dashboard,name='referral_dashboard'),
 path('referrals/guide/',referral_views.referral_guide,name='referral_guide'),
 path('referrals/network/',referral_views.referral_network,name='referral_network'),
