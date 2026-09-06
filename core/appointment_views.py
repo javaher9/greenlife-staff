@@ -22,7 +22,7 @@ def _role(user):
 
 
 def _clinic_branches():
-    return Branch.objects.filter(is_active=True).exclude(name__icontains='کال').order_by('name')
+    return Branch.objects.filter(is_active=True).exclude(name__in=('کال‌سنتر','کال سنتر','Call Center')).order_by('name')
 
 
 def _appointment_access_required(view):
@@ -74,6 +74,8 @@ def appointment_availability(request):
         return JsonResponse({'ok':False,'error':'branch and date are required'},status=400)
 
     branch=get_object_or_404(_clinic_branches(),pk=int(branch_id))
+    if _role(request.user)=='receptionist' and getattr(request.user.profile,'branch_id',None)!=branch.pk:
+        raise PermissionDenied('منشی فقط به نوبت‌های شعبه خودش دسترسی دارد.')
     day=_parse_requested_date(raw_date)
     booked=set(
         VisitAppointment.objects.filter(
