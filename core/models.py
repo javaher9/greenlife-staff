@@ -95,6 +95,22 @@ class ReferralProfile(models.Model):
         return super().save(*args,**kwargs)
 
 
+class CallCenterLeadGroup(models.Model):
+    """Operator-owned folders used to keep the call-center queue understandable."""
+    owner=models.ForeignKey(
+        EmployeeProfile,on_delete=models.CASCADE,related_name='call_center_lead_groups'
+    )
+    name=models.CharField(max_length=80)
+    is_default=models.BooleanField(default=False)
+    created_at=models.DateTimeField(auto_now_add=True)
+    class Meta:
+        ordering=['-is_default','name','id']
+        constraints=[
+            models.UniqueConstraint(fields=['owner','name'],name='uniq_cc_group_owner_name'),
+        ]
+    def __str__(self): return self.name
+
+
 class ReferralLead(models.Model):
     STATUS=[
         ('new','جدید'),('contacted','تماس گرفته شد'),('appointment','نوبت ثبت شد'),
@@ -110,6 +126,7 @@ class ReferralLead(models.Model):
     status=models.CharField(max_length=20,choices=STATUS,default='new',db_index=True)
     source=models.CharField(max_length=20,choices=SOURCE,default='panel')
     assigned_to=models.ForeignKey(EmployeeProfile,on_delete=models.SET_NULL,null=True,blank=True,related_name='assigned_referral_leads')
+    group=models.ForeignKey(CallCenterLeadGroup,on_delete=models.SET_NULL,null=True,blank=True,related_name='leads')
     next_follow_up=models.DateField(null=True,blank=True)
     notes=models.TextField(blank=True)
     crm_id=models.CharField(max_length=120,blank=True,null=True,db_index=True)
