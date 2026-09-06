@@ -264,7 +264,7 @@ class AppointmentFromLeadForm(forms.ModelForm):
 
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
-        self.fields['branch'].queryset=Branch.objects.filter(is_active=True).exclude(name__icontains='کال').order_by('name')
+        self.fields['branch'].queryset=Branch.objects.filter(is_active=True).exclude(name__in=('کال‌سنتر','کال سنتر','Call Center')).order_by('name')
 
     def clean_appointment_date(self):
         value=self.cleaned_data['appointment_date']
