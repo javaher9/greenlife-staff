@@ -157,6 +157,11 @@ class CallCenterLeadForm(forms.ModelForm):
         self.fields['group'].required=False
         self.fields['group'].empty_label='بدون گروه'
 
+    def clean_group(self):
+        if self.is_bound and 'group' not in self.data:
+            return self.instance.group
+        return self.cleaned_data.get('group')
+
 
 class ReferralSaleForm(forms.ModelForm):
     sale_date=JalaliDateField(label='تاریخ فروش')
