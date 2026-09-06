@@ -412,10 +412,13 @@ def call_center_dashboard(request):
         'appointment':VisitAppointment.objects.filter(lead__assigned_to=operator,appointment_date__gte=today).exclude(status='cancelled').count(),
         'ungrouped':all_leads.filter(group__isnull=True).count(),
     }
+    today_appointments=VisitAppointment.objects.filter(
+        created_by=request.user,appointment_date=today
+    ).exclude(status='cancelled').select_related('branch','lead').order_by('appointment_time')[:12]
     return render(request,'core/call_center/dashboard.html',{
         'leads':leads,'statuses':ReferralLead.STATUS,'status_filter':status,
         'group_filter':group_filter,'groups':groups,
-        'stats':stats,'today':today,
+        'stats':stats,'today':today,'today_appointments':today_appointments,
     })
 
 
