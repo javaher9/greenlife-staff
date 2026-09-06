@@ -1,3 +1,5 @@
+"""Internal staff messaging; redeploy marker for disk-safe production rollout."""
+
 from functools import wraps
 
 from django.contrib import messages
