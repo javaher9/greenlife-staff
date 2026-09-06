@@ -14,6 +14,7 @@ set +a
 
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
 RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-14}"
+KEEP_COUNT="${BACKUP_KEEP_COUNT:-3}"
 STAMP="$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$BACKUP_DIR"
 
@@ -56,6 +57,20 @@ if [[ -n "$MEDIA_VOL" ]]; then
 fi
 
 find "$BACKUP_DIR" -type f -mtime +"$RETENTION_DAYS" -delete || true
+
+# Deploys may happen many times in the same day. Keep only the newest few
+# generations of each large backup family so repeated releases cannot fill disk.
+for pattern in 'db_*.dump' 'media_*.tar.gz'; do
+  mapfile -t backup_files < <(
+    find "$BACKUP_DIR" -maxdepth 1 -type f -name "$pattern" -printf '%T@ %p\n' \
+      | sort -nr | cut -d' ' -f2-
+  )
+  if [[ "${#backup_files[@]}" -gt "$KEEP_COUNT" ]]; then
+    for ((idx=KEEP_COUNT; idx<${#backup_files[@]}; idx++)); do
+      rm -f -- "${backup_files[$idx]}"
+    done
+  fi
+done
 
 echo "Backup complete: $DB_FILE"
 [[ -f "$MEDIA_FILE" ]] && echo "Media backup: $MEDIA_FILE"
