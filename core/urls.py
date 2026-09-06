@@ -9,6 +9,7 @@ from . import meeting_views
 from .mcp import mcp_endpoint
 urlpatterns=[path('service-worker.js',views.service_worker,name='service_worker'),path('camp/',camp_views.camp_dashboard,name='camp_dashboard'),
 path('call-center/',referral_views.call_center_dashboard,name='call_center_dashboard'),
+path('call-center/groups/new/',referral_views.call_center_group_create,name='call_center_group_create'),
 path('call-center/leads/<int:pk>/',referral_views.call_center_lead,name='call_center_lead'),
 path('referrals/',referral_views.referral_dashboard,name='referral_dashboard'),
 path('referrals/guide/',referral_views.referral_guide,name='referral_guide'),
