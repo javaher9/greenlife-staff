@@ -409,7 +409,7 @@ def call_center_dashboard(request):
         'all':all_leads.count(),
         'new':all_leads.filter(status='new').count(),
         'follow_up':all_leads.filter(next_follow_up__lte=today).exclude(status__in=('won','lost')).count(),
-        'appointment':VisitAppointment.objects.filter(lead__assigned_to=operator).exclude(status='cancelled').count(),
+        'appointment':VisitAppointment.objects.filter(lead__assigned_to=operator,appointment_date__gte=today).exclude(status='cancelled').count(),
         'ungrouped':all_leads.filter(group__isnull=True).count(),
     }
     return render(request,'core/call_center/dashboard.html',{
