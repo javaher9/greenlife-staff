@@ -1,3 +1,5 @@
+"""Internal staff messaging views. Also marks this release as an application rebuild after safe backup cleanup."""
+
 from functools import wraps
 
 from django.contrib import messages
