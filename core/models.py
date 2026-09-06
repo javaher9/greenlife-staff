@@ -729,6 +729,45 @@ class InternalRequest(models.Model):
     class Meta: ordering=['-created_at']
 
 
+class InternalConversation(models.Model):
+    """Private staff conversation. Only listed participants can read or write."""
+    title=models.CharField(max_length=160,blank=True)
+    participants=models.ManyToManyField(User,related_name='internal_conversations')
+    created_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='created_internal_conversations'
+    )
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True,db_index=True)
+
+    class Meta:
+        ordering=['-updated_at','-id']
+
+    def __str__(self):
+        return self.title or f'گفتگو {self.pk}'
+
+
+class InternalMessage(models.Model):
+    conversation=models.ForeignKey(
+        InternalConversation,on_delete=models.CASCADE,related_name='messages'
+    )
+    sender=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='sent_internal_messages'
+    )
+    body=models.TextField()
+    read_by=models.ManyToManyField(User,blank=True,related_name='read_internal_messages')
+    created_at=models.DateTimeField(auto_now_add=True,db_index=True)
+
+    class Meta:
+        ordering=['created_at','id']
+        indexes=[
+            models.Index(fields=['conversation','created_at'],name='imsg_conv_created_idx'),
+        ]
+
+    def __str__(self):
+        sender=self.sender.get_full_name() or self.sender.username if self.sender else 'system'
+        return f'{sender}: {self.body[:40]}'
+
+
 class AuditLog(models.Model):
     actor=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='audit_logs')
     action=models.CharField(max_length=40)
