@@ -30,6 +30,64 @@ class JalaliDateField(forms.DateField):
         try: return parse_jalali(value)
         except Exception as e: raise forms.ValidationError(str(e))
 
+class StaffLoginForm(forms.Form):
+    username=forms.CharField(
+        label='نام کاربری',
+        widget=forms.TextInput(attrs={'autocomplete':'username','autocapitalize':'none'}),
+    )
+    password=forms.CharField(
+        label='رمز ورود',
+        widget=forms.PasswordInput(attrs={'autocomplete':'current-password'}),
+    )
+    def __init__(self,*args,mobile=False,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.mobile=mobile
+        if mobile:
+            self.fields['password'].label='PIN موبایل'
+            self.fields['password'].widget.attrs.update({
+                'inputmode':'numeric',
+                'placeholder':'PIN شش‌رقمی یا رمز فعلی',
+            })
+        else:
+            self.fields['password'].label='رمز دسکتاپ'
+            self.fields['password'].widget.attrs['placeholder']='رمز دسکتاپ'
+
+
+class StaffCredentialUpdateForm(forms.Form):
+    desktop_password=forms.CharField(
+        label='رمز دسکتاپ جدید',required=False,
+        widget=forms.PasswordInput(attrs={'autocomplete':'new-password'}),
+        help_text='حداقل ۱۰ کاراکتر و شامل حرف و عدد.',
+    )
+    mobile_pin=forms.CharField(
+        label='PIN موبایل جدید',required=False,max_length=6,
+        widget=forms.PasswordInput(attrs={'inputmode':'numeric','autocomplete':'new-password'}),
+        help_text='دقیقاً ۶ رقم.',
+    )
+
+    def clean_desktop_password(self):
+        value=self.cleaned_data.get('desktop_password') or ''
+        if not value:
+            return ''
+        if len(value)<10 or not any(ch.isalpha() for ch in value) or not any(ch.isdigit() for ch in value):
+            raise forms.ValidationError('رمز دسکتاپ باید حداقل ۱۰ کاراکتر و شامل حرف و عدد باشد.')
+        return value
+
+    def clean_mobile_pin(self):
+        value=(self.cleaned_data.get('mobile_pin') or '').strip()
+        if not value:
+            return ''
+        if len(value)!=6 or not value.isdigit():
+            raise forms.ValidationError('PIN موبایل باید دقیقاً ۶ رقم باشد.')
+        return value
+
+    def clean(self):
+        data=super().clean()
+        if not data.get('desktop_password') and not data.get('mobile_pin'):
+            raise forms.ValidationError('حداقل یکی از رمزها را وارد کنید.')
+        return data
+
+
 class ReportForm(forms.ModelForm):
     class Meta:
         model=DailyReport; fields=['text','audio']
@@ -69,12 +127,28 @@ class BlackboardMessageForm(forms.ModelForm):
 
 class EmployeeCreateForm(forms.Form):
     username=forms.CharField(label='نام کاربری'); first_name=forms.CharField(label='نام'); last_name=forms.CharField(label='نام خانوادگی')
-    password=forms.CharField(label='رمز عبور',widget=forms.PasswordInput); employee_code=forms.CharField(label='کد پرسنلی',required=False)
+    password=forms.CharField(label='رمز دسکتاپ',widget=forms.PasswordInput)
+    mobile_pin=forms.CharField(
+        label='PIN موبایل',required=False,max_length=6,
+        widget=forms.PasswordInput(attrs={'inputmode':'numeric'}),
+        help_text='اختیاری؛ اگر خالی باشد فعلاً موبایل با رمز دسکتاپ وارد می‌شود.',
+    )
+    employee_code=forms.CharField(label='کد پرسنلی',required=False)
     job_title=forms.CharField(label='سمت',required=False); phone=forms.CharField(label='تلفن',required=False); birth_date=JalaliDateField(label='تاریخ تولد',required=False)
     branch=forms.ModelChoiceField(label='شعبه',queryset=Branch.objects.filter(is_active=True),required=False); role=forms.ChoiceField(label='نقش',choices=EmployeeProfile.ROLE_CHOICES)
     def clean_username(self):
         value=self.cleaned_data['username'].strip()
         if User.objects.filter(username__iexact=value).exists(): raise forms.ValidationError('این نام کاربری قبلاً ثبت شده است.')
+        return value
+    def clean_password(self):
+        value=self.cleaned_data.get('password') or ''
+        if len(value)<10 or not any(ch.isalpha() for ch in value) or not any(ch.isdigit() for ch in value):
+            raise forms.ValidationError('رمز دسکتاپ باید حداقل ۱۰ کاراکتر و شامل حرف و عدد باشد.')
+        return value
+    def clean_mobile_pin(self):
+        value=(self.cleaned_data.get('mobile_pin') or '').strip()
+        if value and (len(value)!=6 or not value.isdigit()):
+            raise forms.ValidationError('PIN موبایل باید دقیقاً ۶ رقم باشد.')
         return value
 
 
@@ -205,7 +279,7 @@ class EmployeeEditForm(forms.Form):
         empty_value=None,choices=(('', 'نامشخص'),('True', 'بیمه شده'),('False', 'بیمه نشده')),
     )
     is_active=forms.BooleanField(label='فعال',required=False)
-    new_password=forms.CharField(label='رمز عبور جدید',required=False,widget=forms.PasswordInput,help_text='اگر نمی‌خواهید رمز تغییر کند، خالی بگذارید.')
+    new_password=forms.CharField(label='رمز دسکتاپ جدید',required=False,widget=forms.PasswordInput,help_text='اگر نمی‌خواهید رمز دسکتاپ تغییر کند، خالی بگذارید.')
 
     def __init__(self,*args,employee,**kwargs):
         super().__init__(*args,**kwargs)
@@ -233,6 +307,12 @@ class EmployeeEditForm(forms.Form):
         value=(self.cleaned_data.get('employee_code') or '').strip()
         if value and EmployeeProfile.objects.filter(employee_code=value).exclude(pk=self.employee.pk).exists():
             raise forms.ValidationError('این کد پرسنلی قبلاً ثبت شده است.')
+        return value
+
+    def clean_new_password(self):
+        value=self.cleaned_data.get('new_password') or ''
+        if value and (len(value)<10 or not any(ch.isalpha() for ch in value) or not any(ch.isdigit() for ch in value)):
+            raise forms.ValidationError('رمز دسکتاپ باید حداقل ۱۰ کاراکتر و شامل حرف و عدد باشد.')
         return value
 
     def save(self):

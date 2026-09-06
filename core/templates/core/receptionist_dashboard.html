@@ -62,6 +62,12 @@
   </style>
 </head>
 <body>
+{% if request.session.impersonator_user_id %}
+<div style="position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:99999;display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;background:#a7273f;color:#fff;box-shadow:0 8px 24px rgba(96,12,30,.28);font:800 11px/1.5 Tahoma,sans-serif">
+  <span>در حال مشاهده به‌عنوان {{ user.get_full_name|default:user.username }}</span>
+  <form method="post" action="{% url 'impersonate_return' %}" style="margin:0">{% csrf_token %}<button type="submit" style="border:0;border-radius:8px;padding:6px 10px;background:#fff;color:#8a1f36;font-family:inherit;font-weight:900;cursor:pointer">بازگشت به ادمین</button></form>
+</div>
+{% endif %}
 <div class="shell">
   <aside class="side">
     <div class="side-head">

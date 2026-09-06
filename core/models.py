@@ -52,6 +52,32 @@ class EmployeeProfile(models.Model):
     def __str__(self): return self.user.get_full_name() or self.user.username
 
 
+class StaffCredential(models.Model):
+    """Separate staff credentials for desktop and mobile access.
+
+    Desktop authentication continues to use Django's password hash. Recoverable
+    copies are encrypted only for the Super Admin credential screen.
+    """
+    user=models.OneToOneField(User,on_delete=models.CASCADE,related_name='staff_credential')
+    mobile_pin_hash=models.CharField(max_length=128,blank=True)
+    mobile_pin_cipher=models.TextField(blank=True)
+    desktop_password_cipher=models.TextField(blank=True)
+    mobile_pin_set_at=models.DateTimeField(null=True,blank=True)
+    desktop_password_set_at=models.DateTimeField(null=True,blank=True)
+    last_mobile_login=models.DateTimeField(null=True,blank=True)
+    last_desktop_login=models.DateTimeField(null=True,blank=True)
+    mobile_failed_attempts=models.PositiveSmallIntegerField(default=0)
+    mobile_locked_until=models.DateTimeField(null=True,blank=True)
+    updated_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='updated_staff_credentials'
+    )
+    updated_at=models.DateTimeField(auto_now=True)
+    class Meta:
+        ordering=['user__last_name','user__first_name','user__username']
+    def __str__(self):
+        return f'Credentials - {self.user.get_full_name() or self.user.username}'
+
+
 class ReferralProfile(models.Model):
     """A staff member or external partner who can introduce customers.
 
