@@ -26,6 +26,21 @@
 .impersonation-banner form{margin:0}.impersonation-banner button{border:0;border-radius:8px;padding:6px 10px;background:#fff;color:#8a1f36;font-family:inherit;font-weight:900;cursor:pointer}
 @media(max-width:700px){.impersonation-banner{top:6px;width:calc(100% - 18px);justify-content:space-between;font-size:10px}}
 </style>
+{% if user.is_authenticated and user.profile.role == 'call_center' %}
+<style>
+@media(min-width:821px){
+body.gl-authenticated{background:#f4f6fa!important;color:#243147!important}
+body.gl-authenticated .app-sidebar{background:#fff!important;border-right:1px solid #e7ebf1!important;box-shadow:0 0 28px rgba(36,48,72,.05)!important;color:#344056!important}
+body.gl-authenticated .app-sidebar .brand,body.gl-authenticated .app-sidebar .brand *{color:#355f4c!important}
+body.gl-authenticated .app-sidebar .app-nav a{color:#5f6b7e!important;background:transparent!important;border-color:transparent!important}
+body.gl-authenticated .app-sidebar .app-nav a:hover,body.gl-authenticated .app-sidebar .app-nav a.is-active{background:#f2ecfb!important;color:#6b4b9c!important}
+body.gl-authenticated .topbar{background:#fff!important;border-bottom:1px solid #e8ecf2!important;color:#2d3950!important;box-shadow:none!important}
+body.gl-authenticated .topbar input{background:#f7f9fc!important;color:#344056!important;border-color:#e3e8ef!important}
+body.gl-authenticated .app-main{background:#f4f6fa!important}
+body.gl-authenticated .gl-version-footer{display:none!important}
+}
+</style>
+{% endif %}
 </head>
 <body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'receptionist' %}gl-role-employee{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
 {% if request.session.impersonator_user_id %}
