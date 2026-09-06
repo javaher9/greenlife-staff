@@ -1,0 +1,64 @@
+{% extends 'core/base.html' %}{% block content %}
+<style>
+.appt-shell{max-width:980px;margin:0 auto 80px;font-family:Tahoma,sans-serif}
+.appt-card{background:#fff;border:1px solid #e3e8f0;border-radius:20px;box-shadow:0 10px 30px rgba(38,50,73,.07);padding:22px;color:#1d293d}
+.appt-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px}.appt-top h1{margin:0 0 6px;font-size:24px}.appt-top p{margin:0;color:#768397;font-size:12px}.appt-back{color:#6b4b98;text-decoration:none;font-weight:900}
+.appt-person{padding:12px 14px;border-radius:13px;background:#f7f3fc;border:1px solid #e8def5;margin-bottom:16px}.appt-person strong{display:block}.appt-person small{color:#7b8798}
+.appt-form{display:grid;grid-template-columns:1fr 1fr;gap:13px}.appt-form p{margin:0}.appt-form p:last-of-type{grid-column:1/-1}.appt-form label{display:block;margin-bottom:6px;font-size:11px;font-weight:900;color:#4e5b70}.appt-form input,.appt-form select,.appt-form textarea{width:100%;box-sizing:border-box;padding:11px;border:1px solid #dce3ec;border-radius:11px;background:#fbfcfe;color:#17223a;font-family:inherit}.appt-form textarea{min-height:92px}.appt-form .errorlist{margin:5px 0 0;padding:0;list-style:none;color:#b33751;font-size:10px}
+.appt-help{grid-column:1/-1;padding:11px 13px;border-radius:12px;background:#eef8f3;color:#297254;font-size:11px;line-height:1.8}.appt-submit{grid-column:1/-1;border:0;border-radius:12px;padding:13px;background:#7553a8;color:#fff;font-family:inherit;font-weight:900;font-size:13px;cursor:pointer}
+.slot-note{display:block;margin-top:5px;color:#7f8a9a;font-size:9px}.slot-note.busy{color:#af3851}
+@media(max-width:760px){.appt-card{padding:15px}.appt-form{grid-template-columns:1fr}.appt-form p:last-of-type,.appt-help,.appt-submit{grid-column:auto}.appt-top{flex-direction:column}}
+</style>
+<div class="appt-shell">
+  <div class="appt-card" data-fixed-branch="{% if fixed_branch %}{{ fixed_branch.pk }}{% endif %}">
+    <div class="appt-top">
+      <div><h1>{{ title }}</h1><p>{{ subtitle }}</p></div>
+      {% if booking_source == 'call_center' %}<a class="appt-back" href="{% url 'call_center_lead' lead.pk %}">بازگشت به لید ←</a>{% else %}<a class="appt-back" href="{% url 'appointment_schedule' %}">برنامه نوبت‌ها ←</a>{% endif %}
+    </div>
+    {% if lead %}<div class="appt-person"><strong>{{ lead.full_name }}</strong><small>{{ lead.phone }}{% if lead.interested_service %} · {{ lead.interested_service }}{% endif %}</small></div>{% endif %}
+    {% if fixed_branch %}<div class="appt-person"><strong>شعبه: {{ fixed_branch }}</strong><small>نوبت فقط برای همین شعبه ثبت می‌شود.</small></div>{% endif %}
+    <form method="post" class="appt-form">{% csrf_token %}
+      {{ form.as_p }}
+      <div class="appt-help">ساعت‌های نوبت از <strong>۰۹:۰۰ تا ۱۸:۰۰</strong> و با فاصله <strong>۱۵ دقیقه</strong> هستند. ساعت‌های پر به‌صورت خودکار غیرفعال می‌شوند.</div>
+      <button class="appt-submit" type="submit">ثبت قطعی نوبت</button>
+    </form>
+  </div>
+</div>
+<script>
+(function(){
+  const root=document.querySelector('.appt-card');
+  const branch=document.getElementById('id_branch');
+  const day=document.getElementById('id_appointment_date');
+  const slot=document.getElementById('id_appointment_time');
+  if(!root||!day||!slot)return;
+  const fixed=root.dataset.fixedBranch||'';
+  let note=document.createElement('small'); note.className='slot-note'; slot.parentElement.appendChild(note);
+  async function refresh(){
+    const branchId=branch?branch.value:fixed;
+    const dateValue=(day.value||'').trim();
+    if(!branchId||!dateValue){note.textContent='ابتدا شعبه و تاریخ را انتخاب کنید.';return;}
+    note.textContent='در حال بررسی ساعت‌های آزاد...'; note.classList.remove('busy');
+    try{
+      const url='{% url "appointment_availability" %}?branch='+encodeURIComponent(branchId)+'&date='+encodeURIComponent(dateValue);
+      const res=await fetch(url,{credentials:'same-origin'});
+      const data=await res.json();
+      if(!res.ok||!data.ok)throw new Error('خطا');
+      let free=0;
+      [...slot.options].forEach(opt=>{
+        const info=data.slots.find(x=>x.value===opt.value);
+        if(!info)return;
+        opt.disabled=!info.available;
+        if(info.available)free++;
+        opt.textContent=info.label+(info.available?'':' — پر');
+      });
+      if(slot.selectedOptions[0]&&slot.selectedOptions[0].disabled)slot.value='';
+      note.textContent=free+' ساعت آزاد برای این روز';
+      if(!free)note.classList.add('busy');
+    }catch(e){note.textContent='بررسی آنلاین اسلات‌ها انجام نشد؛ سیستم هنگام ثبت دوباره کنترل می‌کند.';}
+  }
+  if(branch)branch.addEventListener('change',refresh);
+  day.addEventListener('change',refresh); day.addEventListener('blur',refresh);
+  refresh();
+})();
+</script>
+{% endblock %}
