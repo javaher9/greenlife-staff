@@ -26,8 +26,29 @@
 .impersonation-banner form{margin:0}.impersonation-banner button{border:0;border-radius:8px;padding:6px 10px;background:#fff;color:#8a1f36;font-family:inherit;font-weight:900;cursor:pointer}
 @media(max-width:700px){.impersonation-banner{top:6px;width:calc(100% - 18px);justify-content:space-between;font-size:10px}}
 </style>
+<style>
+@media(min-width:821px){
+  body.gl-role-call-center{background:#f3f6fb!important;color:#243149}
+  body.gl-role-call-center .app-sidebar{background:#fff!important;border-left:1px solid #e5e9f0!important;box-shadow:0 10px 30px rgba(35,46,67,.06)!important}
+  body.gl-role-call-center .brand{background:#fff!important;color:#1c6f50!important;border-bottom:1px solid #eef1f5!important}
+  body.gl-role-call-center .brand b{color:#2a8a64!important}body.gl-role-call-center .brand small{color:#8b95a3!important}
+  body.gl-role-call-center .app-nav a{color:#526077!important;background:transparent!important;border-color:transparent!important}
+  body.gl-role-call-center .app-nav a:hover{background:#f7f4fc!important;color:#6e4fa0!important}
+  body.gl-role-call-center .app-nav a.is-active{background:#eee7f9!important;color:#6d4ca1!important;border-right:3px solid #7655a8!important}
+  body.gl-role-call-center .nav-ico{color:inherit!important}
+  body.gl-role-call-center .sidebar-footer{border-top:1px solid #edf0f4!important;background:#fff!important}
+  body.gl-role-call-center .sidebar-footer a{color:#738095!important}
+  body.gl-role-call-center .app-main{background:#f3f6fb!important}
+  body.gl-role-call-center .topbar{background:#fff!important;border-bottom:1px solid #e6eaf1!important;box-shadow:0 4px 18px rgba(35,46,67,.04)!important;color:#26344a!important}
+  body.gl-role-call-center .topbar-search{background:#f8fafc!important;border-color:#e2e7ef!important}
+  body.gl-role-call-center .topbar-search input{background:transparent!important;color:#29364b!important}
+  body.gl-role-call-center .topbar-date,body.gl-role-call-center .header-person strong{color:#2a3548!important}
+  body.gl-role-call-center .header-person span{color:#8a95a4!important}
+  body.gl-role-call-center .msg{box-shadow:none!important}
+}
+</style>
 </head>
-<body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'receptionist' %}gl-role-employee{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
+<body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'receptionist' %}gl-role-employee{% endif %} {% if user.profile.role == 'call_center' %}gl-role-call-center{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
 {% if request.session.impersonator_user_id %}
 <div class="impersonation-banner"><span>در حال مشاهده به‌عنوان {{ user.get_full_name|default:user.username }}</span><form method="post" action="{% url 'impersonate_return' %}">{% csrf_token %}<button type="submit">بازگشت به ادمین</button></form></div>
 {% endif %}
@@ -41,6 +62,9 @@
     {% if executive_access %}
     <a href="/my-office/" class="gl-executive-nav {% if request.path|slice:':11' == '/my-office/' %}is-active{% endif %}"><span class="nav-ico">✦</span><span>دفتر من</span><b class="gl-private-badge">PRIVATE</b></a>
     <a href="{% url 'credential_settings' %}" class="{% if request.resolver_match.url_name == 'credential_settings' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>تنظیمات دسترسی</span></a>
+    {% endif %}
+    {% if user.profile.role != 'referrer' %}
+    <a href="{% url 'internal_messages' %}" class="{% if request.resolver_match.url_name == 'internal_messages' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>پیام داخلی</span></a>
     {% endif %}
     {% if user.profile.role == 'consultant' %}
     <a href="/" class="nav-main {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico">⌂</span><span>داشبورد من</span></a>
