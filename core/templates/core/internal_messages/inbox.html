@@ -1,0 +1,23 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<style>
+.im-wrap{max-width:1220px;margin:0 auto 80px;color:#1f2b3e}
+.im-head{display:flex;justify-content:space-between;align-items:center;gap:14px;background:#fff;border:1px solid #e3e8ef;border-radius:18px;padding:18px 20px;box-shadow:0 8px 24px rgba(35,45,66,.06);margin-bottom:12px}
+.im-head h1{margin:0 0 4px;font-size:24px}.im-head p{margin:0;color:#7a8798;font-size:11px}.im-new{display:inline-flex;align-items:center;gap:6px;padding:11px 14px;border-radius:11px;background:#7553a8;color:#fff;text-decoration:none;font-weight:900;font-size:11px}
+.im-grid{display:grid;gap:8px}.im-row{display:grid;grid-template-columns:minmax(220px,1.2fr) minmax(280px,1.6fr) 110px 52px;gap:12px;align-items:center;padding:13px 15px;background:#fff;border:1px solid #e5e9f0;border-radius:14px;text-decoration:none;color:#26344a;box-shadow:0 4px 14px rgba(40,51,75,.04)}
+.im-row:hover{border-color:#d8caeb;box-shadow:0 8px 22px rgba(70,49,110,.07)}.im-title strong{display:block;font-size:12px}.im-title small{display:block;color:#8792a1;font-size:9px;margin-top:4px}.im-preview{font-size:10px;color:#657286;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.im-time{font-size:9px;color:#8b95a4;text-align:center}.im-unread{min-width:26px;height:26px;border-radius:999px;background:#7655a8;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;margin:auto}.im-empty{padding:50px;text-align:center;background:#fff;border:1px dashed #d9e0e9;border-radius:16px;color:#7b8798}
+@media(max-width:760px){.im-head{align-items:flex-start;flex-direction:column}.im-row{grid-template-columns:1fr auto}.im-preview{grid-column:1/-1}.im-time{grid-column:1}.im-unread{grid-column:2;grid-row:1}}
+</style>
+<section class="im-wrap">
+  <header class="im-head"><div><h1>کارتابل داخلی</h1><p>گفتگوی مستقیم و گروهی بین پرسنل</p></div><a class="im-new" href="{% url 'internal_message_new' %}">＋ گفتگوی جدید</a></header>
+  <div class="im-grid">
+    {% for row in conversation_rows %}
+    <a class="im-row" href="{% url 'internal_message_thread' row.conversation.pk %}">
+      <div class="im-title"><strong>{{ row.title }}</strong><small>{{ row.participant_count }} نفر در گفتگو</small></div>
+      <div class="im-preview">{% if row.last %}{{ row.last.sender.get_full_name|default:row.last.sender.username }}: {{ row.last.body|truncatechars:120 }}{% else %}هنوز پیامی ثبت نشده{% endif %}</div>
+      <div class="im-time">{% if row.last %}{{ row.last.created_at|jdatetime }}{% endif %}</div>
+      {% if row.unread %}<span class="im-unread">{{ row.unread }}</span>{% else %}<span></span>{% endif %}
+    </a>
+    {% empty %}<div class="im-empty">هنوز گفتگویی ندارید. از «گفتگوی جدید» شروع کنید.</div>{% endfor %}
+  </div>
+</section>
+{% endblock %}
