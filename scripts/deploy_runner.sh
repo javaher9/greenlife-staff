@@ -84,12 +84,12 @@ if [[ "$APP_BUILD_REQUIRED" == "1" ]]; then
   # reuse the exact currently running image only when both dependency manifest
   # and Dockerfile are byte-for-byte identical to the previous production image.
   local_overlay_ok=0
-  if docker image inspect greenlife-staff-rollback-web:latest >/dev/null 2>&1; then
-    old_requirements="$(mktemp)"
-    old_dockerfile="$(mktemp)"
-    overlay_dockerfile="$(mktemp)"
-    trap 'rm -f "$old_requirements" "$old_dockerfile" "$overlay_dockerfile"' EXIT
+  old_requirements="$DEPLOY_PATH/.rollback/requirements.previous"
+  old_dockerfile="$DEPLOY_PATH/.rollback/Dockerfile.previous"
+  overlay_dockerfile="$DEPLOY_PATH/.rollback/Dockerfile.overlay"
+  rm -f "$old_requirements" "$old_dockerfile" "$overlay_dockerfile"
 
+  if docker image inspect greenlife-staff-rollback-web:latest >/dev/null 2>&1; then
     if docker run --rm --entrypoint cat greenlife-staff-rollback-web:latest /app/requirements.txt >"$old_requirements" 2>/dev/null \
       && docker run --rm --entrypoint cat greenlife-staff-rollback-web:latest /app/Dockerfile >"$old_dockerfile" 2>/dev/null \
       && cmp -s requirements.txt "$old_requirements" \
