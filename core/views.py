@@ -35,7 +35,7 @@ def _is_mobile_request(request):
     if (request.META.get('HTTP_SEC_CH_UA_MOBILE') or '').strip() == '?1':
         return True
     ua=(request.META.get('HTTP_USER_AGENT') or '').lower()
-    mobile_tokens=('iphone','ipod','android','mobile','windows phone','opera mini')
+    mobile_tokens=('iphone','ipod','mobile','windows phone','opera mini')
     return any(token in ua for token in mobile_tokens)
 
 
