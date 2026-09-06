@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.http import JsonResponse
 from django.urls import reverse
 from django.utils import timezone
 
@@ -121,3 +122,48 @@ def internal_messages(request):
     })
     response['Cache-Control']='no-store, private'
     return response
+
+
+@_staff_messaging_required
+def internal_message_updates(request):
+    contacts=list(_staff_users().exclude(pk=request.user.pk))
+    contact_ids={u.pk for u in contacts}
+    selected_id=(request.GET.get('with') or '').strip()
+    selected=None
+    if selected_id:
+        if not selected_id.isdigit() or int(selected_id) not in contact_ids:
+            return JsonResponse({'ok':False,'error':'invalid contact'},status=400)
+        selected=next((u for u in contacts if u.pk==int(selected_id)),None)
+
+    try:
+        after=max(0,int(request.GET.get('after') or 0))
+    except (TypeError,ValueError):
+        after=0
+
+    if selected:
+        qs=InternalMessage.objects.filter(
+            Q(sender=request.user,recipient=selected) |
+            Q(sender=selected,recipient=request.user),
+            pk__gt=after,
+        ).select_related('sender','recipient').order_by('pk')[:100]
+        InternalMessage.objects.filter(
+            sender=selected,recipient=request.user,read_at__isnull=True
+        ).update(read_at=timezone.now())
+    else:
+        qs=InternalMessage.objects.filter(
+            recipient__isnull=True,pk__gt=after
+        ).select_related('sender').order_by('pk')[:100]
+
+    data=[]
+    for item in qs:
+        data.append({
+            'id':item.pk,
+            'sender':item.sender.get_full_name() or item.sender.username,
+            'body':item.body,
+            'mine':item.sender_id==request.user.pk,
+            'time':timezone.localtime(item.created_at).strftime('%H:%M'),
+        })
+    response=JsonResponse({'ok':True,'messages':data})
+    response['Cache-Control']='no-store, private'
+    return response
+
