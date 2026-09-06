@@ -29,7 +29,8 @@ jobs:
           FREE_GB=$((FREE_KB / 1024 / 1024))
           echo "Disk before cleanup: ${FREE_GB} GB free, ${USED_PERCENT}% used"
 
-          # Only reclaim disposable caches/logs. Never prune Docker volumes or app data.
+          # Only reclaim disposable caches/logs and redundant backup generations.
+          # Never prune Docker volumes, the live database, or live media.
           if [ "$FREE_GB" -lt 20 ] || [ "$USED_PERCENT" -ge 82 ]; then
             echo "Low disk detected; reclaiming safe disposable space..."
             sudo journalctl --vacuum-size=200M || true
@@ -37,6 +38,25 @@ jobs:
             docker image prune -af || true
             docker builder prune -af || true
             find "$HOME/actions-runner/_diag" -type f -mtime +7 -delete 2>/dev/null || true
+
+            BACKUP_DIR="/home/ubuntu/greenlife-staff-runtime/backups"
+            if [ -d "$BACKUP_DIR" ]; then
+              echo "Backup directory before retention cleanup:"
+              du -sh "$BACKUP_DIR" || true
+              for pattern in 'db_*.dump' 'media_*.tar.gz'; do
+                mapfile -t backup_files < <(
+                  find "$BACKUP_DIR" -maxdepth 1 -type f -name "$pattern" -printf '%T@ %p\n' \
+                    | sort -nr | cut -d' ' -f2-
+                )
+                if [ "${#backup_files[@]}" -gt 3 ]; then
+                  for ((idx=3; idx<${#backup_files[@]}; idx++)); do
+                    rm -f -- "${backup_files[$idx]}"
+                  done
+                fi
+              done
+              echo "Backup directory after retention cleanup:"
+              du -sh "$BACKUP_DIR" || true
+            fi
           fi
 
           df -h / || true
