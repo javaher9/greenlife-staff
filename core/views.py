@@ -194,6 +194,7 @@ def login_view(request):
     return render(request,'core/login.html',{
         'form':form,
         'mobile_login':mobile_login,
+        'next':request.POST.get('next') or request.GET.get('next') or '',
     })
 
 @credential_admin_required
@@ -212,7 +213,10 @@ def credential_settings(request):
             'desktop_revealable':bool(credential and credential.desktop_password_cipher),
             'mobile_revealable':bool(credential and credential.mobile_pin_cipher),
         })
-    return render(request,'core/credential_settings.html',{'credential_rows':rows})
+    response=render(request,'core/credential_settings.html',{'credential_rows':rows})
+    response['Cache-Control']='no-store, private'
+    response['Pragma']='no-cache'
+    return response
 
 
 @credential_admin_required
@@ -267,7 +271,10 @@ def credential_reveal(request,pk,kind):
         metadata={'kind':kind},
         ip_address=_request_ip(request),
     )
-    return JsonResponse({'ok':True,'secret':secret})
+    response=JsonResponse({'ok':True,'secret':secret})
+    response['Cache-Control']='no-store, private'
+    response['Pragma']='no-cache'
+    return response
 
 
 @credential_admin_required
