@@ -2,6 +2,7 @@ import csv
 import io
 import os
 import uuid
+from datetime import time as dt_time
 from functools import wraps
 
 from django.contrib import messages
@@ -427,6 +428,18 @@ def call_center_dashboard(request):
         .select_related('branch','lead')
         .order_by('appointment_time')[:12]
     )
+    appointment_by_time={
+        item.appointment_time.strftime('%H:%M'):item for item in today_appointments
+    }
+    appointment_slots=[]
+    for hour in range(9,19):
+        minutes=(0,15,30,45) if hour<18 else (0,)
+        for minute in minutes:
+            label=f'{hour:02d}:{minute:02d}'
+            appointment_slots.append({
+                'label':label,
+                'appointment':appointment_by_time.get(label),
+            })
     recent_internal_messages=(
         InternalMessage.objects.filter(
             Q(recipient__isnull=True) | Q(sender=request.user) | Q(recipient=request.user)
@@ -442,6 +455,7 @@ def call_center_dashboard(request):
         'group_filter':group_filter,'groups':groups,
         'stats':stats,'today':today,
         'today_appointments':today_appointments,
+        'appointment_slots':appointment_slots,
         'recent_internal_messages':recent_internal_messages,
         'internal_unread':internal_unread,
     })
