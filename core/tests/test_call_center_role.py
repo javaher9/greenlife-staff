@@ -3,7 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from core.forms import ReferralLeadManageForm
-from core.models import Branch, EmployeeProfile, ReferralLead, ReferralProfile, StaffNotification, Task
+from core.models import Branch, CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, StaffNotification, Task
 from core.referral_views import _auto_assign_call_center
 
 
@@ -94,6 +94,44 @@ class CallCenterRoleTests(TestCase):
         self.assertTrue(StaffNotification.objects.filter(
             user=self.operator_two,notification_type='call_center_lead',
         ).exists())
+
+    def test_groups_are_bootstrapped_and_existing_leads_go_to_staff_sales_group(self):
+        response=self.client.get(reverse('call_center_dashboard'))
+        self.assertEqual(response.status_code,200)
+        names=set(CallCenterLeadGroup.objects.filter(owner=self.operator_one.profile).values_list('name',flat=True))
+        self.assertTrue({
+            'شبکه فروش پرسنل','وب‌سایت','کمپ','شرکت‌ها و همکاری سازمانی','اینستاگرام'
+        }.issubset(names))
+        self.lead_one.refresh_from_db()
+        self.assertIsNotNone(self.lead_one.group_id)
+        self.assertEqual(self.lead_one.group.name,'شبکه فروش پرسنل')
+        self.assertContains(response,'شبکه فروش پرسنل')
+
+    def test_operator_can_create_group_and_move_own_lead(self):
+        response=self.client.post(reverse('call_center_group_create'),{'name':'کمپ VIP'})
+        self.assertEqual(response.status_code,302)
+        group=CallCenterLeadGroup.objects.get(owner=self.operator_one.profile,name='کمپ VIP')
+        response=self.client.post(reverse('call_center_lead',args=[self.lead_one.pk]),{
+            'status':'contacted','group':group.pk,'next_follow_up':'',
+            'interested_service':'لاغری','notes':'انتقال به گروه کمپ',
+        })
+        self.assertRedirects(response,reverse('call_center_dashboard'))
+        self.lead_one.refresh_from_db()
+        self.assertEqual(self.lead_one.group,group)
+
+    def test_referral_registration_says_exactly_where_lead_went(self):
+        self.client.force_login(self.referrer_user)
+        response=self.client.post(reverse('referral_lead_create'),{
+            'full_name':'مشتری شفاف','phone':'09121112222',
+            'alternate_phone':'','interested_service':'مشاوره','notes':'',
+            'referrer':self.referrer.pk,
+        },follow=True)
+        lead=ReferralLead.objects.get(full_name='مشتری شفاف')
+        self.assertIsNotNone(lead.assigned_to_id)
+        self.assertIsNotNone(lead.group_id)
+        self.assertEqual(lead.group.name,'شبکه فروش پرسنل')
+        self.assertContains(response,'شبکه فروش پرسنل')
+        self.assertContains(response,'اپراتور')
 
     def test_manager_assignment_field_only_lists_call_center_staff(self):
         form=ReferralLeadManageForm(instance=self.lead_one)
