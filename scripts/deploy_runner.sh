@@ -78,10 +78,43 @@ fi
 
 APP_BUILD_REQUIRED="${APP_BUILD_REQUIRED:-1}"
 if [[ "$APP_BUILD_REQUIRED" == "1" ]]; then
-  echo "Building application image..."
-  if ! DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 "${COMPOSE[@]}" build; then
-    echo "WARNING: Local-cache build failed; retrying with BuildKit without --pull." >&2
-    "${COMPOSE[@]}" build
+  echo "Preparing application image..."
+
+  # Fast, network-independent path for source-only application changes:
+  # reuse the exact currently running image only when both dependency manifest
+  # and Dockerfile are byte-for-byte identical to the previous production image.
+  local_overlay_ok=0
+  if docker image inspect greenlife-staff-rollback-web:latest >/dev/null 2>&1; then
+    old_requirements="$(mktemp)"
+    old_dockerfile="$(mktemp)"
+    overlay_dockerfile="$(mktemp)"
+    trap 'rm -f "$old_requirements" "$old_dockerfile" "$overlay_dockerfile"' EXIT
+
+    if docker run --rm --entrypoint cat greenlife-staff-rollback-web:latest /app/requirements.txt >"$old_requirements" 2>/dev/null \
+      && docker run --rm --entrypoint cat greenlife-staff-rollback-web:latest /app/Dockerfile >"$old_dockerfile" 2>/dev/null \
+      && cmp -s requirements.txt "$old_requirements" \
+      && cmp -s Dockerfile "$old_dockerfile"; then
+      local_overlay_ok=1
+    fi
+  fi
+
+  if [[ "$local_overlay_ok" == "1" ]]; then
+    echo "Dependencies and Dockerfile are unchanged; building from approved local production image without Docker Hub."
+    cat >"$overlay_dockerfile" <<'EOF'
+FROM greenlife-staff-rollback-web:latest
+WORKDIR /app
+COPY . .
+RUN chmod +x /app/entrypoint.sh
+ENTRYPOINT ["/app/entrypoint.sh"]
+EOF
+    DOCKER_BUILDKIT=0 docker build --pull=false -f "$overlay_dockerfile" -t greenlife-staff-runtime-web:latest .
+    docker tag greenlife-staff-runtime-web:latest greenlife-staff-runtime-web_lan:latest
+  else
+    echo "Dependency manifest or Dockerfile changed; a full application build is required."
+    if ! DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 "${COMPOSE[@]}" build; then
+      echo "WARNING: Local-cache build failed; retrying with BuildKit without --pull." >&2
+      "${COMPOSE[@]}" build
+    fi
   fi
 else
   echo "Infrastructure-only change detected; reusing approved local application image."
