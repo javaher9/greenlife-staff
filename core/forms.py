@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.utils import timezone
 from PIL import Image, ImageOps
-from .models import DailyReport, Task, LeaveRequest, Announcement, BlackboardMessage, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, Branch, JobDutyTemplate, Guideline, DeviceIssue, ReferralProfile, ReferralLead, ReferralSale, FinancialTransaction
+from .models import DailyReport, Task, LeaveRequest, Announcement, BlackboardMessage, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, Branch, JobDutyTemplate, Guideline, DeviceIssue, ReferralProfile, ReferralLead, ReferralSale, FinancialTransaction, CallCenterLeadGroup
 from .jalali import parse_jalali, format_jalali
 
 class JalaliDateInput(forms.TextInput):
@@ -137,15 +137,30 @@ class CallCenterLeadForm(forms.ModelForm):
     next_follow_up=JalaliDateField(label='پیگیری بعدی',required=False)
     class Meta:
         model=ReferralLead
-        fields=['status','next_follow_up','interested_service','notes']
+        fields=['status','group','next_follow_up','interested_service','notes']
         labels={
-            'status':'نتیجه تماس','interested_service':'خدمت موردنظر',
+            'status':'نتیجه تماس','group':'گروه لید','interested_service':'خدمت موردنظر',
             'notes':'گزارش تماس و توضیحات مشتری',
         }
         widgets={'notes':forms.Textarea(attrs={
             'rows':6,
             'placeholder':'نتیجه تماس، درخواست مشتری و زمان مناسب پیگیری بعدی را ثبت کنید.',
         })}
+
+    def __init__(self,*args,operator=None,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.operator=operator
+        if operator is None:
+            self.fields['group'].queryset=CallCenterLeadGroup.objects.none()
+        else:
+            self.fields['group'].queryset=CallCenterLeadGroup.objects.filter(owner=operator)
+        self.fields['group'].required=False
+        self.fields['group'].empty_label='بدون گروه'
+
+    def clean_group(self):
+        if self.is_bound and 'group' not in self.data:
+            return self.instance.group
+        return self.cleaned_data.get('group')
 
 
 class ReferralSaleForm(forms.ModelForm):

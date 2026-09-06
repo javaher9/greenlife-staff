@@ -19,7 +19,7 @@ from .forms import (
     PublicReferralLeadForm, ReferralLeadForm, ReferralLeadManageForm,
     ReferralMemberForm, ReferralSaleForm, CallCenterLeadForm,
 )
-from .models import EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification
+from .models import CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification
 
 
 def _role(user):
@@ -107,9 +107,38 @@ def _public_referral_url(profile):
     return base+reverse('public_referral_lead',args=[profile.referral_code])
 
 
+CALL_CENTER_STARTER_GROUPS=(
+    ('شبکه فروش پرسنل',True),
+    ('وب‌سایت',False),
+    ('کمپ',False),
+    ('شرکت‌ها و همکاری سازمانی',False),
+    ('اینستاگرام',False),
+)
+
+
+def _ensure_call_center_groups(operator):
+    groups={}
+    for name,is_default in CALL_CENTER_STARTER_GROUPS:
+        group,_=CallCenterLeadGroup.objects.get_or_create(
+            owner=operator,name=name,defaults={'is_default':is_default},
+        )
+        if is_default and not group.is_default:
+            group.is_default=True
+            group.save(update_fields=['is_default'])
+        groups[name]=group
+    return groups
+
+
+def _default_call_center_group(operator):
+    return _ensure_call_center_groups(operator)['شبکه فروش پرسنل']
+
+
 def _auto_assign_call_center(lead):
-    """Assign new leads to the active operator with the lightest open queue."""
+    """Assign new referral leads to the lightest queue and make their destination explicit."""
     if lead.assigned_to_id:
+        if not lead.group_id:
+            lead.group=_default_call_center_group(lead.assigned_to)
+            lead.save(update_fields=['group','updated_at'])
         return lead.assigned_to
     operator=(EmployeeProfile.objects.filter(role='call_center',is_active=True,user__is_active=True)
               .annotate(open_leads=Count(
@@ -119,7 +148,8 @@ def _auto_assign_call_center(lead):
               .order_by('open_leads','id').first())
     if operator:
         lead.assigned_to=operator
-        lead.save(update_fields=['assigned_to','updated_at'])
+        lead.group=_default_call_center_group(operator)
+        lead.save(update_fields=['assigned_to','group','updated_at'])
         _notify_call_center_assignment(lead)
     return operator
 
@@ -265,8 +295,19 @@ def referral_lead_create(request):
     form=ReferralLeadForm(request.POST or None)
     if request.method=='POST' and form.is_valid():
         lead=form.save(commit=False); lead.referrer=referrer; lead.source='panel'; lead.created_by=request.user; lead.save()
-        _auto_assign_call_center(lead)
-        messages.success(request,'لید ثبت شد و در صف پیگیری قرار گرفت.')
+        assigned=_auto_assign_call_center(lead)
+        if assigned:
+            operator_name=assigned.user.get_full_name() or assigned.user.username
+            group_name=lead.group.name if lead.group_id else 'بدون گروه'
+            messages.success(
+                request,
+                f'لید ثبت شد؛ به کال‌سنتر، اپراتور «{operator_name}» و گروه «{group_name}» ارسال شد.'
+            )
+        else:
+            messages.warning(
+                request,
+                'لید ثبت شد، اما اپراتور فعال کال‌سنتر پیدا نشد؛ لید در صف بدون مسئول باقی مانده است.'
+            )
         return redirect('referral_lead_list')
     return render(request,'core/referrals/form.html',{
         'form':form,'title':'ثبت لید جدید','subtitle':f'معرف: {referrer}',
@@ -315,8 +356,14 @@ def referral_lead_manage(request,pk):
     if request.method=='POST' and form.is_valid():
         previous_assignee=lead.assigned_to_id
         updated=form.save()
-        if updated.assigned_to_id and updated.assigned_to_id!=previous_assignee:
-            _notify_call_center_assignment(updated)
+        if updated.assigned_to_id!=previous_assignee:
+            if updated.assigned_to_id:
+                updated.group=_default_call_center_group(updated.assigned_to)
+                updated.save(update_fields=['group','updated_at'])
+                _notify_call_center_assignment(updated)
+            elif updated.group_id:
+                updated.group=None
+                updated.save(update_fields=['group','updated_at'])
         messages.success(request,'وضعیت پیگیری لید به‌روزرسانی شد.')
         return redirect('referral_lead_list')
     return render(request,'core/referrals/form.html',{
@@ -338,34 +385,74 @@ def call_center_required(view):
 
 @call_center_required
 def call_center_dashboard(request):
-    leads=ReferralLead.objects.filter(assigned_to=request.user.profile).select_related('assigned_to')
+    operator=request.user.profile
+    default_group=_default_call_center_group(operator)
+    ReferralLead.objects.filter(assigned_to=operator,group__isnull=True).update(group=default_group)
+    all_leads=ReferralLead.objects.filter(assigned_to=operator)
+    leads=all_leads.select_related('assigned_to','group','referrer__user')
     status=request.GET.get('status','')
     if status in dict(ReferralLead.STATUS):
         leads=leads.filter(status=status)
+
+    group_filter=(request.GET.get('group') or '').strip()
+    if group_filter=='ungrouped':
+        leads=leads.filter(group__isnull=True)
+    elif group_filter.isdigit():
+        leads=leads.filter(group_id=int(group_filter),group__owner=operator)
+
     today=timezone.localdate()
-    all_leads=ReferralLead.objects.filter(assigned_to=request.user.profile)
+    groups=(CallCenterLeadGroup.objects.filter(owner=operator)
+            .annotate(lead_count=Count('leads',filter=Q(leads__assigned_to=operator)))
+            .order_by('-is_default','name','id'))
     stats={
         'all':all_leads.count(),
         'new':all_leads.filter(status='new').count(),
         'follow_up':all_leads.filter(next_follow_up__lte=today).exclude(status__in=('won','lost')).count(),
         'appointment':all_leads.filter(status='appointment').count(),
+        'ungrouped':all_leads.filter(group__isnull=True).count(),
     }
     return render(request,'core/call_center/dashboard.html',{
         'leads':leads,'statuses':ReferralLead.STATUS,'status_filter':status,
+        'group_filter':group_filter,'groups':groups,
         'stats':stats,'today':today,
     })
 
 
 @call_center_required
+def call_center_group_create(request):
+    if request.method!='POST':
+        return redirect('call_center_dashboard')
+    name=(request.POST.get('name') or '').strip()
+    if not name:
+        messages.error(request,'نام گروه را وارد کنید.')
+        return redirect('call_center_dashboard')
+    if len(name)>80:
+        messages.error(request,'نام گروه باید حداکثر ۸۰ کاراکتر باشد.')
+        return redirect('call_center_dashboard')
+    group,created=CallCenterLeadGroup.objects.get_or_create(
+        owner=request.user.profile,name=name,defaults={'is_default':False},
+    )
+    if created:
+        messages.success(request,f'گروه «{group.name}» ساخته شد. حالا می‌توانید لیدها را داخل آن قرار دهید.')
+    else:
+        messages.info(request,f'گروه «{group.name}» از قبل وجود دارد.')
+    return redirect(f"{reverse('call_center_dashboard')}?group={group.pk}")
+
+
+@call_center_required
 def call_center_lead(request,pk):
     lead=get_object_or_404(
-        ReferralLead.objects.select_related('assigned_to'),
+        ReferralLead.objects.select_related('assigned_to','group'),
         pk=pk,assigned_to=request.user.profile,
     )
-    form=CallCenterLeadForm(request.POST or None,instance=lead)
+    form=CallCenterLeadForm(request.POST or None,instance=lead,operator=request.user.profile)
     if request.method=='POST' and form.is_valid():
-        form.save()
-        messages.success(request,'نتیجه تماس و پیگیری بعدی ذخیره شد.')
+        updated=form.save()
+        group_name=updated.group.name if updated.group_id else 'بدون گروه'
+        messages.success(
+            request,
+            f'نتیجه تماس ذخیره شد؛ این لید اکنون در گروه «{group_name}» و در صف شما قرار دارد.'
+        )
         return redirect('call_center_dashboard')
     return render(request,'core/call_center/lead.html',{'lead':lead,'form':form})
 
