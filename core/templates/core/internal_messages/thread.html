@@ -1,0 +1,35 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<style>
+.im-thread-wrap{max-width:1120px;margin:0 auto 80px}.im-thread-card{background:#fff;border:1px solid #e3e8ef;border-radius:20px;box-shadow:0 10px 28px rgba(35,45,66,.06);overflow:hidden;color:#1f2b3e}
+.im-thread-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:16px 18px;border-bottom:1px solid #edf0f4}.im-thread-head h1{margin:0 0 4px;font-size:18px}.im-thread-head p{margin:0;color:#7b8798;font-size:9px}.im-thread-head a{color:#6f4da1;text-decoration:none;font-weight:900;font-size:10px}
+.im-messages{min-height:430px;max-height:62vh;overflow:auto;padding:18px;background:#f7f9fc;display:flex;flex-direction:column;gap:8px}.im-msg{max-width:min(72%,720px);padding:10px 12px;border-radius:14px;background:#fff;border:1px solid #e2e7ef;align-self:flex-start}.im-msg.own{align-self:flex-end;background:#f1eafb;border-color:#dfd0f3}.im-msg strong{display:block;font-size:10px;margin-bottom:4px}.im-msg p{margin:0;white-space:pre-wrap;line-height:1.9;font-size:11px}.im-msg small{display:block;margin-top:5px;color:#8994a4;font-size:8px;direction:ltr;text-align:left}
+.im-compose{display:grid;grid-template-columns:1fr auto;gap:8px;padding:12px;border-top:1px solid #edf0f4;background:#fff}.im-compose textarea{min-height:54px;max-height:140px;resize:vertical;border:1px solid #dce3ec;border-radius:11px;padding:10px;font-family:inherit}.im-compose button{align-self:stretch;border:0;border-radius:11px;background:#7553a8;color:#fff;font-family:inherit;font-weight:900;padding:0 18px;cursor:pointer}.im-participants{padding:9px 18px;background:#fbfcfe;border-bottom:1px solid #edf0f4;color:#758196;font-size:9px}
+@media(max-width:700px){.im-msg{max-width:88%}.im-compose{grid-template-columns:1fr}.im-compose button{height:42px}.im-thread-head{align-items:flex-start;flex-direction:column}}
+</style>
+<section class="im-thread-wrap"><div class="im-thread-card">
+  <header class="im-thread-head"><div><h1>{{ conversation_title }}</h1><p>گفتگوی داخلی پرسنل</p></div><a href="{% url 'internal_message_inbox' %}">همه گفتگوها ←</a></header>
+  <div class="im-participants">{% for p in conversation_participants %}{{ p.get_full_name|default:p.username }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+  <div id="imMessages" class="im-messages" data-thread="{{ conversation.pk }}" data-last="{% if thread_messages %}{{ thread_messages|last|default_if_none:'' }}{% endif %}">
+    {% for item in thread_messages %}
+    <div class="im-msg {% if item.sender_id == user.id %}own{% endif %}" data-id="{{ item.pk }}"><strong>{{ item.sender.get_full_name|default:item.sender.username }}</strong><p>{{ item.body }}</p><small>{{ item.created_at|date:"H:i" }}</small></div>
+    {% empty %}<div class="muted">پیامی وجود ندارد.</div>{% endfor %}
+  </div>
+  <form method="post" class="im-compose">{% csrf_token %}<textarea name="body" maxlength="5000" placeholder="پیام خود را بنویسید..." required></textarea><button type="submit">ارسال</button></form>
+</div></section>
+<script>
+(function(){
+ const box=document.getElementById('imMessages'); if(!box)return;
+ const initial=[...box.querySelectorAll('[data-id]')]; let last=initial.length?Number(initial[initial.length-1].dataset.id):0;
+ function esc(v){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+ function scrollBottom(){box.scrollTop=box.scrollHeight;} scrollBottom();
+ async function poll(){
+   try{
+    const r=await fetch('{% url "internal_message_updates" conversation.pk %}?after='+last,{credentials:'same-origin'});
+    const d=await r.json(); if(!r.ok||!d.ok)return;
+    d.messages.forEach(m=>{if(m.id<=last)return; const el=document.createElement('div'); el.className='im-msg'+(m.own?' own':''); el.dataset.id=m.id; el.innerHTML='<strong>'+esc(m.sender)+'</strong><p>'+esc(m.body).replace(/\n/g,'<br>')+'</p><small>'+esc(m.time)+'</small>'; box.appendChild(el); last=m.id;}); if(d.messages.length)scrollBottom();
+   }catch(e){}
+ }
+ setInterval(poll,8000);
+})();
+</script>
+{% endblock %}
