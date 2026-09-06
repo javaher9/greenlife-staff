@@ -6,22 +6,26 @@ from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from functools import wraps
 from django.contrib import messages
-from django.contrib.auth import login, logout
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect, render
 from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
-from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, BlackboardMessageForm, EmployeeCreateForm, EmployeeEditForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm, ConsultantFinanceEntryForm
-from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction, MeetingActionUpdate
+from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, BlackboardMessageForm, EmployeeCreateForm, EmployeeEditForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm, ConsultantFinanceEntryForm, StaffLoginForm, StaffCredentialUpdateForm
+from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction, MeetingActionUpdate, StaffCredential
 from .ai import analyze_finance_receipt, process_report
 from .jalali import format_jalali, gregorian_to_jalali, jalali_to_gregorian, parse_jalali
 from .reporting import day_summary, leaderboard, answer_query
 from .operations import shift_rule, attendance_status_for, overtime_minutes, award_report, award_task, missing_report_days, auto_kpi, approve_correction, report_required, report_exists
 from .smart_alerts import generate_smart_alerts
 from .executive_engine import ceo_score, trend_alerts, calendar_events
+from .credential_security import (
+    change_desktop_password, change_mobile_pin, decrypt_secret,
+    record_desktop_login, record_mobile_login, remember_desktop_password,
+    verify_mobile_pin,
+)
 
 def role_of(user): return getattr(getattr(user,'profile',None),'role','employee')
 
@@ -52,6 +56,16 @@ def executive_required(view):
     def wrapper(request,*args,**kwargs):
         if not _is_executive_user(request.user):
             raise PermissionDenied('Executive workspace access denied.')
+        return view(request,*args,**kwargs)
+    return wrapper
+
+
+def credential_admin_required(view):
+    @wraps(view)
+    @login_required
+    def wrapper(request,*args,**kwargs):
+        if not (request.user.is_superuser or _is_executive_user(request.user)):
+            raise PermissionDenied('Credential administration access denied.')
         return view(request,*args,**kwargs)
     return wrapper
 
@@ -136,33 +150,173 @@ def login_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
 
-    data=request.POST or None
-    # Usernames in Staff are treated case-insensitively at login.
-    # Example: Moradi / moradi / MORADI resolve to the same stored username.
-    if request.method=='POST' and data:
-        mutable=data.copy()
-        raw=(mutable.get('username') or '').strip()
-        if raw:
-            matched=User.objects.filter(username__iexact=raw,is_active=True).order_by('id').first()
-            if matched:
-                mutable['username']=matched.username
-        data=mutable
-
-    form=AuthenticationForm(request,data=data)
+    mobile_login=_is_mobile_request(request)
+    form=StaffLoginForm(request.POST or None,mobile=mobile_login)
     if request.method=='POST' and form.is_valid():
-        user=form.get_user()
-        # Accounts created from Django's generic User admin may not yet have
-        # the EmployeeProfile required throughout the staff application.
-        EmployeeProfile.objects.get_or_create(
-            user=user,
-            defaults={
-                'role':'admin' if user.is_superuser else 'employee',
-                'is_active':user.is_active,
-            },
+        raw_username=(form.cleaned_data.get('username') or '').strip()
+        secret=form.cleaned_data.get('password') or ''
+        matched=User.objects.filter(username__iexact=raw_username,is_active=True).order_by('id').first()
+        user=None
+        auth_error='نام کاربری یا رمز صحیح نیست.'
+
+        if matched:
+            if mobile_login:
+                verified,status=verify_mobile_pin(matched,secret)
+                if verified is True:
+                    user=matched
+                elif verified is None:
+                    # Safe rollout: users without a mobile PIN keep using their
+                    # existing desktop password on mobile until a PIN is assigned.
+                    user=authenticate(request,username=matched.username,password=secret)
+                elif status=='locked':
+                    auth_error='ورود موبایل موقتاً قفل شده است. ده دقیقه دیگر دوباره امتحان کنید.'
+            else:
+                user=authenticate(request,username=matched.username,password=secret)
+
+        if user:
+            EmployeeProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    'role':'admin' if user.is_superuser else 'employee',
+                    'is_active':user.is_active,
+                },
+            )
+            login(request,user,backend='django.contrib.auth.backends.ModelBackend')
+            request.session['login_device']='mobile' if mobile_login else 'desktop'
+            if mobile_login:
+                record_mobile_login(user)
+            else:
+                record_desktop_login(user)
+            return redirect(request.POST.get('next') or 'dashboard')
+
+        form.add_error(None,auth_error)
+
+    return render(request,'core/login.html',{
+        'form':form,
+        'mobile_login':mobile_login,
+    })
+
+@credential_admin_required
+def credential_settings(request):
+    profiles=(
+        EmployeeProfile.objects.exclude(role='referrer')
+        .select_related('user','branch','user__staff_credential')
+        .order_by('branch__name','user__last_name','user__first_name','user__username')
+    )
+    rows=[]
+    for profile in profiles:
+        credential=getattr(profile.user,'staff_credential',None)
+        rows.append({
+            'profile':profile,
+            'credential':credential,
+            'desktop_revealable':bool(credential and credential.desktop_password_cipher),
+            'mobile_revealable':bool(credential and credential.mobile_pin_cipher),
+        })
+    return render(request,'core/credential_settings.html',{'credential_rows':rows})
+
+
+@credential_admin_required
+def credential_update(request,pk):
+    profile=get_object_or_404(EmployeeProfile.objects.select_related('user','branch'),pk=pk)
+    if request.method!='POST':
+        return redirect('credential_settings')
+    form=StaffCredentialUpdateForm(request.POST)
+    if form.is_valid():
+        desktop=form.cleaned_data.get('desktop_password') or ''
+        mobile=form.cleaned_data.get('mobile_pin') or ''
+        if desktop:
+            change_desktop_password(profile.user,desktop,actor=request.user)
+        if mobile:
+            change_mobile_pin(profile.user,mobile,actor=request.user)
+        AuditLog.objects.create(
+            actor=request.user,action='credential_update',path=request.path,method='POST',
+            object_type='User',object_id=str(profile.user_id),
+            summary=f'Credential update for {profile.user.username}',
+            metadata={'desktop_changed':bool(desktop),'mobile_changed':bool(mobile)},
+            ip_address=_request_ip(request),
         )
-        login(request,user)
+        messages.success(request,f'دسترسی‌های {profile.user.get_full_name() or profile.user.username} به‌روزرسانی شد.')
+    else:
+        messages.error(request,'رمزها ذخیره نشدند: '+ ' '.join(
+            msg for field in form.errors.values() for msg in field
+        ))
+    return redirect('credential_settings')
+
+
+@credential_admin_required
+def credential_reveal(request,pk,kind):
+    if request.method!='POST':
+        return JsonResponse({'ok':False,'error':'POST required'},status=405)
+    profile=get_object_or_404(EmployeeProfile.objects.select_related('user'),pk=pk)
+    credential=getattr(profile.user,'staff_credential',None)
+    cipher=''
+    if credential:
+        if kind=='desktop':
+            cipher=credential.desktop_password_cipher
+        elif kind=='mobile':
+            cipher=credential.mobile_pin_cipher
+    if kind not in ('desktop','mobile'):
+        return JsonResponse({'ok':False,'error':'invalid kind'},status=400)
+    secret=decrypt_secret(cipher)
+    if not secret:
+        return JsonResponse({'ok':False,'error':'این رمز هنوز برای نمایش ذخیره نشده است.'},status=404)
+    AuditLog.objects.create(
+        actor=request.user,action='credential_reveal',path=request.path,method='POST',
+        object_type='User',object_id=str(profile.user_id),
+        summary=f'{kind} credential revealed for {profile.user.username}',
+        metadata={'kind':kind},
+        ip_address=_request_ip(request),
+    )
+    return JsonResponse({'ok':True,'secret':secret})
+
+
+@credential_admin_required
+def impersonate_start(request,pk):
+    if request.method!='POST':
+        return redirect('credential_settings')
+    target_profile=get_object_or_404(EmployeeProfile.objects.select_related('user'),pk=pk,is_active=True)
+    target=target_profile.user
+    if target.is_superuser or target_profile.role=='admin':
+        messages.error(request,'برای امنیت، ورود آزمایشی به حساب مدیر سیستم از این صفحه مجاز نیست.')
+        return redirect('credential_settings')
+    original_id=request.user.pk
+    AuditLog.objects.create(
+        actor=request.user,action='impersonation_start',path=request.path,method='POST',
+        object_type='User',object_id=str(target.pk),
+        summary=f'View as {target.username}',metadata={},
+        ip_address=_request_ip(request),
+    )
+    login(request,target,backend='django.contrib.auth.backends.ModelBackend')
+    request.session['impersonator_user_id']=original_id
+    request.session['impersonator_started_at']=timezone.now().isoformat()
+    request.session['login_device']='desktop'
+    return redirect('dashboard')
+
+
+@login_required
+def impersonate_return(request):
+    if request.method!='POST':
         return redirect('dashboard')
-    return render(request,'core/login.html',{'form':form})
+    original_id=request.session.get('impersonator_user_id')
+    if not original_id:
+        return redirect('dashboard')
+    original=User.objects.filter(pk=original_id,is_active=True).first()
+    if not original or not (original.is_superuser or _is_executive_user(original)):
+        logout(request)
+        return redirect('login')
+    target_id=request.user.pk
+    AuditLog.objects.create(
+        actor=original,action='impersonation_end',path=request.path,method='POST',
+        object_type='User',object_id=str(target_id),
+        summary=f'Returned from view-as user {target_id}',metadata={},
+        ip_address=_request_ip(request),
+    )
+    login(request,original,backend='django.contrib.auth.backends.ModelBackend')
+    request.session.pop('impersonator_user_id',None)
+    request.session.pop('impersonator_started_at',None)
+    request.session['login_device']='desktop'
+    return redirect('credential_settings')
+
 
 def logout_view(request): logout(request); return redirect('login')
 
@@ -533,10 +687,13 @@ def employee_create(request):
         d=form.cleaned_data; user=User.objects.create_user(username=d['username'],password=d['password'],first_name=d['first_name'],last_name=d['last_name'])
         EmployeeProfile.objects.update_or_create(user=user,defaults={
             'branch':d['branch'],'role':d['role'],
-            'job_title':d['job_title'] or ('کارشناس کال‌سنتر' if d['role']=='call_center' else 'مشاور' if d['role']=='consultant' else ''),
+            'job_title':d['job_title'] or ('کارشناس کال‌سنتر' if d['role']=='call_center' else 'مشاور' if d['role']=='consultant' else 'منشی' if d['role']=='receptionist' else ''),
             'employee_code':d['employee_code'] or None,'phone':d['phone'],
             'birth_date':d.get('birth_date'),'is_active':user.is_active,
         })
+        remember_desktop_password(user,d['password'],actor=request.user)
+        if d.get('mobile_pin'):
+            change_mobile_pin(user,d['mobile_pin'],actor=request.user)
         messages.success(request,'کارمند ایجاد شد.'); return redirect('employee_list')
     return render(request,'core/generic_form.html',{'form':form,'title':'افزودن کارمند','button':'ساخت حساب'})
 
@@ -554,7 +711,10 @@ def employee_edit(request,pk):
     elif role_of(request.user)=='internal_manager':
         form.fields['role'].choices=[('employee','کارمند'),('call_center','کال‌سنتر'),('consultant','مشاور')]
     if request.method=='POST' and form.is_valid():
-        with transaction.atomic(): form.save()
+        with transaction.atomic():
+            form.save()
+            if form.cleaned_data.get('new_password'):
+                remember_desktop_password(employee.user,form.cleaned_data['new_password'],actor=request.user)
         messages.success(request,'مشخصات پرسنل به‌روزرسانی شد.')
         return redirect('employee_file',pk=pk)
     return render(request,'core/employee_management_form.html',{
