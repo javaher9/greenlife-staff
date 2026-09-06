@@ -1,4 +1,5 @@
 """Internal staff messaging; redeploy marker for disk-safe production rollout."""
+# Disk-safe production rollout verified by PR CI.
 
 from functools import wraps
 
