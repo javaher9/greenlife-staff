@@ -53,15 +53,19 @@ class CallCenterRoleTests(TestCase):
         self.assertNotContains(response,'شبکه فروش من')
         self.assertNotContains(response,'/referrals/')
 
-    def test_dashboard_keeps_call_center_mobile_navigation_and_isolated_layout(self):
+    def test_dashboard_keeps_mobile_navigation_and_uses_approved_light_reference_shell(self):
         response=self.client.get(reverse('call_center_dashboard'))
         self.assertEqual(response.status_code,200)
         self.assertContains(response,'cc-mobile-leads')
         self.assertContains(response,'cc-mobile-notifications')
-        self.assertContains(response,'<div class="cc-hero">',html=False)
-        self.assertContains(response,'<div class="cc-filters">',html=False)
-        self.assertNotContains(response,'<header class="cc-hero">',html=False)
-        self.assertNotContains(response,'<nav class="cc-filters">',html=False)
+        self.assertContains(response,'class="cc-ref"')
+        self.assertContains(response,'شعار امروز')
+        self.assertContains(response,'هر تماس، یک قدم برای حال بهتر')
+        self.assertContains(response,'برنامه نوبت‌های امروز')
+        self.assertContains(response,'09:00')
+        self.assertContains(response,'18:00')
+        self.assertContains(response,'body.gl-role-call-center:before{display:none!important')
+        self.assertContains(response,'html.gl-call-center-html{background:#f5f7fb!important')
 
     def test_operator_can_record_result_only_for_own_lead(self):
         response=self.client.post(reverse('call_center_lead',args=[self.lead_one.pk]),{

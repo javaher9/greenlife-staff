@@ -1,5 +1,5 @@
 {% load static jalali_tags %}<!doctype html>
-<html lang="fa" dir="rtl">
+<html lang="fa" dir="rtl" class="{% if user.is_authenticated and user.profile.role == 'call_center' %}gl-call-center-html{% endif %}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -27,24 +27,44 @@
 @media(max-width:700px){.impersonation-banner{top:6px;width:calc(100% - 18px);justify-content:space-between;font-size:10px}}
 </style>
 <style>
+html.gl-call-center-html{background:#f5f7fb!important}
 @media(min-width:821px){
-  body.gl-role-call-center{background:#f3f6fb!important;color:#243149}
-  body.gl-role-call-center .app-sidebar{background:#fff!important;border-left:1px solid #e5e9f0!important;box-shadow:0 10px 30px rgba(35,46,67,.06)!important}
+  body.gl-role-call-center{background:#f5f7fb!important;color:#243149!important}
+  body.gl-role-call-center:before{display:none!important;content:none!important}
+  body.gl-role-call-center .app-sidebar{
+    width:208px!important;left:0!important;right:auto!important;top:0!important;bottom:0!important;
+    background:#fff!important;border:0!important;border-right:1px solid #e7ebf1!important;
+    box-shadow:4px 0 24px rgba(35,46,67,.035)!important;padding:18px 13px 14px!important
+  }
   body.gl-role-call-center .brand{background:#fff!important;color:#1c6f50!important;border-bottom:1px solid #eef1f5!important}
-  body.gl-role-call-center .brand b{color:#2a8a64!important}body.gl-role-call-center .brand small{color:#8b95a3!important}
-  body.gl-role-call-center .app-nav a{color:#526077!important;background:transparent!important;border-color:transparent!important}
+  body.gl-role-call-center .brand b{color:#2a8a64!important}
+  body.gl-role-call-center .brand small{color:#8b95a3!important}
+  body.gl-role-call-center .app-nav a{color:#59677a!important;background:transparent!important;border-color:transparent!important}
   body.gl-role-call-center .app-nav a:hover{background:#f7f4fc!important;color:#6e4fa0!important}
   body.gl-role-call-center .app-nav a.is-active{background:#eee7f9!important;color:#6d4ca1!important;border-right:3px solid #7655a8!important}
   body.gl-role-call-center .nav-ico{color:inherit!important}
   body.gl-role-call-center .sidebar-footer{border-top:1px solid #edf0f4!important;background:#fff!important}
   body.gl-role-call-center .sidebar-footer a{color:#738095!important}
-  body.gl-role-call-center .app-main{background:#f3f6fb!important}
-  body.gl-role-call-center .topbar{background:#fff!important;border-bottom:1px solid #e6eaf1!important;box-shadow:0 4px 18px rgba(35,46,67,.04)!important;color:#26344a!important}
+  body.gl-role-call-center .app-main{
+    margin-left:208px!important;margin-right:0!important;width:calc(100% - 208px)!important;
+    max-width:none!important;min-height:100vh!important;padding:0 18px 28px!important;background:#f5f7fb!important
+  }
+  body.gl-role-call-center .topbar{
+    height:68px!important;margin:0 -18px 14px!important;padding:0 22px!important;
+    background:#fff!important;border-bottom:1px solid #e6eaf1!important;
+    box-shadow:0 3px 14px rgba(35,46,67,.035)!important;color:#26344a!important
+  }
   body.gl-role-call-center .topbar-search{background:#f8fafc!important;border-color:#e2e7ef!important}
   body.gl-role-call-center .topbar-search input{background:transparent!important;color:#29364b!important}
   body.gl-role-call-center .topbar-date,body.gl-role-call-center .header-person strong{color:#2a3548!important}
   body.gl-role-call-center .header-person span{color:#8a95a4!important}
   body.gl-role-call-center .msg{box-shadow:none!important}
+}
+@media(min-width:821px) and (max-width:1180px){
+  body.gl-role-call-center .app-sidebar{width:176px!important;padding-left:10px!important;padding-right:10px!important}
+  body.gl-role-call-center .app-main{margin-left:176px!important;width:calc(100% - 176px)!important;padding:0 12px 24px!important}
+  body.gl-role-call-center .topbar{margin-left:-12px!important;margin-right:-12px!important;padding-left:16px!important;padding-right:16px!important}
+  body.gl-role-call-center .app-nav>a{font-size:9px!important;padding-left:8px!important;padding-right:8px!important}
 }
 </style>
 </head>

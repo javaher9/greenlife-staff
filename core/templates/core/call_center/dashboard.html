@@ -1,102 +1,155 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
 <style>
-.cc-workspace{width:100%;max-width:1560px;margin:0 auto 88px;display:grid;gap:12px;min-width:0;font-family:Tahoma,sans-serif;color:#243149}
-.cc-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 18px;border:1px solid #e5e9f0;border-radius:18px;background:#fff;box-shadow:0 8px 24px rgba(35,46,67,.055)}
-.cc-hero h1{margin:3px 0 4px;color:#17223a;font-size:24px}.cc-hero p{margin:0;color:#7b8798;font-size:11px}.cc-eyebrow{font-size:9px;font-weight:900;color:#7655a8;letter-spacing:.6px}.cc-top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.cc-badge,.cc-logout{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:6px 11px;border-radius:999px;font-size:10px;font-weight:900;text-decoration:none}.cc-badge{color:#207653;background:#eef8f3;border:1px solid #d5eee2}.cc-badge i{width:7px;height:7px;border-radius:50%;background:#38b77d}.cc-logout{color:#8c4057;background:#fff4f6;border:1px solid #f0dce2}
-.cc-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}.cc-kpi{padding:14px 15px;min-height:88px;border:1px solid #e6eaf1;border-radius:16px;background:#fff;box-shadow:0 6px 18px rgba(40,51,75,.04)}.cc-kpi span{display:flex;align-items:center;gap:7px;color:#6e7a90;font-size:10px;font-weight:900}.cc-kpi span i{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:#eef8f3;color:#20845c;font-style:normal}.cc-kpi:nth-child(2) span i{background:#eef2ff;color:#516ad6}.cc-kpi:nth-child(3) span i{background:#fff2f5;color:#c64a68}.cc-kpi:nth-child(4) span i{background:#f0ebfb;color:#7655a8}.cc-kpi:nth-child(5) span i{background:#fff7e7;color:#a97817}.cc-kpi strong{display:block;color:#17223a;font-size:27px;margin-top:5px;line-height:1}.cc-kpi small{display:block;color:#8a95a6;font-size:9px;margin-top:6px}
-.cc-actions-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.cc-action{display:flex;align-items:center;justify-content:center;gap:8px;height:44px;border:1px solid #e2e7ef;border-radius:12px;background:#fff;color:#4c5870;text-decoration:none;font-size:10px;font-weight:900;box-shadow:0 4px 14px rgba(40,51,75,.035)}.cc-action.primary{background:#23a16c;color:#fff;border-color:#23a16c}.cc-action.purple{color:#6b4b99;background:#f5f0fb}.cc-action .count{min-width:18px;height:18px;border-radius:999px;background:#c73b59;color:#fff;display:grid;place-items:center;font-size:8px}
-.cc-filters{display:grid;grid-template-columns:minmax(260px,1fr) auto auto;gap:8px;align-items:center;padding:9px;border:1px solid #e4e8ef;border-radius:14px;background:#fff}.cc-search{position:relative}.cc-search input{width:100%;height:40px;padding:0 40px 0 12px;border:1px solid #dfe4ed;border-radius:10px;background:#fafbfd;color:#17223a;font-family:inherit;font-size:11px;outline:none}.cc-search:before{content:'⌕';position:absolute;right:13px;top:7px;color:#7655a8;font-size:20px}.cc-select{height:40px;padding:0 11px;border:1px solid #dfe4ed;border-radius:10px;background:#fafbfd;color:#455269;font-family:inherit}.cc-quick-filter{display:flex;gap:5px;overflow:auto}.cc-quick-filter button{height:34px;padding:0 11px;border:1px solid #dde3ec;border-radius:999px;background:#fff;color:#5b677c;font-family:inherit;font-size:9px;font-weight:900;white-space:nowrap;cursor:pointer}.cc-quick-filter button.active{background:#7655a8;border-color:#7655a8;color:#fff}
-.cc-groups{padding:10px 12px;border:1px solid #e4e8ef;border-radius:14px;background:#fff}.cc-groups-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}.cc-groups-head strong{display:block;color:#17223a;font-size:11px}.cc-groups-head small{display:block;color:#8994a4;font-size:8px;margin-top:3px}.cc-group-create{display:flex;gap:6px;align-items:center}.cc-group-create input{height:34px;min-width:175px;padding:0 10px;border:1px solid #dfe4ed;border-radius:9px;background:#fafbfd;color:#17223a;font-family:inherit}.cc-group-create button{height:34px;padding:0 11px;border:0;border-radius:9px;background:#7655a8;color:#fff;font-family:inherit;font-size:9px;font-weight:900;cursor:pointer}.cc-group-list{display:flex;flex-wrap:wrap;gap:6px}.cc-group-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 9px;border-radius:999px;border:1px solid #dde3ed;background:#fff;color:#526077;text-decoration:none;font-size:9px;font-weight:900}.cc-group-chip b{display:inline-flex;min-width:18px;height:18px;align-items:center;justify-content:center;border-radius:999px;background:#f0f2f7;font-size:8px}.cc-group-chip.active{background:#f1ebfb;border-color:#8f6fc0;color:#5f408d}.cc-group-chip.default:before{content:'★';color:#e2ad37}
-.cc-layout{display:grid;grid-template-columns:minmax(0,1fr) 295px;gap:12px;align-items:start}.cc-main-card,.cc-side-card,.cc-message-card{border:1px solid #e3e7ef;border-radius:16px;background:#fff;box-shadow:0 6px 18px rgba(40,51,75,.04);overflow:hidden}.cc-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 15px;border-bottom:1px solid #edf0f4}.cc-card-head h2,.cc-card-head h3{margin:0;color:#17223a;font-size:13px}.cc-card-head a{color:#7655a8;text-decoration:none;font-size:9px;font-weight:900}
-.cc-list-head{display:grid;grid-template-columns:minmax(210px,1.2fr) minmax(120px,.8fr) 105px 120px 165px;gap:8px;padding:9px 13px;background:#fafbfd;color:#8994a4;font-size:9px;font-weight:900}.cc-list{display:grid}.cc-lead{display:grid;grid-template-columns:minmax(210px,1.2fr) minmax(120px,.8fr) 105px 120px 165px;gap:8px;align-items:center;padding:10px 13px;border-bottom:1px solid #edf0f4;background:#fff}.cc-lead:last-child{border-bottom:0}.cc-lead:hover{background:#fcfbfe}.cc-person{min-width:0}.cc-person strong{display:block;color:#18233a;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cc-person small{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:4px;color:#7b8798;font-size:8px}.cc-person small b{font-weight:700;direction:ltr;color:#414e63}.cc-source,.cc-lead-group{display:inline-flex;align-items:center;padding:3px 6px;border-radius:999px;font-size:8px;font-weight:900}.cc-source{background:#eef9fc;color:#277487}.cc-lead-group{background:#f4effb;color:#684998}.cc-service{color:#344158;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-status{display:inline-flex;width:max-content;padding:5px 7px;border-radius:999px;background:#f2ecfb;color:#69499a;font-size:8px;font-weight:900}.cc-follow{font-size:9px;color:#5f6c81}.cc-follow.overdue{color:#b53f57;font-weight:900}.cc-follow.today{color:#9b6b0e;font-weight:900}.cc-actions{display:flex;gap:5px;justify-content:flex-end}.cc-call,.cc-open{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:6px 8px;border-radius:8px;text-decoration:none;font-weight:900;font-size:9px;white-space:nowrap}.cc-call{background:#27a46f;color:#fff}.cc-open{border:1px solid #dbe1ea;color:#42516a;background:#fff}.cc-empty{padding:38px;text-align:center;color:#8490a0}
-.cc-side{display:grid;gap:10px}.cc-appts{max-height:450px;overflow:auto}.cc-appt{display:grid;grid-template-columns:54px 1fr auto;gap:8px;align-items:center;padding:9px 12px;border-bottom:1px solid #edf0f4}.cc-appt:last-child{border-bottom:0}.cc-appt-time{font-weight:900;color:#7655a8;direction:ltr;font-size:10px}.cc-appt strong{display:block;font-size:10px;color:#26344a}.cc-appt small{display:block;font-size:8px;color:#8b95a5;margin-top:3px}.cc-appt-branch{font-size:8px;font-weight:900;color:#237151;background:#eef8f3;padding:4px 6px;border-radius:999px}.cc-appt-empty{padding:28px;text-align:center;color:#8c97a6;font-size:10px}
-.cc-message-list{padding:4px 12px 10px}.cc-message{display:block;padding:9px 0;border-bottom:1px solid #edf0f4;text-decoration:none}.cc-message:last-child{border-bottom:0}.cc-message strong{display:block;color:#344158;font-size:9px}.cc-message p{margin:3px 0 0;color:#7b8798;font-size:8px;line-height:1.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cc-unread{display:inline-flex;margin-right:5px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#c73b59;color:#fff;align-items:center;justify-content:center;font-size:8px}
-.cc-footer-note{padding:10px 12px;border-top:1px solid #edf0f4;color:#8490a0;font-size:8px;line-height:1.7}
-@media(max-width:1180px){.cc-kpis{grid-template-columns:repeat(3,1fr)}.cc-layout{grid-template-columns:1fr}.cc-side{grid-template-columns:1fr 1fr}.cc-list-head{display:none}.cc-lead{grid-template-columns:minmax(190px,1fr) minmax(120px,.7fr) 100px 120px}.cc-actions{grid-column:1/-1;justify-content:flex-start}}
+/* Call Center Reference UI v2 — desktop/tablet light workspace */
+.cc-ref{width:100%;max-width:1540px;margin:0 auto 70px;display:grid;gap:11px;color:#223149;font-family:Tahoma,"Noto Sans Arabic",sans-serif;direction:rtl}
+.cc-ref *{box-sizing:border-box}
+.cc-ref-head{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:13px 16px;background:#fff;border:1px solid #e8ecf2;border-radius:15px;box-shadow:0 6px 20px rgba(45,56,80,.045)}
+.cc-ref-head h1{margin:0;color:#17233b;font-size:20px;line-height:1.3}.cc-ref-head p{margin:4px 0 0;color:#8390a1;font-size:9px}
+.cc-ref-title{display:flex;align-items:center;gap:11px}.cc-ref-title-icon{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:#f2ecfb;color:#7655a8;font-size:18px;font-weight:900}
+.cc-ref-motto{display:flex;align-items:center;gap:8px;padding:8px 11px;border-radius:11px;background:#eef8f3;border:1px solid #ddf0e6;color:#32785d;font-size:9px;white-space:nowrap}.cc-ref-motto b{color:#1c6f50}
+.cc-ref-date{font-size:9px;color:#7f8b9a;white-space:nowrap}
+
+.cc-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}.cc-kpi{min-height:98px;padding:13px 14px;background:#fff;border:1px solid #e8ecf2;border-radius:15px;box-shadow:0 6px 18px rgba(45,56,80,.038);position:relative;overflow:hidden}.cc-kpi:after{content:"";position:absolute;inset:auto 0 0;height:3px;background:#e6eef7}.cc-kpi:nth-child(1):after{background:#63c89b}.cc-kpi:nth-child(2):after{background:#7da7ef}.cc-kpi:nth-child(3):after{background:#ed8ea7}.cc-kpi:nth-child(4):after{background:#a588df}.cc-kpi:nth-child(5):after{background:#e7ba63}
+.cc-kpi-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.cc-kpi-label{font-size:9px;font-weight:900;color:#59677a}.cc-kpi-icon{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:14px;font-weight:900}.cc-kpi:nth-child(1) .cc-kpi-icon{background:#eaf8f1;color:#24805b}.cc-kpi:nth-child(2) .cc-kpi-icon{background:#edf3ff;color:#527bd0}.cc-kpi:nth-child(3) .cc-kpi-icon{background:#fff0f4;color:#c44867}.cc-kpi:nth-child(4) .cc-kpi-icon{background:#f2edfb;color:#7453a5}.cc-kpi:nth-child(5) .cc-kpi-icon{background:#fff7e8;color:#a77416}
+.cc-kpi strong{display:block;margin-top:8px;color:#17233b;font-size:28px;line-height:1}.cc-kpi small{display:block;margin-top:7px;color:#929cac;font-size:8px;line-height:1.6}
+
+.cc-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.cc-action{height:43px;display:flex;align-items:center;justify-content:center;gap:7px;border-radius:11px;border:1px solid #e4e8ef;background:#fff;color:#4c5970;text-decoration:none;font-size:9px;font-weight:900;box-shadow:0 4px 13px rgba(45,56,80,.028)}.cc-action:hover{background:#fafbfe}.cc-action.green{background:#20a36b;color:#fff;border-color:#20a36b}.cc-action.purple{background:#f3edfb;color:#684795;border-color:#e4d9f1}.cc-action.blue{background:#eef5ff;color:#3f6ca8;border-color:#dbe9fa}.cc-action .count{min-width:18px;height:18px;padding:0 5px;border-radius:999px;display:grid;place-items:center;background:#cf3e5b;color:#fff;font-size:8px}
+
+.cc-filters{display:grid;grid-template-columns:minmax(260px,1fr) 145px auto;gap:8px;align-items:center;padding:8px;background:#fff;border:1px solid #e7ebf1;border-radius:13px}.cc-search{position:relative}.cc-search:before{content:"⌕";position:absolute;right:12px;top:6px;color:#7756a7;font-size:20px}.cc-search input,.cc-select{width:100%;height:38px;border:1px solid #e0e5ec!important;border-radius:9px!important;background:#fafbfd!important;color:#253248!important;font-family:inherit!important;font-size:9px!important;box-shadow:none!important}.cc-search input{padding:0 38px 0 10px!important}.cc-select{padding:0 9px!important}
+.cc-quick{display:flex;gap:5px;overflow:auto}.cc-quick button{height:32px;padding:0 10px;border:1px solid #e0e5ec!important;border-radius:999px!important;background:#fff!important;color:#59667b!important;font-family:inherit;font-size:8px;font-weight:900;box-shadow:none!important;white-space:nowrap;cursor:pointer}.cc-quick button.active{background:#7655a8!important;color:#fff!important;border-color:#7655a8!important}
+
+.cc-groups{display:flex;align-items:center;gap:9px;padding:8px 10px;background:#fff;border:1px solid #e7ebf1;border-radius:13px}.cc-groups-title{flex:0 0 auto;min-width:95px}.cc-groups-title strong{display:block;font-size:9px;color:#3b4960}.cc-groups-title small{display:block;font-size:7px;color:#9aa4b2;margin-top:2px}.cc-group-list{display:flex;gap:5px;overflow:auto;flex:1}.cc-group-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 8px;border:1px solid #e1e6ed;border-radius:999px;background:#fff;color:#59667a;text-decoration:none;font-size:8px;font-weight:900;white-space:nowrap}.cc-group-chip b{display:grid;place-items:center;min-width:18px;height:18px;border-radius:999px;background:#f1f3f7;font-size:7px}.cc-group-chip.active{background:#f1eafa;color:#684793;border-color:#d9caec}.cc-group-chip.default:before{content:"★";color:#dfaa32}
+.cc-group-create{display:flex;gap:5px;flex:0 0 auto}.cc-group-create input{width:140px;height:34px;padding:0 8px!important;border:1px solid #e0e5ec!important;border-radius:8px!important;background:#fafbfd!important;color:#253248!important;font-family:inherit;font-size:8px!important;box-shadow:none!important}.cc-group-create button{height:34px;padding:0 9px;border:0!important;border-radius:8px!important;background:#7655a8!important;color:#fff!important;font-family:inherit;font-size:8px;font-weight:900;box-shadow:none!important}
+
+.cc-stage{display:grid;grid-template-columns:minmax(0,1fr) 292px;grid-template-areas:"main side";gap:10px;align-items:start}.cc-main{grid-area:main;display:grid;gap:10px;min-width:0}.cc-side{grid-area:side;display:grid;gap:10px;position:sticky;top:82px}
+.cc-card{background:#fff;border:1px solid #e7ebf1;border-radius:14px;box-shadow:0 6px 18px rgba(45,56,80,.035);overflow:hidden}.cc-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;border-bottom:1px solid #eef1f5}.cc-card-head h2,.cc-card-head h3{margin:0;color:#1d2a41;font-size:11px}.cc-card-head a{color:#7351a3;text-decoration:none;font-size:8px;font-weight:900}
+
+.cc-table-head,.cc-lead{display:grid;grid-template-columns:minmax(185px,1.25fr) minmax(95px,.8fr) 90px 105px 150px;gap:7px;align-items:center}.cc-table-head{padding:8px 12px;background:#fafbfd;color:#8994a4;font-size:8px;font-weight:900}.cc-lead{padding:9px 12px;border-bottom:1px solid #eef1f5;background:#fff}.cc-lead:last-child{border-bottom:0}.cc-lead:hover{background:#fcfbfe}.cc-person{min-width:0}.cc-person strong{display:block;color:#19253b;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cc-person small{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:3px;color:#818c9b;font-size:7px}.cc-person small b{direction:ltr;color:#435067}.cc-tag{display:inline-flex;padding:3px 5px;border-radius:999px;font-size:7px;font-weight:900}.cc-tag.source{background:#edf8fb;color:#277487}.cc-tag.group{background:#f3eef9;color:#694998}.cc-service{font-size:9px;color:#425067;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cc-status{display:inline-flex;width:max-content;padding:4px 6px;border-radius:999px;background:#f1eafa;color:#684793;font-size:7px;font-weight:900}.cc-follow{font-size:8px;color:#667389}.cc-follow.overdue{color:#b83d58;font-weight:900}.cc-follow.today{color:#9d6b09;font-weight:900}.cc-row-actions{display:flex;gap:4px;justify-content:flex-end}.cc-row-actions a{min-height:30px;display:inline-flex;align-items:center;justify-content:center;padding:0 7px;border-radius:7px;text-decoration:none;font-size:8px;font-weight:900;white-space:nowrap}.cc-call{background:#21a06a;color:#fff}.cc-open{border:1px solid #dde3eb;background:#fff;color:#45536a}.cc-empty{padding:36px;text-align:center;color:#8c97a6;font-size:9px}
+
+.cc-bottom{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cc-message-list{padding:3px 12px 9px}.cc-message{display:block;padding:8px 0;border-bottom:1px solid #eef1f5;text-decoration:none}.cc-message:last-child{border-bottom:0}.cc-message strong{display:block;color:#354258;font-size:8px}.cc-message p{margin:3px 0 0;color:#7d8898;font-size:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cc-unread{display:inline-flex;margin-right:4px;min-width:17px;height:17px;padding:0 5px;border-radius:999px;background:#c93c59;color:#fff;align-items:center;justify-content:center;font-size:7px}
+.cc-cem{padding:12px}.cc-cem-focus{display:flex;align-items:center;gap:10px;padding:10px;border-radius:11px;background:#f5f1fb;border:1px solid #e8ddf4}.cc-cem-icon{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#7655a8;color:#fff;font-size:14px}.cc-cem-focus strong{display:block;color:#4f3675;font-size:9px}.cc-cem-focus p{margin:3px 0 0;color:#7e6d92;font-size:7px;line-height:1.7}.cc-cem-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}.cc-cem-stat{padding:8px;border-radius:9px;background:#fafbfd;border:1px solid #edf0f4;text-align:center}.cc-cem-stat b{display:block;color:#27354b;font-size:14px}.cc-cem-stat span{display:block;margin-top:2px;color:#8d97a5;font-size:7px}
+
+.cc-schedule-note{margin:10px 10px 6px;padding:7px 8px;border-radius:9px;background:#eef8f3;color:#257553;font-size:8px;font-weight:900;text-align:center}.cc-slots{max-height:610px;overflow:auto;padding:0 8px 8px}.cc-slot{display:grid;grid-template-columns:50px 1fr 20px;gap:6px;align-items:center;min-height:34px;padding:5px 4px;border-bottom:1px solid #f0f2f5}.cc-slot:last-child{border-bottom:0}.cc-slot-time{direction:ltr;text-align:center;color:#56647b;font-size:8px;font-weight:900}.cc-slot-empty{color:#9aa4b2;font-size:8px}.cc-slot-person strong{display:block;color:#29364c;font-size:8px}.cc-slot-person small{display:block;margin-top:2px;color:#8d97a5;font-size:7px}.cc-slot-dot{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:#edf8f3;color:#23805a;font-size:8px}.cc-slot.booked{background:#fbf8fe}.cc-slot.booked .cc-slot-time{color:#684793}.cc-slot.booked .cc-slot-dot{background:#efe6fa;color:#694998}
+.cc-side-footer{padding:9px 11px;border-top:1px solid #eef1f5;color:#8c97a6;font-size:7px;line-height:1.7}
+
+@media(min-width:821px) and (max-width:1180px){
+  .cc-ref{gap:8px}.cc-ref-head{padding:10px 12px}.cc-ref-head h1{font-size:17px}.cc-ref-motto{white-space:normal;max-width:260px}
+  .cc-kpis{gap:6px}.cc-kpi{padding:10px;min-height:86px}.cc-kpi strong{font-size:23px}.cc-kpi small{font-size:7px}
+  .cc-actions{gap:5px}.cc-action{font-size:8px;height:39px}
+  .cc-stage{grid-template-columns:minmax(0,1fr) 245px;gap:8px}.cc-side{top:76px}
+  .cc-table-head,.cc-lead{grid-template-columns:minmax(160px,1.2fr) minmax(85px,.7fr) 82px 92px 128px;padding-left:8px;padding-right:8px}
+  .cc-group-create input{width:115px}.cc-groups-title{display:none}.cc-cem-stats{gap:4px}
+}
+@media(max-width:900px) and (min-width:821px){
+  .cc-ref-motto{display:none}.cc-kpis{grid-template-columns:repeat(5,minmax(100px,1fr));overflow:auto}.cc-actions{grid-template-columns:repeat(5,minmax(110px,1fr));overflow:auto}
+  .cc-stage{grid-template-columns:minmax(0,1fr) 225px}.cc-table-head{display:none}.cc-lead{grid-template-columns:1fr 90px}.cc-service,.cc-status,.cc-follow{grid-column:1}.cc-row-actions{grid-column:2;grid-row:1/5;align-self:center;flex-direction:column}.cc-bottom{grid-template-columns:1fr}
+}
 @media(max-width:820px){
-.cc-workspace{gap:10px;color:#edf5f8}.cc-hero{padding:15px;align-items:flex-start;flex-direction:column;background:linear-gradient(145deg,#0f1b27,#121d2b);border-color:#2b4050}.cc-hero h1{font-size:22px;color:#fff}.cc-hero p{color:#b9c7d0}.cc-eyebrow{color:#c4a8e6}.cc-badge{background:#173326;border-color:#275541;color:#9cefc3}.cc-logout{background:#2b1720;border-color:#5c2e3c;color:#ffdce5}.cc-top-actions{width:100%;justify-content:space-between}
-.cc-kpis{grid-template-columns:repeat(2,1fr);gap:7px}.cc-kpi{min-height:82px;padding:12px;background:#101d2a;border-color:#2a4051;box-shadow:none}.cc-kpi span,.cc-kpi small{color:#b7c5ce}.cc-kpi strong{color:#fff}.cc-kpi span i{background:#172938;color:#bfead5}
-.cc-actions-bar{grid-template-columns:repeat(2,1fr)}.cc-action{background:#101d2a;border-color:#2a4051;color:#e4edf2;box-shadow:none}.cc-action.primary{background:#1f8d60}.cc-action.purple{background:#2b2240;color:#eadcfb}
-.cc-filters,.cc-groups,.cc-main-card,.cc-side-card,.cc-message-card{background:#0f1b27;border-color:#2a4051;box-shadow:none}.cc-search input,.cc-select,.cc-group-create input{background:#09131c;color:#fff;border-color:#31495b}.cc-quick-filter button{background:#101d2a;color:#dbe4ea;border-color:#395367}.cc-quick-filter button.active{background:#7655a8}.cc-groups-head strong,.cc-card-head h2,.cc-card-head h3{color:#fff}.cc-groups-head small,.cc-card-head a{color:#ad9bc5}.cc-group-chip{background:#111f2c;color:#dce6eb;border-color:#385064}.cc-group-chip b{background:#233242}.cc-card-head{border-color:#293d4d}.cc-list-head{display:none}.cc-lead{grid-template-columns:1fr;gap:7px;padding:12px;background:#0e1b27;border-color:#293d4d}.cc-person strong{color:#fff}.cc-person small{color:#b8c5ce}.cc-person small b{color:#e1e9ed}.cc-service{color:#e7edf1}.cc-follow{color:#c7d1d8}.cc-open{background:#101d2a;border-color:#3b5366;color:#eef4f7}.cc-actions{grid-column:auto;width:100%}.cc-actions a{flex:1}.cc-layout{grid-template-columns:1fr}.cc-side{display:none}.cc-message-list{display:none}.cc-footer-note{display:none}
+  .cc-ref{gap:10px;color:#edf5f8}.cc-ref-head{padding:15px;align-items:flex-start;flex-direction:column;background:linear-gradient(145deg,#0f1b27,#121d2b);border-color:#2b4050}.cc-ref-head h1{color:#fff}.cc-ref-head p{color:#b9c7d0}.cc-ref-title-icon{background:#2b2240;color:#e7d6fa}.cc-ref-motto{background:#173326;border-color:#275541;color:#9cefc3}.cc-ref-date{color:#bac6ce}
+  .cc-kpis{grid-template-columns:repeat(2,1fr)}.cc-kpi{background:#101d2a;border-color:#2a4051;box-shadow:none}.cc-kpi strong{color:#fff}.cc-kpi-label,.cc-kpi small{color:#b7c5ce}
+  .cc-actions{grid-template-columns:repeat(2,1fr)}.cc-action{background:#101d2a;border-color:#2a4051;color:#e4edf2;box-shadow:none}.cc-action.green{background:#1f8d60}.cc-action.purple{background:#2b2240;color:#eadcfb}
+  .cc-filters,.cc-groups,.cc-card{background:#0f1b27;border-color:#2a4051;box-shadow:none}.cc-search input,.cc-select,.cc-group-create input{background:#09131c!important;color:#fff!important;border-color:#31495b!important}.cc-quick button{background:#101d2a!important;color:#dbe4ea!important;border-color:#395367!important}.cc-group-chip{background:#111f2c;color:#dce6eb;border-color:#385064}.cc-group-chip b{background:#233242}.cc-groups-title strong,.cc-card-head h2,.cc-card-head h3{color:#fff}.cc-card-head{border-color:#293d4d}.cc-stage{grid-template-columns:1fr;grid-template-areas:"main"}.cc-side{display:none}.cc-table-head{display:none}.cc-lead{grid-template-columns:1fr;gap:6px;background:#0e1b27;border-color:#293d4d}.cc-person strong{color:#fff}.cc-person small b,.cc-service{color:#e6edf1}.cc-follow{color:#c7d1d8}.cc-row-actions{justify-content:flex-start}.cc-bottom{grid-template-columns:1fr}.cc-message{border-color:#293d4d}.cc-message strong{color:#e7edf1}.cc-message p{color:#aab7c0}.cc-cem-focus{background:#2b2240;border-color:#4a3c63}.cc-cem-focus strong{color:#eadcfb}.cc-cem-focus p{color:#b9a7cc}.cc-cem-stat{background:#111f2c;border-color:#293d4d}.cc-cem-stat b{color:#fff}
 }
 </style>
 
-<div class="cc-workspace">
-  <div class="cc-hero">
-    <div><span class="cc-eyebrow">CALL CENTER WORKSPACE</span><h1>پنل کال‌سنتر</h1><p>مدیریت لید، پیگیری، نوبت‌دهی و ارتباط داخلی در یک صفحه.</p></div>
-    <div class="cc-top-actions"><span class="cc-badge"><i></i> صف من فعال است</span><a class="cc-logout" href="/logout/">↪ خروج</a></div>
-  </div>
+<div class="cc-ref">
+  <header class="cc-ref-head">
+    <div class="cc-ref-title">
+      <div class="cc-ref-title-icon">☎</div>
+      <div><h1>پنل کال‌سنتر</h1><p>مدیریت لید، پیگیری، نوبت‌دهی و ارتباط داخلی — همه در یک میز کار</p></div>
+    </div>
+    <div class="cc-ref-motto"><span>✦</span><span><b>شعار امروز:</b> هر تماس، یک قدم برای حال بهتر</span></div>
+    <div class="cc-ref-date">{{ today|jdate }}</div>
+  </header>
 
   <section class="cc-kpis">
-    <article class="cc-kpi"><span><i>＋</i> لیدهای امروز</span><strong>{{ stats.today }}</strong><small>ورودی‌های امروز در صف شما</small></article>
-    <article class="cc-kpi"><span><i>◎</i> کل لیدهای من</span><strong>{{ stats.all }}</strong><small>همه لیدهای تخصیص‌یافته</small></article>
-    <article class="cc-kpi"><span><i>!</i> پیگیری باز</span><strong>{{ stats.follow_up }}</strong><small>نیازمند اقدام امروز یا عقب‌افتاده</small></article>
-    <article class="cc-kpi"><span><i>▣</i> نوبت امروز</span><strong>{{ stats.appointment_today }}</strong><small>نوبت واقعی ثبت‌شده برای امروز</small></article>
-    <article class="cc-kpi"><span><i>↗</i> نوبت‌های آینده</span><strong>{{ stats.appointment }}</strong><small>از امروز به بعد</small></article>
+    <article class="cc-kpi"><div class="cc-kpi-top"><span class="cc-kpi-label">لیدهای امروز</span><span class="cc-kpi-icon">＋</span></div><strong>{{ stats.today }}</strong><small>ورودی‌های امروز در صف شما</small></article>
+    <article class="cc-kpi"><div class="cc-kpi-top"><span class="cc-kpi-label">کل لیدهای من</span><span class="cc-kpi-icon">◎</span></div><strong>{{ stats.all }}</strong><small>همه لیدهای تخصیص‌یافته</small></article>
+    <article class="cc-kpi"><div class="cc-kpi-top"><span class="cc-kpi-label">پیگیری‌های باز</span><span class="cc-kpi-icon">!</span></div><strong>{{ stats.follow_up }}</strong><small>امروز یا عقب‌افتاده</small></article>
+    <article class="cc-kpi"><div class="cc-kpi-top"><span class="cc-kpi-label">نوبت امروز</span><span class="cc-kpi-icon">▣</span></div><strong>{{ stats.appointment_today }}</strong><small>نوبت واقعی امروز</small></article>
+    <article class="cc-kpi"><div class="cc-kpi-top"><span class="cc-kpi-label">نوبت‌های آینده</span><span class="cc-kpi-icon">↗</span></div><strong>{{ stats.appointment }}</strong><small>از امروز به بعد</small></article>
   </section>
 
-  <nav class="cc-actions-bar">
-    <a class="cc-action primary" href="?status=new">☎ لیدهای جدید</a>
-    <a class="cc-action" href="?status=contacted">✓ ثبت / پیگیری نتیجه تماس</a>
+  <nav class="cc-actions">
+    <a class="cc-action green" href="?status=new">☎ تماس جدید</a>
+    <a class="cc-action" href="?status=contacted">✓ ثبت نتیجه تماس</a>
     <a class="cc-action purple" href="{% url 'appointment_schedule' %}">▣ نوبت‌دهی</a>
-    <a class="cc-action" href="{% url 'internal_messages' %}">✉ پیام داخلی {% if internal_unread %}<span class="count">{{ internal_unread }}</span>{% endif %}</a>
+    <a class="cc-action blue" href="{% url 'internal_messages' %}">✉ پیام داخلی {% if internal_unread %}<span class="count">{{ internal_unread }}</span>{% endif %}</a>
+    <a class="cc-action" href="?status=contacted">◷ پیگیری امروز</a>
   </nav>
 
   <div class="cc-filters">
     <div class="cc-search"><input id="ccSearch" type="search" placeholder="جستجوی نام، شماره موبایل، خدمت یا معرف..."></div>
     <select id="ccSourceFilter" class="cc-select"><option value="">همه منابع</option><option value="panel">ثبت در پنل</option><option value="link">لینک اختصاصی</option><option value="qr">QR اختصاصی</option><option value="import">ورودی فایل</option></select>
-    <div class="cc-quick-filter"><button type="button" class="active" data-time="all">همه</button><button type="button" data-time="overdue">عقب‌افتاده</button><button type="button" data-time="today">امروز</button><button type="button" data-time="future">پیگیری بعدی</button></div>
+    <div class="cc-quick"><button type="button" class="active" data-time="all">همه</button><button type="button" data-time="overdue">عقب‌افتاده</button><button type="button" data-time="today">امروز</button><button type="button" data-time="future">پیگیری بعدی</button></div>
   </div>
 
   <section class="cc-groups">
-    <div class="cc-groups-head">
-      <div><strong>گروه‌های لید من</strong><small>شبکه فروش پرسنل، وب‌سایت، کمپ، شرکت‌ها، اینستاگرام یا گروه دلخواه</small></div>
-      <form class="cc-group-create" method="post" action="{% url 'call_center_group_create' %}">{% csrf_token %}<input name="name" maxlength="80" placeholder="گروه جدید..." required><button type="submit">＋ ساخت گروه</button></form>
-    </div>
+    <div class="cc-groups-title"><strong>گروه‌های لید من</strong><small>تفکیک سریع صف</small></div>
     <div class="cc-group-list">
       <a class="cc-group-chip {% if not group_filter %}active{% endif %}" href="{% url 'call_center_dashboard' %}">همه لیدها <b>{{ stats.all }}</b></a>
       {% for group in groups %}<a class="cc-group-chip {% if group.is_default %}default{% endif %} {% if group_filter == group.pk|stringformat:'s' %}active{% endif %}" href="?group={{ group.pk }}">{{ group.name }} <b>{{ group.lead_count }}</b></a>{% endfor %}
       {% if stats.ungrouped %}<a class="cc-group-chip {% if group_filter == 'ungrouped' %}active{% endif %}" href="?group=ungrouped">بدون گروه <b>{{ stats.ungrouped }}</b></a>{% endif %}
     </div>
+    <form class="cc-group-create" method="post" action="{% url 'call_center_group_create' %}">{% csrf_token %}<input name="name" maxlength="80" placeholder="گروه جدید..." required><button type="submit">＋ ساخت</button></form>
   </section>
 
-  <div class="cc-layout">
-    <main class="cc-main-card">
-      <div class="cc-card-head"><h2>لیست لیدهای من</h2><a href="{% url 'internal_messages' %}">کارتابل داخلی</a></div>
-      <div class="cc-list-head"><span>مراجع‌کننده</span><span>خدمت</span><span>وضعیت</span><span>پیگیری بعدی</span><span>اقدام</span></div>
-      <div class="cc-list" id="ccLeadList">
-        {% for lead in leads %}
-        <article class="cc-lead" data-source="{{ lead.source }}" data-followup="{{ lead.next_follow_up|date:'Y-m-d' }}" data-search="{{ lead.full_name }} {{ lead.phone }} {{ lead.interested_service }} {{ lead.referrer }} {{ lead.group.name|default:'' }}">
-          <div class="cc-person"><strong>{{ lead.full_name }}</strong><small><b>{{ lead.phone }}</b><span class="cc-source">{{ lead.get_source_display }}</span><span class="cc-lead-group">{{ lead.group.name|default:'بدون گروه' }}</span><span>معرف: {{ lead.referrer }}</span></small></div>
-          <div class="cc-service">{{ lead.interested_service|default:'خدمت مشخص نشده' }}</div>
-          <span class="cc-status">{{ lead.get_status_display }}</span>
-          <div class="cc-follow" data-date="{{ lead.next_follow_up|date:'Y-m-d' }}">{% if lead.next_follow_up %}{{ lead.next_follow_up|jdate }}{% else %}تعیین نشده{% endif %}</div>
-          <div class="cc-actions"><a class="cc-call" href="tel:{{ lead.phone }}">☎ تماس</a><a class="cc-open" href="{% url 'call_center_lead' lead.pk %}">پرونده / نتیجه</a></div>
+  <div class="cc-stage">
+    <section class="cc-main">
+      <article class="cc-card">
+        <div class="cc-card-head"><h2>لیست لیدهای من</h2><a href="{% url 'internal_messages' %}">کارتابل داخلی ←</a></div>
+        <div class="cc-table-head"><span>مراجع‌کننده</span><span>خدمت</span><span>وضعیت</span><span>پیگیری بعدی</span><span>اقدام</span></div>
+        <div id="ccLeadList">
+          {% for lead in leads %}
+          <div class="cc-lead" data-source="{{ lead.source }}" data-followup="{{ lead.next_follow_up|date:'Y-m-d' }}" data-search="{{ lead.full_name }} {{ lead.phone }} {{ lead.interested_service }} {{ lead.referrer }} {{ lead.group.name|default:'' }}">
+            <div class="cc-person"><strong>{{ lead.full_name }}</strong><small><b>{{ lead.phone }}</b><span class="cc-tag source">{{ lead.get_source_display }}</span><span class="cc-tag group">{{ lead.group.name|default:'بدون گروه' }}</span><span>معرف: {{ lead.referrer }}</span></small></div>
+            <div class="cc-service">{{ lead.interested_service|default:'خدمت مشخص نشده' }}</div>
+            <span class="cc-status">{{ lead.get_status_display }}</span>
+            <div class="cc-follow">{% if lead.next_follow_up %}{{ lead.next_follow_up|jdate }}{% else %}تعیین نشده{% endif %}</div>
+            <div class="cc-row-actions"><a class="cc-call" href="tel:{{ lead.phone }}">☎ تماس</a><a class="cc-open" href="{% url 'call_center_lead' lead.pk %}">پرونده / نتیجه</a></div>
+          </div>
+          {% empty %}<div class="cc-empty">در این فیلتر لیدی وجود ندارد.</div>{% endfor %}
+        </div>
+      </article>
+
+      <div class="cc-bottom">
+        <article class="cc-card">
+          <div class="cc-card-head"><h3>پیام داخلی {% if internal_unread %}<span class="cc-unread">{{ internal_unread }}</span>{% endif %}</h3><a href="{% url 'internal_messages' %}">باز کردن کارتابل ←</a></div>
+          <div class="cc-message-list">
+            {% for item in recent_internal_messages %}
+            <a class="cc-message" href="{% url 'internal_messages' %}{% if item.recipient_id %}?with={% if item.sender_id == user.id %}{{ item.recipient_id }}{% else %}{{ item.sender_id }}{% endif %}{% endif %}"><strong>{{ item.sender.get_full_name|default:item.sender.username }}</strong><p>{{ item.body|truncatechars:95 }}</p></a>
+            {% empty %}<div class="cc-empty">هنوز پیام داخلی ثبت نشده است.</div>{% endfor %}
+          </div>
         </article>
-        {% empty %}<div class="cc-empty">در این فیلتر لیدی وجود ندارد.</div>{% endfor %}
+
+        <article class="cc-card">
+          <div class="cc-card-head"><h3>تجربه مشتری (CEM)</h3><a href="?status=contacted">اقدام بعدی ←</a></div>
+          <div class="cc-cem">
+            <div class="cc-cem-focus"><span class="cc-cem-icon">♥</span><div><strong>تمرکز امروز: پیگیری منظم و تجربه یکدست بیمار</strong><p>نوبت‌ها، پیگیری‌های باز و پیام‌های داخلی را از همین میز کار هماهنگ کنید.</p></div></div>
+            <div class="cc-cem-stats"><div class="cc-cem-stat"><b>{{ stats.follow_up }}</b><span>پیگیری باز</span></div><div class="cc-cem-stat"><b>{{ stats.appointment_today }}</b><span>نوبت امروز</span></div><div class="cc-cem-stat"><b>{{ internal_unread }}</b><span>پیام خوانده‌نشده</span></div></div>
+          </div>
+        </article>
       </div>
-    </main>
+    </section>
 
     <aside class="cc-side">
-      <section class="cc-side-card">
-        <div class="cc-card-head"><h3>برنامه نوبت‌های امروز</h3><a href="{% url 'appointment_schedule' %}">برنامه کامل</a></div>
-        <div class="cc-appts">
-          {% for item in today_appointments %}
-          <div class="cc-appt"><span class="cc-appt-time">{{ item.appointment_time|date:"H:i" }}</span><div><strong>{{ item.full_name }}</strong><small>{{ item.service|default:"مشاوره" }}</small></div><span class="cc-appt-branch">{{ item.branch }}</span></div>
-          {% empty %}<div class="cc-appt-empty">برای امروز نوبتی در لیدهای شما ثبت نشده است.</div>{% endfor %}
+      <article class="cc-card">
+        <div class="cc-card-head"><h3>برنامه نوبت‌های امروز</h3><a href="{% url 'appointment_schedule' %}">برنامه کامل ←</a></div>
+        <div class="cc-schedule-note">ساعات ویزیت: ۰۹:۰۰ تا ۱۸:۰۰ — هر ۱۵ دقیقه</div>
+        <div class="cc-slots">
+          {% for slot in appointment_slots %}
+          <div class="cc-slot {% if slot.appointment %}booked{% endif %}">
+            <span class="cc-slot-time">{{ slot.label }}</span>
+            {% if slot.appointment %}
+              <div class="cc-slot-person"><strong>{{ slot.appointment.full_name }}</strong><small>{{ slot.appointment.service|default:"مشاوره" }} · {{ slot.appointment.branch }}</small></div><span class="cc-slot-dot">●</span>
+            {% else %}
+              <span class="cc-slot-empty">خالی است</span><span class="cc-slot-dot">·</span>
+            {% endif %}
+          </div>
+          {% endfor %}
         </div>
-      </section>
-
-      <section class="cc-message-card">
-        <div class="cc-card-head"><h3>پیام داخلی {% if internal_unread %}<span class="cc-unread">{{ internal_unread }}</span>{% endif %}</h3><a href="{% url 'internal_messages' %}">باز کردن کارتابل</a></div>
-        <div class="cc-message-list">
-          {% for item in recent_internal_messages %}
-          <a class="cc-message" href="{% url 'internal_messages' %}{% if item.recipient_id %}?with={% if item.sender_id == user.id %}{{ item.recipient_id }}{% else %}{{ item.sender_id }}{% endif %}{% endif %}"><strong>{{ item.sender.get_full_name|default:item.sender.username }}</strong><p>{{ item.body|truncatechars:80 }}</p></a>
-          {% empty %}<div class="cc-appt-empty">هنوز پیام داخلی ثبت نشده است.</div>{% endfor %}
-        </div>
-        <div class="cc-footer-note">پیام مستقیم برای فرد موردنظر اعلان ایجاد می‌کند؛ گفتگوی عمومی برای همه پرسنل قابل مشاهده است.</div>
-      </section>
+        <div class="cc-side-footer">نوبت واقعی کال‌سنتر و منشی در یک برنامه مشترک نمایش داده می‌شود.</div>
+      </article>
     </aside>
   </div>
 </div>
@@ -105,11 +158,9 @@
 (function(){
   const list=document.getElementById('ccLeadList'), search=document.getElementById('ccSearch'), source=document.getElementById('ccSourceFilter'), buttons=[...document.querySelectorAll('[data-time]')];
   if(!list||!search||!source)return;
-  const rows=[...list.querySelectorAll('.cc-lead')];
-  let time='all';
-  const today=new Date().toISOString().slice(0,10);
+  const rows=[...list.querySelectorAll('.cc-lead')], today=new Date().toISOString().slice(0,10); let time='all';
   function classify(row){const d=row.dataset.followup||'';if(!d)return'none';if(d<today)return'overdue';if(d===today)return'today';return'future'}
-  rows.forEach(row=>{const el=row.querySelector('.cc-follow');const v=classify(row);if(el&&(v==='overdue'||v==='today'))el.classList.add(v)});
+  rows.forEach(row=>{const el=row.querySelector('.cc-follow'),v=classify(row);if(el&&(v==='overdue'||v==='today'))el.classList.add(v)});
   function apply(){const q=(search.value||'').trim().toLowerCase(),s=source.value;rows.forEach(row=>{const okQ=!q||(row.dataset.search||'').toLowerCase().includes(q),okS=!s||row.dataset.source===s,v=classify(row),okT=time==='all'||v===time;row.style.display=(okQ&&okS&&okT)?'grid':'none'})}
   search.addEventListener('input',apply);source.addEventListener('change',apply);buttons.forEach(b=>b.addEventListener('click',()=>{buttons.forEach(x=>x.classList.remove('active'));b.classList.add('active');time=b.dataset.time;apply()}));
 })();
