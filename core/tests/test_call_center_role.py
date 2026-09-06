@@ -64,8 +64,14 @@ class CallCenterRoleTests(TestCase):
         self.assertContains(response,'برنامه نوبت‌های امروز')
         self.assertContains(response,'09:00')
         self.assertContains(response,'18:00')
-        self.assertContains(response,'body.gl-role-call-center:before{display:none!important')
-        self.assertContains(response,'html.gl-call-center-html{background:#f5f7fb!important')
+        self.assertContains(response,'body.gl-role-call-center .app-sidebar{display:none!important')
+        self.assertContains(response,'background:#f5f7fb!important;background-image:none!important')
+        self.assertContains(response,'class="cc-desktop-dock"')
+        self.assertContains(response,'بیماران / لیدها')
+        self.assertContains(response,'نوبت‌ها')
+        self.assertContains(response,'پیام داخلی')
+        self.assertContains(response,'cc-mobile-attendance')
+        self.assertContains(response,'cc-mobile-reports')
 
     def test_operator_can_record_result_only_for_own_lead(self):
         response=self.client.post(reverse('call_center_lead',args=[self.lead_one.pk]),{
