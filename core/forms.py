@@ -140,6 +140,11 @@ class EmployeeCreateForm(forms.Form):
         value=self.cleaned_data['username'].strip()
         if User.objects.filter(username__iexact=value).exists(): raise forms.ValidationError('این نام کاربری قبلاً ثبت شده است.')
         return value
+    def clean_password(self):
+        value=self.cleaned_data.get('password') or ''
+        if len(value)<10 or not any(ch.isalpha() for ch in value) or not any(ch.isdigit() for ch in value):
+            raise forms.ValidationError('رمز دسکتاپ باید حداقل ۱۰ کاراکتر و شامل حرف و عدد باشد.')
+        return value
     def clean_mobile_pin(self):
         value=(self.cleaned_data.get('mobile_pin') or '').strip()
         if value and (len(value)!=6 or not value.isdigit()):
@@ -302,6 +307,12 @@ class EmployeeEditForm(forms.Form):
         value=(self.cleaned_data.get('employee_code') or '').strip()
         if value and EmployeeProfile.objects.filter(employee_code=value).exclude(pk=self.employee.pk).exists():
             raise forms.ValidationError('این کد پرسنلی قبلاً ثبت شده است.')
+        return value
+
+    def clean_new_password(self):
+        value=self.cleaned_data.get('new_password') or ''
+        if value and (len(value)<10 or not any(ch.isalpha() for ch in value) or not any(ch.isdigit() for ch in value)):
+            raise forms.ValidationError('رمز دسکتاپ باید حداقل ۱۰ کاراکتر و شامل حرف و عدد باشد.')
         return value
 
     def save(self):
