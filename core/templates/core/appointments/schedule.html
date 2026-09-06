@@ -1,0 +1,47 @@
+{% extends 'core/base.html' %}{% block content %}
+<style>
+.schedule-shell{max-width:1200px;margin:0 auto 80px;font-family:Tahoma,sans-serif;color:#1e2a3d}
+.schedule-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;padding:18px 20px;background:#fff;border:1px solid #e3e7ef;border-radius:18px;box-shadow:0 8px 24px rgba(38,50,73,.06);margin-bottom:12px}.schedule-head h1{margin:0 0 5px}.schedule-head p{margin:0;color:#7b8798;font-size:11px}.schedule-actions{display:flex;gap:8px;flex-wrap:wrap}.schedule-actions a{padding:10px 12px;border-radius:10px;text-decoration:none;font-weight:900;font-size:11px}.new-appt{background:#7553a8;color:#fff}.back-appt{border:1px solid #dfe4ec;color:#526077;background:#fff}
+.schedule-filter{display:flex;gap:8px;align-items:end;padding:12px;background:#fff;border:1px solid #e3e7ef;border-radius:15px;margin-bottom:12px}.schedule-filter label{font-size:10px;font-weight:900;color:#667388}.schedule-filter input,.schedule-filter select{display:block;margin-top:5px;height:38px;border:1px solid #dce2ea;border-radius:9px;padding:0 10px;background:#fbfcfe;font-family:inherit}.schedule-filter button{height:38px;border:0;border-radius:9px;padding:0 14px;background:#263d52;color:#fff;font-family:inherit;font-weight:900}
+.schedule-card{background:#fff;border:1px solid #e3e7ef;border-radius:18px;overflow:hidden;box-shadow:0 8px 24px rgba(38,50,73,.05)}.slot-row{display:grid;grid-template-columns:90px 1fr 170px 160px;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid #edf0f4;min-height:48px}.slot-row:last-child{border-bottom:0}.slot-time{font-weight:900;direction:ltr;text-align:center;color:#5f438b}.slot-empty{color:#a0a9b7;font-size:11px}.slot-person strong{display:block}.slot-person small{display:block;margin-top:3px;color:#7b8798;font-size:10px}.slot-status{display:inline-flex;width:max-content;padding:5px 8px;border-radius:999px;background:#eff7f3;color:#237653;font-size:10px;font-weight:900}.slot-source{font-size:10px;color:#68758a}.slot-buttons{display:flex;gap:4px;flex-wrap:wrap}.slot-buttons button{border:0;border-radius:7px;padding:6px 7px;font-family:inherit;font-size:9px;font-weight:900;cursor:pointer}.arrive{background:#eaf7f1;color:#176d4c}.complete{background:#eef1fb;color:#4259a1}.cancel{background:#fff0f3;color:#a8324b}
+@media(max-width:760px){.schedule-head{align-items:flex-start;flex-direction:column}.schedule-filter{align-items:stretch;flex-direction:column}.slot-row{grid-template-columns:65px 1fr}.slot-status,.slot-source,.slot-buttons{grid-column:2}.schedule-actions{width:100%}}
+</style>
+<section class="schedule-shell">
+  <header class="schedule-head">
+    <div><h1>برنامه نوبت‌دهی</h1><p>{{ schedule_branch|default:'—' }} · ساعت ۰۹:۰۰ تا ۱۸:۰۰ · هر ۱۵ دقیقه</p></div>
+    <div class="schedule-actions">
+      {% if appointment_role == 'receptionist' %}<a class="new-appt" href="{% url 'receptionist_appointment_create' %}">＋ نوبت جدید</a>{% endif %}
+      {% if appointment_role == 'call_center' %}<a class="back-appt" href="{% url 'call_center_dashboard' %}">بازگشت به کال‌سنتر</a>{% else %}<a class="back-appt" href="/">بازگشت به داشبورد</a>{% endif %}
+    </div>
+  </header>
+
+  <form class="schedule-filter" method="get">
+    {% if appointment_role != 'receptionist' %}
+    <label>شعبه<select name="branch">{% for b in appointment_branches %}<option value="{{ b.pk }}" {% if schedule_branch and b.pk == schedule_branch.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></label>
+    {% endif %}
+    <label>تاریخ<input type="date" name="date" value="{{ schedule_date|date:'Y-m-d' }}"></label>
+    <button type="submit">نمایش برنامه</button>
+  </form>
+
+  <div class="schedule-card">
+    {% for row in schedule_rows %}
+    <div class="slot-row">
+      <div class="slot-time">{{ row.time }}</div>
+      {% if row.appointment %}
+        <div class="slot-person"><strong>{{ row.appointment.full_name }}</strong><small>{{ row.appointment.phone }}{% if row.appointment.service %} · {{ row.appointment.service }}{% endif %}</small></div>
+        <div><span class="slot-status">{{ row.appointment.get_status_display }}</span><div class="slot-source">{{ row.appointment.get_source_display }}</div></div>
+        {% if appointment_role == 'receptionist' %}
+        <div class="slot-buttons">
+          {% if row.appointment.status == 'booked' %}<form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'arrived' %}">{% csrf_token %}<button class="arrive">مراجعه کرد</button></form>{% endif %}
+          {% if row.appointment.status != 'completed' %}<form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'completed' %}">{% csrf_token %}<button class="complete">انجام شد</button></form>{% endif %}
+          <form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'cancelled' %}">{% csrf_token %}<button class="cancel">لغو</button></form>
+        </div>
+        {% else %}<div class="slot-source">رزرو شده</div>{% endif %}
+      {% else %}
+        <div class="slot-empty">آزاد</div><div></div><div></div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
