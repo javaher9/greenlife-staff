@@ -386,7 +386,8 @@ def call_center_required(view):
 @call_center_required
 def call_center_dashboard(request):
     operator=request.user.profile
-    _ensure_call_center_groups(operator)
+    default_group=_default_call_center_group(operator)
+    ReferralLead.objects.filter(assigned_to=operator,group__isnull=True).update(group=default_group)
     all_leads=ReferralLead.objects.filter(assigned_to=operator)
     leads=all_leads.select_related('assigned_to','group','referrer__user')
     status=request.GET.get('status','')
