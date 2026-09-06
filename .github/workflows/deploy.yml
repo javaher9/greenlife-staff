@@ -16,7 +16,7 @@ jobs:
   deploy:
     # Register the Ubuntu runner with these labels: self-hosted, linux, greenlife-prod
     runs-on: [self-hosted, linux, greenlife-prod]
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - name: Safe production disk cleanup
