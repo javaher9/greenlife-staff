@@ -5,7 +5,8 @@
 .msg-contacts-head,.msg-thread-head{padding:16px 17px;border-bottom:1px solid #edf0f4}
 .msg-contacts-head h2,.msg-thread-head h1{margin:0 0 5px;color:#17223a}.msg-contacts-head h2{font-size:16px}.msg-thread-head h1{font-size:19px}
 .msg-contacts-head p,.msg-thread-head p{margin:0;color:#7c8798;font-size:10px;line-height:1.7}
-.msg-contact-list{max-height:680px;overflow:auto;padding:8px}
+.msg-contact-search{padding:9px 10px 0}.msg-contact-search input{width:100%;height:38px;border:1px solid #dfe5ed!important;border-radius:10px!important;background:#fafbfd!important;color:#29364b!important;padding:0 10px!important;font-family:inherit!important;font-size:10px!important;box-shadow:none!important}
+.msg-contact-list{max-height:640px;overflow:auto;padding:8px}
 .msg-contact{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;color:#344158;text-decoration:none;margin-bottom:3px}.msg-contact:hover,.msg-contact.active{background:#f3effa}.msg-contact.public{background:#eef8f3;color:#236c50}.msg-avatar{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:#eee9f7;color:#694a98;font-weight:900;flex:0 0 38px;overflow:hidden}.msg-avatar img{width:100%;height:100%;object-fit:cover}.msg-contact strong{display:block;font-size:11px}.msg-contact small{display:block;color:#8490a0;font-size:9px;margin-top:3px}.msg-unread{margin-right:auto;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#c73b59;color:#fff;display:grid;place-items:center;font-size:8px;font-weight:900}
 .msg-thread{display:grid;grid-template-rows:auto minmax(380px,1fr) auto;min-height:680px}.msg-thread-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.msg-thread-head .room-meta{min-width:0}.msg-room-pill{padding:6px 9px;border-radius:999px;background:#eef8f3;color:#237151;font-size:9px;font-weight:900;white-space:nowrap}
 .msg-stream{padding:18px;overflow:auto;background:#fafbfd;display:flex;flex-direction:column;gap:9px}.msg-bubble{max-width:72%;padding:10px 12px;border-radius:14px;background:#fff;border:1px solid #e4e8ef;box-shadow:0 3px 10px rgba(40,51,75,.035)}.msg-bubble.mine{align-self:flex-end;background:#efe8f8;border-color:#dfd1f0}.msg-bubble.theirs{align-self:flex-start}.msg-bubble strong{display:block;color:#38445a;font-size:9px;margin-bottom:5px}.msg-bubble p{margin:0;color:#202c3f;font-size:11px;line-height:1.9;white-space:pre-wrap;word-break:break-word}.msg-bubble small{display:block;margin-top:6px;color:#929baa;font-size:8px}.msg-empty{margin:auto;text-align:center;color:#8b95a5;font-size:11px}.msg-empty b{display:block;color:#6c4b9b;font-size:28px;margin-bottom:9px}
@@ -18,12 +19,13 @@ body.gl-page-internal_messages{background:#f4f7fb!important}body.gl-page-interna
 <section class="msg-page">
   <aside class="msg-contacts">
     <div class="msg-contacts-head"><h2>پیام داخلی</h2><p>گفتگوی عمومی یا پیام مستقیم به هر پرسنل</p></div>
-    <div class="msg-contact-list">
+    <div class="msg-contact-search"><input id="msgContactSearch" type="search" placeholder="جستجوی نام، سمت یا شعبه..."></div>
+    <div class="msg-contact-list" id="msgContactList">
       <a class="msg-contact public {% if not selected_contact %}active{% endif %}" href="{% url 'internal_messages' %}">
         <span class="msg-avatar">◎</span><span><strong>گفتگوی عمومی پرسنل</strong><small>برای همه اعضای فعال</small></span>
       </a>
       {% for row in contact_rows %}
-      <a class="msg-contact {% if selected_contact and selected_contact.pk == row.user.pk %}active{% endif %}" href="{% url 'internal_messages' %}?with={{ row.user.pk }}">
+      <a class="msg-contact {% if selected_contact and selected_contact.pk == row.user.pk %}active{% endif %}" data-search="{{ row.user.get_full_name }} {{ row.user.username }} {{ row.user.profile.job_title }} {{ row.user.profile.branch }}" href="{% url 'internal_messages' %}?with={{ row.user.pk }}">
         <span class="msg-avatar">{% if row.user.profile.avatar %}<img src="{{ row.user.profile.avatar.url }}" alt="">{% else %}{{ row.user.first_name|first|default:row.user.username|first }}{% endif %}</span>
         <span><strong>{{ row.user.get_full_name|default:row.user.username }}</strong><small>{{ row.user.profile.job_title|default:row.user.profile.get_role_display }}{% if row.user.profile.branch %} · {{ row.user.profile.branch }}{% endif %}</small></span>
         {% if row.unread %}<b class="msg-unread">{{ row.unread }}</b>{% endif %}
@@ -36,7 +38,7 @@ body.gl-page-internal_messages{background:#f4f7fb!important}body.gl-page-interna
     <header class="msg-thread-head"><div class="room-meta"><h1>{{ room_title }}</h1><p>{{ room_subtitle }}</p></div>{% if unread_total %}<span class="msg-room-pill">{{ unread_total }} پیام خوانده‌نشده</span>{% else %}<span class="msg-room-pill">کارتابل فعال</span>{% endif %}</header>
     <div class="msg-stream" id="msgStream">
       {% for item in thread %}
-      <article class="msg-bubble {% if item.sender_id == user.id %}mine{% else %}theirs{% endif %}">
+      <article class="msg-bubble {% if item.sender_id == user.id %}mine{% else %}theirs{% endif %}" data-id="{{ item.pk }}">
         <strong>{{ item.sender.get_full_name|default:item.sender.username }}</strong>
         <p>{{ item.body }}</p>
         <small>{{ item.created_at|jdatetime }}</small>
@@ -54,6 +56,49 @@ body.gl-page-internal_messages{background:#f4f7fb!important}body.gl-page-interna
   </section>
 </section>
 <script>
-(function(){const stream=document.getElementById('msgStream');if(stream)stream.scrollTop=stream.scrollHeight;})();
+(function(){
+  const stream=document.getElementById('msgStream');
+  const search=document.getElementById('msgContactSearch');
+  const contactList=document.getElementById('msgContactList');
+  if(search&&contactList){
+    const contacts=[...contactList.querySelectorAll('.msg-contact[data-search]')];
+    search.addEventListener('input',function(){
+      const q=(this.value||'').trim().toLowerCase();
+      contacts.forEach(row=>{row.style.display=!q||(row.dataset.search||'').toLowerCase().includes(q)?'flex':'none';});
+    });
+  }
+  if(!stream)return;
+  stream.scrollTop=stream.scrollHeight;
+  const initial=[...stream.querySelectorAll('.msg-bubble[data-id]')];
+  let last=initial.length?Number(initial[initial.length-1].dataset.id):0;
+  const selected='{% if selected_contact %}{{ selected_contact.pk }}{% endif %}';
+  const base='{% url "internal_message_updates" %}';
+
+  function esc(value){
+    return String(value).replace(/[&<>"']/g,function(ch){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+    });
+  }
+  async function poll(){
+    try{
+      const url=base+'?after='+last+(selected?'&with='+selected:'');
+      const response=await fetch(url,{credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}});
+      const data=await response.json();
+      if(!response.ok||!data.ok)return;
+      let added=false;
+      data.messages.forEach(function(item){
+        if(item.id<=last)return;
+        const el=document.createElement('article');
+        el.className='msg-bubble '+(item.mine?'mine':'theirs');
+        el.dataset.id=item.id;
+        el.innerHTML='<strong>'+esc(item.sender)+'</strong><p>'+esc(item.body).replace(/\n/g,'<br>')+'</p><small>'+esc(item.time)+'</small>';
+        stream.appendChild(el);
+        last=item.id;added=true;
+      });
+      if(added)stream.scrollTop=stream.scrollHeight;
+    }catch(e){}
+  }
+  window.setInterval(poll,6000);
+})();
 </script>
 {% endblock %}
