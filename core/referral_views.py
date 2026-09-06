@@ -19,7 +19,7 @@ from .forms import (
     PublicReferralLeadForm, ReferralLeadForm, ReferralLeadManageForm,
     ReferralMemberForm, ReferralSaleForm, CallCenterLeadForm,
 )
-from .models import CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification, VisitAppointment
+from .models import CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification, VisitAppointment, InternalMessage
 # Production rebuild marker after the previous deployment hit the workflow timeout.
 
 
@@ -407,15 +407,43 @@ def call_center_dashboard(request):
             .order_by('-is_default','name','id'))
     stats={
         'all':all_leads.count(),
+        'today':all_leads.filter(created_at__date=today).count(),
         'new':all_leads.filter(status='new').count(),
         'follow_up':all_leads.filter(next_follow_up__lte=today).exclude(status__in=('won','lost')).count(),
-        'appointment':VisitAppointment.objects.filter(lead__assigned_to=operator,appointment_date__gte=today).exclude(status='cancelled').count(),
+        'appointment':VisitAppointment.objects.filter(
+            lead__assigned_to=operator,appointment_date__gte=today
+        ).exclude(status='cancelled').count(),
+        'appointment_today':VisitAppointment.objects.filter(
+            lead__assigned_to=operator,appointment_date=today
+        ).exclude(status='cancelled').count(),
         'ungrouped':all_leads.filter(group__isnull=True).count(),
     }
+    today_appointments=(
+        VisitAppointment.objects.filter(
+            appointment_date=today,
+            lead__assigned_to=operator,
+        )
+        .exclude(status='cancelled')
+        .select_related('branch','lead')
+        .order_by('appointment_time')[:12]
+    )
+    recent_internal_messages=(
+        InternalMessage.objects.filter(
+            Q(recipient__isnull=True) | Q(sender=request.user) | Q(recipient=request.user)
+        )
+        .select_related('sender','recipient')
+        .order_by('-created_at')[:4]
+    )
+    internal_unread=InternalMessage.objects.filter(
+        recipient=request.user,read_at__isnull=True
+    ).count()
     return render(request,'core/call_center/dashboard.html',{
         'leads':leads,'statuses':ReferralLead.STATUS,'status_filter':status,
         'group_filter':group_filter,'groups':groups,
         'stats':stats,'today':today,
+        'today_appointments':today_appointments,
+        'recent_internal_messages':recent_internal_messages,
+        'internal_unread':internal_unread,
     })
 
 
