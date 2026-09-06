@@ -74,6 +74,31 @@ class InternalMessagingTests(TestCase):
         self.assertContains(response,self.employee.get_full_name())
         self.assertNotContains(response,self.referrer.get_full_name())
 
+    def test_live_updates_are_private_to_selected_thread(self):
+        first=InternalMessage.objects.create(
+            sender=self.call_center,recipient=self.receptionist,body='پیام خصوصی برای منشی'
+        )
+        InternalMessage.objects.create(
+            sender=self.call_center,recipient=self.employee,body='پیام برای کارمند دیگر'
+        )
+        self.client.force_login(self.receptionist)
+        response=self.client.get(reverse('internal_message_updates'),{
+            'with':str(self.call_center.pk),'after':'0',
+        })
+        self.assertEqual(response.status_code,200)
+        payload=response.json()
+        self.assertTrue(payload['ok'])
+        bodies=[item['body'] for item in payload['messages']]
+        self.assertIn(first.body,bodies)
+        self.assertNotIn('پیام برای کارمند دیگر',bodies)
+
+    def test_message_page_has_contact_search_and_live_polling(self):
+        self.client.force_login(self.call_center)
+        response=self.client.get(reverse('internal_messages'))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'id="msgContactSearch"')
+        self.assertContains(response,"window.setInterval(poll,6000)")
+
     def test_referrer_cannot_access_staff_messages(self):
         self.client.force_login(self.referrer)
         self.assertEqual(self.client.get(reverse('internal_messages')).status_code,403)
