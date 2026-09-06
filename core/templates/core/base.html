@@ -49,6 +49,7 @@
     <a href="/tasks/" class="{% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>وظایف من</span></a>
     <a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش روزانه</span></a>
     <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>شرح وظایف</span></a>
+    <a href="/messages/" class="{% if request.path|slice:':10' == '/messages/' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>کارتابل داخلی</span></a>
     <a href="/service-requests/"><span class="nav-ico">✓</span><span>درخواست‌ها</span></a>
     <a href="/device-issues/mine/"><span class="nav-ico">⚒</span><span>خرابی دستگاه</span></a>
     <a href="/notifications/" class="{% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico">♢</span><span>اعلان‌ها</span></a>
@@ -59,6 +60,7 @@
     <a href="/attendance/" class="attendance-nav employee-bottom-nav cc-mobile-attendance {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور و غیاب</span></a>
     <a href="/tasks/" class="employee-bottom-nav cc-mobile-tasks {% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>وظایف من</span></a>
     <a href="/reports/" class="employee-bottom-nav cc-mobile-reports {% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش روزانه</span></a>
+    <a href="/messages/" class="{% if request.path|slice:':10' == '/messages/' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>پیام داخلی</span></a>
     <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>شرح وظایف</span></a>
     <a href="/notifications/" class="employee-bottom-nav cc-mobile-notifications {% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico">♢</span><span>اعلان‌ها</span></a>
     <a href="/profile/"><span class="nav-ico">◉</span><span>پروفایل</span></a>
@@ -69,6 +71,7 @@
     <a href="/tasks/" class="employee-bottom-nav {% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>وظایف من</span></a>
     <a href="/reports/" class="employee-bottom-nav {% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش روزانه</span></a>
     <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>شرح وظایف</span></a>
+    <a href="/messages/" class="{% if request.path|slice:':10' == '/messages/' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>کارتابل داخلی</span></a>
     <a href="/service-requests/"><span class="nav-ico">✓</span><span>درخواست‌ها</span></a>
     <a href="/device-issues/mine/"><span class="nav-ico">⚒</span><span>خرابی دستگاه</span></a>
     <a href="/notifications/" class="employee-bottom-nav {% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico">♢</span><span>اعلان‌ها</span></a>
@@ -109,6 +112,7 @@
     {% if user.profile.role != 'employee' %}<a href="/kpi/"><span class="nav-ico">◎</span><span>عملکرد و KPI</span></a>{% endif %}
     <a href="/sop/" class="{% if request.path|slice:':5' == '/sop/' %}is-active{% endif %}"><span class="nav-ico">◇</span><span>آموزش</span></a>
     <a href="/guidelines/" class="{% if user.profile.role == 'employee' %}employee-guidelines-nav employee-bottom-nav {% endif %}{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>{% if user.profile.role == 'employee' %}شرح وظایف{% else %}شرح وظایف و دستورالعمل‌ها{% endif %}</span></a>
+    <a href="/messages/" class="{% if request.path|slice:':10' == '/messages/' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>کارتابل داخلی</span></a>
     <a href="/service-requests/"><span class="nav-ico">✓</span><span>درخواست‌ها</span></a>
     {% if user.profile.role == 'employee' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌ها</span></a>{% endif %}
     {% if user.profile.role == 'admin' or user.profile.role == 'manager' %}<a href="/finance/"><span class="nav-ico">▧</span><span>مالی و درآمد</span></a>{% endif %}
@@ -132,6 +136,7 @@
         {% if user.profile.role == 'employee' %}
           <a href="/reports/"><span>▥</span>گزارش‌ها</a>
           <a href="/sop/"><span>◇</span>آموزش</a>
+          <a href="/messages/"><span>✉</span>کارتابل داخلی</a>
           <a href="/service-requests/"><span>✓</span>درخواست‌ها</a>
           <a href="/device-issues/mine/"><span>⚒</span>خرابی دستگاه</a>
           <a href="/logout/" class="employee-more-logout"><span>↪</span>خروج</a>
@@ -144,6 +149,7 @@
           {% if user.profile.role == 'manager' or user.profile.role == 'internal_manager' %}<a href="/attendance/team/"><span>◷</span>حضور تیم</a>{% endif %}
           <a href="/kpi/"><span>◎</span>عملکرد و KPI</a>
           <a href="/sop/"><span>◇</span>آموزش</a>
+          <a href="/messages/"><span>✉</span>کارتابل داخلی</a>
           <a href="/service-requests/"><span>✓</span>درخواست‌ها</a>
           <a href="/notifications/"><span>⚙</span>اعلان‌ها</a>
           <a href="/profile/"><span>◉</span>پروفایل</a>
