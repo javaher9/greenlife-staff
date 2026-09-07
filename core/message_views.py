@@ -103,13 +103,33 @@ def internal_messages(request):
     ).values_list('sender_id',flat=True):
         unread_by_sender[sender_id]=unread_by_sender.get(sender_id,0)+1
 
+    recent_direct=list(
+        InternalMessage.objects.filter(
+            Q(sender=request.user,recipient__isnull=False) |
+            Q(recipient=request.user)
+        ).select_related('sender','recipient').order_by('-created_at')[:500]
+    )
+    last_by_contact={}
+    for item in recent_direct:
+        other_id=item.recipient_id if item.sender_id==request.user.pk else item.sender_id
+        if other_id and other_id not in last_by_contact:
+            last_by_contact[other_id]=item
+
     contact_rows=[
         {
             'user':u,
             'unread':unread_by_sender.get(u.pk,0),
+            'last_message':last_by_contact.get(u.pk),
         }
         for u in contacts
     ]
+    contact_rows.sort(
+        key=lambda row:(
+            1 if row['unread'] else 0,
+            row['last_message'].created_at.timestamp() if row['last_message'] else 0,
+        ),
+        reverse=True,
+    )
     unread_total=sum(unread_by_sender.values())
 
     response=render(request,'core/internal_messages.html',{
@@ -119,6 +139,8 @@ def internal_messages(request):
         'room_title':room_title,
         'room_subtitle':room_subtitle,
         'unread_total':unread_total,
+        'staff_count':len(contacts)+1,
+        'room_kind':'خصوصی' if selected else 'عمومی',
     })
     response['Cache-Control']='no-store, private'
     return response
