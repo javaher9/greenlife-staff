@@ -1,7 +1,109 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}
 {% block content %}
+<style>
+/* Meeting dashboard readability + visual polish v2 */
+body.gl-page-meeting_dashboard .topbar{
+  background:linear-gradient(180deg,#0d1821,#0a141c)!important;
+  border-bottom:1px solid #2a3944!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.16)!important;
+}
+body.gl-page-meeting_dashboard .topbar-search{
+  background:#0f1c25!important;border:1px solid #32434f!important;
+}
+body.gl-page-meeting_dashboard .topbar-search input{
+  color:#e6edf1!important;opacity:1!important;
+}
+body.gl-page-meeting_dashboard .topbar-search input::placeholder{
+  color:#aebdc6!important;opacity:1!important;
+}
+body.gl-page-meeting_dashboard .topbar-date{color:#d2dde2!important;opacity:1!important}
+body.gl-page-meeting_dashboard .topbar-bell{color:#c9b5ff!important}
+body.gl-page-meeting_dashboard .header-person strong{color:#fff!important}
+body.gl-page-meeting_dashboard .header-person span{color:#b5c2c8!important}
+
+.mtg-dashboard .mtg-page-head{
+  background:
+    radial-gradient(circle at 8% 20%,rgba(139,92,246,.14),transparent 28%),
+    radial-gradient(circle at 86% 88%,rgba(53,208,127,.08),transparent 24%),
+    linear-gradient(135deg,#13212c,#0a151d)!important;
+  border-color:#405260!important;
+  box-shadow:0 16px 38px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.025)!important;
+}
+.mtg-dashboard .mtg-page-head>div:first-child>span{color:#b99cff!important}
+.mtg-dashboard .mtg-page-head h1{color:#fff!important}
+.mtg-dashboard .mtg-page-head p{color:#c2cdd2!important;font-size:10px!important}
+.mtg-dashboard .mtg-head-actions a{
+  color:#d7e0e4!important;border-color:#52636e!important;background:rgba(255,255,255,.025)!important
+}
+.mtg-dashboard .mtg-head-actions a:hover{border-color:#8b6be1!important;background:rgba(139,92,246,.10)!important;color:#fff!important}
+.mtg-dashboard .mtg-head-actions a.is-primary{
+  color:#fff!important;border-color:#835ee0!important;background:linear-gradient(135deg,#8b5cf6,#6946c3)!important;
+  box-shadow:0 8px 20px rgba(116,76,207,.24)!important
+}
+
+.mtg-dashboard .mtg-kpi{
+  border-width:1px!important;box-shadow:0 15px 32px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.06)!important
+}
+.mtg-dashboard .mtg-kpi span,
+.mtg-dashboard .mtg-kpi span i{color:#fff!important}
+.mtg-dashboard .mtg-kpi strong{
+  color:#fff!important;opacity:1!important;text-shadow:0 2px 10px rgba(0,0,0,.22)!important
+}
+.mtg-dashboard .mtg-kpi small{
+  color:#f0f3f5!important;opacity:.92!important;font-size:8px!important
+}
+.mtg-dashboard .kpi-purple{background:linear-gradient(145deg,#5b38a0,#2b1d4b)!important;border-color:#8d69e0!important}
+.mtg-dashboard .kpi-blue{background:linear-gradient(145deg,#27699d,#143b58)!important;border-color:#58a1d9!important}
+.mtg-dashboard .kpi-gold{background:linear-gradient(145deg,#8a5d1f,#4a3214)!important;border-color:#c38b36!important}
+.mtg-dashboard .kpi-red{background:linear-gradient(145deg,#8d3548,#4a2029)!important;border-color:#d05a72!important}
+
+.mtg-dashboard .mtg-surface{
+  border-color:#344751!important;
+  background:
+    linear-gradient(145deg,rgba(20,34,45,.97),rgba(10,22,30,.98))!important;
+  box-shadow:0 13px 30px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.025)!important
+}
+.mtg-dashboard .mtg-surface:nth-child(1){box-shadow:0 13px 30px rgba(0,0,0,.20),inset 3px 0 0 rgba(139,92,246,.58)!important}
+.mtg-dashboard .mtg-surface:nth-child(2){box-shadow:0 13px 30px rgba(0,0,0,.20),inset 3px 0 0 rgba(53,208,127,.50)!important}
+.mtg-dashboard .mtg-control-queue{box-shadow:0 13px 30px rgba(0,0,0,.20),inset 3px 0 0 rgba(87,153,216,.46)!important}
+
+.mtg-dashboard .mtg-panel-head h2{color:#fff!important}
+.mtg-dashboard .mtg-panel-head p{color:#b5c2c9!important}
+.mtg-dashboard .mtg-panel-head>span,
+.mtg-dashboard .mtg-panel-head>strong{color:#c4cfd4!important}
+.mtg-dashboard .mtg-dashboard-legend p{color:#c5cfd4!important}
+.mtg-dashboard .mtg-dashboard-legend p b{color:#fff!important}
+.mtg-dashboard .mtg-donut strong{color:#fff!important}
+.mtg-dashboard .mtg-donut span{color:#b9c6cc!important}
+.mtg-dashboard .mtg-owner-list span strong{color:#eef3f5!important}
+.mtg-dashboard .mtg-owner-list span small{color:#aab8bf!important}
+.mtg-dashboard .mtg-owner-list>div>b{color:#e7eef1!important}
+.mtg-dashboard .mtg-owner-list span>em{background:#22323d!important}
+.mtg-dashboard .mtg-empty{color:#b9c4c9!important}
+
+.mtg-dashboard .mtg-queue-tabs a{
+  color:#c0cbd0!important;border-color:#455762!important;background:rgba(255,255,255,.02)!important
+}
+.mtg-dashboard .mtg-queue-tabs a:hover{border-color:#7e61c6!important;color:#fff!important}
+.mtg-dashboard .mtg-queue-tabs a.is-active{
+  color:#fff!important;border-color:#8c69df!important;background:linear-gradient(135deg,rgba(139,92,246,.30),rgba(105,70,195,.20))!important
+}
+.mtg-dashboard .mtg-queue-list>a{color:#eef3f5!important;border-color:#31434e!important}
+.mtg-dashboard .mtg-queue-list>a:hover{background:rgba(139,92,246,.045)!important}
+.mtg-dashboard .mtg-queue-list>a>div strong{color:#fff!important}
+.mtg-dashboard .mtg-queue-list>a>div small{color:#a8b6bd!important}
+.mtg-dashboard .mtg-queue-owner{color:#d9e1e5!important}
+.mtg-dashboard .mtg-queue-progress>b{color:#dce5e9!important}
+.mtg-dashboard .mtg-status{border:1px solid rgba(255,255,255,.07)!important}
+
+.mtg-dashboard-badge{
+  display:inline-flex;align-items:center;gap:6px;margin-top:9px;padding:6px 9px;border-radius:999px;
+  background:rgba(139,92,246,.11);border:1px solid rgba(160,128,233,.30);color:#d8c9ff;font-size:8px;font-weight:900
+}
+.mtg-dashboard-badge i{width:20px;height:20px;display:grid;place-items:center;border-radius:7px;background:#7652ce;color:#fff;font-style:normal}
+</style>
 <div class="mtg-page mtg-dashboard">
-  <div class="mtg-page-head"><div><span>EXECUTIVE CONTROL</span><h1>پیگیری مصوبات جلسات</h1><p>تصویر زنده از مسئول، مرحله و پیشرفت تمام کارهای مصوب</p></div><div class="mtg-head-actions"><a href="/meeting-minutes/">لیست صورت‌جلسات</a><a class="is-primary" href="/meeting-minutes/new/">＋ صورت‌جلسه جدید</a></div></div>
+  <div class="mtg-page-head"><div><span>EXECUTIVE CONTROL</span><h1>پیگیری مصوبات جلسات</h1><p>تصویر زنده از مسئول، مرحله و پیشرفت تمام کارهای مصوب</p><div class="mtg-dashboard-badge"><i>◈</i>مرکز کنترل و پیگیری مصوبات</div></div><div class="mtg-head-actions"><a href="/meeting-minutes/">لیست صورت‌جلسات</a><a class="is-primary" href="/meeting-minutes/new/">＋ صورت‌جلسه جدید</a></div></div>
   <div class="mtg-kpis">
     <a class="mtg-kpi kpi-purple" href="?status=all"><span><i>◈</i>مصوبات باز</span><strong>{{ counts.open }}</strong><small>تمام کارهای تکمیل‌نشده</small></a>
     <a class="mtg-kpi kpi-blue" href="?status=doing"><span><i>↻</i>در حال انجام</span><strong>{{ counts.doing }}</strong><small>در مرحله اجرا</small></a>
