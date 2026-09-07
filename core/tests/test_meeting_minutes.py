@@ -133,3 +133,8 @@ class MeetingMinutesTests(TestCase):
             self.assertContains(response,css_class)
         self.assertContains(response,action.title)
         self.assertContains(response,self.employee.get_full_name())
+        self.assertContains(response,'مرکز کنترل و پیگیری مصوبات')
+        self.assertContains(response,'body.gl-page-meeting_dashboard .topbar-date{color:#d2dde2!important')
+        self.assertContains(response,'.mtg-dashboard .mtg-kpi strong')
+        self.assertContains(response,'color:#fff!important;opacity:1!important')
+        self.assertContains(response,'.mtg-dashboard .mtg-empty{color:#b9c4c9!important')
