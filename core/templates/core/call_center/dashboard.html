@@ -175,7 +175,15 @@
         <p>لیدها، تماس‌ها، نوبت‌ها و ارتباط با تیم؛ همه در یک میز کار روشن و بیمارمحور.</p>
       </div>
     </div>
-    <div class="cc-v5-motto"><span class="cc-v5-motto-ico">✦</span><div><small>شعار امروز</small><strong>هر تماس، یک قدم برای حال بهتر</strong></div></div>
+    <div class="cc-v6-hero-side">
+      <div class="cc-v5-motto"><span class="cc-v5-motto-ico">✦</span><div><small>شعار امروز</small><strong>هر تماس، یک قدم برای حال بهتر</strong></div></div>
+      <div class="cc-v6-flow" aria-label="مسیر مراجعه">
+        <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">☎</span><strong>تماس</strong><small>شروع ارتباط</small></div>
+        <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">↻</span><strong>پیگیری</strong><small>ادامه مسیر</small></div>
+        <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">▣</span><strong>نوبت</strong><small>ثبت زمان</small></div>
+        <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">♥</span><strong>مراجعه</strong><small>تجربه بهتر</small></div>
+      </div>
+    </div>
   </header>
 
   <section class="cc-v5-kpis">
@@ -233,13 +241,41 @@
         </div>
       </section>
 
-      <section class="cc-v5-card">
-        <header class="cc-v5-section-head"><div><h3>تجربه مشتری (CEM)</h3><p>یک نگاه سریع به مواردی که امروز نیاز به توجه دارند.</p></div><a href="?status=contacted">پیگیری‌ها ←</a></header>
-        <div class="cc-v5-cem">
-          <div class="cc-v5-cem-focus"><span class="cc-v5-cem-icon">♥</span><div><strong>تمرکز امروز: پیگیری انسانی و منظم</strong><p>مراجع باید احساس کند از اولین تماس، یک نفر مشخص حواسش به مسیر او هست.</p></div></div>
-          <div class="cc-v5-cem-stats"><div class="cc-v5-cem-stat"><b>{{ stats.follow_up }}</b><span>پیگیری باز</span></div><div class="cc-v5-cem-stat"><b>{{ stats.appointment_today }}</b><span>نوبت امروز</span></div><div class="cc-v5-cem-stat"><b>{{ internal_unread }}</b><span>پیام داخلی</span></div></div>
-        </div>
-      </section>
+      <div class="cc-v6-lower">
+        <section class="cc-v5-card">
+          <header class="cc-v5-section-head"><div><h3>تجربه مشتری (CEM)</h3><p>یک نگاه سریع به مواردی که امروز نیاز به توجه دارند.</p></div><a href="?status=contacted">پیگیری‌ها ←</a></header>
+          <div class="cc-v5-cem">
+            <div class="cc-v5-cem-focus"><span class="cc-v5-cem-icon">♥</span><div><strong>تمرکز امروز: پیگیری انسانی و منظم</strong><p>مراجع باید احساس کند از اولین تماس، یک نفر مشخص حواسش به مسیر او هست.</p></div></div>
+            <div class="cc-v5-cem-stats"><div class="cc-v5-cem-stat"><b>{{ stats.follow_up }}</b><span>پیگیری باز</span></div><div class="cc-v5-cem-stat"><b>{{ stats.appointment_today }}</b><span>نوبت امروز</span></div><div class="cc-v5-cem-stat"><b>{{ internal_unread }}</b><span>پیام داخلی</span></div></div>
+          </div>
+        </section>
+
+        <section class="cc-v5-card cc-v6-chat">
+          <header class="cc-v5-section-head">
+            <div><h3>ارتباط داخلی تیم {% if internal_unread %}<span class="cc-v5-count">{{ internal_unread }}</span>{% endif %}</h3><p>پیام سریع به منشی، همکار کال‌سنتر یا سایر پرسنل</p></div>
+            <a href="{% url 'internal_messages' %}">گفتگوی کامل ←</a>
+          </header>
+          <div class="cc-v6-chat-feed" id="ccDashboardChatFeed">
+            {% for item in recent_internal_messages %}
+            <div class="cc-v6-chat-item">
+              <span class="cc-v6-chat-avatar">{% if item.sender.profile.avatar %}<img src="{{ item.sender.profile.avatar.url }}" alt="">{% else %}{{ item.sender.first_name|first|default:item.sender.username|first }}{% endif %}</span>
+              <div class="cc-v6-chat-copy"><strong>{{ item.sender.get_full_name|default:item.sender.username }}</strong><p>{{ item.body|truncatechars:110 }}</p><small>{{ item.created_at|jdatetime }}</small></div>
+            </div>
+            {% empty %}<div class="cc-v6-chat-empty">هنوز پیامی ثبت نشده؛ از کادر پایین اولین پیام را بفرستید.</div>{% endfor %}
+          </div>
+          <div class="cc-v6-chat-compose">
+            <form class="cc-v6-chat-form" id="ccQuickMessageForm">{% csrf_token %}
+              <select name="recipient" required aria-label="گیرنده">
+                <option value="">انتخاب همکار...</option>
+                {% for person in chat_contacts %}<option value="{{ person.pk }}">{{ person.get_full_name|default:person.username }}{% if person.profile.job_title %} · {{ person.profile.job_title }}{% endif %}</option>{% endfor %}
+              </select>
+              <textarea name="body" maxlength="1200" required placeholder="پیام کوتاه به همکار..."></textarea>
+              <button type="submit">ارسال</button>
+            </form>
+            <div class="cc-v6-chat-status" id="ccQuickMessageStatus"></div>
+          </div>
+        </section>
+      </div>
     </section>
 
     <aside class="cc-v5-side">
@@ -264,25 +300,6 @@
   </div>
 </div>
 
-<div class="cc-mini-chat" id="ccMiniChat">
-  <button type="button" class="cc-mini-toggle" id="ccMiniToggle" aria-expanded="false" aria-controls="ccMiniPanel">✉{% if internal_unread %}<b>{{ internal_unread }}</b>{% endif %}</button>
-  <section class="cc-mini-panel" id="ccMiniPanel" hidden>
-    <header class="cc-mini-head">
-      <div class="cc-mini-title"><span>✉</span><div><strong>گفتگوی تیم</strong><small>آخرین پیام‌های داخلی</small></div></div>
-      <a href="{% url 'internal_messages' %}">صفحه کامل ←</a>
-    </header>
-    <div class="cc-mini-list">
-      {% for item in recent_internal_messages %}
-      <a class="cc-mini-message" href="{% url 'internal_messages' %}{% if item.recipient_id %}?with={% if item.sender_id == user.id %}{{ item.recipient_id }}{% else %}{{ item.sender_id }}{% endif %}{% endif %}">
-        <span class="cc-mini-avatar">{% if item.sender.profile.avatar %}<img src="{{ item.sender.profile.avatar.url }}" alt="">{% else %}{{ item.sender.first_name|first|default:item.sender.username|first }}{% endif %}</span>
-        <span><strong>{{ item.sender.get_full_name|default:item.sender.username }}</strong><p>{{ item.body|truncatechars:82 }}</p></span>
-      </a>
-      {% empty %}<div class="cc-mini-empty">هنوز پیام داخلی ثبت نشده است.</div>{% endfor %}
-    </div>
-    <footer class="cc-mini-foot"><span>{% if internal_unread %}{{ internal_unread }} پیام خوانده‌نشده{% else %}همه پیام‌ها دیده شده‌اند{% endif %}</span><a href="{% url 'internal_messages' %}">شروع گفتگو</a></footer>
-  </section>
-</div>
-
 <script>
 (function(){
   const list=document.getElementById('ccLeadList'),search=document.getElementById('ccSearch'),source=document.getElementById('ccSourceFilter'),buttons=[...document.querySelectorAll('[data-time]')];
@@ -294,15 +311,35 @@
     search.addEventListener('input',apply);source.addEventListener('change',apply);buttons.forEach(b=>b.addEventListener('click',()=>{buttons.forEach(x=>x.classList.remove('active'));b.classList.add('active');time=b.dataset.time;apply()}));
   }
 
-  const toggle=document.getElementById('ccMiniToggle'),panel=document.getElementById('ccMiniPanel');
-  if(toggle&&panel){
-    toggle.addEventListener('click',function(){
-      const open=panel.hidden;panel.hidden=!open;toggle.setAttribute('aria-expanded',open?'true':'false');
+  const quickForm=document.getElementById('ccQuickMessageForm');
+  const quickStatus=document.getElementById('ccQuickMessageStatus');
+  const quickFeed=document.getElementById('ccDashboardChatFeed');
+  if(quickForm&&quickStatus&&quickFeed){
+    quickForm.addEventListener('submit',async function(e){
+      e.preventDefault();
+      const button=quickForm.querySelector('button[type="submit"]');
+      button.disabled=true;quickStatus.classList.remove('error');quickStatus.textContent='در حال ارسال...';
+      try{
+        const response=await fetch('{% url "call_center_quick_message" %}',{
+          method:'POST',body:new FormData(quickForm),credentials:'same-origin',
+          headers:{'X-Requested-With':'XMLHttpRequest'}
+        });
+        const data=await response.json();
+        if(!response.ok||!data.ok)throw new Error(data.error||'ارسال پیام انجام نشد.');
+        const empty=quickFeed.querySelector('.cc-v6-chat-empty');if(empty)empty.remove();
+        const item=document.createElement('div');item.className='cc-v6-chat-item';
+        const initial=(data.message.sender||'?').trim().charAt(0)||'?';
+        item.innerHTML='<span class="cc-v6-chat-avatar">'+initial+'</span><div class="cc-v6-chat-copy"><strong>'+escapeHtml(data.message.sender)+'</strong><p>'+escapeHtml(data.message.body)+'</p><small>الان · به '+escapeHtml(data.message.recipient)+'</small></div>';
+        quickFeed.prepend(item);
+        quickForm.querySelector('textarea').value='';
+        quickStatus.textContent='پیام ارسال شد ✓';
+      }catch(err){
+        quickStatus.classList.add('error');quickStatus.textContent=err.message||'خطا در ارسال پیام';
+      }finally{button.disabled=false;}
     });
-    document.addEventListener('click',function(e){
-      if(!panel.hidden&&!document.getElementById('ccMiniChat').contains(e.target)){panel.hidden=true;toggle.setAttribute('aria-expanded','false');}
-    });
-    document.addEventListener('keydown',function(e){if(e.key==='Escape'){panel.hidden=true;toggle.setAttribute('aria-expanded','false');}});
+  }
+  function escapeHtml(value){
+    return String(value).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});
   }
 })();
 </script>
