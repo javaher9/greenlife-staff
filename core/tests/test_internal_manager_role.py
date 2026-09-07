@@ -73,6 +73,16 @@ class InternalManagerRoleTests(TestCase):
         self.assertEqual(result['data'], {})
         self.assertIn('فعال نیست', result['answer'])
 
+    def test_management_dashboard_has_high_contrast_readability_floor(self):
+        response = self.client.get('/live/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'داشبورد مدیریتی امروز')
+        self.assertContains(response, 'body.gl-page-branch_live_dashboard .cmd-hero h1')
+        self.assertContains(response, 'color:#ffffff!important')
+        self.assertContains(response, '.cmd-card small')
+        self.assertContains(response, '.cmd-section-head h2')
+        self.assertContains(response, '#ownerNoteStateV35')
+
     def test_live_api_is_operational_but_has_no_revenue_field(self):
         response = self.client.get('/api/live/')
         self.assertEqual(response.status_code, 200)
