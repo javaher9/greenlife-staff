@@ -443,8 +443,8 @@ def call_center_dashboard(request):
         InternalMessage.objects.filter(
             Q(recipient__isnull=True) | Q(sender=request.user) | Q(recipient=request.user)
         )
-        .select_related('sender','recipient')
-        .order_by('-created_at')[:4]
+        .select_related('sender','sender__profile','recipient','recipient__profile')
+        .order_by('-created_at')[:6]
     )
     internal_unread=InternalMessage.objects.filter(
         recipient=request.user,read_at__isnull=True
