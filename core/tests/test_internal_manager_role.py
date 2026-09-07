@@ -77,6 +77,8 @@ class InternalManagerRoleTests(TestCase):
         response = self.client.get('/live/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'داشبورد مدیریتی امروز')
+        self.assertNotContains(response, 'مالی و درآمد')
+        self.assertNotContains(response, 'href="/finance/"')
         self.assertContains(response, 'body.gl-page-branch_live_dashboard .cmd-hero h1')
         self.assertContains(response, 'color:#ffffff!important')
         self.assertContains(response, '.cmd-card small')
