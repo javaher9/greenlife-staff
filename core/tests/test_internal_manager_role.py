@@ -82,6 +82,12 @@ class InternalManagerRoleTests(TestCase):
         self.assertContains(response, '.cmd-card small')
         self.assertContains(response, '.cmd-section-head h2')
         self.assertContains(response, '#ownerNoteStateV35')
+        self.assertContains(response, 'Lightweight premium KPI plaques')
+        self.assertContains(response, 'repeating-linear-gradient')
+        self.assertContains(response, '.cmd-card.amber')
+        self.assertContains(response, '#8e4465')
+        self.assertContains(response, '.cmd-attn:nth-child(2) i')
+        self.assertContains(response, '.cmd-module:nth-child(4n+3):before')
 
     def test_live_api_is_operational_but_has_no_revenue_field(self):
         response = self.client.get('/api/live/')
