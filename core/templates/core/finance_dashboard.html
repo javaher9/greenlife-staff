@@ -1,12 +1,268 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
-<section class="hero"><div><h1>مالی و درآمد</h1><p>خلاصه درآمد CRM · {{ summary.date }}</p></div>{% if user.profile.role == 'admin' %}<form method="post" action="/finance/sync/">{% csrf_token %}<button class="primary">همگام‌سازی CRM</button></form>{% endif %}</section>
-<form method="get" class="panel"><label>تاریخ شمسی</label><div class="queryrow"><input name="date" value="{{ summary.date }}" placeholder="۱۴۰۵/۰۵/۲۴"><button class="primary">نمایش</button></div></form>
-<section class="stats"><div><b>{{ summary.total|floatformat:0|fa }}</b><span>درآمد روز</span></div><div><b>{{ summary.expense_total|floatformat:0|fa }}</b><span>هزینه روز</span></div><div><b>{{ summary.net_total|floatformat:0|fa }}</b><span>خالص روز</span></div><div><b>{{ summary.count|fa }}</b><span>تراکنش تأییدشده</span></div></section>
-<div class="grid"><section class="panel"><h2>خلاصه شعب</h2>{% for x in summary.by_branch %}<div class="rankrow"><span>{{ x.branch__name|default:'بدون شعبه' }}</span><b>درآمد {{ x.total|floatformat:0|fa }} · هزینه {{ x.expenses|floatformat:0|fa }} · خالص {{ x.net|floatformat:0|fa }}</b></div>{% empty %}<p class="muted">برای این روز داده مالی ثبت نشده است.</p>{% endfor %}</section>
-<section class="panel"><h2>مقصد واریز</h2>{% for x in summary.by_payment %}<div class="rankrow"><span>{{ x.payment_method|default:'نامشخص' }}</span><b>{{ x.total|floatformat:0|fa }}</b></div>{% empty %}<p class="muted">داده‌ای وجود ندارد.</p>{% endfor %}</section></div>
-<section class="panel"><div class="sectionhead"><h2>ثبت‌های دستی مشاوران</h2><small>فقط موارد تأییدشده وارد جمع مالی می‌شوند.</small></div><div class="tablewrap"><table>
-<tr><th>تاریخ</th><th>شعبه</th><th>مشاور</th><th>نام فرد</th><th>نوع</th><th>مبلغ</th><th>مقصد واریز</th><th>سند</th><th>تحلیل عکس</th><th>بررسی</th></tr>
-{% for x in manual_entries %}<tr><td>{{ x.occurred_at|jdate }}</td><td>{{ x.branch|default:'—' }}</td><td>{{ x.recorded_by.get_full_name|default:x.recorded_by.username }}</td><td>{{ x.person_name }}</td><td>{{ x.get_entry_type_display }}</td><td>{{ x.amount|floatformat:0|fa }}</td><td>{{ x.payment_method }}</td><td>{% if x.receipt_image %}<a href="{{ x.receipt_image.url }}" target="_blank" rel="noopener">مشاهده</a><small>{{ x.receipt_original_size|filesizeformat }} ← {{ x.receipt_compressed_size|filesizeformat }}</small>{% else %}—{% endif %}</td><td><span class="badge {{ x.analysis_status }}">{{ x.get_analysis_status_display }}</span>{% if x.receipt_analysis.detected_amount %}<small>مبلغ خوانده‌شده: {{ x.receipt_analysis.detected_amount }} {{ x.receipt_analysis.currency_unit }}</small>{% endif %}{% if x.receipt_analysis.manual_amount_match == False %}<small class="warning-text">⚠ اختلاف با مبلغ دستی</small>{% elif x.receipt_analysis.manual_amount_match == True %}<small>✓ مطابق مبلغ دستی</small>{% endif %}{% if x.receipt_analysis.tracking_number %}<small>پیگیری: {{ x.receipt_analysis.tracking_number }}</small>{% endif %}{% if x.analysis_status == 'failed' or x.analysis_status == 'skipped' %}<form method="post" action="{% url 'finance_entry_analyze' x.pk %}" class="inline-form">{% csrf_token %}<button class="mini">تحلیل دوباره</button></form>{% endif %}</td><td><span class="badge {{ x.review_status }}">{{ x.get_review_status_display }}</span>{% if x.review_status == 'pending' or x.review_status == 'needs_correction' %}<form method="post" action="{% url 'finance_entry_review' x.pk 'approve' %}" class="inline-form">{% csrf_token %}<button class="mini">تأیید</button></form><form method="post" action="{% url 'finance_entry_review' x.pk 'correction' %}" class="inline-form">{% csrf_token %}<button class="mini">اصلاح</button></form><form method="post" action="{% url 'finance_entry_review' x.pk 'cancel' %}" class="inline-form">{% csrf_token %}<button class="mini danger">ابطال</button></form>{% endif %}</td></tr>{% empty %}<tr><td colspan="10">ثبت دستی وجود ندارد.</td></tr>{% endfor %}
-</table></div></section>
-<section class="panel"><h2>وضعیت اتصال CRM</h2>{% for x in logs %}<div class="row"><strong>{{ x.get_status_display }}</strong><span>{{ x.message }} · جدید {{ x.imported|fa }} / به‌روزرسانی {{ x.updated|fa }}</span></div>{% empty %}<p class="muted">هنوز همگام‌سازی اجرا نشده است. ابتدا تنظیمات API روی سرور وارد شود.</p>{% endfor %}</section>
+<style>
+/* Finance dashboard premium UI v2 — scoped, CSS-only, no business-logic changes */
+.fin-page{display:grid;gap:16px;padding:14px 0 30px}
+.fin-page a{text-decoration:none}
+.fin-hero{
+  display:flex;align-items:center;justify-content:space-between;gap:18px;padding:22px 24px;border-radius:24px;
+  border:1px solid rgba(118,86,190,.34);
+  background:
+    radial-gradient(circle at 12% 15%,rgba(139,92,246,.18),transparent 27%),
+    radial-gradient(circle at 90% 90%,rgba(47,160,119,.10),transparent 24%),
+    linear-gradient(135deg,#111d2a,#0b141e 62%,#101723);
+  box-shadow:0 18px 42px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.035)
+}
+.fin-hero-copy small{display:block;margin-bottom:5px;color:#cbb7ff;font-size:9px;font-weight:900;letter-spacing:.08em}
+.fin-hero h1{margin:0 0 7px;color:#fff!important;font-size:clamp(27px,3vw,39px);font-weight:950}
+.fin-hero p{margin:0;color:#d6e0ea!important;font-size:13px;font-weight:650}
+.fin-sync{
+  border:1px solid #8668d2!important;border-radius:14px!important;padding:11px 15px!important;
+  background:linear-gradient(135deg,#7652ce,#5e43a8)!important;color:#fff!important;font-weight:900!important;
+  box-shadow:0 9px 20px rgba(75,48,132,.25)!important
+}
+
+.fin-filter{
+  display:grid!important;grid-template-columns:auto minmax(220px,1fr) auto;align-items:end;gap:12px;
+  padding:15px 17px!important;border:1px solid rgba(255,255,255,.10)!important;border-radius:18px!important;
+  background:linear-gradient(145deg,rgba(20,29,45,.96),rgba(10,16,27,.98))!important;
+  box-shadow:0 10px 25px rgba(0,0,0,.10)!important
+}
+.fin-filter label{color:#dbe4ee!important;font-size:11px;font-weight:850}
+.fin-filter .queryrow{display:contents}
+.fin-filter input{
+  height:42px!important;border:1px solid #38495c!important;border-radius:12px!important;background:#0c1621!important;
+  color:#fff!important;padding:0 12px!important;font-weight:750!important
+}
+.fin-filter input::placeholder{color:#93a2b3!important;opacity:1!important}
+.fin-filter button{
+  height:42px!important;border:0!important;border-radius:12px!important;padding:0 18px!important;
+  background:linear-gradient(135deg,#7652ce,#6747b6)!important;color:#fff!important;font-weight:900!important
+}
+
+.fin-kpis{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important}
+.fin-kpis>div{
+  position:relative;overflow:hidden;min-height:112px;padding:17px 18px!important;border-radius:19px!important;
+  border:1px solid rgba(255,255,255,.14)!important;box-shadow:0 13px 28px rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.09)!important
+}
+.fin-kpis>div::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(circle at 90% 10%,rgba(255,255,255,.16),transparent 23%),repeating-linear-gradient(118deg,rgba(255,255,255,.018) 0 1px,transparent 1px 9px)
+}
+.fin-kpis>div:nth-child(1){background:linear-gradient(145deg,#377c65,#245745 52%,#17241f)!important;border-color:#63a88d!important}
+.fin-kpis>div:nth-child(2){background:linear-gradient(145deg,#91445f,#582d3e 52%,#241a20)!important;border-color:#bd6b87!important}
+.fin-kpis>div:nth-child(3){background:linear-gradient(145deg,#614596,#3e2d62 52%,#1c1b2a)!important;border-color:#8269b6!important}
+.fin-kpis>div:nth-child(4){background:linear-gradient(145deg,#347793,#24536a 52%,#18242c)!important;border-color:#5e9eb9!important}
+.fin-kpis b,.fin-kpis span{position:relative;z-index:1}
+.fin-kpis b{display:block;color:#fff!important;font-size:30px!important;font-weight:950!important;line-height:1.15}
+.fin-kpis span{display:block;margin-top:8px;color:#edf3f8!important;font-size:11px!important;font-weight:800!important}
+
+.fin-grid{display:grid!important;grid-template-columns:1.2fr .8fr!important;gap:14px!important}
+.fin-panel{
+  padding:18px!important;border:1px solid rgba(255,255,255,.10)!important;border-radius:20px!important;
+  background:radial-gradient(circle at 100% 0,rgba(139,92,246,.045),transparent 28%),linear-gradient(150deg,rgba(18,27,42,.98),rgba(9,15,25,.98))!important;
+  box-shadow:0 12px 28px rgba(0,0,0,.11),inset 0 1px 0 rgba(255,255,255,.025)!important
+}
+.fin-panel h2,.fin-panel .sectionhead h2{margin:0;color:#fff!important;font-size:18px!important;font-weight:900!important}
+.fin-panel .sectionhead small{color:#bdc9d7!important;font-weight:650!important}
+.fin-rank{
+  display:grid;grid-template-columns:minmax(100px,.75fr) minmax(0,1.25fr);gap:12px;align-items:center;
+  padding:11px 12px;margin-top:8px;border:1px solid rgba(255,255,255,.045);border-radius:13px;background:rgba(255,255,255,.035)
+}
+.fin-rank span{color:#eef3f8!important;font-weight:850}
+.fin-rank b{color:#c7d3df!important;font-size:11px!important;line-height:1.8!important;text-align:left}
+.fin-empty{color:#aebbc8!important;margin:12px 0 0}
+
+.fin-ledger{padding:0!important;overflow:hidden}
+.fin-ledger-head{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 18px 14px;
+  border-bottom:1px solid rgba(255,255,255,.07)
+}
+.fin-ledger-head h2{margin:0;color:#fff!important;font-size:19px;font-weight:950}
+.fin-ledger-head small{color:#c4cfda!important;font-weight:650}
+.fin-tablewrap{overflow:auto;max-width:100%;scrollbar-width:thin;scrollbar-color:#5a477c #0c1420}
+.fin-table{
+  width:100%;min-width:1420px;border-collapse:separate!important;border-spacing:0!important;table-layout:fixed;
+  background:transparent!important
+}
+.fin-table col.c-date{width:112px}.fin-table col.c-branch{width:105px}.fin-table col.c-consultant{width:145px}.fin-table col.c-person{width:150px}
+.fin-table col.c-type{width:92px}.fin-table col.c-amount{width:122px}.fin-table col.c-pay{width:115px}.fin-table col.c-receipt{width:140px}
+.fin-table col.c-analysis{width:250px}.fin-table col.c-review{width:230px}
+.fin-table th{
+  position:sticky;top:0;z-index:5;padding:12px 10px!important;border-bottom:1px solid #34465a!important;
+  background:#101c2a!important;color:#dce6ef!important;font-size:10px!important;font-weight:900!important;text-align:right!important
+}
+.fin-table td{
+  padding:12px 10px!important;border-bottom:1px solid rgba(255,255,255,.055)!important;
+  background:rgba(10,17,28,.72)!important;color:#edf3f8!important;font-size:11px!important;vertical-align:top!important;
+  overflow-wrap:anywhere
+}
+.fin-table tbody tr:nth-child(even) td{background:rgba(14,23,36,.82)!important}
+.fin-table tbody tr:hover td{background:rgba(80,61,128,.13)!important}
+.fin-table th:last-child,.fin-table td:last-child{
+  position:sticky;left:0;z-index:4;border-right:1px solid rgba(255,255,255,.06)!important;
+  box-shadow:-8px 0 18px rgba(0,0,0,.12)
+}
+.fin-table th:last-child{z-index:7;background:#142030!important}
+.fin-table td:last-child{background:#111c29!important}
+.fin-table tbody tr:nth-child(even) td:last-child{background:#142131!important}
+.fin-cell-stack{display:grid;gap:6px}
+.fin-cell-stack>small{display:block;color:#adbac8!important;font-size:9px!important;line-height:1.65}
+.fin-money{color:#fff!important;font-size:12px!important;font-weight:950!important;white-space:nowrap}
+.fin-type{
+  display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.055);color:#e9eff6;font-size:9px;font-weight:900
+}
+.fin-receipt-link{
+  display:inline-flex;align-items:center;justify-content:center;min-width:76px;padding:7px 10px;border-radius:10px;
+  border:1px solid #4b718d;background:linear-gradient(135deg,#234b66,#1b384d);color:#eef8ff!important;font-weight:850!important
+}
+
+.fin-page .badge{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:26px;padding:5px 8px!important;
+  border-radius:999px!important;border:1px solid rgba(255,255,255,.10)!important;font-size:9px!important;font-weight:900!important;white-space:nowrap
+}
+.fin-page .badge.pending{background:#574222!important;color:#ffe1a3!important;border-color:#846331!important}
+.fin-page .badge.approved,.fin-page .badge.processed{background:#214c3c!important;color:#bff5dd!important;border-color:#3f775f!important}
+.fin-page .badge.needs_correction{background:#56364f!important;color:#ffd0ed!important;border-color:#8a567c!important}
+.fin-page .badge.cancelled,.fin-page .badge.failed{background:#552c36!important;color:#ffc4d0!important;border-color:#8d4657!important}
+.fin-page .badge.skipped{background:#2d4358!important;color:#c9e5ff!important;border-color:#496b89!important}
+
+.fin-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px}
+.fin-actions .inline-form{margin:0!important;display:block!important}
+.fin-btn{
+  width:100%;min-height:32px;border-radius:9px!important;padding:6px 7px!important;border:1px solid transparent!important;
+  color:#fff!important;font-family:inherit!important;font-size:9px!important;font-weight:900!important;cursor:pointer
+}
+.fin-btn.approve{background:linear-gradient(135deg,#2f765c,#255c49)!important;border-color:#57977e!important}
+.fin-btn.correction{background:linear-gradient(135deg,#7652a5,#604184)!important;border-color:#9474bd!important}
+.fin-btn.cancel{background:linear-gradient(135deg,#8a4052,#6c3341)!important;border-color:#b45e72!important}
+.fin-btn.analyze{background:linear-gradient(135deg,#2d6585,#244e68)!important;border-color:#4e89a8!important}
+.fin-warning{display:block;color:#ffbdcb!important;font-size:9px!important;font-weight:850!important;line-height:1.55}
+.fin-ok{display:block;color:#aee8cf!important;font-size:9px!important;font-weight:800!important}
+
+.fin-sync-log .row{
+  display:grid!important;grid-template-columns:160px minmax(0,1fr);gap:12px;align-items:start;padding:11px 12px!important;
+  border:1px solid rgba(255,255,255,.045);border-radius:12px;background:rgba(255,255,255,.03)!important;margin-top:8px
+}
+.fin-sync-log .row strong{color:#fff!important}.fin-sync-log .row span{color:#c3ceda!important;line-height:1.7!important}
+
+@media(max-width:1050px){.fin-kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}.fin-grid{grid-template-columns:1fr!important}}
+@media(max-width:700px){
+  .fin-page{gap:12px}.fin-hero{align-items:flex-start;flex-direction:column;padding:18px}.fin-filter{grid-template-columns:1fr!important;align-items:stretch}
+  .fin-filter .queryrow{display:grid;grid-template-columns:1fr auto;gap:8px}.fin-kpis{grid-template-columns:1fr 1fr!important}
+  .fin-kpis>div{min-height:96px;padding:14px!important}.fin-kpis b{font-size:25px!important}
+  .fin-ledger-head{align-items:flex-start;flex-direction:column}.fin-sync-log .row{grid-template-columns:1fr}
+}
+@media(max-width:430px){.fin-kpis{grid-template-columns:1fr!important}}
+</style>
+
+<div class="fin-page">
+  <section class="fin-hero">
+    <div class="fin-hero-copy">
+      <small>FINANCE CONTROL</small>
+      <h1>مالی و درآمد</h1>
+      <p>خلاصه درآمد CRM · {{ summary.date }}</p>
+    </div>
+    {% if user.profile.role == 'admin' %}
+    <form method="post" action="/finance/sync/">{% csrf_token %}<button class="fin-sync">↻ همگام‌سازی CRM</button></form>
+    {% endif %}
+  </section>
+
+  <form method="get" class="fin-filter">
+    <label for="finDate">تاریخ شمسی</label>
+    <div class="queryrow">
+      <input id="finDate" name="date" value="{{ summary.date }}" placeholder="۱۴۰۵/۰۵/۲۴">
+      <button>نمایش گزارش</button>
+    </div>
+  </form>
+
+  <section class="stats fin-kpis" aria-label="خلاصه مالی روز">
+    <div><b>{{ summary.total|floatformat:0|fa }}</b><span>درآمد روز</span></div>
+    <div><b>{{ summary.expense_total|floatformat:0|fa }}</b><span>هزینه روز</span></div>
+    <div><b>{{ summary.net_total|floatformat:0|fa }}</b><span>خالص روز</span></div>
+    <div><b>{{ summary.count|fa }}</b><span>تراکنش تأییدشده</span></div>
+  </section>
+
+  <div class="fin-grid">
+    <section class="fin-panel">
+      <h2>خلاصه شعب</h2>
+      {% for x in summary.by_branch %}
+      <div class="fin-rank"><span>{{ x.branch__name|default:'بدون شعبه' }}</span><b>درآمد {{ x.total|floatformat:0|fa }} · هزینه {{ x.expenses|floatformat:0|fa }} · خالص {{ x.net|floatformat:0|fa }}</b></div>
+      {% empty %}<p class="fin-empty">برای این روز داده مالی ثبت نشده است.</p>{% endfor %}
+    </section>
+    <section class="fin-panel">
+      <h2>مقصد واریز</h2>
+      {% for x in summary.by_payment %}
+      <div class="fin-rank"><span>{{ x.payment_method|default:'نامشخص' }}</span><b>{{ x.total|floatformat:0|fa }}</b></div>
+      {% empty %}<p class="fin-empty">داده‌ای وجود ندارد.</p>{% endfor %}
+    </section>
+  </div>
+
+  <section class="fin-panel fin-ledger">
+    <div class="fin-ledger-head">
+      <h2>ثبت‌های دستی مشاوران</h2>
+      <small>فقط موارد تأییدشده وارد جمع مالی می‌شوند.</small>
+    </div>
+    <div class="fin-tablewrap">
+      <table class="fin-table">
+        <colgroup>
+          <col class="c-date"><col class="c-branch"><col class="c-consultant"><col class="c-person"><col class="c-type">
+          <col class="c-amount"><col class="c-pay"><col class="c-receipt"><col class="c-analysis"><col class="c-review">
+        </colgroup>
+        <thead><tr><th>تاریخ</th><th>شعبه</th><th>مشاور</th><th>نام فرد</th><th>نوع</th><th>مبلغ</th><th>مقصد واریز</th><th>سند</th><th>تحلیل عکس</th><th>بررسی</th></tr></thead>
+        <tbody>
+        {% for x in manual_entries %}
+        <tr>
+          <td>{{ x.occurred_at|jdate }}</td>
+          <td>{{ x.branch|default:'—' }}</td>
+          <td>{{ x.recorded_by.get_full_name|default:x.recorded_by.username }}</td>
+          <td><strong>{{ x.person_name }}</strong></td>
+          <td><span class="fin-type">{{ x.get_entry_type_display }}</span></td>
+          <td><span class="fin-money">{{ x.amount|floatformat:0|fa }}</span></td>
+          <td>{{ x.payment_method }}</td>
+          <td>
+            <div class="fin-cell-stack">
+              {% if x.receipt_image %}
+                <a class="fin-receipt-link" href="{{ x.receipt_image.url }}" target="_blank" rel="noopener">◈ مشاهده سند</a>
+                <small>{{ x.receipt_original_size|filesizeformat }} ← {{ x.receipt_compressed_size|filesizeformat }}</small>
+              {% else %}<span>—</span>{% endif %}
+            </div>
+          </td>
+          <td>
+            <div class="fin-cell-stack">
+              <span class="badge {{ x.analysis_status }}">{{ x.get_analysis_status_display }}</span>
+              {% if x.receipt_analysis.detected_amount %}<small>مبلغ خوانده‌شده: {{ x.receipt_analysis.detected_amount }} {{ x.receipt_analysis.currency_unit }}</small>{% endif %}
+              {% if x.receipt_analysis.manual_amount_match == False %}<span class="fin-warning">⚠ اختلاف با مبلغ دستی</span>{% elif x.receipt_analysis.manual_amount_match == True %}<span class="fin-ok">✓ مطابق مبلغ دستی</span>{% endif %}
+              {% if x.receipt_analysis.tracking_number %}<small>پیگیری: {{ x.receipt_analysis.tracking_number }}</small>{% endif %}
+              {% if x.analysis_status == 'failed' or x.analysis_status == 'skipped' %}
+              <form method="post" action="{% url 'finance_entry_analyze' x.pk %}" class="inline-form">{% csrf_token %}<button class="fin-btn analyze">تحلیل دوباره</button></form>
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            <div class="fin-cell-stack">
+              <span class="badge {{ x.review_status }}">{{ x.get_review_status_display }}</span>
+              {% if x.review_status == 'pending' or x.review_status == 'needs_correction' %}
+              <div class="fin-actions">
+                <form method="post" action="{% url 'finance_entry_review' x.pk 'approve' %}" class="inline-form">{% csrf_token %}<button class="fin-btn approve">✓ تأیید</button></form>
+                <form method="post" action="{% url 'finance_entry_review' x.pk 'correction' %}" class="inline-form">{% csrf_token %}<button class="fin-btn correction">✎ اصلاح</button></form>
+                <form method="post" action="{% url 'finance_entry_review' x.pk 'cancel' %}" class="inline-form">{% csrf_token %}<button class="fin-btn cancel">× ابطال</button></form>
+              </div>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="10" class="fin-empty">ثبت دستی وجود ندارد.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="fin-panel fin-sync-log">
+    <h2>وضعیت اتصال CRM</h2>
+    {% for x in logs %}
+      <div class="row"><strong>{{ x.get_status_display }}</strong><span>{{ x.message }} · جدید {{ x.imported|fa }} / به‌روزرسانی {{ x.updated|fa }}</span></div>
+    {% empty %}<p class="fin-empty">هنوز همگام‌سازی اجرا نشده است. ابتدا تنظیمات API روی سرور وارد شود.</p>{% endfor %}
+  </section>
+</div>
 {% endblock %}
