@@ -1,72 +1,352 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
 <style>
-.msg-page{max-width:1400px;margin:0 auto 80px;display:grid;grid-template-columns:300px minmax(0,1fr);gap:12px;font-family:Tahoma,sans-serif}
-.msg-contacts,.msg-thread{border:1px solid #e1e6ee;border-radius:18px;background:#fff;box-shadow:0 8px 24px rgba(38,50,73,.06);overflow:hidden}
-.msg-contacts-head,.msg-thread-head{padding:16px 17px;border-bottom:1px solid #edf0f4}
-.msg-contacts-head h2,.msg-thread-head h1{margin:0 0 5px;color:#17223a}.msg-contacts-head h2{font-size:16px}.msg-thread-head h1{font-size:19px}
-.msg-contacts-head p,.msg-thread-head p{margin:0;color:#7c8798;font-size:10px;line-height:1.7}
-.msg-contact-search{padding:9px 10px 0}.msg-contact-search input{width:100%;height:38px;border:1px solid #dfe5ed!important;border-radius:10px!important;background:#fafbfd!important;color:#29364b!important;padding:0 10px!important;font-family:inherit!important;font-size:10px!important;box-shadow:none!important}
-.msg-contact-list{max-height:640px;overflow:auto;padding:8px}
-.msg-contact{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;color:#344158;text-decoration:none;margin-bottom:3px}.msg-contact:hover,.msg-contact.active{background:#f3effa}.msg-contact.public{background:#eef8f3;color:#236c50}.msg-avatar{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:#eee9f7;color:#694a98;font-weight:900;flex:0 0 38px;overflow:hidden}.msg-avatar img{width:100%;height:100%;object-fit:cover}.msg-contact strong{display:block;font-size:11px}.msg-contact small{display:block;color:#8490a0;font-size:9px;margin-top:3px}.msg-unread{margin-right:auto;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#c73b59;color:#fff;display:grid;place-items:center;font-size:8px;font-weight:900}
-.msg-thread{display:grid;grid-template-rows:auto minmax(380px,1fr) auto;min-height:680px}.msg-thread-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.msg-thread-head .room-meta{min-width:0}.msg-room-pill{padding:6px 9px;border-radius:999px;background:#eef8f3;color:#237151;font-size:9px;font-weight:900;white-space:nowrap}
-.msg-stream{padding:18px;overflow:auto;background:#fafbfd;display:flex;flex-direction:column;gap:9px}.msg-bubble{max-width:72%;padding:10px 12px;border-radius:14px;background:#fff;border:1px solid #e4e8ef;box-shadow:0 3px 10px rgba(40,51,75,.035)}.msg-bubble.mine{align-self:flex-end;background:#efe8f8;border-color:#dfd1f0}.msg-bubble.theirs{align-self:flex-start}.msg-bubble strong{display:block;color:#38445a;font-size:9px;margin-bottom:5px}.msg-bubble p{margin:0;color:#202c3f;font-size:11px;line-height:1.9;white-space:pre-wrap;word-break:break-word}.msg-bubble small{display:block;margin-top:6px;color:#929baa;font-size:8px}.msg-empty{margin:auto;text-align:center;color:#8b95a5;font-size:11px}.msg-empty b{display:block;color:#6c4b9b;font-size:28px;margin-bottom:9px}
-.msg-compose{padding:12px;border-top:1px solid #e9edf3;background:#fff;display:grid;grid-template-columns:160px 1fr auto;gap:8px}.msg-compose select,.msg-compose textarea{border:1px solid #dce2eb;border-radius:11px;background:#fbfcfe;font-family:inherit;color:#26344a}.msg-compose select{height:44px;padding:0 10px}.msg-compose textarea{min-height:44px;max-height:100px;padding:10px 12px;resize:vertical}.msg-compose button{border:0;border-radius:11px;padding:0 16px;background:#6f50a3;color:#fff;font-family:inherit;font-weight:900;cursor:pointer}
-@media(min-width:821px){
-body.gl-page-internal_messages{background:#f4f7fb!important}body.gl-page-internal_messages .app-main{background:#f4f7fb!important}
+/* Internal Messaging v4 — full-width desktop/tablet workspace */
+.msg-shell{
+  width:100%!important;max-width:1600px!important;margin:0 auto 78px!important;
+  font-family:Tahoma,"Noto Sans Arabic",sans-serif!important;color:#243149!important;
 }
-@media(max-width:820px){.msg-page{grid-template-columns:1fr;margin-bottom:76px}.msg-contacts,.msg-thread{background:#101a26;border-color:#273a49;box-shadow:none}.msg-contacts-head,.msg-thread-head,.msg-compose{border-color:#273a49;background:#101a26}.msg-contacts-head h2,.msg-thread-head h1{color:#f1f5f8}.msg-contacts-head p,.msg-thread-head p{color:#9eb0bd}.msg-contact{color:#e7eef3}.msg-contact:hover,.msg-contact.active{background:#172536}.msg-contact small{color:#9aabb8}.msg-thread{min-height:560px}.msg-stream{background:#0b141e}.msg-bubble{background:#132231;border-color:#273d4e}.msg-bubble.mine{background:#3b2c56;border-color:#60478a}.msg-bubble p,.msg-bubble strong{color:#f0f4f7}.msg-compose{grid-template-columns:1fr}.msg-compose select,.msg-compose textarea{background:#0b141e;color:#fff;border-color:#2c4355}.msg-compose button{min-height:42px}.msg-bubble{max-width:88%}}
-</style>
-<section class="msg-page">
-  <aside class="msg-contacts">
-    <div class="msg-contacts-head"><h2>پیام داخلی</h2><p>گفتگوی عمومی یا پیام مستقیم به هر پرسنل</p></div>
-    <div class="msg-contact-search"><input id="msgContactSearch" type="search" placeholder="جستجوی نام، سمت یا شعبه..."></div>
-    <div class="msg-contact-list" id="msgContactList">
-      <a class="msg-contact public {% if not selected_contact %}active{% endif %}" href="{% url 'internal_messages' %}">
-        <span class="msg-avatar">◎</span><span><strong>گفتگوی عمومی پرسنل</strong><small>برای همه اعضای فعال</small></span>
-      </a>
-      {% for row in contact_rows %}
-      <a class="msg-contact {% if selected_contact and selected_contact.pk == row.user.pk %}active{% endif %}" data-search="{{ row.user.get_full_name }} {{ row.user.username }} {{ row.user.profile.job_title }} {{ row.user.profile.branch }}" href="{% url 'internal_messages' %}?with={{ row.user.pk }}">
-        <span class="msg-avatar">{% if row.user.profile.avatar %}<img src="{{ row.user.profile.avatar.url }}" alt="">{% else %}{{ row.user.first_name|first|default:row.user.username|first }}{% endif %}</span>
-        <span><strong>{{ row.user.get_full_name|default:row.user.username }}</strong><small>{{ row.user.profile.job_title|default:row.user.profile.get_role_display }}{% if row.user.profile.branch %} · {{ row.user.profile.branch }}{% endif %}</small></span>
-        {% if row.unread %}<b class="msg-unread">{{ row.unread }}</b>{% endif %}
-      </a>
-      {% endfor %}
-    </div>
-  </aside>
+.msg-shell *{box-sizing:border-box}
+.msg-page-head{
+  display:flex!important;align-items:center!important;justify-content:space-between!important;gap:16px!important;
+  width:100%!important;margin:0 0 11px!important;padding:13px 16px!important;
+  border:1px solid #e5eaf1!important;border-radius:16px!important;background:#fff!important;
+  box-shadow:0 6px 20px rgba(42,54,78,.045)!important;direction:rtl!important;
+}
+.msg-page-title{display:flex!important;align-items:center!important;gap:11px!important;min-width:0!important}
+.msg-page-icon{
+  width:40px!important;height:40px!important;flex:0 0 40px!important;border-radius:12px!important;
+  display:grid!important;place-items:center!important;background:#f1eafb!important;color:#6c4b9b!important;
+  font-size:17px!important;font-weight:900!important;
+}
+.msg-page-head h1{margin:0!important;color:#17233b!important;font-size:18px!important;line-height:1.4!important}
+.msg-page-head p{margin:3px 0 0!important;color:#8490a1!important;font-size:9px!important;line-height:1.7!important}
+.msg-page-stats{display:flex!important;align-items:center!important;gap:6px!important;flex-wrap:wrap!important;justify-content:flex-end!important}
+.msg-stat-pill{
+  display:inline-flex!important;align-items:center!important;gap:5px!important;height:30px!important;padding:0 9px!important;
+  border-radius:999px!important;border:1px solid #e1e6ed!important;background:#fafbfd!important;
+  color:#667389!important;font-size:8px!important;font-weight:900!important;white-space:nowrap!important;
+}
+.msg-stat-pill.green{background:#eef8f3!important;border-color:#dfeee6!important;color:#287858!important}
+.msg-stat-pill.purple{background:#f3eef9!important;border-color:#e3d9ef!important;color:#6d4c9d!important}
+.msg-stat-pill b{color:inherit!important;font-size:10px!important}
 
-  <section class="msg-thread">
-    <header class="msg-thread-head"><div class="room-meta"><h1>{{ room_title }}</h1><p>{{ room_subtitle }}</p></div>{% if unread_total %}<span class="msg-room-pill">{{ unread_total }} پیام خوانده‌نشده</span>{% else %}<span class="msg-room-pill">کارتابل فعال</span>{% endif %}</header>
-    <div class="msg-stream" id="msgStream">
-      {% for item in thread %}
-      <article class="msg-bubble {% if item.sender_id == user.id %}mine{% else %}theirs{% endif %}" data-id="{{ item.pk }}">
-        <strong>{{ item.sender.get_full_name|default:item.sender.username }}</strong>
-        <p>{{ item.body }}</p>
-        <small>{{ item.created_at|jdatetime }}</small>
-      </article>
-      {% empty %}<div class="msg-empty"><b>✉</b>هنوز پیامی در این گفتگو نیست.</div>{% endfor %}
+.msg-layout{
+  width:100%!important;min-width:0!important;display:grid!important;
+  grid-template-columns:minmax(0,1fr) 320px!important;grid-template-areas:"thread contacts"!important;
+  gap:12px!important;align-items:stretch!important;direction:ltr!important;
+}
+.msg-contacts{
+  grid-area:contacts!important;position:relative!important;inset:auto!important;width:auto!important;height:auto!important;
+  min-width:0!important;max-width:none!important;margin:0!important;padding:0!important;overflow:hidden!important;
+  border:1px solid #e2e7ee!important;border-radius:17px!important;background:#fff!important;background-image:none!important;
+  box-shadow:0 8px 24px rgba(38,50,73,.05)!important;direction:rtl!important;
+}
+.msg-thread{
+  grid-area:thread!important;position:relative!important;width:auto!important;min-width:0!important;max-width:none!important;
+  margin:0!important;padding:0!important;overflow:hidden!important;display:grid!important;
+  grid-template-rows:auto minmax(520px,calc(100vh - 295px)) auto!important;
+  border:1px solid #e2e7ee!important;border-radius:17px!important;background:#fff!important;background-image:none!important;
+  box-shadow:0 8px 24px rgba(38,50,73,.05)!important;direction:rtl!important;
+}
+
+.msg-contacts-head,.msg-thread-head{
+  background:#fff!important;background-image:none!important;border:0!important;border-bottom:1px solid #edf0f4!important;
+  box-shadow:none!important;color:#243149!important;
+}
+.msg-contacts-head{padding:15px 15px 12px!important}
+.msg-contacts-head-top{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important}
+.msg-contacts-head h2{margin:0!important;color:#17223a!important;font-size:14px!important}
+.msg-contacts-head p{margin:4px 0 0!important;color:#7f8b9c!important;font-size:8px!important;line-height:1.6!important}
+.msg-contact-total{
+  min-width:28px!important;height:28px!important;border-radius:9px!important;display:grid!important;place-items:center!important;
+  background:#f2ecfb!important;color:#6b4b9c!important;font-size:9px!important;font-weight:900!important;
+}
+
+.msg-contact-search{padding:9px 10px 7px!important;background:#fff!important}
+.msg-contact-search-wrap{position:relative!important}
+.msg-contact-search-wrap:before{
+  content:"⌕"!important;position:absolute!important;right:11px!important;top:5px!important;
+  color:#7655a8!important;font-size:18px!important;z-index:2!important;
+}
+.msg-contact-search input{
+  width:100%!important;height:38px!important;margin:0!important;padding:0 36px 0 10px!important;
+  border:1px solid #dfe5ed!important;border-radius:10px!important;background:#fafbfd!important;background-image:none!important;
+  color:#29364b!important;font-family:inherit!important;font-size:9px!important;box-shadow:none!important;outline:none!important;
+}
+.msg-contact-search input:focus{border-color:#cdbde2!important;box-shadow:0 0 0 3px rgba(118,85,168,.07)!important}
+
+.msg-public-wrap{padding:0 8px 6px!important}
+.msg-contact-list{max-height:calc(100vh - 305px)!important;min-height:470px!important;overflow:auto!important;padding:3px 8px 9px!important}
+.msg-contact{
+  width:100%!important;min-width:0!important;display:grid!important;grid-template-columns:40px minmax(0,1fr) auto!important;
+  align-items:center!important;gap:9px!important;margin:0 0 3px!important;padding:8px!important;border:1px solid transparent!important;
+  border-radius:11px!important;background:#fff!important;background-image:none!important;color:#344158!important;
+  text-decoration:none!important;box-shadow:none!important;transition:.15s!important;
+}
+.msg-contact:hover{background:#faf8fd!important;border-color:#eee7f6!important}
+.msg-contact.active{background:#f2ecfa!important;border-color:#e0d2f0!important;color:#5f4289!important}
+.msg-contact.public{background:#eef8f3!important;border-color:#e2f0e8!important;color:#236c50!important}
+.msg-contact.public.active{background:#e7f5ed!important;border-color:#d6eadf!important}
+.msg-avatar{
+  width:40px!important;height:40px!important;border-radius:12px!important;display:grid!important;place-items:center!important;
+  background:#eee9f7!important;color:#694a98!important;font-weight:900!important;flex:0 0 40px!important;overflow:hidden!important;
+  font-size:11px!important;
+}
+.msg-contact.public .msg-avatar{background:#dcf1e5!important;color:#237653!important}
+.msg-avatar img{width:100%!important;height:100%!important;object-fit:cover!important}
+.msg-contact-copy{min-width:0!important}
+.msg-contact strong{
+  display:block!important;margin:0!important;color:#2f3c51!important;font-size:9px!important;line-height:1.5!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+.msg-contact.active strong{color:#5f4289!important}
+.msg-contact.public strong{color:#276d51!important}
+.msg-contact small{
+  display:block!important;margin:2px 0 0!important;color:#8792a1!important;font-size:7px!important;line-height:1.5!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+.msg-contact-preview{
+  display:block!important;margin-top:3px!important;color:#a0a8b4!important;font-size:7px!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;max-width:100%!important;
+}
+.msg-contact-side{display:flex!important;flex-direction:column!important;align-items:flex-end!important;gap:4px!important;min-width:28px!important}
+.msg-unread{
+  min-width:20px!important;height:20px!important;padding:0 5px!important;border-radius:999px!important;
+  background:#c73b59!important;color:#fff!important;display:grid!important;place-items:center!important;
+  font-size:7px!important;font-weight:900!important;
+}
+.msg-contact-time{color:#a0a8b4!important;font-size:6px!important;white-space:nowrap!important}
+
+.msg-thread-head{
+  min-height:76px!important;padding:13px 16px!important;display:flex!important;justify-content:space-between!important;
+  align-items:center!important;gap:12px!important;direction:rtl!important;
+}
+.msg-room-person{display:flex!important;align-items:center!important;gap:10px!important;min-width:0!important}
+.msg-room-avatar{
+  width:42px!important;height:42px!important;flex:0 0 42px!important;border-radius:13px!important;
+  display:grid!important;place-items:center!important;background:#f0eaf8!important;color:#684793!important;font-size:13px!important;font-weight:900!important;overflow:hidden!important;
+}
+.msg-room-avatar.public{background:#e6f5ed!important;color:#277454!important}
+.msg-room-avatar img{width:100%!important;height:100%!important;object-fit:cover!important}
+.msg-room-meta{min-width:0!important}
+.msg-thread-head h1{margin:0!important;color:#17223a!important;font-size:15px!important;line-height:1.4!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.msg-thread-head p{margin:4px 0 0!important;color:#7c8798!important;font-size:8px!important;line-height:1.6!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.msg-room-actions{display:flex!important;align-items:center!important;gap:5px!important;flex-wrap:wrap!important;justify-content:flex-end!important}
+.msg-room-pill{
+  display:inline-flex!important;align-items:center!important;height:28px!important;padding:0 8px!important;
+  border-radius:999px!important;background:#eef8f3!important;color:#237151!important;border:1px solid #deeee5!important;
+  font-size:7px!important;font-weight:900!important;white-space:nowrap!important;
+}
+.msg-room-pill.private{background:#f3eef9!important;color:#684793!important;border-color:#e3d9ef!important}
+.msg-room-pill.live{background:#f8fafc!important;color:#718095!important;border-color:#e5e9ef!important}
+.msg-room-pill.live:before{content:"●"!important;color:#2ca16d!important;font-size:8px!important;margin-left:4px!important}
+
+.msg-stream{
+  width:100%!important;min-width:0!important;padding:18px 20px!important;overflow:auto!important;
+  background:#f8fafc!important;background-image:none!important;display:flex!important;flex-direction:column!important;gap:8px!important;
+  direction:rtl!important;
+}
+.msg-day-hint{
+  align-self:center!important;margin:0 0 5px!important;padding:4px 8px!important;border-radius:999px!important;
+  background:#eef1f5!important;color:#8792a1!important;font-size:7px!important;
+}
+.msg-bubble{
+  max-width:min(68%,720px)!important;min-width:110px!important;padding:9px 11px!important;border-radius:14px!important;
+  background:#fff!important;background-image:none!important;border:1px solid #e4e8ef!important;
+  box-shadow:0 3px 10px rgba(40,51,75,.03)!important;color:#202c3f!important;
+}
+.msg-bubble.mine{
+  align-self:flex-end!important;background:#efe8f8!important;background-image:none!important;border-color:#ded0ef!important;
+  border-bottom-right-radius:5px!important;
+}
+.msg-bubble.theirs{align-self:flex-start!important;border-bottom-left-radius:5px!important}
+.msg-bubble strong{display:block!important;margin:0 0 4px!important;color:#38445a!important;font-size:8px!important}
+.msg-bubble.mine strong{color:#674994!important}
+.msg-bubble p{
+  margin:0!important;color:#202c3f!important;font-size:10px!important;line-height:1.9!important;
+  white-space:pre-wrap!important;word-break:break-word!important;
+}
+.msg-bubble small{display:block!important;margin-top:5px!important;color:#929baa!important;font-size:7px!important;direction:ltr!important;text-align:left!important}
+.msg-empty{
+  margin:auto!important;text-align:center!important;color:#8b95a5!important;font-size:9px!important;line-height:1.8!important;
+}
+.msg-empty b{
+  width:46px!important;height:46px!important;margin:0 auto 9px!important;border-radius:15px!important;
+  display:grid!important;place-items:center!important;background:#f1eafa!important;color:#6c4b9b!important;font-size:20px!important;
+}
+.msg-empty span{display:block!important;color:#6f7b8d!important;font-size:9px!important;font-weight:900!important;margin-bottom:2px!important}
+
+.msg-compose{
+  width:100%!important;min-width:0!important;margin:0!important;padding:10px 12px!important;border:0!important;border-top:1px solid #e9edf3!important;
+  background:#fff!important;background-image:none!important;display:grid!important;grid-template-columns:180px minmax(0,1fr) 82px!important;
+  gap:7px!important;align-items:stretch!important;direction:rtl!important;box-shadow:none!important;
+}
+.msg-compose select,.msg-compose textarea{
+  width:100%!important;margin:0!important;border:1px solid #dce2eb!important;border-radius:10px!important;
+  background:#fbfcfe!important;background-image:none!important;color:#26344a!important;font-family:inherit!important;
+  box-shadow:none!important;outline:none!important;
+}
+.msg-compose select{height:46px!important;padding:0 9px!important;font-size:8px!important}
+.msg-compose textarea{
+  min-height:46px!important;max-height:110px!important;padding:10px 11px!important;resize:vertical!important;font-size:10px!important;line-height:1.7!important;
+}
+.msg-compose select:focus,.msg-compose textarea:focus{border-color:#cbb9e1!important;box-shadow:0 0 0 3px rgba(111,80,163,.07)!important}
+.msg-compose button{
+  width:100%!important;min-height:46px!important;margin:0!important;padding:0 12px!important;border:0!important;border-radius:10px!important;
+  background:#7251a5!important;background-image:none!important;color:#fff!important;font-family:inherit!important;
+  font-size:9px!important;font-weight:900!important;box-shadow:0 7px 16px rgba(100,70,150,.16)!important;cursor:pointer!important;
+}
+.msg-compose button:hover{background:#654594!important;transform:none!important;filter:none!important}
+
+@media(min-width:821px){
+  body.gl-page-internal_messages,
+  body.gl-page-internal_messages .app-main{
+    background:#f5f7fb!important;background-image:none!important;
+  }
+  body.gl-role-call-center.gl-page-internal_messages .topbar{
+    background:#fff!important;background-image:none!important;
+  }
+}
+@media(min-width:821px) and (max-width:1180px){
+  .msg-shell{margin-bottom:72px!important}
+  .msg-layout{grid-template-columns:minmax(0,1fr) 285px!important;gap:9px!important}
+  .msg-thread{grid-template-rows:auto minmax(450px,calc(100vh - 280px)) auto!important}
+  .msg-page-head{padding:11px 13px!important}
+  .msg-page-head h1{font-size:16px!important}
+  .msg-contact-list{max-height:calc(100vh - 290px)!important;min-height:420px!important}
+  .msg-compose{grid-template-columns:155px minmax(0,1fr) 74px!important}
+}
+@media(max-width:820px){
+  .msg-shell{margin:0 auto 76px!important;color:#edf5f8!important}
+  .msg-page-head{background:#101a26!important;border-color:#273a49!important;box-shadow:none!important;align-items:flex-start!important;flex-direction:column!important}
+  .msg-page-head h1{color:#f1f5f8!important}.msg-page-head p{color:#9eb0bd!important}
+  .msg-page-stats{justify-content:flex-start!important}.msg-stat-pill{background:#162533!important;border-color:#2b4050!important;color:#b9c7d0!important}
+  .msg-layout{grid-template-columns:1fr!important;grid-template-areas:"contacts" "thread"!important;gap:9px!important}
+  .msg-contacts,.msg-thread{background:#101a26!important;border-color:#273a49!important;box-shadow:none!important}
+  .msg-contacts-head,.msg-thread-head,.msg-compose{background:#101a26!important;border-color:#273a49!important}
+  .msg-contact-search{background:#101a26!important}.msg-contact-search input{background:#0b141e!important;color:#fff!important;border-color:#2c4355!important}
+  .msg-contact-list{min-height:0!important;max-height:330px!important}
+  .msg-contact{background:#101a26!important;color:#e7eef3!important}.msg-contact:hover,.msg-contact.active{background:#172536!important;border-color:#31495b!important}
+  .msg-contact.public{background:#173326!important;border-color:#275541!important}.msg-contact strong{color:#edf3f7!important}.msg-contact small,.msg-contact-preview,.msg-contact-time{color:#9aabb8!important}
+  .msg-thread{grid-template-rows:auto minmax(420px,56vh) auto!important;min-height:0!important}
+  .msg-thread-head h1{color:#f1f5f8!important}.msg-thread-head p{color:#9eb0bd!important}
+  .msg-stream{background:#0b141e!important}.msg-bubble{max-width:88%!important;background:#132231!important;border-color:#273d4e!important}
+  .msg-bubble.mine{background:#3b2c56!important;border-color:#60478a!important}.msg-bubble p,.msg-bubble strong{color:#f0f4f7!important}
+  .msg-compose{grid-template-columns:1fr!important}.msg-compose select,.msg-compose textarea{background:#0b141e!important;color:#fff!important;border-color:#2c4355!important}
+  .msg-compose button{min-height:42px!important}
+}
+</style>
+
+<section class="msg-shell">
+  <header class="msg-page-head">
+    <div class="msg-page-title">
+      <span class="msg-page-icon">✉</span>
+      <div><h1>مرکز پیام داخلی</h1><p>گفتگوی عمومی و پیام مستقیم بین پرسنل؛ سریع، خصوصی و داخل Staff App</p></div>
     </div>
-    <form class="msg-compose" method="post">{% csrf_token %}
-      <select name="recipient" aria-label="گیرنده">
-        <option value="all" {% if not selected_contact %}selected{% endif %}>همه پرسنل</option>
-        {% for row in contact_rows %}<option value="{{ row.user.pk }}" {% if selected_contact and selected_contact.pk == row.user.pk %}selected{% endif %}>{{ row.user.get_full_name|default:row.user.username }}</option>{% endfor %}
-      </select>
-      <textarea name="body" maxlength="2000" required placeholder="پیام خود را بنویسید..."></textarea>
-      <button type="submit">ارسال</button>
-    </form>
-  </section>
+    <div class="msg-page-stats">
+      <span class="msg-stat-pill green"><b>{{ staff_count }}</b> عضو فعال</span>
+      <span class="msg-stat-pill purple"><b>{{ unread_total }}</b> خوانده‌نشده</span>
+      <span class="msg-stat-pill">↻ به‌روزرسانی خودکار</span>
+    </div>
+  </header>
+
+  <div class="msg-layout">
+    <aside class="msg-contacts">
+      <div class="msg-contacts-head">
+        <div class="msg-contacts-head-top"><div><h2>همکاران</h2><p>برای شروع گفتگو یک نفر را انتخاب کنید</p></div><span class="msg-contact-total">{{ contact_rows|length }}</span></div>
+      </div>
+
+      <div class="msg-contact-search">
+        <div class="msg-contact-search-wrap"><input id="msgContactSearch" type="search" placeholder="جستجوی نام، سمت یا شعبه..."></div>
+      </div>
+
+      <div class="msg-public-wrap">
+        <a class="msg-contact public {% if not selected_contact %}active{% endif %}" href="{% url 'internal_messages' %}">
+          <span class="msg-avatar">◎</span>
+          <span class="msg-contact-copy"><strong>گفتگوی عمومی پرسنل</strong><small>پیام قابل مشاهده برای همه اعضای فعال</small></span>
+          <span class="msg-contact-side"><span class="msg-contact-time">عمومی</span></span>
+        </a>
+      </div>
+
+      <div class="msg-contact-list" id="msgContactList">
+        {% for row in contact_rows %}
+        <a class="msg-contact {% if selected_contact and selected_contact.pk == row.user.pk %}active{% endif %}"
+           data-search="{{ row.user.get_full_name }} {{ row.user.username }} {{ row.user.profile.job_title }} {{ row.user.profile.branch }}"
+           href="{% url 'internal_messages' %}?with={{ row.user.pk }}">
+          <span class="msg-avatar">{% if row.user.profile.avatar %}<img src="{{ row.user.profile.avatar.url }}" alt="">{% else %}{{ row.user.first_name|first|default:row.user.username|first }}{% endif %}</span>
+          <span class="msg-contact-copy">
+            <strong>{{ row.user.get_full_name|default:row.user.username }}</strong>
+            <small>{{ row.user.profile.job_title|default:row.user.profile.get_role_display }}{% if row.user.profile.branch %} · {{ row.user.profile.branch }}{% endif %}</small>
+            {% if row.last_message %}<span class="msg-contact-preview">{{ row.last_message.body|truncatechars:55 }}</span>{% else %}<span class="msg-contact-preview">هنوز گفتگویی شروع نشده</span>{% endif %}
+          </span>
+          <span class="msg-contact-side">
+            {% if row.unread %}<b class="msg-unread">{{ row.unread }}</b>{% endif %}
+            {% if row.last_message %}<span class="msg-contact-time">{{ row.last_message.created_at|jdatetime }}</span>{% endif %}
+          </span>
+        </a>
+        {% empty %}
+        <div class="msg-empty"><b>◎</b><span>همکاری برای نمایش وجود ندارد</span></div>
+        {% endfor %}
+      </div>
+    </aside>
+
+    <section class="msg-thread">
+      <header class="msg-thread-head">
+        <div class="msg-room-person">
+          <span class="msg-room-avatar {% if not selected_contact %}public{% endif %}">
+            {% if selected_contact and selected_contact.profile.avatar %}<img src="{{ selected_contact.profile.avatar.url }}" alt="">
+            {% elif selected_contact %}{{ selected_contact.first_name|first|default:selected_contact.username|first }}
+            {% else %}◎{% endif %}
+          </span>
+          <div class="msg-room-meta"><h1>{{ room_title }}</h1><p>{{ room_subtitle }}</p></div>
+        </div>
+        <div class="msg-room-actions">
+          <span class="msg-room-pill {% if selected_contact %}private{% endif %}">{{ room_kind }}</span>
+          <span class="msg-room-pill live">پیام‌ها خودکار تازه می‌شوند</span>
+        </div>
+      </header>
+
+      <div class="msg-stream" id="msgStream">
+        {% if thread %}<div class="msg-day-hint">آخرین پیام‌های این گفتگو</div>{% endif %}
+        {% for item in thread %}
+        <article class="msg-bubble {% if item.sender_id == user.id %}mine{% else %}theirs{% endif %}" data-id="{{ item.pk }}">
+          <strong>{{ item.sender.get_full_name|default:item.sender.username }}</strong>
+          <p>{{ item.body }}</p>
+          <small>{{ item.created_at|jdatetime }}</small>
+        </article>
+        {% empty %}
+        <div class="msg-empty" id="msgEmpty"><b>✉</b><span>هنوز پیامی در این گفتگو نیست</span>اولین پیام را از کادر پایین ارسال کنید.</div>
+        {% endfor %}
+      </div>
+
+      <form class="msg-compose" method="post">{% csrf_token %}
+        <select name="recipient" aria-label="گیرنده">
+          <option value="all" {% if not selected_contact %}selected{% endif %}>همه پرسنل</option>
+          {% for row in contact_rows %}<option value="{{ row.user.pk }}" {% if selected_contact and selected_contact.pk == row.user.pk %}selected{% endif %}>{{ row.user.get_full_name|default:row.user.username }}</option>{% endfor %}
+        </select>
+        <textarea name="body" maxlength="2000" required placeholder="{% if selected_contact %}پیام به {{ selected_contact.get_full_name|default:selected_contact.username }}...{% else %}پیام برای گفتگوی عمومی...{% endif %}"></textarea>
+        <button type="submit">ارسال</button>
+      </form>
+    </section>
+  </div>
 </section>
+
 <script>
 (function(){
   const stream=document.getElementById('msgStream');
   const search=document.getElementById('msgContactSearch');
   const contactList=document.getElementById('msgContactList');
+
   if(search&&contactList){
     const contacts=[...contactList.querySelectorAll('.msg-contact[data-search]')];
     search.addEventListener('input',function(){
       const q=(this.value||'').trim().toLowerCase();
-      contacts.forEach(row=>{row.style.display=!q||(row.dataset.search||'').toLowerCase().includes(q)?'flex':'none';});
+      contacts.forEach(row=>{
+        row.style.display=!q||(row.dataset.search||'').toLowerCase().includes(q)?'grid':'none';
+      });
     });
   }
+
   if(!stream)return;
   stream.scrollTop=stream.scrollHeight;
   const initial=[...stream.querySelectorAll('.msg-bubble[data-id]')];
@@ -79,6 +359,7 @@ body.gl-page-internal_messages{background:#f4f7fb!important}body.gl-page-interna
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
     });
   }
+
   async function poll(){
     try{
       const url=base+'?after='+last+(selected?'&with='+selected:'');
@@ -88,6 +369,8 @@ body.gl-page-internal_messages{background:#f4f7fb!important}body.gl-page-interna
       let added=false;
       data.messages.forEach(function(item){
         if(item.id<=last)return;
+        const empty=document.getElementById('msgEmpty');
+        if(empty)empty.remove();
         const el=document.createElement('article');
         el.className='msg-bubble '+(item.mine?'mine':'theirs');
         el.dataset.id=item.id;
@@ -98,6 +381,7 @@ body.gl-page-internal_messages{background:#f4f7fb!important}body.gl-page-interna
       if(added)stream.scrollTop=stream.scrollHeight;
     }catch(e){}
   }
+
   window.setInterval(poll,6000);
 })();
 </script>
