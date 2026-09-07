@@ -113,7 +113,7 @@ html.gl-call-center-html{background:#f5f7fb!important;background-image:none!impo
     <a href="/profile/"><span class="nav-ico">◉</span><span>پروفایل</span></a>
     <a href="/logout/"><span class="nav-ico">↪</span><span>خروج</span></a>
     {% elif user.profile.role == 'call_center' %}
-    <a href="/call-center/" class="employee-bottom-nav cc-mobile-leads {% if request.path|slice:':13' == '/call-center/' %}is-active{% endif %}"><span class="nav-ico">☎</span><span>لیدهای من</span></a>
+    <a href="/" class="nav-main employee-bottom-nav cc-mobile-home {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico">⌂</span><span>خانه</span></a>
     <a href="/attendance/" class="attendance-nav employee-bottom-nav cc-mobile-attendance {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور و غیاب</span></a>
     <a href="/tasks/" class="employee-bottom-nav cc-mobile-tasks {% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>وظایف من</span></a>
     <a href="/reports/" class="employee-bottom-nav cc-mobile-reports {% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش روزانه</span></a>
