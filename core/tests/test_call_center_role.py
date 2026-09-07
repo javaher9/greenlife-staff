@@ -44,6 +44,21 @@ class CallCenterRoleTests(TestCase):
         response=self.client.get(reverse('dashboard'))
         self.assertRedirects(response,reverse('call_center_dashboard'),fetch_redirect_response=False)
 
+    def test_mobile_call_center_uses_personal_dashboard(self):
+        response=self.client.get(
+            reverse('dashboard'),
+            HTTP_USER_AGENT='Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Mobile Safari/537.36',
+            HTTP_SEC_CH_UA_MOBILE='?1',
+        )
+        self.assertEqual(response.status_code,200)
+        self.assertTemplateUsed(response,'core/dashboard.html')
+        self.assertContains(response,'cc-mobile-home')
+        self.assertNotContains(response,'cc-mobile-leads')
+        self.assertContains(response,'cc-mobile-attendance')
+        self.assertContains(response,'cc-mobile-tasks')
+        self.assertContains(response,'cc-mobile-reports')
+        self.assertContains(response,'cc-mobile-notifications')
+
     def test_dashboard_only_shows_assigned_leads_and_direct_call(self):
         response=self.client.get(reverse('call_center_dashboard'))
         self.assertEqual(response.status_code,200)
@@ -56,7 +71,8 @@ class CallCenterRoleTests(TestCase):
     def test_dashboard_keeps_mobile_navigation_and_uses_photo_ready_light_workspace(self):
         response=self.client.get(reverse('call_center_dashboard'))
         self.assertEqual(response.status_code,200)
-        self.assertContains(response,'cc-mobile-leads')
+        self.assertNotContains(response,'cc-mobile-leads')
+        self.assertContains(response,'cc-mobile-home')
         self.assertContains(response,'cc-mobile-notifications')
         self.assertContains(response,'class="cc-v5"')
         self.assertContains(response,'شعار امروز')
