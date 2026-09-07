@@ -231,7 +231,7 @@
     <div class="cmd-modules">
       <a class="cmd-module" href="/meeting-minutes/dashboard/"><strong>◈ صورت‌جلسات و مصوبات</strong><small>پیگیری مصوبات، مسئول اجرا و مراحل انجام</small><b>ورود به بخش ←</b></a>
       <a class="cmd-module" href="/referrals/"><strong>✦ شبکه فروش</strong><small>اعضا، لیدها، فروش و عملکرد شبکه</small><b>مدیریت شبکه ←</b></a>
-      <a class="cmd-module" href="/finance/"><strong>▧ مالی و درآمد</strong><small>ثبت‌ها، وضعیت تراکنش‌ها و گزارش مالی</small><b>مشاهده مالی ←</b></a>
+      {% if user.profile.role != 'internal_manager' %}<a class="cmd-module" href="/finance/"><strong>▧ مالی و درآمد</strong><small>ثبت‌ها، وضعیت تراکنش‌ها و گزارش مالی</small><b>مشاهده مالی ←</b></a>{% endif %}
       <a class="cmd-module" href="/reports/"><strong>▥ گزارش‌های پرسنل</strong><small>گزارش‌های روزانه و موارد ارسال‌نشده</small><b>مشاهده گزارش‌ها ←</b></a>
       <a class="cmd-module" href="/employees/"><strong>♙ پرسنل</strong><small>پرونده، نقش، وضعیت و عملکرد اعضای تیم</small><b>مدیریت پرسنل ←</b></a>
       <a class="cmd-module" href="/attendance/team/"><strong>◷ حضور و غیاب</strong><small>حضور امروز، تأخیر و وضعیت تیم</small><b>مشاهده حضور ←</b></a>
