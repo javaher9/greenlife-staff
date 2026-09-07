@@ -104,6 +104,9 @@ class InternalMessagingTests(TestCase):
         self.assertContains(response,'position:relative!important;inset:auto!important;width:auto!important')
         self.assertContains(response,'grid-template-columns:180px minmax(0,1fr) 82px!important')
         self.assertContains(response,'پیام‌ها خودکار تازه می‌شوند')
+        self.assertContains(response,'.msg-bubble p{color:#172235!important;font-size:11px!important;font-weight:700!important')
+        self.assertContains(response,'.msg-contact-preview{color:#6f7b8b!important;font-size:8px!important;font-weight:700!important')
+        self.assertContains(response,'.msg-compose textarea::placeholder{color:#667386!important;opacity:1!important')
 
     def test_contact_list_shows_recent_direct_message_preview(self):
         InternalMessage.objects.create(
