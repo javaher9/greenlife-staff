@@ -171,23 +171,26 @@ body.gl-page-finance_dashboard .fin-table td:last-child>.fin-cell-stack{
   width:100%!important;min-width:0!important;box-sizing:border-box!important
 }
 body.gl-page-finance_dashboard .fin-actions{
-  width:100%!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
-  gap:5px!important;align-items:stretch!important;overflow:hidden!important
+  width:100%!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:6px!important;align-items:stretch!important;overflow:visible!important
 }
 body.gl-page-finance_dashboard .fin-actions .inline-form{
   display:block!important;position:static!important;width:100%!important;min-width:0!important;
   max-width:100%!important;margin:0!important;padding:0!important
 }
+body.gl-page-finance_dashboard .fin-actions .inline-form:nth-child(3){
+  grid-column:1/-1!important;width:58%!important;justify-self:start!important
+}
 body.gl-page-finance_dashboard .fin-actions .fin-btn{
   position:static!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;
-  width:100%!important;min-width:0!important;max-width:100%!important;min-height:28px!important;height:28px!important;
-  margin:0!important;padding:3px 4px!important;border-radius:8px!important;overflow:hidden!important;
-  white-space:nowrap!important;text-overflow:ellipsis!important;font-size:8px!important;line-height:1!important;
-  box-shadow:0 4px 10px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.10)!important
+  width:100%!important;min-width:0!important;max-width:100%!important;min-height:27px!important;height:27px!important;
+  margin:0!important;padding:3px 7px!important;border-radius:9px!important;overflow:hidden!important;
+  white-space:nowrap!important;text-overflow:clip!important;font-size:8.5px!important;line-height:1!important;
+  box-shadow:0 3px 9px rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.08)!important
 }
-body.gl-page-finance_dashboard .fin-actions .fin-btn.approve{background:linear-gradient(135deg,#2f765c,#255c49)!important;border-color:#57977e!important}
-body.gl-page-finance_dashboard .fin-actions .fin-btn.correction{background:linear-gradient(135deg,#6f50a0,#553b7c)!important;border-color:#8d70b5!important}
-body.gl-page-finance_dashboard .fin-actions .fin-btn.cancel{background:linear-gradient(135deg,#824052,#64333f)!important;border-color:#a95a6d!important}
+body.gl-page-finance_dashboard .fin-actions .fin-btn.approve{background:linear-gradient(135deg,#286b51,#205541)!important;border-color:#4c876d!important}
+body.gl-page-finance_dashboard .fin-actions .fin-btn.correction{background:linear-gradient(135deg,#654993,#513972)!important;border-color:#8065a7!important}
+body.gl-page-finance_dashboard .fin-actions .fin-btn.cancel{background:linear-gradient(135deg,#733846,#5b2e39)!important;border-color:#965061!important}
 
 /* Only the finance page: make the desktop side navigation calmer, smaller and more premium. */
 @media(min-width:801px){
@@ -209,7 +212,8 @@ body.gl-page-finance_dashboard .fin-actions .fin-btn.cancel{background:linear-gr
   body.gl-page-finance_dashboard .fin-table col.c-review{width:196px!important}
   body.gl-page-finance_dashboard .fin-table th:last-child,
   body.gl-page-finance_dashboard .fin-table td:last-child{min-width:196px!important;width:196px!important}
-  body.gl-page-finance_dashboard .fin-actions{grid-template-columns:1fr!important}
+  body.gl-page-finance_dashboard .fin-actions{grid-template-columns:1fr 1fr!important}
+  body.gl-page-finance_dashboard .fin-actions .inline-form:nth-child(3){grid-column:1/-1!important;width:58%!important}
   body.gl-page-finance_dashboard .fin-actions .fin-btn{height:27px!important;min-height:27px!important;font-size:8.5px!important}
 }
 </style>
