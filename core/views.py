@@ -378,7 +378,7 @@ def dashboard(request):
             'receptionist_appointment_count':receptionist_appointment_count,
             'receptionist_arrived_count':receptionist_arrived_count,
         })
-    if role=='call_center':
+    if role=='call_center' and not _is_mobile_request(request):
         return redirect('call_center_dashboard')
     if role=='referrer':
         return redirect('referral_dashboard')
