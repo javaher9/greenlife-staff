@@ -66,14 +66,41 @@ class CallCenterRoleTests(TestCase):
         self.assertContains(response,'برنامه نوبت‌های امروز')
         self.assertContains(response,'09:00')
         self.assertContains(response,'18:00')
-        self.assertContains(response,'class="cc-mini-chat"')
-        self.assertContains(response,'گفتگوی تیم')
+        self.assertContains(response,'ارتباط داخلی تیم')
+        self.assertContains(response,'id="ccQuickMessageForm"')
+        self.assertContains(response,'مسیر مراجعه')
+        self.assertContains(response,'تماس')
+        self.assertContains(response,'پیگیری')
+        self.assertContains(response,'نوبت')
+        self.assertContains(response,'مراجعه')
         self.assertContains(response,'class="cc-desktop-dock"')
         self.assertContains(response,'بیماران / لیدها')
         self.assertContains(response,'نوبت‌ها')
         self.assertContains(response,'پیام داخلی')
         self.assertContains(response,'cc-mobile-attendance')
         self.assertContains(response,'cc-mobile-reports')
+
+    def test_quick_message_sends_to_staff_and_creates_notification(self):
+        response=self.client.post(reverse('call_center_quick_message'),{
+            'recipient':str(self.staff.pk),
+            'body':'لطفاً این مراجعه‌کننده را پیگیری کنید',
+        })
+        self.assertEqual(response.status_code,200)
+        payload=response.json()
+        self.assertTrue(payload['ok'])
+        self.assertEqual(payload['message']['recipient'],self.staff.get_full_name() or self.staff.username)
+        self.assertTrue(StaffNotification.objects.filter(
+            user=self.staff,notification_type='internal_message',
+        ).exists())
+
+    def test_quick_message_rejects_external_referrer_recipient(self):
+        external=self.make_user('external-referrer','referrer','معرف بیرونی')
+        response=self.client.post(reverse('call_center_quick_message'),{
+            'recipient':str(external.pk),
+            'body':'نباید ارسال شود',
+        })
+        self.assertEqual(response.status_code,400)
+        self.assertFalse(response.json()['ok'])
 
     def test_operator_can_record_result_only_for_own_lead(self):
         response=self.client.post(reverse('call_center_lead',args=[self.lead_one.pk]),{
