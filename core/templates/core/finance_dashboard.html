@@ -161,6 +161,57 @@
   .fin-ledger-head{align-items:flex-start;flex-direction:column}.fin-sync-log .row{grid-template-columns:1fr}
 }
 @media(max-width:430px){.fin-kpis{grid-template-columns:1fr!important}}
+
+/* Finance v2.2 — isolate the left review controls and compact this page's sidebar.
+   This intentionally overrides older global button/readability rules only on finance. */
+body.gl-page-finance_dashboard .fin-table col.c-review{width:214px!important}
+body.gl-page-finance_dashboard .fin-table th:last-child,
+body.gl-page-finance_dashboard .fin-table td:last-child{min-width:214px!important;width:214px!important}
+body.gl-page-finance_dashboard .fin-table td:last-child>.fin-cell-stack{
+  width:100%!important;min-width:0!important;box-sizing:border-box!important
+}
+body.gl-page-finance_dashboard .fin-actions{
+  width:100%!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:5px!important;align-items:stretch!important;overflow:hidden!important
+}
+body.gl-page-finance_dashboard .fin-actions .inline-form{
+  display:block!important;position:static!important;width:100%!important;min-width:0!important;
+  max-width:100%!important;margin:0!important;padding:0!important
+}
+body.gl-page-finance_dashboard .fin-actions .fin-btn{
+  position:static!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  width:100%!important;min-width:0!important;max-width:100%!important;min-height:28px!important;height:28px!important;
+  margin:0!important;padding:3px 4px!important;border-radius:8px!important;overflow:hidden!important;
+  white-space:nowrap!important;text-overflow:ellipsis!important;font-size:8px!important;line-height:1!important;
+  box-shadow:0 4px 10px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.10)!important
+}
+body.gl-page-finance_dashboard .fin-actions .fin-btn.approve{background:linear-gradient(135deg,#2f765c,#255c49)!important;border-color:#57977e!important}
+body.gl-page-finance_dashboard .fin-actions .fin-btn.correction{background:linear-gradient(135deg,#6f50a0,#553b7c)!important;border-color:#8d70b5!important}
+body.gl-page-finance_dashboard .fin-actions .fin-btn.cancel{background:linear-gradient(135deg,#824052,#64333f)!important;border-color:#a95a6d!important}
+
+/* Only the finance page: make the desktop side navigation calmer, smaller and more premium. */
+@media(min-width:801px){
+  body.gl-page-finance_dashboard .app-sidebar{padding:16px 11px 12px!important}
+  body.gl-page-finance_dashboard .app-nav{gap:3px!important;margin-top:5px!important}
+  body.gl-page-finance_dashboard .app-nav>a,
+  body.gl-page-finance_dashboard .app-nav>button.mobile-more-toggle{
+    min-height:34px!important;padding:5px 9px!important;border-radius:9px!important;
+    gap:8px!important;font-size:10.5px!important;line-height:1.25!important
+  }
+  body.gl-page-finance_dashboard .app-nav .nav-ico{
+    width:22px!important;height:22px!important;min-width:22px!important;border-radius:6px!important;font-size:14px!important
+  }
+  body.gl-page-finance_dashboard .nav-section-title{margin:6px 5px 1px!important;padding-top:6px!important;font-size:9px!important}
+  body.gl-page-finance_dashboard .sidebar-footer{margin-top:6px!important;padding-top:8px!important}
+  body.gl-page-finance_dashboard .app-nav>a[href="/finance/"].nav-module{display:none!important}
+}
+@media(max-width:760px){
+  body.gl-page-finance_dashboard .fin-table col.c-review{width:196px!important}
+  body.gl-page-finance_dashboard .fin-table th:last-child,
+  body.gl-page-finance_dashboard .fin-table td:last-child{min-width:196px!important;width:196px!important}
+  body.gl-page-finance_dashboard .fin-actions{grid-template-columns:1fr!important}
+  body.gl-page-finance_dashboard .fin-actions .fin-btn{height:27px!important;min-height:27px!important;font-size:8.5px!important}
+}
 </style>
 
 <div class="fin-page">
