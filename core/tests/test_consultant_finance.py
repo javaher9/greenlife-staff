@@ -116,6 +116,29 @@ class ConsultantFinanceEntryTests(TestCase):
         self.assertContains(response,'نیازمند اصلاح')
         self.assertContains(response,'consultant-finance-nav')
 
+    def test_finance_dashboard_has_consistent_premium_actions_and_aligned_ledger(self):
+        occurred=timezone.make_aware(datetime.combine(timezone.localdate(),time(10,0)))
+        FinancialTransaction.objects.create(
+            source='manual',branch=self.branch,occurred_at=occurred,amount=1234567,
+            entry_type='inc',person_name='مشتری مالی',payment_method='Pos S',
+            review_status='pending',analysis_status='skipped',recorded_by=self.consultant,
+        )
+        self.client.force_login(self.admin)
+        response=self.client.get('/finance/')
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'class="fin-page"')
+        self.assertContains(response,'class="stats fin-kpis"')
+        self.assertContains(response,'class="fin-table"')
+        self.assertContains(response,'table-layout:fixed')
+        self.assertContains(response,'position:sticky;left:0')
+        self.assertContains(response,'class="fin-actions"')
+        self.assertContains(response,'fin-btn approve')
+        self.assertContains(response,'fin-btn correction')
+        self.assertContains(response,'fin-btn cancel')
+        self.assertContains(response,'fin-btn analyze')
+        self.assertContains(response,'linear-gradient(145deg,#377c65')
+        self.assertContains(response,'linear-gradient(145deg,#91445f')
+
     def test_consultant_sees_only_destination_codes_not_internal_meanings(self):
         self.client.force_login(self.consultant)
         response=self.client.get('/finance/entry/')
