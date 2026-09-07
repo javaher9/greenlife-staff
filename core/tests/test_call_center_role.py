@@ -68,6 +68,7 @@ class CallCenterRoleTests(TestCase):
         self.assertContains(response,'18:00')
         self.assertContains(response,'ارتباط داخلی تیم')
         self.assertContains(response,'id="ccQuickMessageForm"')
+        self.assertContains(response,'.cc-v6-chat-copy p{margin:3px 0 0;color:#526174;font-size:8px;font-weight:700')
         self.assertContains(response,'مسیر مراجعه')
         self.assertContains(response,'تماس')
         self.assertContains(response,'پیگیری')
