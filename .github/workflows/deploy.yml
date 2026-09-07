@@ -36,15 +36,23 @@ jobs:
             sudo journalctl --vacuum-size=200M || true
             sudo apt-get clean || true
 
-            # Remove only stopped containers owned by this Compose project.
-            # Stopped containers can pin multi-GB old images and prevent image prune.
-            # Never remove running containers or any Docker volume.
-            echo "Stopped GreenLife containers before cleanup:"
-            docker ps -a --filter "label=com.docker.compose.project=greenlife-staff-runtime"               --filter "status=exited" --format '{{.ID}} {{.Names}} {{.Status}}' || true
-            docker container prune -f               --filter "label=com.docker.compose.project=greenlife-staff-runtime" || true
-
+            # This runner is dedicated to GreenLife production. Remove only stopped
+            # containers (never running containers, never volumes), then reclaim images
+            # that were pinned exclusively by those stopped containers.
+            echo "Stopped containers before cleanup:"
+            docker ps -a --filter "status=exited" --format '{{.ID}} {{.Names}} {{.Image}} {{.Status}}' || true
+            docker container prune -f || true
             docker image prune -af || true
             docker builder prune -af || true
+
+            # Rebuildable runner caches are safe to purge and can grow by several GB
+            # across repeated PR validation/deployment runs.
+            echo "Runner cache before cleanup:"
+            du -sh "$HOME/.cache/pip" "$HOME/actions-runner/_work/_temp" 2>/dev/null || true
+            python3 -m pip cache purge || rm -rf "$HOME/.cache/pip" || true
+            find "$HOME/actions-runner/_work/_temp" -mindepth 1 -mtime +1 -delete 2>/dev/null || true
+            echo "Runner cache after cleanup:"
+            du -sh "$HOME/.cache/pip" "$HOME/actions-runner/_work/_temp" 2>/dev/null || true
             find "$HOME/actions-runner/_diag" -type f -mtime +7 -delete 2>/dev/null || true
 
             BACKUP_DIR="/home/ubuntu/greenlife-staff-runtime/backups"
