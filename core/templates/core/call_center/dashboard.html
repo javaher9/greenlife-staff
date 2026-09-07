@@ -34,24 +34,36 @@
 }
 .cc-v5-motto-ico{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:#7351a4;color:#fff;font-size:15px}
 .cc-v5-motto small{display:block;color:#9585a8;font-size:7px;font-weight:900}.cc-v5-motto strong{display:block;margin-top:3px;color:#563c7d;font-size:10px;line-height:1.7}
+.cc-v6-hero-side{display:grid;gap:8px}
+.cc-v6-flow{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;align-items:center;padding:9px;border:1px solid #e6eaf0;border-radius:14px;background:rgba(255,255,255,.78)}
+.cc-v6-flow-step{position:relative;text-align:center;padding:5px 3px}.cc-v6-flow-step:not(:last-child):after{content:"←";position:absolute;left:-6px;top:16px;color:#b7a9ca;font-size:10px;font-weight:900}
+.cc-v6-flow-ico{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;margin:0 auto 4px;font-size:13px;font-weight:900}
+.cc-v6-flow-step:nth-child(1) .cc-v6-flow-ico{background:#eaf8f1;color:#23805a}
+.cc-v6-flow-step:nth-child(2) .cc-v6-flow-ico{background:#fff0f4;color:#b84b67}
+.cc-v6-flow-step:nth-child(3) .cc-v6-flow-ico{background:#f1eafa;color:#694899}
+.cc-v6-flow-step:nth-child(4) .cc-v6-flow-ico{background:#edf4ff;color:#4774b3}
+.cc-v6-flow-step strong{display:block;color:#516075;font-size:7px}.cc-v6-flow-step small{display:block;margin-top:1px;color:#9aa3b0;font-size:6px}
 
 .cc-v5-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
 .cc-v5-kpi{
-  position:relative;overflow:hidden;min-height:105px;padding:13px 14px;background:#fff;border:1px solid var(--line);
-  border-radius:17px;box-shadow:0 6px 20px rgba(42,54,78,.038)
+  position:relative;overflow:hidden;min-height:112px;padding:14px 15px;border:0;
+  border-radius:18px;box-shadow:0 10px 26px rgba(42,54,78,.09);isolation:isolate
 }
-.cc-v5-kpi:after{content:"";position:absolute;width:72px;height:72px;border-radius:50%;left:-22px;bottom:-34px;opacity:.75}
-.cc-v5-kpi:nth-child(1):after{background:var(--green-soft)}.cc-v5-kpi:nth-child(2):after{background:var(--blue-soft)}
-.cc-v5-kpi:nth-child(3):after{background:var(--rose-soft)}.cc-v5-kpi:nth-child(4):after{background:var(--purple-soft)}.cc-v5-kpi:nth-child(5):after{background:var(--amber-soft)}
+.cc-v5-kpi:before{content:"";position:absolute;inset:0;z-index:-2}
+.cc-v5-kpi:after{content:"";position:absolute;width:108px;height:108px;border-radius:50%;left:-34px;bottom:-52px;background:rgba(255,255,255,.15);z-index:-1}
+.cc-v5-kpi:nth-child(1):before{background:linear-gradient(135deg,#138b61,#36b780)}
+.cc-v5-kpi:nth-child(2):before{background:linear-gradient(135deg,#315f9f,#5895d1)}
+.cc-v5-kpi:nth-child(3):before{background:linear-gradient(135deg,#a93f5d,#dc6c86)}
+.cc-v5-kpi:nth-child(4):before{background:linear-gradient(135deg,#5f3b9d,#8b62ce)}
+.cc-v5-kpi:nth-child(5):before{background:linear-gradient(135deg,#9f681e,#d69a39)}
 .cc-v5-kpi-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.cc-v5-kpi-label{font-size:9px;font-weight:900;color:#5d697c}
-.cc-v5-kpi-icon{width:32px;height:32px;border-radius:11px;display:grid;place-items:center;font-size:13px;font-weight:900}
-.cc-v5-kpi:nth-child(1) .cc-v5-kpi-icon{background:var(--green-soft);color:var(--green)}
-.cc-v5-kpi:nth-child(2) .cc-v5-kpi-icon{background:var(--blue-soft);color:var(--blue)}
-.cc-v5-kpi:nth-child(3) .cc-v5-kpi-icon{background:var(--rose-soft);color:var(--rose)}
-.cc-v5-kpi:nth-child(4) .cc-v5-kpi-icon{background:var(--purple-soft);color:var(--purple)}
-.cc-v5-kpi:nth-child(5) .cc-v5-kpi-icon{background:var(--amber-soft);color:var(--amber)}
-.cc-v5-kpi strong{display:block;margin-top:8px;color:#17233b;font-size:29px;line-height:1}.cc-v5-kpi small{display:block;margin-top:7px;color:#929cac;font-size:7px;line-height:1.65}
+.cc-v5-kpi-label{font-size:9px;font-weight:900;color:#fff}
+.cc-v5-kpi-icon{
+  width:34px;height:34px;border-radius:12px;display:grid;place-items:center;font-size:15px;font-weight:900;
+  background:rgba(255,255,255,.18)!important;color:#fff!important;border:1px solid rgba(255,255,255,.20)
+}
+.cc-v5-kpi strong{display:block;margin-top:9px;color:#fff;font-size:30px;line-height:1}
+.cc-v5-kpi small{display:block;margin-top:7px;color:rgba(255,255,255,.78);font-size:7px;line-height:1.65}
 
 .cc-v5-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
 .cc-v5-action{height:44px;display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid #e2e7ee;border-radius:12px;background:#fff;color:#566379;font-size:9px;font-weight:900;box-shadow:0 4px 14px rgba(42,54,78,.025)}
@@ -105,6 +117,18 @@
 .cc-v5-slot-person strong{display:block;color:#29364c;font-size:8px}.cc-v5-slot-person small{display:block;margin-top:2px;color:#8d97a5;font-size:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cc-v5-slot-empty{color:#a0a9b6;font-size:8px}.cc-v5-slot-dot{font-size:9px;color:#2a9f6c}.cc-v5-slot.booked{background:#fbf8fe}
 
 .cc-v5-cem{padding:12px}.cc-v5-cem-focus{display:grid;grid-template-columns:38px 1fr;gap:10px;align-items:center;padding:10px;border-radius:12px;background:linear-gradient(135deg,#f5f1fb,#f0f8f4);border:1px solid #e7e1ee}.cc-v5-cem-icon{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;background:#7351a4;color:#fff;font-size:15px}.cc-v5-cem-focus strong{display:block;color:#513874;font-size:9px}.cc-v5-cem-focus p{margin:3px 0 0;color:#7f708f;font-size:7px;line-height:1.7}.cc-v5-cem-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}.cc-v5-cem-stat{padding:8px;border-radius:10px;background:#fafbfd;border:1px solid #edf0f4;text-align:center}.cc-v5-cem-stat b{display:block;color:#27354b;font-size:14px}.cc-v5-cem-stat span{display:block;margin-top:2px;color:#8d97a5;font-size:7px}
+.cc-v6-lower{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,.9fr);gap:10px}
+.cc-v6-chat{display:grid;grid-template-rows:auto minmax(180px,1fr) auto;min-height:330px}
+.cc-v6-chat-feed{padding:8px 11px;overflow:auto;max-height:245px;background:linear-gradient(180deg,#fbfcfe,#f8fafc)}
+.cc-v6-chat-item{display:grid;grid-template-columns:38px minmax(0,1fr);gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #edf0f4}
+.cc-v6-chat-item:last-child{border-bottom:0}.cc-v6-chat-avatar{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;overflow:hidden;background:#eef8f3;color:#277654;font-size:10px;font-weight:900}
+.cc-v6-chat-avatar img{width:100%;height:100%;object-fit:cover}.cc-v6-chat-copy{min-width:0}.cc-v6-chat-copy strong{display:block;color:#334158;font-size:8px}
+.cc-v6-chat-copy p{margin:3px 0 0;color:#7f8b9b;font-size:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cc-v6-chat-copy small{display:block;margin-top:3px;color:#a0a8b4;font-size:6px}
+.cc-v6-chat-empty{padding:28px;text-align:center;color:#8b95a4;font-size:8px}.cc-v6-chat-compose{padding:9px 10px;border-top:1px solid #edf0f4;background:#fff}
+.cc-v6-chat-form{display:grid;grid-template-columns:155px minmax(0,1fr) 70px;gap:6px}.cc-v6-chat-form select,.cc-v6-chat-form textarea{width:100%;border:1px solid #dfe4eb!important;border-radius:9px!important;background:#fafbfd!important;color:#29364b!important;font-family:inherit!important;box-shadow:none!important}
+.cc-v6-chat-form select{height:42px;padding:0 8px!important;font-size:8px!important}.cc-v6-chat-form textarea{height:42px;min-height:42px;max-height:88px;resize:vertical;padding:9px!important;font-size:8px!important}
+.cc-v6-chat-form button{border:0!important;border-radius:9px!important;background:#7351a4!important;color:#fff!important;font:900 8px Tahoma!important;box-shadow:0 7px 15px rgba(89,61,136,.15)!important}
+.cc-v6-chat-status{min-height:16px;margin-top:5px;color:#2c805c;font-size:7px}.cc-v6-chat-status.error{color:#b63f59}
 
 /* Mini chat */
 .cc-mini-chat{position:fixed;right:18px;bottom:80px;z-index:110;direction:rtl}
@@ -120,6 +144,7 @@
   .cc-v5{gap:9px}.cc-v5-hero{grid-template-columns:1fr 290px;padding:14px}.cc-v5-hero h1{font-size:18px}.cc-v5-operator-avatar{width:50px;height:50px;flex-basis:50px}
   .cc-v5-kpis{gap:6px}.cc-v5-kpi{min-height:92px;padding:10px}.cc-v5-kpi strong{font-size:24px}
   .cc-v5-stage{grid-template-columns:minmax(0,1fr) 255px;gap:8px}.cc-v5-patient{grid-template-columns:minmax(210px,1.2fr) 82px 78px 86px 125px;padding:8px}.cc-v5-person-avatar{width:44px;height:44px}.cc-v5-person{grid-template-columns:44px minmax(0,1fr);gap:8px}
+  .cc-v6-lower{grid-template-columns:1fr}.cc-v6-chat-form{grid-template-columns:135px minmax(0,1fr) 66px}
   .cc-v5-group-label{display:none}.cc-v5-group-new input{width:115px}.cc-mini-panel{width:305px}
 }
 @media(max-width:900px) and (min-width:821px){
@@ -135,6 +160,7 @@
   .cc-v5-toolbar{grid-template-columns:1fr}.cc-v5-search input,.cc-v5-select,.cc-v5-group-new input{background:#09131c!important;color:#fff!important;border-color:#31495b!important}.cc-v5-quick button{background:#101d2a!important;color:#dbe4ea!important;border-color:#395367!important}
   .cc-v5-groups{align-items:stretch;flex-direction:column}.cc-v5-chip{background:#111f2c;color:#dce6eb;border-color:#385064}.cc-v5-chip b{background:#233242}.cc-v5-group-new input{width:100%}.cc-v5-group-new{width:100%}
   .cc-v5-stage{grid-template-columns:1fr}.cc-v5-side{display:none}.cc-v5-patient{grid-template-columns:1fr;gap:6px;background:#0e1b27;border-color:#293d4d}.cc-v5-person-copy strong{color:#fff}.cc-v5-person-meta b,.cc-v5-service{color:#e6edf1}.cc-v5-follow{color:#c7d1d8}.cc-v5-row-actions{justify-content:flex-start}.cc-v5-section-head{border-color:#293d4d}.cc-v5-section-head h2,.cc-v5-section-head h3{color:#fff}
+  .cc-v6-lower{grid-template-columns:1fr}.cc-v6-chat{display:none}
   .cc-v5-cem-focus{background:#2b2240;border-color:#4a3c63}.cc-v5-cem-focus strong{color:#eadcfb}.cc-v5-cem-focus p{color:#b9a7cc}.cc-v5-cem-stat{background:#111f2c;border-color:#293d4d}.cc-v5-cem-stat b{color:#fff}
 }
 </style>
@@ -149,7 +175,15 @@
         <p>لیدها، تماس‌ها، نوبت‌ها و ارتباط با تیم؛ همه در یک میز کار روشن و بیمارمحور.</p>
       </div>
     </div>
-    <div class="cc-v5-motto"><span class="cc-v5-motto-ico">✦</span><div><small>شعار امروز</small><strong>هر تماس، یک قدم برای حال بهتر</strong></div></div>
+    <div class="cc-v6-hero-side">
+      <div class="cc-v5-motto"><span class="cc-v5-motto-ico">✦</span><div><small>شعار امروز</small><strong>هر تماس، یک قدم برای حال بهتر</strong></div></div>
+      <div class="cc-v6-flow" aria-label="مسیر مراجعه">
+        <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">☎</span><strong>تماس</strong><small>شروع ارتباط</small></div>
+        <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">↻</span><strong>پیگیری</strong><small>ادامه مسیر</small></div>
+        <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">▣</span><strong>نوبت</strong><small>ثبت زمان</small></div>
+        <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">♥</span><strong>مراجعه</strong><small>تجربه بهتر</small></div>
+      </div>
+    </div>
   </header>
 
   <section class="cc-v5-kpis">
@@ -207,13 +241,41 @@
         </div>
       </section>
 
-      <section class="cc-v5-card">
-        <header class="cc-v5-section-head"><div><h3>تجربه مشتری (CEM)</h3><p>یک نگاه سریع به مواردی که امروز نیاز به توجه دارند.</p></div><a href="?status=contacted">پیگیری‌ها ←</a></header>
-        <div class="cc-v5-cem">
-          <div class="cc-v5-cem-focus"><span class="cc-v5-cem-icon">♥</span><div><strong>تمرکز امروز: پیگیری انسانی و منظم</strong><p>مراجع باید احساس کند از اولین تماس، یک نفر مشخص حواسش به مسیر او هست.</p></div></div>
-          <div class="cc-v5-cem-stats"><div class="cc-v5-cem-stat"><b>{{ stats.follow_up }}</b><span>پیگیری باز</span></div><div class="cc-v5-cem-stat"><b>{{ stats.appointment_today }}</b><span>نوبت امروز</span></div><div class="cc-v5-cem-stat"><b>{{ internal_unread }}</b><span>پیام داخلی</span></div></div>
-        </div>
-      </section>
+      <div class="cc-v6-lower">
+        <section class="cc-v5-card">
+          <header class="cc-v5-section-head"><div><h3>تجربه مشتری (CEM)</h3><p>یک نگاه سریع به مواردی که امروز نیاز به توجه دارند.</p></div><a href="?status=contacted">پیگیری‌ها ←</a></header>
+          <div class="cc-v5-cem">
+            <div class="cc-v5-cem-focus"><span class="cc-v5-cem-icon">♥</span><div><strong>تمرکز امروز: پیگیری انسانی و منظم</strong><p>مراجع باید احساس کند از اولین تماس، یک نفر مشخص حواسش به مسیر او هست.</p></div></div>
+            <div class="cc-v5-cem-stats"><div class="cc-v5-cem-stat"><b>{{ stats.follow_up }}</b><span>پیگیری باز</span></div><div class="cc-v5-cem-stat"><b>{{ stats.appointment_today }}</b><span>نوبت امروز</span></div><div class="cc-v5-cem-stat"><b>{{ internal_unread }}</b><span>پیام داخلی</span></div></div>
+          </div>
+        </section>
+
+        <section class="cc-v5-card cc-v6-chat">
+          <header class="cc-v5-section-head">
+            <div><h3>ارتباط داخلی تیم {% if internal_unread %}<span class="cc-v5-count">{{ internal_unread }}</span>{% endif %}</h3><p>پیام سریع به منشی، همکار کال‌سنتر یا سایر پرسنل</p></div>
+            <a href="{% url 'internal_messages' %}">گفتگوی کامل ←</a>
+          </header>
+          <div class="cc-v6-chat-feed" id="ccDashboardChatFeed">
+            {% for item in recent_internal_messages %}
+            <div class="cc-v6-chat-item">
+              <span class="cc-v6-chat-avatar">{% if item.sender.profile.avatar %}<img src="{{ item.sender.profile.avatar.url }}" alt="">{% else %}{{ item.sender.first_name|first|default:item.sender.username|first }}{% endif %}</span>
+              <div class="cc-v6-chat-copy"><strong>{{ item.sender.get_full_name|default:item.sender.username }}</strong><p>{{ item.body|truncatechars:110 }}</p><small>{{ item.created_at|jdatetime }}</small></div>
+            </div>
+            {% empty %}<div class="cc-v6-chat-empty">هنوز پیامی ثبت نشده؛ از کادر پایین اولین پیام را بفرستید.</div>{% endfor %}
+          </div>
+          <div class="cc-v6-chat-compose">
+            <form class="cc-v6-chat-form" id="ccQuickMessageForm">{% csrf_token %}
+              <select name="recipient" required aria-label="گیرنده">
+                <option value="">انتخاب همکار...</option>
+                {% for person in chat_contacts %}<option value="{{ person.pk }}">{{ person.get_full_name|default:person.username }}{% if person.profile.job_title %} · {{ person.profile.job_title }}{% endif %}</option>{% endfor %}
+              </select>
+              <textarea name="body" maxlength="1200" required placeholder="پیام کوتاه به همکار..."></textarea>
+              <button type="submit">ارسال</button>
+            </form>
+            <div class="cc-v6-chat-status" id="ccQuickMessageStatus"></div>
+          </div>
+        </section>
+      </div>
     </section>
 
     <aside class="cc-v5-side">
@@ -238,25 +300,6 @@
   </div>
 </div>
 
-<div class="cc-mini-chat" id="ccMiniChat">
-  <button type="button" class="cc-mini-toggle" id="ccMiniToggle" aria-expanded="false" aria-controls="ccMiniPanel">✉{% if internal_unread %}<b>{{ internal_unread }}</b>{% endif %}</button>
-  <section class="cc-mini-panel" id="ccMiniPanel" hidden>
-    <header class="cc-mini-head">
-      <div class="cc-mini-title"><span>✉</span><div><strong>گفتگوی تیم</strong><small>آخرین پیام‌های داخلی</small></div></div>
-      <a href="{% url 'internal_messages' %}">صفحه کامل ←</a>
-    </header>
-    <div class="cc-mini-list">
-      {% for item in recent_internal_messages %}
-      <a class="cc-mini-message" href="{% url 'internal_messages' %}{% if item.recipient_id %}?with={% if item.sender_id == user.id %}{{ item.recipient_id }}{% else %}{{ item.sender_id }}{% endif %}{% endif %}">
-        <span class="cc-mini-avatar">{% if item.sender.profile.avatar %}<img src="{{ item.sender.profile.avatar.url }}" alt="">{% else %}{{ item.sender.first_name|first|default:item.sender.username|first }}{% endif %}</span>
-        <span><strong>{{ item.sender.get_full_name|default:item.sender.username }}</strong><p>{{ item.body|truncatechars:82 }}</p></span>
-      </a>
-      {% empty %}<div class="cc-mini-empty">هنوز پیام داخلی ثبت نشده است.</div>{% endfor %}
-    </div>
-    <footer class="cc-mini-foot"><span>{% if internal_unread %}{{ internal_unread }} پیام خوانده‌نشده{% else %}همه پیام‌ها دیده شده‌اند{% endif %}</span><a href="{% url 'internal_messages' %}">شروع گفتگو</a></footer>
-  </section>
-</div>
-
 <script>
 (function(){
   const list=document.getElementById('ccLeadList'),search=document.getElementById('ccSearch'),source=document.getElementById('ccSourceFilter'),buttons=[...document.querySelectorAll('[data-time]')];
@@ -268,15 +311,35 @@
     search.addEventListener('input',apply);source.addEventListener('change',apply);buttons.forEach(b=>b.addEventListener('click',()=>{buttons.forEach(x=>x.classList.remove('active'));b.classList.add('active');time=b.dataset.time;apply()}));
   }
 
-  const toggle=document.getElementById('ccMiniToggle'),panel=document.getElementById('ccMiniPanel');
-  if(toggle&&panel){
-    toggle.addEventListener('click',function(){
-      const open=panel.hidden;panel.hidden=!open;toggle.setAttribute('aria-expanded',open?'true':'false');
+  const quickForm=document.getElementById('ccQuickMessageForm');
+  const quickStatus=document.getElementById('ccQuickMessageStatus');
+  const quickFeed=document.getElementById('ccDashboardChatFeed');
+  if(quickForm&&quickStatus&&quickFeed){
+    quickForm.addEventListener('submit',async function(e){
+      e.preventDefault();
+      const button=quickForm.querySelector('button[type="submit"]');
+      button.disabled=true;quickStatus.classList.remove('error');quickStatus.textContent='در حال ارسال...';
+      try{
+        const response=await fetch('{% url "call_center_quick_message" %}',{
+          method:'POST',body:new FormData(quickForm),credentials:'same-origin',
+          headers:{'X-Requested-With':'XMLHttpRequest'}
+        });
+        const data=await response.json();
+        if(!response.ok||!data.ok)throw new Error(data.error||'ارسال پیام انجام نشد.');
+        const empty=quickFeed.querySelector('.cc-v6-chat-empty');if(empty)empty.remove();
+        const item=document.createElement('div');item.className='cc-v6-chat-item';
+        const initial=(data.message.sender||'?').trim().charAt(0)||'?';
+        item.innerHTML='<span class="cc-v6-chat-avatar">'+initial+'</span><div class="cc-v6-chat-copy"><strong>'+escapeHtml(data.message.sender)+'</strong><p>'+escapeHtml(data.message.body)+'</p><small>الان · به '+escapeHtml(data.message.recipient)+'</small></div>';
+        quickFeed.prepend(item);
+        quickForm.querySelector('textarea').value='';
+        quickStatus.textContent='پیام ارسال شد ✓';
+      }catch(err){
+        quickStatus.classList.add('error');quickStatus.textContent=err.message||'خطا در ارسال پیام';
+      }finally{button.disabled=false;}
     });
-    document.addEventListener('click',function(e){
-      if(!panel.hidden&&!document.getElementById('ccMiniChat').contains(e.target)){panel.hidden=true;toggle.setAttribute('aria-expanded','false');}
-    });
-    document.addEventListener('keydown',function(e){if(e.key==='Escape'){panel.hidden=true;toggle.setAttribute('aria-expanded','false');}});
+  }
+  function escapeHtml(value){
+    return String(value).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});
   }
 })();
 </script>
