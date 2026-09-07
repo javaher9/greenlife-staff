@@ -98,6 +98,21 @@ class InternalMessagingTests(TestCase):
         self.assertEqual(response.status_code,200)
         self.assertContains(response,'id="msgContactSearch"')
         self.assertContains(response,"window.setInterval(poll,6000)")
+        self.assertContains(response,'مرکز پیام داخلی')
+        self.assertContains(response,'grid-template-columns:minmax(0,1fr) 320px!important')
+        self.assertContains(response,'grid-template-areas:"thread contacts"!important')
+        self.assertContains(response,'position:relative!important;inset:auto!important;width:auto!important')
+        self.assertContains(response,'grid-template-columns:180px minmax(0,1fr) 82px!important')
+        self.assertContains(response,'پیام‌ها خودکار تازه می‌شوند')
+
+    def test_contact_list_shows_recent_direct_message_preview(self):
+        InternalMessage.objects.create(
+            sender=self.call_center,recipient=self.receptionist,body='آخرین هماهنگی بیمار فردا'
+        )
+        self.client.force_login(self.call_center)
+        response=self.client.get(reverse('internal_messages'))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'آخرین هماهنگی بیمار فردا')
 
     def test_referrer_cannot_access_staff_messages(self):
         self.client.force_login(self.referrer)
