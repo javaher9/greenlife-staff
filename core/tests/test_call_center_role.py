@@ -93,9 +93,10 @@ class CallCenterRoleTests(TestCase):
             user=self.staff,notification_type='internal_message',
         ).exists())
 
-    def test_quick_message_rejects_referrer_recipient(self):
+    def test_quick_message_rejects_external_referrer_recipient(self):
+        external=self.make_user('external-referrer','referrer','معرف بیرونی')
         response=self.client.post(reverse('call_center_quick_message'),{
-            'recipient':str(self.referrer_user.pk),
+            'recipient':str(external.pk),
             'body':'نباید ارسال شود',
         })
         self.assertEqual(response.status_code,400)
