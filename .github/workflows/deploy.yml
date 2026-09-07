@@ -35,6 +35,14 @@ jobs:
             echo "Low disk detected; reclaiming safe disposable space..."
             sudo journalctl --vacuum-size=200M || true
             sudo apt-get clean || true
+
+            # Remove only stopped containers owned by this Compose project.
+            # Stopped containers can pin multi-GB old images and prevent image prune.
+            # Never remove running containers or any Docker volume.
+            echo "Stopped GreenLife containers before cleanup:"
+            docker ps -a --filter "label=com.docker.compose.project=greenlife-staff-runtime"               --filter "status=exited" --format '{{.ID}} {{.Names}} {{.Status}}' || true
+            docker container prune -f               --filter "label=com.docker.compose.project=greenlife-staff-runtime" || true
+
             docker image prune -af || true
             docker builder prune -af || true
             find "$HOME/actions-runner/_diag" -type f -mtime +7 -delete 2>/dev/null || true
@@ -126,6 +134,7 @@ jobs:
           bash -n entrypoint.sh scripts/*.sh
 
       - name: Sync source to fixed production directory
+        id: sync_source
         shell: bash
         env:
           # Docker is installed as a confined Snap. This bind-mounted path is
@@ -188,7 +197,7 @@ jobs:
           "$DEPLOY_PATH/scripts/deploy_runner.sh"
 
       - name: Roll back source if deployment fails
-        if: failure()
+        if: ${{ failure() && steps.sync_source.outcome == 'success' }}
         shell: bash
         env:
           DEPLOY_PATH: /home/ubuntu/greenlife-staff-runtime
