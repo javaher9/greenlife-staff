@@ -449,6 +449,13 @@ def call_center_dashboard(request):
     internal_unread=InternalMessage.objects.filter(
         recipient=request.user,read_at__isnull=True
     ).count()
+    chat_contacts=list(
+        User.objects.filter(is_active=True,profile__is_active=True)
+        .exclude(pk=request.user.pk)
+        .exclude(profile__role='referrer')
+        .select_related('profile','profile__branch')
+        .order_by('profile__branch__name','first_name','last_name','username')
+    )
     return render(request,'core/call_center/dashboard.html',{
         'leads':leads,'statuses':ReferralLead.STATUS,'status_filter':status,
         'group_filter':group_filter,'groups':groups,
@@ -457,7 +464,47 @@ def call_center_dashboard(request):
         'appointment_slots':appointment_slots,
         'recent_internal_messages':recent_internal_messages,
         'internal_unread':internal_unread,
+        'chat_contacts':chat_contacts,
     })
+
+
+@call_center_required
+def call_center_quick_message(request):
+    if request.method!='POST':
+        return JsonResponse({'ok':False,'error':'method not allowed'},status=405)
+    body=(request.POST.get('body') or '').strip()
+    target=(request.POST.get('recipient') or '').strip()
+    if not body:
+        return JsonResponse({'ok':False,'error':'متن پیام خالی است.'},status=400)
+    if len(body)>1200:
+        return JsonResponse({'ok':False,'error':'پیام حداکثر ۱۲۰۰ کاراکتر می‌تواند باشد.'},status=400)
+    if not target.isdigit():
+        return JsonResponse({'ok':False,'error':'گیرنده معتبر نیست.'},status=400)
+    recipient=get_object_or_404(
+        User.objects.select_related('profile','profile__branch'),
+        pk=int(target),is_active=True,profile__is_active=True,
+    )
+    if recipient.pk==request.user.pk or recipient.profile.role=='referrer':
+        return JsonResponse({'ok':False,'error':'گیرنده معتبر نیست.'},status=400)
+    item=InternalMessage.objects.create(sender=request.user,recipient=recipient,body=body)
+    StaffNotification.objects.create(
+        user=recipient,
+        title='پیام داخلی جدید',
+        message=f'{request.user.get_full_name() or request.user.username}: {body[:140]}',
+        notification_type='internal_message',
+    )
+    response=JsonResponse({
+        'ok':True,
+        'message':{
+            'id':item.pk,
+            'sender':request.user.get_full_name() or request.user.username,
+            'recipient':recipient.get_full_name() or recipient.username,
+            'body':item.body,
+            'time':timezone.localtime(item.created_at).strftime('%H:%M'),
+        },
+    })
+    response['Cache-Control']='no-store, private'
+    return response
 
 
 @call_center_required
