@@ -13,6 +13,7 @@ from PIL import Image, ImageDraw
 from core.finance import finance_summary
 from core.jalali import format_jalali
 from core.models import AuditLog, Branch, EmployeeProfile, FinancialTransaction, ReferralLead, ReferralProfile, VisitAppointment
+from core.templatetags.jalali_tags import en_number, million_toman
 
 
 @override_settings(ROOT_URLCONF='greenlife.urls')
@@ -130,6 +131,8 @@ class ConsultantFinanceEntryTests(TestCase):
         self.assertEqual(response.status_code,200)
         self.assertContains(response,'class="fin-page"')
         self.assertContains(response,'class="stats fin-kpis"')
+        self.assertContains(response,'میلیون تومان')
+        self.assertContains(response,'1.235')
         self.assertContains(response,'class="fin-table"')
         self.assertContains(response,'table-layout:fixed')
         self.assertContains(response,'position:sticky;left:0')
@@ -140,6 +143,13 @@ class ConsultantFinanceEntryTests(TestCase):
         self.assertContains(response,'fin-btn analyze')
         self.assertContains(response,'linear-gradient(145deg,#377c65')
         self.assertContains(response,'linear-gradient(145deg,#91445f')
+
+    def test_finance_amounts_use_compact_latin_millions(self):
+        self.assertEqual(million_toman(194000000),'194')
+        self.assertEqual(million_toman(2000000),'2')
+        self.assertEqual(million_toman(2500000),'2.5')
+        self.assertEqual(million_toman(2502500),'2.503')
+        self.assertEqual(en_number(34),'34')
 
     def test_consultant_sees_only_destination_codes_not_internal_meanings(self):
         self.client.force_login(self.consultant)
