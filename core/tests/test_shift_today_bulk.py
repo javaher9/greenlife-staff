@@ -54,7 +54,10 @@ class ShiftTodayBulkTests(TestCase):
         response=self.client.get(reverse('shift_today_bulk'),{'mode':'weekly','branch':self.branch.pk})
         self.assertEqual(response.status_code,200)
         self.assertContains(response,'برنامه هفتگی شعبه')
-        self.assertContains(response,'تغییر برنامه یک پرسنل')
+        self.assertContains(response,'پرسنل این شعبه')
+        self.assertContains(response,self.employee.get_full_name())
+        self.assertContains(response,'staff-gallery-card')
+        self.assertNotContains(response,'id="employeePicker"')
 
     def test_internal_manager_cannot_assign_management_account(self):
         self.client.force_login(self.internal)

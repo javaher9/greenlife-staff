@@ -1396,6 +1396,13 @@ def shift_today_bulk(request):
         rows.append({'user':user,'start':rule.get('start'),'end':rule.get('end'),'source':source_labels.get(rule.get('source'),'برنامه پایه'),'is_personal':user.pk in assignments,'is_off':rule.get('is_off',False)})
 
     active_filter=Q(effective_until__isnull=True)|Q(effective_until__gte=day)
+    personal_weekly_user_ids=set(
+        EmployeeWorkSchedule.objects.filter(
+            user_id__in=scoped_users,effective_from__lte=day,
+        ).filter(active_filter).values_list('user_id',flat=True)
+    )
+    for row in rows:
+        row['has_weekly_override']=row['user'].pk in personal_weekly_user_ids
     branch_rules={}
     if selected_branch:
         for rule in BranchWorkSchedule.objects.filter(branch=selected_branch,effective_from__lte=day).filter(active_filter).order_by('weekday','-effective_from','-pk'):
