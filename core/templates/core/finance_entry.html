@@ -1,6 +1,6 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
 <section class="hero">
-  <div><span class="eyebrow">ثبت فروش مشاور</span><h1>ثبت فروش شعبه</h1><p>فروش‌های نوبت‌گرفته از افسریه از مراجعه مستقیم شعبه جدا ثبت می‌شوند.</p></div>
+  <div><span class="eyebrow">ثبت دریافت شعبه</span><h1>ثبت فروش و پرداخت</h1><p>مبلغ دریافتی و پکیج/خدمت را ثبت کنید؛ فروش افسریه از مراجعه مستقیم شعبه جدا می‌شود.</p></div>
 </section>
 
 {% if pending_appointments %}<section class="panel">
@@ -27,13 +27,14 @@
       <label>{{ form.sale_reason.label }}{{ form.sale_reason }}{{ form.sale_reason.errors }}</label>
       <label>{{ form.sale_origin.label }}{{ form.sale_origin }}{{ form.sale_origin.errors }}</label>
       <label>{{ form.payment_method.label }}{{ form.payment_method }}{{ form.payment_method.errors }}</label>
+      <label>{{ form.service.label }}{{ form.service }}{{ form.service.errors }}</label>
       <label>{{ form.terminal_or_payee.label }}{{ form.terminal_or_payee }}{{ form.terminal_or_payee.errors }}</label>
       <label>{{ form.tracking_number.label }}{{ form.tracking_number }}{{ form.tracking_number.errors }}</label>
       <label>{{ form.destination_card.label }}{{ form.destination_card }}{{ form.destination_card.errors }}</label>
     </div>
     <label>{{ form.description.label }}{{ form.description }}{{ form.description.errors }}</label>
     <label>{{ form.receipt_image.label }}{{ form.receipt_image }}{{ form.receipt_image.errors }}<small>عکس رسید، کارت‌به‌کارت یا صفحه تراکنش؛ حداکثر ۱۰ مگابایت. تصویر خودکار فشرده و تحلیل می‌شود، اما مبلغ دستی تغییر نمی‌کند.</small></label>
-    <button class="primary" type="submit">ثبت و ارسال برای بررسی</button>
+    <button class="primary" type="submit">ثبت دریافت و ارسال برای بررسی</button>
   </form>
 </section>
 
