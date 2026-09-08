@@ -211,7 +211,7 @@ class ConsultantFinanceEntryTests(TestCase):
     def test_consultant_sees_only_own_branch_call_center_appointments_and_sale_is_attributed_to_afsariyeh(self):
         call_center=self.make_user('cc-agent','call_center',None,'کارشناس','افسریه')
         ref_user=self.make_user('referrer-user','referrer',None,'معرف','نمونه')
-        referrer=ReferralProfile.objects.create(user=ref_user,referral_code='REF-TEST',level=1)
+        referrer=ReferralProfile.objects.create(user=ref_user,referral_code='REF-TEST')
         lead=ReferralLead.objects.create(
             referrer=referrer,full_name='فروش افسریه',phone='09121112222',
             assigned_to=call_center.profile,status='appointment',
@@ -243,9 +243,53 @@ class ConsultantFinanceEntryTests(TestCase):
         self.assertEqual(entry.sale_origin,'afsariyeh')
         self.assertEqual(entry.sale_reason,'daya_package')
         self.assertEqual(entry.raw_data['call_center_user_id'],call_center.pk)
+        self.assertEqual(entry.call_center_owner,call_center)
         appointment.refresh_from_db(); lead.refresh_from_db()
         self.assertEqual(appointment.status,'completed')
         self.assertEqual(lead.status,'won')
+
+    def test_first_call_center_appointment_owner_never_changes(self):
+        first=self.make_user('flower-first','call_center',None,'گل','رز')
+        second=self.make_user('flower-second','call_center',None,'گل','یاس')
+        ref_user=self.make_user('owner-referrer','referrer',None,'معرف','مالکیت')
+        referrer=ReferralProfile.objects.create(user=ref_user,referral_code='OWNER-TEST')
+        lead=ReferralLead.objects.create(
+            referrer=referrer,full_name='مراجعه مالکیت',phone='09120009999',assigned_to=first.profile,
+        )
+        VisitAppointment.objects.create(
+            lead=lead,branch=self.branch,full_name=lead.full_name,phone=lead.phone,
+            appointment_date=timezone.localdate(),appointment_time=time(9,0),
+            source='call_center',created_by=first,
+        )
+        lead.refresh_from_db()
+        self.assertEqual(lead.first_appointment_by,first)
+        VisitAppointment.objects.create(
+            lead=lead,branch=self.other_branch,full_name=lead.full_name,phone=lead.phone,
+            appointment_date=timezone.localdate(),appointment_time=time(9,15),
+            source='call_center',created_by=second,
+        )
+        lead.refresh_from_db()
+        self.assertEqual(lead.first_appointment_by,first)
+
+    def test_finance_dashboard_shows_flower_branch_category_and_smart_analysis(self):
+        flower=self.make_user('flower-rose','call_center',None,'رز','افسریه')
+        occurred=timezone.now()
+        FinancialTransaction.objects.create(
+            source='manual',branch=self.branch,occurred_at=occurred,amount=1940000000,
+            entry_type='inc',sale_reason='device_package',person_name='مراجع',
+            review_status='approved',recorded_by=self.consultant,call_center_owner=flower,
+        )
+        self.client.force_login(self.admin)
+        response=self.client.get('/finance/')
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'عملکرد گل‌های کال‌سنتر')
+        self.assertContains(response,'گل رز افسریه')
+        self.assertContains(response,'عملکرد شعب')
+        self.assertContains(response,'دستگاه و خدمات')
+        self.assertContains(response,'پکیج دستگاه')
+        self.assertContains(response,'فروش بر اساس منشأ لید')
+        self.assertContains(response,'مراجعه مستقیم شعبه')
+        self.assertContains(response,'تحلیل هوشمند مالی')
 
     def test_receipt_and_positive_manual_amount_are_required(self):
         self.client.force_login(self.consultant)

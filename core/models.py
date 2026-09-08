@@ -159,6 +159,11 @@ class ReferralLead(models.Model):
     sync_status=models.CharField(max_length=20,choices=SYNC_STATUS,default='local',db_index=True)
     source_url=models.URLField(max_length=500,blank=True)
     created_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='created_referral_leads')
+    first_appointment_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,
+        related_name='first_owned_referral_leads',
+        help_text='مالک دائمی مراجعه؛ کاربری که اولین نوبت کال‌سنتر را ثبت کرده است.',
+    )
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
     class Meta:
@@ -229,7 +234,14 @@ class VisitAppointment(models.Model):
 
     def save(self,*args,**kwargs):
         self.full_clean(exclude=['branch','appointment_date','appointment_time'] if kwargs.pop('_skip_slot_unique_validation',False) else None)
-        return super().save(*args,**kwargs)
+        result=super().save(*args,**kwargs)
+        if self.lead_id and self.source=='call_center' and self.created_by_id:
+            # A conditional UPDATE makes the first booking owner immutable even
+            # when two requests reach the server at almost the same time.
+            ReferralLead.objects.filter(
+                pk=self.lead_id,first_appointment_by__isnull=True,
+            ).update(first_appointment_by_id=self.created_by_id)
+        return result
 
     def __str__(self):
         return f'{self.appointment_date} {self.appointment_time:%H:%M} - {self.full_name}'
@@ -571,6 +583,11 @@ class FinancialTransaction(models.Model):
     analyzed_at=models.DateTimeField(null=True,blank=True)
     review_status=models.CharField(max_length=20,choices=REVIEW_STATUS,default='approved')
     recorded_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='recorded_financial_transactions')
+    call_center_owner=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,
+        related_name='attributed_financial_transactions',
+        help_text='گل کال‌سنتر که اولین نوبت این مراجعه را ثبت کرده است.',
+    )
     reviewed_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='reviewed_financial_transactions')
     reviewed_at=models.DateTimeField(null=True,blank=True)
     review_note=models.CharField(max_length=300,blank=True)

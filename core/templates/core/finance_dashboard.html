@@ -240,6 +240,49 @@ body.gl-page-finance_dashboard .fin-btn.delete{
   border-color:#864554!important;background:rgba(113,43,58,.52)!important;color:#ffd2db!important;font-size:8px!important;box-shadow:none!important
 }
 .fin-million{direction:ltr;unicode-bidi:isolate;font-family:Tahoma,Arial,sans-serif;font-variant-numeric:tabular-nums}
+.fin-flower-panel{overflow:hidden;padding:20px!important}
+.fin-flower-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:14px}
+.fin-flower-head p{margin:5px 0 0;color:#aebdca;font-size:10px;font-weight:700}
+.fin-flower-legend{display:flex;gap:7px;flex-wrap:wrap;direction:ltr}
+.fin-flower-legend span{padding:5px 8px;border-radius:999px;color:#fff;font-size:8px;font-weight:900;border:1px solid rgba(255,255,255,.1)}
+.fin-flower-legend .today{background:#286b51}.fin-flower-legend .month{background:#654993}.fin-flower-legend .year{background:#245f7b}
+.fin-flower-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:10px}
+.fin-flower-card{padding:14px;border:1px solid rgba(167,129,239,.16);border-radius:16px;background:linear-gradient(145deg,rgba(39,30,58,.7),rgba(16,25,36,.88));box-shadow:inset 0 1px 0 rgba(255,255,255,.045)}
+.fin-flower-name{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.fin-flower-name strong{color:#fff;font-size:14px;font-weight:950}.fin-flower-name small{color:#c9b6f4;font-size:8px;font-weight:850}
+.fin-flower-metric{display:grid;grid-template-columns:37px minmax(0,1fr) 68px;gap:7px;align-items:center;margin-top:8px}
+.fin-flower-metric>span{color:#bcc9d5;font-size:8px;font-weight:850}.fin-flower-metric>b{color:#fff;text-align:left;font-size:10px;font-weight:950}
+.fin-flower-track{height:7px;overflow:hidden;border-radius:99px;background:rgba(255,255,255,.07)}
+.fin-flower-track i{display:block;height:100%;min-width:2px;border-radius:inherit;box-shadow:0 0 12px currentColor}
+.fin-flower-metric.today i{background:linear-gradient(90deg,#2c775b,#64c39c)}
+.fin-flower-metric.month i{background:linear-gradient(90deg,#684796,#a37bdf)}
+.fin-flower-metric.year i{background:linear-gradient(90deg,#28647f,#58add0)}
+.fin-analytics-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+.fin-chart-list{display:grid;gap:11px;margin-top:13px}
+.fin-chart-row{display:grid;grid-template-columns:90px minmax(0,1fr) 84px;gap:9px;align-items:center}
+.fin-chart-row>strong{color:#eef4f9;font-size:10px}.fin-chart-row>small{color:#fff;text-align:left;font-size:9px;font-weight:900}
+.fin-dual-track{display:grid;gap:4px}.fin-dual-track span{display:block;height:6px;min-width:2px;border-radius:99px}
+.fin-dual-track .income{background:linear-gradient(90deg,#2d7359,#67c79f)}.fin-dual-track .expense{background:linear-gradient(90deg,#773849,#d06c83)}
+.fin-category-row{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.055)}
+.fin-category-row:last-child{border-bottom:0}.fin-category-head{display:flex;justify-content:space-between;gap:10px;color:#edf3f8;font-size:10px;font-weight:850}
+.fin-category-track{height:8px;margin-top:7px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+.fin-category-track i{display:block;height:100%;min-width:2px;border-radius:inherit;background:linear-gradient(90deg,#624397,#a779df)}
+.fin-ai-panel{position:relative;overflow:hidden;border-color:rgba(117,82,191,.34)!important;background:radial-gradient(circle at 5% 0,rgba(132,83,226,.18),transparent 34%),linear-gradient(135deg,#182231,#101722)!important}
+.fin-ai-panel::after{content:"AI";position:absolute;left:18px;top:11px;color:rgba(206,181,255,.12);font-size:54px;font-weight:950}
+.fin-ai-title{display:flex;align-items:center;gap:9px}.fin-ai-dot{width:9px;height:9px;border-radius:50%;background:#9b73e1;box-shadow:0 0 15px #9b73e1}
+.fin-ai-panel p{position:relative;z-index:1;margin:11px 0 0;max-width:900px;color:#dce6ef;font-size:11px;font-weight:700;line-height:2}
+.fin-ai-mode{display:inline-block;margin-top:9px;padding:4px 8px;border-radius:99px;background:rgba(116,79,181,.2);color:#d8c3ff;font-size:8px;font-weight:900}
+.fin-dimension-panel{padding:18px!important}.fin-dimension-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:9px;margin-top:12px}
+.fin-dimension-card{padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,.075);background:rgba(255,255,255,.035)}
+.fin-dimension-card>header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px;color:#fff}
+.fin-dimension-card>header strong{font-size:11px;font-weight:950}.fin-dimension-card>header small{color:#aebdca;font-size:8px}
+.fin-triplet{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;direction:rtl}
+.fin-triplet>div{padding:8px 5px;border-radius:10px;text-align:center;border:1px solid rgba(255,255,255,.06);background:linear-gradient(145deg,rgba(35,48,62,.9),rgba(19,27,38,.9))}
+.fin-triplet>div:nth-child(2){background:linear-gradient(145deg,rgba(79,55,116,.72),rgba(37,29,54,.9))}.fin-triplet>div:nth-child(3){background:linear-gradient(145deg,rgba(31,83,67,.72),rgba(22,42,36,.9))}
+.fin-triplet span{display:block;color:#aebdca;font-size:7px;font-weight:850}.fin-triplet b{display:block;margin-top:4px;color:#fff;font-size:12px;font-weight:950}
+.fin-expense-note{display:block;margin-top:7px;color:#e0a8b5;font-size:8px;font-weight:850}
+@media(max-width:700px){.fin-flower-head{align-items:flex-start;flex-direction:column}.fin-flower-grid{grid-template-columns:1fr}}
+@media(max-width:900px){.fin-analytics-grid{grid-template-columns:1fr}}
 </style>
 
 <div class="fin-page">
@@ -269,6 +312,55 @@ body.gl-page-finance_dashboard .fin-btn.delete{
     <div><b class="fin-million">{{ summary.count|en_number }}</b><span>تراکنش تأییدشده</span><small>تعداد ثبت نهایی</small></div>
   </section>
 
+  <section class="fin-panel fin-flower-panel" aria-label="تحلیل فروش گل‌های کال‌سنتر">
+    <div class="fin-flower-head">
+      <div><h2>عملکرد گل‌های کال‌سنتر</h2><p>فروش‌های تأییدشده بر اساس مالک اولین نوبت · امروز، ماه و سال شمسی جاری</p></div>
+      <div class="fin-flower-legend"><span class="today">TODAY</span><span class="month">MONTH</span><span class="year">YEAR</span></div>
+    </div>
+    <div class="fin-flower-grid">
+      {% for flower in flower_sales.rows %}
+      <article class="fin-flower-card">
+        <div class="fin-flower-name"><strong>✦ گل {{ flower.flower_name }}</strong><small><span class="fin-million">{{ flower.sales_count|en_number }}</span> فروش سال</small></div>
+        <div class="fin-flower-metric today"><span>امروز</span><div class="fin-flower-track"><i style="width:{% widthratio flower.today flower_sales.max_today 100 %}%"></i></div><b class="fin-million">{{ flower.today|million_toman }}</b></div>
+        <div class="fin-flower-metric month"><span>ماه</span><div class="fin-flower-track"><i style="width:{% widthratio flower.month flower_sales.max_month 100 %}%"></i></div><b class="fin-million">{{ flower.month|million_toman }}</b></div>
+        <div class="fin-flower-metric year"><span>سال</span><div class="fin-flower-track"><i style="width:{% widthratio flower.year flower_sales.max_year 100 %}%"></i></div><b class="fin-million">{{ flower.year|million_toman }}</b></div>
+      </article>
+      {% empty %}<p class="fin-empty">هنوز فروش تأییدشده‌ای با نوبت کال‌سنتر ثبت نشده است.</p>{% endfor %}
+    </div>
+  </section>
+
+  <section class="fin-panel fin-dimension-panel" aria-label="مقایسه شعب">
+    <div class="sectionhead"><div><h2>عملکرد شعب</h2><small>درآمد تأییدشده هر شعبه · امروز، ماه و سال شمسی</small></div></div>
+    <div class="fin-dimension-grid">{% for branch in visual_analytics.branches %}
+      <article class="fin-dimension-card"><header><strong>⌂ {{ branch.branch__name|default:'بدون شعبه' }}</strong><small><span class="fin-million">{{ branch.count|en_number }}</span> تراکنش سال</small></header>
+        <div class="fin-triplet"><div><span>امروز</span><b class="fin-million">{{ branch.today|million_toman }}</b></div><div><span>ماه</span><b class="fin-million">{{ branch.month|million_toman }}</b></div><div><span>سال</span><b class="fin-million">{{ branch.year|million_toman }}</b></div></div>
+        <small class="fin-expense-note">هزینه ماه: <b class="fin-million">{{ branch.expense_month|million_toman }}</b> میلیون تومان</small>
+      </article>{% endfor %}</div>
+  </section>
+
+  <section class="fin-panel fin-dimension-panel" aria-label="تحلیل دستگاه و خدمات">
+    <div class="sectionhead"><div><h2>دستگاه و خدمات</h2><small>پکیج دستگاه، دایا، لیپولیتیک، پوست و سایر · میلیون تومان</small></div></div>
+    <div class="fin-dimension-grid">{% for item in visual_analytics.categories %}
+      <article class="fin-dimension-card"><header><strong>◇ {{ item.label }}</strong><small><span class="fin-million">{{ item.count|en_number }}</span> ثبت سال</small></header>
+        <div class="fin-triplet"><div><span>امروز</span><b class="fin-million">{{ item.today|million_toman }}</b></div><div><span>ماه</span><b class="fin-million">{{ item.month|million_toman }}</b></div><div><span>سال</span><b class="fin-million">{{ item.year|million_toman }}</b></div></div>
+        <small class="fin-expense-note">هزینه ماه این موضوع: <b class="fin-million">{{ item.expense_month|million_toman }}</b></small>
+      </article>{% endfor %}</div>
+  </section>
+
+  <section class="fin-panel fin-dimension-panel" aria-label="تحلیل منشأ لید">
+    <div class="sectionhead"><div><h2>فروش بر اساس منشأ لید</h2><small>مشخص می‌کند مشتری از پنل، لینک، QR، فایل ورودی یا مراجعه مستقیم آمده است</small></div></div>
+    <div class="fin-dimension-grid">{% for source in visual_analytics.sources %}
+      <article class="fin-dimension-card"><header><strong>◎ {{ source.label }}</strong><small><span class="fin-million">{{ source.count|en_number }}</span> فروش سال</small></header>
+        <div class="fin-triplet"><div><span>امروز</span><b class="fin-million">{{ source.today|million_toman }}</b></div><div><span>ماه</span><b class="fin-million">{{ source.month|million_toman }}</b></div><div><span>سال</span><b class="fin-million">{{ source.year|million_toman }}</b></div></div>
+      </article>{% empty %}<p class="fin-empty">هنوز فروش تأییدشده‌ای با منشأ مشخص وجود ندارد.</p>{% endfor %}</div>
+  </section>
+
+  <section class="fin-panel fin-ai-panel" aria-label="تحلیل هوشمند مالی">
+    <div class="fin-ai-title"><span class="fin-ai-dot"></span><h2>تحلیل هوشمند مالی</h2></div>
+    <p>{{ ai_insight }}</p>
+    <span class="fin-ai-mode">{% if ai_live %}AI ANALYSIS · داده تجمیعی{% else %}SMART ANALYTICS · تحلیل داخلی{% endif %}</span>
+  </section>
+
   <div class="fin-grid">
     <section class="fin-panel">
       <h2>خلاصه شعب</h2>
@@ -292,16 +384,18 @@ body.gl-page-finance_dashboard .fin-btn.delete{
     <div class="fin-tablewrap">
       <table class="fin-table">
         <colgroup>
-          <col class="c-date"><col class="c-branch"><col class="c-consultant"><col class="c-person"><col class="c-type">
+          <col class="c-date"><col class="c-branch"><col class="c-consultant"><col class="c-consultant"><col class="c-consultant"><col class="c-person"><col class="c-type">
           <col class="c-amount"><col class="c-pay"><col class="c-receipt"><col class="c-analysis"><col class="c-review">
         </colgroup>
-        <thead><tr><th>تاریخ</th><th>شعبه</th><th>مشاور</th><th>نام فرد</th><th>نوع</th><th>مبلغ</th><th>مقصد واریز</th><th>سند</th><th>تحلیل عکس</th><th>بررسی</th></tr></thead>
+        <thead><tr><th>تاریخ</th><th>شعبه</th><th>مشاور</th><th>گل کال‌سنتر</th><th>منشأ لید</th><th>نام فرد</th><th>نوع</th><th>مبلغ</th><th>مقصد واریز</th><th>سند</th><th>تحلیل عکس</th><th>بررسی</th></tr></thead>
         <tbody>
         {% for x in manual_entries %}
         <tr>
           <td>{{ x.occurred_at|jdate }}</td>
           <td>{{ x.branch|default:'—' }}</td>
           <td>{{ x.recorded_by.get_full_name|default:x.recorded_by.username }}</td>
+          <td>{% if x.call_center_owner %}<strong>✦ {{ x.call_center_owner.get_full_name|default:x.call_center_owner.username }}</strong>{% else %}<span class="fin-empty">مراجعه مستقیم</span>{% endif %}</td>
+          <td>{% if x.appointment.lead %}<strong>{{ x.appointment.lead.get_source_display }}</strong><small>{% if x.appointment.lead.group %} · {{ x.appointment.lead.group.name }}{% endif %}</small>{% else %}مراجعه مستقیم شعبه{% endif %}</td>
           <td><strong>{{ x.person_name }}</strong></td>
           <td><span class="fin-type">{{ x.get_entry_type_display }}</span></td>
           <td><span class="fin-money fin-million">{{ x.amount|million_toman }}</span> <small>میلیون تومان</small></td>
@@ -343,7 +437,7 @@ body.gl-page-finance_dashboard .fin-btn.delete{
             </div>
           </td>
         </tr>
-        {% empty %}<tr><td colspan="10" class="fin-empty">ثبت دستی وجود ندارد.</td></tr>{% endfor %}
+        {% empty %}<tr><td colspan="12" class="fin-empty">ثبت دستی وجود ندارد.</td></tr>{% endfor %}
         </tbody>
       </table>
     </div>

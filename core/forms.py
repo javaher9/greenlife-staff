@@ -513,7 +513,7 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
                 status='cancelled',
             ).exclude(
                 financial_transactions__isnull=False,
-            ).select_related('lead','created_by','branch').order_by('-appointment_date','-appointment_time')
+            ).select_related('lead','lead__first_appointment_by','created_by','branch').order_by('-appointment_date','-appointment_time')
 
     def clean(self):
         data=super().clean()

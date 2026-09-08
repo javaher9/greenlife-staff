@@ -1067,7 +1067,8 @@ def management_query_api(request):
 
 @finance_required
 def finance_dashboard(request):
-    from .finance import finance_summary
+    from .finance import finance_summary, flower_sales_summary, finance_visual_analytics
+    from .ai import analyze_finance_dashboard
     from .models import IntegrationSyncLog
     day=timezone.localdate(); raw=request.GET.get('date')
     if raw:
@@ -1076,11 +1077,25 @@ def finance_dashboard(request):
     branch=None
     if role_of(request.user)=='manager': branch=request.user.profile.branch
     summary=finance_summary(day,branch)
+    flower_sales=flower_sales_summary(timezone.localdate(),branch)
+    visual_analytics=finance_visual_analytics(timezone.localdate(),branch)
+    ai_payload={
+        'period':f"{visual_analytics['jalali_year']}/{visual_analytics['jalali_month']}",
+        'branches':[{'name':x['branch__name'] or 'بدون شعبه','today':str(x['today']),'month':str(x['month']),'year':str(x['year']),'expense_month':str(x['expense_month'])} for x in visual_analytics['branches']],
+        'flowers':[{'name':x['flower_name'],'today':str(x['today']),'month':str(x['month']),'year':str(x['year'])} for x in flower_sales['rows']],
+        'categories':[{'name':x['label'],'today':str(x['today']),'month':str(x['month']),'year':str(x['year']),'expense_month':str(x['expense_month'])} for x in visual_analytics['categories']],
+        'lead_sources':[{'name':x['label'],'today':str(x['today']),'month':str(x['month']),'year':str(x['year'])} for x in visual_analytics['sources']],
+    }
+    ai_insight,ai_live=analyze_finance_dashboard(ai_payload)
     logs=IntegrationSyncLog.objects.all()[:5]
-    entries=FinancialTransaction.objects.filter(source='manual').select_related('branch','recorded_by')
+    entries=FinancialTransaction.objects.filter(source='manual').select_related(
+        'branch','recorded_by','call_center_owner','appointment__lead__referrer__user','appointment__lead__group',
+    )
     if role_of(request.user)=='manager': entries=entries.filter(branch=request.user.profile.branch)
     return render(request,'core/finance_dashboard.html',{
-        'summary':summary,'logs':logs,'selected':day,'manual_entries':entries[:100],
+        'summary':summary,'flower_sales':flower_sales,'visual_analytics':visual_analytics,
+        'ai_insight':ai_insight,'ai_live':ai_live,
+        'logs':logs,'selected':day,'manual_entries':entries[:100],
     })
 
 @consultant_required
@@ -1111,6 +1126,12 @@ def finance_entry(request):
         obj.sale_origin='afsariyeh' if appointment else 'branch_walk_in'
         if appointment:
             obj.person_name=appointment.full_name
+            owner=appointment.lead.first_appointment_by if appointment.lead_id else None
+            if owner is None:
+                owner=(VisitAppointment.objects.filter(
+                    lead_id=appointment.lead_id,source='call_center',created_by__isnull=False,
+                ).order_by('created_at','id').values_list('created_by',flat=True).first() if appointment.lead_id else None)
+            obj.call_center_owner_id=getattr(owner,'pk',owner) or appointment.created_by_id
         obj.patient_ref=obj.person_name
         obj.service=obj.get_sale_reason_display() if obj.sale_reason else obj.service
         obj.account_heading=obj.service
@@ -1121,7 +1142,8 @@ def finance_entry(request):
             'sale_origin':obj.sale_origin,
             'appointment_id':appointment.pk if appointment else None,
             'lead_id':appointment.lead_id if appointment else None,
-            'call_center_user_id':appointment.created_by_id if appointment else None,
+            'call_center_user_id':obj.call_center_owner_id if appointment else None,
+            'first_appointment_owner_id':obj.call_center_owner_id if appointment else None,
         }
         with transaction.atomic():
             obj.save()

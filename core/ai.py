@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import json
 import mimetypes
 import os
@@ -7,6 +8,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from openai import OpenAI
+from django.core.cache import cache
 from django.utils import timezone
 
 
@@ -120,6 +122,53 @@ def analyze_finance_receipt(transaction):
         transaction.analysis_error=str(exc)[:500]
         transaction.save(update_fields=['analysis_status','analysis_error'])
         return False,f'تحلیل تصویر انجام نشد: {exc}'
+
+
+def analyze_finance_dashboard(payload):
+    """Return a cached, aggregate-only AI commentary; never sends patient data."""
+    key=os.getenv('OPENAI_API_KEY','').strip()
+    branches=payload.get('branches',[])
+    flowers=payload.get('flowers',[])
+    categories=payload.get('categories',[])
+    if not branches and not flowers:
+        return 'برای تحلیل هوشمند هنوز داده تأییدشده کافی وجود ندارد.',False
+    if not key:
+        best_flower=max(flowers,key=lambda x:Decimal(str(x.get('month',0))),default=None)
+        best_branch=max(branches,key=lambda x:Decimal(str(x.get('month',0))),default=None)
+        parts=[]
+        if best_branch: parts.append(f"بیشترین درآمد ماه مربوط به {best_branch['name']} است.")
+        if best_flower: parts.append(f"گل برتر ماه {best_flower['name']} است.")
+        if categories: parts.append(f"بیشترین سهم ثبت‌شده مربوط به {categories[0]['name']} است.")
+        return ' '.join(parts),False
+    serialized=json.dumps(payload,ensure_ascii=False,sort_keys=True,default=str)
+    cache_key='finance-ai:'+hashlib.sha256(serialized.encode('utf-8')).hexdigest()
+    cached=cache.get(cache_key)
+    if cached:
+        return cached,True
+    prompt=(
+        'تو تحلیل‌گر مالی کلینیک گرین‌لایف هستی. داده زیر فقط تجمیعی است. '
+        'در 3 تا 5 جمله فارسی کوتاه و مدیریتی، شعبه برتر، گل برتر، ترکیب فروش/هزینه '
+        'و یک نکته عملی را بگو. عددسازی نکن و فقط از داده استفاده کن. '
+        f'داده: {serialized}'
+    )
+    try:
+        client=OpenAI(api_key=key,timeout=25,max_retries=1)
+        response=client.responses.create(
+            model=os.getenv('OPENAI_ANALYSIS_MODEL','gpt-4.1-mini'),
+            input=prompt,
+        )
+        text=(getattr(response,'output_text','') or '').strip()
+        if not text: raise ValueError('پاسخ تحلیل خالی بود.')
+        cache.set(cache_key,text,60*30)
+        return text,True
+    except Exception:
+        best_flower=max(flowers,key=lambda x:Decimal(str(x.get('month',0))),default=None)
+        best_branch=max(branches,key=lambda x:Decimal(str(x.get('month',0))),default=None)
+        parts=[]
+        if best_branch: parts.append(f"بیشترین درآمد ماه مربوط به {best_branch['name']} است.")
+        if best_flower: parts.append(f"گل برتر ماه {best_flower['name']} است.")
+        if categories: parts.append(f"بیشترین سهم ثبت‌شده مربوط به {categories[0]['name']} است.")
+        return ' '.join(parts),False
 
 
 def _audio_upload_tuple(field_file):
