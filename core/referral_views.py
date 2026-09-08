@@ -17,7 +17,7 @@ from django.utils import timezone
 
 from .forms import (
     PublicReferralLeadForm, ReferralLeadForm, ReferralLeadManageForm,
-    ReferralMemberForm, ReferralSaleForm, CallCenterLeadForm,
+    ReferralMemberForm, ReferralSaleForm, CallCenterLeadForm, CallCenterLeadCreateForm,
 )
 from .models import CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification, VisitAppointment, InternalMessage
 # Production rebuild marker after the previous deployment hit the workflow timeout.
@@ -132,6 +132,26 @@ def _ensure_call_center_groups(operator):
 
 def _default_call_center_group(operator):
     return _ensure_call_center_groups(operator)['شبکه فروش پرسنل']
+
+
+def _call_center_direct_referrer():
+    """Technical, inactive source for leads entered directly by call-center staff."""
+    user,_=User.objects.get_or_create(
+        username='call-center-direct-source',
+        defaults={
+            'first_name':'ثبت مستقیم','last_name':'کال‌سنتر','is_active':False,
+        },
+    )
+    if user.has_usable_password():
+        user.set_unusable_password()
+        user.save(update_fields=['password'])
+    profile,_=ReferralProfile.objects.get_or_create(
+        user=user,
+        defaults={
+            'referral_code':_new_code(),'is_active':False,'created_by':None,
+        },
+    )
+    return profile
 
 
 def _auto_assign_call_center(lead):
@@ -526,6 +546,33 @@ def call_center_group_create(request):
     else:
         messages.info(request,f'گروه «{group.name}» از قبل وجود دارد.')
     return redirect(f"{reverse('call_center_dashboard')}?group={group.pk}")
+
+
+@call_center_required
+def call_center_lead_create(request):
+    if request.method!='POST':
+        return redirect('call_center_dashboard')
+    operator=request.user.profile
+    _ensure_call_center_groups(operator)
+    form=CallCenterLeadCreateForm(request.POST,operator=operator)
+    if form.is_valid():
+        lead=form.save(commit=False)
+        lead.referrer=_call_center_direct_referrer()
+        lead.assigned_to=operator
+        lead.created_by=request.user
+        lead.source='panel'
+        lead.save()
+        messages.success(
+            request,
+            f'شماره {lead.phone} با نام «{lead.full_name}» در گروه «{lead.group.name}» ثبت شد.'
+        )
+        return redirect(f"{reverse('call_center_dashboard')}?group={lead.group_id}")
+    error=' '.join(message for messages_list in form.errors.values() for message in messages_list)
+    messages.error(request,error or 'اطلاعات ثبت شماره کامل یا معتبر نیست.')
+    group_id=(request.POST.get('group') or '').strip()
+    if group_id.isdigit() and CallCenterLeadGroup.objects.filter(pk=group_id,owner=operator).exists():
+        return redirect(f"{reverse('call_center_dashboard')}?group={group_id}")
+    return redirect('call_center_dashboard')
 
 
 @call_center_required

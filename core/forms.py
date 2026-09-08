@@ -238,6 +238,41 @@ class CallCenterLeadForm(forms.ModelForm):
         return self.cleaned_data.get('group')
 
 
+class CallCenterLeadCreateForm(forms.ModelForm):
+    class Meta:
+        model=ReferralLead
+        fields=['full_name','phone','group','interested_service','notes']
+        labels={
+            'full_name':'نام مراجعه‌کننده','phone':'شماره موبایل','group':'گروه مربوطه',
+            'interested_service':'خدمت موردنظر','notes':'توضیحات اولیه',
+        }
+        widgets={
+            'full_name':forms.TextInput(attrs={'placeholder':'نام و نام خانوادگی'}),
+            'phone':forms.TextInput(attrs={
+                'placeholder':'مثلاً 09121234567','inputmode':'tel','autocomplete':'tel',
+                'dir':'ltr',
+            }),
+            'interested_service':forms.TextInput(attrs={'placeholder':'اختیاری'}),
+            'notes':forms.TextInput(attrs={'placeholder':'توضیح کوتاه (اختیاری)'}),
+        }
+
+    def __init__(self,*args,operator=None,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.operator=operator
+        groups=CallCenterLeadGroup.objects.none()
+        if operator is not None:
+            groups=CallCenterLeadGroup.objects.filter(owner=operator).order_by('-is_default','name','id')
+        self.fields['group'].queryset=groups
+        self.fields['group'].empty_label=None
+
+    def clean_phone(self):
+        raw=self.cleaned_data.get('phone') or ''
+        value=''.join(ch for ch in raw if ch.isdigit() or ch=='+')
+        if len(value)<10:
+            raise forms.ValidationError('شماره موبایل معتبر وارد کنید.')
+        return value
+
+
 
 def visit_appointment_time_choices():
     choices=[]

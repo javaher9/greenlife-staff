@@ -85,6 +85,9 @@
 .cc-v5-group-list{display:flex;gap:5px;overflow:auto;flex:1}.cc-v5-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 8px;border:1px solid #e0e5ec;border-radius:999px;background:#fff;color:#5a677a;font-size:8px;font-weight:900;white-space:nowrap}
 .cc-v5-chip b{min-width:18px;height:18px;border-radius:999px;background:#f1f3f7;display:grid;place-items:center;font-size:7px}.cc-v5-chip.active{background:#f1eafa;color:#674795;border-color:#d9caec}.cc-v5-chip.default:before{content:"★";color:#e0a935}
 .cc-v5-group-new{display:flex;gap:5px;flex:0 0 auto}.cc-v5-group-new input{width:140px;height:34px;padding:0 8px!important;font-size:8px!important}.cc-v5-group-new button{height:34px;padding:0 9px;border:0!important;border-radius:9px!important;background:#7351a4!important;color:#fff!important;font:900 8px Tahoma!important;box-shadow:none!important}
+.cc-v5-lead-new{display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(150px,1fr) minmax(135px,.8fr) minmax(140px,1fr) minmax(160px,1.2fr) auto;gap:7px;padding:9px 10px;background:#fff;border:1px solid var(--line);border-radius:14px}
+.cc-v5-lead-new input,.cc-v5-lead-new select{width:100%;height:38px;padding:0 10px!important;border:1px solid #dfe5ec!important;border-radius:10px!important;background:#fafbfd!important;color:#253248!important;font:800 9px Tahoma!important;box-shadow:none!important}
+.cc-v5-lead-new button{height:38px;padding:0 14px;border:0!important;border-radius:10px!important;background:#239b68!important;color:#fff!important;font:900 9px Tahoma!important;box-shadow:none!important;white-space:nowrap}
 
 .cc-v5-stage{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:11px;align-items:start}
 .cc-v5-main{display:grid;gap:10px;min-width:0}.cc-v5-side{display:grid;gap:10px;position:sticky;top:80px}
@@ -160,6 +163,7 @@
   .cc-v5-actions{grid-template-columns:repeat(2,1fr)}.cc-v5-action{background:#101d2a;color:#e4edf2;border-color:#2a4051}.cc-v5-action.primary{background:#1f8d60}.cc-v5-action.purple{background:#2b2240;color:#eadcfb}
   .cc-v5-toolbar{grid-template-columns:1fr}.cc-v5-search input,.cc-v5-select,.cc-v5-group-new input{background:#09131c!important;color:#fff!important;border-color:#31495b!important}.cc-v5-quick button{background:#101d2a!important;color:#dbe4ea!important;border-color:#395367!important}
   .cc-v5-groups{align-items:stretch;flex-direction:column}.cc-v5-chip{background:#111f2c;color:#dce6eb;border-color:#385064}.cc-v5-chip b{background:#233242}.cc-v5-group-new input{width:100%}.cc-v5-group-new{width:100%}
+  .cc-v5-lead-new{grid-template-columns:1fr 1fr;background:#101d2a;border-color:#2a4051}.cc-v5-lead-new input,.cc-v5-lead-new select{background:#09131c!important;color:#fff!important;border-color:#31495b!important}.cc-v5-lead-new button{grid-column:1/-1}
   .cc-v5-stage{grid-template-columns:1fr}.cc-v5-side{display:none}.cc-v5-patient{grid-template-columns:1fr;gap:6px;background:#0e1b27;border-color:#293d4d}.cc-v5-person-copy strong{color:#fff}.cc-v5-person-meta b,.cc-v5-service{color:#e6edf1}.cc-v5-follow{color:#c7d1d8}.cc-v5-row-actions{justify-content:flex-start}.cc-v5-section-head{border-color:#293d4d}.cc-v5-section-head h2,.cc-v5-section-head h3{color:#fff}
   .cc-v6-lower{grid-template-columns:1fr}.cc-v6-chat{display:none}
   .cc-v5-cem-focus{background:#2b2240;border-color:#4a3c63}.cc-v5-cem-focus strong{color:#eadcfb}.cc-v5-cem-focus p{color:#b9a7cc}.cc-v5-cem-stat{background:#111f2c;border-color:#293d4d}.cc-v5-cem-stat b{color:#fff}
@@ -218,6 +222,18 @@
     </div>
     <form class="cc-v5-group-new" method="post" action="{% url 'call_center_group_create' %}">{% csrf_token %}<input name="name" maxlength="80" placeholder="گروه جدید..." required><button type="submit">＋ ساخت</button></form>
   </section>
+
+  <form class="cc-v5-lead-new" method="post" action="{% url 'call_center_lead_create' %}">
+    {% csrf_token %}
+    <input name="full_name" maxlength="140" placeholder="نام مراجعه‌کننده" required>
+    <input name="phone" maxlength="30" inputmode="tel" autocomplete="tel" dir="ltr" placeholder="شماره موبایل" required>
+    <select name="group" required aria-label="گروه مربوطه">
+      {% for group in groups %}<option value="{{ group.pk }}" {% if group_filter == group.pk|stringformat:'s' %}selected{% endif %}>{{ group.name }}</option>{% endfor %}
+    </select>
+    <input name="interested_service" maxlength="160" placeholder="خدمت موردنظر (اختیاری)">
+    <input name="notes" maxlength="500" placeholder="توضیح کوتاه (اختیاری)">
+    <button type="submit">＋ ثبت تلفن در گروه</button>
+  </form>
 
   <div class="cc-v5-stage">
     <section class="cc-v5-main">

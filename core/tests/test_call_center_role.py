@@ -177,6 +177,32 @@ class CallCenterRoleTests(TestCase):
         self.lead_one.refresh_from_db()
         self.assertEqual(self.lead_one.group,group)
 
+    def test_operator_can_register_phone_directly_in_own_group(self):
+        group=CallCenterLeadGroup.objects.create(owner=self.operator_one.profile,name='پیگیری نمایشگاه')
+        response=self.client.post(reverse('call_center_lead_create'),{
+            'full_name':'مشتری نمایشگاه','phone':'0912 333 4455','group':group.pk,
+            'interested_service':'پوست','notes':'تماس عصر',
+        })
+        lead=ReferralLead.objects.get(full_name='مشتری نمایشگاه')
+        self.assertRedirects(
+            response,f"{reverse('call_center_dashboard')}?group={group.pk}",
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(lead.phone,'09123334455')
+        self.assertEqual(lead.group,group)
+        self.assertEqual(lead.assigned_to,self.operator_one.profile)
+        self.assertEqual(lead.created_by,self.operator_one)
+        self.assertFalse(lead.referrer.is_active)
+
+    def test_operator_cannot_register_phone_in_another_operators_group(self):
+        other_group=CallCenterLeadGroup.objects.create(owner=self.operator_two.profile,name='خصوصی بنفشه')
+        response=self.client.post(reverse('call_center_lead_create'),{
+            'full_name':'نباید ثبت شود','phone':'09124445566','group':other_group.pk,
+            'interested_service':'','notes':'',
+        })
+        self.assertRedirects(response,reverse('call_center_dashboard'),fetch_redirect_response=False)
+        self.assertFalse(ReferralLead.objects.filter(full_name='نباید ثبت شود').exists())
+
     def test_referral_registration_says_exactly_where_lead_went(self):
         self.client.force_login(self.referrer_user)
         response=self.client.post(reverse('referral_lead_create'),{
