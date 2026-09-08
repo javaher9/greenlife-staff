@@ -1421,6 +1421,24 @@ def shift_today_bulk(request):
         for rule in EmployeeWorkSchedule.objects.filter(user=selected_employee,effective_from__lte=day).filter(active_filter).order_by('weekday','-effective_from','-pk'):
             employee_rules.setdefault(rule.weekday,rule)
     branch_day_map={x['weekday']:x for x in branch_days}
+    all_employee_rules={}
+    for rule in EmployeeWorkSchedule.objects.filter(
+        user_id__in=scoped_users,effective_from__lte=day,
+    ).filter(active_filter).order_by('user_id','weekday','-effective_from','-pk'):
+        all_employee_rules.setdefault((rule.user_id,rule.weekday),rule)
+    for row in rows:
+        weekly_days=[]
+        for weekday,label in weekday_order:
+            personal=all_employee_rules.get((row['user'].pk,weekday))
+            inherited=branch_day_map[weekday]
+            weekly_days.append({
+                'label':label,
+                'is_working':personal.is_working if personal else inherited['is_working'],
+                'start':personal.start_time if personal else inherited['start'],
+                'end':personal.end_time if personal else inherited['end'],
+                'personal':bool(personal),
+            })
+        row['weekly_days']=weekly_days
     employee_days=[]
     for weekday,label in weekday_order:
         personal=employee_rules.get(weekday); inherited=branch_day_map[weekday]
