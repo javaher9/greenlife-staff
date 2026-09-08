@@ -1,0 +1,40 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<style>
+.shift-quick-shell{max-width:1180px;margin:0 auto 80px;display:grid;gap:14px;font-family:Tahoma,sans-serif;color:#26344a}.shift-quick-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 24px;border:1px solid #e2e7ef;border-radius:22px;background:linear-gradient(135deg,#fff,#f7f4fc);box-shadow:0 12px 32px rgba(42,52,75,.07)}.shift-quick-head h1{margin:4px 0 6px;color:#29364b}.shift-quick-head p{margin:0;color:#7a8798;font-size:11px}.shift-date{flex:0 0 auto;padding:11px 14px;border-radius:14px;background:#ede5f7;color:#65458f;font-weight:900}.shift-bulk-bar{display:grid;grid-template-columns:auto 150px 150px auto 1fr;align-items:end;gap:9px;padding:14px;border:1px solid #e2e7ef;border-radius:18px;background:#fff}.shift-bulk-bar label{font-size:9px;font-weight:900;color:#68768a}.shift-bulk-bar input{display:block;width:100%;height:42px;margin-top:5px;border:1px solid #dce2eb;border-radius:11px;padding:0 10px;background:#fafbfd;color:#26344a}.shift-bulk-bar button,.shift-save{height:42px;border:0;border-radius:11px;padding:0 15px;font-family:inherit;font-weight:900;cursor:pointer}.select-all{background:#eff3f7!important;color:#435168!important}.apply-hours{background:#eee6f8!important;color:#684993!important}.shift-hint{align-self:center;color:#8a95a3;font-size:9px;line-height:1.7}.shift-table-card{overflow:hidden;border:1px solid #e2e7ef;border-radius:20px;background:#fff;box-shadow:0 10px 28px rgba(42,52,75,.055)}.shift-row{display:grid;grid-template-columns:44px minmax(190px,1fr) 130px 150px 150px;gap:10px;align-items:center;min-height:70px;padding:10px 15px;border-bottom:1px solid #edf0f4}.shift-row:last-child{border-bottom:0}.shift-row.is-head{min-height:42px;background:#f7f8fb;color:#7e8998;font-size:9px;font-weight:900}.shift-row input[type=checkbox]{width:20px;height:20px;accent-color:#7652a5}.shift-person strong,.shift-person small{display:block}.shift-person strong{color:#2b374a}.shift-person small{margin-top:4px;color:#8a95a3;font-size:9px}.shift-source{width:max-content;padding:6px 9px;border-radius:999px;background:#eef7f3;color:#39775d;font-size:8px;font-weight:900}.shift-source.personal{background:#eee6f8;color:#6b4a95}.shift-time{width:100%;height:40px;border:1px solid #dce2ea;border-radius:10px;padding:0 9px;background:#fbfcfe;color:#26344a}.shift-save-bar{position:sticky;bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid #ddd5e8;border-radius:17px;background:rgba(255,255,255,.96);box-shadow:0 14px 35px rgba(42,31,62,.14);backdrop-filter:blur(12px)}.shift-save-bar span{color:#6e7a8b;font-size:10px}.shift-save{min-width:210px;background:linear-gradient(135deg,#7653a6,#5f3d8c);color:#fff}.shift-empty{padding:35px;text-align:center;color:#8d98a6}
+@media(max-width:760px){.shift-quick-shell{gap:10px;margin-bottom:95px;color:#eef5f3}.shift-quick-head{align-items:flex-start;flex-direction:column;padding:17px;background:linear-gradient(135deg,#141f2b,#281d3c);border-color:#374150}.shift-quick-head h1{font-size:22px;color:#fff}.shift-quick-head p{color:#a8b3bc}.shift-date{background:rgba(139,92,246,.18);color:#d7c3f2}.shift-bulk-bar{grid-template-columns:1fr 1fr;padding:11px;background:#101b25;border-color:#33404b}.shift-bulk-bar>button:first-child{grid-column:1/-1}.shift-bulk-bar label{color:#aab5bd}.shift-bulk-bar input,.shift-time{background:#09141d;color:#f1f5f7;border-color:#3b4853}.shift-bulk-bar .shift-hint{grid-column:1/-1}.apply-hours{grid-column:1/-1}.shift-table-card{background:#101b25;border-color:#33404b}.shift-row{grid-template-columns:34px minmax(0,1fr) 112px;min-height:94px;padding:10px;border-color:#2b3944}.shift-row.is-head{display:none}.shift-person strong{color:#f0f4f6}.shift-person small{color:#98a6af}.shift-row .shift-time{grid-row:2}.shift-row .shift-time[name^=start_]{grid-column:2}.shift-row .shift-time[name^=end_]{grid-column:3}.shift-source{justify-self:start}.shift-save-bar{bottom:82px;align-items:stretch;flex-direction:column;background:rgba(12,24,32,.96);border-color:#3a4652}.shift-save-bar span{color:#aab5bd}.shift-save{width:100%}}
+</style>
+<div class="shift-quick-shell">
+  <div class="shift-quick-head"><div><span class="eyebrow">DAILY WORK SCHEDULE</span><h1>تنظیم سریع ساعت کاری امروز</h1><p>این صفحه فقط برنامه امروز را تغییر می‌دهد و به ساعات گذشته یا روزهای آینده دست نمی‌زند.</p></div><div class="shift-date">{{ today|jdate }}</div></div>
+  <form method="post" id="shiftQuickForm">{% csrf_token %}
+    <div class="shift-bulk-bar">
+      <button type="button" class="select-all" id="toggleAll">انتخاب همه</button>
+      <label>شروع مشترک<input type="time" id="bulkStart" value="09:00"></label>
+      <label>پایان مشترک<input type="time" id="bulkEnd" value="17:00"></label>
+      <button type="button" class="apply-hours" id="applyBulk">اعمال روی انتخاب‌شده‌ها</button>
+      <span class="shift-hint">می‌توانید پس از اعمال گروهی، ساعت هر نفر را جداگانه اصلاح کنید.</span>
+    </div>
+    <div class="shift-table-card">
+      <div class="shift-row is-head"><span></span><span>پرسنل</span><span>منبع ساعت فعلی</span><span>شروع</span><span>پایان</span></div>
+      {% for row in rows %}<div class="shift-row">
+        <input class="employee-select" type="checkbox" name="selected" value="{{ row.user.pk }}">
+        <span class="shift-person"><strong>{{ row.user.get_full_name|default:row.user.username }}</strong><small>{{ row.user.profile.branch|default:'بدون شعبه' }} · {{ row.user.profile.get_role_display }}</small></span>
+        <span class="shift-source {% if row.is_personal %}personal{% endif %}">{{ row.source }}</span>
+        <input class="shift-time" type="time" name="start_{{ row.user.pk }}" value="{% if row.start %}{{ row.start|time:'H:i' }}{% endif %}" aria-label="ساعت شروع {{ row.user.get_full_name|default:row.user.username }}">
+        <input class="shift-time" type="time" name="end_{{ row.user.pk }}" value="{% if row.end %}{{ row.end|time:'H:i' }}{% endif %}" aria-label="ساعت پایان {{ row.user.get_full_name|default:row.user.username }}">
+      </div>{% empty %}<div class="shift-empty">پرسنل فعالی برای تنظیم ساعت پیدا نشد.</div>{% endfor %}
+    </div>
+    <div class="shift-save-bar"><span>فقط افراد انتخاب‌شده برای امروز به‌روزرسانی می‌شوند.</span><button class="shift-save" type="submit">ذخیره ساعت کاری امروز</button></div>
+  </form>
+</div>
+<script>
+(function(){
+  const checks=[...document.querySelectorAll('.employee-select')];
+  const toggle=document.getElementById('toggleAll');
+  const start=document.getElementById('bulkStart');
+  const end=document.getElementById('bulkEnd');
+  toggle.addEventListener('click',()=>{const next=!checks.every(x=>x.checked);checks.forEach(x=>x.checked=next);toggle.textContent=next?'لغو انتخاب همه':'انتخاب همه'});
+  document.getElementById('applyBulk').addEventListener('click',()=>checks.filter(x=>x.checked).forEach(x=>{const row=x.closest('.shift-row');row.querySelector('[name^="start_"]').value=start.value;row.querySelector('[name^="end_"]').value=end.value;}));
+  document.querySelectorAll('.shift-time').forEach(input=>input.addEventListener('change',()=>{input.closest('.shift-row').querySelector('.employee-select').checked=true;}));
+})();
+</script>
+{% endblock %}

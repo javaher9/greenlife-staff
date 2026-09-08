@@ -1238,6 +1238,90 @@ def shift_assign(request):
         obj=form.save(commit=False); obj.created_by=request.user; obj.save(); messages.success(request,'شیفت روزانه تخصیص داده شد.'); return redirect('shift_list')
     return render(request,'core/generic_form.html',{'form':form,'title':'تخصیص شیفت','button':'ثبت تخصیص'})
 
+@manager_required
+def shift_today_bulk(request):
+    """Safely set one-day shift overrides without changing historical/default schedules."""
+    role=role_of(request.user)
+    day=timezone.localdate()
+    users=User.objects.filter(
+        is_active=True,profile__is_active=True,profile__role__in=PERSONNEL_ROLES,
+    ).exclude(profile__branch__isnull=True).select_related(
+        'profile','profile__branch','profile__shift_group','profile__shift_group__default_shift',
+    ).order_by('profile__branch__name','first_name','last_name','username')
+    if role=='manager':
+        users=users.filter(profile__branch=request.user.profile.branch)
+
+    scoped_users={user.pk:user for user in users}
+    if request.method=='POST':
+        selected_ids=[]
+        for raw_id in request.POST.getlist('selected'):
+            try: selected_ids.append(int(raw_id))
+            except (TypeError,ValueError): continue
+        selected_ids=list(dict.fromkeys(selected_ids))
+        errors=[]; plans=[]
+        for user_id in selected_ids:
+            user=scoped_users.get(user_id)
+            if not user:
+                errors.append('یکی از پرسنل انتخاب‌شده در محدوده دسترسی شما نیست.')
+                continue
+            start_raw=(request.POST.get(f'start_{user_id}') or '').strip()
+            end_raw=(request.POST.get(f'end_{user_id}') or '').strip()
+            try:
+                start_time=datetime.strptime(start_raw,'%H:%M').time()
+                end_time=datetime.strptime(end_raw,'%H:%M').time()
+            except ValueError:
+                errors.append(f'ساعت کاری {user.get_full_name() or user.username} کامل یا معتبر نیست.')
+                continue
+            plans.append((user,start_time,end_time))
+
+        if not selected_ids:
+            errors.append('حداقل یک نفر را برای اعمال ساعت کاری انتخاب کنید.')
+        if errors:
+            for error in errors: messages.error(request,error)
+        else:
+            with transaction.atomic():
+                for user,start_time,end_time in plans:
+                    branch=user.profile.branch
+                    shift=WorkShift.objects.filter(
+                        branch=branch,start_time=start_time,end_time=end_time,is_active=True,
+                    ).order_by('pk').first()
+                    if not shift:
+                        shift=WorkShift.objects.create(
+                            name=f'روزانه {start_time.strftime("%H:%M")} تا {end_time.strftime("%H:%M")}',
+                            branch=branch,start_time=start_time,end_time=end_time,
+                            grace_minutes=branch.grace_minutes,report_required=True,is_active=True,
+                        )
+                    ShiftAssignment.objects.update_or_create(
+                        user=user,date=day,
+                        defaults={
+                            'shift':shift,'created_by':request.user,
+                            'note':'تنظیم سریع ساعت کاری امروز',
+                        },
+                    )
+                _attendance_audit(
+                    request,'bulk_shift_assignment',
+                    summary=f'ساعت کاری امروز برای {len(plans)} نفر تنظیم شد',
+                    metadata={'date':day.isoformat(),'employee_ids':[user.pk for user,_,_ in plans]},
+                )
+            messages.success(request,f'ساعت کاری امروز برای {len(plans)} نفر با موفقیت ذخیره شد.')
+            return redirect('shift_today_bulk')
+
+    assignments={
+        item.user_id:item for item in ShiftAssignment.objects.select_related('shift').filter(
+            date=day,user_id__in=scoped_users,
+        )
+    }
+    rows=[]
+    source_labels={'personal':'اختصاصی امروز','group':'گروه شیفت','branch':'ساعت شعبه','default':'تعیین نشده'}
+    for user in scoped_users.values():
+        rule=shift_rule(user,day)
+        rows.append({
+            'user':user,'start':rule.get('start'),'end':rule.get('end'),
+            'source':source_labels.get(rule.get('source'),'برنامه پایه'),
+            'is_personal':user.pk in assignments,
+        })
+    return render(request,'core/shift_today_bulk.html',{'rows':rows,'today':day})
+
 @login_required
 def correction_list(request):
     role=role_of(request.user); qs=AttendanceCorrectionRequest.objects.select_related('user','attendance').all()
