@@ -1432,6 +1432,7 @@ def shift_today_bulk(request):
             personal=all_employee_rules.get((row['user'].pk,weekday))
             inherited=branch_day_map[weekday]
             weekly_days.append({
+                'weekday':weekday,
                 'label':label,
                 'is_working':personal.is_working if personal else inherited['is_working'],
                 'start':personal.start_time if personal else inherited['start'],
