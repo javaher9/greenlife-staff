@@ -1085,34 +1085,66 @@ def finance_dashboard(request):
 
 @consultant_required
 def finance_entry(request):
-    form=ConsultantFinanceEntryForm(request.POST or None,request.FILES or None)
+    profile=request.user.profile
+    initial={'entry_type':'inc'}
+    requested_appointment=(request.GET.get('appointment') or '').strip()
+    if requested_appointment.isdigit():
+        initial['appointment']=requested_appointment
+        initial['sale_origin']='afsariyeh'
+    form=ConsultantFinanceEntryForm(
+        request.POST or None,request.FILES or None,
+        consultant_profile=profile,initial=initial,
+    )
     if request.method=='POST' and form.is_valid():
         obj=form.save(commit=False)
         tx_date=form.cleaned_data['date']
         local_now=timezone.localtime()
         naive_time=local_now.time().replace(tzinfo=None)
         obj.occurred_at=timezone.make_aware(datetime.combine(tx_date,naive_time))
-        obj.branch=request.user.profile.branch
+        obj.branch=profile.branch
         obj.source='manual'
         obj.review_status='pending'
         obj.analysis_status='pending'
         obj.recorded_by=request.user
+        appointment=form.cleaned_data.get('appointment')
+        obj.appointment=appointment
+        obj.sale_origin='afsariyeh' if appointment else 'branch_walk_in'
+        if appointment:
+            obj.person_name=appointment.full_name
         obj.patient_ref=obj.person_name
+        obj.service=obj.get_sale_reason_display() if obj.sale_reason else obj.service
+        obj.account_heading=obj.service
         obj.receipt_original_size=getattr(form,'receipt_original_size',0)
         obj.receipt_compressed_size=getattr(form,'receipt_compressed_size',0)
-        obj.raw_data={'entry_channel':'staff_consultant'}
-        obj.save()
-        AuditLog.objects.create(
-            actor=request.user,action='finance_entry',path=request.path,method='POST',
-            object_type='FinancialTransaction',object_id=str(obj.pk),
-            summary=f'ثبت مالی مشاور برای {obj.person_name}'[:250],
-            metadata={
-                'amount':str(obj.amount),'branch_id':obj.branch_id,'status':obj.review_status,
-                'receipt_original_size':obj.receipt_original_size,
-                'receipt_compressed_size':obj.receipt_compressed_size,
-            },
-            ip_address=_request_ip(request),
-        )
+        obj.raw_data={
+            'entry_channel':'staff_consultant',
+            'sale_origin':obj.sale_origin,
+            'appointment_id':appointment.pk if appointment else None,
+            'lead_id':appointment.lead_id if appointment else None,
+            'call_center_user_id':appointment.created_by_id if appointment else None,
+        }
+        with transaction.atomic():
+            obj.save()
+            if appointment:
+                if appointment.status!='completed':
+                    appointment.status='completed'
+                    appointment.save(update_fields=['status','updated_at'])
+                if appointment.lead_id and appointment.lead.status!='won':
+                    appointment.lead.status='won'
+                    appointment.lead.save(update_fields=['status','updated_at'])
+            AuditLog.objects.create(
+                actor=request.user,action='finance_entry',path=request.path,method='POST',
+                object_type='FinancialTransaction',object_id=str(obj.pk),
+                summary=f'ثبت مالی مشاور برای {obj.person_name}'[:250],
+                metadata={
+                    'amount':str(obj.amount),'branch_id':obj.branch_id,'status':obj.review_status,
+                    'sale_origin':obj.sale_origin,'sale_reason':obj.sale_reason,
+                    'appointment_id':obj.appointment_id,
+                    'receipt_original_size':obj.receipt_original_size,
+                    'receipt_compressed_size':obj.receipt_compressed_size,
+                },
+                ip_address=_request_ip(request),
+            )
         messages.success(request,'تراکنش ثبت شد و برای بررسی مالی ارسال شد.')
         ok,analysis_message=analyze_finance_receipt(obj)
         if ok: messages.success(request,analysis_message)
@@ -1121,7 +1153,10 @@ def finance_entry(request):
     entries=FinancialTransaction.objects.filter(
         source='manual',recorded_by=request.user,
     ).select_related('branch').order_by('-created_at')[:50]
-    return render(request,'core/finance_entry.html',{'form':form,'entries':entries})
+    pending_appointments=form.fields['appointment'].queryset[:30]
+    return render(request,'core/finance_entry.html',{
+        'form':form,'entries':entries,'pending_appointments':pending_appointments,
+    })
 
 @finance_required
 def finance_entry_review(request,pk,action):

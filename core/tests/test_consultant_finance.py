@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw
 
 from core.finance import finance_summary
 from core.jalali import format_jalali
-from core.models import AuditLog, Branch, EmployeeProfile, FinancialTransaction
+from core.models import AuditLog, Branch, EmployeeProfile, FinancialTransaction, ReferralLead, ReferralProfile, VisitAppointment
 
 
 @override_settings(ROOT_URLCONF='greenlife.urls')
@@ -77,6 +77,8 @@ class ConsultantFinanceEntryTests(TestCase):
             'entry_type':'inc',
             'person_name':'مشتری نمونه',
             'amount':'1234567',
+            'sale_reason':'device_package',
+            'sale_origin':'branch_walk_in',
             'payment_method':'Pos S',
             'service':'پکیج مشاوره',
             'account_heading':'فروش پکیج',
@@ -94,7 +96,7 @@ class ConsultantFinanceEntryTests(TestCase):
         self.client.force_login(self.consultant)
         response=self.client.get('/finance/entry/')
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'ثبت تراکنش مالی')
+        self.assertContains(response, 'ثبت فروش شعبه')
         self.assertContains(response, format_jalali(timezone.localdate()))
 
     def test_consultant_dashboard_has_prominent_finance_entry_and_stats(self):
@@ -164,7 +166,48 @@ class ConsultantFinanceEntryTests(TestCase):
         self.assertGreater(entry.receipt_original_size,0)
         self.assertGreater(entry.receipt_compressed_size,0)
         self.assertEqual(entry.raw_data['entry_channel'], 'staff_consultant')
+        self.assertEqual(entry.sale_reason,'device_package')
+        self.assertEqual(entry.sale_origin,'branch_walk_in')
         self.assertTrue(AuditLog.objects.filter(action='finance_entry',object_id=str(entry.pk)).exists())
+
+    def test_consultant_sees_only_own_branch_call_center_appointments_and_sale_is_attributed_to_afsariyeh(self):
+        call_center=self.make_user('cc-agent','call_center',None,'کارشناس','افسریه')
+        ref_user=self.make_user('referrer-user','referrer',None,'معرف','نمونه')
+        referrer=ReferralProfile.objects.create(user=ref_user,referral_code='REF-TEST',level=1)
+        lead=ReferralLead.objects.create(
+            referrer=referrer,full_name='فروش افسریه',phone='09121112222',
+            assigned_to=call_center.profile,status='appointment',
+        )
+        appointment=VisitAppointment.objects.create(
+            lead=lead,branch=self.branch,full_name=lead.full_name,phone=lead.phone,
+            service='دستگاه',appointment_date=timezone.localdate(),appointment_time=time(10,30),
+            source='call_center',created_by=call_center,
+        )
+        VisitAppointment.objects.create(
+            branch=self.other_branch,full_name='بیمار پونک',phone='09123334444',
+            appointment_date=timezone.localdate(),appointment_time=time(11,0),
+            source='call_center',created_by=call_center,
+        )
+        self.client.force_login(self.consultant)
+        page=self.client.get('/finance/entry/')
+        self.assertContains(page,'فروش افسریه')
+        self.assertNotContains(page,'بیمار پونک')
+
+        payload=self.valid_payload(
+            appointment=str(appointment.pk),person_name='',sale_origin='afsariyeh',
+            sale_reason='daya_package',
+        )
+        response=self.client.post('/finance/entry/',data=payload)
+        self.assertRedirects(response,'/finance/entry/',fetch_redirect_response=False)
+        entry=FinancialTransaction.objects.get(source='manual')
+        self.assertEqual(entry.appointment,appointment)
+        self.assertEqual(entry.person_name,'فروش افسریه')
+        self.assertEqual(entry.sale_origin,'afsariyeh')
+        self.assertEqual(entry.sale_reason,'daya_package')
+        self.assertEqual(entry.raw_data['call_center_user_id'],call_center.pk)
+        appointment.refresh_from_db(); lead.refresh_from_db()
+        self.assertEqual(appointment.status,'completed')
+        self.assertEqual(lead.status,'won')
 
     def test_receipt_and_positive_manual_amount_are_required(self):
         self.client.force_login(self.consultant)

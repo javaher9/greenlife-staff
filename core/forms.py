@@ -432,6 +432,12 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
         ('CC S','CC S'),
     ]
     date=JalaliDateField(label='تاریخ تراکنش',initial=timezone.localdate)
+    appointment=forms.ModelChoiceField(
+        label='نوبت مرتبط',required=False,queryset=VisitAppointment.objects.none(),
+        empty_label='مراجعه مستقیم شعبه (بدون نوبت افسریه)',
+    )
+    sale_reason=forms.ChoiceField(label='علت فروش',choices=FinancialTransaction.SALE_REASON)
+    sale_origin=forms.ChoiceField(label='مبدأ فروش',choices=FinancialTransaction.SALE_ORIGIN)
     payment_method=forms.ChoiceField(label='مقصد واریز',choices=PAYMENT_METHODS)
     receipt_image=forms.ImageField(
         label='تصویر تراکنش',required=True,
@@ -441,21 +447,54 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
     class Meta:
         model=FinancialTransaction
         fields=[
-            'entry_type','person_name','amount','payment_method','service',
+            'entry_type','appointment','person_name','amount','sale_reason','sale_origin','payment_method','service',
             'account_heading','terminal_or_payee','tracking_number',
             'destination_card','description','receipt_image',
         ]
         labels={
             'entry_type':'نوع ثبت','person_name':'نام فرد','amount':'مبلغ (ریال)',
+            'sale_reason':'علت فروش','sale_origin':'مبدأ فروش',
             'service':'خدمت یا پکیج','account_heading':'سرفصل دستگاه یا حساب',
             'terminal_or_payee':'نام پایانه یا شخص دریافت‌کننده','tracking_number':'شماره پیگیری',
             'destination_card':'کارت مقصد','description':'توضیحات',
         }
         widgets={
+            'entry_type':forms.HiddenInput(),
             'amount':forms.NumberInput(attrs={'min':'1','step':'1','inputmode':'numeric','placeholder':'مبلغ را دقیق و عددی وارد کنید'}),
             'person_name':forms.TextInput(attrs={'placeholder':'نام و نام خانوادگی فرد'}),
             'description':forms.Textarea(attrs={'rows':3}),
         }
+
+    def __init__(self,*args,consultant_profile=None,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.consultant_profile=consultant_profile
+        self.fields['entry_type'].initial='inc'
+        self.fields['sale_origin'].initial='branch_walk_in'
+        if consultant_profile and consultant_profile.branch_id:
+            self.fields['appointment'].queryset=VisitAppointment.objects.filter(
+                branch_id=consultant_profile.branch_id,
+                source='call_center',
+            ).exclude(
+                status='cancelled',
+            ).exclude(
+                financial_transactions__isnull=False,
+            ).select_related('lead','created_by','branch').order_by('-appointment_date','-appointment_time')
+
+    def clean(self):
+        data=super().clean()
+        appointment=data.get('appointment')
+        if appointment:
+            if not self.consultant_profile or appointment.branch_id!=self.consultant_profile.branch_id:
+                self.add_error('appointment','این نوبت متعلق به شعبه شما نیست.')
+            if FinancialTransaction.objects.filter(appointment=appointment).exists():
+                self.add_error('appointment','فروش این نوبت قبلاً ثبت شده است.')
+            data['sale_origin']='afsariyeh'
+            data['person_name']=appointment.full_name
+        elif data.get('sale_origin')=='afsariyeh':
+            self.add_error('appointment','برای فروش افسریه باید نوبت مرتبط را انتخاب کنید.')
+        if data.get('sale_reason')=='other' and not (data.get('description') or '').strip():
+            self.add_error('description','برای «سایر» توضیح کوتاه علت فروش الزامی است.')
+        return data
 
     def clean_amount(self):
         amount=self.cleaned_data['amount']
@@ -471,6 +510,9 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
 
     def clean_person_name(self):
         value=(self.cleaned_data.get('person_name') or '').strip()
+        appointment=self.cleaned_data.get('appointment')
+        if appointment:
+            return appointment.full_name
         if len(value)<2:
             raise forms.ValidationError('نام فرد را کامل وارد کنید.')
         return value

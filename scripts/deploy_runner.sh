@@ -150,6 +150,18 @@ fi
 "${COMPOSE[@]}" exec -T nginx nginx -t
 "${COMPOSE[@]}" exec -T nginx nginx -s reload
 
+# Docker service names are resolved by nginx when its workers start. The LAN
+# web container can receive a new bridge IP during an application deploy while
+# nginx_lan itself remains up, leaving its workers pointed at the retired IP.
+# Restart only the LAN proxy after container replacement so it always resolves
+# the current web_lan address. Public nginx (8085), CRM and PostgreSQL are not
+# interrupted by this operation.
+if [[ -f "$LAN_COMPOSE_FILE" ]]; then
+  echo "Refreshing private LAN proxy DNS after web_lan replacement..."
+  "${COMPOSE[@]}" exec -T nginx_lan nginx -t
+  "${COMPOSE[@]}" restart nginx_lan
+fi
+
 if ! ./scripts/healthcheck.sh; then
   echo "Healthcheck failed. Existing database backup is available in backups/." >&2
   echo "Code rollback is handled by the GitHub workflow source snapshot." >&2
@@ -243,7 +255,9 @@ if [[ -f "$LAN_COMPOSE_FILE" ]]; then
   echo "Checking private LAN login endpoint..."
   lan_ok=0
   for i in {1..30}; do
-    code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 5 -H 'Host: localhost' http://127.0.0.1:8086/login/ || true)"
+    # Use the real LAN Host, not localhost: localhost is accepted by both web
+    # services and could hide a stale nginx_lan upstream after a Docker IP swap.
+    code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 5 -H 'Host: 192.168.40.96' http://127.0.0.1:8086/login/ || true)"
     if [[ "$code" == "200" ]]; then
       lan_ok=1
       echo "LAN login endpoint OK: http://192.168.40.96:8086/login/"

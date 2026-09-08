@@ -530,13 +530,30 @@ class FinancialTransaction(models.Model):
         ('pending','در صف تحلیل'),('processed','تحلیل‌شده'),
         ('failed','خطای تحلیل'),('skipped','تحلیل‌نشده'),
     ]
+    SALE_REASON=[
+        ('device_package','پکیج دستگاه'),
+        ('daya_package','پکیج دایا'),
+        ('lipolytic','لیپولیتیک'),
+        ('skin','پوست'),
+        ('other','سایر'),
+    ]
+    SALE_ORIGIN=[
+        ('afsariyeh','فروش افسریه'),
+        ('branch_walk_in','مراجعه مستقیم شعبه'),
+    ]
     external_id=models.CharField(max_length=120,blank=True,null=True)
     source=models.CharField(max_length=20,choices=SOURCE,default='crm')
     branch=models.ForeignKey(Branch,on_delete=models.SET_NULL,null=True,blank=True,related_name='financial_transactions')
+    appointment=models.ForeignKey(
+        VisitAppointment,on_delete=models.PROTECT,null=True,blank=True,
+        related_name='financial_transactions',
+    )
     occurred_at=models.DateTimeField()
     amount=models.DecimalField(max_digits=18,decimal_places=2)
     entry_type=models.CharField(max_length=10,choices=ENTRY_TYPE,default='inc')
     payment_method=models.CharField(max_length=80,blank=True)
+    sale_reason=models.CharField(max_length=30,choices=SALE_REASON,blank=True)
+    sale_origin=models.CharField(max_length=30,choices=SALE_ORIGIN,blank=True)
     service=models.CharField(max_length=160,blank=True)
     patient_ref=models.CharField(max_length=120,blank=True)
     person_name=models.CharField(max_length=160,blank=True)
@@ -562,7 +579,10 @@ class FinancialTransaction(models.Model):
     created_at=models.DateTimeField(auto_now_add=True)
     class Meta:
         ordering=['-occurred_at']
-        constraints=[models.UniqueConstraint(fields=['source','external_id'],name='uniq_finance_source_external',condition=models.Q(external_id__isnull=False))]
+        constraints=[
+            models.UniqueConstraint(fields=['source','external_id'],name='uniq_finance_source_external',condition=models.Q(external_id__isnull=False)),
+            models.UniqueConstraint(fields=['appointment'],name='uniq_finance_appointment',condition=models.Q(appointment__isnull=False)),
+        ]
     def __str__(self): return f'{self.branch or "—"} - {self.amount}'
 
 class IntegrationSyncLog(models.Model):
