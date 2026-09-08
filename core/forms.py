@@ -487,9 +487,9 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
             'destination_card','description','receipt_image',
         ]
         labels={
-            'entry_type':'نوع ثبت','person_name':'نام فرد','amount':'مبلغ (ریال)',
+            'entry_type':'نوع ثبت','person_name':'نام فرد','amount':'مبلغ دریافتی (ریال)',
             'sale_reason':'علت فروش','sale_origin':'مبدأ فروش',
-            'service':'خدمت یا پکیج','account_heading':'سرفصل دستگاه یا حساب',
+            'service':'پکیج / خدمت','account_heading':'سرفصل دستگاه یا حساب',
             'terminal_or_payee':'نام پایانه یا شخص دریافت‌کننده','tracking_number':'شماره پیگیری',
             'destination_card':'کارت مقصد','description':'توضیحات',
         }
@@ -497,6 +497,7 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
             'entry_type':forms.HiddenInput(),
             'amount':forms.NumberInput(attrs={'min':'1','step':'1','inputmode':'numeric','placeholder':'مبلغ را دقیق و عددی وارد کنید'}),
             'person_name':forms.TextInput(attrs={'placeholder':'نام و نام خانوادگی فرد'}),
+            'service':forms.TextInput(attrs={'placeholder':'نام پکیج یا خدمت؛ مثال: Double Define شکم ۴ جلسه'}),
             'description':forms.Textarea(attrs={'rows':3}),
         }
 
@@ -529,6 +530,8 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
             self.add_error('appointment','برای فروش افسریه باید نوبت مرتبط را انتخاب کنید.')
         if data.get('sale_reason')=='other' and not (data.get('description') or '').strip():
             self.add_error('description','برای «سایر» توضیح کوتاه علت فروش الزامی است.')
+        if data.get('payment_method')=='CC P' and not (data.get('terminal_or_payee') or '').strip():
+            self.add_error('terminal_or_payee','برای CC P نام شخص دریافت‌کننده الزامی است.')
         return data
 
     def clean_amount(self):
@@ -589,12 +592,6 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
             return compressed
         except Exception as exc:
             raise forms.ValidationError('فشرده‌سازی تصویر انجام نشد؛ یک عکس JPG، PNG یا WEBP معتبر ارسال کنید.') from exc
-
-    def clean(self):
-        data=super().clean()
-        if data.get('payment_method')=='CC P' and not (data.get('terminal_or_payee') or '').strip():
-            self.add_error('terminal_or_payee','برای CC P نام شخص دریافت‌کننده الزامی است.')
-        return data
 
 class AttendanceManualForm(forms.ModelForm):
     date=JalaliDateField(label='تاریخ')
