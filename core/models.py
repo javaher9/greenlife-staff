@@ -598,6 +598,56 @@ class ShiftAssignment(models.Model):
         ordering=['-date','user__last_name']
     def __str__(self): return f'{self.user} - {self.date} - {self.shift}'
 
+class BranchWorkSchedule(models.Model):
+    """Versioned weekly branch schedule; old dates keep their original rule."""
+    WEEKDAYS=[
+        (0,'دوشنبه'),(1,'سه‌شنبه'),(2,'چهارشنبه'),(3,'پنجشنبه'),
+        (4,'جمعه'),(5,'شنبه'),(6,'یکشنبه'),
+    ]
+    branch=models.ForeignKey(Branch,on_delete=models.CASCADE,related_name='weekly_schedules')
+    weekday=models.PositiveSmallIntegerField(choices=WEEKDAYS)
+    is_working=models.BooleanField(default=True)
+    start_time=models.TimeField(null=True,blank=True)
+    end_time=models.TimeField(null=True,blank=True)
+    effective_from=models.DateField(default=timezone.localdate,db_index=True)
+    effective_until=models.DateField(null=True,blank=True,db_index=True)
+    created_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='created_branch_work_schedules')
+    updated_at=models.DateTimeField(auto_now=True)
+    class Meta:
+        ordering=['branch__name','weekday','-effective_from']
+        constraints=[models.UniqueConstraint(fields=['branch','weekday','effective_from'],name='uniq_branch_weekday_effective')]
+        indexes=[models.Index(fields=['branch','weekday','effective_from'],name='branch_weekday_effect_idx')]
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.is_working and (not self.start_time or not self.end_time):
+            raise ValidationError('برای روز کاری، ساعت شروع و پایان الزامی است.')
+        if self.effective_until and self.effective_until<self.effective_from:
+            raise ValidationError('تاریخ پایان نمی‌تواند قبل از تاریخ شروع باشد.')
+    def __str__(self): return f'{self.branch} - {self.get_weekday_display()}'
+
+class EmployeeWorkSchedule(models.Model):
+    """Versioned employee override for a weekday, taking priority over branch rules."""
+    user=models.ForeignKey(User,on_delete=models.CASCADE,related_name='weekly_work_schedules')
+    weekday=models.PositiveSmallIntegerField(choices=BranchWorkSchedule.WEEKDAYS)
+    is_working=models.BooleanField(default=True)
+    start_time=models.TimeField(null=True,blank=True)
+    end_time=models.TimeField(null=True,blank=True)
+    effective_from=models.DateField(default=timezone.localdate,db_index=True)
+    effective_until=models.DateField(null=True,blank=True,db_index=True)
+    created_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='created_employee_work_schedules')
+    updated_at=models.DateTimeField(auto_now=True)
+    class Meta:
+        ordering=['user__last_name','user__first_name','weekday','-effective_from']
+        constraints=[models.UniqueConstraint(fields=['user','weekday','effective_from'],name='uniq_employee_weekday_effective')]
+        indexes=[models.Index(fields=['user','weekday','effective_from'],name='employee_weekday_effect_idx')]
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.is_working and (not self.start_time or not self.end_time):
+            raise ValidationError('برای روز کاری، ساعت شروع و پایان الزامی است.')
+        if self.effective_until and self.effective_until<self.effective_from:
+            raise ValidationError('تاریخ پایان نمی‌تواند قبل از تاریخ شروع باشد.')
+    def __str__(self): return f'{self.user} - {self.get_weekday_display()}'
+
 class AttendanceCorrectionRequest(models.Model):
     STATUS=[('pending','در انتظار بررسی'),('approved','تایید شده'),('rejected','رد شده')]
     user=models.ForeignKey(User,on_delete=models.CASCADE,related_name='attendance_corrections')

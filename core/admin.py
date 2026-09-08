@@ -30,7 +30,7 @@ from .models import FinancialTransaction, IntegrationSyncLog
 admin.site.register(FinancialTransaction)
 admin.site.register(IntegrationSyncLog)
 
-from .models import WorkShift, ShiftAssignment, ShiftGroup, AttendanceCorrectionRequest, StaffNotification
+from .models import WorkShift, ShiftAssignment, ShiftGroup, BranchWorkSchedule, EmployeeWorkSchedule, AttendanceCorrectionRequest, StaffNotification
 @admin.register(WorkShift)
 class WorkShiftAdmin(admin.ModelAdmin):
     list_display=('name','branch','start_time','end_time','grace_minutes','report_required','is_active')
@@ -48,6 +48,16 @@ class ShiftGroupAdmin(admin.ModelAdmin):
 class ShiftAssignmentAdmin(admin.ModelAdmin):
     list_display=('user','shift','date','created_by')
     list_filter=('shift__branch','date','shift')
+    search_fields=('user__username','user__first_name','user__last_name')
+@admin.register(BranchWorkSchedule)
+class BranchWorkScheduleAdmin(admin.ModelAdmin):
+    list_display=('branch','weekday','is_working','start_time','end_time','effective_from','effective_until')
+    list_filter=('branch','weekday','is_working')
+
+@admin.register(EmployeeWorkSchedule)
+class EmployeeWorkScheduleAdmin(admin.ModelAdmin):
+    list_display=('user','weekday','is_working','start_time','end_time','effective_from','effective_until')
+    list_filter=('weekday','is_working','user__profile__branch')
     search_fields=('user__username','user__first_name','user__last_name')
 admin.site.register(AttendanceCorrectionRequest)
 admin.site.register(StaffNotification)

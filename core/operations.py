@@ -3,10 +3,11 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.utils import timezone
 from .models import (Attendance, AttendanceCorrectionRequest, DailyReport, LeaveRequest,
-                     ScoreEvent, ShiftAssignment, ShiftGroup, StaffNotification, Task, FinancialTransaction)
+                     ScoreEvent, ShiftAssignment, ShiftGroup, StaffNotification, Task, FinancialTransaction,
+                     BranchWorkSchedule, EmployeeWorkSchedule)
 from .jalali import format_jalali
 
 REPORT_MISSING_PENALTY=int(os.getenv('REPORT_MISSING_PENALTY','-2'))
@@ -26,8 +27,10 @@ def assignment_for(user, day):
 def shift_rule(user, day):
     # Priority:
     # 1) One-day personal override
-    # 2) Employee shift group
-    # 3) Branch default hours
+    # 2) Employee weekly schedule
+    # 3) Branch weekly schedule
+    # 4) Employee shift group
+    # 5) Legacy branch default hours
     assignment=assignment_for(user,day)
     if assignment:
         return {
@@ -38,9 +41,47 @@ def shift_rule(user, day):
             'report_required':assignment.shift.report_required,
             'assignment':assignment,
             'source':'personal',
+            'is_working':True,
+            'is_off':False,
         }
 
     profile=getattr(user,'profile',None)
+    active_on_day=Q(effective_until__isnull=True)|Q(effective_until__gte=day)
+    weekly=EmployeeWorkSchedule.objects.filter(
+        user=user,weekday=day.weekday(),effective_from__lte=day,
+    ).filter(active_on_day).order_by('-effective_from','-pk').first()
+    if weekly:
+        return {
+            'name':'برنامه هفتگی شخصی' if weekly.is_working else 'روز غیرکاری شخصی',
+            'start':weekly.start_time if weekly.is_working else None,
+            'end':weekly.end_time if weekly.is_working else None,
+            'grace':getattr(getattr(profile,'branch',None),'grace_minutes',0),
+            'report_required':weekly.is_working,
+            'assignment':None,
+            'source':'employee_weekly',
+            'is_working':weekly.is_working,
+            'is_off':not weekly.is_working,
+            'weekly_rule':weekly,
+        }
+
+    branch=getattr(profile,'branch',None) if profile else None
+    weekly=BranchWorkSchedule.objects.filter(
+        branch=branch,weekday=day.weekday(),effective_from__lte=day,
+    ).filter(active_on_day).order_by('-effective_from','-pk').first() if branch else None
+    if weekly:
+        return {
+            'name':f'برنامه هفتگی {branch}' if weekly.is_working else f'روز غیرکاری {branch}',
+            'start':weekly.start_time if weekly.is_working else None,
+            'end':weekly.end_time if weekly.is_working else None,
+            'grace':branch.grace_minutes,
+            'report_required':weekly.is_working,
+            'assignment':None,
+            'source':'branch_weekly',
+            'is_working':weekly.is_working,
+            'is_off':not weekly.is_working,
+            'weekly_rule':weekly,
+        }
+
     group=getattr(profile,'shift_group',None) if profile else None
     if group and group.is_active and group.default_shift and group.default_shift.is_active:
         shift=group.default_shift
@@ -53,9 +94,10 @@ def shift_rule(user, day):
             'assignment':None,
             'source':'group',
             'group':group,
+            'is_working':True,
+            'is_off':False,
         }
 
-    branch=getattr(profile,'branch',None) if profile else None
     if branch:
         return {
             'name':'ساعت کاری شعبه',
@@ -65,6 +107,8 @@ def shift_rule(user, day):
             'report_required':True,
             'assignment':None,
             'source':'branch',
+            'is_working':True,
+            'is_off':False,
         }
 
     return {
@@ -75,14 +119,18 @@ def shift_rule(user, day):
         'report_required':True,
         'assignment':None,
         'source':'default',
+        'is_working':True,
+        'is_off':False,
     }
 
 
 def attendance_status_for(user, day, check_in):
     leave=approved_leave(user,day)
     if leave: return 'leave'
-    if not check_in: return 'absent'
     rule=shift_rule(user,day)
+    # A voluntary check-in on a configured day off is valid and is never late.
+    if rule.get('is_off') and check_in: return 'present'
+    if not check_in: return 'absent'
     if not rule['start']: return 'present'
     local=timezone.localtime(check_in)
     threshold=datetime.combine(day,rule['start'])+timedelta(minutes=rule['grace'])

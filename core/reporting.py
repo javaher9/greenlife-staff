@@ -28,13 +28,14 @@ def day_summary(user, day=None):
         r=by.get(u.id); leave=lmap.get(u.id); rule=shift_rule(u,day)
         if leave and not (r and r.check_in): status='leave'; status_fa=leave.get_request_type_display()
         elif r: status=r.status; status_fa=r.get_status_display()
+        elif rule.get('is_off'): status='off'; status_fa='روز غیرکاری'
         else: status='missing'; status_fa='ثبت نشده'
         rows.append({'id':u.id,'name':full_name(u),'branch':getattr(getattr(u,'profile',None),'branch',None).name if getattr(getattr(u,'profile',None),'branch',None) else None,
                      'check_in':timezone.localtime(r.check_in).strftime('%H:%M') if r and r.check_in else None,
                      'check_out':timezone.localtime(r.check_out).strftime('%H:%M') if r and r.check_out else None,
                      'status':status,'status_fa':status_fa,'shift':rule['name']})
-    late=[x for x in rows if x['status']=='late']; missing=[x for x in rows if x['status']=='missing']; leave_rows=[x for x in rows if x['status']=='leave']
-    return {'date':format_jalali(day),'gregorian_date':str(day),'employees':len(rows),'present':sum(1 for x in rows if x['check_in']),'late':len(late),'missing':len(missing),'leave':len(leave_rows),'late_people':late,'missing_people':missing,'leave_people':leave_rows,'rows':rows}
+    late=[x for x in rows if x['status']=='late']; missing=[x for x in rows if x['status']=='missing']; leave_rows=[x for x in rows if x['status']=='leave']; off=[x for x in rows if x['status']=='off']
+    return {'date':format_jalali(day),'gregorian_date':str(day),'employees':len(rows),'present':sum(1 for x in rows if x['check_in']),'late':len(late),'missing':len(missing),'leave':len(leave_rows),'off':len(off),'late_people':late,'missing_people':missing,'leave_people':leave_rows,'off_people':off,'rows':rows}
 
 def leaderboard(user, days=30):
     start=timezone.localdate()-timedelta(days=days-1); users=scope_users(user)
