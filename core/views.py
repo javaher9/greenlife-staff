@@ -133,15 +133,15 @@ def finance_required(view):
         return view(request,*args,**kwargs)
     return wrapper
 
-def consultant_required(view):
+def finance_entry_required(view):
     @wraps(view)
     @login_required
     def wrapper(request,*args,**kwargs):
-        if role_of(request.user)!='consultant':
-            messages.error(request,'ثبت مالی فقط برای نقش مشاور فعال است.')
+        if role_of(request.user) not in ('consultant','receptionist'):
+            messages.error(request,'ثبت مالی فقط برای نقش مشاور یا منشی فعال است.')
             return redirect('dashboard')
         if not getattr(request.user.profile,'branch_id',None):
-            messages.error(request,'برای ثبت مالی باید شعبه مشاور مشخص باشد.')
+            messages.error(request,'برای ثبت مالی باید شعبه کاربر مشخص باشد.')
             return redirect('dashboard')
         return view(request,*args,**kwargs)
     return wrapper
@@ -361,6 +361,9 @@ def dashboard(request):
         receptionist_arrived_count=receptionist_appointments.filter(
             status__in=('arrived','completed')
         ).count()
+        receptionist_payment_count=FinancialTransaction.objects.filter(
+            source='manual',recorded_by=request.user,created_at__date=today_local,
+        ).exclude(review_status='cancelled').count()
         return render(request,'core/receptionist_dashboard.html',{
             'role':role,
             'profile':profile,
@@ -378,6 +381,7 @@ def dashboard(request):
             'receptionist_appointments':receptionist_appointments,
             'receptionist_appointment_count':receptionist_appointment_count,
             'receptionist_arrived_count':receptionist_arrived_count,
+            'receptionist_payment_count':receptionist_payment_count,
         })
     if role=='call_center' and not _is_mobile_request(request):
         return redirect('call_center_dashboard')
@@ -1098,7 +1102,7 @@ def finance_dashboard(request):
         'logs':logs,'selected':day,'manual_entries':entries[:100],
     })
 
-@consultant_required
+@finance_entry_required
 def finance_entry(request):
     profile=request.user.profile
     initial={'entry_type':'inc'}
@@ -1133,12 +1137,13 @@ def finance_entry(request):
                 ).order_by('created_at','id').values_list('created_by',flat=True).first() if appointment.lead_id else None)
             obj.call_center_owner_id=getattr(owner,'pk',owner) or appointment.created_by_id
         obj.patient_ref=obj.person_name
-        obj.service=obj.get_sale_reason_display() if obj.sale_reason else obj.service
+        if not (obj.service or '').strip() and obj.sale_reason:
+            obj.service=obj.get_sale_reason_display()
         obj.account_heading=obj.service
         obj.receipt_original_size=getattr(form,'receipt_original_size',0)
         obj.receipt_compressed_size=getattr(form,'receipt_compressed_size',0)
         obj.raw_data={
-            'entry_channel':'staff_consultant',
+            'entry_channel':f"staff_{role_of(request.user)}",
             'sale_origin':obj.sale_origin,
             'appointment_id':appointment.pk if appointment else None,
             'lead_id':appointment.lead_id if appointment else None,
@@ -1157,7 +1162,7 @@ def finance_entry(request):
             AuditLog.objects.create(
                 actor=request.user,action='finance_entry',path=request.path,method='POST',
                 object_type='FinancialTransaction',object_id=str(obj.pk),
-                summary=f'ثبت مالی مشاور برای {obj.person_name}'[:250],
+                summary=f'ثبت مالی {role_of(request.user)} برای {obj.person_name}'[:250],
                 metadata={
                     'amount':str(obj.amount),'branch_id':obj.branch_id,'status':obj.review_status,
                     'sale_origin':obj.sale_origin,'sale_reason':obj.sale_reason,
