@@ -234,6 +234,11 @@ body.gl-page-finance_dashboard .fin-actions .fin-btn{
   width:auto!important;min-width:0!important;max-width:none!important;height:23px!important;min-height:23px!important;
   padding:2px 7px!important;border-radius:7px!important;font-size:8px!important
 }
+body.gl-page-finance_dashboard .fin-delete-form{display:inline-flex!important;width:auto!important;margin:2px 0 0!important}
+body.gl-page-finance_dashboard .fin-btn.delete{
+  width:auto!important;min-width:0!important;height:22px!important;min-height:22px!important;padding:2px 7px!important;
+  border-color:#864554!important;background:rgba(113,43,58,.52)!important;color:#ffd2db!important;font-size:8px!important;box-shadow:none!important
+}
 .fin-million{direction:ltr;unicode-bidi:isolate;font-family:Tahoma,Arial,sans-serif;font-variant-numeric:tabular-nums}
 </style>
 
@@ -329,6 +334,11 @@ body.gl-page-finance_dashboard .fin-actions .fin-btn{
                 <form method="post" action="{% url 'finance_entry_review' x.pk 'correction' %}" class="inline-form">{% csrf_token %}<button class="fin-btn correction">✎ اصلاح</button></form>
                 <form method="post" action="{% url 'finance_entry_review' x.pk 'cancel' %}" class="inline-form">{% csrf_token %}<button class="fin-btn cancel">× ابطال</button></form>
               </div>
+              {% endif %}
+              {% if user.profile.role == 'admin' %}
+              <form method="post" action="{% url 'finance_entry_delete' x.pk %}" class="inline-form fin-delete-form" onsubmit="return confirm('این تراکنش برای همیشه حذف شود؟ این کار فقط برای ثبت‌های تکراری انجام شود.');">
+                {% csrf_token %}<button class="fin-btn delete" type="submit">⌫ حذف</button>
+              </form>
               {% endif %}
             </div>
           </td>

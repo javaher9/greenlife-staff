@@ -151,6 +151,34 @@ class ConsultantFinanceEntryTests(TestCase):
         self.assertEqual(million_toman(25025000),'2.503')
         self.assertEqual(en_number(34),'34')
 
+    def test_admin_can_delete_duplicate_manual_transaction_with_audit_trail(self):
+        entry=FinancialTransaction.objects.create(
+            source='manual',branch=self.branch,occurred_at=timezone.now(),amount=25000000,
+            person_name='ثبت تکراری',review_status='pending',recorded_by=self.consultant,
+        )
+        self.client.force_login(self.admin)
+        page=self.client.get('/finance/')
+        self.assertContains(page,f'/finance/entries/{entry.pk}/delete/')
+        response=self.client.post(f'/finance/entries/{entry.pk}/delete/')
+        self.assertRedirects(response,'/finance/',fetch_redirect_response=False)
+        self.assertFalse(FinancialTransaction.objects.filter(pk=entry.pk).exists())
+        log=AuditLog.objects.get(action='finance_delete',object_id=str(entry.pk))
+        self.assertEqual(log.actor,self.admin)
+        self.assertEqual(log.metadata['amount'],'25000000.00')
+        self.assertEqual(log.metadata['person_name'],'ثبت تکراری')
+
+    def test_manager_cannot_delete_manual_transaction(self):
+        entry=FinancialTransaction.objects.create(
+            source='manual',branch=self.branch,occurred_at=timezone.now(),amount=25000000,
+            person_name='ثبت محفوظ',review_status='pending',recorded_by=self.consultant,
+        )
+        self.client.force_login(self.manager)
+        page=self.client.get('/finance/')
+        self.assertNotContains(page,f'/finance/entries/{entry.pk}/delete/')
+        response=self.client.post(f'/finance/entries/{entry.pk}/delete/')
+        self.assertEqual(response.status_code,403)
+        self.assertTrue(FinancialTransaction.objects.filter(pk=entry.pk).exists())
+
     def test_consultant_sees_only_destination_codes_not_internal_meanings(self):
         self.client.force_login(self.consultant)
         response=self.client.get('/finance/entry/')
