@@ -56,11 +56,21 @@ class ShiftTodayBulkTests(TestCase):
         self.assertContains(response,'برنامه هفتگی شعبه')
         self.assertContains(response,'پرسنل این شعبه')
         self.assertContains(response,self.employee.get_full_name())
-        self.assertContains(response,'staff-gallery-card')
+        self.assertContains(response,'staff-schedule-card')
         self.assertNotContains(response,'id="employeePicker"')
+        self.assertContains(response,'ذخیره برنامه این فرد')
         employee_row=response.context['rows'][0]
         self.assertEqual(len(employee_row['weekly_days']),7)
         self.assertEqual(employee_row['weekly_days'][0]['start'],time(9))
+
+    def test_weekly_screen_opens_a_complete_schedule_panel_for_every_employee(self):
+        second=self.make_user('second-employee','employee',self.branch)
+        self.client.force_login(self.internal)
+        response=self.client.get(reverse('shift_today_bulk'),{'mode':'weekly','branch':self.branch.pk})
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.content.count(b'<section class="staff-schedule-card">'),2)
+        self.assertContains(response,self.employee.get_full_name())
+        self.assertContains(response,second.get_full_name())
 
     def test_internal_manager_cannot_assign_management_account(self):
         self.client.force_login(self.internal)
