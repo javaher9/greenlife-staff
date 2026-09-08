@@ -14,7 +14,7 @@ from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, BlackboardMessageForm, EmployeeCreateForm, EmployeeEditForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm, ConsultantFinanceEntryForm, StaffLoginForm, StaffCredentialUpdateForm
-from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction, MeetingActionUpdate, StaffCredential, VisitAppointment
+from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, Branch, BranchWorkSchedule, EmployeeWorkSchedule, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction, MeetingActionUpdate, StaffCredential, VisitAppointment
 from .ai import analyze_finance_receipt, process_report
 from .jalali import format_jalali, gregorian_to_jalali, jalali_to_gregorian, parse_jalali
 from .reporting import day_summary, leaderboard, answer_query
@@ -373,6 +373,7 @@ def dashboard(request):
                 user=request.user,is_read=False
             ).count(),
             'attendance_today':attendance_today,
+            'today_shift':shift_rule(request.user,today_local),
             'jalali_dashboard_date':jalali_dashboard_date,
             'receptionist_appointments':receptionist_appointments,
             'receptionist_appointment_count':receptionist_appointment_count,
@@ -1240,87 +1241,189 @@ def shift_assign(request):
 
 @manager_required
 def shift_today_bulk(request):
-    """Safely set one-day shift overrides without changing historical/default schedules."""
+    """Manage today's exception and versioned weekly schedules from one safe screen."""
     role=role_of(request.user)
+    if role not in ('admin','internal_manager'):
+        messages.error(request,'تنظیم برنامه کاری فقط برای مدیر سیستم و مدیر داخلی فعال است.')
+        return redirect('dashboard')
     day=timezone.localdate()
-    users=User.objects.filter(
+    branches=Branch.objects.filter(is_active=True).order_by('name')
+    branch_id=request.POST.get('branch') or request.GET.get('branch')
+    try: branch_id=int(branch_id) if branch_id else None
+    except (TypeError,ValueError): branch_id=None
+    selected_branch=branches.filter(pk=branch_id).first() if branch_id else branches.first()
+
+    users=User.objects.none()
+    if selected_branch:
+        users=User.objects.filter(
         is_active=True,profile__is_active=True,profile__role__in=PERSONNEL_ROLES,
-    ).exclude(profile__branch__isnull=True).select_related(
-        'profile','profile__branch','profile__shift_group','profile__shift_group__default_shift',
-    ).order_by('profile__branch__name','first_name','last_name','username')
-    if role=='manager':
-        users=users.filter(profile__branch=request.user.profile.branch)
+        profile__branch=selected_branch,
+        ).select_related(
+            'profile','profile__branch','profile__shift_group','profile__shift_group__default_shift',
+        ).order_by('first_name','last_name','username')
 
     scoped_users={user.pk:user for user in users}
-    if request.method=='POST':
-        selected_ids=[]
-        for raw_id in request.POST.getlist('selected'):
-            try: selected_ids.append(int(raw_id))
-            except (TypeError,ValueError): continue
-        selected_ids=list(dict.fromkeys(selected_ids))
-        errors=[]; plans=[]
-        for user_id in selected_ids:
-            user=scoped_users.get(user_id)
-            if not user:
-                errors.append('یکی از پرسنل انتخاب‌شده در محدوده دسترسی شما نیست.')
-                continue
-            start_raw=(request.POST.get(f'start_{user_id}') or '').strip()
-            end_raw=(request.POST.get(f'end_{user_id}') or '').strip()
-            try:
-                start_time=datetime.strptime(start_raw,'%H:%M').time()
-                end_time=datetime.strptime(end_raw,'%H:%M').time()
-            except ValueError:
-                errors.append(f'ساعت کاری {user.get_full_name() or user.username} کامل یا معتبر نیست.')
-                continue
-            plans.append((user,start_time,end_time))
+    weekday_order=[(5,'شنبه'),(6,'یکشنبه'),(0,'دوشنبه'),(1,'سه‌شنبه'),(2,'چهارشنبه'),(3,'پنجشنبه'),(4,'جمعه')]
 
-        if not selected_ids:
-            errors.append('حداقل یک نفر را برای اعمال ساعت کاری انتخاب کنید.')
-        if errors:
-            for error in errors: messages.error(request,error)
-        else:
-            with transaction.atomic():
-                for user,start_time,end_time in plans:
-                    branch=user.profile.branch
-                    shift=WorkShift.objects.filter(
-                        branch=branch,start_time=start_time,end_time=end_time,is_active=True,
-                    ).order_by('pk').first()
-                    if not shift:
-                        shift=WorkShift.objects.create(
-                            name=f'روزانه {start_time.strftime("%H:%M")} تا {end_time.strftime("%H:%M")}',
-                            branch=branch,start_time=start_time,end_time=end_time,
-                            grace_minutes=branch.grace_minutes,report_required=True,is_active=True,
-                        )
-                    ShiftAssignment.objects.update_or_create(
-                        user=user,date=day,
-                        defaults={
-                            'shift':shift,'created_by':request.user,
-                            'note':'تنظیم سریع ساعت کاری امروز',
-                        },
-                    )
-                _attendance_audit(
-                    request,'bulk_shift_assignment',
-                    summary=f'ساعت کاری امروز برای {len(plans)} نفر تنظیم شد',
-                    metadata={'date':day.isoformat(),'employee_ids':[user.pk for user,_,_ in plans]},
-                )
-            messages.success(request,f'ساعت کاری امروز برای {len(plans)} نفر با موفقیت ذخیره شد.')
-            return redirect('shift_today_bulk')
+    def parse_weekly_plan(prefix):
+        plan=[]; errors=[]
+        for weekday,label in weekday_order:
+            is_working=request.POST.get(f'{prefix}_working_{weekday}')=='1'
+            start_time=end_time=None
+            if is_working:
+                start_raw=(request.POST.get(f'{prefix}_start_{weekday}') or '').strip()
+                end_raw=(request.POST.get(f'{prefix}_end_{weekday}') or '').strip()
+                try:
+                    start_time=datetime.strptime(start_raw,'%H:%M').time()
+                    end_time=datetime.strptime(end_raw,'%H:%M').time()
+                except ValueError:
+                    errors.append(f'ساعت شروع و پایان {label} کامل یا معتبر نیست.')
+            plan.append((weekday,is_working,start_time,end_time))
+        return plan,errors
 
-    assignments={
-        item.user_id:item for item in ShiftAssignment.objects.select_related('shift').filter(
-            date=day,user_id__in=scoped_users,
+    def replace_weekly_rule(model,lookup,weekday,is_working,start_time,end_time):
+        active=model.objects.filter(
+            **lookup,weekday=weekday,effective_from__lte=day,
+        ).filter(Q(effective_until__isnull=True)|Q(effective_until__gte=day)).order_by('-effective_from','-pk').first()
+        if active and active.effective_from<day:
+            active.effective_until=day-timedelta(days=1)
+            active.save(update_fields=['effective_until','updated_at'])
+        obj,_=model.objects.update_or_create(
+            **lookup,weekday=weekday,effective_from=day,
+            defaults={
+                'is_working':is_working,
+                'start_time':start_time if is_working else None,
+                'end_time':end_time if is_working else None,
+                'effective_until':None,
+                'created_by':request.user,
+            },
         )
-    }
+        obj.full_clean()
+        obj.save()
+
+    if request.method=='POST':
+        action=request.POST.get('action','save_today')
+        if not selected_branch:
+            messages.error(request,'شعبه معتبر انتخاب نشده است.')
+        elif action=='save_branch_weekly':
+            plan,errors=parse_weekly_plan('branch')
+            if errors:
+                for error in errors: messages.error(request,error)
+            else:
+                with transaction.atomic():
+                    for values in plan:
+                        replace_weekly_rule(BranchWorkSchedule,{'branch':selected_branch},*values)
+                    _attendance_audit(request,'branch_weekly_schedule',summary=f'برنامه هفتگی شعبه {selected_branch} تنظیم شد',metadata={'branch_id':selected_branch.pk,'effective_from':day.isoformat()})
+                messages.success(request,f'برنامه هفتگی {selected_branch} از امروز برای کل شعبه اعمال شد.')
+                return redirect(f'/shifts/today/?mode=weekly&branch={selected_branch.pk}')
+        elif action in ('save_employee_weekly','reset_employee_weekly'):
+            try: employee_id=int(request.POST.get('employee') or 0)
+            except (TypeError,ValueError): employee_id=0
+            employee=scoped_users.get(employee_id)
+            if not employee:
+                messages.error(request,'پرسنل انتخاب‌شده در این شعبه معتبر نیست.')
+            elif action=='reset_employee_weekly':
+                with transaction.atomic():
+                    active_rules=EmployeeWorkSchedule.objects.filter(
+                        user=employee,effective_from__lte=day,
+                    ).filter(Q(effective_until__isnull=True)|Q(effective_until__gte=day))
+                    active_rules.filter(effective_from=day).delete()
+                    active_rules.filter(effective_from__lt=day).update(effective_until=day-timedelta(days=1))
+                    _attendance_audit(request,'employee_weekly_schedule_reset',summary=f'برنامه شخصی {employee.get_full_name() or employee.username} حذف شد',metadata={'employee_id':employee.pk,'effective_from':day.isoformat()})
+                messages.success(request,'برنامه شخصی حذف شد؛ این فرد از برنامه شعبه پیروی می‌کند.')
+                return redirect(f'/shifts/today/?mode=weekly&branch={selected_branch.pk}&employee={employee.pk}')
+            else:
+                plan,errors=parse_weekly_plan('employee')
+                if errors:
+                    for error in errors: messages.error(request,error)
+                else:
+                    with transaction.atomic():
+                        for values in plan:
+                            replace_weekly_rule(EmployeeWorkSchedule,{'user':employee},*values)
+                        _attendance_audit(request,'employee_weekly_schedule',summary=f'برنامه هفتگی {employee.get_full_name() or employee.username} تنظیم شد',metadata={'employee_id':employee.pk,'effective_from':day.isoformat()})
+                    messages.success(request,'برنامه هفتگی اختصاصی پرسنل از امروز ذخیره شد.')
+                    return redirect(f'/shifts/today/?mode=weekly&branch={selected_branch.pk}&employee={employee.pk}')
+        else:
+            selected_ids=[]
+            for raw_id in request.POST.getlist('selected'):
+                try: selected_ids.append(int(raw_id))
+                except (TypeError,ValueError): continue
+            selected_ids=list(dict.fromkeys(selected_ids))
+            errors=[]; plans=[]
+            for user_id in selected_ids:
+                user=scoped_users.get(user_id)
+                if not user:
+                    errors.append('یکی از پرسنل انتخاب‌شده در محدوده دسترسی شما نیست.')
+                    continue
+                start_raw=(request.POST.get(f'start_{user_id}') or '').strip()
+                end_raw=(request.POST.get(f'end_{user_id}') or '').strip()
+                try:
+                    start_time=datetime.strptime(start_raw,'%H:%M').time()
+                    end_time=datetime.strptime(end_raw,'%H:%M').time()
+                except ValueError:
+                    errors.append(f'ساعت کاری {user.get_full_name() or user.username} کامل یا معتبر نیست.')
+                    continue
+                plans.append((user,start_time,end_time))
+            if not selected_ids: errors.append('حداقل یک نفر را برای اعمال ساعت کاری انتخاب کنید.')
+            if errors:
+                for error in errors: messages.error(request,error)
+            else:
+                with transaction.atomic():
+                    for user,start_time,end_time in plans:
+                        branch=user.profile.branch
+                        shift=WorkShift.objects.filter(
+                            branch=branch,start_time=start_time,end_time=end_time,is_active=True,
+                        ).order_by('pk').first()
+                        if not shift:
+                            shift=WorkShift.objects.create(
+                                name=f'روزانه {start_time.strftime("%H:%M")} تا {end_time.strftime("%H:%M")}',
+                                branch=branch,start_time=start_time,end_time=end_time,
+                                grace_minutes=branch.grace_minutes,report_required=True,is_active=True,
+                            )
+                        ShiftAssignment.objects.update_or_create(
+                            user=user,date=day,
+                            defaults={'shift':shift,'created_by':request.user,'note':'تنظیم سریع ساعت کاری امروز'},
+                        )
+                    _attendance_audit(request,'bulk_shift_assignment',summary=f'ساعت کاری امروز برای {len(plans)} نفر تنظیم شد',metadata={'date':day.isoformat(),'employee_ids':[user.pk for user,_,_ in plans]})
+                messages.success(request,f'ساعت کاری امروز برای {len(plans)} نفر با موفقیت ذخیره شد.')
+                return redirect(f'/shifts/today/?branch={selected_branch.pk}')
+
+    assignments={item.user_id:item for item in ShiftAssignment.objects.select_related('shift').filter(date=day,user_id__in=scoped_users)}
     rows=[]
-    source_labels={'personal':'اختصاصی امروز','group':'گروه شیفت','branch':'ساعت شعبه','default':'تعیین نشده'}
+    source_labels={'personal':'اختصاصی امروز','employee_weekly':'هفتگی شخصی','branch_weekly':'هفتگی شعبه','group':'گروه شیفت','branch':'ساعت شعبه','default':'تعیین نشده'}
     for user in scoped_users.values():
         rule=shift_rule(user,day)
-        rows.append({
-            'user':user,'start':rule.get('start'),'end':rule.get('end'),
-            'source':source_labels.get(rule.get('source'),'برنامه پایه'),
-            'is_personal':user.pk in assignments,
-        })
-    return render(request,'core/shift_today_bulk.html',{'rows':rows,'today':day})
+        rows.append({'user':user,'start':rule.get('start'),'end':rule.get('end'),'source':source_labels.get(rule.get('source'),'برنامه پایه'),'is_personal':user.pk in assignments,'is_off':rule.get('is_off',False)})
+
+    active_filter=Q(effective_until__isnull=True)|Q(effective_until__gte=day)
+    branch_rules={}
+    if selected_branch:
+        for rule in BranchWorkSchedule.objects.filter(branch=selected_branch,effective_from__lte=day).filter(active_filter).order_by('weekday','-effective_from','-pk'):
+            branch_rules.setdefault(rule.weekday,rule)
+    branch_days=[]
+    for weekday,label in weekday_order:
+        rule=branch_rules.get(weekday)
+        branch_days.append({'weekday':weekday,'label':label,'is_working':rule.is_working if rule else True,'start':rule.start_time if rule else getattr(selected_branch,'work_start',None),'end':rule.end_time if rule else getattr(selected_branch,'work_end',None),'configured':bool(rule)})
+
+    employee_id=request.POST.get('employee') or request.GET.get('employee')
+    try: employee_id=int(employee_id) if employee_id else None
+    except (TypeError,ValueError): employee_id=None
+    selected_employee=scoped_users.get(employee_id) if employee_id else (next(iter(scoped_users.values()),None))
+    employee_rules={}
+    if selected_employee:
+        for rule in EmployeeWorkSchedule.objects.filter(user=selected_employee,effective_from__lte=day).filter(active_filter).order_by('weekday','-effective_from','-pk'):
+            employee_rules.setdefault(rule.weekday,rule)
+    branch_day_map={x['weekday']:x for x in branch_days}
+    employee_days=[]
+    for weekday,label in weekday_order:
+        personal=employee_rules.get(weekday); inherited=branch_day_map[weekday]
+        employee_days.append({'weekday':weekday,'label':label,'is_working':personal.is_working if personal else inherited['is_working'],'start':personal.start_time if personal else inherited['start'],'end':personal.end_time if personal else inherited['end'],'personal':bool(personal)})
+
+    return render(request,'core/shift_today_bulk.html',{
+        'rows':rows,'today':day,'branches':branches,'selected_branch':selected_branch,
+        'weekday_order':weekday_order,'branch_days':branch_days,'employee_days':employee_days,
+        'selected_employee':selected_employee,'mode':request.GET.get('mode','today'),
+    })
 
 @login_required
 def correction_list(request):
@@ -1370,13 +1473,13 @@ def management_employee_status_api(request):
     elif name: users=users.filter(Q(first_name__icontains=name)|Q(last_name__icontains=name)|Q(username__icontains=name))
     user=users.first()
     if not user: return JsonResponse({'error':'employee not found'},status=404)
-    today=timezone.localdate(); rec=Attendance.objects.filter(user=user,date=today).first()
+    today=timezone.localdate(); rec=Attendance.objects.filter(user=user,date=today).first(); today_rule=shift_rule(user,today)
     missing=missing_report_days(user,days=31,end=today-timedelta(days=1))
     kpi=auto_kpi(user,today-timedelta(days=29),today)
     return JsonResponse({'name':user.get_full_name() or user.username,'branch':user.profile.branch.name if user.profile.branch else None,
         'date':format_jalali(today),'check_in':timezone.localtime(rec.check_in).strftime('%H:%M') if rec and rec.check_in else None,
         'check_out':timezone.localtime(rec.check_out).strftime('%H:%M') if rec and rec.check_out else None,
-        'status':rec.status if rec else 'missing','missing_report_nights_31d':len(missing),'missing_report_dates':[format_jalali(x) for x in missing],
+        'status':rec.status if rec else ('off' if today_rule.get('is_off') else 'missing'),'missing_report_nights_31d':len(missing),'missing_report_dates':[format_jalali(x) for x in missing],
         'auto_kpi_30d':kpi},json_dumps_params={'ensure_ascii':False})
 
 
@@ -1401,17 +1504,19 @@ def _branch_live_payload(branch=None, day=None):
     for u in users.order_by('profile__branch__name','last_name','first_name','username'):
         leave = LeaveRequest.objects.filter(user=u,status='approved',start_date__lte=day,end_date__gte=day).first()
         rec = Attendance.objects.filter(user=u,date=day).first()
+        shift=shift_rule(u,day)
         if leave:
             status='leave'; label=leave.get_request_type_display()
         elif rec and rec.check_in:
             status=attendance_status_for(u,day,rec.check_in)
             label='با تأخیر' if status=='late' else 'حاضر'
+        elif shift.get('is_off'):
+            status='off'; label='روز غیرکاری'
         else:
             status='missing'; label='ورود ثبت نشده'
         counters[status] = counters.get(status,0)+1
         overdue = Task.objects.filter(assigned_to=u,status__in=('todo','doing'),due_date__lt=day).count()
         missing_reports = len(missing_report_days(u,days=7,end=day-timedelta(days=1)))
-        shift=shift_rule(u,day)
         expected_start=shift.get('start')
         late_minutes=0
         if rec and rec.check_in and expected_start:
@@ -1433,6 +1538,7 @@ def _branch_live_payload(branch=None, day=None):
             'location_status':rec.check_in_location_status if rec else None,
             'location_distance_m':rec.check_in_distance_m if rec else None,
             'report_today':report_today,
+            'is_off':bool(shift.get('is_off')),
             'overdue_tasks':overdue,
             'missing_reports_7d':missing_reports,
         })
@@ -1443,11 +1549,13 @@ def _branch_live_payload(branch=None, day=None):
     if branch: overdue_tasks=overdue_tasks.filter(assigned_to__profile__branch=branch)
     reports_today = DailyReport.objects.filter(created_at__date=day)
     if branch: reports_today=reports_today.filter(user__profile__branch=branch)
-    total_people=max(1,len(rows))
+    scheduled_rows=[p for p in rows if not p['is_off']]
+    total_people=max(1,len(scheduled_rows))
     present_people=counters.get('present',0)+counters.get('late',0)
     attendance_rate=round(present_people*100/total_people)
     ontime_rate=round(counters.get('present',0)*100/total_people)
-    report_rate=round((len(rows)-sum(1 for p in rows if not p['report_today']))*100/total_people)
+    missing_reports_today=sum(1 for p in scheduled_rows if not p['report_today'])
+    report_rate=round((len(scheduled_rows)-missing_reports_today)*100/total_people)
 
     # Real task completion metric for today (no decorative/hard-coded KPI).
     tasks_today = Task.objects.filter(
@@ -1547,7 +1655,7 @@ def _branch_live_payload(branch=None, day=None):
         'revenue_today':str(revenue),
         'overdue_tasks':overdue_tasks.count(),
         'reports_today':reports_today.values('user').distinct().count(),
-        'missing_reports_today':sum(1 for p in rows if not p['report_today']),
+        'missing_reports_today':missing_reports_today,
         'unverified_locations':sum(1 for p in rows if p['check_in'] and p['location_status'] not in ('verified','manual')),
         'rejected_location_attempts':rejected_attempts.count(),
         'device_open_count':device_open_count,
@@ -1562,7 +1670,7 @@ def _branch_live_payload(branch=None, day=None):
         'tasks_today_done':tasks_today_done,
         'present_people':present_people,
         'action_required_count':(
-            counters.get('late',0) + sum(1 for p in rows if not p['report_today'])
+            counters.get('late',0) + missing_reports_today
             + overdue_tasks.count() + device_open_count
         ),
         'request_total':request_total,
@@ -1905,6 +2013,7 @@ def executive_today(request):
         p=u.profile
         leave=LeaveRequest.objects.filter(user=u,status='approved',start_date__lte=day,end_date__gte=day).first()
         rec=Attendance.objects.filter(user=u,date=day).first()
+        work_rule=shift_rule(u,day)
         avatar=p.avatar.url if p.avatar else None
         base={'id':u.id,'profile_id':p.id,'name':u.get_full_name() or u.username,'branch':p.branch.name if p.branch else '—','job_title':p.job_title,'avatar':avatar}
 
@@ -1914,14 +2023,14 @@ def executive_today(request):
             status=attendance_status_for(u,day,rec.check_in)
             if status=='late':
                 late_people.append({**base,'time':timezone.localtime(rec.check_in).strftime('%H:%M')})
-        else:
+        elif not work_rule.get('is_off'):
             missing_people.append(base)
 
         # checklist status
         templates=_checklist_templates_for(u)
         items=[i for t in templates for i in t.items.all()]
         required=[i for i in items if i.is_required]
-        if required:
+        if required and not work_rule.get('is_off'):
             done_ids=set(ChecklistCompletion.objects.filter(user=u,date=day,is_done=True,item__in=required).values_list('item_id',flat=True))
             missing_required=[i for i in required if i.id not in done_ids]
             if missing_required:
@@ -1989,9 +2098,10 @@ def morning_brief_data(user, branch=None):
         leave=LeaveRequest.objects.filter(user=u,status='approved',start_date__lte=day,end_date__gte=day).exists()
         if leave: continue
         rec=Attendance.objects.filter(user=u,date=day).first()
+        work_rule=shift_rule(u,day)
         if rec and rec.check_in and attendance_status_for(u,day,rec.check_in)=='late':
             late.append(u)
-        elif not rec or not rec.check_in: missing.append(u)
+        elif (not rec or not rec.check_in) and not work_rule.get('is_off'): missing.append(u)
         k=auto_kpi(u,day-timedelta(days=29),day)
         if k['score']<70: low_kpi.append((u,k['score']))
     overdue=Task.objects.filter(status__in=('todo','doing'),due_date__lt=day)
@@ -2491,6 +2601,9 @@ def action_center(request):
             shift=shift_rule(u,day) or {}
         except Exception:
             shift={}
+
+        if shift.get('is_off'):
+            continue
 
         if rec and rec.check_in:
             current_status=attendance_status_for(u,day,rec.check_in)

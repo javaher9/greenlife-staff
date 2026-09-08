@@ -68,7 +68,11 @@
   <section class="gl-dashboard-pair">
     <a class="gl-dash-card gl-attendance-card" href="/attendance/">
       <div class="gl-card-title"><h2>وضعیت امروز</h2><span>◷</span></div>
-      {% if attendance_today.check_in %}
+      {% if today_shift.is_off and not attendance_today.check_in %}
+        <span class="gl-state-pill ok">روز غیرکاری</span>
+        <strong class="gl-entry-time gl-entry-empty">—</strong>
+        <small>امروز طبق برنامه نیازی به ثبت ورود نیست</small>
+      {% elif attendance_today.check_in %}
         <span class="gl-state-pill ok">✓ حضور ثبت شده</span>
         <strong class="gl-entry-time">{{ attendance_today.check_in|date:'H:i' }}</strong>
         <small>ساعت ورود</small>
@@ -80,15 +84,15 @@
       {% if today_shift.start %}<p class="gl-shift-line">شیفت: {{ today_shift.start|time:'H:i' }} - {{ today_shift.end|time:'H:i' }}</p>{% endif %}
     </a>
 
-    <a class="gl-dash-card gl-report-card" href="{% if today_report_exists %}/reports/{% else %}/reports/new/{% endif %}">
+    <a class="gl-dash-card gl-report-card" href="{% if today_shift.is_off or today_report_exists %}/reports/{% else %}/reports/new/{% endif %}">
       <div class="gl-card-title"><h2>گزارش امروز</h2><span>▤</span></div>
       <div class="gl-report-body">
         <div class="gl-ring" style="--progress:{{ overall_progress }};">
           <span>{{ overall_progress }}%</span>
         </div>
         <div class="gl-report-lines">
-          <p class="{% if today_report_exists %}ok{% endif %}">{% if today_report_exists %}✓ گزارش ارسال شده{% else %}گزارش هنوز ارسال نشده{% endif %}</p>
-          <small>{% if today_report_exists %}برای مشاهده گزارش لمس کنید{% else %}برای ثبت گزارش لمس کنید{% endif %}</small>
+          <p class="{% if today_shift.is_off or today_report_exists %}ok{% endif %}">{% if today_shift.is_off %}امروز گزارش الزامی نیست{% elif today_report_exists %}✓ گزارش ارسال شده{% else %}گزارش هنوز ارسال نشده{% endif %}</p>
+          <small>{% if today_shift.is_off %}روز غیرکاری در برنامه هفتگی{% elif today_report_exists %}برای مشاهده گزارش لمس کنید{% else %}برای ثبت گزارش لمس کنید{% endif %}</small>
         </div>
       </div>
     </a>

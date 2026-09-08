@@ -173,7 +173,7 @@
     <div class="actions">
       <a class="primary-action" href="{% url 'receptionist_appointment_create' %}">＋ نوبت جدید</a>
       <div>
-        {% if attendance_today.check_in %}<span class="attendance-pill">✓ ورود امروز {{ attendance_today.check_in|date:"H:i" }}</span>{% else %}<a href="/attendance/" class="attendance-pill off">ورود امروز هنوز ثبت نشده</a>{% endif %}
+        {% if attendance_today.check_in %}<span class="attendance-pill">✓ ورود امروز {{ attendance_today.check_in|date:"H:i" }}</span>{% elif today_shift.is_off %}<span class="attendance-pill">امروز روز غیرکاری شماست</span>{% else %}<a href="/attendance/" class="attendance-pill off">ورود امروز هنوز ثبت نشده</a>{% endif %}
       </div>
       <span class="footnote">نسخه دسکتاپ منشی · تم سفید</span>
     </div>
