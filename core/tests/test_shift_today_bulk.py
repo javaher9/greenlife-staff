@@ -58,6 +58,9 @@ class ShiftTodayBulkTests(TestCase):
         self.assertContains(response,self.employee.get_full_name())
         self.assertContains(response,'staff-gallery-card')
         self.assertNotContains(response,'id="employeePicker"')
+        employee_row=response.context['rows'][0]
+        self.assertEqual(len(employee_row['weekly_days']),7)
+        self.assertEqual(employee_row['weekly_days'][0]['start'],time(9))
 
     def test_internal_manager_cannot_assign_management_account(self):
         self.client.force_login(self.internal)
