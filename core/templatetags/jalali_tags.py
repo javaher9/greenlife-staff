@@ -33,9 +33,9 @@ def en_number(value):
 
 @register.filter
 def million_toman(value):
-    """Display a toman amount as compact millions using Latin digits."""
+    """Display a stored rial amount as compact million tomans using Latin digits."""
     try:
-        millions=Decimal(str(value))/Decimal('1000000')
+        millions=Decimal(str(value))/Decimal('10000000')
     except (InvalidOperation,TypeError,ValueError):
         return '0'
     rendered=f'{millions.quantize(Decimal("0.001"),rounding=ROUND_HALF_UP):f}'.rstrip('0').rstrip('.')

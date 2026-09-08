@@ -122,7 +122,7 @@ class ConsultantFinanceEntryTests(TestCase):
     def test_finance_dashboard_has_consistent_premium_actions_and_aligned_ledger(self):
         occurred=timezone.make_aware(datetime.combine(timezone.localdate(),time(10,0)))
         FinancialTransaction.objects.create(
-            source='manual',branch=self.branch,occurred_at=occurred,amount=1234567,
+            source='manual',branch=self.branch,occurred_at=occurred,amount=12345670,
             entry_type='inc',person_name='مشتری مالی',payment_method='Pos S',
             review_status='pending',analysis_status='skipped',recorded_by=self.consultant,
         )
@@ -145,10 +145,10 @@ class ConsultantFinanceEntryTests(TestCase):
         self.assertContains(response,'linear-gradient(145deg,#91445f')
 
     def test_finance_amounts_use_compact_latin_millions(self):
-        self.assertEqual(million_toman(194000000),'194')
-        self.assertEqual(million_toman(2000000),'2')
-        self.assertEqual(million_toman(2500000),'2.5')
-        self.assertEqual(million_toman(2502500),'2.503')
+        self.assertEqual(million_toman(1940000000),'194')
+        self.assertEqual(million_toman(20000000),'2')
+        self.assertEqual(million_toman(25000000),'2.5')
+        self.assertEqual(million_toman(25025000),'2.503')
         self.assertEqual(en_number(34),'34')
 
     def test_consultant_sees_only_destination_codes_not_internal_meanings(self):
