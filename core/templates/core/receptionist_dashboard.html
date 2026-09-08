@@ -79,7 +79,7 @@
       <span class="disabled" title="پس از اتصال CRM فعال می‌شود"><span class="ico">♙</span>مراجعین</span>
       <a href="{% url 'appointment_schedule' %}"><span class="ico">▣</span>نوبت‌دهی</a>
       <span class="disabled" title="پس از اتصال CRM فعال می‌شود"><span class="ico">◎</span>پذیرش</span>
-      <span class="disabled" title="پس از اتصال مالی فعال می‌شود"><span class="ico">▤</span>پرداخت</span>
+      <a href="{% url 'finance_entry' %}"><span class="ico">▤</span>پرداخت</a>
       <a href="/tasks/"><span class="ico">✓</span>پیگیری</a>
       <span class="disabled" title="در فاز بعدی فعال می‌شود"><span class="ico">◈</span>CRM / CEM</span>
       <a href="{% url 'internal_messages' %}"><span class="ico">✉</span>پیام داخلی</a>
@@ -105,7 +105,7 @@
     <section class="kpis">
       <article class="kpi"><div class="kpi-copy"><small>نوبت‌های امروز</small><strong>{{ receptionist_appointment_count|default:0 }}</strong><p>نوبت‌های واقعی همین شعبه</p></div><div class="kpi-icon">▣</div></article>
       <article class="kpi"><div class="kpi-copy"><small>مراجعین امروز</small><strong>{{ receptionist_arrived_count|default:0 }}</strong><p>بر اساس وضعیت نوبت‌های امروز</p></div><div class="kpi-icon">♙</div></article>
-      <article class="kpi"><div class="kpi-copy"><small>پرداخت‌های امروز</small><strong>—</strong><p>بدون نمایش اطلاعات مالی ساختگی</p></div><div class="kpi-icon">▤</div></article>
+      <article class="kpi"><div class="kpi-copy"><small>پرداخت‌های امروز</small><strong>{{ receptionist_payment_count|default:0 }}</strong><p>ثبت‌شده توسط شما</p></div><div class="kpi-icon">▤</div></article>
       <article class="kpi"><div class="kpi-copy"><small>پیگیری‌های باز</small><strong>{{ receptionist_task_count|default:0 }}</strong><p>بر اساس وظایف واقعی شما</p></div><div class="kpi-icon">✓</div></article>
     </section>
 
