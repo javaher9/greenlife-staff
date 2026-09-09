@@ -92,7 +92,7 @@ body.gl-page-finance_dashboard .content,body.gl-page-finance_dashboard .page-con
       <div class="fin42-real-total">
         <span>جمع فروش فایل</span>
         <b>{{ intel.external_revenue.grand_total_display }}</b>
-        <small>تومان · {{ intel.external_revenue.period_label }}</small>
+        <small>میلیون تومان · {{ intel.external_revenue.period_label }}</small>
       </div>
     </div>
 
@@ -104,7 +104,7 @@ body.gl-page-finance_dashboard .content,body.gl-page-finance_dashboard .page-con
           <span class="fin42-real-kpi-rank">{{ forloop.counter }}</span>
         </div>
         <b>{{ r.total_display }}</b>
-        <small>تومان</small>
+        <small>میلیون تومان</small>
         <div class="fin42-real-share">
           <span>{{ r.pct }}%</span>
           <div class="fin42-real-share-track"><i style="width:{{ r.pct }}%"></i></div>
@@ -178,7 +178,8 @@ body.gl-page-finance_dashboard .content,body.gl-page-finance_dashboard .page-con
     const rawMax=Math.max(...allValues,1);
     const magnitude=Math.pow(10,Math.floor(Math.log10(rawMax)));
     const yMax=Math.ceil(rawMax/magnitude)*magnitude;
-    const fmt=n=>n>=1e9?((n/1e9)%1?(n/1e9).toFixed(1):(n/1e9).toFixed(0))+'B':n>=1e6?((n/1e6)%1?(n/1e6).toFixed(1):(n/1e6).toFixed(0))+'M':n>=1e3?Math.round(n/1e3)+'K':String(Math.round(n));
+    const clean=n=>{const m=Number(n)/1e6;return (Math.round(m*1000)/1000).toString()};
+    const fmt=n=>clean(n);
     const stamps=timeline.map(r=>Date.parse(r.date+'T00:00:00'));
     const minT=Math.min(...stamps),maxT=Math.max(...stamps);
     const xAt=i=>pad.l+((stamps[i]-minT)/(maxT-minT||1))*pw;
@@ -214,7 +215,7 @@ body.gl-page-finance_dashboard .content,body.gl-page-finance_dashboard .page-con
         const raw=row.values&&row.values[branch.name];
         if(raw===undefined||raw===null)return;
         const point=make('circle',{cx:xAt(i),cy:yAt(raw),r:4,class:'point',fill:branch.color});
-        point.appendChild(make('title',{},branch.name+' · '+row.label+' · '+Number(raw).toLocaleString('en-US')+' تومان'));
+        point.appendChild(make('title',{},branch.name+' · '+row.label+' · '+clean(raw)+' میلیون تومان'));
         svg.appendChild(point);
       });
     });
