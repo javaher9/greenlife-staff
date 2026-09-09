@@ -108,6 +108,7 @@ def _clinic_revenue_snapshot(day):
         branches.append({
             'name': name,
             'total': total,
+            'total_display': f'{total:,}',
             'pct': round((total * 100 / grand_total), 1) if grand_total else 0,
             'relative': round((total * 100 / max_branch_total), 1),
             'color': palette.get(name, fallback_colors[idx % len(fallback_colors)]),
@@ -129,6 +130,7 @@ def _clinic_revenue_snapshot(day):
     return {
         'available': True,
         'grand_total': grand_total,
+        'grand_total_display': f'{grand_total:,}',
         'branches': branches,
         'timeline': timeline,
         'chart_data': {'branches': branches, 'timeline': timeline},
