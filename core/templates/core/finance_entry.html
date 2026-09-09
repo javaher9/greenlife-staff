@@ -1,4 +1,40 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<style>
+.finance-entry-shell{display:grid;gap:14px}
+.finance-entry-form{position:relative}
+.fin-submit{display:inline-flex!important;align-items:center;justify-content:center;gap:8px;min-width:240px;min-height:44px;transition:opacity .15s ease,transform .15s ease}
+.fin-submit:disabled{opacity:.78;cursor:wait;transform:none}
+.fin-submit-spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.38);border-top-color:#fff;border-radius:50%;animation:finSpin .7s linear infinite}
+@keyframes finSpin{to{transform:rotate(360deg)}}
+.fin-submit-status{margin-top:9px;padding:9px 11px;border-radius:10px;background:rgba(35,137,98,.13);border:1px solid rgba(35,137,98,.28);color:#bff6dd;font-size:12px;font-weight:800;line-height:1.7}
+.fin-submit-help{display:block;margin-top:7px;color:#8295a7;font-size:11px}
+.fin-today-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:250px}
+.fin-today-stat{padding:9px 11px;border:1px solid rgba(112,136,159,.2);border-radius:10px;background:rgba(255,255,255,.035)}
+.fin-today-stat span{display:block;color:#8296a8;font-size:10px;font-weight:800}
+.fin-today-stat b{display:block;margin-top:3px;color:inherit;font-size:16px;font-weight:950;direction:ltr;text-align:right}
+.fin-today-mobile{display:none}
+.fin-today-card{padding:12px;border:1px solid rgba(110,139,162,.18);border-radius:13px;background:rgba(255,255,255,.035)}
+.fin-today-card+.fin-today-card{margin-top:8px}
+.fin-today-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.fin-today-card-head strong{font-size:13px}
+.fin-today-money{font-size:18px!important;font-weight:950;direction:ltr;white-space:nowrap}
+.fin-today-meta{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin-top:9px;color:#8fa1b2;font-size:11px}
+.fin-today-meta b{color:inherit;font-weight:850}
+.fin-today-card-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(120,145,165,.13)}
+.fin-today-empty{padding:18px;text-align:center;color:#8498aa}
+@media(max-width:700px){
+  .finance-entry-shell{gap:10px}
+  .finance-entry-form .grid{grid-template-columns:1fr!important}
+  .fin-submit{width:100%;min-height:50px;position:sticky;bottom:10px;z-index:6;box-shadow:0 10px 26px rgba(0,0,0,.28)}
+  .fin-submit-help{text-align:center}
+  .fin-today-summary{width:100%;min-width:0}
+  .fin-today-desktop{display:none}
+  .fin-today-mobile{display:block}
+  .panel .sectionhead{align-items:flex-start;gap:9px;flex-direction:column}
+}
+</style>
+
+<div class="finance-entry-shell">
 <section class="hero">
   <div><span class="eyebrow">ثبت دریافت شعبه</span><h1>ثبت فروش و پرداخت</h1><p>مبلغ دریافتی و پکیج/خدمت را ثبت کنید؛ فروش افسریه از مراجعه مستقیم شعبه جدا می‌شود.</p></div>
 </section>
@@ -14,10 +50,12 @@
   </table></div>
 </section>{% endif %}
 
-<section class="panel">
+<section class="panel" id="finance-entry-form-panel">
   <div class="sectionhead"><div><h2>تراکنش جدید</h2><small>شعبه: {{ user.profile.branch|default:'تعیین نشده' }} · ثبت‌کننده: {{ user.get_full_name|default:user.username }}</small></div></div>
-  <form method="post" enctype="multipart/form-data" class="finance-entry-form">
-    {% csrf_token %}{{ form.non_field_errors }}
+  <form method="post" enctype="multipart/form-data" class="finance-entry-form" id="financeEntryForm">
+    {% csrf_token %}
+    <input type="hidden" name="submission_token" value="{{ submission_token }}">
+    {{ form.non_field_errors }}
     <div class="grid">
       <label>{{ form.date.label }}{{ form.date }}{{ form.date.errors }}</label>
       {{ form.entry_type }}
@@ -34,20 +72,83 @@
     </div>
     <label>{{ form.description.label }}{{ form.description }}{{ form.description.errors }}</label>
     <label>{{ form.receipt_image.label }}{{ form.receipt_image }}{{ form.receipt_image.errors }}<small>عکس رسید، کارت‌به‌کارت یا صفحه تراکنش؛ حداکثر ۱۰ مگابایت. تصویر خودکار فشرده و تحلیل می‌شود، اما مبلغ دستی تغییر نمی‌کند.</small></label>
-    <button class="primary" type="submit">ثبت دریافت و ارسال برای بررسی</button>
+    <button class="primary fin-submit" id="financeSubmitButton" type="submit">
+      <span class="fin-submit-icon">✓</span><span class="fin-submit-label">ثبت دریافت و ارسال برای بررسی</span>
+    </button>
+    <small class="fin-submit-help">بعد از اولین لمس، دکمه قفل می‌شود؛ برای ثبت دوباره روی آن نزنید.</small>
+    <div class="fin-submit-status" id="financeSubmitStatus" role="status" aria-live="polite" hidden>در حال ثبت اطلاعات و ارسال تصویر… ثبت فقط یک‌بار انجام می‌شود.</div>
   </form>
 </section>
 
-<section class="panel">
-  <div class="sectionhead"><h2>ثبت‌های اخیر من</h2><small>رکوردها حذف نمی‌شوند و نتیجه بررسی کنار هر مورد نمایش داده می‌شود.</small></div>
-  <div class="tablewrap"><table>
-    <tr><th>تاریخ</th><th>نام فرد</th><th>مبدأ</th><th>علت فروش</th><th>مبلغ</th><th>مقصد واریز</th><th>سند</th><th>وضعیت</th></tr>
+<section class="panel" id="today-finance-entries">
+  <div class="sectionhead">
+    <div><h2>ثبت‌های مالی امروز من</h2><small>فقط ثبت‌های امروز {{ today|jdate }} نمایش داده می‌شود؛ آخرین ثبت بالاتر است.</small></div>
+    <div class="fin-today-summary">
+      <div class="fin-today-stat"><span>تعداد ثبت امروز</span><b>{{ today_count|en_number }}</b></div>
+      <div class="fin-today-stat"><span>جمع · میلیون تومان</span><b>{{ today_total|million_toman }}</b></div>
+    </div>
+  </div>
+
+  <div class="tablewrap fin-today-desktop"><table>
+    <tr><th>تاریخ</th><th>نام فرد</th><th>مبدأ</th><th>علت فروش</th><th>مبلغ (میلیون تومان)</th><th>مقصد واریز</th><th>سند</th><th>وضعیت</th></tr>
     {% for x in entries %}<tr>
       <td>{{ x.occurred_at|jdate }}</td><td>{{ x.person_name }}</td><td>{{ x.get_sale_origin_display|default:'—' }}</td><td>{{ x.get_sale_reason_display|default:'—' }}</td>
-      <td>{{ x.amount|floatformat:0|fa }}</td><td>{{ x.payment_method }}</td>
+      <td>{{ x.amount|million_toman }}</td><td>{{ x.payment_method }}</td>
       <td>{% if x.receipt_image %}<a href="{{ x.receipt_image.url }}" target="_blank" rel="noopener">مشاهده</a><small>{{ x.receipt_compressed_size|filesizeformat }}</small>{% else %}—{% endif %}</td>
       <td><span class="badge {{ x.review_status }}">{{ x.get_review_status_display }}</span>{% if x.review_note %}<small>{{ x.review_note }}</small>{% endif %}</td>
-    </tr>{% empty %}<tr><td colspan="8">هنوز تراکنشی ثبت نکرده‌اید.</td></tr>{% endfor %}
+    </tr>{% empty %}<tr><td colspan="8">امروز هنوز ثبت مالی ندارید.</td></tr>{% endfor %}
   </table></div>
+
+  <div class="fin-today-mobile">
+    {% for x in entries %}
+      <article class="fin-today-card">
+        <div class="fin-today-card-head">
+          <div><strong>{{ x.person_name }}</strong><small>{{ x.occurred_at|jdate }}</small></div>
+          <span class="fin-today-money">{{ x.amount|million_toman }}</span>
+        </div>
+        <div class="fin-today-meta">
+          <span>علت: <b>{{ x.get_sale_reason_display|default:'—' }}</b></span>
+          <span>مبدأ: <b>{{ x.get_sale_origin_display|default:'—' }}</b></span>
+          <span>واریز: <b>{{ x.payment_method|default:'—' }}</b></span>
+          <span>واحد: <b>میلیون تومان</b></span>
+        </div>
+        <div class="fin-today-card-foot">
+          <span class="badge {{ x.review_status }}">{{ x.get_review_status_display }}</span>
+          {% if x.receipt_image %}<a href="{{ x.receipt_image.url }}" target="_blank" rel="noopener">مشاهده سند</a>{% endif %}
+        </div>
+      </article>
+    {% empty %}
+      <div class="fin-today-empty">امروز هنوز ثبت مالی ندارید.</div>
+    {% endfor %}
+  </div>
 </section>
+</div>
+
+<script>
+(function(){
+  const form=document.getElementById('financeEntryForm');
+  const button=document.getElementById('financeSubmitButton');
+  const status=document.getElementById('financeSubmitStatus');
+  if(!form||!button)return;
+
+  let submitted=false;
+  form.addEventListener('submit',function(event){
+    if(submitted){
+      event.preventDefault();
+      return;
+    }
+    if(!form.checkValidity())return;
+
+    submitted=true;
+    form.setAttribute('aria-busy','true');
+    button.disabled=true;
+    button.setAttribute('aria-disabled','true');
+    const icon=button.querySelector('.fin-submit-icon');
+    const label=button.querySelector('.fin-submit-label');
+    if(icon){icon.className='fin-submit-spinner';icon.textContent='';}
+    if(label)label.textContent='در حال ثبت…';
+    if(status)status.hidden=false;
+  });
+})();
+</script>
 {% endblock %}
