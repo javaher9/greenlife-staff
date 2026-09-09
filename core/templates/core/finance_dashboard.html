@@ -32,6 +32,17 @@ body.gl-page-finance_dashboard .content,body.gl-page-finance_dashboard .page-con
 
 .fin42-crm{padding:11px 13px}.fin42-crm summary{cursor:pointer;color:#8da4b7;font-size:8px;font-weight:900}.fin42-crm-row{display:grid;grid-template-columns:120px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:7px;color:#9fb0bf}.fin42-crm-row strong{color:#d6e2ec}
 
+
+/* Real clinic revenue snapshot — isolated from internal FinancialTransaction analytics. */
+.fin42-real{padding:15px;background:radial-gradient(circle at 92% 3%,rgba(139,92,246,.14),transparent 26%),linear-gradient(145deg,#0d1d2c,#081722);border-color:rgba(139,92,246,.34)}
+.fin42-real-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}.fin42-real-eyebrow{display:inline-flex;align-items:center;gap:6px;padding:4px 7px;border-radius:7px;background:rgba(139,92,246,.14);border:1px solid rgba(139,92,246,.3);color:#cbbcff;font-size:7px;font-weight:950;letter-spacing:.06em}.fin42-real-head h2{margin:7px 0 0;color:#fff!important;font-size:17px!important;font-weight:950!important}.fin42-real-head p{margin:5px 0 0;color:#849bad;font-size:8px;line-height:1.8}.fin42-real-total{text-align:left;min-width:170px}.fin42-real-total span{display:block;color:#91a6b8;font-size:7px;font-weight:900}.fin42-real-total b{display:block;margin-top:3px;direction:ltr;color:#fff!important;font-size:22px;font-variant-numeric:tabular-nums}.fin42-real-total small{color:#aebfd0!important;font-size:8px!important}
+.fin42-real-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}.fin42-real-kpi{position:relative;min-height:104px;padding:11px 12px;border:1px solid rgba(118,147,171,.22);border-radius:13px;background:linear-gradient(145deg,rgba(16,36,52,.96),rgba(9,24,36,.98));overflow:hidden}.fin42-real-kpi::after{content:"";position:absolute;right:0;bottom:0;width:100%;height:3px;background:var(--rc,#8b5cf6)}.fin42-real-kpi-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.fin42-real-kpi-name{display:flex;align-items:center;gap:7px;color:#f4f8fc;font-size:9px;font-weight:950}.fin42-real-kpi-name i{width:8px;height:8px;border-radius:50%;background:var(--rc,#8b5cf6);box-shadow:0 0 11px var(--rc,#8b5cf6)}.fin42-real-kpi-rank{display:grid;place-items:center;width:22px;height:22px;border-radius:7px;background:rgba(255,255,255,.055);color:#91a5b7;font-size:7px;font-weight:950}.fin42-real-kpi b{display:block;margin-top:9px;color:#fff!important;direction:ltr;text-align:right;font-size:17px;font-variant-numeric:tabular-nums}.fin42-real-kpi small{display:block;margin-top:2px;color:#8498aa!important;font-size:7px!important}.fin42-real-share{display:flex;align-items:center;gap:7px;margin-top:8px}.fin42-real-share span{direction:ltr;color:#c8d8e6;font-size:7px;font-weight:900}.fin42-real-share-track{flex:1;height:4px;border-radius:99px;background:#183044;overflow:hidden}.fin42-real-share-track i{display:block;height:100%;border-radius:inherit;background:var(--rc,#8b5cf6)}
+.fin42-real-grid{display:grid;grid-template-columns:1.55fr .75fr;gap:10px}.fin42-real-chart,.fin42-real-compare{padding:12px;border:1px solid rgba(103,136,160,.18);border-radius:13px;background:rgba(6,19,30,.62)}.fin42-real-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}.fin42-real-section-head h3{margin:0;color:#f7fbff;font-size:11px;font-weight:950}.fin42-real-section-head span{color:#7f96a8;font-size:7px}.fin42-real-legend{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 6px}.fin42-real-legend span{display:inline-flex;align-items:center;gap:5px;color:#aebfce;font-size:7px;font-weight:850}.fin42-real-legend i{width:7px;height:7px;border-radius:50%;background:var(--rc)}
+.fin42-real-svg{display:block;width:100%;height:310px;overflow:visible}.fin42-real-svg text{font-family:inherit;fill:#7890a4;font-size:10px}.fin42-real-svg .grid{stroke:#234158;stroke-width:1;opacity:.5}.fin42-real-svg .axis{stroke:#36566d;stroke-width:1}.fin42-real-svg .series{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.fin42-real-svg .point{stroke:#071722;stroke-width:2}.fin42-real-svg .xlabel{font-size:9px;fill:#6f879a}.fin42-real-svg .ylabel{font-size:9px;fill:#6f879a}
+.fin42-real-bars{display:grid;gap:11px;padding-top:7px}.fin42-real-bar-row{display:grid;grid-template-columns:62px 1fr;gap:8px;align-items:center}.fin42-real-bar-name{font-size:8px;color:#cfe0ec;font-weight:900}.fin42-real-bar-body{display:grid;gap:5px}.fin42-real-bar-value{display:flex;align-items:center;justify-content:space-between;gap:8px;direction:ltr;color:#f4f8fb;font-size:8px;font-weight:950}.fin42-real-bar-value em{font-style:normal;color:#8198aa;font-size:7px}.fin42-real-bar-track{height:13px;border-radius:5px;background:#142c3e;overflow:hidden}.fin42-real-bar-track i{display:block;height:100%;min-width:2px;border-radius:inherit;background:linear-gradient(90deg,var(--rc),color-mix(in srgb,var(--rc) 65%,#fff));box-shadow:0 0 14px color-mix(in srgb,var(--rc) 25%,transparent)}
+.fin42-real-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:9px;padding-top:8px;border-top:1px solid rgba(92,132,160,.11);color:#71899b;font-size:7px}.fin42-real-foot strong{color:#b9cbd9}
+@media(max-width:1050px){.fin42-real-grid{grid-template-columns:1fr}.fin42-real-kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:620px){.fin42-real-kpis{grid-template-columns:1fr}.fin42-real-head{flex-direction:column}.fin42-real-total{text-align:right}.fin42-real-svg{height:260px}}
+
 @media(max-width:1280px){.fin42-kpis{grid-template-columns:repeat(3,1fr)}.fin42-grid3,.fin42-mid{grid-template-columns:1fr 1fr}.fin42-grid3>section:first-child,.fin42-mid>section:first-child{grid-column:1/-1}.fin42-bottom{grid-template-columns:1fr}}
 @media(max-width:900px){.fin42-filter{grid-template-columns:repeat(2,1fr)}.fin42-grid3,.fin42-mid{grid-template-columns:1fr}.fin42-grid3>section:first-child,.fin42-mid>section:first-child{grid-column:auto}.fin42-donut-wrap{justify-content:flex-start}.fin42 h1{font-size:27px}}
 @media(max-width:620px){.fin42-kpis{grid-template-columns:1fr 1fr}.fin42-filter{grid-template-columns:1fr}.fin42-kpi{min-height:116px}.fin42-kpi b{font-size:23px}.fin42-periods{overflow:auto;justify-content:flex-start}.fin42-periods .apply{margin-right:0}.fin42-head{flex-direction:column}.fin42-service{grid-template-columns:60px 1fr 58px}.fin42-donut-wrap{flex-direction:column;align-items:center}}
@@ -69,6 +80,147 @@ body.gl-page-finance_dashboard .content,body.gl-page-finance_dashboard .page-con
     <article class="fin42-kpi orange"><div class="fin42-kpi-top"><span class="fin42-kpi-icon">▼</span><span class="fin42-kpi-name">نرخ تبدیل</span></div><b>{{ intel.conversion }}%</b><small>فروش ÷ لید</small><span class="fin42-chip">{{ intel.count|en_number }} فروش</span></article>
     <article class="fin42-kpi pink"><div class="fin42-kpi-top"><span class="fin42-kpi-icon">◎</span><span class="fin42-kpi-name">درآمد به ازای لید</span></div><b>{{ intel.revenue_per_lead|million_toman }}</b><small>میلیون تومان</small><span class="fin42-chip">بهره‌وری لید</span></article>
   </section>
+
+  {% if intel.external_revenue.available %}
+  <section class="fin42-panel fin42-real" aria-label="فروش واقعی مراکز در ماه جاری">
+    <div class="fin42-real-head">
+      <div>
+        <span class="fin42-real-eyebrow">REAL REVENUE · JSON</span>
+        <h2>فروش واقعی مراکز در ماه جاری</h2>
+        <p>تایم‌لاین و جمع فروش مستقیماً از فایل واقعی مراکز محاسبه شده است؛ روز بدون رکورد به‌عنوان صفر فرض نمی‌شود.</p>
+      </div>
+      <div class="fin42-real-total">
+        <span>جمع فروش فایل</span>
+        <b>{{ intel.external_revenue.grand_total_display }}</b>
+        <small>تومان · {{ intel.external_revenue.period_label }}</small>
+      </div>
+    </div>
+
+    <div class="fin42-real-kpis">
+      {% for r in intel.external_revenue.branches %}
+      <article class="fin42-real-kpi" style="--rc:{{ r.color }}">
+        <div class="fin42-real-kpi-top">
+          <span class="fin42-real-kpi-name"><i></i>{{ r.name }}</span>
+          <span class="fin42-real-kpi-rank">{{ forloop.counter }}</span>
+        </div>
+        <b>{{ r.total_display }}</b>
+        <small>تومان</small>
+        <div class="fin42-real-share">
+          <span>{{ r.pct }}%</span>
+          <div class="fin42-real-share-track"><i style="width:{{ r.pct }}%"></i></div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+
+    <div class="fin42-real-grid">
+      <div class="fin42-real-chart">
+        <div class="fin42-real-section-head">
+          <h3>تایم‌لاین فروش روزانه مراکز</h3>
+          <span>{{ intel.external_revenue.start_label }} تا {{ intel.external_revenue.end_label }}</span>
+        </div>
+        <div class="fin42-real-legend">
+          {% for r in intel.external_revenue.branches %}<span style="--rc:{{ r.color }}"><i></i>{{ r.name }}</span>{% endfor %}
+        </div>
+        <svg id="fin42-real-revenue-chart" class="fin42-real-svg" viewBox="0 0 920 310" role="img" aria-label="نمودار تایم‌لاین فروش روزانه مراکز"></svg>
+      </div>
+
+      <div class="fin42-real-compare">
+        <div class="fin42-real-section-head">
+          <h3>مقایسه فروش مراکز</h3>
+          <span>کل ماه جاری</span>
+        </div>
+        <div class="fin42-real-bars">
+          {% for r in intel.external_revenue.branches %}
+          <div class="fin42-real-bar-row" style="--rc:{{ r.color }}">
+            <span class="fin42-real-bar-name">{{ r.name }}</span>
+            <div class="fin42-real-bar-body">
+              <div class="fin42-real-bar-value"><strong>{{ r.total_display }}</strong><em>{{ r.pct }}%</em></div>
+              <div class="fin42-real-bar-track"><i style="width:{{ r.relative }}%"></i></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="fin42-real-foot">
+      <span><strong>{{ intel.external_revenue.record_count }}</strong> رکورد واقعی در فایل</span>
+      <span>منبع: <strong>clinic_revenue_timeline.json</strong> · آماده جایگزینی با API زنده همین ساختار</span>
+    </div>
+    {{ intel.external_revenue.chart_data|json_script:"fin42-real-revenue-data" }}
+  </section>
+
+  <script>
+  (function(){
+    const source=document.getElementById('fin42-real-revenue-data');
+    const svg=document.getElementById('fin42-real-revenue-chart');
+    if(!source||!svg)return;
+    let payload;
+    try{payload=JSON.parse(source.textContent)}catch(e){return}
+    const timeline=Array.isArray(payload.timeline)?payload.timeline:[];
+    const branches=Array.isArray(payload.branches)?payload.branches:[];
+    if(!timeline.length||!branches.length)return;
+
+    const NS='http://www.w3.org/2000/svg';
+    const W=920,H=310,pad={l:62,r:18,t:18,b:42},pw=W-pad.l-pad.r,ph=H-pad.t-pad.b;
+    const make=(tag,attrs,text)=>{
+      const el=document.createElementNS(NS,tag);
+      Object.entries(attrs||{}).forEach(([k,v])=>el.setAttribute(k,String(v)));
+      if(text!==undefined)el.textContent=text;
+      return el;
+    };
+    const allValues=[];
+    timeline.forEach(row=>branches.forEach(b=>{
+      const v=row.values&&row.values[b.name];
+      if(v!==undefined&&v!==null)allValues.push(Number(v)||0);
+    }));
+    const rawMax=Math.max(...allValues,1);
+    const magnitude=Math.pow(10,Math.floor(Math.log10(rawMax)));
+    const yMax=Math.ceil(rawMax/magnitude)*magnitude;
+    const fmt=n=>n>=1e9?((n/1e9)%1?(n/1e9).toFixed(1):(n/1e9).toFixed(0))+'B':n>=1e6?((n/1e6)%1?(n/1e6).toFixed(1):(n/1e6).toFixed(0))+'M':n>=1e3?Math.round(n/1e3)+'K':String(Math.round(n));
+    const stamps=timeline.map(r=>Date.parse(r.date+'T00:00:00'));
+    const minT=Math.min(...stamps),maxT=Math.max(...stamps);
+    const xAt=i=>pad.l+((stamps[i]-minT)/(maxT-minT||1))*pw;
+    const yAt=v=>pad.t+ph-(Number(v)/yMax)*ph;
+
+    for(let i=0;i<=4;i++){
+      const value=yMax*i/4, y=yAt(value);
+      svg.appendChild(make('line',{x1:pad.l,y1:y,x2:W-pad.r,y2:y,class:'grid'}));
+      const label=make('text',{x:pad.l-9,y:y+3,'text-anchor':'end',class:'ylabel'},fmt(value));
+      svg.appendChild(label);
+    }
+    svg.appendChild(make('line',{x1:pad.l,y1:pad.t+ph,x2:W-pad.r,y2:pad.t+ph,class:'axis'}));
+
+    const tickEvery=Math.max(1,Math.ceil(timeline.length/8));
+    timeline.forEach((row,i)=>{
+      if(i%tickEvery!==0&&i!==timeline.length-1)return;
+      const x=xAt(i);
+      svg.appendChild(make('line',{x1:x,y1:pad.t+ph,x2:x,y2:pad.t+ph+5,class:'axis'}));
+      svg.appendChild(make('text',{x,y:pad.t+ph+20,'text-anchor':'middle',class:'xlabel'},row.label));
+    });
+
+    branches.forEach(branch=>{
+      let d='',penDown=false;
+      timeline.forEach((row,i)=>{
+        const raw=row.values&&row.values[branch.name];
+        if(raw===undefined||raw===null){penDown=false;return}
+        const x=xAt(i),y=yAt(raw);
+        d+=(penDown?' L ':' M ')+x.toFixed(1)+' '+y.toFixed(1);
+        penDown=true;
+      });
+      if(d)svg.appendChild(make('path',{d,class:'series',stroke:branch.color}));
+      timeline.forEach((row,i)=>{
+        const raw=row.values&&row.values[branch.name];
+        if(raw===undefined||raw===null)return;
+        const point=make('circle',{cx:xAt(i),cy:yAt(raw),r:4,class:'point',fill:branch.color});
+        point.appendChild(make('title',{},branch.name+' · '+row.label+' · '+Number(raw).toLocaleString('en-US')+' تومان'));
+        svg.appendChild(point);
+      });
+    });
+  })();
+  </script>
+  {% endif %}
 
   <div class="fin42-grid3">
     <section class="fin42-panel fin42-card"><div class="fin42-card-head"><h2>روند درآمد</h2><span class="fin42-pill">۷ روز اخیر</span></div><div class="fin42-trend">{% for d in intel.trend %}<div class="fin42-day"><small>{{ d.count|en_number }}</small><div class="fin42-bar" style="height:{{ d.height }}%" title="{{ d.amount|million_toman }} میلیون تومان"></div><em>{{ d.date|jdate }}</em></div>{% endfor %}</div></section>
