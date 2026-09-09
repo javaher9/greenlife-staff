@@ -10,7 +10,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect, render
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, BlackboardMessageForm, EmployeeCreateForm, EmployeeEditForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm, ConsultantFinanceEntryForm, StaffLoginForm, StaffCredentialUpdateForm
@@ -1110,6 +1110,24 @@ def finance_entry(request):
     if requested_appointment.isdigit():
         initial['appointment']=requested_appointment
         initial['sale_origin']='afsariyeh'
+
+    raw_submission_token=(request.POST.get('submission_token') or '').strip()
+    try:
+        submission_token=uuid.UUID(raw_submission_token).hex if raw_submission_token else uuid.uuid4().hex
+    except (ValueError,AttributeError):
+        submission_token=uuid.uuid4().hex
+    submission_external_id=f'staff:{request.user.pk}:{submission_token}'
+
+    # Fast idempotency check before image validation/compression. The database unique
+    # constraint below is still the final protection against truly concurrent taps.
+    if request.method=='POST' and raw_submission_token:
+        existing=FinancialTransaction.objects.filter(
+            source='manual',external_id=submission_external_id,recorded_by=request.user,
+        ).first()
+        if existing:
+            messages.info(request,'این دریافت قبلاً ثبت شده است؛ ثبت دوباره انجام نشد.')
+            return redirect('finance_entry')
+
     form=ConsultantFinanceEntryForm(
         request.POST or None,request.FILES or None,
         consultant_profile=profile,initial=initial,
@@ -1122,6 +1140,7 @@ def finance_entry(request):
         obj.occurred_at=timezone.make_aware(datetime.combine(tx_date,naive_time))
         obj.branch=profile.branch
         obj.source='manual'
+        obj.external_id=submission_external_id
         obj.review_status='pending'
         obj.analysis_status='pending'
         obj.recorded_by=request.user
@@ -1144,45 +1163,69 @@ def finance_entry(request):
         obj.receipt_compressed_size=getattr(form,'receipt_compressed_size',0)
         obj.raw_data={
             'entry_channel':f"staff_{role_of(request.user)}",
+            'submission_token':submission_token,
             'sale_origin':obj.sale_origin,
             'appointment_id':appointment.pk if appointment else None,
             'lead_id':appointment.lead_id if appointment else None,
             'call_center_user_id':obj.call_center_owner_id if appointment else None,
             'first_appointment_owner_id':obj.call_center_owner_id if appointment else None,
         }
-        with transaction.atomic():
-            obj.save()
-            if appointment:
-                if appointment.status!='completed':
-                    appointment.status='completed'
-                    appointment.save(update_fields=['status','updated_at'])
-                if appointment.lead_id and appointment.lead.status!='won':
-                    appointment.lead.status='won'
-                    appointment.lead.save(update_fields=['status','updated_at'])
-            AuditLog.objects.create(
-                actor=request.user,action='finance_entry',path=request.path,method='POST',
-                object_type='FinancialTransaction',object_id=str(obj.pk),
-                summary=f'ثبت مالی {role_of(request.user)} برای {obj.person_name}'[:250],
-                metadata={
-                    'amount':str(obj.amount),'branch_id':obj.branch_id,'status':obj.review_status,
-                    'sale_origin':obj.sale_origin,'sale_reason':obj.sale_reason,
-                    'appointment_id':obj.appointment_id,
-                    'receipt_original_size':obj.receipt_original_size,
-                    'receipt_compressed_size':obj.receipt_compressed_size,
-                },
-                ip_address=_request_ip(request),
-            )
+        try:
+            with transaction.atomic():
+                obj.save()
+                if appointment:
+                    if appointment.status!='completed':
+                        appointment.status='completed'
+                        appointment.save(update_fields=['status','updated_at'])
+                    if appointment.lead_id and appointment.lead.status!='won':
+                        appointment.lead.status='won'
+                        appointment.lead.save(update_fields=['status','updated_at'])
+                AuditLog.objects.create(
+                    actor=request.user,action='finance_entry',path=request.path,method='POST',
+                    object_type='FinancialTransaction',object_id=str(obj.pk),
+                    summary=f'ثبت مالی {role_of(request.user)} برای {obj.person_name}'[:250],
+                    metadata={
+                        'amount':str(obj.amount),'branch_id':obj.branch_id,'status':obj.review_status,
+                        'sale_origin':obj.sale_origin,'sale_reason':obj.sale_reason,
+                        'appointment_id':obj.appointment_id,
+                        'receipt_original_size':obj.receipt_original_size,
+                        'receipt_compressed_size':obj.receipt_compressed_size,
+                        'submission_token':submission_token,
+                    },
+                    ip_address=_request_ip(request),
+                )
+        except IntegrityError:
+            duplicate=FinancialTransaction.objects.filter(
+                source='manual',external_id=submission_external_id,recorded_by=request.user,
+            ).first()
+            if duplicate:
+                messages.info(request,'این دریافت قبلاً ثبت شده است؛ ثبت دوباره انجام نشد.')
+                return redirect('finance_entry')
+            if appointment and FinancialTransaction.objects.filter(appointment=appointment).exists():
+                messages.info(request,'برای این نوبت قبلاً ثبت مالی انجام شده است.')
+                return redirect('finance_entry')
+            raise
         messages.success(request,'تراکنش ثبت شد و برای بررسی مالی ارسال شد.')
         ok,analysis_message=analyze_finance_receipt(obj)
         if ok: messages.success(request,analysis_message)
         else: messages.warning(request,analysis_message+' ثبت مالی شما محفوظ است و مدیر می‌تواند تحلیل را دوباره اجرا کند.')
         return redirect('finance_entry')
-    entries=FinancialTransaction.objects.filter(
+
+    today=timezone.localdate()
+    today_start=timezone.make_aware(datetime.combine(today,datetime.min.time()))
+    today_end=today_start+timedelta(days=1)
+    entries_qs=FinancialTransaction.objects.filter(
         source='manual',recorded_by=request.user,
-    ).select_related('branch').order_by('-created_at')[:50]
+        occurred_at__gte=today_start,occurred_at__lt=today_end,
+    ).select_related('branch').order_by('-created_at')
+    today_count=entries_qs.count()
+    today_total=entries_qs.aggregate(v=Sum('amount'))['v'] or 0
+    entries=entries_qs[:50]
     pending_appointments=form.fields['appointment'].queryset[:30]
     return render(request,'core/finance_entry.html',{
         'form':form,'entries':entries,'pending_appointments':pending_appointments,
+        'submission_token':submission_token,'today_count':today_count,'today_total':today_total,
+        'today':today,
     })
 
 @finance_required
