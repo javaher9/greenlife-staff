@@ -50,6 +50,12 @@ def _money(value):
     return value or ZERO
 
 
+def _million_toman_display(value):
+    millions = Decimal(str(value or 0)) / Decimal('1000000')
+    rendered = f'{millions.quantize(Decimal("0.001")):f}'.rstrip('0').rstrip('.')
+    return rendered or '0'
+
+
 def _clinic_revenue_snapshot(day):
     """Load the real clinic revenue JSON snapshot and normalize it for finance UI charts."""
     data_path = Path(settings.BASE_DIR) / 'core' / 'data' / 'clinic_revenue_timeline.json'
@@ -108,7 +114,7 @@ def _clinic_revenue_snapshot(day):
         branches.append({
             'name': name,
             'total': total,
-            'total_display': f'{total:,}',
+            'total_display': _million_toman_display(total),
             'pct': round((total * 100 / grand_total), 1) if grand_total else 0,
             'relative': round((total * 100 / max_branch_total), 1),
             'color': palette.get(name, fallback_colors[idx % len(fallback_colors)]),
@@ -130,7 +136,7 @@ def _clinic_revenue_snapshot(day):
     return {
         'available': True,
         'grand_total': grand_total,
-        'grand_total_display': f'{grand_total:,}',
+        'grand_total_display': _million_toman_display(grand_total),
         'branches': branches,
         'timeline': timeline,
         'chart_data': {'branches': branches, 'timeline': timeline},
