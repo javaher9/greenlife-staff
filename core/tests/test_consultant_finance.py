@@ -1,7 +1,7 @@
 import tempfile
 from io import BytesIO
 from unittest.mock import Mock, patch
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 
 from django.contrib.auth.models import User
@@ -99,6 +99,56 @@ class ConsultantFinanceEntryTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'ثبت فروش شعبه')
         self.assertContains(response, format_jalali(timezone.localdate()))
+
+    def test_finance_entry_has_single_submit_guard_and_today_summary(self):
+        self.client.force_login(self.consultant)
+        response=self.client.get('/finance/')
+
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'name="submission_token"')
+        self.assertContains(response,'id="financeSubmitButton"')
+        self.assertContains(response,'در حال ثبت…')
+        self.assertContains(response,'ثبت‌های مالی امروز من')
+        self.assertContains(response,'جمع · میلیون تومان')
+
+    def test_duplicate_submission_token_creates_only_one_transaction(self):
+        self.client.force_login(self.consultant)
+        token='11111111111111111111111111111111'
+
+        first=self.valid_payload(submission_token=token)
+        response=self.client.post('/finance/entry/',data=first)
+        self.assertRedirects(response,'/finance/entry/',fetch_redirect_response=False)
+
+        second=self.valid_payload(
+            submission_token=token,
+            receipt_image=self.receipt('duplicate-receipt.gif'),
+        )
+        response=self.client.post('/finance/entry/',data=second)
+        self.assertRedirects(response,'/finance/entry/',fetch_redirect_response=False)
+
+        entries=FinancialTransaction.objects.filter(source='manual',recorded_by=self.consultant)
+        self.assertEqual(entries.count(),1)
+        self.assertEqual(entries.get().external_id,f'staff:{self.consultant.pk}:{token}')
+
+    def test_finance_entry_history_shows_only_today(self):
+        now=timezone.now()
+        FinancialTransaction.objects.create(
+            source='manual',branch=self.branch,occurred_at=now,amount=15000000,
+            entry_type='inc',person_name='ثبت امروز',review_status='pending',
+            recorded_by=self.consultant,
+        )
+        FinancialTransaction.objects.create(
+            source='manual',branch=self.branch,occurred_at=now-timedelta(days=1),amount=22000000,
+            entry_type='inc',person_name='ثبت دیروز',review_status='pending',
+            recorded_by=self.consultant,
+        )
+
+        self.client.force_login(self.consultant)
+        response=self.client.get('/finance/entry/')
+
+        self.assertContains(response,'ثبت امروز')
+        self.assertNotContains(response,'ثبت دیروز')
+        self.assertContains(response,'1.5')
 
     def test_consultant_dashboard_has_prominent_finance_entry_and_stats(self):
         occurred=timezone.make_aware(datetime.combine(timezone.localdate(),time(10,0)))
