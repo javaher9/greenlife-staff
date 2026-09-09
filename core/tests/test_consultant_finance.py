@@ -102,7 +102,7 @@ class ConsultantFinanceEntryTests(TestCase):
 
     def test_finance_entry_has_single_submit_guard_and_today_summary(self):
         self.client.force_login(self.consultant)
-        response=self.client.get('/finance/')
+        response=self.client.get('/finance/entry/')
 
         self.assertEqual(response.status_code,200)
         self.assertContains(response,'name="submission_token"')
