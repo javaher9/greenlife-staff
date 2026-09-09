@@ -1,453 +1,93 @@
-{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+{% extends 'core/base.html' %}{% load jalali_tags finance_intelligence %}{% block content %}
+{% finance_intelligence as intel %}
 <style>
-/* Finance dashboard premium UI v2 — scoped, CSS-only, no business-logic changes */
-.fin-page{display:grid;gap:16px;padding:14px 0 30px}
-.fin-page a{text-decoration:none}
-.fin-hero{
-  display:flex;align-items:center;justify-content:space-between;gap:18px;padding:22px 24px;border-radius:24px;
-  border:1px solid rgba(118,86,190,.34);
-  background:
-    radial-gradient(circle at 12% 15%,rgba(139,92,246,.18),transparent 27%),
-    radial-gradient(circle at 90% 90%,rgba(47,160,119,.10),transparent 24%),
-    linear-gradient(135deg,#111d2a,#0b141e 62%,#101723);
-  box-shadow:0 18px 42px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.035)
-}
-.fin-hero-copy small{display:block;margin-bottom:5px;color:#cbb7ff;font-size:9px;font-weight:900;letter-spacing:.08em}
-.fin-hero h1{margin:0 0 7px;color:#fff!important;font-size:clamp(27px,3vw,39px);font-weight:950}
-.fin-hero p{margin:0;color:#d6e0ea!important;font-size:13px;font-weight:650}
-.fin-sync{
-  border:1px solid #8668d2!important;border-radius:14px!important;padding:11px 15px!important;
-  background:linear-gradient(135deg,#7652ce,#5e43a8)!important;color:#fff!important;font-weight:900!important;
-  box-shadow:0 9px 20px rgba(75,48,132,.25)!important
-}
+/* GreenLife Finance Intelligence v42 — strictly scoped to finance page. */
+body.gl-page-finance_dashboard{background:#06111b!important;color:#eaf3fb!important}
+body.gl-page-finance_dashboard .app-main,body.gl-page-finance_dashboard main{background:radial-gradient(circle at 82% 4%,rgba(0,226,146,.055),transparent 24%),radial-gradient(circle at 20% 24%,rgba(98,73,214,.07),transparent 28%),#06111b!important}
+body.gl-page-finance_dashboard .content,body.gl-page-finance_dashboard .page-content{background:transparent!important}
+.fin42{--panel:#0c1a28;--panel2:#0a1723;--line:#1d3548;--muted:#91a5b8;--green:#16db8b;--blue:#3888ff;--purple:#8b5cf6;--cyan:#18c8d8;--orange:#f59e0b;--pink:#ec4899;display:grid;gap:14px;padding:8px 0 28px;direction:rtl;color:#eaf3fb}
+.fin42 *{box-sizing:border-box}.fin42 a{text-decoration:none}.fin42 input,.fin42 select,.fin42 button{font-family:inherit}
+.fin42-panel{border:1px solid rgba(92,135,169,.22);border-radius:16px;background:linear-gradient(145deg,rgba(13,29,43,.98),rgba(7,19,30,.99));box-shadow:0 14px 36px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.035);overflow:hidden}
+.fin42-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:3px 2px 0}.fin42-title{display:flex;gap:13px;align-items:center}.fin42-logo{display:flex;align-items:flex-end;gap:4px;height:42px}.fin42-logo i{display:block;width:7px;border-radius:8px;background:linear-gradient(180deg,#48ffb0,#13ae71);box-shadow:0 0 12px rgba(39,240,148,.42)}.fin42-logo i:nth-child(1){height:18px}.fin42-logo i:nth-child(2){height:28px}.fin42-logo i:nth-child(3){height:39px}.fin42 h1{margin:0;color:#fff!important;font-size:32px;font-weight:950;line-height:1.15}.fin42-sub{margin-top:4px;color:#7690a6;font-size:9px;font-weight:800;letter-spacing:.05em;direction:ltr;text-align:right}.fin42-sync{border:1px solid #267958!important;background:linear-gradient(135deg,#0f5e43,#0b3f31)!important;color:#d6fff0!important;border-radius:10px!important;padding:9px 12px!important;font-size:9px!important;font-weight:900!important;cursor:pointer}
 
-.fin-filter{
-  display:grid!important;grid-template-columns:auto minmax(220px,1fr) auto;align-items:end;gap:12px;
-  padding:15px 17px!important;border:1px solid rgba(255,255,255,.10)!important;border-radius:18px!important;
-  background:linear-gradient(145deg,rgba(20,29,45,.96),rgba(10,16,27,.98))!important;
-  box-shadow:0 10px 25px rgba(0,0,0,.10)!important
-}
-.fin-filter label{color:#dbe4ee!important;font-size:11px;font-weight:850}
-.fin-filter .queryrow{display:contents}
-.fin-filter input{
-  height:42px!important;border:1px solid #38495c!important;border-radius:12px!important;background:#0c1621!important;
-  color:#fff!important;padding:0 12px!important;font-weight:750!important
-}
-.fin-filter input::placeholder{color:#93a2b3!important;opacity:1!important}
-.fin-filter button{
-  height:42px!important;border:0!important;border-radius:12px!important;padding:0 18px!important;
-  background:linear-gradient(135deg,#7652ce,#6747b6)!important;color:#fff!important;font-weight:900!important
-}
+.fin42-filter{display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr 1fr 1fr;gap:8px;padding:10px;border:1px solid rgba(74,119,153,.24);border-radius:15px;background:rgba(7,20,31,.78);box-shadow:inset 0 1px 0 rgba(255,255,255,.025)}.fin42-field{position:relative}.fin42-field label{display:block;margin:0 3px 5px;color:#8da3b7;font-size:7.5px;font-weight:900}.fin42-field input,.fin42-field select{width:100%;height:37px;border:1px solid #22415a!important;border-radius:10px!important;background:#0b1c2b!important;color:#edf7ff!important;padding:0 10px!important;font-size:9px!important;font-weight:800!important;outline:none}.fin42-field select{appearance:auto}.fin42-periods{grid-column:1/-1;display:flex;align-items:center;gap:6px;justify-content:flex-start;padding-top:2px}.fin42-periods button{height:31px;padding:0 15px;border-radius:9px;border:1px solid #25465e;background:#0b1d2b;color:#c8d7e5;font-size:9px;font-weight:900;cursor:pointer}.fin42-periods button.active{background:linear-gradient(135deg,#238cf7,#37a8ff);border-color:#51b5ff;color:#fff;box-shadow:0 7px 17px rgba(38,143,235,.24)}.fin42-periods .apply{margin-right:auto;background:linear-gradient(135deg,#136a4c,#0c4d39);border-color:#278262;color:#d9fff1}
 
-.fin-kpis{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important}
-.fin-kpis>div{
-  position:relative;overflow:hidden;min-height:112px;padding:17px 18px!important;border-radius:19px!important;
-  border:1px solid rgba(255,255,255,.14)!important;box-shadow:0 13px 28px rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.09)!important
-}
-.fin-kpis>div::before{
-  content:"";position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(circle at 90% 10%,rgba(255,255,255,.16),transparent 23%),repeating-linear-gradient(118deg,rgba(255,255,255,.018) 0 1px,transparent 1px 9px)
-}
-.fin-kpis>div:nth-child(1){background:linear-gradient(145deg,#377c65,#245745 52%,#17241f)!important;border-color:#63a88d!important}
-.fin-kpis>div:nth-child(2){background:linear-gradient(145deg,#91445f,#582d3e 52%,#241a20)!important;border-color:#bd6b87!important}
-.fin-kpis>div:nth-child(3){background:linear-gradient(145deg,#614596,#3e2d62 52%,#1c1b2a)!important;border-color:#8269b6!important}
-.fin-kpis>div:nth-child(4){background:linear-gradient(145deg,#347793,#24536a 52%,#18242c)!important;border-color:#5e9eb9!important}
-.fin-kpis b,.fin-kpis span{position:relative;z-index:1}
-.fin-kpis b{display:block;color:#fff!important;font-size:30px!important;font-weight:950!important;line-height:1.15}
-.fin-kpis span{display:block;margin-top:8px;color:#edf3f8!important;font-size:11px!important;font-weight:800!important}
-.fin-kpis small{position:relative;z-index:1;display:block;margin-top:4px;color:rgba(255,255,255,.72)!important;font-size:8px!important;font-weight:750!important}
+.fin42-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}.fin42-kpi{position:relative;min-height:128px;border-radius:15px;padding:13px 14px;overflow:hidden;border:1px solid rgba(255,255,255,.14);box-shadow:0 12px 24px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.08)}.fin42-kpi::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 12% 7%,rgba(255,255,255,.15),transparent 25%),repeating-linear-gradient(120deg,rgba(255,255,255,.018) 0 1px,transparent 1px 9px);pointer-events:none}.fin42-kpi.green{background:linear-gradient(145deg,#07573d,#063b2f 64%,#07261f);border-color:#12855d}.fin42-kpi.blue{background:linear-gradient(145deg,#133f9c,#102c68 64%,#101d3b);border-color:#2b5fd0}.fin42-kpi.purple{background:linear-gradient(145deg,#6332ae,#3f217a 64%,#241542);border-color:#8250ce}.fin42-kpi.cyan{background:linear-gradient(145deg,#08687a,#074c5b 64%,#07303a);border-color:#11899e}.fin42-kpi.orange{background:linear-gradient(145deg,#864412,#5d2d0e 64%,#351b0c);border-color:#a95e1c}.fin42-kpi.pink{background:linear-gradient(145deg,#7d174d,#581139 64%,#340b25);border-color:#a52869}.fin42-kpi-top{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.fin42-kpi-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:10px;background:rgba(255,255,255,.11);box-shadow:inset 0 1px 0 rgba(255,255,255,.14);font-size:19px}.fin42-kpi-name{color:#f5fbff;font-size:10px;font-weight:900}.fin42-kpi b{position:relative;z-index:1;display:block;margin-top:8px;color:#fff!important;font-size:27px;font-weight:950;direction:ltr;text-align:right;font-variant-numeric:tabular-nums}.fin42-kpi small{position:relative;z-index:1;display:block;margin-top:3px;color:rgba(239,248,255,.72)!important;font-size:8px!important;font-weight:750!important}.fin42-chip{position:absolute;bottom:10px;right:12px;z-index:1;padding:4px 7px;border-radius:7px;background:rgba(6,19,27,.28);color:#bfffe0;font-size:7px;font-weight:900;border:1px solid rgba(255,255,255,.075)}
 
-.fin-grid{display:grid!important;grid-template-columns:1.2fr .8fr!important;gap:14px!important}
-.fin-panel{
-  padding:18px!important;border:1px solid rgba(255,255,255,.10)!important;border-radius:20px!important;
-  background:radial-gradient(circle at 100% 0,rgba(139,92,246,.045),transparent 28%),linear-gradient(150deg,rgba(18,27,42,.98),rgba(9,15,25,.98))!important;
-  box-shadow:0 12px 28px rgba(0,0,0,.11),inset 0 1px 0 rgba(255,255,255,.025)!important
-}
-.fin-panel h2,.fin-panel .sectionhead h2{margin:0;color:#fff!important;font-size:18px!important;font-weight:900!important}
-.fin-panel .sectionhead small{color:#bdc9d7!important;font-weight:650!important}
-.fin-rank{
-  display:grid;grid-template-columns:minmax(100px,.75fr) minmax(0,1.25fr);gap:12px;align-items:center;
-  padding:11px 12px;margin-top:8px;border:1px solid rgba(255,255,255,.045);border-radius:13px;background:rgba(255,255,255,.035)
-}
-.fin-rank span{color:#eef3f8!important;font-weight:850}
-.fin-rank b{color:#c7d3df!important;font-size:11px!important;line-height:1.8!important;text-align:left}
-.fin-empty{color:#aebbc8!important;margin:12px 0 0}
+.fin42-grid3{display:grid;grid-template-columns:1.18fr .82fr .82fr;gap:10px}.fin42-card{padding:13px 14px}.fin42-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:11px}.fin42-card h2{margin:0;color:#fff!important;font-size:13px!important;font-weight:950!important}.fin42-note{color:#7f95a9!important;font-size:7.5px!important;font-weight:750!important}.fin42-pill{padding:5px 8px;border-radius:8px;border:1px solid #24435a;background:#0b1c2a;color:#b9cbd9;font-size:7px;font-weight:900}
 
-.fin-ledger{padding:0!important;overflow:hidden}
-.fin-ledger-head{
-  display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 18px 14px;
-  border-bottom:1px solid rgba(255,255,255,.07)
-}
-.fin-ledger-head h2{margin:0;color:#fff!important;font-size:19px;font-weight:950}
-.fin-ledger-head small{color:#c4cfda!important;font-weight:650}
-.fin-tablewrap{overflow:auto;max-width:100%;scrollbar-width:thin;scrollbar-color:#5a477c #0c1420}
-.fin-table{
-  width:100%;min-width:1420px;border-collapse:separate!important;border-spacing:0!important;table-layout:fixed;
-  background:transparent!important
-}
-.fin-table col.c-date{width:112px}.fin-table col.c-branch{width:105px}.fin-table col.c-consultant{width:145px}.fin-table col.c-person{width:150px}
-.fin-table col.c-type{width:92px}.fin-table col.c-amount{width:122px}.fin-table col.c-pay{width:115px}.fin-table col.c-receipt{width:140px}
-.fin-table col.c-analysis{width:250px}.fin-table col.c-review{width:220px}
-.fin-table th{
-  position:sticky;top:0;z-index:5;padding:12px 10px!important;border-bottom:1px solid #34465a!important;
-  background:#101c2a!important;color:#dce6ef!important;font-size:10px!important;font-weight:900!important;text-align:right!important
-}
-.fin-table td{
-  padding:12px 10px!important;border-bottom:1px solid rgba(255,255,255,.055)!important;
-  background:rgba(10,17,28,.72)!important;color:#edf3f8!important;font-size:11px!important;vertical-align:top!important;
-  overflow-wrap:anywhere
-}
-.fin-table tbody tr:nth-child(even) td{background:rgba(14,23,36,.82)!important}
-.fin-table tbody tr:hover td{background:rgba(80,61,128,.13)!important}
-.fin-table th:last-child,.fin-table td:last-child{
-  position:sticky;left:0;z-index:4;border-right:1px solid rgba(255,255,255,.06)!important;
-  box-shadow:-8px 0 18px rgba(0,0,0,.12)
-}
-.fin-table th:last-child{z-index:7;background:#142030!important}
-.fin-table td:last-child{background:#111c29!important}
-.fin-table tbody tr:nth-child(even) td:last-child{background:#142131!important}
-.fin-cell-stack{display:grid;gap:6px}
-.fin-cell-stack>small{display:block;color:#adbac8!important;font-size:9px!important;line-height:1.65}
-.fin-money{color:#fff!important;font-size:12px!important;font-weight:950!important;white-space:nowrap}
-.fin-type{
-  display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.08);
-  background:rgba(255,255,255,.055);color:#e9eff6;font-size:9px;font-weight:900
-}
-.fin-receipt-link{
-  display:inline-flex;align-items:center;justify-content:center;min-width:76px;padding:7px 10px;border-radius:10px;
-  border:1px solid #4b718d;background:linear-gradient(135deg,#234b66,#1b384d);color:#eef8ff!important;font-weight:850!important
-}
+.fin42-trend{height:168px;display:flex;align-items:flex-end;gap:10px;padding:10px 5px 2px;border-top:1px solid rgba(255,255,255,.025);background:repeating-linear-gradient(to top,rgba(108,147,177,.09) 0 1px,transparent 1px 34px)}.fin42-day{flex:1;min-width:0;height:100%;display:flex;align-items:flex-end;justify-content:center;position:relative;padding-bottom:25px}.fin42-bar{width:min(31px,58%);min-height:3px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#24e38f,#0e9661);box-shadow:0 0 16px rgba(29,214,133,.18);position:relative}.fin42-bar::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent)}.fin42-day em{position:absolute;bottom:6px;color:#8399aa;font-size:7px;font-style:normal;white-space:nowrap}.fin42-day small{position:absolute;top:2px;color:#6094ff!important;font-size:7px!important;font-weight:900!important}
 
-.fin-page .badge{
-  display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:26px;padding:5px 8px!important;
-  border-radius:999px!important;border:1px solid rgba(255,255,255,.10)!important;font-size:9px!important;font-weight:900!important;white-space:nowrap
-}
-.fin-page .badge.pending{background:#574222!important;color:#ffe1a3!important;border-color:#846331!important}
-.fin-page .badge.approved,.fin-page .badge.processed{background:#214c3c!important;color:#bff5dd!important;border-color:#3f775f!important}
-.fin-page .badge.needs_correction{background:#56364f!important;color:#ffd0ed!important;border-color:#8a567c!important}
-.fin-page .badge.cancelled,.fin-page .badge.failed{background:#552c36!important;color:#ffc4d0!important;border-color:#8d4657!important}
-.fin-page .badge.skipped{background:#2d4358!important;color:#c9e5ff!important;border-color:#496b89!important}
+.fin42-donut-wrap{display:flex;align-items:center;justify-content:center;gap:18px;min-height:170px}.fin42-donut{--p:0;--c:#16d888;width:124px;aspect-ratio:1;border-radius:50%;background:conic-gradient(var(--c) calc(var(--p)*1%),#173044 0);position:relative;box-shadow:0 0 24px rgba(0,0,0,.14)}.fin42-donut::after{content:"";position:absolute;inset:25px;border-radius:50%;background:#091825;border:1px solid rgba(255,255,255,.035)}.fin42-donut-center{position:absolute;inset:0;z-index:2;display:grid;place-content:center;text-align:center}.fin42-donut-center b{font-size:20px;color:#fff!important;direction:ltr}.fin42-donut-center span{font-size:7px;color:#8fa5b7}.fin42-legend{display:grid;gap:6px;min-width:120px}.fin42-legend-row{display:grid;grid-template-columns:9px 1fr auto;align-items:center;gap:6px;color:#cfe0ec;font-size:7.5px}.fin42-legend-row i{width:7px;height:7px;border-radius:50%}.fin42-legend-row b{font-size:7.5px;color:#fff!important;direction:ltr}
 
-.fin-actions{
-  display:flex!important;flex-wrap:wrap;align-items:center;gap:5px;margin-top:8px
-}
-.fin-actions .inline-form{margin:0!important;display:block!important;flex:0 0 auto}
-.fin-btn{
-  width:auto;min-width:48px;min-height:28px;border-radius:8px!important;padding:4px 8px!important;
-  border:1px solid rgba(255,255,255,.16)!important;color:#fff!important;font-family:inherit!important;
-  font-size:8.5px!important;font-weight:900!important;line-height:1.1;letter-spacing:-.01em;cursor:pointer;
-  box-shadow:0 4px 10px rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.10)!important;
-  transition:transform .16s ease,filter .16s ease,box-shadow .16s ease
-}
-.fin-btn:hover{transform:translateY(-1px);filter:brightness(1.06);box-shadow:0 6px 14px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.12)!important}
-.fin-btn:active{transform:translateY(0)}
-.fin-btn.approve{background:linear-gradient(135deg,#2f765c,#255c49)!important;border-color:#57977e!important}
-.fin-btn.correction{background:linear-gradient(135deg,#7652a5,#604184)!important;border-color:#9474bd!important}
-.fin-btn.cancel{background:linear-gradient(135deg,#8a4052,#6c3341)!important;border-color:#b45e72!important}
-.fin-btn.analyze{background:linear-gradient(135deg,#2d6585,#244e68)!important;border-color:#4e89a8!important}
-.fin-warning{display:block;color:#ffbdcb!important;font-size:9px!important;font-weight:850!important;line-height:1.55}
-.fin-ok{display:block;color:#aee8cf!important;font-size:9px!important;font-weight:800!important}
+.fin42-mid{display:grid;grid-template-columns:1.15fr .86fr .86fr;gap:10px}.fin42-matrix{overflow:auto}.fin42-matrix table{width:100%;border-collapse:separate;border-spacing:0;min-width:520px;font-size:8px}.fin42-matrix th,.fin42-matrix td{padding:8px 7px;border-bottom:1px solid rgba(92,132,162,.12);border-left:1px solid rgba(92,132,162,.08);text-align:center;color:#dce8f2}.fin42-matrix th{background:#102335;color:#9fb3c4;font-size:7px;font-weight:900}.fin42-matrix th:first-child,.fin42-matrix td:first-child{text-align:right;position:sticky;right:0;background:#0c1d2b;z-index:2}.fin42-matrix td.hot{background:linear-gradient(135deg,rgba(10,106,74,.7),rgba(8,75,59,.7));color:#cffff0;font-weight:950}.fin42-matrix .sum{color:#fff;font-weight:950}
 
-.fin-sync-log .row{
-  display:grid!important;grid-template-columns:160px minmax(0,1fr);gap:12px;align-items:start;padding:11px 12px!important;
-  border:1px solid rgba(255,255,255,.045);border-radius:12px;background:rgba(255,255,255,.03)!important;margin-top:8px
-}
-.fin-sync-log .row strong{color:#fff!important}.fin-sync-log .row span{color:#c3ceda!important;line-height:1.7!important}
+.fin42-funnel{display:grid;gap:6px;padding-top:2px}.fin42-funnel-row{height:28px;margin:auto;display:grid;grid-template-columns:1fr 58px;align-items:center;border-radius:5px;clip-path:polygon(6% 0,94% 0,87% 100%,13% 100%);padding:0 22px 0 18px;color:white;font-size:8px;font-weight:900;box-shadow:0 7px 13px rgba(0,0,0,.15)}.fin42-funnel-row b{direction:ltr;font-size:12px}.fin42-funnel-row:nth-child(1){width:96%;background:linear-gradient(90deg,#d7378a,#ae2c72)}.fin42-funnel-row:nth-child(2){width:84%;background:linear-gradient(90deg,#596ff5,#3e59db)}.fin42-funnel-row:nth-child(3){width:72%;background:linear-gradient(90deg,#11b9b4,#0c8e91)}.fin42-funnel-row:nth-child(4){width:60%;background:linear-gradient(90deg,#65d84d,#32ad47)}.fin42-funnel-row:nth-child(5){width:48%;background:linear-gradient(90deg,#ffbf2c,#e49114)}
 
-@media(max-width:1050px){.fin-kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}.fin-grid{grid-template-columns:1fr!important}}
-@media(max-width:700px){
-  .fin-page{gap:12px}.fin-hero{align-items:flex-start;flex-direction:column;padding:18px}.fin-filter{grid-template-columns:1fr!important;align-items:stretch}
-  .fin-filter .queryrow{display:grid;grid-template-columns:1fr auto;gap:8px}.fin-kpis{grid-template-columns:1fr 1fr!important}
-  .fin-kpis>div{min-height:96px;padding:14px!important}.fin-kpis b{font-size:25px!important}
-  .fin-ledger-head{align-items:flex-start;flex-direction:column}.fin-sync-log .row{grid-template-columns:1fr}
-}
-@media(max-width:430px){.fin-kpis{grid-template-columns:1fr!important}}
+.fin42-services{display:grid;gap:10px;padding-top:7px}.fin42-service{display:grid;grid-template-columns:70px 1fr 74px;gap:8px;align-items:center}.fin42-service>span{font-size:8px;color:#c8d8e4;font-weight:850}.fin42-service>strong{font-size:8px;color:#fff;direction:ltr;text-align:left}.fin42-track{height:12px;border-radius:4px;background:#142c3d;overflow:hidden}.fin42-track i{display:block;height:100%;min-width:2px;border-radius:inherit;background:linear-gradient(90deg,#655fff,#3b9dff);box-shadow:0 0 12px rgba(74,133,255,.3)}.fin42-service:nth-child(2) .fin42-track i{background:linear-gradient(90deg,#1cb9fa,#3584ff)}.fin42-service:nth-child(3) .fin42-track i{background:linear-gradient(90deg,#8e66ff,#6153e8)}.fin42-service:nth-child(4) .fin42-track i{background:linear-gradient(90deg,#b45cff,#7e42dc)}
 
-/* Finance v2.2 — isolate the left review controls and compact this page's sidebar.
-   This intentionally overrides older global button/readability rules only on finance. */
-body.gl-page-finance_dashboard .fin-table col.c-review{width:214px!important}
-body.gl-page-finance_dashboard .fin-table th:last-child,
-body.gl-page-finance_dashboard .fin-table td:last-child{min-width:214px!important;width:214px!important}
-body.gl-page-finance_dashboard .fin-table td:last-child>.fin-cell-stack{
-  width:100%!important;min-width:0!important;box-sizing:border-box!important
-}
-body.gl-page-finance_dashboard .fin-actions{
-  width:100%!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
-  gap:6px!important;align-items:stretch!important;overflow:visible!important
-}
-body.gl-page-finance_dashboard .fin-actions .inline-form{
-  display:block!important;position:static!important;width:100%!important;min-width:0!important;
-  max-width:100%!important;margin:0!important;padding:0!important
-}
-body.gl-page-finance_dashboard .fin-actions .inline-form:nth-child(3){
-  grid-column:1/-1!important;width:58%!important;justify-self:start!important
-}
-body.gl-page-finance_dashboard .fin-actions .fin-btn{
-  position:static!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;
-  width:100%!important;min-width:0!important;max-width:100%!important;min-height:27px!important;height:27px!important;
-  margin:0!important;padding:3px 7px!important;border-radius:9px!important;overflow:hidden!important;
-  white-space:nowrap!important;text-overflow:clip!important;font-size:8.5px!important;line-height:1!important;
-  box-shadow:0 3px 9px rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.08)!important
-}
-body.gl-page-finance_dashboard .fin-actions .fin-btn.approve{background:linear-gradient(135deg,#286b51,#205541)!important;border-color:#4c876d!important}
-body.gl-page-finance_dashboard .fin-actions .fin-btn.correction{background:linear-gradient(135deg,#654993,#513972)!important;border-color:#8065a7!important}
-body.gl-page-finance_dashboard .fin-actions .fin-btn.cancel{background:linear-gradient(135deg,#733846,#5b2e39)!important;border-color:#965061!important}
+.fin42-bottom{display:grid;grid-template-columns:1.7fr .9fr;gap:10px}.fin42-ledger{padding:0}.fin42-ledger-head{display:flex;justify-content:space-between;align-items:center;padding:12px 13px;border-bottom:1px solid rgba(91,131,162,.15)}.fin42-ledger-head h2{margin:0;color:#fff!important;font-size:13px;font-weight:950}.fin42-table-wrap{overflow:auto;max-height:450px;scrollbar-width:thin;scrollbar-color:#36546b #081621}.fin42-table{width:100%;min-width:1150px;border-collapse:separate;border-spacing:0;table-layout:fixed}.fin42-table th{position:sticky;top:0;z-index:4;padding:9px 8px;background:#102334;color:#9fb3c4;font-size:7px;text-align:right;border-bottom:1px solid #254259}.fin42-table td{padding:9px 8px;background:#0a1926;color:#dce8f1;font-size:7.5px;border-bottom:1px solid rgba(76,117,147,.12);vertical-align:top;overflow-wrap:anywhere}.fin42-table tbody tr:nth-child(even) td{background:#0c1c29}.fin42-money{direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums;font-weight:950;color:#fff!important}.fin42-badge{display:inline-flex;align-items:center;padding:3px 6px;border-radius:6px;font-size:7px;font-weight:900;border:1px solid rgba(255,255,255,.08)}.fin42-badge.approved,.fin42-badge.processed{background:#103f31;color:#8ff2c5;border-color:#24634e}.fin42-badge.pending{background:#4b3712;color:#ffd987;border-color:#735821}.fin42-badge.needs_correction{background:#4d2141;color:#ffc7ef;border-color:#70375e}.fin42-badge.cancelled,.fin42-badge.failed{background:#4f1f2a;color:#ffc2cf;border-color:#773444}.fin42-badge.skipped{background:#18384e;color:#b9e4ff;border-color:#2c5670}.fin42-receipt{display:inline-flex;padding:5px 7px;border-radius:7px;background:#123b54;border:1px solid #295d7b;color:#dff5ff!important;font-size:7px;font-weight:900}.fin42-actions{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px}.fin42-btn{height:22px;border-radius:6px;padding:0 6px!important;border:1px solid rgba(255,255,255,.13)!important;color:#fff!important;font-size:7px!important;font-weight:900!important;cursor:pointer}.fin42-btn.approve{background:#176046!important}.fin42-btn.correction{background:#60408a!important}.fin42-btn.cancel{background:#713344!important}.fin42-btn.delete{background:#51222c!important}.fin42-btn.analyze{background:#18506c!important}.fin42-warn{display:block;margin-top:4px;color:#ff8196!important;font-size:7px!important;font-weight:900!important}.fin42-ok{display:block;margin-top:4px;color:#73e4b0!important;font-size:7px!important;font-weight:900!important}
 
-/* Only the finance page: make the desktop side navigation calmer, smaller and more premium. */
-@media(min-width:801px){
-  body.gl-page-finance_dashboard .app-sidebar{padding:16px 11px 12px!important}
-  body.gl-page-finance_dashboard .app-nav{gap:3px!important;margin-top:5px!important}
-  body.gl-page-finance_dashboard .app-nav>a,
-  body.gl-page-finance_dashboard .app-nav>button.mobile-more-toggle{
-    min-height:34px!important;padding:5px 9px!important;border-radius:9px!important;
-    gap:8px!important;font-size:10.5px!important;line-height:1.25!important
-  }
-  body.gl-page-finance_dashboard .app-nav .nav-ico{
-    width:22px!important;height:22px!important;min-width:22px!important;border-radius:6px!important;font-size:14px!important
-  }
-  body.gl-page-finance_dashboard .nav-section-title{margin:6px 5px 1px!important;padding-top:6px!important;font-size:9px!important}
-  body.gl-page-finance_dashboard .sidebar-footer{margin-top:6px!important;padding-top:8px!important}
-  body.gl-page-finance_dashboard .app-nav>a[href="/finance/"].nav-module{display:none!important}
-}
-@media(max-width:760px){
-  body.gl-page-finance_dashboard .fin-table col.c-review{width:196px!important}
-  body.gl-page-finance_dashboard .fin-table th:last-child,
-  body.gl-page-finance_dashboard .fin-table td:last-child{min-width:196px!important;width:196px!important}
-  body.gl-page-finance_dashboard .fin-actions{grid-template-columns:1fr 1fr!important}
-  body.gl-page-finance_dashboard .fin-actions .inline-form:nth-child(3){grid-column:1/-1!important;width:58%!important}
-  body.gl-page-finance_dashboard .fin-actions .fin-btn{height:27px!important;min-height:27px!important;font-size:8.5px!important}
-}
+.fin42-ai{position:relative;padding:12px 13px;background:radial-gradient(circle at 100% 0,rgba(119,78,234,.18),transparent 34%),linear-gradient(145deg,#0d1d2b,#081722);border-color:rgba(118,84,222,.32)}.fin42-ai-title{display:flex;align-items:center;gap:8px;color:#fff;font-size:13px;font-weight:950}.fin42-ai-title b{color:#42d7ff}.fin42-ai-summary{margin-top:9px;padding:8px 9px;border:1px solid rgba(42,213,132,.42);border-radius:8px;background:linear-gradient(90deg,rgba(8,106,67,.46),rgba(6,67,48,.32));color:#d8fff0;font-size:8px;line-height:1.8;font-weight:800}.fin42-alerts{display:grid;gap:6px;margin-top:9px}.fin42-alert{position:relative;padding:7px 25px 7px 8px;border-radius:7px;color:#cfe0ec;font-size:7.5px;line-height:1.7;background:#0c1b28;border:1px solid rgba(87,127,156,.16)}.fin42-alert::before{position:absolute;right:8px;top:7px;font-size:10px}.fin42-alert.ok::before{content:"●";color:#20dd8b}.fin42-alert.warn::before{content:"▲";color:#ffb52e}.fin42-alert.info::before{content:"●";color:#4ca2ff}.fin42-ai-mode{display:inline-block;margin-top:9px;padding:4px 7px;border-radius:6px;background:#2d2253;color:#cbb9ff;font-size:7px;font-weight:900}
 
-/* Finance v2.3 — compact status controls and readable million-toman figures. */
-body.gl-page-finance_dashboard .fin-page .badge{
-  width:max-content!important;min-width:0!important;min-height:20px!important;height:20px!important;
-  padding:2px 6px!important;font-size:8px!important;line-height:1!important
-}
-body.gl-page-finance_dashboard .fin-actions{
-  display:flex!important;flex-wrap:wrap!important;gap:4px!important;width:auto!important;align-items:center!important
-}
-body.gl-page-finance_dashboard .fin-actions .inline-form,
-body.gl-page-finance_dashboard .fin-actions .inline-form:nth-child(3){
-  display:inline-flex!important;grid-column:auto!important;width:auto!important;min-width:0!important;justify-self:auto!important
-}
-body.gl-page-finance_dashboard .fin-actions .fin-btn{
-  width:auto!important;min-width:0!important;max-width:none!important;height:23px!important;min-height:23px!important;
-  padding:2px 7px!important;border-radius:7px!important;font-size:8px!important
-}
-body.gl-page-finance_dashboard .fin-delete-form{display:inline-flex!important;width:auto!important;margin:2px 0 0!important}
-body.gl-page-finance_dashboard .fin-btn.delete{
-  width:auto!important;min-width:0!important;height:22px!important;min-height:22px!important;padding:2px 7px!important;
-  border-color:#864554!important;background:rgba(113,43,58,.52)!important;color:#ffd2db!important;font-size:8px!important;box-shadow:none!important
-}
-.fin-million{direction:ltr;unicode-bidi:isolate;font-family:Tahoma,Arial,sans-serif;font-variant-numeric:tabular-nums}
-.fin-flower-panel{overflow:hidden;padding:20px!important}
-.fin-flower-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:14px}
-.fin-flower-head p{margin:5px 0 0;color:#aebdca;font-size:10px;font-weight:700}
-.fin-flower-legend{display:flex;gap:7px;flex-wrap:wrap;direction:ltr}
-.fin-flower-legend span{padding:5px 8px;border-radius:999px;color:#fff;font-size:8px;font-weight:900;border:1px solid rgba(255,255,255,.1)}
-.fin-flower-legend .today{background:#286b51}.fin-flower-legend .month{background:#654993}.fin-flower-legend .year{background:#245f7b}
-.fin-flower-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:10px}
-.fin-flower-card{padding:14px;border:1px solid rgba(167,129,239,.22);border-radius:16px;background:radial-gradient(circle at 90% 0,rgba(116,75,174,.18),transparent 38%),linear-gradient(145deg,rgba(39,30,58,.86),rgba(16,25,36,.96));box-shadow:0 9px 22px rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.055)}
-.fin-flower-name{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
-.fin-flower-name strong{color:#fff!important;font-size:14px;font-weight:950;text-shadow:0 1px 8px rgba(0,0,0,.28)}.fin-flower-name small{color:#dccbff!important;font-size:8px;font-weight:850}
-.fin-flower-metric{display:grid;grid-template-columns:37px minmax(0,1fr) 68px;gap:7px;align-items:center;margin-top:8px}
-.fin-flower-metric>span{color:#e0e8ef!important;font-size:8px;font-weight:850}.fin-flower-metric>b{color:#fff!important;text-align:left;font-size:10px;font-weight:950}
-.fin-flower-track{height:7px;overflow:hidden;border-radius:99px;background:rgba(255,255,255,.07)}
-.fin-flower-track i{display:block;height:100%;min-width:2px;border-radius:inherit;box-shadow:0 0 12px currentColor}
-.fin-flower-metric.today i{background:linear-gradient(90deg,#2c775b,#64c39c)}
-.fin-flower-metric.month i{background:linear-gradient(90deg,#684796,#a37bdf)}
-.fin-flower-metric.year i{background:linear-gradient(90deg,#28647f,#58add0)}
-.fin-analytics-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
-.fin-chart-list{display:grid;gap:11px;margin-top:13px}
-.fin-chart-row{display:grid;grid-template-columns:90px minmax(0,1fr) 84px;gap:9px;align-items:center}
-.fin-chart-row>strong{color:#eef4f9;font-size:10px}.fin-chart-row>small{color:#fff;text-align:left;font-size:9px;font-weight:900}
-.fin-dual-track{display:grid;gap:4px}.fin-dual-track span{display:block;height:6px;min-width:2px;border-radius:99px}
-.fin-dual-track .income{background:linear-gradient(90deg,#2d7359,#67c79f)}.fin-dual-track .expense{background:linear-gradient(90deg,#773849,#d06c83)}
-.fin-category-row{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.055)}
-.fin-category-row:last-child{border-bottom:0}.fin-category-head{display:flex;justify-content:space-between;gap:10px;color:#edf3f8;font-size:10px;font-weight:850}
-.fin-category-track{height:8px;margin-top:7px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
-.fin-category-track i{display:block;height:100%;min-width:2px;border-radius:inherit;background:linear-gradient(90deg,#624397,#a779df)}
-.fin-ai-panel{position:relative;overflow:hidden;border-color:rgba(117,82,191,.34)!important;background:radial-gradient(circle at 5% 0,rgba(132,83,226,.18),transparent 34%),linear-gradient(135deg,#182231,#101722)!important}
-.fin-ai-panel::after{content:"AI";position:absolute;left:18px;top:11px;color:rgba(206,181,255,.12);font-size:54px;font-weight:950}
-.fin-ai-title{display:flex;align-items:center;gap:9px}.fin-ai-dot{width:9px;height:9px;border-radius:50%;background:#9b73e1;box-shadow:0 0 15px #9b73e1}
-.fin-ai-panel p{position:relative;z-index:1;margin:11px 0 0;max-width:900px;color:#dce6ef;font-size:11px;font-weight:700;line-height:2}
-.fin-ai-mode{display:inline-block;margin-top:9px;padding:4px 8px;border-radius:99px;background:rgba(116,79,181,.2);color:#d8c3ff;font-size:8px;font-weight:900}
-.fin-dimension-panel{padding:18px!important}.fin-dimension-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:9px;margin-top:12px}
-.fin-dimension-card{padding:12px;border-radius:15px;border:1px solid rgba(135,105,195,.20);background:radial-gradient(circle at 100% 0,rgba(112,77,174,.13),transparent 40%),linear-gradient(145deg,rgba(28,39,53,.94),rgba(14,22,32,.98));box-shadow:0 9px 22px rgba(0,0,0,.13),inset 0 1px 0 rgba(255,255,255,.045)}
-body.gl-page-finance_dashboard .fin-dimension-card>header{display:flex!important;position:static!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;width:auto!important;height:auto!important;min-height:42px!important;margin:-3px -3px 10px!important;padding:9px 10px!important;border:1px solid rgba(154,121,215,.16)!important;border-radius:11px!important;background:linear-gradient(135deg,rgba(66,48,96,.58),rgba(25,38,51,.72))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.055)!important;color:#fff!important}
-body.gl-page-finance_dashboard .fin-dimension-card>header strong{color:#fff!important;font-size:11px!important;font-weight:950!important;text-shadow:0 1px 7px rgba(0,0,0,.30)!important}body.gl-page-finance_dashboard .fin-dimension-card>header small{color:#d8e1e9!important;font-size:8px!important;font-weight:800!important}
-.fin-triplet{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;direction:rtl}
-.fin-triplet>div{padding:9px 5px;border-radius:10px;text-align:center;border:1px solid rgba(91,139,166,.16);background:linear-gradient(145deg,rgba(32,63,78,.90),rgba(18,35,46,.96));box-shadow:inset 0 1px 0 rgba(255,255,255,.045)}
-.fin-triplet>div:nth-child(2){border-color:rgba(151,110,212,.22);background:linear-gradient(145deg,rgba(79,55,116,.88),rgba(37,29,54,.96))}.fin-triplet>div:nth-child(3){border-color:rgba(74,154,120,.20);background:linear-gradient(145deg,rgba(31,83,67,.88),rgba(22,42,36,.96))}
-.fin-triplet span{display:block;color:#dce5ed!important;font-size:7px;font-weight:850}.fin-triplet b{display:block;margin-top:4px;color:#fff!important;font-size:13px;font-weight:950;text-shadow:0 1px 7px rgba(0,0,0,.26)}
-.fin-expense-note{display:block;margin-top:8px;padding:6px 8px;border-radius:8px;background:rgba(121,54,72,.13);color:#f0bdc8!important;font-size:8px;font-weight:850}.fin-expense-note b{color:#fff!important}
-@media(max-width:700px){.fin-flower-head{align-items:flex-start;flex-direction:column}.fin-flower-grid{grid-template-columns:1fr}}
-@media(max-width:900px){.fin-analytics-grid{grid-template-columns:1fr}}
+.fin42-crm{padding:11px 13px}.fin42-crm summary{cursor:pointer;color:#8da4b7;font-size:8px;font-weight:900}.fin42-crm-row{display:grid;grid-template-columns:120px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:7px;color:#9fb0bf}.fin42-crm-row strong{color:#d6e2ec}
+
+@media(max-width:1280px){.fin42-kpis{grid-template-columns:repeat(3,1fr)}.fin42-grid3,.fin42-mid{grid-template-columns:1fr 1fr}.fin42-grid3>section:first-child,.fin42-mid>section:first-child{grid-column:1/-1}.fin42-bottom{grid-template-columns:1fr}}
+@media(max-width:900px){.fin42-filter{grid-template-columns:repeat(2,1fr)}.fin42-grid3,.fin42-mid{grid-template-columns:1fr}.fin42-grid3>section:first-child,.fin42-mid>section:first-child{grid-column:auto}.fin42-donut-wrap{justify-content:flex-start}.fin42 h1{font-size:27px}}
+@media(max-width:620px){.fin42-kpis{grid-template-columns:1fr 1fr}.fin42-filter{grid-template-columns:1fr}.fin42-kpi{min-height:116px}.fin42-kpi b{font-size:23px}.fin42-periods{overflow:auto;justify-content:flex-start}.fin42-periods .apply{margin-right:0}.fin42-head{flex-direction:column}.fin42-service{grid-template-columns:60px 1fr 58px}.fin42-donut-wrap{flex-direction:column;align-items:center}}
+@media(max-width:410px){.fin42-kpis{grid-template-columns:1fr}}
 </style>
 
-<div class="fin-page">
-  <section class="fin-hero">
-    <div class="fin-hero-copy">
-      <small>FINANCE CONTROL</small>
-      <h1>مالی و درآمد</h1>
-      <p>خلاصه درآمد CRM · {{ summary.date }}</p>
-    </div>
-    {% if user.profile.role == 'admin' %}
-    <form method="post" action="/finance/sync/">{% csrf_token %}<button class="fin-sync">↻ همگام‌سازی CRM</button></form>
-    {% endif %}
-  </section>
+<div class="fin42">
+  <header class="fin42-head">
+    <div class="fin42-title"><span class="fin42-logo"><i></i><i></i><i></i></span><div><h1>مالی و درآمد</h1><div class="fin42-sub">FINANCE | REVENUE INTELLIGENCE</div></div></div>
+    {% if user.profile.role == 'admin' %}<form method="post" action="/finance/sync/">{% csrf_token %}<button class="fin42-sync">↻ همگام‌سازی CRM</button></form>{% endif %}
+  </header>
 
-  <form method="get" class="fin-filter">
-    <label for="finDate">تاریخ شمسی</label>
-    <div class="queryrow">
-      <input id="finDate" name="date" value="{{ summary.date }}" placeholder="۱۴۰۵/۰۵/۲۴">
-      <button>نمایش گزارش</button>
+  <form method="get" class="fin42-filter">
+    <div class="fin42-field"><label>تاریخ شمسی</label><input name="date" value="{{ summary.date }}"></div>
+    <div class="fin42-field"><label>شعبه</label><select name="branch" {% if user.profile.role == 'manager' %}disabled{% endif %}><option value="">همه شعب</option>{% for b in intel.branches %}<option value="{{ b.id }}" {% if intel.branch.id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select>{% if user.profile.role == 'manager' %}<input type="hidden" name="branch" value="{{ intel.branch.id }}">{% endif %}</div>
+    <div class="fin42-field"><label>گل کال‌سنتر</label><select name="flower"><option value="">همه گل‌ها</option>{% for f in intel.flowers %}<option value="{{ f.user_id }}" {% if intel.flower_id == f.user_id %}selected{% endif %}>{{ f.user.get_full_name|default:f.user.username }}</option>{% endfor %}</select></div>
+    <div class="fin42-field"><label>منشأ لید</label><select name="source"><option value="">همه منشأها</option>{% for code,label in intel.source_options %}<option value="{{ code }}" {% if intel.source == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div class="fin42-field"><label>خدمت</label><select name="service"><option value="">همه خدمات</option>{% for code,label in intel.service_options %}<option value="{{ code }}" {% if intel.service == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div class="fin42-field"><label>نمای فعال</label><input value="{{ intel.period_label }}" readonly></div>
+    <div class="fin42-periods">
+      <button name="period" value="today" class="{% if intel.period == 'today' %}active{% endif %}">امروز</button>
+      <button name="period" value="yesterday" class="{% if intel.period == 'yesterday' %}active{% endif %}">دیروز</button>
+      <button name="period" value="week" class="{% if intel.period == 'week' %}active{% endif %}">هفته</button>
+      <button name="period" value="month" class="{% if intel.period == 'month' %}active{% endif %}">ماه</button>
+      <button name="period" value="year" class="{% if intel.period == 'year' %}active{% endif %}">سال</button>
+      <button class="apply" name="period" value="{{ intel.period }}">اعمال فیلترها</button>
     </div>
   </form>
 
-  <section class="stats fin-kpis" aria-label="خلاصه مالی روز">
-    <div><b class="fin-million">{{ summary.total|million_toman }}</b><span>درآمد روز</span><small>میلیون تومان</small></div>
-    <div><b class="fin-million">{{ summary.expense_total|million_toman }}</b><span>هزینه روز</span><small>میلیون تومان</small></div>
-    <div><b class="fin-million">{{ summary.net_total|million_toman }}</b><span>خالص روز</span><small>میلیون تومان</small></div>
-    <div><b class="fin-million">{{ summary.count|en_number }}</b><span>تراکنش تأییدشده</span><small>تعداد ثبت نهایی</small></div>
+  <section class="fin42-kpis" aria-label="شاخص‌های کلیدی مالی">
+    <article class="fin42-kpi green"><div class="fin42-kpi-top"><span class="fin42-kpi-icon">💰</span><span class="fin42-kpi-name">درآمد کل</span></div><b>{{ intel.total|million_toman }}</b><small>میلیون تومان</small><span class="fin42-chip">{{ intel.period_label }}</span></article>
+    <article class="fin42-kpi blue"><div class="fin42-kpi-top"><span class="fin42-kpi-icon">🛒</span><span class="fin42-kpi-name">تعداد فروش</span></div><b>{{ intel.count|en_number }}</b><small>فاکتور تأییدشده</small><span class="fin42-chip">فروش واقعی</span></article>
+    <article class="fin42-kpi purple"><div class="fin42-kpi-top"><span class="fin42-kpi-icon">▰</span><span class="fin42-kpi-name">میانگین فاکتور</span></div><b>{{ intel.avg_invoice|million_toman }}</b><small>میلیون تومان</small><span class="fin42-chip">ارزش هر فروش</span></article>
+    <article class="fin42-kpi cyan"><div class="fin42-kpi-top"><span class="fin42-kpi-icon">👥</span><span class="fin42-kpi-name">تعداد لید</span></div><b>{{ intel.lead_count|en_number }}</b><small>لید جدید در بازه</small><span class="fin42-chip">{{ intel.appointment_count|en_number }} نوبت</span></article>
+    <article class="fin42-kpi orange"><div class="fin42-kpi-top"><span class="fin42-kpi-icon">▼</span><span class="fin42-kpi-name">نرخ تبدیل</span></div><b>{{ intel.conversion }}%</b><small>فروش ÷ لید</small><span class="fin42-chip">{{ intel.count|en_number }} فروش</span></article>
+    <article class="fin42-kpi pink"><div class="fin42-kpi-top"><span class="fin42-kpi-icon">◎</span><span class="fin42-kpi-name">درآمد به ازای لید</span></div><b>{{ intel.revenue_per_lead|million_toman }}</b><small>میلیون تومان</small><span class="fin42-chip">بهره‌وری لید</span></article>
   </section>
 
-  <section class="fin-panel fin-flower-panel" aria-label="تحلیل فروش گل‌های کال‌سنتر">
-    <div class="fin-flower-head">
-      <div><h2>عملکرد گل‌های کال‌سنتر</h2><p>فروش‌های تأییدشده بر اساس مالک اولین نوبت · امروز، ماه و سال شمسی جاری</p></div>
-      <div class="fin-flower-legend"><span class="today">TODAY</span><span class="month">MONTH</span><span class="year">YEAR</span></div>
-    </div>
-    <div class="fin-flower-grid">
-      {% for flower in flower_sales.rows %}
-      <article class="fin-flower-card">
-        <div class="fin-flower-name"><strong>✦ گل {{ flower.flower_name }}</strong><small><span class="fin-million">{{ flower.sales_count|en_number }}</span> فروش سال</small></div>
-        <div class="fin-flower-metric today"><span>امروز</span><div class="fin-flower-track"><i style="width:{% widthratio flower.today flower_sales.max_today 100 %}%"></i></div><b class="fin-million">{{ flower.today|million_toman }}</b></div>
-        <div class="fin-flower-metric month"><span>ماه</span><div class="fin-flower-track"><i style="width:{% widthratio flower.month flower_sales.max_month 100 %}%"></i></div><b class="fin-million">{{ flower.month|million_toman }}</b></div>
-        <div class="fin-flower-metric year"><span>سال</span><div class="fin-flower-track"><i style="width:{% widthratio flower.year flower_sales.max_year 100 %}%"></i></div><b class="fin-million">{{ flower.year|million_toman }}</b></div>
-      </article>
-      {% empty %}<p class="fin-empty">هنوز فروش تأییدشده‌ای با نوبت کال‌سنتر ثبت نشده است.</p>{% endfor %}
-    </div>
-  </section>
-
-  <section class="fin-panel fin-dimension-panel" aria-label="مقایسه شعب">
-    <div class="sectionhead"><div><h2>عملکرد شعب</h2><small>درآمد تأییدشده هر شعبه · امروز، ماه و سال شمسی</small></div></div>
-    <div class="fin-dimension-grid">{% for branch in visual_analytics.branches %}
-      <article class="fin-dimension-card"><header><strong>⌂ {{ branch.branch__name|default:'بدون شعبه' }}</strong><small><span class="fin-million">{{ branch.count|en_number }}</span> تراکنش سال</small></header>
-        <div class="fin-triplet"><div><span>امروز</span><b class="fin-million">{{ branch.today|million_toman }}</b></div><div><span>ماه</span><b class="fin-million">{{ branch.month|million_toman }}</b></div><div><span>سال</span><b class="fin-million">{{ branch.year|million_toman }}</b></div></div>
-        <small class="fin-expense-note">هزینه ماه: <b class="fin-million">{{ branch.expense_month|million_toman }}</b> میلیون تومان</small>
-      </article>{% endfor %}</div>
-  </section>
-
-  <section class="fin-panel fin-dimension-panel" aria-label="تحلیل دستگاه و خدمات">
-    <div class="sectionhead"><div><h2>دستگاه و خدمات</h2><small>پکیج دستگاه، دایا، لیپولیتیک، پوست و سایر · میلیون تومان</small></div></div>
-    <div class="fin-dimension-grid">{% for item in visual_analytics.categories %}
-      <article class="fin-dimension-card"><header><strong>◇ {{ item.label }}</strong><small><span class="fin-million">{{ item.count|en_number }}</span> ثبت سال</small></header>
-        <div class="fin-triplet"><div><span>امروز</span><b class="fin-million">{{ item.today|million_toman }}</b></div><div><span>ماه</span><b class="fin-million">{{ item.month|million_toman }}</b></div><div><span>سال</span><b class="fin-million">{{ item.year|million_toman }}</b></div></div>
-        <small class="fin-expense-note">هزینه ماه این موضوع: <b class="fin-million">{{ item.expense_month|million_toman }}</b></small>
-      </article>{% endfor %}</div>
-  </section>
-
-  <section class="fin-panel fin-dimension-panel" aria-label="تحلیل منشأ لید">
-    <div class="sectionhead"><div><h2>فروش بر اساس منشأ لید</h2><small>مشخص می‌کند مشتری از پنل، لینک، QR، فایل ورودی یا مراجعه مستقیم آمده است</small></div></div>
-    <div class="fin-dimension-grid">{% for source in visual_analytics.sources %}
-      <article class="fin-dimension-card"><header><strong>◎ {{ source.label }}</strong><small><span class="fin-million">{{ source.count|en_number }}</span> فروش سال</small></header>
-        <div class="fin-triplet"><div><span>امروز</span><b class="fin-million">{{ source.today|million_toman }}</b></div><div><span>ماه</span><b class="fin-million">{{ source.month|million_toman }}</b></div><div><span>سال</span><b class="fin-million">{{ source.year|million_toman }}</b></div></div>
-      </article>{% empty %}<p class="fin-empty">هنوز فروش تأییدشده‌ای با منشأ مشخص وجود ندارد.</p>{% endfor %}</div>
-  </section>
-
-  <section class="fin-panel fin-ai-panel" aria-label="تحلیل هوشمند مالی">
-    <div class="fin-ai-title"><span class="fin-ai-dot"></span><h2>تحلیل هوشمند مالی</h2></div>
-    <p>{{ ai_insight }}</p>
-    <span class="fin-ai-mode">{% if ai_live %}AI ANALYSIS · داده تجمیعی{% else %}SMART ANALYTICS · تحلیل داخلی{% endif %}</span>
-  </section>
-
-  <div class="fin-grid">
-    <section class="fin-panel">
-      <h2>خلاصه شعب</h2>
-      {% for x in summary.by_branch %}
-      <div class="fin-rank"><span>{{ x.branch__name|default:'بدون شعبه' }}</span><b>درآمد <i class="fin-million">{{ x.total|million_toman }}</i> · هزینه <i class="fin-million">{{ x.expenses|million_toman }}</i> · خالص <i class="fin-million">{{ x.net|million_toman }}</i><small> میلیون تومان</small></b></div>
-      {% empty %}<p class="fin-empty">برای این روز داده مالی ثبت نشده است.</p>{% endfor %}
-    </section>
-    <section class="fin-panel">
-      <h2>مقصد واریز</h2>
-      {% for x in summary.by_payment %}
-      <div class="fin-rank"><span>{{ x.payment_method|default:'نامشخص' }}</span><b><i class="fin-million">{{ x.total|million_toman }}</i> <small>میلیون تومان</small></b></div>
-      {% empty %}<p class="fin-empty">داده‌ای وجود ندارد.</p>{% endfor %}
-    </section>
+  <div class="fin42-grid3">
+    <section class="fin42-panel fin42-card"><div class="fin42-card-head"><h2>روند درآمد</h2><span class="fin42-pill">۷ روز اخیر</span></div><div class="fin42-trend">{% for d in intel.trend %}<div class="fin42-day"><small>{{ d.count|en_number }}</small><div class="fin42-bar" style="height:{{ d.height }}%" title="{{ d.amount|million_toman }} میلیون تومان"></div><em>{{ d.date|jdate }}</em></div>{% endfor %}</div></section>
+    <section class="fin42-panel fin42-card"><div class="fin42-card-head"><h2>درآمد بر اساس شعبه</h2><span class="fin42-pill">مبلغ</span></div><div class="fin42-donut-wrap"><div class="fin42-donut" style="--p:{{ intel.branch_donut }};--c:#16d888"><div class="fin42-donut-center"><b>{{ intel.total|million_toman }}M</b><span>مجموع</span></div></div><div class="fin42-legend">{% for r in intel.branch_rows|slice:':6' %}<div class="fin42-legend-row"><i style="background:{{ r.color }}"></i><span>{{ r.label }}</span><b>{{ r.total|million_toman }}M · {{ r.pct }}%</b></div>{% empty %}<span class="fin42-note">داده‌ای نیست.</span>{% endfor %}</div></div></section>
+    <section class="fin42-panel fin42-card"><div class="fin42-card-head"><h2>درآمد بر اساس منشأ لید</h2><span class="fin42-pill">مبلغ</span></div><div class="fin42-donut-wrap"><div class="fin42-donut" style="--p:{{ intel.source_donut }};--c:#10d39a"><div class="fin42-donut-center"><b>{{ intel.total|million_toman }}M</b><span>مجموع</span></div></div><div class="fin42-legend">{% for r in intel.source_rows|slice:':6' %}<div class="fin42-legend-row"><i style="background:{{ r.color }}"></i><span>{{ r.label }}</span><b>{{ r.total|million_toman }}M · {{ r.pct }}%</b></div>{% empty %}<span class="fin42-note">منشأ لید ثبت نشده.</span>{% endfor %}</div></div></section>
   </div>
 
-  <section class="fin-panel fin-ledger">
-    <div class="fin-ledger-head">
-      <h2>ثبت‌های دستی مشاوران</h2>
-      <small>فقط موارد تأییدشده وارد جمع مالی می‌شوند.</small>
-    </div>
-    <div class="fin-tablewrap">
-      <table class="fin-table">
-        <colgroup>
-          <col class="c-date"><col class="c-branch"><col class="c-consultant"><col class="c-consultant"><col class="c-consultant"><col class="c-person"><col class="c-type">
-          <col class="c-amount"><col class="c-pay"><col class="c-receipt"><col class="c-analysis"><col class="c-review">
-        </colgroup>
-        <thead><tr><th>تاریخ</th><th>شعبه</th><th>مشاور</th><th>گل کال‌سنتر</th><th>منشأ لید</th><th>نام فرد</th><th>نوع</th><th>مبلغ</th><th>مقصد واریز</th><th>سند</th><th>تحلیل عکس</th><th>بررسی</th></tr></thead>
-        <tbody>
-        {% for x in manual_entries %}
-        <tr>
-          <td>{{ x.occurred_at|jdate }}</td>
-          <td>{{ x.branch|default:'—' }}</td>
-          <td>{{ x.recorded_by.get_full_name|default:x.recorded_by.username }}</td>
-          <td>{% if x.call_center_owner %}<strong>✦ {{ x.call_center_owner.get_full_name|default:x.call_center_owner.username }}</strong>{% else %}<span class="fin-empty">مراجعه مستقیم</span>{% endif %}</td>
-          <td>{% if x.appointment.lead %}<strong>{{ x.appointment.lead.get_source_display }}</strong><small>{% if x.appointment.lead.group %} · {{ x.appointment.lead.group.name }}{% endif %}</small>{% else %}مراجعه مستقیم شعبه{% endif %}</td>
-          <td><strong>{{ x.person_name }}</strong></td>
-          <td><span class="fin-type">{{ x.get_entry_type_display }}</span></td>
-          <td><span class="fin-money fin-million">{{ x.amount|million_toman }}</span> <small>میلیون تومان</small></td>
-          <td>{{ x.payment_method }}</td>
-          <td>
-            <div class="fin-cell-stack">
-              {% if x.receipt_image %}
-                <a class="fin-receipt-link" href="{{ x.receipt_image.url }}" target="_blank" rel="noopener">◈ مشاهده سند</a>
-                <small>{{ x.receipt_original_size|filesizeformat }} ← {{ x.receipt_compressed_size|filesizeformat }}</small>
-              {% else %}<span>—</span>{% endif %}
-            </div>
-          </td>
-          <td>
-            <div class="fin-cell-stack">
-              <span class="badge {{ x.analysis_status }}">{{ x.get_analysis_status_display }}</span>
-              {% if x.receipt_analysis.detected_amount %}<small>مبلغ خوانده‌شده: <span class="fin-million">{{ x.receipt_analysis.detected_amount|en_number }}</span> {{ x.receipt_analysis.currency_unit }}</small>{% endif %}
-              {% if x.receipt_analysis.manual_amount_match == False %}<span class="fin-warning">⚠ اختلاف با مبلغ دستی</span>{% elif x.receipt_analysis.manual_amount_match == True %}<span class="fin-ok">✓ مطابق مبلغ دستی</span>{% endif %}
-              {% if x.receipt_analysis.tracking_number %}<small>پیگیری: {{ x.receipt_analysis.tracking_number }}</small>{% endif %}
-              {% if x.analysis_status == 'failed' or x.analysis_status == 'skipped' %}
-              <form method="post" action="{% url 'finance_entry_analyze' x.pk %}" class="inline-form">{% csrf_token %}<button class="fin-btn analyze">تحلیل دوباره</button></form>
-              {% endif %}
-            </div>
-          </td>
-          <td>
-            <div class="fin-cell-stack">
-              <span class="badge {{ x.review_status }}">{{ x.get_review_status_display }}</span>
-              {% if x.review_status == 'pending' or x.review_status == 'needs_correction' %}
-              <div class="fin-actions">
-                <form method="post" action="{% url 'finance_entry_review' x.pk 'approve' %}" class="inline-form">{% csrf_token %}<button class="fin-btn approve">✓ تأیید</button></form>
-                <form method="post" action="{% url 'finance_entry_review' x.pk 'correction' %}" class="inline-form">{% csrf_token %}<button class="fin-btn correction">✎ اصلاح</button></form>
-                <form method="post" action="{% url 'finance_entry_review' x.pk 'cancel' %}" class="inline-form">{% csrf_token %}<button class="fin-btn cancel">× ابطال</button></form>
-              </div>
-              {% endif %}
-              {% if user.profile.role == 'admin' %}
-              <form method="post" action="{% url 'finance_entry_delete' x.pk %}" class="inline-form fin-delete-form" onsubmit="return confirm('این تراکنش برای همیشه حذف شود؟ این کار فقط برای ثبت‌های تکراری انجام شود.');">
-                {% csrf_token %}<button class="fin-btn delete" type="submit">⌫ حذف</button>
-              </form>
-              {% endif %}
-            </div>
-          </td>
-        </tr>
-        {% empty %}<tr><td colspan="12" class="fin-empty">ثبت دستی وجود ندارد.</td></tr>{% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
+  <div class="fin42-mid">
+    <section class="fin42-panel fin42-card"><div class="fin42-card-head"><h2>ماتریس فروش (گل × شعبه)</h2><span class="fin42-pill">میلیون تومان</span></div><div class="fin42-matrix"><table><thead><tr><th>گل / شعبه</th>{% for b in intel.matrix_branches %}<th>{{ b.name }}</th>{% endfor %}<th>جمع</th></tr></thead><tbody>{% for row in intel.matrix_rows %}<tr><td>✦ {{ row.flower.user.get_full_name|default:row.flower.user.username }}</td>{% for c in row.cells %}<td class="{% if c.total %}hot{% endif %}">{{ c.total|million_toman }}</td>{% endfor %}<td class="sum">{{ row.total|million_toman }}</td></tr>{% empty %}<tr><td colspan="8">فروش منتسب به گل ثبت نشده است.</td></tr>{% endfor %}</tbody></table></div></section>
+    <section class="fin42-panel fin42-card"><div class="fin42-card-head"><h2>قیف فروش</h2><span class="fin42-pill">{{ intel.period_label }}</span></div><div class="fin42-funnel"><div class="fin42-funnel-row"><span>لید</span><b>{{ intel.lead_count|en_number }}</b></div><div class="fin42-funnel-row"><span>نوبت</span><b>{{ intel.appointment_count|en_number }}</b></div><div class="fin42-funnel-row"><span>مراجعه</span><b>{{ intel.visit_count|en_number }}</b></div><div class="fin42-funnel-row"><span>فروش</span><b>{{ intel.count|en_number }}</b></div><div class="fin42-funnel-row"><span>وصول</span><b>{{ intel.total|million_toman }}M</b></div></div></section>
+    <section class="fin42-panel fin42-card"><div class="fin42-card-head"><h2>درآمد بر اساس خدمت</h2><span class="fin42-pill">مبلغ</span></div><div class="fin42-services">{% for s in intel.service_rows|slice:':7' %}<div class="fin42-service"><span>{{ s.label }}</span><div class="fin42-track"><i style="width:{{ s.pct }}%"></i></div><strong>{{ s.total|million_toman }}M · {{ s.pct }}%</strong></div>{% empty %}<span class="fin42-note">داده خدمات ثبت نشده است.</span>{% endfor %}</div></section>
+  </div>
 
-  <section class="fin-panel fin-sync-log">
-    <h2>وضعیت اتصال CRM</h2>
-    {% for x in logs %}
-      <div class="row"><strong>{{ x.get_status_display }}</strong><span>{{ x.message }} · جدید {{ x.imported|fa }} / به‌روزرسانی {{ x.updated|fa }}</span></div>
-    {% empty %}<p class="fin-empty">هنوز همگام‌سازی اجرا نشده است. ابتدا تنظیمات API روی سرور وارد شود.</p>{% endfor %}
-  </section>
+  <div class="fin42-bottom">
+    <section class="fin42-panel fin42-ledger"><div class="fin42-ledger-head"><h2>آخرین تراکنش‌ها</h2><span class="fin42-note">کنترل سند، تحلیل و تأیید مالی</span></div><div class="fin42-table-wrap"><table class="fin42-table"><thead><tr><th>تاریخ</th><th>نام</th><th>شعبه</th><th>گل</th><th>منشأ لید</th><th>خدمت</th><th>مبلغ</th><th>روش پرداخت</th><th>سند</th><th>تحلیل</th><th>وضعیت / اقدام</th></tr></thead><tbody>{% for x in intel.entries %}<tr><td>{{ x.occurred_at|jdate }}</td><td><strong>{{ x.person_name|default:'—' }}</strong></td><td>{{ x.branch|default:'—' }}</td><td>{% if x.call_center_owner %}✦ {{ x.call_center_owner.get_full_name|default:x.call_center_owner.username }}{% else %}مستقیم{% endif %}</td><td>{% if x.appointment.lead %}{{ x.appointment.lead.get_source_display }}{% else %}مراجعه مستقیم{% endif %}</td><td>{{ x.get_sale_reason_display|default:x.service|default:'—' }}</td><td><span class="fin42-money">{{ x.amount|million_toman }}</span> M</td><td>{{ x.payment_method|default:'—' }}</td><td>{% if x.receipt_image %}<a class="fin42-receipt" href="{{ x.receipt_image.url }}" target="_blank" rel="noopener">◈ مشاهده سند</a>{% else %}—{% endif %}</td><td><span class="fin42-badge {{ x.analysis_status }}">{{ x.get_analysis_status_display }}</span>{% if x.receipt_analysis.detected_amount %}<small style="display:block;margin-top:4px;color:#7f96a8">خوانده‌شده: {{ x.receipt_analysis.detected_amount|en_number }}</small>{% endif %}{% if x.receipt_analysis.manual_amount_match == False %}<span class="fin42-warn">⚠ اختلاف با مبلغ دستی</span>{% elif x.receipt_analysis.manual_amount_match == True %}<span class="fin42-ok">✓ مطابق مبلغ دستی</span>{% endif %}{% if x.analysis_status == 'failed' or x.analysis_status == 'skipped' %}<form method="post" action="{% url 'finance_entry_analyze' x.pk %}" style="margin-top:4px">{% csrf_token %}<button class="fin42-btn analyze">تحلیل دوباره</button></form>{% endif %}</td><td><span class="fin42-badge {{ x.review_status }}">{{ x.get_review_status_display }}</span>{% if x.review_status == 'pending' or x.review_status == 'needs_correction' %}<div class="fin42-actions"><form method="post" action="{% url 'finance_entry_review' x.pk 'approve' %}">{% csrf_token %}<button class="fin42-btn approve">✓ تأیید</button></form><form method="post" action="{% url 'finance_entry_review' x.pk 'correction' %}">{% csrf_token %}<button class="fin42-btn correction">✎ اصلاح</button></form><form method="post" action="{% url 'finance_entry_review' x.pk 'cancel' %}">{% csrf_token %}<button class="fin42-btn cancel">× ابطال</button></form></div>{% endif %}{% if user.profile.role == 'admin' %}<form method="post" action="{% url 'finance_entry_delete' x.pk %}" onsubmit="return confirm('این تراکنش برای همیشه حذف شود؟');" style="margin-top:4px">{% csrf_token %}<button class="fin42-btn delete">⌫ حذف</button></form>{% endif %}</td></tr>{% empty %}<tr><td colspan="11">برای فیلتر انتخاب‌شده تراکنشی وجود ندارد.</td></tr>{% endfor %}</tbody></table></div></section>
+
+    <aside class="fin42-panel fin42-ai"><div class="fin42-ai-title">✦ <b>AI</b> تحلیل هوشمند</div><div class="fin42-ai-summary">{{ ai_insight }}</div><div class="fin42-alerts">{% for a in intel.alerts %}<div class="fin42-alert {{ a.level }}">{{ a.text }}</div>{% endfor %}{% if summary.expense_total %}<div class="fin42-alert info">هزینه ثبت‌شده روز انتخابی: {{ summary.expense_total|million_toman }} میلیون تومان؛ خالص: {{ summary.net_total|million_toman }} میلیون تومان.</div>{% endif %}</div><span class="fin42-ai-mode">{% if ai_live %}AI ANALYSIS · داده تجمیعی{% else %}SMART ANALYTICS · تحلیل داخلی{% endif %}</span></aside>
+  </div>
+
+  <details class="fin42-panel fin42-crm"><summary>وضعیت اتصال CRM و گزارش همگام‌سازی</summary>{% for x in logs %}<div class="fin42-crm-row"><strong>{{ x.get_status_display }}</strong><span>{{ x.message }} · جدید {{ x.imported|fa }} / بروزرسانی {{ x.updated|fa }}</span></div>{% empty %}<div class="fin42-crm-row"><strong>بدون اجرا</strong><span>هنوز همگام‌سازی ثبت نشده است.</span></div>{% endfor %}</details>
 </div>
 {% endblock %}
