@@ -1,7 +1,10 @@
+import json
 from datetime import datetime, time, timedelta
 from decimal import Decimal
+from pathlib import Path
 
 from django import template
+from django.conf import settings
 from django.db.models import Count, Sum, Q
 from django.utils import timezone
 
@@ -45,6 +48,95 @@ def _pct(value, total):
 
 def _money(value):
     return value or ZERO
+
+
+def _clinic_revenue_snapshot(day):
+    """Load the real clinic revenue JSON snapshot and normalize it for finance UI charts."""
+    data_path = Path(settings.BASE_DIR) / 'core' / 'data' / 'clinic_revenue_timeline.json'
+    empty = {
+        'available': False, 'grand_total': 0, 'branches': [], 'timeline': [],
+        'record_count': 0, 'period_label': 'ماه جاری', 'start_label': '', 'end_label': '',
+    }
+    try:
+        payload = json.loads(data_path.read_text(encoding='utf-8'))
+    except (OSError, ValueError, TypeError):
+        return empty
+
+    rows = payload.get('data') if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        return empty
+
+    jy, jm, _ = gregorian_to_jalali(day.year, day.month, day.day)
+    month_start = datetime(*jalali_to_gregorian(jy, jm, 1)).date()
+    next_jy, next_jm = (jy + 1, 1) if jm == 12 else (jy, jm + 1)
+    month_end = datetime(*jalali_to_gregorian(next_jy, next_jm, 1)).date()
+
+    totals = {}
+    date_values = {}
+    accepted = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        try:
+            row_day = datetime.strptime(str(row.get('date', '')), '%m/%d/%Y').date()
+            amount = int(Decimal(str(row.get('total', 0) or 0)))
+        except (ValueError, TypeError, ArithmeticError):
+            continue
+        if not (month_start <= row_day < month_end):
+            continue
+        clinic = str(row.get('کلینیک') or row.get('clinic') or row.get('branch') or '').strip()
+        if not clinic:
+            continue
+        accepted.append((row_day, clinic, amount))
+        totals[clinic] = totals.get(clinic, 0) + amount
+        date_values.setdefault(row_day, {})[clinic] = amount
+
+    if not accepted:
+        return empty
+
+    palette = {
+        'نیاوران': '#8b5cf6',
+        'پونک': '#3b82f6',
+        'اصفهان': '#16d888',
+        'ارومیه': '#f59e0b',
+    }
+    fallback_colors = ['#22d3ee', '#ec4899', '#a3e635', '#f97316', '#c084fc']
+    grand_total = sum(totals.values())
+    max_branch_total = max(totals.values()) or 1
+    branches = []
+    for idx, (name, total) in enumerate(sorted(totals.items(), key=lambda item: item[1], reverse=True)):
+        branches.append({
+            'name': name,
+            'total': total,
+            'pct': round((total * 100 / grand_total), 1) if grand_total else 0,
+            'relative': round((total * 100 / max_branch_total), 1),
+            'color': palette.get(name, fallback_colors[idx % len(fallback_colors)]),
+        })
+
+    timeline = []
+    for row_day in sorted(date_values):
+        rjy, rjm, rjd = gregorian_to_jalali(row_day.year, row_day.month, row_day.day)
+        timeline.append({
+            'date': row_day.isoformat(),
+            'label': f'{rjm:02d}/{rjd:02d}',
+            'values': date_values[row_day],
+        })
+
+    first_day = min(x[0] for x in accepted)
+    last_day = max(x[0] for x in accepted)
+    _, first_month, first_dom = gregorian_to_jalali(first_day.year, first_day.month, first_day.day)
+    _, last_month, last_dom = gregorian_to_jalali(last_day.year, last_day.month, last_day.day)
+    return {
+        'available': True,
+        'grand_total': grand_total,
+        'branches': branches,
+        'timeline': timeline,
+        'chart_data': {'branches': branches, 'timeline': timeline},
+        'record_count': len(accepted),
+        'period_label': f'{jy}/{jm:02d}',
+        'start_label': f'{first_month:02d}/{first_dom:02d}',
+        'end_label': f'{last_month:02d}/{last_dom:02d}',
+    }
 
 
 def _apply_transaction_filters(qs, branch, flower_id, source, service):
@@ -240,6 +332,8 @@ def finance_intelligence(context):
     if service:
         entries = entries.filter(sale_reason=service)
 
+    external_revenue = _clinic_revenue_snapshot(day)
+
     return {
         'period': period, 'period_label': period_label, 'start': start, 'end': end,
         'branch': branch, 'flower_id': flower_id, 'source': source, 'service': service,
@@ -253,4 +347,5 @@ def finance_intelligence(context):
         'source_rows': source_rows, 'source_donut': source_donut, 'service_rows': service_rows,
         'matrix_branches': branches, 'matrix_rows': matrix_rows,
         'alerts': alerts, 'entries': entries.order_by('-occurred_at', '-id')[:60],
+        'external_revenue': external_revenue,
     }
