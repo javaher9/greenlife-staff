@@ -1,0 +1,1 @@
+Consultant cockpit v1 intentionally reads real existing appointments, finance, leads, tasks and internal messages. Device/cabin/operator overlap engine is not faked in v1; the dashboard labels that next resource-scheduler step explicitly. Presentation mode contains no synthetic patient before/after photos.
