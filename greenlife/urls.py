@@ -2,11 +2,12 @@ from django.contrib import admin
 from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
-from core import instagram_views
+from core import instagram_views, lead_management_views
 
 urlpatterns=[
     path('admin/',admin.site.urls),
     path('instagram/',instagram_views.instagram_lead,name='instagram_lead'),
+    path('lead-management/',lead_management_views.lead_management_dashboard,name='lead_management_dashboard'),
     path('',include('public_network.urls')),
     path('',include('core.urls')),
 ]
