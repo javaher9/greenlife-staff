@@ -1,0 +1,107 @@
+{% extends 'core/base.html' %}
+{% load humanize %}
+{% block content %}
+<style>
+.consultant-cockpit{--bg:#071019;--panel:#0c1722;--panel2:#101d29;--line:rgba(255,255,255,.075);--muted:#91a1af;--text:#f5f8fa;--green:#38e596;--purple:#a879ff;--blue:#55a7ff;--amber:#ffc65a;--pink:#ff6fae;--cyan:#50dfdf;min-height:calc(100vh - 90px);color:var(--text);font-family:Tahoma,'Noto Sans Arabic',sans-serif}
+.consultant-cockpit *{box-sizing:border-box}.cc-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin:8px 0 18px}.cc-head h1{font-size:27px!important;margin:0 0 7px}.cc-head p{margin:0;color:var(--muted)!important;font-size:13px}.cc-head-actions{display:flex;gap:9px;flex-wrap:wrap}.cc-btn{border:1px solid var(--line);background:#132230;color:#eaf0f4;border-radius:12px;padding:9px 13px;text-decoration:none;font-size:12px;font-weight:800;cursor:pointer}.cc-btn.primary{background:linear-gradient(135deg,#18b973,#2bd391);color:#07130d;border-color:#42e5a1}.cc-btn.present{background:linear-gradient(135deg,#7544d6,#ad71ff);border-color:#c69dff;color:#fff}.cc-kpis{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:10px;margin-bottom:14px}.cc-kpi{position:relative;overflow:hidden;background:linear-gradient(155deg,#101d28,#0a151f);border:1px solid var(--line);border-radius:16px;padding:15px;min-height:112px;box-shadow:0 14px 35px rgba(0,0,0,.18)}.cc-kpi:after{content:'';position:absolute;inset:auto -20px -30px auto;width:90px;height:90px;border-radius:50%;filter:blur(24px);opacity:.19;background:var(--accent)}.cc-kpi small{display:block;color:#aab7c1!important;font-size:11px!important;margin-bottom:8px}.cc-kpi strong{display:block;font-size:25px;line-height:1.1;color:#fff}.cc-kpi em{display:block;margin-top:8px;font-style:normal;color:var(--accent);font-size:10px}.cc-kpi.green{--accent:var(--green)}.cc-kpi.purple{--accent:var(--purple)}.cc-kpi.blue{--accent:var(--blue)}.cc-kpi.amber{--accent:var(--amber)}.cc-kpi.pink{--accent:var(--pink)}.cc-kpi.cyan{--accent:var(--cyan)}
+.cc-main-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px}.cc-stack{display:grid;gap:14px}.cc-panel{background:linear-gradient(160deg,#0d1924,#09131c);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 16px 40px rgba(0,0,0,.15)}.cc-panel-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}.cc-panel-head h2{font-size:15px!important;margin:0}.cc-panel-head span{font-size:10px;color:var(--muted)}.cc-date-nav{display:flex;gap:6px;align-items:center}.cc-date-nav a{padding:6px 9px;border:1px solid var(--line);border-radius:9px;color:#dce5ea;text-decoration:none;font-size:11px}.cc-timeline{overflow:auto}.cc-timebar{display:grid;grid-template-columns:120px repeat(10,minmax(82px,1fr));min-width:930px;background:#0a141d;border-bottom:1px solid var(--line)}.cc-timebar div{padding:9px 7px;font-size:10px;color:#94a6b3;text-align:center;border-left:1px solid rgba(255,255,255,.04)}.cc-appt-list{min-width:930px}.cc-appt-row{display:grid;grid-template-columns:120px 1fr;min-height:62px;border-bottom:1px solid rgba(255,255,255,.045)}.cc-appt-row:last-child{border-bottom:0}.cc-appt-time{display:flex;flex-direction:column;align-items:center;justify-content:center;border-left:1px solid var(--line);color:#c3d0d8;font-weight:800;font-size:12px}.cc-appt-time small{font-size:9px!important;color:#748795!important}.cc-appt-card{margin:8px 11px;padding:10px 12px;border-radius:12px;border:1px solid color-mix(in srgb,var(--tone) 35%,transparent);background:color-mix(in srgb,var(--tone) 12%,#0d1822);display:grid;grid-template-columns:1.2fr 1fr .9fr auto;gap:10px;align-items:center}.cc-appt-card.mint{--tone:#38e596}.cc-appt-card.blue{--tone:#55a7ff}.cc-appt-card.violet{--tone:#a879ff}.cc-appt-card.amber{--tone:#ffc65a}.cc-appt-card.pink{--tone:#ff6fae}.cc-appt-card.cyan{--tone:#50dfdf}.cc-appt-card strong{font-size:12px}.cc-appt-card span{font-size:10px;color:#aebbc4}.cc-appt-card b{font-size:10px;color:var(--tone)}.cc-status{padding:5px 8px;border-radius:999px;background:rgba(255,255,255,.06);font-size:9px!important;color:#dce6eb!important}.cc-empty{padding:38px;text-align:center;color:#7f919e}
+.cc-side-section{padding:14px 15px;border-bottom:1px solid var(--line)}.cc-side-section:last-child{border-bottom:0}.cc-side-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.cc-side-title strong{font-size:12px}.cc-side-title b{font-size:10px;color:var(--green);background:rgba(56,229,150,.09);border:1px solid rgba(56,229,150,.2);padding:4px 7px;border-radius:999px}.cc-person{display:grid;grid-template-columns:40px 1fr auto;gap:9px;align-items:center;padding:8px 0}.cc-avatar{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(145deg,#273d50,#172635);color:#fff;font-size:15px;font-weight:900}.cc-person strong{display:block;font-size:11px}.cc-person small{font-size:9px!important;color:#8fa0ad!important}.cc-person .loyalty{font-size:9px;padding:4px 7px;border-radius:999px;background:rgba(255,198,90,.1);color:#ffd36f;border:1px solid rgba(255,198,90,.2)}.cc-money{display:block;margin-top:3px;font-size:9px;color:#77e6b2}.cc-mini-action{color:#9fb0bb;text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:4px 7px;font-size:9px}.cc-priority{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:14px}.cc-priority-card{background:linear-gradient(150deg,#101c27,#0a141d);border:1px solid var(--line);border-radius:15px;padding:13px}.cc-priority-card h3{font-size:12px!important;margin:0 0 9px}.cc-priority-card ul{list-style:none;padding:0;margin:0;display:grid;gap:7px}.cc-priority-card li{font-size:10px;color:#aebcc6;display:flex;justify-content:space-between;gap:7px}.cc-priority-card .num{font-weight:900;color:#fff}.cc-resource-note{margin:12px 0 0;padding:10px 12px;border-radius:12px;border:1px dashed rgba(80,223,223,.28);background:rgba(80,223,223,.05);color:#9fcfd1;font-size:10px;line-height:1.8}.cc-chat-fab{position:fixed;left:22px;bottom:22px;z-index:90;width:58px;height:58px;border-radius:18px;display:grid;place-items:center;text-decoration:none;background:linear-gradient(135deg,#7a4ce0,#a86eff);border:1px solid #c8a6ff;box-shadow:0 18px 45px rgba(117,68,214,.42);color:#fff;font-size:23px}.cc-chat-fab b{position:absolute;top:-6px;right:-6px;min-width:21px;height:21px;padding:0 5px;border-radius:999px;display:grid;place-items:center;background:#ff4d6d;color:#fff;font-size:9px;border:2px solid #071019}.cc-chat-label{position:fixed;left:91px;bottom:33px;z-index:89;background:#101b26;border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:10px;color:#dbe5eb}.cc-present-overlay{position:fixed;inset:0;z-index:999;background:rgba(3,8,13,.94);backdrop-filter:blur(12px);display:none;padding:34px;overflow:auto}.cc-present-overlay.show{display:block}.cc-present-shell{max-width:1180px;margin:auto}.cc-present-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.cc-present-top h2{font-size:28px!important;margin:0}.cc-present-close{background:#182633;border:1px solid var(--line);color:#fff;border-radius:12px;padding:9px 13px;cursor:pointer}.cc-present-hero{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}.cc-present-card{background:linear-gradient(145deg,#101d29,#0b1620);border:1px solid var(--line);border-radius:22px;padding:24px}.cc-present-card h3{font-size:18px!important;margin:0 0 12px}.cc-present-card p{font-size:12px;line-height:2;color:#b5c2cb!important}.cc-before-after{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:15px}.cc-photo-slot{aspect-ratio:4/3;border-radius:18px;border:1px dashed rgba(255,255,255,.2);display:grid;place-items:center;background:radial-gradient(circle at 30% 20%,rgba(168,121,255,.14),transparent 45%),#0b141e;color:#8193a0;font-size:11px}.cc-points{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}.cc-point{border:1px solid var(--line);border-radius:16px;padding:16px;background:#0b1620}.cc-point strong{display:block;color:#fff;margin-bottom:6px;font-size:13px}.cc-point span{font-size:10px;color:#94a5b0;line-height:1.9}.cc-top-actions{display:flex;gap:6px;flex-wrap:wrap}.cc-quick{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:#0d1a25;color:#b7c5cd;text-decoration:none;font-size:10px;font-weight:800}
+@media(max-width:1250px){.cc-kpis{grid-template-columns:repeat(3,1fr)}.cc-main-grid{grid-template-columns:1fr}.cc-priority{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:800px){.consultant-cockpit{display:none}.cc-chat-fab,.cc-chat-label{display:none}}
+</style>
+<div class="consultant-cockpit">
+  <div class="cc-head">
+    <div>
+      <h1>پنل مشاور</h1>
+      <p>{{ branch.name|default:'شعبه مشخص نشده' }} · {{ jalali_date }} · کنترل نوبت، پیگیری مراجع، فروش و تجربه مشتری</p>
+    </div>
+    <div class="cc-head-actions">
+      <a class="cc-btn" href="{% url 'internal_messages' %}">✉ چت پرسنل {% if unread_messages %}({{ unread_messages }}){% endif %}</a>
+      <a class="cc-btn" href="{% url 'finance_entry' %}">▧ ثبت مالی</a>
+      <button class="cc-btn present" type="button" onclick="document.getElementById('presentation').classList.add('show')">✦ پرزنت به مراجع</button>
+      <a class="cc-btn primary" href="{% url 'appointment_schedule' %}">＋ نوبت جدید</a>
+    </div>
+  </div>
+
+  <div class="cc-kpis">
+    <article class="cc-kpi green"><small>نوبت‌های امروز</small><strong>{{ appointment_count }}</strong><em>{{ arrived_count }} مراجعه کرده</em></article>
+    <article class="cc-kpi blue"><small>در انتظار مراجعه</small><strong>{{ waiting_count }}</strong><em>{{ cancelled_count }} لغو / کنسلی</em></article>
+    <article class="cc-kpi purple"><small>لیدهای باز شعبه</small><strong>{{ lead_open_count }}</strong><em>از {{ lead_count }} لید مرتبط</em></article>
+    <article class="cc-kpi amber"><small>فروش امروز شعبه</small><strong>{{ sales_today|floatformat:0|intcomma }}</strong><em>تومان</em></article>
+    <article class="cc-kpi pink"><small>Happy Call</small><strong>{{ happy_call_count }}</strong><em>صف پیگیری ۲۱ روز اخیر</em></article>
+    <article class="cc-kpi cyan"><small>کارهای من</small><strong>{{ open_tasks }}</strong><em>{{ unread_notifications }} اعلان خوانده‌نشده</em></article>
+  </div>
+
+  <div class="cc-main-grid">
+    <div class="cc-stack">
+      <section class="cc-panel">
+        <div class="cc-panel-head">
+          <div><h2>Timeline نوبت‌های دستگاه و خدمات</h2><span>نمای روزانه شعبه · ساعت ۰۹ تا ۱۸</span></div>
+          <div class="cc-date-nav"><a href="?date={{ previous_date|date:'Y-m-d' }}">‹ روز قبل</a><a href="?date={{ today|date:'Y-m-d' }}">امروز</a><a href="?date={{ next_date|date:'Y-m-d' }}">روز بعد ›</a></div>
+        </div>
+        <div class="cc-timeline">
+          <div class="cc-timebar"><div>ساعت</div>{% for hour in hours %}<div>{{ hour }}</div>{% endfor %}</div>
+          <div class="cc-appt-list">
+            {% for row in schedule_rows %}
+            <div class="cc-appt-row">
+              <div class="cc-appt-time">{{ row.appointment.appointment_time|time:'H:i' }}<small>{{ row.appointment.get_status_display }}</small></div>
+              <div class="cc-appt-card {{ row.tone }}">
+                <div><strong>{{ row.appointment.full_name }}</strong><span>{{ row.appointment.phone }}</span></div>
+                <div><b>{{ row.appointment.service|default:'خدمت تعیین نشده' }}</b><span>خدمت / دستگاه</span></div>
+                <div><strong>{{ row.appointment.lead.interested_service|default:'—' }}</strong><span>علاقه‌مندی لید</span></div>
+                <span class="cc-status">{{ row.appointment.get_status_display }}</span>
+              </div>
+            </div>
+            {% empty %}<div class="cc-empty">برای این روز نوبتی ثبت نشده است.</div>{% endfor %}
+          </div>
+        </div>
+        <div class="cc-resource-note">موتور منابع این Timeline برای نسخه بعدی به «دستگاه فیزیکی + کابین + زمان اپراتور + Buffer» متصل می‌شود تا Overlap واقعی غیرممکن شود. فعلاً این صفحه داده‌های نوبت ثبت‌شده شعبه را بدون ساختن داده فرضی نمایش می‌دهد.</div>
+      </section>
+
+      <div class="cc-priority">
+        <section class="cc-priority-card"><h3>◈ نیازمند نوبت</h3><ul>{% for lead in needs_booking|slice:':5' %}<li><span>{{ lead.full_name }} · {{ lead.interested_service|default:'خدمت نامشخص' }}</span><span class="num">›</span></li>{% empty %}<li>موردی در صف نیست.</li>{% endfor %}</ul></section>
+        <section class="cc-priority-card"><h3>♡ Happy Call امروز</h3><ul>{% for appt in happy_calls|slice:':5' %}<li><span>{{ appt.full_name }} · {{ appt.service|default:'خدمت' }}</span><a class="cc-mini-action" href="tel:{{ appt.phone }}">تماس</a></li>{% empty %}<li>موردی برای پیگیری نیست.</li>{% endfor %}</ul></section>
+        <section class="cc-priority-card"><h3>◎ فرصت‌های امروز</h3><ul>{% for row in patient_rows|slice:':5' %}<li><span>{{ row.appointment.full_name }} · {{ row.loyalty }}</span><span class="num">{{ row.total_spend|floatformat:0|intcomma }}</span></li>{% empty %}<li>با ورود نوبت‌ها فرصت‌ها نمایش داده می‌شوند.</li>{% endfor %}</ul></section>
+        <section class="cc-priority-card"><h3>⚠ وضعیت عملیات</h3><ul><li><span>ثبت مالی من</span><span class="num">{{ my_payment_count }}</span></li><li><span>پیام خوانده‌نشده</span><span class="num">{{ unread_messages }}</span></li><li><span>اعلان جدید</span><span class="num">{{ unread_notifications }}</span></li><li><span>نوبت لغوشده</span><span class="num">{{ cancelled_count }}</span></li></ul></section>
+      </div>
+    </div>
+
+    <aside class="cc-panel">
+      <div class="cc-panel-head"><div><h2>مراجعین امروز + CEM</h2><span>شناخت سریع قبل از گفتگو و پیشنهاد</span></div></div>
+      <div class="cc-side-section">
+        <div class="cc-side-title"><strong>کارت مراجع</strong><b>{{ patient_rows|length }} نفر</b></div>
+        {% for row in patient_rows|slice:':7' %}
+        <div class="cc-person">
+          <div class="cc-avatar">{{ row.appointment.full_name|slice:':1' }}</div>
+          <div><strong>{{ row.appointment.full_name }}</strong><small>{{ row.appointment.appointment_time|time:'H:i' }} · {{ row.appointment.service|default:'خدمت' }}</small><span class="cc-money">کل پرداخت ثبت‌شده: {{ row.total_spend|floatformat:0|intcomma }} تومان</span></div>
+          <span class="loyalty">{{ row.loyalty }}</span>
+        </div>
+        {% empty %}<div class="cc-empty" style="padding:18px 0">مراجعی برای این روز نیست.</div>{% endfor %}
+      </div>
+      <div class="cc-side-section">
+        <div class="cc-side-title"><strong>CEM پیشنهادی برای گفتگو</strong><b>LIVE</b></div>
+        <p style="font-size:10px;line-height:2;color:#93a5b0!important;margin:0">سطح وفاداری و سابقه پرداخت از داده واقعی نمایش داده می‌شود. تیپ شخصیتی، حساسیت به قیمت، دغدغه و روش مناسب گفتگو فقط پس از ثبت واقعی در پرونده CEM نمایش داده خواهد شد؛ سیستم برای بیمار برچسب حدسی نمی‌سازد.</p>
+      </div>
+      <div class="cc-side-section">
+        <div class="cc-side-title"><strong>دسترسی سریع</strong></div>
+        <div class="cc-top-actions"><a class="cc-quick" href="{% url 'appointment_schedule' %}">تقویم نوبت‌ها</a><a class="cc-quick" href="{% url 'finance_entry' %}">ثبت مالی</a><a class="cc-quick" href="{% url 'internal_messages' %}">چت</a><a class="cc-quick" href="{% url 'device_issue_mine' %}">خرابی دستگاه</a></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<a class="cc-chat-fab" href="{% url 'internal_messages' %}" title="چت داخلی">✉{% if unread_messages %}<b>{{ unread_messages }}</b>{% endif %}</a><div class="cc-chat-label">چت سریع پرسنل</div>
+
+<div id="presentation" class="cc-present-overlay">
+  <div class="cc-present-shell">
+    <div class="cc-present-top"><div><h2>GreenLife · معرفی برای مراجع</h2><p style="color:#9eafba!important;margin:6px 0 0">صفحه Presentation بدون اطلاعات محرمانه داخلی</p></div><button class="cc-present-close" type="button" onclick="document.getElementById('presentation').classList.remove('show')">بستن ×</button></div>
+    <div class="cc-present-hero">
+      <div class="cc-present-card"><h3>تجربه درمان و تناسب اندام شخصی‌سازی‌شده</h3><p>در GreenLife مسیر هر مراجع بر اساس ارزیابی، هدف درمانی، برنامه جلسات و پیگیری منظم طراحی می‌شود. مشاور می‌تواند مسیر پیشنهادی را با زبان ساده و قابل فهم به مراجع نشان دهد.</p><div class="cc-points"><div class="cc-point"><strong>برنامه روشن</strong><span>تعداد جلسه، فاصله جلسات و پیگیری بعدی شفاف.</span></div><div class="cc-point"><strong>تکنولوژی</strong><span>خدمات دستگاهی و درمانی بر اساس نیاز مراجعه‌کننده.</span></div><div class="cc-point"><strong>پیگیری</strong><span>Happy Call و بررسی تجربه بعد از مراجعه.</span></div></div></div>
+      <div class="cc-present-card"><h3>قبل و بعد</h3><p>برای نمایش نمونه‌های واقعی و دارای رضایت مراجع. در این نسخه هیچ تصویر فرضی بیمار نمایش داده نمی‌شود.</p><div class="cc-before-after"><div class="cc-photo-slot">جای عکس «قبل» تأییدشده</div><div class="cc-photo-slot">جای عکس «بعد» تأییدشده</div></div></div>
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){var p=document.getElementById('presentation');if(p)p.classList.remove('show')}});
+</script>
+{% endblock %}
