@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q, Sum
+from django.db.models import Q, Sum
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
@@ -126,6 +126,7 @@ def consultant_dashboard(request):
         patient_rows.append({
             'appointment': appt,
             'total_spend': total_spend,
+            'total_spend_million': round(float(total_spend) / 1_000_000, 1),
             'loyalty': _loyalty_from_spend(total_spend),
             'lead': appt.lead,
         })
@@ -154,6 +155,7 @@ def consultant_dashboard(request):
         'waiting_count': waiting_count,
         'cancelled_count': cancelled_count,
         'sales_today': sales_today,
+        'sales_today_million': round(float(sales_today) / 1_000_000, 1),
         'my_payment_count': my_finance.count(),
         'lead_count': lead_count,
         'lead_open_count': lead_open_count,
