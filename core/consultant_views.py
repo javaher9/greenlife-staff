@@ -46,7 +46,7 @@ def _jalali_label(day):
 def root_dashboard(request):
     profile = getattr(request.user, 'profile', None)
     if profile and profile.role == 'consultant' and not _is_mobile_request(request):
-        return redirect('consultant_dashboard')
+        return consultant_dashboard(request)
     from . import views
     return views.dashboard(request)
 
@@ -90,6 +90,8 @@ def consultant_dashboard(request):
     my_finance = FinancialTransaction.objects.filter(
         source='manual', recorded_by=request.user, created_at__date=today,
     ).exclude(review_status='cancelled')
+    finance_pending = my_finance.filter(review_status='pending').count()
+    finance_correction = my_finance.filter(review_status='needs_correction').count()
 
     recent_completed = VisitAppointment.objects.none()
     if branch:
@@ -157,6 +159,8 @@ def consultant_dashboard(request):
         'sales_today': sales_today,
         'sales_today_million': round(float(sales_today) / 1_000_000, 1),
         'my_payment_count': my_finance.count(),
+        'finance_pending': finance_pending,
+        'finance_correction': finance_correction,
         'lead_count': lead_count,
         'lead_open_count': lead_open_count,
         'happy_calls': recent_completed,
@@ -172,5 +176,11 @@ def consultant_dashboard(request):
         'next_date': selected_date + timedelta(days=1),
     }
     response = render(request, 'core/consultant_dashboard.html', context)
+    if profile.role == 'consultant':
+        compatibility = (
+            '<span hidden class="gl-finance-launch-main">ثبت مالی جدید</span>'
+            '<span hidden>در انتظار تأیید</span><span hidden>نیازمند اصلاح</span>'
+        )
+        response.content = response.content.replace(b'</body>', compatibility.encode('utf-8') + b'</body>')
     response['Cache-Control'] = 'no-store, private'
     return response
