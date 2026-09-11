@@ -1,0 +1,1 @@
+Patient-facing presentation mode must show only approved GreenLife material and before/after images with documented patient consent when the media library is added.
