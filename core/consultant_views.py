@@ -15,6 +15,8 @@ from .models import (
     VisitAppointment,
 )
 
+# Desktop consultant cockpit entrypoint and supporting live branch metrics.
+
 
 def _is_mobile_request(request):
     if (request.META.get('HTTP_SEC_CH_UA_MOBILE') or '').strip() == '?1':
