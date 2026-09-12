@@ -3,30 +3,169 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f7faf8">
   <title>مشاوره رایگان گرین‌لایف</title>
   <style>
-    *{box-sizing:border-box}body{margin:0;font-family:Tahoma,Arial,sans-serif;background:linear-gradient(180deg,#0f172a,#111827);color:#111827;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px}.wrap{width:min(100%,460px)}.brand{text-align:center;color:#fff;margin-bottom:18px}.brand strong{font-size:30px;letter-spacing:.5px}.brand small{display:block;opacity:.72;margin-top:4px}.card{background:#fff;border-radius:26px;padding:26px;box-shadow:0 24px 70px rgba(0,0,0,.3)}h1{font-size:24px;margin:0 0 8px;text-align:center}.lead{color:#667085;line-height:1.9;text-align:center;margin:0 0 22px}.field{display:block;margin-bottom:15px}.field>span{display:block;font-size:13px;font-weight:700;margin-bottom:7px}.field input{width:100%;height:52px;border:1px solid #e5e7eb;border-radius:14px;padding:0 14px;font:inherit;background:#fafafa;outline:none}.field input:focus{border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.12)}.consent{display:flex;gap:10px;align-items:flex-start;font-size:12px;line-height:1.8;color:#667085;margin:8px 0 16px}.consent input{margin-top:5px}.error{display:block;color:#dc2626;font-size:12px;margin-top:6px}.btn{width:100%;border:0;border-radius:15px;height:54px;background:#111827;color:#fff;font:inherit;font-weight:700;font-size:16px;cursor:pointer}.privacy{text-align:center;color:#98a2b3;font-size:11px;margin-top:14px;line-height:1.8}.success{text-align:center;padding:18px 4px}.success .tick{width:70px;height:70px;border-radius:50%;background:#ecfdf3;color:#16a34a;display:grid;place-items:center;margin:0 auto 16px;font-size:34px}.success p{color:#667085;line-height:1.9} @media(max-width:480px){body{padding:14px}.card{padding:22px 18px;border-radius:22px}}
+    :root{
+      --green:#1d8f63;
+      --green-dark:#167552;
+      --green-soft:#eaf7f1;
+      --purple:#7656a8;
+      --purple-soft:#f1ebf8;
+      --ink:#17221d;
+      --muted:#6e7b75;
+      --line:#e6ece8;
+      --surface:#ffffff;
+    }
+    *{box-sizing:border-box}
+    html{-webkit-text-size-adjust:100%}
+    body{
+      margin:0;
+      min-height:100vh;
+      min-height:100dvh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:max(18px,env(safe-area-inset-top)) 18px max(18px,env(safe-area-inset-bottom));
+      font-family:Tahoma,Arial,sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at 12% 12%,rgba(118,86,168,.11),transparent 29%),
+        radial-gradient(circle at 88% 84%,rgba(29,143,99,.12),transparent 31%),
+        linear-gradient(160deg,#fbfcfb 0%,#f5f9f7 52%,#faf8fc 100%);
+    }
+    .wrap{width:min(100%,440px)}
+    .brand{text-align:center;margin-bottom:16px}
+    .brand-mark{
+      width:54px;height:54px;margin:0 auto 9px;border-radius:18px;
+      display:grid;place-items:center;
+      background:linear-gradient(145deg,var(--green),var(--purple));
+      box-shadow:0 10px 28px rgba(52,111,83,.18);
+      color:#fff;font-weight:800;font-size:21px;letter-spacing:-1px;
+    }
+    .brand strong{display:block;font-size:25px;line-height:1.15;letter-spacing:.2px;color:#203129}
+    .brand small{display:block;margin-top:4px;color:#8b978f;font-size:10px;letter-spacing:2.2px}
+    .card{
+      position:relative;overflow:hidden;
+      background:rgba(255,255,255,.96);
+      border:1px solid rgba(226,235,230,.95);
+      border-radius:28px;
+      padding:26px 24px 22px;
+      box-shadow:0 24px 70px rgba(39,72,56,.11),0 3px 12px rgba(64,46,84,.04);
+    }
+    .card:before{
+      content:"";position:absolute;inset:0 0 auto 0;height:4px;
+      background:linear-gradient(90deg,var(--purple),#8f6fba 42%,#58ad86 68%,var(--green));
+    }
+    .eyebrow{
+      width:max-content;margin:0 auto 11px;padding:7px 11px;border-radius:999px;
+      background:linear-gradient(90deg,var(--purple-soft),var(--green-soft));
+      color:#58685f;font-size:11px;font-weight:700;
+    }
+    h1{font-size:23px;line-height:1.55;margin:0 0 7px;text-align:center;color:#17251e}
+    .lead{color:var(--muted);font-size:13px;line-height:1.9;text-align:center;margin:0 auto 20px;max-width:340px}
+    .field{display:block;margin-bottom:13px}
+    .field>span{display:block;font-size:12px;font-weight:700;color:#435048;margin:0 3px 7px}
+    .field input,.field select,.field textarea{
+      width:100%;min-height:52px;border:1px solid var(--line);border-radius:15px;
+      padding:0 14px;font:inherit;font-size:14px;color:#24322b;background:#fbfcfb;outline:none;
+      transition:border-color .18s ease,box-shadow .18s ease,background .18s ease,transform .18s ease;
+    }
+    .field textarea{padding-top:13px;min-height:92px;resize:vertical}
+    .field input::placeholder,.field textarea::placeholder{color:#abb4af}
+    .field input:focus,.field select:focus,.field textarea:focus{
+      background:#fff;border-color:#7eaa92;box-shadow:0 0 0 4px rgba(29,143,99,.09);
+    }
+    .consent{
+      display:flex;gap:9px;align-items:flex-start;margin:5px 2px 15px;
+      color:#748078;font-size:11px;line-height:1.75;cursor:pointer;
+    }
+    .consent input{width:17px;height:17px;margin:3px 0 0;accent-color:var(--green);flex:0 0 auto}
+    .error{display:block;color:#c83e51;font-style:normal;font-size:11px;margin:6px 4px 0;line-height:1.6}
+    .btn{
+      width:100%;height:54px;border:0;border-radius:16px;padding:0 18px;
+      background:linear-gradient(100deg,var(--green-dark),var(--green) 70%,#26996d);
+      color:#fff;font:inherit;font-size:15px;font-weight:800;cursor:pointer;
+      box-shadow:0 10px 22px rgba(29,143,99,.20);
+      transition:transform .18s ease,box-shadow .18s ease,opacity .18s ease;
+    }
+    .btn:active{transform:translateY(1px);box-shadow:0 6px 14px rgba(29,143,99,.17)}
+    .btn:disabled{cursor:default;opacity:.72;transform:none}
+    .privacy{text-align:center;color:#97a19b;font-size:10px;margin-top:12px;line-height:1.8}
+    .quick-note{
+      display:flex;align-items:center;justify-content:center;gap:6px;
+      color:#809087;font-size:10px;margin:0 0 14px;
+    }
+    .quick-note i{width:6px;height:6px;border-radius:50%;background:var(--purple);box-shadow:12px 0 0 rgba(29,143,99,.9)}
+    .success{text-align:center;padding:18px 3px 9px}
+    .success .tick{
+      width:72px;height:72px;border-radius:24px;display:grid;place-items:center;margin:0 auto 17px;
+      background:linear-gradient(145deg,var(--green-soft),#f4eefb);color:var(--green);
+      font-size:35px;font-weight:800;box-shadow:inset 0 0 0 1px rgba(29,143,99,.09);
+    }
+    .success p{color:var(--muted);font-size:13px;line-height:2;margin-bottom:5px}
+    @media(max-width:480px){
+      body{align-items:flex-start;padding:22px 14px 18px}
+      .brand{margin-bottom:13px}.brand-mark{width:48px;height:48px;border-radius:16px;font-size:18px}
+      .brand strong{font-size:23px}.card{padding:23px 17px 19px;border-radius:24px}
+      h1{font-size:21px}.lead{margin-bottom:17px}.field{margin-bottom:11px}
+      .field input,.field select{min-height:50px}.btn{height:52px}
+    }
+    @media(max-height:700px) and (max-width:480px){
+      body{padding-top:13px}.brand-mark{display:none}.brand{margin-bottom:9px}.brand small{display:none}
+      .card{padding-top:20px}.eyebrow{margin-bottom:8px}.lead{margin-bottom:13px}.field{margin-bottom:9px}
+    }
   </style>
 </head>
 <body>
 <main class="wrap">
-  <div class="brand"><strong>GreenLife</strong><small>CLINICS</small></div>
+  <div class="brand">
+    <div class="brand-mark">GL</div>
+    <strong>GreenLife</strong>
+    <small>CLINICS</small>
+  </div>
+
   <section class="card">
     {% if completed %}
-      <div class="success"><div class="tick">✓</div><h1>درخواست شما ثبت شد</h1><p>یکی از کارشناسان گرین‌لایف برای راهنمایی و هماهنگی با شما تماس می‌گیرد.</p></div>
+      <div class="success">
+        <div class="tick">✓</div>
+        <h1>درخواست شما ثبت شد</h1>
+        <p>یکی از کارشناسان گرین‌لایف برای راهنمایی و هماهنگی با شما تماس می‌گیرد.</p>
+      </div>
     {% else %}
-      <h1>مشاوره گرین‌لایف</h1>
-      <p class="lead">نام و شماره موبایل‌تان را وارد کنید؛ کارشناسان ما برای راهنمایی با شما تماس می‌گیرند.</p>
-      <form method="post">{% csrf_token %}
+      <div class="eyebrow">مشاوره رایگان و سریع</div>
+      <h1>یک قدم تا شروع تغییر</h1>
+      <p class="lead">اطلاعات کوتاه زیر را وارد کنید؛ کارشناسان گرین‌لایف برای راهنمایی با شما تماس می‌گیرند.</p>
+      <div class="quick-note"><i></i><span>ثبت درخواست کمتر از یک دقیقه</span></div>
+
+      <form method="post" id="instagramLeadForm">{% csrf_token %}
         <label class="field"><span>{{ form.full_name.label }}</span>{{ form.full_name }}{% for error in form.full_name.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <label class="field"><span>{{ form.phone.label }}</span>{{ form.phone }}{% for error in form.phone.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <label class="field"><span>{{ form.interested_service.label }}</span>{{ form.interested_service }}{% for error in form.interested_service.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <label class="consent">{{ form.consent }}<span>{{ form.consent.label }}</span></label>{% for error in form.consent.errors %}<em class="error">{{ error }}</em>{% endfor %}
-        <button class="btn" type="submit">درخواست تماس</button>
+        <button class="btn" id="submitLeadBtn" type="submit">درخواست تماس</button>
       </form>
       <div class="privacy">اطلاعات شما فقط برای تماس کارشناسان گرین‌لایف استفاده می‌شود.</div>
     {% endif %}
   </section>
 </main>
+
+<script>
+(function(){
+  var form=document.getElementById('instagramLeadForm');
+  var btn=document.getElementById('submitLeadBtn');
+  var phone=document.querySelector('[name="phone"]');
+  var nameInput=document.querySelector('[name="full_name"]');
+  if(phone){phone.setAttribute('inputmode','tel');phone.setAttribute('autocomplete','tel');phone.setAttribute('dir','ltr');}
+  if(nameInput){nameInput.setAttribute('autocomplete','name');}
+  if(form&&btn){
+    form.addEventListener('submit',function(){
+      if(!form.checkValidity()) return;
+      btn.disabled=true;
+      btn.textContent='در حال ثبت درخواست...';
+    });
+  }
+})();
+</script>
 </body>
 </html>
