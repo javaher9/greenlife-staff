@@ -8,6 +8,7 @@ urlpatterns=[
     path('admin/',admin.site.urls),
     path('api/integrations/leads/',lead_ingest_views.ingest_lead,name='lead_ingest'),
     path('instagram/',instagram_views.instagram_lead,name='instagram_lead'),
+    path('instagram/manual/',instagram_views.instagram_manual_lead,name='instagram_manual_lead'),
     path('lead-management/',lead_management_views.lead_management_dashboard,name='lead_management_dashboard'),
     path('',include('public_network.urls')),
     path('',include('core.urls')),
