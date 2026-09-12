@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db.models import Count, Q
 from django.shortcuts import render
@@ -8,6 +9,7 @@ from .models import CallCenterLeadGroup, EmployeeProfile, ReferralLead, Referral
 
 
 INSTAGRAM_GROUP_NAME = 'اینستاگرام جدید'
+INSTAGRAM_MANUAL_GROUP_NAME = 'اینستاگرام - دستی'
 
 
 class InstagramLeadForm(forms.Form):
@@ -69,7 +71,7 @@ def _instagram_source_profile():
     return profile
 
 
-def _assign_instagram_lead(lead):
+def _assign_instagram_lead(lead, group_name=INSTAGRAM_GROUP_NAME, notification_title='لید جدید اینستاگرام'):
     operator = (
         EmployeeProfile.objects
         .filter(role='call_center', is_active=True, user__is_active=True)
@@ -85,7 +87,7 @@ def _assign_instagram_lead(lead):
 
     group, _ = CallCenterLeadGroup.objects.get_or_create(
         owner=operator,
-        name=INSTAGRAM_GROUP_NAME,
+        name=group_name,
         defaults={'is_default': False},
     )
     lead.assigned_to = operator
@@ -93,8 +95,8 @@ def _assign_instagram_lead(lead):
     lead.save(update_fields=['assigned_to', 'group', 'updated_at'])
     StaffNotification.objects.create(
         user=operator.user,
-        title='لید جدید اینستاگرام',
-        message=f'{lead.full_name} با شماره {lead.phone} به گروه «{INSTAGRAM_GROUP_NAME}» اضافه شد.',
+        title=notification_title,
+        message=f'{lead.full_name} با شماره {lead.phone} به گروه «{group_name}» اضافه شد.',
         notification_type='call_center_lead',
         related_date=timezone.localdate(),
     )
@@ -121,6 +123,45 @@ def instagram_lead(request):
         form = InstagramLeadForm()
 
     return render(request, 'core/instagram_lead.html', {
+        'form': form,
+        'completed': completed,
+    })
+
+
+@login_required(login_url='/login/')
+def instagram_manual_lead(request):
+    post_data = None
+    if request.method == 'POST':
+        post_data = request.POST.copy()
+        # The customer has already supplied their phone number in Instagram DM;
+        # keep the public consent field out of the internal staff workflow.
+        post_data['consent'] = 'on'
+
+    form = InstagramLeadForm(post_data)
+    completed = False
+    if request.method == 'POST' and form.is_valid():
+        data = form.cleaned_data
+        staff_name = request.user.get_full_name() or request.user.username
+        lead = ReferralLead.objects.create(
+            referrer=_instagram_source_profile(),
+            full_name=data['full_name'].strip(),
+            phone=data['phone'],
+            interested_service=(data.get('interested_service') or '').strip(),
+            status='new',
+            source='panel',
+            source_url=request.build_absolute_uri()[:500],
+            notes=f'اینستاگرام - دستی | ثبت از دایرکت توسط {staff_name}',
+            created_by=request.user,
+        )
+        _assign_instagram_lead(
+            lead,
+            group_name=INSTAGRAM_MANUAL_GROUP_NAME,
+            notification_title='لید جدید اینستاگرام - دستی',
+        )
+        completed = True
+        form = InstagramLeadForm()
+
+    return render(request, 'core/instagram_manual_lead.html', {
         'form': form,
         'completed': completed,
     })
