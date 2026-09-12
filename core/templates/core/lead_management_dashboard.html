@@ -31,6 +31,20 @@ body.gl-premium-dark .app-main .lead-page .c-blue strong{color:#7bdcff!important
 body.gl-premium-dark .app-main .lead-page .donut-wrap{grid-template-columns:240px 1fr!important;gap:22px!important}
 body.gl-premium-dark .app-main .lead-page .donut{width:224px!important;height:224px!important;filter:drop-shadow(0 12px 25px rgba(139,92,246,.22))!important}
 body.gl-premium-dark .app-main .lead-page .donut:after{inset:45px!important;color:#fff!important;-webkit-text-fill-color:#fff!important;font-size:13px!important}
+/* v3: premium dark tables; remove the accidental white header rail. */
+body.gl-premium-dark .app-main .lead-page :is(.operator-table,.lead-table){border:1px solid #344052!important;border-radius:14px!important;border-collapse:separate!important;border-spacing:0!important;overflow:hidden;background:#10151e!important}
+body.gl-premium-dark .app-main .lead-page :is(.operator-table,.lead-table) thead,body.gl-premium-dark .app-main .lead-page :is(.operator-table,.lead-table) thead tr{background:linear-gradient(90deg,#173c32 0%,#252243 52%,#172d3d 100%)!important}
+body.gl-premium-dark .app-main .lead-page :is(.operator-table,.lead-table) th{padding:12px 9px!important;border:0!important;border-bottom:1px solid #4b4a69!important;background:transparent!important;color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;font-weight:900!important}
+body.gl-premium-dark .app-main .lead-page :is(.operator-table,.lead-table) tbody tr{background:rgba(17,23,32,.94)!important;transition:.16s ease}
+body.gl-premium-dark .app-main .lead-page :is(.operator-table,.lead-table) tbody tr:nth-child(even){background:rgba(25,30,43,.94)!important}
+body.gl-premium-dark .app-main .lead-page :is(.operator-table,.lead-table) tbody tr:hover{background:linear-gradient(90deg,rgba(36,103,76,.24),rgba(105,72,161,.20))!important}
+body.gl-premium-dark .app-main .lead-page :is(.operator-table,.lead-table) td{padding:11px 9px!important;border-color:#293240!important;color:#e7edf4!important;-webkit-text-fill-color:#e7edf4!important}
+body.gl-premium-dark .app-main .lead-page .operator-table td:first-child,body.gl-premium-dark .app-main .lead-page .lead-table td:nth-child(2){color:#8ff0b5!important;-webkit-text-fill-color:#8ff0b5!important;font-weight:900!important}
+body.gl-premium-dark .app-main .lead-page .operator-table tbody tr:nth-child(even) td:first-child,body.gl-premium-dark .app-main .lead-page .lead-table tbody tr:nth-child(even) td:nth-child(2){color:#d2b3ff!important;-webkit-text-fill-color:#d2b3ff!important}
+body.gl-premium-dark .app-main .lead-page .operator-table td:nth-child(2),body.gl-premium-dark .app-main .lead-page .operator-table td:nth-child(6),body.gl-premium-dark .app-main .lead-page .operator-table td:nth-child(7){color:#82d7ff!important;-webkit-text-fill-color:#82d7ff!important;font-weight:800!important}
+body.gl-premium-dark .app-main .lead-page .operator-table td:nth-child(8),body.gl-premium-dark .app-main .lead-page .operator-table td:nth-child(9){color:#ffd27c!important;-webkit-text-fill-color:#ffd27c!important}
+body.gl-premium-dark .app-main .lead-page .group-pill{border-color:#3d4657!important;background:linear-gradient(135deg,rgba(35,82,65,.38),rgba(71,48,101,.32))!important;color:#ecf4f0!important;-webkit-text-fill-color:#ecf4f0!important}
+body.gl-premium-dark .app-main .lead-page .sales-box:nth-child(1){border-top:2px solid #69e6a0!important}body.gl-premium-dark .app-main .lead-page .sales-box:nth-child(2){border-top:2px solid #d26dff!important}body.gl-premium-dark .app-main .lead-page .sales-box:nth-child(3){border-top:2px solid #62cfff!important}
 @media(max-width:600px){body.gl-premium-dark .app-main .lead-page .donut-wrap{grid-template-columns:1fr!important}body.gl-premium-dark .app-main .lead-page .donut{width:205px!important;height:205px!important}body.gl-premium-dark .app-main .lead-page .donut:after{inset:41px!important}}
 </style>
 <div class="lead-page">
