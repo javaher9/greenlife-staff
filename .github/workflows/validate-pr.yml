@@ -45,5 +45,5 @@ jobs:
         run: python -m compileall -q core greenlife
       - name: Django system check
         run: python manage.py check
-      - name: Receptionist, call center and consultant finance regression tests
-        run: python manage.py test core.tests.test_receptionist_role core.tests.test_call_center_role core.tests.test_consultant_finance --verbosity 2
+      - name: Receptionist, call center, finance and lead-ingest regression tests
+        run: python manage.py test core.tests.test_receptionist_role core.tests.test_call_center_role core.tests.test_consultant_finance core.tests.test_lead_ingest --verbosity 2
