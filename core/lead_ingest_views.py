@@ -34,6 +34,7 @@ _RESERVED_KEYS = {
     'external_id', 'lead_id', 'campaign', 'utm_campaign', 'utm_source',
     'utm_medium', 'utm_content', 'utm_term', 'landing_page', 'referrer',
     'referrer_url', 'page_title', 'language', 'lang', 'meta', 'metadata', 'fields',
+    'cta_variant', 'cta_label', 'copy_variant',
 }
 
 
@@ -42,9 +43,6 @@ def _authorized(request):
     authorization = request.headers.get('Authorization', '')
     if authorization.lower().startswith('bearer '):
         supplied = authorization[7:].strip()
-    # Elementor's native Webhook action cannot set custom headers, so the
-    # server-to-server webhook may use a query token. It is never rendered as
-    # a public CTA URL.
     if not supplied:
         supplied = request.GET.get('token', '').strip()
     if not supplied:
@@ -196,8 +194,6 @@ def ingest_lead(request):
     try:
         payload = json.loads(request.body.decode('utf-8') or '{}')
     except (UnicodeDecodeError, json.JSONDecodeError):
-        # Elementor's native webhook can post form-encoded data depending on
-        # the installed Pro version. Accept that format too.
         payload = request.POST.dict()
     if not isinstance(payload, dict):
         return JsonResponse({'ok': False, 'error': 'invalid_payload'}, status=400)
@@ -236,6 +232,9 @@ def ingest_lead(request):
     landing_page = _lookup(data, aliases=('landing_page',), limit=500)
     referrer_url = _lookup(data, aliases=('referrer_url', 'referrer'), limit=500)
     language = _lookup(data, aliases=('language', 'lang'), limit=20)
+    cta_variant = _lookup(data, aliases=('cta_variant',), limit=80)
+    cta_label = _lookup(data, aliases=('cta_label',), limit=180)
+    copy_variant = _lookup(data, aliases=('copy_variant',), limit=40)
 
     url_utm = _utm_from_url(source_url)
     utm = {
@@ -247,7 +246,6 @@ def ingest_lead(request):
     if sum(ch.isdigit() for ch in phone) < 10:
         return JsonResponse({'ok': False, 'error': 'valid_phone_required'}, status=400)
 
-    # Idempotency: prevent the same channel from creating a rapid duplicate.
     duplicate = ReferralLead.objects.filter(
         phone=phone,
         created_at__gte=timezone.now() - timedelta(minutes=10),
@@ -261,6 +259,8 @@ def ingest_lead(request):
         meta.append(f'[external_id:{external_id}]')
     if campaign:
         meta.append(f'[campaign:{campaign}]')
+    if cta_variant:
+        meta.append(f'[cta_variant:{cta_variant}]')
 
     website_meta = {
         'page_url': source_url,
@@ -270,6 +270,9 @@ def ingest_lead(request):
         'landing_page': landing_page,
         'referrer_url': referrer_url,
         'language': language,
+        'cta_variant': cta_variant,
+        'cta_label': cta_label,
+        'copy_variant': copy_variant,
         **{key: value for key, value in utm.items() if value},
     }
     website_meta = {key: value for key, value in website_meta.items() if value}
@@ -300,4 +303,5 @@ def ingest_lead(request):
         'assigned_to': operator.user.get_full_name() or operator.user.username if operator else None,
         'channel': channel,
         'source_url': source_url,
+        'cta_variant': cta_variant,
     }, status=201)
