@@ -25,7 +25,7 @@ body.gl-page-call_center_lead .app-main{background:#f5f7fb!important}
       {% if real_appointments %}
       <div class="cc-appts">
         {% for item in real_appointments %}
-        <div class="cc-appt"><b>{{ item.appointment_time|date:"H:i" }}</b><div><strong>{{ item.branch }}</strong><small>{{ item.appointment_date|date:"Y/m/d" }}</small></div><span>{{ item.get_status_display }}</span></div>
+        <div class="cc-appt"><b>{{ item.appointment_time|date:"H:i" }}</b><div><strong>{{ item.branch }}</strong><small dir="ltr">{{ item.appointment_date|jdate_en }}</small></div><span>{{ item.get_status_display }}</span></div>
         {% endfor %}
       </div>
       {% endif %}

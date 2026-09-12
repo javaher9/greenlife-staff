@@ -11,6 +11,19 @@ def jdatetime(value):
         try: value = timezone.localtime(value)
         except Exception: pass
     return format_jalali(value, with_time=True)
+
+@register.filter
+def jdate_en(value):
+    """Render a Jalali date with Latin digits."""
+    return format_jalali(value, persian_digits=False)
+
+@register.filter
+def jdatetime_en(value):
+    """Render a localized Jalali date/time with Latin digits."""
+    if value:
+        try: value = timezone.localtime(value)
+        except Exception: pass
+    return format_jalali(value, with_time=True, persian_digits=False)
 @register.filter
 def fa(value): return to_persian_digits(value)
 
