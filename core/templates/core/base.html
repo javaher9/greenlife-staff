@@ -158,6 +158,7 @@ html.gl-call-center-html{background:#f5f7fb!important;background-image:none!impo
     {% endif %}
     {% if user.profile.role != 'employee' %}<a href="/live/"><span class="nav-ico">⌘</span><span>{% if user.profile.role == "manager" %}مدیریت شعبه{% elif user.profile.role == "internal_manager" %}مدیریت داخلی{% else %}پنل مدیریتی{% endif %}</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/action-center/"><span class="nav-ico">⚡</span><span>مرکز اقدام</span></a>{% endif %}
+    {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}<a href="/lead-management/" class="{% if request.resolver_match.url_name == 'lead_management_dashboard' %}is-active{% endif %}"><span class="nav-ico">◉</span><span>لیدها</span></a>{% endif %}
     {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}<a href="/my-tasks/" class="{% if request.path|slice:':10' == '/my-tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>وظایف من</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/blackboard/" class="{% if '/blackboard/' in request.path %}is-active{% endif %}"><span class="nav-ico">▰</span><span>تخته‌سیاه پرسنل</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌های پرسنل</span></a>{% endif %}
@@ -196,13 +197,14 @@ html.gl-call-center-html{background:#f5f7fb!important;background-image:none!impo
           <a href="/logout/" class="employee-more-logout"><span>↪</span>خروج</a>
         {% else %}
           <a href="/live/"><span>⌘</span>پنل مدیریتی</a>
+          {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}<a href="/lead-management/"><span>◉</span>لیدها</a>{% endif %}
           {% if user.profile.role == 'internal_manager' %}<a href="/meeting-minutes/new/"><span>＋</span>صورت‌جلسه جدید</a><a href="/meeting-minutes/"><span>▤</span>لیست صورت‌جلسات</a>{% elif user.profile.role == 'admin' %}<a href="/meeting-minutes/dashboard/"><span>◈</span>پیگیری مصوبات</a>{% endif %}
           <a href="/reports/"><span>▥</span>گزارش‌های پرسنل</a>
           <a href="/employees/"><span>♙</span>پرسنل</a>
           {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' %}<a href="{% url 'shift_today_bulk' %}"><span>◷</span>تنظیم ساعت کاری</a>{% endif %}
           <a href="/referrals/"><span>✦</span>مدیریت شبکه فروش</a>
           {% if user.profile.role == 'manager' or user.profile.role == 'internal_manager' %}<a href="/attendance/team/"><span>◷</span>حضور تیم</a>{% endif %}
-          <a href="/kpi/"><span>◎</span>عملکرد و KPI</a>
+          <a href="/kpi/"><span>◎</span>عملکرد و KPI</span></a>
           <a href="/sop/"><span>◇</span>آموزش</a>
           <a href="/service-requests/"><span>✓</span>درخواست‌ها</a>
           <a href="/notifications/"><span>⚙</span>اعلان‌ها</a>
