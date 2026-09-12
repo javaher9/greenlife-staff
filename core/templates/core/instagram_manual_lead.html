@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f7faf8">
+  <title>ثبت لید دایرکت اینستاگرام | GreenLife</title>
+  <style>
+    :root{--green:#1d8f63;--green-dark:#167552;--green-soft:#eaf7f1;--purple:#7656a8;--purple-soft:#f1ebf8;--ink:#17221d;--muted:#6e7b75;--line:#e4ebe7}
+    *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+    body{margin:0;min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:18px 14px;font-family:Tahoma,Arial,sans-serif;color:var(--ink);background:radial-gradient(circle at 10% 12%,rgba(118,86,168,.11),transparent 30%),radial-gradient(circle at 90% 86%,rgba(29,143,99,.12),transparent 30%),#f7faf8}
+    .wrap{width:min(100%,440px)}
+    .brand{text-align:center;margin-bottom:14px}.brand strong{display:block;font-size:24px;color:#203129}.brand small{display:block;margin-top:4px;color:#8b978f;font-size:10px;letter-spacing:1.7px}
+    .card{position:relative;overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:26px;padding:25px 22px 21px;box-shadow:0 22px 65px rgba(39,72,56,.11)}
+    .card:before{content:"";position:absolute;inset:0 0 auto;height:4px;background:linear-gradient(90deg,var(--purple),#8f6fba 42%,#58ad86 68%,var(--green))}
+    .badge{width:max-content;margin:0 auto 10px;padding:7px 11px;border-radius:999px;background:linear-gradient(90deg,var(--purple-soft),var(--green-soft));color:#5e6d64;font-size:11px;font-weight:700}
+    h1{margin:0 0 7px;text-align:center;font-size:21px;line-height:1.55}.lead{margin:0 auto 18px;text-align:center;color:var(--muted);font-size:12px;line-height:1.9;max-width:340px}
+    .field{display:block;margin-bottom:12px}.field>span{display:block;margin:0 3px 7px;color:#435048;font-size:12px;font-weight:700}.field input{width:100%;height:51px;border:1px solid var(--line);border-radius:15px;padding:0 14px;background:#fbfcfb;color:#24322b;font:14px Tahoma,Arial,sans-serif;outline:none}.field input:focus{background:#fff;border-color:#7eaa92;box-shadow:0 0 0 4px rgba(29,143,99,.09)}.field input::placeholder{color:#abb4af}.error{display:block;color:#c83e51;font-style:normal;font-size:11px;margin:6px 4px 0}
+    .btn{width:100%;height:53px;border:0;border-radius:16px;background:linear-gradient(100deg,var(--green-dark),var(--green) 70%,#26996d);color:#fff;font:800 15px Tahoma,Arial,sans-serif;cursor:pointer;box-shadow:0 10px 22px rgba(29,143,99,.20)}.btn:disabled{opacity:.7;cursor:default}
+    .hint{text-align:center;color:#929e97;font-size:10px;line-height:1.8;margin-top:12px}.success{text-align:center;padding:18px 2px 8px}.tick{width:70px;height:70px;margin:0 auto 16px;border-radius:23px;display:grid;place-items:center;background:linear-gradient(145deg,var(--green-soft),var(--purple-soft));color:var(--green);font-size:34px;font-weight:900}.again{display:inline-flex;margin-top:10px;padding:11px 16px;border-radius:12px;background:var(--purple-soft);color:#65458e;text-decoration:none;font-size:12px;font-weight:800}
+    @media(max-width:480px){body{align-items:flex-start;padding-top:22px}.card{padding:23px 17px 19px;border-radius:24px}}
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <div class="brand"><strong>GreenLife</strong><small>INSTAGRAM · MANUAL LEAD</small></div>
+  <section class="card">
+    {% if completed %}
+      <div class="success">
+        <div class="tick">✓</div>
+        <h1>لید ثبت شد</h1>
+        <p class="lead">این شماره با برچسب «اینستاگرام - دستی» وارد صف کال‌سنتر شد.</p>
+        <a class="again" href="{% url 'instagram_manual_lead' %}">ثبت شماره بعدی</a>
+      </div>
+    {% else %}
+      <div class="badge">اینستاگرام - دستی</div>
+      <h1>ثبت لید از دایرکت</h1>
+      <p class="lead">شماره‌ای را که مخاطب در دایرکت فرستاده اینجا وارد کنید تا مستقیم وارد App و صف کال‌سنتر شود.</p>
+      <form method="post" id="manualInstagramForm">{% csrf_token %}
+        <label class="field"><span>نام / آیدی اینستاگرام</span>{{ form.full_name }}{% for error in form.full_name.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
+        <label class="field"><span>{{ form.phone.label }}</span>{{ form.phone }}{% for error in form.phone.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
+        <label class="field"><span>{{ form.interested_service.label }}</span>{{ form.interested_service }}{% for error in form.interested_service.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
+        <button class="btn" id="manualSubmitBtn" type="submit">ثبت در App</button>
+      </form>
+      <div class="hint">نام ثبت‌کننده نیز به‌صورت خودکار در سابقه لید ذخیره می‌شود.</div>
+    {% endif %}
+  </section>
+</main>
+<script>
+(function(){
+  var form=document.getElementById('manualInstagramForm');
+  var btn=document.getElementById('manualSubmitBtn');
+  var phone=document.querySelector('[name="phone"]');
+  if(phone){phone.setAttribute('inputmode','tel');phone.setAttribute('dir','ltr');}
+  if(form&&btn){form.addEventListener('submit',function(){if(!form.checkValidity())return;btn.disabled=true;btn.textContent='در حال ثبت...';});}
+})();
+</script>
+</body>
+</html>
