@@ -8,7 +8,7 @@ from django.utils import timezone
 from .models import CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, StaffNotification
 
 
-INSTAGRAM_GROUP_NAME = 'اینستاگرام جدید'
+INSTAGRAM_GROUP_NAME = 'اینستاگرام - لینک'
 INSTAGRAM_MANUAL_GROUP_NAME = 'اینستاگرام - دستی'
 
 
