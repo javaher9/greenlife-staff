@@ -20,6 +20,7 @@ path('appointments/availability/',appointment_views.appointment_availability,nam
 path('appointments/new/',appointment_views.receptionist_appointment_create,name='receptionist_appointment_create'),
 path('appointments/<int:pk>/status/<str:status>/',appointment_views.receptionist_appointment_status,name='receptionist_appointment_status'),
 path('referrals/',referral_views.referral_dashboard,name='referral_dashboard'),
+path('referrals/supervision/',referral_views.referral_supervisor_dashboard,name='referral_supervisor_dashboard'),
 path('referrals/guide/',referral_views.referral_guide,name='referral_guide'),
 path('referrals/network/',referral_views.referral_network,name='referral_network'),
 path('referrals/network/tree/',referral_tree_views.referral_tree_all,name='referral_tree_all'),

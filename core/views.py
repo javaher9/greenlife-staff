@@ -1,3014 +1,2 @@
-import math
-import uuid
-from datetime import date, datetime, timedelta
-from django.http import JsonResponse
-from django.conf import settings
-from django.core.exceptions import PermissionDenied
-from functools import wraps
-from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
-from django.shortcuts import get_object_or_404, redirect, render
-from django.db import IntegrityError, transaction
-from django.db.models import Count, Q, Sum
-from django.utils import timezone
-from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, BlackboardMessageForm, EmployeeCreateForm, EmployeeEditForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm, ConsultantFinanceEntryForm, StaffLoginForm, StaffCredentialUpdateForm
-from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, Branch, BranchWorkSchedule, EmployeeWorkSchedule, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction, MeetingActionUpdate, StaffCredential, VisitAppointment
-from .ai import analyze_finance_receipt, process_report
-from .jalali import format_jalali, gregorian_to_jalali, jalali_to_gregorian, parse_jalali
-from .reporting import day_summary, leaderboard, answer_query
-from .operations import shift_rule, attendance_status_for, overtime_minutes, award_report, award_task, missing_report_days, auto_kpi, approve_correction, report_required, report_exists
-from .smart_alerts import generate_smart_alerts
-from .executive_engine import ceo_score, trend_alerts, calendar_events
-from .credential_security import (
-    change_desktop_password, change_mobile_pin, decrypt_secret,
-    record_desktop_login, record_mobile_login, remember_desktop_password,
-    verify_mobile_pin,
-)
-
-def role_of(user): return getattr(getattr(user,'profile',None),'role','employee')
-
-MANAGEMENT_ROLES=('admin','internal_manager','manager')
-FINANCE_ROLES=('admin','manager')
-PERSONNEL_ROLES=('employee','call_center','consultant','receptionist')
-
-
-def _is_mobile_request(request):
-    """Keep the established dark personnel experience on phones."""
-    if (request.META.get('HTTP_SEC_CH_UA_MOBILE') or '').strip() == '?1':
-        return True
-    ua=(request.META.get('HTTP_USER_AGENT') or '').lower()
-    mobile_tokens=('iphone','ipod','mobile','windows phone','opera mini')
-    return any(token in ua for token in mobile_tokens)
-
-
-def _is_executive_user(user):
-    return bool(
-        getattr(user,'is_authenticated',False)
-        and (getattr(user,'username','') or '').lower() in settings.EXECUTIVE_USERNAMES
-    )
-
-
-def executive_required(view):
-    @wraps(view)
-    @login_required
-    def wrapper(request,*args,**kwargs):
-        if not _is_executive_user(request.user):
-            raise PermissionDenied('Executive workspace access denied.')
-        return view(request,*args,**kwargs)
-    return wrapper
-
-
-def credential_admin_required(view):
-    @wraps(view)
-    @login_required
-    def wrapper(request,*args,**kwargs):
-        if not (request.user.is_superuser or _is_executive_user(request.user)):
-            raise PermissionDenied('Credential administration access denied.')
-        return view(request,*args,**kwargs)
-    return wrapper
-
-def _request_ip(request):
-    forwarded=request.META.get('HTTP_X_FORWARDED_FOR','')
-    if forwarded:
-        return forwarded.split(',')[0].strip()
-    return request.META.get('REMOTE_ADDR') or None
-
-def _attendance_audit(request, action, summary='', metadata=None, obj=None):
-    """Best-effort audit logging; never blocks attendance if logging itself fails."""
-    try:
-        AuditLog.objects.create(
-            actor=request.user if getattr(request,'user',None) and request.user.is_authenticated else None,
-            action=action,
-            path=request.path[:255],
-            method=request.method[:10],
-            object_type='Attendance',
-            object_id=str(getattr(obj,'pk','') or ''),
-            summary=(summary or '')[:250],
-            metadata=metadata or {},
-            ip_address=_request_ip(request),
-        )
-    except Exception:
-        pass
-
-
-_UNICODE_ESCAPES = {
-    r'\u200c':'â€Œ', r'\u200f':'â€', r'\u200e':'â€', r'\n':'\n', r'\t':'\t'
-}
-def normalize_ai_text(value):
-    if not isinstance(value,str): return value
-    out=value
-    for raw,real in _UNICODE_ESCAPES.items():
-        out=out.replace(raw,real)
-    return out
-
-def manager_required(view):
-    @wraps(view)
-    @login_required
-    def wrapper(request,*args,**kwargs):
-        if role_of(request.user) not in MANAGEMENT_ROLES:
-            messages.error(request,'Ø¯Ø³ØªØ±Ø³ÛŒ Ù…Ø¬Ø§Ø² Ù†ÛŒØ³Øª.')
-            return redirect('dashboard')
-        return view(request,*args,**kwargs)
-    return wrapper
-
-def standard_manager_required(view):
-    @wraps(view)
-    @login_required
-    def wrapper(request,*args,**kwargs):
-        if role_of(request.user) not in ('admin','manager'):
-            messages.error(request,'Ø§ÛŒÙ† Ø¨Ø®Ø´ Ø¨Ø±Ø§ÛŒ Ù…Ø¯ÛŒØ± Ø¯Ø§Ø®Ù„ÛŒ ÙØ¹Ø§Ù„ Ù†ÛŒØ³Øª.')
-            return redirect('dashboard')
-        return view(request,*args,**kwargs)
-    return wrapper
-
-def finance_required(view):
-    @wraps(view)
-    @login_required
-    def wrapper(request,*args,**kwargs):
-        if role_of(request.user) not in FINANCE_ROLES:
-            messages.error(request,'Ø¨Ø®Ø´ Ù…Ø§Ù„ÛŒ Ø¨Ø±Ø§ÛŒ Ù†Ù‚Ø´ Ù…Ø¯ÛŒØ± Ø¯Ø§Ø®Ù„ÛŒ ÙØ¹Ø§Ù„ Ù†ÛŒØ³Øª.')
-            return redirect('dashboard')
-        return view(request,*args,**kwargs)
-    return wrapper
-
-def finance_entry_required(view):
-    @wraps(view)
-    @login_required
-    def wrapper(request,*args,**kwargs):
-        if role_of(request.user) not in ('consultant','receptionist'):
-            messages.error(request,'Ø«Ø¨Øª Ù…Ø§Ù„ÛŒ ÙÙ‚Ø· Ø¨Ø±Ø§ÛŒ Ù†Ù‚Ø´ Ù…Ø´Ø§ÙˆØ± ÛŒØ§ Ù…Ù†Ø´ÛŒ ÙØ¹Ø§Ù„ Ø§Ø³Øª.')
-            return redirect('dashboard')
-        if not getattr(request.user.profile,'branch_id',None):
-            messages.error(request,'Ø¨Ø±Ø§ÛŒ Ø«Ø¨Øª Ù…Ø§Ù„ÛŒ Ø¨Ø§ÛŒØ¯ Ø´Ø¹Ø¨Ù‡ Ú©Ø§Ø±Ø¨Ø± Ù…Ø´Ø®Øµ Ø¨Ø§Ø´Ø¯.')
-            return redirect('dashboard')
-        return view(request,*args,**kwargs)
-    return wrapper
-
-def login_view(request):
-    if request.user.is_authenticated:
-        return redirect('dashboard')
-
-    mobile_login=_is_mobile_request(request)
-    form=StaffLoginForm(request.POST or None,mobile=mobile_login)
-    if request.method=='POST' and form.is_valid():
-        raw_username=(form.cleaned_data.get('username') or '').strip()
-        secret=form.cleaned_data.get('password') or ''
-        matched=User.objects.filter(username__iexact=raw_username,is_active=True).order_by('id').first()
-        user=None
-        auth_error='Ù†Ø§Ù… Ú©Ø§Ø±Ø¨Ø±ÛŒ ÛŒØ§ Ø±Ù…Ø² ØµØ­ÛŒØ­ Ù†ÛŒØ³Øª.'
-
-        if matched:
-            if mobile_login:
-                verified,status=verify_mobile_pin(matched,secret)
-                if verified is True:
-                    user=matched
-                elif verified is None:
-                    # Safe rollout: users without a mobile PIN keep using their
-                    # existing desktop password on mobile until a PIN is assigned.
-                    user=authenticate(request,username=matched.username,password=secret)
-                elif status=='locked':
-                    auth_error='ÙˆØ±ÙˆØ¯ Ù…ÙˆØ¨Ø§ÛŒÙ„ Ù…ÙˆÙ‚ØªØ§Ù‹ Ù‚ÙÙ„ Ø´Ø¯Ù‡ Ø§Ø³Øª. Ø¯Ù‡ Ø¯Ù‚ÛŒÙ‚Ù‡ Ø¯ÛŒÚ¯Ø± Ø¯ÙˆØ¨Ø§Ø±Ù‡ Ø§Ù…ØªØ­Ø§Ù† Ú©Ù†ÛŒØ¯.'
-            else:
-                user=authenticate(request,username=matched.username,password=secret)
-
-        if user:
-            EmployeeProfile.objects.get_or_create(
-                user=user,
-                defaults={
-                    'role':'admin' if user.is_superuser else 'employee',
-                    'is_active':user.is_active,
-                },
-            )
-            login(request,user,backend='django.contrib.auth.backends.ModelBackend')
-            request.session['login_device']='mobile' if mobile_login else 'desktop'
-            if mobile_login:
-                record_mobile_login(user)
-            else:
-                record_desktop_login(user)
-            return redirect(request.POST.get('next') or 'dashboard')
-
-        form.add_error(None,auth_error)
-
-    return render(request,'core/login.html',{
-        'form':form,
-        'mobile_login':mobile_login,
-        'next':request.POST.get('next') or request.GET.get('next') or '',
-    })
-
-@credential_admin_required
-def credential_settings(request):
-    profiles=(
-        EmployeeProfile.objects.exclude(role='referrer')
-        .select_related('user','branch','user__staff_credential')
-        .order_by('branch__name','user__last_name','user__first_name','user__username')
-    )
-    rows=[]
-    for profile in profiles:
-        credential=getattr(profile.user,'staff_credential',None)
-        rows.append({
-            'profile':profile,
-            'credential':credential,
-            'desktop_revealable':bool(credential and credential.desktop_password_cipher),
-            'mobile_revealable':bool(credential and credential.mobile_pin_cipher),
-        })
-    response=render(request,'core/credential_settings.html',{'credential_rows':rows})
-    response['Cache-Control']='no-store, private'
-    response['Pragma']='no-cache'
-    return response
-
-
-@credential_admin_required
-def credential_update(request,pk):
-    profile=get_object_or_404(EmployeeProfile.objects.select_related('user','branch'),pk=pk)
-    if request.method!='POST':
-        return redirect('credential_settings')
-    form=StaffCredentialUpdateForm(request.POST)
-    if form.is_valid():
-        desktop=form.cleaned_data.get('desktop_password') or ''
-        mobile=form.cleaned_data.get('mobile_pin') or ''
-        if desktop:
-            change_desktop_password(profile.user,desktop,actor=request.user)
-        if mobile:
-            change_mobile_pin(profile.user,mobile,actor=request.user)
-        AuditLog.objects.create(
-            actor=request.user,action='credential_update',path=request.path,method='POST',
-            object_type='User',object_id=str(profile.user_id),
-            summary=f'Credential update for {profile.user.username}',
-            metadata={'desktop_changed':bool(desktop),'mobile_changed':bool(mobile)},
-            ip_address=_request_ip(request),
-        )
-        messages.success(request,f'Ø¯Ø³ØªØ±Ø³ÛŒâ€ŒÙ‡Ø§ÛŒ {profile.user.get_full_name() or profile.user.username} Ø¨Ù‡â€ŒØ±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ø´Ø¯.')
-    else:
-        messages.error(request,'Ø±Ù…Ø²Ù‡Ø§ Ø°Ø®ÛŒØ±Ù‡ Ù†Ø´Ø¯Ù†Ø¯: '+ ' '.join(
-            msg for field in form.errors.values() for msg in field
-        ))
-    return redirect('credential_settings')
-
-
-@credential_admin_required
-def credential_reveal(request,pk,kind):
-    if request.method!='POST':
-        return JsonResponse({'ok':False,'error':'POST required'},status=405)
-    profile=get_object_or_404(EmployeeProfile.objects.select_related('user'),pk=pk)
-    credential=getattr(profile.user,'staff_credential',None)
-    cipher=''
-    if credential:
-        if kind=='desktop':
-            cipher=credential.desktop_password_cipher
-        elif kind=='mobile':
-            cipher=credential.mobile_pin_cipher
-    if kind not in ('desktop','mobile'):
-        return JsonResponse({'ok':False,'error':'invalid kind'},status=400)
-    secret=decrypt_secret(cipher)
-    if not secret:
-        return JsonResponse({'ok':False,'error':'Ø§ÛŒÙ† Ø±Ù…Ø² Ù‡Ù†ÙˆØ² Ø¨Ø±Ø§ÛŒ Ù†Ù…Ø§ÛŒØ´ Ø°Ø®ÛŒØ±Ù‡ Ù†Ø´Ø¯Ù‡ Ø§Ø³Øª.'},status=404)
-    AuditLog.objects.create(
-        actor=request.user,action='credential_reveal',path=request.path,method='POST',
-        object_type='User',object_id=str(profile.user_id),
-        summary=f'{kind} credential revealed for {profile.user.username}',
-        metadata={'kind':kind},
-        ip_address=_request_ip(request),
-    )
-    response=JsonResponse({'ok':True,'secret':secret})
-    response['Cache-Control']='no-store, private'
-    response['Pragma']='no-cache'
-    return response
-
-
-@credential_admin_required
-def impersonate_start(request,pk):
-    if request.method!='POST':
-        return redirect('credential_settings')
-    target_profile=get_object_or_404(EmployeeProfile.objects.select_related('user'),pk=pk,is_active=True)
-    target=target_profile.user
-    if target.is_superuser or target_profile.role=='admin':
-        messages.error(request,'Ø¨Ø±Ø§ÛŒ Ø§Ù…Ù†ÛŒØªØŒ ÙˆØ±ÙˆØ¯ Ø¢Ø²Ù…Ø§ÛŒØ´ÛŒ Ø¨Ù‡ Ø­Ø³Ø§Ø¨ Ù…Ø¯ÛŒØ± Ø³ÛŒØ³ØªÙ… Ø§Ø² Ø§ÛŒÙ† ØµÙØ­Ù‡ Ù…Ø¬Ø§Ø² Ù†ÛŒØ³Øª.')
-        return redirect('credential_settings')
-    original_id=request.user.pk
-    AuditLog.objects.create(
-        actor=request.user,action='impersonation_start',path=request.path,method='POST',
-        object_type='User',object_id=str(target.pk),
-        summary=f'View as {target.username}',metadata={},
-        ip_address=_request_ip(request),
-    )
-    login(request,target,backend='django.contrib.auth.backends.ModelBackend')
-    request.session['impersonator_user_id']=original_id
-    request.session['impersonator_started_at']=timezone.now().isoformat()
-    request.session['login_device']='desktop'
-    return redirect('dashboard')
-
-
-@login_required
-def impersonate_return(request):
-    if request.method!='POST':
-        return redirect('dashboard')
-    original_id=request.session.get('impersonator_user_id')
-    if not original_id:
-        return redirect('dashboard')
-    original=User.objects.filter(pk=original_id,is_active=True).first()
-    if not original or not (original.is_superuser or _is_executive_user(original)):
-        logout(request)
-        return redirect('login')
-    target_id=request.user.pk
-    AuditLog.objects.create(
-        actor=original,action='impersonation_end',path=request.path,method='POST',
-        object_type='User',object_id=str(target_id),
-        summary=f'Returned from view-as user {target_id}',metadata={},
-        ip_address=_request_ip(request),
-    )
-    login(request,original,backend='django.contrib.auth.backends.ModelBackend')
-    request.session.pop('impersonator_user_id',None)
-    request.session.pop('impersonator_started_at',None)
-    request.session['login_device']='desktop'
-    return redirect('credential_settings')
-
-
-def logout_view(request): logout(request); return redirect('login')
-
-@login_required
-def dashboard(request):
-    role=role_of(request.user)
-    if _is_executive_user(request.user):
-        return redirect('executive_workspace')
-    if role=='receptionist' and not _is_mobile_request(request):
-        profile=getattr(request.user,'profile',None)
-        today_local=timezone.localdate()
-        jalali_year,jalali_month,jalali_day=gregorian_to_jalali(
-            today_local.year,today_local.month,today_local.day
-        )
-        weekday_names={0:'Ø¯ÙˆØ´Ù†Ø¨Ù‡',1:'Ø³Ù‡â€ŒØ´Ù†Ø¨Ù‡',2:'Ú†Ù‡Ø§Ø±Ø´Ù†Ø¨Ù‡',3:'Ù¾Ù†Ø¬Ø´Ù†Ø¨Ù‡',4:'Ø¬Ù…Ø¹Ù‡',5:'Ø´Ù†Ø¨Ù‡',6:'ÛŒÚ©Ø´Ù†Ø¨Ù‡'}
-        jalali_month_names=['ÙØ±ÙˆØ±Ø¯ÛŒÙ†','Ø§Ø±Ø¯ÛŒØ¨Ù‡Ø´Øª','Ø®Ø±Ø¯Ø§Ø¯','ØªÛŒØ±','Ù…Ø±Ø¯Ø§Ø¯','Ø´Ù‡Ø±ÛŒÙˆØ±','Ù…Ù‡Ø±','Ø¢Ø¨Ø§Ù†','Ø¢Ø°Ø±','Ø¯ÛŒ','Ø¨Ù‡Ù…Ù†','Ø§Ø³ÙÙ†Ø¯']
-        jalali_dashboard_date=f"{weekday_names[today_local.weekday()]} {jalali_day} {jalali_month_names[jalali_month-1]} {jalali_year}"
-        receptionist_tasks=Task.objects.filter(
-            assigned_to=request.user
-        ).exclude(status='done').order_by('due_date','-priority','id')[:5]
-        receptionist_notifications=StaffNotification.objects.filter(
-            user=request.user,is_read=False
-        ).order_by('-created_at')[:4]
-        attendance_today=Attendance.objects.filter(
-            user=request.user,date=today_local
-        ).first()
-        receptionist_branch=getattr(profile,'branch',None)
-        if receptionist_branch:
-            receptionist_appointments=VisitAppointment.objects.filter(
-                branch=receptionist_branch,appointment_date=today_local
-            ).exclude(status='cancelled').order_by('appointment_time')
-        else:
-            receptionist_appointments=VisitAppointment.objects.none()
-        receptionist_appointment_count=receptionist_appointments.count()
-        receptionist_arrived_count=receptionist_appointments.filter(
-            status__in=('arrived','completed')
-        ).count()
-        receptionist_payment_count=FinancialTransaction.objects.filter(
-            source='manual',recorded_by=request.user,created_at__date=today_local,
-        ).exclude(review_status='cancelled').count()
-        return render(request,'core/receptionist_dashboard.html',{
-            'role':role,
-            'profile':profile,
-            'receptionist_tasks':receptionist_tasks,
-            'receptionist_task_count':Task.objects.filter(
-                assigned_to=request.user
-            ).exclude(status='done').count(),
-            'receptionist_notifications':receptionist_notifications,
-            'notification_count':StaffNotification.objects.filter(
-                user=request.user,is_read=False
-            ).count(),
-            'attendance_today':attendance_today,
-            'today_shift':shift_rule(request.user,today_local),
-            'jalali_dashboard_date':jalali_dashboard_date,
-            'receptionist_appointments':receptionist_appointments,
-            'receptionist_appointment_count':receptionist_appointment_count,
-            'receptionist_arrived_count':receptionist_arrived_count,
-            'receptionist_payment_count':receptionist_payment_count,
-        })
-    if role=='call_center' and not _is_mobile_request(request):
-        return redirect('call_center_dashboard')
-    if role=='referrer':
-        return redirect('referral_dashboard')
-    if role in MANAGEMENT_ROLES:
-        return redirect('branch_live_dashboard')
-    user_tasks=Task.objects.filter(assigned_to=request.user)
-    tasks=user_tasks.order_by('status','due_date')[:8]
-    profile=getattr(request.user,'profile',None)
-    announcements=Announcement.objects.filter(is_active=True).filter(Q(branch__isnull=True)|Q(branch=getattr(profile,'branch',None))).order_by('-created_at')[:4]
-    blackboard_qs=BlackboardMessage.objects.filter(is_active=True)
-    profile_branch=getattr(profile,'branch',None)
-    blackboard=(blackboard_qs.filter(branch=profile_branch).first() if profile_branch else None) or blackboard_qs.filter(branch__isnull=True).first()
-    counts=user_tasks.values('status').annotate(n=Count('id')); stats={x['status']:x['n'] for x in counts}
-    pending_leave=LeaveRequest.objects.filter(user=request.user,status='pending').count()
-    attendance_today=Attendance.objects.filter(user=request.user,date=timezone.localdate()).first()
-    today_local=timezone.localdate()
-    jalali_year,jalali_month,jalali_day=gregorian_to_jalali(
-        today_local.year,today_local.month,today_local.day
-    )
-    jalali_month_start=date(*jalali_to_gregorian(jalali_year,jalali_month,1))
-    report_end=today_local-timedelta(days=1)
-    if report_end < jalali_month_start:
-        missing_reports=[]
-    else:
-        month_days=(report_end-jalali_month_start).days+1
-        missing_reports=missing_report_days(request.user,days=month_days,end=report_end)
-    notifications_qs=StaffNotification.objects.filter(user=request.user,is_read=False)
-    notifications=notifications_qs[:5]
-    notification_count=notifications_qs.count()
-    today_shift=shift_rule(request.user,timezone.localdate())
-    finance_stats={}
-    if role=='consultant':
-        finance_qs=FinancialTransaction.objects.filter(source='manual',recorded_by=request.user)
-        finance_stats={
-            'today':finance_qs.filter(created_at__date=today_local).count(),
-            'pending':finance_qs.filter(review_status='pending').count(),
-            'correction':finance_qs.filter(review_status='needs_correction').count(),
-            'last':finance_qs.order_by('-created_at').first(),
-        }
-
-    # Real employee-dashboard status (no mock values).
-    today_report_exists=DailyReport.objects.filter(
-        user=request.user,
-        created_at__date=today_local,
-    ).exists()
-
-    checklist_templates=_checklist_templates_for(request.user)
-    checklist_item_ids=list(
-        ChecklistItem.objects.filter(template__in=checklist_templates).values_list('id',flat=True)
-    )
-    checklist_total=len(checklist_item_ids)
-    checklist_done=ChecklistCompletion.objects.filter(
-        user=request.user,
-        date=today_local,
-        item_id__in=checklist_item_ids,
-        is_done=True,
-    ).count() if checklist_item_ids else 0
-
-    task_total=user_tasks.count()
-    task_done=user_tasks.filter(status='done').count()
-    task_progress=round(task_done*100/task_total) if task_total else 100
-    checklist_progress=round(checklist_done*100/checklist_total) if checklist_total else 100
-    overall_progress=round((task_progress+checklist_progress+(100 if today_report_exists else 0))/3)
-
-    weekday_names={0:'Ø¯ÙˆØ´Ù†Ø¨Ù‡',1:'Ø³Ù‡â€ŒØ´Ù†Ø¨Ù‡',2:'Ú†Ù‡Ø§Ø±Ø´Ù†Ø¨Ù‡',3:'Ù¾Ù†Ø¬Ø´Ù†Ø¨Ù‡',4:'Ø¬Ù…Ø¹Ù‡',5:'Ø´Ù†Ø¨Ù‡',6:'ÛŒÚ©Ø´Ù†Ø¨Ù‡'}
-    jalali_month_names=['ÙØ±ÙˆØ±Ø¯ÛŒÙ†','Ø§Ø±Ø¯ÛŒØ¨Ù‡Ø´Øª','Ø®Ø±Ø¯Ø§Ø¯','ØªÛŒØ±','Ù…Ø±Ø¯Ø§Ø¯','Ø´Ù‡Ø±ÛŒÙˆØ±','Ù…Ù‡Ø±','Ø¢Ø¨Ø§Ù†','Ø¢Ø°Ø±','Ø¯ÛŒ','Ø¨Ù‡Ù…Ù†','Ø§Ø³ÙÙ†Ø¯']
-    jalali_dashboard_date=f"{weekday_names[today_local.weekday()]} {jalali_day} {jalali_month_names[jalali_month-1]} {jalali_year}"
-
-    role=role_of(request.user)
-    manager_stats={}
-    if role in MANAGEMENT_ROLES:
-        qs=Task.objects.all()
-        if role=='manager': qs=qs.filter(assigned_to__profile__branch=getattr(profile,'branch',None))
-        manager_stats={'all_tasks':qs.count(),'overdue':qs.filter(due_date__lt=timezone.localdate()).exclude(status='done').count(),'pending_leave':LeaveRequest.objects.filter(status='pending').count()}
-    return render(request,'core/dashboard.html',{
-        'tasks':tasks,
-        'announcements':announcements,
-        'blackboard':blackboard,
-        'stats':stats,
-        'pending_leave':pending_leave,
-        'manager_stats':manager_stats,
-        'role':role,
-        'attendance_today':attendance_today,
-        'missing_reports':missing_reports,
-        'notifications':notifications,
-        'notification_count':notification_count,
-        'today_shift':today_shift,
-        'finance_stats':finance_stats,
-        'today_report_exists':today_report_exists,
-        'checklist_total':checklist_total,
-        'checklist_done':checklist_done,
-        'checklist_progress':checklist_progress,
-        'task_total':task_total,
-        'task_done':task_done,
-        'task_progress':task_progress,
-        'overall_progress':overall_progress,
-        'jalali_dashboard_date':jalali_dashboard_date,
-    })
-
-@login_required
-def report_create(request):
-    # A stable token is rendered with the form and sent back on POST.
-    # If the browser/network retries the same submission, return the already
-    # created report instead of inserting another DailyReport row.
-    submission_id=(request.POST.get('submission_id') or '').strip() if request.method=='POST' else uuid.uuid4().hex
-
-    if request.method=='POST' and submission_id:
-        existing=DailyReport.objects.filter(client_submission_id=submission_id,user=request.user).first()
-        if existing:
-            messages.info(request,'Ø§ÛŒÙ† Ú¯Ø²Ø§Ø±Ø´ Ù‚Ø¨Ù„Ø§Ù‹ Ø«Ø¨Øª Ø´Ø¯Ù‡ Ø¨ÙˆØ¯Ø› Ø§Ø² Ø«Ø¨Øª ØªÚ©Ø±Ø§Ø±ÛŒ Ø¬Ù„ÙˆÚ¯ÛŒØ±ÛŒ Ø´Ø¯.')
-            return redirect('report_detail',pk=existing.pk)
-
-    form=ReportForm(request.POST or None,request.FILES or None)
-    if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False)
-        obj.user=request.user
-        obj.branch=getattr(getattr(request.user,'profile',None),'branch',None)
-        obj.client_submission_id=submission_id or uuid.uuid4().hex
-        obj.save()
-        award_report(request.user,timezone.localdate())
-
-        if request.POST.get('process_ai')=='1':
-            try:
-                ok,msg=process_report(obj); messages.success(request,msg) if ok else messages.warning(request,msg)
-            except Exception as e:
-                obj.process_status='failed'; obj.save(update_fields=['process_status']); messages.error(request,f'Ú¯Ø²Ø§Ø±Ø´ Ø°Ø®ÛŒØ±Ù‡ Ø´Ø¯ØŒ ÙˆÙ„ÛŒ Ù¾Ø±Ø¯Ø§Ø²Ø´ Ù‡ÙˆØ´ Ù…ØµÙ†ÙˆØ¹ÛŒ Ø§Ù†Ø¬Ø§Ù… Ù†Ø´Ø¯: {e}')
-        else:
-            messages.success(request,'Ú¯Ø²Ø§Ø±Ø´ Ø¨Ø§ Ù…ÙˆÙÙ‚ÛŒØª Ø«Ø¨Øª Ø´Ø¯.')
-        return redirect('report_detail',pk=obj.pk)
-
-    if not submission_id:
-        submission_id=uuid.uuid4().hex
-    return render(request,'core/report_form.html',{'form':form,'submission_id':submission_id})
-
-@login_required
-def report_list(request):
-    qs=DailyReport.objects.select_related('user','branch').order_by('-created_at'); role=role_of(request.user)
-    if role in PERSONNEL_ROLES: qs=qs.filter(user=request.user)
-    elif role=='manager': qs=qs.filter(branch=getattr(request.user.profile,'branch',None))
-    return render(request,'core/report_list.html',{'reports':qs[:200]})
-
-@login_required
-def report_detail(request,pk):
-    obj=get_object_or_404(DailyReport,pk=pk)
-    role=role_of(request.user)
-    if role in PERSONNEL_ROLES and obj.user_id!=request.user.id:
-        messages.error(request,'Ø¯Ø³ØªØ±Ø³ÛŒ Ù…Ø¬Ø§Ø² Ù†ÛŒØ³Øª.')
-        return redirect('report_list')
-    if role=='manager' and getattr(obj.user.profile,'branch_id',None)!=getattr(request.user.profile,'branch_id',None):
-        messages.error(request,'Ø¯Ø³ØªØ±Ø³ÛŒ Ù…Ø¬Ø§Ø² Ù†ÛŒØ³Øª.')
-        return redirect('report_list')
-
-    # Clean escaped Unicode sequences for correct Persian rendering.
-    obj.text=normalize_ai_text(obj.text)
-    obj.transcript=normalize_ai_text(obj.transcript)
-    obj.ai_summary=normalize_ai_text(obj.ai_summary)
-    obj.follow_up=normalize_ai_text(obj.follow_up)
-    obj.manager_comment=normalize_ai_text(obj.manager_comment)
-
-    comment_form=None
-    if role in MANAGEMENT_ROLES:
-        comment_form=ManagerReportCommentForm(request.POST or None,instance=obj)
-        if request.method=='POST' and request.POST.get('action')=='manager_comment' and comment_form.is_valid():
-            target=comment_form.save(commit=False)
-            target.manager_comment=normalize_ai_text(target.manager_comment)
-            target.manager_comment_by=request.user
-            target.manager_comment_at=timezone.now()
-            target.save(update_fields=['manager_comment','manager_comment_by','manager_comment_at'])
-            messages.success(request,'Ú©Ø§Ù…Ù†Øª Ù…Ø¯ÛŒØ± Ø«Ø¨Øª Ø´Ø¯.')
-            return redirect('report_detail',pk=obj.pk)
-
-    return render(request,'core/report_detail.html',{'report':obj,'comment_form':comment_form})
-
-@login_required
-def task_list(request):
-    role=role_of(request.user)
-    qs=Task.objects.select_related('assigned_to','meeting_action').order_by('status','due_date')
-    if role in PERSONNEL_ROLES: qs=qs.filter(assigned_to=request.user)
-    elif role=='manager': qs=qs.filter(assigned_to__profile__branch=request.user.profile.branch)
-    return render(request,'core/task_list.html',{'tasks':qs,'can_manage':role in MANAGEMENT_ROLES})
-
-@login_required
-def my_task_list(request):
-    qs=Task.objects.filter(assigned_to=request.user).select_related('assigned_to','meeting_action').order_by('status','due_date','-priority')
-    return render(request,'core/task_list.html',{'tasks':qs,'can_manage':False})
-
-@login_required
-def task_update(request,pk):
-    task=get_object_or_404(Task,pk=pk,assigned_to=request.user); form=TaskStatusForm(request.POST or None,instance=task)
-    if request.method=='POST' and form.is_valid():
-        obj=form.save()
-        meeting_action=getattr(obj,'meeting_action',None)
-        if meeting_action:
-            before=meeting_action.status
-            requested=obj.status
-            meeting_action.status={'todo':'todo','doing':'doing','done':'awaiting_approval'}[requested]
-            meeting_action.save(update_fields=['status','updated_at'])
-            MeetingActionUpdate.objects.create(
-                action=meeting_action,user=request.user,previous_status=before,
-                new_status=meeting_action.status,
-                note='Ø§Ø² Ø¨Ø®Ø´ Ú©Ø§Ø±Ù‡Ø§ÛŒ Ù…Ù† Ø¨Ù‡â€ŒØ±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ø´Ø¯.',
-            )
-            if requested=='done':
-                obj.status='doing'; obj.save(update_fields=['status','updated_at'])
-                messages.success(request,'Ø§Ù†Ø¬Ø§Ù… Ú©Ø§Ø± Ø«Ø¨Øª Ø´Ø¯ Ùˆ Ø¨Ø±Ø§ÛŒ ØªØ£ÛŒÛŒØ¯ Ù…Ø¯ÛŒØ± Ø¯Ø§Ø®Ù„ÛŒ Ø§Ø±Ø³Ø§Ù„ Ø´Ø¯.')
-            else:
-                messages.success(request,'Ù¾ÛŒØ´Ø±ÙØª Ù…ØµÙˆØ¨Ù‡ Ø¨Ù‡â€ŒØ±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ø´Ø¯.')
-        else:
-            award_task(obj); messages.success(request,'ÙˆØ¶Ø¹ÛŒØª ÙˆØ¸ÛŒÙÙ‡ Ø¨Ù‡â€ŒØ±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ø´Ø¯.')
-        if obj.created_by_id and obj.created_by_id!=request.user.id and _is_executive_user(obj.created_by):
-            actor=request.user.get_full_name() or request.user.username
-            StaffNotification.objects.create(
-                user=obj.created_by,
-                title=f'Ø¨Ø±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ú©Ø§Ø±: {obj.title[:120]}',
-                message=f'{actor} ÙˆØ¶Ø¹ÛŒØª Ú©Ø§Ø± Ø±Ø§ Ø¨Ù‡ Â«{obj.get_status_display()}Â» ØªØºÛŒÛŒØ± Ø¯Ø§Ø¯.',
-                notification_type='task_update',
-                related_date=obj.due_date or timezone.localdate(),
-            )
-        return redirect('my_task_list' if role_of(request.user) in MANAGEMENT_ROLES else 'task_list')
-    return render(request,'core/task_update.html',{'form':form,'task':task})
-
-@manager_required
-def task_create(request):
-    form=TaskForm(request.POST or None)
-    if role_of(request.user)=='manager': form.fields['assigned_to'].queryset=User.objects.filter(profile__branch=request.user.profile.branch,profile__is_active=True)
-    elif role_of(request.user)=='internal_manager': form.fields['assigned_to'].queryset=User.objects.filter(profile__role__in=PERSONNEL_ROLES,profile__is_active=True)
-    if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False); obj.created_by=request.user; obj.save(); messages.success(request,'ÙˆØ¸ÛŒÙÙ‡ Ø§ÛŒØ¬Ø§Ø¯ Ø´Ø¯.'); return redirect('task_list')
-    return render(request,'core/generic_form.html',{'form':form,'title':'ØªØ¹Ø±ÛŒÙ ÙˆØ¸ÛŒÙÙ‡ Ø¬Ø¯ÛŒØ¯','button':'Ø«Ø¨Øª ÙˆØ¸ÛŒÙÙ‡'})
-
-@login_required
-def announcement_list(request):
-    profile=getattr(request.user,'profile',None)
-    qs=Announcement.objects.filter(is_active=True)
-    if role_of(request.user) not in ('admin','internal_manager'):
-        qs=qs.filter(Q(branch__isnull=True)|Q(branch=getattr(profile,'branch',None)))
-    qs=qs.order_by('-created_at')
-    return render(request,'core/announcement_list.html',{'announcements':qs,'can_manage':role_of(request.user) in MANAGEMENT_ROLES})
-
-@manager_required
-def announcement_create(request):
-    form=AnnouncementForm(request.POST or None)
-    if role_of(request.user)=='manager':
-        form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=request.user.profile.branch_id); form.fields['branch'].initial=request.user.profile.branch
-    if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False); obj.created_by=request.user; obj.save(); messages.success(request,'Ø§Ø·Ù„Ø§Ø¹ÛŒÙ‡ Ù…Ù†ØªØ´Ø± Ø´Ø¯.'); return redirect('announcement_list')
-    return render(request,'core/generic_form.html',{'form':form,'title':'Ø§Ø·Ù„Ø§Ø¹ÛŒÙ‡ Ø¬Ø¯ÛŒØ¯','button':'Ø§Ù†ØªØ´Ø§Ø±'})
-
-@manager_required
-def blackboard_manage(request):
-    qs=BlackboardMessage.objects.select_related('branch','created_by')
-    if role_of(request.user)=='manager':
-        qs=qs.filter(branch=request.user.profile.branch)
-    return render(request,'core/blackboard_manage.html',{'blackboards':qs})
-
-@manager_required
-def blackboard_edit(request,pk=None):
-    item=get_object_or_404(BlackboardMessage,pk=pk) if pk else None
-    role=role_of(request.user)
-    if item and role=='manager' and item.branch_id!=request.user.profile.branch_id:
-        messages.error(request,'Ø¯Ø³ØªØ±Ø³ÛŒ Ø¨Ù‡ Ù¾ÛŒØ§Ù… Ø§ÛŒÙ† Ø´Ø¹Ø¨Ù‡ Ù…Ø¬Ø§Ø² Ù†ÛŒØ³Øª.')
-        return redirect('blackboard_manage')
-    form=BlackboardMessageForm(request.POST or None,instance=item)
-    if role=='manager':
-        form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=request.user.profile.branch_id)
-        form.fields['branch'].initial=request.user.profile.branch
-        form.fields['branch'].required=True
-    if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False)
-        if role=='manager': obj.branch=request.user.profile.branch
-        if not obj.created_by_id: obj.created_by=request.user
-        obj.save()
-        messages.success(request,'Ù¾ÛŒØ§Ù… ØªØ®ØªÙ‡â€ŒØ³ÛŒØ§Ù‡ Ø°Ø®ÛŒØ±Ù‡ Ùˆ Ø¨Ø±Ø§ÛŒ Ù¾Ø±Ø³Ù†Ù„ Ù…Ù†ØªØ´Ø± Ø´Ø¯.' if obj.is_active else 'Ù¾ÛŒØ§Ù… ØªØ®ØªÙ‡â€ŒØ³ÛŒØ§Ù‡ Ø°Ø®ÛŒØ±Ù‡ Ø´Ø¯.')
-        return redirect('blackboard_manage')
-    return render(request,'core/generic_form.html',{
-        'form':form,'title':'ÙˆÛŒØ±Ø§ÛŒØ´ ØªØ®ØªÙ‡â€ŒØ³ÛŒØ§Ù‡' if item else 'Ù¾ÛŒØ§Ù… Ø¬Ø¯ÛŒØ¯ ØªØ®ØªÙ‡â€ŒØ³ÛŒØ§Ù‡','button':'Ø°Ø®ÛŒØ±Ù‡ Ùˆ Ø§Ù†ØªØ´Ø§Ø±',
-    })
-
-@login_required
-def leave_list(request):
-    role=role_of(request.user); qs=LeaveRequest.objects.select_related('user').order_by('-created_at')
-    if role in PERSONNEL_ROLES: qs=qs.filter(user=request.user)
-    elif role=='manager': qs=qs.filter(user__profile__branch=request.user.profile.branch)
-    return render(request,'core/leave_list.html',{'requests':qs,'can_review':role in MANAGEMENT_ROLES})
-
-@login_required
-def leave_create(request):
-    form=LeaveRequestForm(request.POST or None)
-    if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False); obj.user=request.user; obj.save(); messages.success(request,'Ø¯Ø±Ø®ÙˆØ§Ø³Øª Ø«Ø¨Øª Ø´Ø¯.'); return redirect('leave_list')
-    return render(request,'core/generic_form.html',{'form':form,'title':'Ø¯Ø±Ø®ÙˆØ§Ø³Øª Ø¬Ø¯ÛŒØ¯','button':'Ø§Ø±Ø³Ø§Ù„ Ø¯Ø±Ø®ÙˆØ§Ø³Øª'})
-
-@manager_required
-def leave_review(request,pk):
-    obj=get_object_or_404(LeaveRequest,pk=pk)
-    if role_of(request.user)=='manager' and getattr(obj.user.profile,'branch_id',None)!=request.user.profile.branch_id: return redirect('leave_list')
-    form=LeaveReviewForm(request.POST or None,instance=obj)
-    if request.method=='POST' and form.is_valid():
-        item=form.save(commit=False); item.reviewed_by=request.user; item.save(); messages.success(request,'Ø¯Ø±Ø®ÙˆØ§Ø³Øª Ø¨Ø±Ø±Ø³ÛŒ Ø´Ø¯.'); return redirect('leave_list')
-    return render(request,'core/generic_form.html',{'form':form,'title':'Ø¨Ø±Ø±Ø³ÛŒ Ø¯Ø±Ø®ÙˆØ§Ø³Øª','button':'Ø«Ø¨Øª Ù†ØªÛŒØ¬Ù‡'})
-
-@login_required
-def sop_list(request):
-    profile=getattr(request.user,'profile',None)
-    qs=SOPDocument.objects.filter(is_active=True).filter(Q(branch__isnull=True)|Q(branch=getattr(profile,'branch',None))).filter(Q(job_title='')|Q(job_title=getattr(profile,'job_title',''))).order_by('title')
-    return render(request,'core/sop_list.html',{'documents':qs})
-
-@manager_required
-def employee_list(request):
-    role=role_of(request.user)
-    qs=EmployeeProfile.objects.exclude(role='referrer').select_related('user','branch').order_by('branch__name','user__last_name')
-    if role=='manager': qs=qs.filter(branch=request.user.profile.branch)
-    elif role=='internal_manager': qs=qs.filter(role__in=PERSONNEL_ROLES)
-    return render(request,'core/employee_list.html',{
-        'employees':qs,
-        'can_manage':role in MANAGEMENT_ROLES,
-    })
-
-@manager_required
-def employee_create(request):
-    form=EmployeeCreateForm(request.POST or None)
-    if role_of(request.user)=='manager':
-        form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=request.user.profile.branch_id); form.fields['branch'].initial=request.user.profile.branch; form.fields['role'].choices=[('employee','Ú©Ø§Ø±Ù…Ù†Ø¯')]
-    elif role_of(request.user)=='internal_manager':
-        form.fields['role'].choices=[('employee','Ú©Ø§Ø±Ù…Ù†Ø¯'),('call_center','Ú©Ø§Ù„â€ŒØ³Ù†ØªØ±'),('consultant','Ù…Ø´Ø§ÙˆØ±')]
-    if request.method=='POST' and form.is_valid():
-        d=form.cleaned_data; user=User.objects.create_user(username=d['username'],password=d['password'],first_name=d['first_name'],last_name=d['last_name'])
-        EmployeeProfile.objects.update_or_create(user=user,defaults={
-            'branch':d['branch'],'role':d['role'],
-            'job_title':d['job_title'] or ('Ú©Ø§Ø±Ø´Ù†Ø§Ø³ Ú©Ø§Ù„â€ŒØ³Ù†ØªØ±' if d['role']=='call_center' else 'Ù…Ø´Ø§ÙˆØ±' if d['role']=='consultant' else 'Ù…Ù†Ø´ÛŒ' if d['role']=='receptionist' else ''),
-            'employee_code':d['employee_code'] or None,'phone':d['phone'],
-            'birth_date':d.get('birth_date'),'is_active':user.is_active,
-        })
-        remember_desktop_password(user,d['password'],actor=request.user)
-        if d.get('mobile_pin'):
-            change_mobile_pin(user,d['mobile_pin'],actor=request.user)
-        messages.success(request,'Ú©Ø§Ø±Ù…Ù†Ø¯ Ø§ÛŒØ¬Ø§Ø¯ Ø´Ø¯.'); return redirect('employee_list')
-    return render(request,'core/generic_form.html',{'form':form,'title':'Ø§ÙØ²ÙˆØ¯Ù† Ú©Ø§Ø±Ù…Ù†Ø¯','button':'Ø³Ø§Ø®Øª Ø­Ø³Ø§Ø¨'})
-
-@manager_required
-def employee_edit(request,pk):
-    employee=get_object_or_404(EmployeeProfile.objects.select_related('user','branch','shift_group'),pk=pk)
-    if not _employee_access(request,employee):
-        messages.error(request,'Ø¨Ù‡ Ø§ÛŒÙ† Ù¾Ø±Ø³Ù†Ù„ Ø¯Ø³ØªØ±Ø³ÛŒ Ù†Ø¯Ø§Ø±ÛŒØ¯.')
-        return redirect('employee_list')
-    form=EmployeeEditForm(request.POST or None,employee=employee)
-    if role_of(request.user)=='manager':
-        form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=request.user.profile.branch_id)
-        form.fields['role'].choices=[('employee','Ú©Ø§Ø±Ù…Ù†Ø¯')]
-        form.fields['shift_group'].queryset=form.fields['shift_group'].queryset.filter(branch=request.user.profile.branch)
-    elif role_of(request.user)=='internal_manager':
-        form.fields['role'].choices=[('employee','Ú©Ø§Ø±Ù…Ù†Ø¯'),('call_center','Ú©Ø§Ù„â€ŒØ³Ù†ØªØ±'),('consultant','Ù…Ø´Ø§ÙˆØ±')]
-    if request.method=='POST' and form.is_valid():
-        with transaction.atomic():
-            form.save()
-            if form.cleaned_data.get('new_password'):
-                remember_desktop_password(employee.user,form.cleaned_data['new_password'],actor=request.user)
-        messages.success(request,'Ù…Ø´Ø®ØµØ§Øª Ù¾Ø±Ø³Ù†Ù„ Ø¨Ù‡â€ŒØ±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ø´Ø¯.')
-        return redirect('employee_file',pk=pk)
-    return render(request,'core/employee_management_form.html',{
-        'form':form,'employee':employee,'title':'ÙˆÛŒØ±Ø§ÛŒØ´ Ù…Ø´Ø®ØµØ§Øª',
-        'subtitle':'Ø§Ø·Ù„Ø§Ø¹Ø§Øª Ù‡ÙˆÛŒØªÛŒØŒ Ø´ØºÙ„ÛŒØŒ ØªÙ…Ø§Ø³ØŒ Ø¨ÛŒÙ…Ù‡ Ùˆ Ø´ÛŒÙØª Ø§ÛŒÙ† Ù¾Ø±Ø³Ù†Ù„ Ø±Ø§ Ø¨Ù‡â€ŒØ±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ú©Ù†ÛŒØ¯.',
-        'button':'Ø°Ø®ÛŒØ±Ù‡ ØªØºÛŒÛŒØ±Ø§Øª','form_kind':'edit',
-    })
-
-@login_required
-def profile_view(request):
-    profile=getattr(request.user,'profile',None)
-    form=EmployeeAvatarForm(request.POST or None,request.FILES or None,instance=profile) if profile else None
-    if request.method=='POST' and form and form.is_valid():
-        form.save()
-        messages.success(request,'Ø¹Ú©Ø³ Ù¾Ø±ÙˆÙØ§ÛŒÙ„ Ø¨Ù‡â€ŒØ±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ø´Ø¯.')
-        return redirect('profile')
-    today_shift=shift_rule(request.user,timezone.localdate()) if profile else None
-    return render(request,'core/profile.html',{
-        'profile':profile,
-        'avatar_form':form,
-        'today_shift':today_shift,
-    })
-
-@manager_required
-def employee_avatar_edit(request,pk):
-    employee=get_object_or_404(EmployeeProfile.objects.select_related('user','branch'),pk=pk)
-    if not _employee_access(request,employee):
-        messages.error(request,'Ø¨Ù‡ Ø§ÛŒÙ† Ù¾Ø±Ø³Ù†Ù„ Ø¯Ø³ØªØ±Ø³ÛŒ Ù†Ø¯Ø§Ø±ÛŒØ¯.')
-        return redirect('employee_list')
-    form=EmployeeAvatarForm(request.POST or None,request.FILES or None,instance=employee)
-    if request.method=='POST' and form.is_valid():
-        form.save()
-        messages.success(request,'Ø¹Ú©Ø³ Ù¾Ø±Ø³Ù†Ù„ Ø¨Ù‡â€ŒØ±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ø´Ø¯.')
-        return redirect('employee_list')
-    return render(request,'core/employee_avatar_form.html',{'form':form,'employee':employee})
-
-
-def health_check(request):
-    return JsonResponse({"status":"ok","service":"GreenLife Staff API","api_version":"1.0"})
-
-@login_required
-def attendance(request):
-    today=timezone.localdate()
-    profile=getattr(request.user,'profile',None)
-    branch=getattr(profile,'branch',None)
-    record=Attendance.objects.filter(user=request.user,date=today).first()
-
-    def verify_location():
-        """Return (ok, message, metadata). GPS is required only when branch geofence is enabled."""
-        if not branch or not branch.geofence_enabled:
-            return True, '', {'status':'legacy'}
-        if branch.latitude is None or branch.longitude is None:
-            return False, 'Ù…ÙˆÙ‚Ø¹ÛŒØª Ø´Ø¹Ø¨Ù‡ Ù‡Ù†ÙˆØ² ØªÙˆØ³Ø· Ù…Ø¯ÛŒØ± ØªÙ†Ø¸ÛŒÙ… Ù†Ø´Ø¯Ù‡ Ø§Ø³Øª.', {'status':'unavailable'}
-        try:
-            lat=float(request.POST.get('latitude',''))
-            lon=float(request.POST.get('longitude',''))
-            accuracy=float(request.POST.get('accuracy',''))
-        except (TypeError,ValueError):
-            return False, 'Ø¨Ø±Ø§ÛŒ Ø«Ø¨Øª ÙˆØ±ÙˆØ¯ Ø¨Ø§ÛŒØ¯ Ø¯Ø³ØªØ±Ø³ÛŒ Ù…ÙˆÙ‚Ø¹ÛŒØª Ù…Ú©Ø§Ù†ÛŒ Ø±Ø§ ÙØ¹Ø§Ù„ Ú©Ù†ÛŒØ¯.', {'status':'unavailable'}
-
-        # Reject malformed/impossible location values before distance calculation.
-        if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0) or accuracy <= 0:
-            return False, 'Ø§Ø·Ù„Ø§Ø¹Ø§Øª Ù…ÙˆÙ‚Ø¹ÛŒØª Ù…Ú©Ø§Ù†ÛŒ Ù…Ø¹ØªØ¨Ø± Ù†ÛŒØ³Øª. GPS Ø±Ø§ Ø®Ø§Ù…ÙˆØ´ Ùˆ Ø±ÙˆØ´Ù† Ú©Ù†ÛŒØ¯ Ùˆ Ø¯ÙˆØ¨Ø§Ø±Ù‡ Ø§Ù…ØªØ­Ø§Ù† Ú©Ù†ÛŒØ¯.', {
-                'status':'unavailable','lat':lat,'lon':lon,'accuracy':accuracy
-            }
-
-        # Reject very imprecise fixes; otherwise a user could appear inside a large uncertainty circle.
-        if accuracy > 200:
-            return False, f'Ø¯Ù‚Øª GPS Ú©Ø§ÙÛŒ Ù†ÛŒØ³Øª ({int(accuracy)} Ù…ØªØ±). Ú©Ù†Ø§Ø± Ù¾Ù†Ø¬Ø±Ù‡ ÛŒØ§ ÙØ¶Ø§ÛŒ Ø¨Ø§Ø² Ø¯ÙˆØ¨Ø§Ø±Ù‡ Ø§Ù…ØªØ­Ø§Ù† Ú©Ù†ÛŒØ¯.', {
-                'status':'low_accuracy','lat':lat,'lon':lon,'accuracy':accuracy
-            }
-
-        # Haversine distance, meters.
-        r=6371000.0
-        lat1,lon1=math.radians(float(branch.latitude)),math.radians(float(branch.longitude))
-        lat2,lon2=math.radians(lat),math.radians(lon)
-        dlat,dlon=lat2-lat1,lon2-lon1
-        a=math.sin(dlat/2)**2 + math.cos(lat1)*math.cos(lat2)*math.sin(dlon/2)**2
-        distance=r*(2*math.atan2(math.sqrt(a),math.sqrt(1-a)))
-        allowed=float(branch.attendance_radius_m) + min(accuracy,50.0)
-        meta={'status':'verified' if distance <= allowed else 'outside',
-              'lat':lat,'lon':lon,'accuracy':accuracy,'distance':round(distance)}
-        if distance > allowed:
-            return False, f'Ø´Ù…Ø§ Ø­Ø¯ÙˆØ¯ {int(distance)} Ù…ØªØ± Ø§Ø² Ø´Ø¹Ø¨Ù‡ ÙØ§ØµÙ„Ù‡ Ø¯Ø§Ø±ÛŒØ¯Ø› Ø«Ø¨Øª ÙˆØ±ÙˆØ¯ ÙÙ‚Ø· Ø¯Ø§Ø®Ù„ Ù…Ø­Ø¯ÙˆØ¯Ù‡ Ù…Ø¬Ø§Ø² Ø§Ø³Øª.', meta
-        return True, '', meta
-
-    if request.method=='POST':
-        action=request.POST.get('action')
-        if action=='checkin':
-            # Verify BEFORE creating today's record so failed attempts do not create phantom attendance.
-            ok,msg,meta=verify_location()
-            if not ok:
-                _attendance_audit(
-                    request,'attendance_location_rejected',msg,
-                    {'action':'checkin','branch_id':getattr(branch,'id',None),**meta}
-                )
-                messages.error(request,msg)
-                return redirect('attendance')
-            record,_=Attendance.objects.get_or_create(
-                user=request.user,date=today,defaults={'branch':branch}
-            )
-            now=timezone.now()
-            if not record.check_in:
-                record.check_in=now
-                record.status=attendance_status_for(request.user,today,now)
-                record.check_in_location_status=meta.get('status','legacy')
-                if meta.get('lat') is not None:
-                    record.check_in_latitude=meta['lat']
-                    record.check_in_longitude=meta['lon']
-                    record.check_in_accuracy_m=meta.get('accuracy')
-                    record.check_in_distance_m=meta.get('distance')
-                if record.status=='present' and not ScoreEvent.objects.filter(
-                    user=request.user,event_date=today,reason='attendance'
-                ).exists():
-                    ScoreEvent.objects.create(
-                        user=request.user,points=5,reason='attendance',description='Ø­Ø¶ÙˆØ± Ø¨Ù‡â€ŒÙ…ÙˆÙ‚Ø¹'
-                    )
-                record.save()
-                _attendance_audit(
-                    request,'attendance_checkin','Ø«Ø¨Øª ÙˆØ±ÙˆØ¯',
-                    {
-                        'branch_id':getattr(branch,'id',None),
-                        'location_status':record.check_in_location_status,
-                        'distance_m':record.check_in_distance_m,
-                        'accuracy_m':record.check_in_accuracy_m,
-                        'server_time':record.check_in.isoformat() if record.check_in else None,
-                    },record
-                )
-                messages.success(request,'ÙˆØ±ÙˆØ¯ Ø´Ù…Ø§ Ø¨Ø§ ØªØ£ÛŒÛŒØ¯ Ù…ÙˆÙ‚Ø¹ÛŒØª Ø«Ø¨Øª Ø´Ø¯.' if branch and branch.geofence_enabled else 'ÙˆØ±ÙˆØ¯ Ø´Ù…Ø§ Ø«Ø¨Øª Ø´Ø¯.')
-            else:
-                messages.info(request,'ÙˆØ±ÙˆØ¯ Ø§Ù…Ø±ÙˆØ² Ù‚Ø¨Ù„Ø§Ù‹ Ø«Ø¨Øª Ø´Ø¯Ù‡ Ø§Ø³Øª.')
-        elif action=='checkout':
-            record=Attendance.objects.filter(user=request.user,date=today).first()
-            if not record or not record.check_in:
-                messages.error(request,'Ø§Ø¨ØªØ¯Ø§ ÙˆØ±ÙˆØ¯ Ø±Ø§ Ø«Ø¨Øª Ú©Ù†ÛŒØ¯.')
-            elif not record.check_out:
-                # When geofence is enabled, checkout must also happen inside the branch radius.
-                ok,msg,meta=verify_location()
-                if not ok:
-                    _attendance_audit(
-                        request,'attendance_location_rejected','Ø®Ø±ÙˆØ¬ Ø«Ø¨Øª Ù†Ø´Ø¯: '+msg,
-                        {'action':'checkout','branch_id':getattr(branch,'id',None),**meta},record
-                    )
-                    messages.error(request,'Ø®Ø±ÙˆØ¬ Ø«Ø¨Øª Ù†Ø´Ø¯: '+msg)
-                    return redirect('attendance')
-                record.check_out=timezone.now()
-                record.save()
-                _attendance_audit(
-                    request,'attendance_checkout','Ø«Ø¨Øª Ø®Ø±ÙˆØ¬',
-                    {
-                        'branch_id':getattr(branch,'id',None),
-                        'location_status':meta.get('status'),
-                        'distance_m':meta.get('distance'),
-                        'accuracy_m':meta.get('accuracy'),
-                        'server_time':record.check_out.isoformat() if record.check_out else None,
-                    },record
-                )
-                messages.success(request,'Ø®Ø±ÙˆØ¬ Ø´Ù…Ø§ Ø¨Ø§ ØªØ£ÛŒÛŒØ¯ Ù…ÙˆÙ‚Ø¹ÛŒØª Ø«Ø¨Øª Ø´Ø¯.' if branch and branch.geofence_enabled else 'Ø®Ø±ÙˆØ¬ Ø´Ù…Ø§ Ø«Ø¨Øª Ø´Ø¯.')
-            else:
-                messages.info(request,'Ø®Ø±ÙˆØ¬ Ø§Ù…Ø±ÙˆØ² Ù‚Ø¨Ù„Ø§Ù‹ Ø«Ø¨Øª Ø´Ø¯Ù‡ Ø§Ø³Øª.')
-        return redirect('attendance')
-
-    recent=Attendance.objects.filter(user=request.user).order_by('-date')[:31]
-    return render(request,'core/attendance.html',{
-        'record':record,'recent':recent,'today':today,
-        'today_shift':shift_rule(request.user,today),'overtime':overtime_minutes(record),
-        'geofence_enabled':bool(branch and branch.geofence_enabled),
-        'geofence_radius':getattr(branch,'attendance_radius_m',None),
-    })
-
-@manager_required
-def attendance_team(request):
-    role=role_of(request.user); profile=getattr(request.user,'profile',None)
-    date_value=request.GET.get('date')
-    try: selected=parse_jalali(date_value) if date_value else timezone.localdate()
-    except ValueError: selected=timezone.localdate()
-    users=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
-    records=Attendance.objects.filter(date=selected).select_related('user','branch')
-    if role=='manager':
-        users=users.filter(profile__branch=profile.branch); records=records.filter(branch=profile.branch)
-    recmap={r.user_id:r for r in records}
-    rows=[(u,recmap.get(u.id)) for u in users.order_by('profile__branch__name','last_name','first_name')]
-    summary={'employees':len(rows),'present':sum(1 for _,r in rows if r and r.check_in),'late':sum(1 for _,r in rows if r and r.status=='late'),'missing':sum(1 for _,r in rows if not r or not r.check_in)}
-    return render(request,'core/attendance_team.html',{'rows':rows,'selected':selected,'summary':summary})
-
-@manager_required
-def attendance_edit(request,pk):
-    obj=get_object_or_404(Attendance,pk=pk)
-    if role_of(request.user)=='manager' and obj.branch_id!=request.user.profile.branch_id: return redirect('attendance_team')
-    if role_of(request.user)=='internal_manager' and obj.user.profile.role not in PERSONNEL_ROLES: return redirect('attendance_team')
-    form=AttendanceManualForm(request.POST or None,instance=obj)
-    if role_of(request.user)=='manager': form.fields['user'].queryset=User.objects.filter(profile__branch=request.user.profile.branch)
-    elif role_of(request.user)=='internal_manager': form.fields['user'].queryset=User.objects.filter(profile__role__in=PERSONNEL_ROLES,profile__is_active=True)
-    if request.method=='POST' and form.is_valid():
-        before={
-            'user_id':obj.user_id,'date':str(obj.date),
-            'check_in':obj.check_in.isoformat() if obj.check_in else None,
-            'check_out':obj.check_out.isoformat() if obj.check_out else None,
-            'status':obj.status,
-        }
-        changed=form.save(commit=False)
-        changed.check_in_location_status='manual'
-        changed.save()
-        after={
-            'user_id':changed.user_id,'date':str(changed.date),
-            'check_in':changed.check_in.isoformat() if changed.check_in else None,
-            'check_out':changed.check_out.isoformat() if changed.check_out else None,
-            'status':changed.status,
-        }
-        _attendance_audit(request,'attendance_manual_edit','Ø§ØµÙ„Ø§Ø­ Ø¯Ø³ØªÛŒ Ø­Ø¶ÙˆØ± Ùˆ ØºÛŒØ§Ø¨',{'before':before,'after':after},changed)
-        messages.success(request,'Ø±Ú©ÙˆØ±Ø¯ Ø­Ø¶ÙˆØ± Ùˆ ØºÛŒØ§Ø¨ Ø§ØµÙ„Ø§Ø­ Ø´Ø¯.')
-        return redirect('attendance_team')
-    return render(request,'core/generic_form.html',{'form':form,'title':'Ø§ØµÙ„Ø§Ø­ Ø­Ø¶ÙˆØ± Ùˆ ØºÛŒØ§Ø¨','button':'Ø°Ø®ÛŒØ±Ù‡'})
-
-@manager_required
-def attendance_create(request):
-    employee=None
-    employee_pk=request.GET.get('employee')
-    if employee_pk:
-        employee=_employee_or_redirect(request,employee_pk)
-        if employee is None:
-            return redirect('employee_list')
-    form=AttendanceManualForm(request.POST or None,initial={'user':employee.user} if employee else None)
-    if role_of(request.user)=='manager': form.fields['user'].queryset=User.objects.filter(profile__branch=request.user.profile.branch)
-    elif role_of(request.user)=='internal_manager': form.fields['user'].queryset=User.objects.filter(profile__role__in=PERSONNEL_ROLES,profile__is_active=True)
-    if employee:
-        form.fields['user'].disabled=True
-    if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False)
-        if employee:
-            obj.user=employee.user
-        obj.branch=getattr(getattr(obj.user,'profile',None),'branch',None)
-        obj.check_in_location_status='manual'
-        obj.save()
-        _attendance_audit(
-            request,'attendance_manual_create','Ø«Ø¨Øª Ø¯Ø³ØªÛŒ Ø­Ø¶ÙˆØ± Ùˆ ØºÛŒØ§Ø¨',
-            {
-                'user_id':obj.user_id,'date':str(obj.date),
-                'check_in':obj.check_in.isoformat() if obj.check_in else None,
-                'check_out':obj.check_out.isoformat() if obj.check_out else None,
-                'status':obj.status,
-            },obj
-        )
-        messages.success(request,'Ø±Ú©ÙˆØ±Ø¯ Ø­Ø¶ÙˆØ± Ùˆ ØºÛŒØ§Ø¨ Ø«Ø¨Øª Ø´Ø¯.')
-        if employee:
-            return redirect('employee_attendance',pk=employee.pk)
-        return redirect('attendance_team')
-    title='Ø«Ø¨Øª Ø¯Ø³ØªÛŒ Ø­Ø¶ÙˆØ± Ùˆ ØºÛŒØ§Ø¨'
-    if employee:
-        title+=f' Ø¨Ø±Ø§ÛŒ {employee.user.get_full_name() or employee.user.username}'
-    return render(request,'core/generic_form.html',{'form':form,'title':title,'button':'Ø«Ø¨Øª'})
-
-@login_required
-def attendance_api_today(request):
-    rec=Attendance.objects.filter(user=request.user,date=timezone.localdate()).first()
-    return JsonResponse({'date':str(timezone.localdate()),'check_in':rec.check_in.isoformat() if rec and rec.check_in else None,'check_out':rec.check_out.isoformat() if rec and rec.check_out else None,'status':rec.status if rec else None})
-
-
-@manager_required
-def analytics_dashboard(request):
-    q=request.GET.get('q','')
-    result=answer_query(request.user,q) if q else None
-    summary=day_summary(request.user)
-    board=leaderboard(request.user)[:10]
-    return render(request,'core/analytics.html',{'summary':summary,'board':board,'query':q,'result':result})
-
-@manager_required
-def kpi_list(request):
-    qs=KPIRecord.objects.select_related('user').all()
-    if role_of(request.user)=='manager': qs=qs.filter(user__profile__branch=request.user.profile.branch)
-    return render(request,'core/kpi_list.html',{'records':qs[:100]})
-
-@manager_required
-def kpi_create(request):
-    form=KPIRecordForm(request.POST or None)
-    if role_of(request.user)=='manager': form.fields['user'].queryset=User.objects.filter(profile__branch=request.user.profile.branch,profile__is_active=True)
-    elif role_of(request.user)=='internal_manager': form.fields['user'].queryset=User.objects.filter(profile__role__in=PERSONNEL_ROLES,profile__is_active=True)
-    if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False); obj.created_by=request.user; obj.save()
-        ScoreEvent.objects.create(user=obj.user,points=max(0,int(obj.score//10)),reason='kpi',description=f'KPI: {obj.title}',event_date=obj.period_end,created_by=request.user)
-        messages.success(request,'KPI Ø«Ø¨Øª Ùˆ Ø§Ù…ØªÛŒØ§Ø² Ø¢Ù† Ø§Ø¹Ù…Ø§Ù„ Ø´Ø¯.'); return redirect('kpi_list')
-    return render(request,'core/generic_form.html',{'form':form,'title':'Ø«Ø¨Øª KPI','button':'Ø«Ø¨Øª'})
-
-@manager_required
-def score_create(request):
-    form=ScoreEventForm(request.POST or None)
-    if role_of(request.user)=='manager': form.fields['user'].queryset=User.objects.filter(profile__branch=request.user.profile.branch,profile__is_active=True)
-    elif role_of(request.user)=='internal_manager': form.fields['user'].queryset=User.objects.filter(profile__role__in=PERSONNEL_ROLES,profile__is_active=True)
-    if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False); obj.created_by=request.user; obj.save(); messages.success(request,'Ø§Ù…ØªÛŒØ§Ø² Ø«Ø¨Øª Ø´Ø¯.'); return redirect('analytics_dashboard')
-    return render(request,'core/generic_form.html',{'form':form,'title':'Ø§Ù…ØªÛŒØ§Ø² ØªØ´ÙˆÛŒÙ‚ÛŒ/Ø§ØµÙ„Ø§Ø­ÛŒ','button':'Ø«Ø¨Øª Ø§Ù…ØªÛŒØ§Ø²'})
-
-def _api_manager(request):
-    import os
-    key=os.getenv('STAFF_REPORT_API_KEY','')
-    if key and request.headers.get('X-Staff-API-Key')==key: return True
-    return request.user.is_authenticated and role_of(request.user) in MANAGEMENT_ROLES
-
-def management_attendance_summary_api(request):
-    if not _api_manager(request): return JsonResponse({'error':'unauthorized'},status=401)
-    day=timezone.localdate()
-    raw=request.GET.get('date')
-    if raw:
-        try: day=parse_jalali(raw)
-        except ValueError: return JsonResponse({'error':'invalid jalali date; example: 1405/05/24'},status=400)
-    data=day_summary(request.user,day) if request.user.is_authenticated else _api_day_summary_all(day)
-    return JsonResponse(data,json_dumps_params={'ensure_ascii':False})
-
-def _api_day_summary_all(day):
-    from types import SimpleNamespace
-    # API-key access is system-wide/admin scope.
-    admin=User.objects.filter(profile__role='admin').first() or User.objects.filter(is_superuser=True).first()
-    if admin: return day_summary(admin,day)
-    records=Attendance.objects.filter(date=day).select_related('user','branch')
-    rows=[{'id':r.user_id,'name':r.user.get_full_name() or r.user.username,'branch':r.branch.name if r.branch else None,'check_in':timezone.localtime(r.check_in).strftime('%H:%M') if r.check_in else None,'check_out':timezone.localtime(r.check_out).strftime('%H:%M') if r.check_out else None,'status':r.status,'status_fa':r.get_status_display()} for r in records]
-    late=[x for x in rows if x['status']=='late']
-    return {'date':format_jalali(day),'gregorian_date':str(day),'employees':len(rows),'present':sum(1 for x in rows if x['check_in']),'late':len(late),'missing':0,'late_people':late,'missing_people':[],'rows':rows}
-
-def management_query_api(request):
-    if not _api_manager(request): return JsonResponse({'error':'unauthorized'},status=401)
-    q=request.GET.get('q','')
-    if request.user.is_authenticated: data=answer_query(request.user,q)
-    else:
-        admin=User.objects.filter(profile__role='admin').first() or User.objects.filter(is_superuser=True).first()
-        if not admin: return JsonResponse({'error':'no admin user configured'},status=503)
-        data=answer_query(admin,q)
-    return JsonResponse(data,json_dumps_params={'ensure_ascii':False})
-
-@finance_required
-def finance_dashboard(request):
-    from .finance import finance_summary, flower_sales_summary, finance_visual_analytics
-    from .ai import analyze_finance_dashboard
-    from .models import IntegrationSyncLog
-    day=timezone.localdate(); raw=request.GET.get('date')
-    if raw:
-        try: day=parse_jalali(raw)
-        except ValueError: messages.error(request,'ØªØ§Ø±ÛŒØ® Ø´Ù…Ø³ÛŒ Ù†Ø§Ù…Ø¹ØªØ¨Ø± Ø§Ø³Øª.')
-    branch=None
-    if role_of(request.user)=='manager': branch=request.user.profile.branch
-    summary=finance_summary(day,branch)
-    flower_sales=flower_sales_summary(timezone.localdate(),branch)
-    visual_analytics=finance_visual_analytics(timezone.localdate(),branch)
-    ai_payload={
-        'period':f"{visual_analytics['jalali_year']}/{visual_analytics['jalali_month']}",
-        'branches':[{'name':x['branch__name'] or 'Ø¨Ø¯ÙˆÙ† Ø´Ø¹Ø¨Ù‡','today':str(x['today']),'month':str(x['month']),'year':str(x['year']),'expense_month':str(x['expense_month'])} for x in visual_analytics['branches']],
-        'flowers':[{'name':x['flower_name'],'today':str(x['today']),'month':str(x['month']),'year':str(x['year'])} for x in flower_sales['rows']],
-        'categories':[{'name':x['label'],'today':str(x['today']),'month':str(x['month']),'year':str(x['year']),'expense_month':str(x['expense_month'])} for x in visual_analytics['categories']],
-        'lead_sources':[{'name':x['label'],'today':str(x['today']),'month':str(x['month']),'year':str(x['year'])} for x in visual_analytics['sources']],
-    }
-    ai_insight,ai_live=analyze_finance_dashboard(ai_payload)
-    logs=IntegrationSyncLog.objects.all()[:5]
-    entries=FinancialTransaction.objects.filter(source='manual').select_related(
-        'branch','recorded_by','call_center_owner','appointment__lead__referrer__user','appointment__lead__group',
-    )
-    if role_of(request.user)=='manager': entries=entries.filter(branch=request.user.profile.branch)
-    return render(request,'core/finance_dashboard.html',{
-        'summary':summary,'flower_sales':flower_sales,'visual_analytics':visual_analytics,
-        'ai_insight':ai_insight,'ai_live':ai_live,
-        'logs':logs,'selected':day,'manual_entries':entries[:100],
-    })
-
-@finance_entry_required
-def finance_entry(request):
-    profile=request.user.profile
-    initial={'entry_type':'inc'}
-    requested_appointment=(request.GET.get('appointment') or '').strip()
-    if requested_appointment.isdigit():
-        initial['appointment']=requested_appointment
-        initial['sale_origin']='afsariyeh'
-
-    raw_submission_token=(request.POST.get('submission_token') or '').strip()
-    try:
-        submission_token=uuid.UUID(raw_submission_token).hex if raw_submission_token else uuid.uuid4().hex
-    except (ValueError,AttributeError):
-        submission_token=uuid.uuid4().hex
-    submission_external_id=f'staff:{request.user.pk}:{submission_token}'
-
-    # Fast idempotency check before image validation/compression. The database unique
-    # constraint below is still the final protection against truly concurrent taps.
-    if request.method=='POST' and raw_submission_token:
-        existing=FinancialTransaction.objects.filter(
-            source='manual',external_id=submission_external_id,recorded_by=request.user,
-        ).first()
-        if existing:
-            messages.info(request,'Ø§ÛŒÙ† Ø¯Ø±ÛŒØ§ÙØª Ù‚Ø¨Ù„Ø§Ù‹ Ø«Ø¨Øª Ø´Ø¯Ù‡ Ø§Ø³ØªØ› Ø«Ø¨Øª Ø¯ÙˆØ¨Ø§Ø±Ù‡ Ø§Ù†Ø¬Ø§Ù… Ù†Ø´Ø¯.')
-            return redirect('finance_entry')
-
-    form=ConsultantFinanceEntryForm(
-        request.POST or None,request.FILES or None,
-        consultant_profile=profile,initial=initial,
-    )
-    if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False)
-        tx_date=form.cleaned_data['date']
-        local_now=timezone.localtime()
-        naive_time=local_now.time().replace(tzinfo=None)
-        obj.occurred_at=timezone.make_aware(datetime.combine(tx_date,naive_time))
-        obj.branch=profile.branch
-        obj.source='manual'
-        obj.external_id=submission_external_id
-        obj.review_status='pending'
-        obj.analysis_status='pending'
-        obj.recorded_by=request.user
-        appointment=form.cleaned_data.get('appointment')
-        obj.appointment=appointment
-        obj.sale_origin='afsariyeh' if appointment else 'branch_walk_in'
-        if appointment:
-            obj.person_name=appointment.full_name
-            owner=appointment.lead.first_appointment_by if appointment.lead_id else None
-            if owner is None:
-                owner=(VisitAppointment.objects.filter(
-                    lead_id=appointment.lead_id,source='call_center',created_by__isnull=False,
-                ).order_by('created_at','id').values_list('created_by',flat=True).first() if appointment.lead_id else None)
-            obj.call_center_owner_id=getattr(owner,'pk',owner) or appointment.created_by_id
-        obj.patient_ref=obj.person_name
-        if not (obj.service or '').strip() and obj.sale_reason:
-            obj.service=obj.get_sale_reason_display()
-        obj.account_heading=obj.service
-        obj.receipt_original_size=getattr(form,'receipt_original_size',0)
-        obj.receipt_compressed_size=getattr(form,'receipt_compressed_size',0)
-        obj.raw_data={
-            'entry_channel':f"staff_{role_of(request.user)}",
-            'submission_token':submission_token,
-            'sale_origin':obj.sale_origin,
-            'appointment_id':appointment.pk if appointment else None,
-            'lead_id':appointment.lead_id if appointment else None,
-            'call_center_user_id':obj.call_center_owner_id if appointment else None,
-            'first_appointment_owner_id':obj.call_center_owner_id if appointment else None,
-        }
-        try:
-            with transaction.atomic():
-                obj.save()
-                if appointment:
-                    if appointment.status!='completed':
-                        appointment.status='completed'
-                        appointment.save(update_fields=['status','updated_at'])
-                    if appointment.lead_id and appointment.lead.status!='won':
-                        appointment.lead.status='won'
-                        appointment.lead.save(update_fields=['status','updated_at'])
-                AuditLog.objects.create(
-                    actor=request.user,action='finance_entry',path=request.path,method='POST',
-                    object_type='FinancialTransaction',object_id=str(obj.pk),
-                    summary=f'Ø«Ø¨Øª Ù…Ø§Ù„ÛŒ {role_of(request.user)} Ø¨Ø±Ø§ÛŒ {obj.person_name}'[:250],
-                    metadata={
-                        'amount':str(obj.amount),'branch_id':obj.branch_id,'status':obj.review_status,
-                        'sale_origin':obj.sale_origin,'sale_reason':obj.sale_reason,
-                        'appointment_id':obj.appointment_id,
-                        'receipt_original_size':obj.receipt_original_size,
-                        'receipt_compressed_size':obj.receipt_compressed_size,
-                        'submission_token':submission_token,
-                    },
-                    ip_address=_request_ip(request),
-                )
-        except IntegrityError:
-            duplicate=FinancialTransaction.objects.filter(
-                source='manual',external_id=submission_external_id,recorded_by=request.user,
-            ).first()
-            if duplicate:
-                messages.info(request,'Ø§ÛŒÙ† Ø¯Ø±ÛŒØ§ÙØª Ù‚Ø¨Ù„Ø§Ù‹ Ø«Ø¨Øª Ø´Ø¯Ù‡ Ø§Ø³ØªØ› Ø«Ø¨Øª Ø¯ÙˆØ¨Ø§Ø±Ù‡ Ø§Ù†Ø¬Ø§Ù… Ù†Ø´Ø¯.')
-                return redirect('finance_entry')
-            if appointment and FinancialTransaction.objects.filter(appointment=appointment).exists():
-                messages.info(request,'Ø¨Ø±Ø§ÛŒ Ø§ÛŒÙ† Ù†ÙˆØ¨Øª Ù‚Ø¨Ù„Ø§Ù‹ Ø«Ø¨Øª Ù…Ø§Ù„ÛŒ Ø§Ù†Ø¬Ø§Ù… Ø´Ø¯Ù‡ Ø§Ø³Øª.')
-                return redirect('finance_entry')
-            raise
-        messages.success(request,'ØªØ±Ø§Ú©Ù†Ø´ Ø«Ø¨Øª Ø´Ø¯ Ùˆ Ø¨Ø±Ø§ÛŒ Ø¨Ø±Ø±Ø³ÛŒ Ù…Ø§Ù„ÛŒ Ø§Ø±Ø³Ø§Ù„ Ø´Ø¯.')
-        ok,analysis_message=analyze_finance_receipt(obj)
-        if ok: messages.success(request,analysis_message)
-        else: messages.warning(request,analysis_message+' Ø«Ø¨Øª Ù…Ø§Ù„ÛŒ Ø´Ù…Ø§ Ù…Ø­ÙÙˆØ¸ Ø§Ø³Øª Ùˆ Ù…Ø¯ÛŒØ± Ù…ÛŒâ€ŒØªÙˆØ§Ù†Ø¯ ØªØ­Ù„ÛŒÙ„ Ø±Ø§ Ø¯ÙˆØ¨Ø§Ø±Ù‡ Ø§Ø¬Ø±Ø§ Ú©Ù†Ø¯.')
-        return redirect('finance_entry')
-
-    today=timezone.localdate()
-    today_start=timezone.make_aware(datetime.combine(today,datetime.min.time()))
-    today_end=today_start+timedelta(days=1)
-    entries_qs=FinancialTransaction.objects.filter(
-        source='manual',recorded_by=request.user,
-        occurred_at__gte=today_start,occurred_at__lt=today_end,
-    ).select_related('branch').order_by('-created_at')
-    today_count=entries_qs.count()
-    today_total=entries_qs.aggregate(v=Sum('amount'))['v'] or 0
-    entries=entries_qs[:50]
-    pending_appointments=form.fields['appointment'].queryset[:30]
-    return render(request,'core/finance_entry.html',{
-        'form':form,'entries':entries,'pending_appointments':pending_appointments,
-        'submission_token':submission_token,'today_count':today_count,'today_total':today_total,
-        'today':today,
-    })
-
-@finance_required
-def finance_entry_review(request,pk,action):
-    if request.method!='POST': return redirect('finance_dashboard')
-    entry=get_object_or_404(FinancialTransaction,pk=pk,source='manual')
-    if role_of(request.user)=='manager' and entry.branch_id!=request.user.profile.branch_id:
-        messages.error(request,'Ø§ÛŒÙ† ØªØ±Ø§Ú©Ù†Ø´ Ù…Ø±Ø¨ÙˆØ· Ø¨Ù‡ Ø´Ø¹Ø¨Ù‡ Ø´Ù…Ø§ Ù†ÛŒØ³Øª.')
-        return redirect('finance_dashboard')
-    status_map={'approve':'approved','correction':'needs_correction','cancel':'cancelled'}
-    if action not in status_map:
-        messages.error(request,'Ø¹Ù…Ù„ÛŒØ§Øª Ù†Ø§Ù…Ø¹ØªØ¨Ø± Ø§Ø³Øª.')
-        return redirect('finance_dashboard')
-    before=entry.review_status
-    entry.review_status=status_map[action]
-    entry.reviewed_by=request.user
-    entry.reviewed_at=timezone.now()
-    entry.review_note=(request.POST.get('review_note') or '').strip()[:300]
-    entry.save(update_fields=['review_status','reviewed_by','reviewed_at','review_note'])
-    AuditLog.objects.create(
-        actor=request.user,action='finance_review',path=request.path,method='POST',
-        object_type='FinancialTransaction',object_id=str(entry.pk),
-        summary=f'ÙˆØ¶Ø¹ÛŒØª Ù…Ø§Ù„ÛŒ Ø§Ø² {before} Ø¨Ù‡ {entry.review_status}'[:250],
-        metadata={'before':before,'after':entry.review_status},ip_address=_request_ip(request),
-    )
-    if entry.recorded_by:
-        StaffNotification.objects.create(
-            user=entry.recorded_by,title='Ù†ØªÛŒØ¬Ù‡ Ø¨Ø±Ø±Ø³ÛŒ Ø«Ø¨Øª Ù…Ø§Ù„ÛŒ',
-            message=f'ØªØ±Ø§Ú©Ù†Ø´ {entry.person_name} Ø¨Ù‡ ÙˆØ¶Ø¹ÛŒØª Â«{entry.get_review_status_display()}Â» ØªØºÛŒÛŒØ± Ú©Ø±Ø¯.',
-            notification_type='finance_review',related_date=timezone.localdate(),
-        )
-    messages.success(request,'ÙˆØ¶Ø¹ÛŒØª ØªØ±Ø§Ú©Ù†Ø´ Ø¨Ù‡â€ŒØ±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ø´Ø¯.')
-    return redirect('finance_dashboard')
-
-@finance_required
-def finance_entry_delete(request,pk):
-    if request.method!='POST':
-        return redirect('finance_dashboard')
-    if role_of(request.user)!='admin':
-        raise PermissionDenied('Ø­Ø°Ù ØªØ±Ø§Ú©Ù†Ø´ ÙÙ‚Ø· Ø¨Ø±Ø§ÛŒ Ø§Ø¯Ù…ÛŒÙ† Ù…Ø¬Ø§Ø² Ø§Ø³Øª.')
-    entry=get_object_or_404(
-        FinancialTransaction.objects.select_related('branch','recorded_by'),
-        pk=pk,source='manual',
-    )
-    entry_id=entry.pk
-    receipt_name=entry.receipt_image.name if entry.receipt_image else ''
-    receipt_storage=entry.receipt_image.storage if receipt_name else None
-    snapshot={
-        'amount':str(entry.amount),
-        'entry_type':entry.entry_type,
-        'person_name':entry.person_name,
-        'branch_id':entry.branch_id,
-        'branch':entry.branch.name if entry.branch_id else '',
-        'recorded_by_id':entry.recorded_by_id,
-        'review_status':entry.review_status,
-        'receipt_name':receipt_name,
-    }
-    with transaction.atomic():
-        AuditLog.objects.create(
-            actor=request.user,action='finance_delete',path=request.path,method='POST',
-            object_type='FinancialTransaction',object_id=str(entry_id),
-            summary=f'Ø­Ø°Ù ØªØ±Ø§Ú©Ù†Ø´ ØªÚ©Ø±Ø§Ø±ÛŒ {entry.person_name or entry_id}'[:250],
-            metadata=snapshot,ip_address=_request_ip(request),
-        )
-        entry.delete()
-        if receipt_storage and receipt_name:
-            transaction.on_commit(lambda: receipt_storage.delete(receipt_name))
-    messages.success(request,'ØªØ±Ø§Ú©Ù†Ø´ ØªÚ©Ø±Ø§Ø±ÛŒ Ø­Ø°Ù Ø´Ø¯ Ùˆ Ø³Ø§Ø¨Ù‚Ù‡ Ø­Ø°Ù Ø¯Ø± Ú¯Ø²Ø§Ø±Ø´ Ù…Ø¯ÛŒØ±ÛŒØªÛŒ Ø¨Ø§Ù‚ÛŒ Ù…Ø§Ù†Ø¯.')
-    return redirect('finance_dashboard')
-
-@finance_required
-def finance_entry_analyze(request,pk):
-    if request.method!='POST': return redirect('finance_dashboard')
-    entry=get_object_or_404(FinancialTransaction,pk=pk,source='manual')
-    if role_of(request.user)=='manager' and entry.branch_id!=request.user.profile.branch_id:
-        messages.error(request,'Ø§ÛŒÙ† ØªØ±Ø§Ú©Ù†Ø´ Ù…Ø±Ø¨ÙˆØ· Ø¨Ù‡ Ø´Ø¹Ø¨Ù‡ Ø´Ù…Ø§ Ù†ÛŒØ³Øª.')
-        return redirect('finance_dashboard')
-    entry.analysis_status='pending'; entry.analysis_error=''
-    entry.save(update_fields=['analysis_status','analysis_error'])
-    ok,message=analyze_finance_receipt(entry)
-    if ok: messages.success(request,message)
-    else: messages.warning(request,message)
-    AuditLog.objects.create(
-        actor=request.user,action='finance_receipt_analysis',path=request.path,method='POST',
-        object_type='FinancialTransaction',object_id=str(entry.pk),summary=message[:250],
-        metadata={'analysis_status':entry.analysis_status},ip_address=_request_ip(request),
-    )
-    return redirect('finance_dashboard')
-
-@finance_required
-def finance_sync(request):
-    if request.method!='POST': return redirect('finance_dashboard')
-    if role_of(request.user)!='admin': messages.error(request,'Ù‡Ù…Ú¯Ø§Ù…â€ŒØ³Ø§Ø²ÛŒ CRM ÙÙ‚Ø· Ø¨Ø±Ø§ÛŒ Ù…Ø¯ÛŒØ± Ø³ÛŒØ³ØªÙ… Ù…Ø¬Ø§Ø² Ø§Ø³Øª.'); return redirect('finance_dashboard')
-    try:
-        from .finance import sync_crm
-        result=sync_crm(); messages.success(request,f"Ù‡Ù…Ú¯Ø§Ù…â€ŒØ³Ø§Ø²ÛŒ Ø§Ù†Ø¬Ø§Ù… Ø´Ø¯: {result['imported']} Ø¬Ø¯ÛŒØ¯ØŒ {result['updated']} Ø¨Ù‡â€ŒØ±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ.")
-    except Exception as e: messages.error(request,f'Ø®Ø·Ø§ Ø¯Ø± Ø§ØªØµØ§Ù„ CRM: {e}')
-    return redirect('finance_dashboard')
-
-def management_finance_summary_api(request):
-    if not _api_manager(request): return JsonResponse({'error':'unauthorized'},status=401)
-    if request.user.is_authenticated and role_of(request.user)=='internal_manager':
-        return JsonResponse({'error':'finance access denied'},status=403)
-    from .finance import finance_summary
-    day=timezone.localdate(); raw=request.GET.get('date')
-    if raw:
-        try: day=parse_jalali(raw)
-        except ValueError: return JsonResponse({'error':'invalid jalali date; example: 1405/05/24'},status=400)
-    branch=None
-    if request.user.is_authenticated and role_of(request.user)=='manager': branch=request.user.profile.branch
-    data=finance_summary(day,branch)
-    data['total']=str(data['total'])
-    for group in ('by_branch','by_payment'):
-        for row in data[group]: row['total']=str(row['total'])
-    return JsonResponse(data,json_dumps_params={'ensure_ascii':False})
-
-@login_required
-def notifications_list(request):
-    qs=StaffNotification.objects.filter(user=request.user)
-    if request.method=='POST':
-        qs.filter(is_read=False).update(is_read=True); messages.success(request,'Ø§Ø¹Ù„Ø§Ù†â€ŒÙ‡Ø§ Ø®ÙˆØ§Ù†Ø¯Ù‡ Ø´Ø¯Ù†Ø¯.'); return redirect('notifications')
-    return render(request,'core/notifications.html',{'notifications':qs[:100]})
-
-@manager_required
-def shift_list(request):
-    shifts=WorkShift.objects.select_related('branch').filter(is_active=True)
-    assignments=ShiftAssignment.objects.select_related('user','shift','shift__branch').order_by('-date')
-    if role_of(request.user)=='manager':
-        shifts=shifts.filter(branch=request.user.profile.branch)
-        assignments=assignments.filter(user__profile__branch=request.user.profile.branch)
-    return render(request,'core/shift_list.html',{'shifts':shifts,'assignments':assignments[:100]})
-
-@manager_required
-def shift_create(request):
-    form=WorkShiftForm(request.POST or None)
-    if role_of(request.user)=='manager':
-        form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=request.user.profile.branch_id)
-        form.fields['branch'].initial=request.user.profile.branch
-    if request.method=='POST' and form.is_valid():
-        form.save(); messages.success(request,'Ø´ÛŒÙØª Ø§ÛŒØ¬Ø§Ø¯ Ø´Ø¯.'); return redirect('shift_list')
-    return render(request,'core/generic_form.html',{'form':form,'title':'ØªØ¹Ø±ÛŒÙ Ø´ÛŒÙØª','button':'Ø«Ø¨Øª Ø´ÛŒÙØª'})
-
-@manager_required
-def shift_assign(request):
-    form=ShiftAssignmentForm(request.POST or None)
-    if role_of(request.user)=='manager':
-        form.fields['user'].queryset=User.objects.filter(profile__branch=request.user.profile.branch,profile__is_active=True)
-        form.fields['shift'].queryset=WorkShift.objects.filter(branch=request.user.profile.branch,is_active=True)
-    elif role_of(request.user)=='internal_manager':
-        form.fields['user'].queryset=User.objects.filter(profile__role__in=PERSONNEL_ROLES,profile__is_active=True)
-    if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False); obj.created_by=request.user; obj.save(); messages.success(request,'Ø´ÛŒÙØª Ø±ÙˆØ²Ø§Ù†Ù‡ ØªØ®ØµÛŒØµ Ø¯Ø§Ø¯Ù‡ Ø´Ø¯.'); return redirect('shift_list')
-    return render(request,'core/generic_form.html',{'form':form,'title':'ØªØ®ØµÛŒØµ Ø´ÛŒÙØª','button':'Ø«Ø¨Øª ØªØ®ØµÛŒØµ'})
-
-@manager_required
-def shift_today_bulk(request):
-    """Manage today's exception and versioned weekly schedules from one safe screen."""
-    role=role_of(request.user)
-    if role not in ('admin','internal_manager'):
-        messages.error(request,'ØªÙ†Ø¸ÛŒÙ… Ø¨Ø±Ù†Ø§Ù…Ù‡ Ú©Ø§Ø±ÛŒ ÙÙ‚Ø· Ø¨Ø±Ø§ÛŒ Ù…Ø¯ÛŒØ± Ø³ÛŒØ³ØªÙ… Ùˆ Ù…Ø¯ÛŒØ± Ø¯Ø§Ø®Ù„ÛŒ ÙØ¹Ø§Ù„ Ø§Ø³Øª.')
-        return redirect('dashboard')
-    day=timezone.localdate()
-    branches=Branch.objects.filter(is_active=True).order_by('name')
-    branch_id=request.POST.get('branch') or request.GET.get('branch')
-    try: branch_id=int(branch_id) if branch_id else None
-    except (TypeError,ValueError): branch_id=None
-    selected_branch=branches.filter(pk=branch_id).first() if branch_id else branches.first()
-
-    users=User.objects.none()
-    if selected_branch:
-        users=User.objects.filter(
-        is_active=True,profile__is_active=True,profile__role__in=PERSONNEL_ROLES,
-        profile__branch=selected_branch,
-        ).select_related(
-            'profile','profile__branch','profile__shift_group','profile__shift_group__default_shift',
-        ).order_by('first_name','last_name','username')
-
-    scoped_users={user.pk:user for user in users}
-    weekday_order=[(5,'Ø´Ù†Ø¨Ù‡'),(6,'ÛŒÚ©Ø´Ù†Ø¨Ù‡'),(0,'Ø¯ÙˆØ´Ù†Ø¨Ù‡'),(1,'Ø³Ù‡â€ŒØ´Ù†Ø¨Ù‡'),(2,'Ú†Ù‡Ø§Ø±Ø´Ù†Ø¨Ù‡'),(3,'Ù¾Ù†Ø¬Ø´Ù†Ø¨Ù‡'),(4,'Ø¬Ù…Ø¹Ù‡')]
-
-    def parse_weekly_plan(prefix):
-        plan=[]; errors=[]
-        for weekday,label in weekday_order:
-            is_working=request.POST.get(f'{prefix}_working_{weekday}')=='1'
-            start_time=end_time=None
-            if is_working:
-                start_raw=(request.POST.get(f'{prefix}_start_{weekday}') or '').strip()
-                end_raw=(request.POST.get(f'{prefix}_end_{weekday}') or '').strip()
-                try:
-                    start_time=datetime.strptime(start_raw,'%H:%M').time()
-                    end_time=datetime.strptime(end_raw,'%H:%M').time()
-                except ValueError:
-                    errors.append(f'Ø³Ø§Ø¹Øª Ø´Ø±ÙˆØ¹ Ùˆ Ù¾Ø§ÛŒØ§Ù† {label} Ú©Ø§Ù…Ù„ ÛŒØ§ Ù…Ø¹ØªØ¨Ø± Ù†ÛŒØ³Øª.')
-            plan.append((weekday,is_working,start_time,end_time))
-        return plan,errors
-
-    def replace_weekly_rule(model,lookup,weekday,is_working,start_time,end_time):
-        active=model.objects.filter(
-            **lookup,weekday=weekday,effective_from__lte=day,
-        ).filter(Q(effective_until__isnull=True)|Q(effective_until__gte=day)).order_by('-effective_from','-pk').first()
-        if active and active.effective_from<day:
-            active.effective_until=day-timedelta(days=1)
-            active.save(update_fields=['effective_until','updated_at'])
-        obj,_=model.objects.update_or_create(
-            **lookup,weekday=weekday,effective_from=day,
-            defaults={
-                'is_working':is_working,
-                'start_time':start_time if is_working else None,
-                'end_time':end_time if is_working else None,
-                'effective_until':None,
-                'created_by':request.user,
-            },
-        )
-        obj.full_clean()
-        obj.save()
-
-    if request.method=='POST':
-        action=request.POST.get('action','save_today')
-        if not selected_branch:
-            messages.error(request,'Ø´Ø¹Ø¨Ù‡ Ù…Ø¹ØªØ¨Ø± Ø§Ù†ØªØ®Ø§Ø¨ Ù†Ø´Ø¯Ù‡ Ø§Ø³Øª.')
-        elif action=='save_branch_weekly':
-            plan,errors=parse_weekly_plan('branch')
-            if errors:
-                for error in errors: messages.error(request,error)
-            else:
-                with transaction.atomic():
-                    for values in plan:
-                        replace_weekly_rule(BranchWorkSchedule,{'branch':selected_branch},*values)
-                    _attendance_audit(request,'branch_weekly_schedule',summary=f'Ø¨Ø±Ù†Ø§Ù…Ù‡ Ù‡ÙØªÚ¯ÛŒ Ø´Ø¹Ø¨Ù‡ {selected_branch} ØªÙ†Ø¸ÛŒÙ… Ø´Ø¯',metadata={'branch_id':selected_branch.pk,'effective_from':day.isoformat()})
-                messages.success(request,f'Ø¨Ø±Ù†Ø§Ù…Ù‡ Ù‡ÙØªÚ¯ÛŒ {selected_branch} Ø§Ø² Ø§Ù…Ø±ÙˆØ² Ø¨Ø±Ø§ÛŒ Ú©Ù„ Ø´Ø¹Ø¨Ù‡ Ø§Ø¹Ù…Ø§Ù„ Ø´Ø¯.')
-                return redirect(f'/shifts/today/?mode=weekly&branch={selected_branch.pk}')
-        elif action in ('save_employee_weekly','reset_employee_weekly'):
-            try: employee_id=int(request.POST.get('employee') or 0)
-            except (TypeError,ValueError): employee_id=0
-            employee=scoped_users.get(employee_id)
-            if not employee:
-                messages.error(request,'Ù¾Ø±Ø³Ù†Ù„ Ø§Ù†ØªØ®Ø§Ø¨â€ŒØ´Ø¯Ù‡ Ø¯Ø± Ø§ÛŒÙ† Ø´Ø¹Ø¨Ù‡ Ù…Ø¹ØªØ¨Ø± Ù†ÛŒØ³Øª.')
-            elif action=='reset_employee_weekly':
-                with transaction.atomic():
-                    active_rules=EmployeeWorkSchedule.objects.filter(
-                        user=employee,effective_from__lte=day,
-                    ).filter(Q(effective_until__isnull=True)|Q(effective_until__gte=day))
-                    active_rules.filter(effective_from=day).delete()
-                    active_rules.filter(effective_from__lt=day).update(effective_until=day-timedelta(days=1))
-                    _attendance_audit(request,'employee_weekly_schedule_reset',summary=f'Ø¨Ø±Ù†Ø§Ù…Ù‡ Ø´Ø®ØµÛŒ {employee.get_full_name() or employee.username} Ø­Ø°Ù Ø´Ø¯',metadata={'employee_id':employee.pk,'effective_from':day.isoformat()})
-                messages.success(request,'Ø¨Ø±Ù†Ø§Ù…Ù‡ Ø´Ø®ØµÛŒ Ø­Ø°Ù Ø´Ø¯Ø› Ø§ÛŒÙ† ÙØ±Ø¯ Ø§Ø² Ø¨Ø±Ù†Ø§Ù…Ù‡ Ø´Ø¹Ø¨Ù‡ Ù¾ÛŒØ±ÙˆÛŒ Ù…ÛŒâ€ŒÚ©Ù†Ø¯.')
-                return redirect(f'/shifts/today/?mode=weekly&branch={selected_branch.pk}&employee={employee.pk}')
-            else:
-                plan,errors=parse_weekly_plan('employee')
-                if errors:
-                    for error in errors: messages.error(request,error)
-                else:
-                    with transaction.atomic():
-                        for values in plan:
-                            replace_weekly_rule(EmployeeWorkSchedule,{'user':employee},*values)
-                        _attendance_audit(request,'employee_weekly_schedule',summary=f'Ø¨Ø±Ù†Ø§Ù…Ù‡ Ù‡ÙØªÚ¯ÛŒ {employee.get_full_name() or employee.username} ØªÙ†Ø¸ÛŒÙ… Ø´Ø¯',metadata={'employee_id':employee.pk,'effective_from':day.isoformat()})
-                    messages.success(request,'Ø¨Ø±Ù†Ø§Ù…Ù‡ Ù‡ÙØªÚ¯ÛŒ Ø§Ø®ØªØµØ§ØµÛŒ Ù¾Ø±Ø³Ù†Ù„ Ø§Ø² Ø§Ù…Ø±ÙˆØ² Ø°Ø®ÛŒØ±Ù‡ Ø´Ø¯.')
-                    return redirect(f'/shifts/today/?mode=weekly&branch={selected_branch.pk}&employee={employee.pk}')
-        else:
-            selected_ids=[]
-            for raw_id in request.POST.getlist('selected'):
-                try: selected_ids.append(int(raw_id))
-                except (TypeError,ValueError): continue
-            selected_ids=list(dict.fromkeys(selected_ids))
-            errors=[]; plans=[]
-            for user_id in selected_ids:
-                user=scoped_users.get(user_id)
-                if not user:
-                    errors.append('ÛŒÚ©ÛŒ Ø§Ø² Ù¾Ø±Ø³Ù†Ù„ Ø§Ù†ØªØ®Ø§Ø¨â€ŒØ´Ø¯Ù‡ Ø¯Ø± Ù…Ø­Ø¯ÙˆØ¯Ù‡ Ø¯Ø³ØªØ±Ø³ÛŒ Ø´Ù…Ø§ Ù†ÛŒØ³Øª.')
-                    continue
-                start_raw=(request.POST.get(f'start_{user_id}') or '').strip()
-                end_raw=(request.POST.get(f'end_{user_id}') or '').strip()
-                try:
-                    start_time=datetime.strptime(start_raw,'%H:%M').time()
-                    end_time=datetime.strptime(end_raw,'%H:%M').time()
-                except ValueError:
-                    errors.append(f'Ø³Ø§Ø¹Øª Ú©Ø§Ø±ÛŒ {user.get_full_name() or user.username} Ú©Ø§Ù…Ù„ ÛŒØ§ Ù…Ø¹ØªØ¨Ø± Ù†ÛŒØ³Øª.')
-                    continue
-                plans.append((user,start_time,end_time))
-            if not selected_ids: errors.append('Ø­Ø¯Ø§Ù‚Ù„ ÛŒÚ© Ù†ÙØ± Ø±Ø§ Ø¨Ø±Ø§ÛŒ Ø§Ø¹Ù…Ø§Ù„ Ø³Ø§Ø¹Øª Ú©Ø§Ø±ÛŒ Ø§Ù†ØªØ®Ø§Ø¨ Ú©Ù†ÛŒØ¯.')
-            if errors:
-                for error in errors: messages.error(request,error)
-            else:
-                with transaction.atomic():
-                    for user,start_time,end_time in plans:
-                        branch=user.profile.branch
-                        shift=WorkShift.objects.filter(
-                            branch=branch,start_time=start_time,end_time=end_time,is_active=True,
-                        ).order_by('pk').first()
-                        if not shift:
-                            shift=WorkShift.objects.create(
-                                name=f'Ø±ÙˆØ²Ø§Ù†Ù‡ {start_time.strftime("%H:%M")} ØªØ§ {end_time.strftime("%H:%M")}',
-                                branch=branch,start_time=start_time,end_time=end_time,
-                                grace_minutes=branch.grace_minutes,report_required=True,is_active=True,
-                            )
-                        ShiftAssignment.objects.update_or_create(
-                            user=user,date=day,
-                            defaults={'shift':shift,'created_by':request.user,'note':'ØªÙ†Ø¸ÛŒÙ… Ø³Ø±ÛŒØ¹ Ø³Ø§Ø¹Øª Ú©Ø§Ø±ÛŒ Ø§Ù…Ø±ÙˆØ²'},
-                        )
-                    _attendance_audit(request,'bulk_shift_assignment',summary=f'Ø³Ø§Ø¹Øª Ú©Ø§Ø±ÛŒ Ø§Ù…Ø±ÙˆØ² Ø¨Ø±Ø§ÛŒ {len(plans)} Ù†ÙØ± ØªÙ†Ø¸ÛŒÙ… Ø´Ø¯',metadata={'date':day.isoformat(),'employee_ids':[user.pk for user,_,_ in plans]})
-                messages.success(request,f'Ø³Ø§Ø¹Øª Ú©Ø§Ø±ÛŒ Ø§Ù…Ø±ÙˆØ² Ø¨Ø±Ø§ÛŒ {len(plans)} Ù†ÙØ± Ø¨Ø§ Ù…ÙˆÙÙ‚ÛŒØª Ø°Ø®ÛŒØ±Ù‡ Ø´Ø¯.')
-                return redirect(f'/shifts/today/?branch={selected_branch.pk}')
-
-    assignments={item.user_id:item for item in ShiftAssignment.objects.select_related('shift').filter(date=day,user_id__in=scoped_users)}
-    rows=[]
-    source_labels={'personal':'Ø§Ø®ØªØµØ§ØµÛŒ Ø§Ù…Ø±ÙˆØ²','employee_weekly':'Ù‡ÙØªÚ¯ÛŒ Ø´Ø®ØµÛŒ','branch_weekly':'Ù‡ÙØªÚ¯ÛŒ Ø´Ø¹Ø¨Ù‡','group':'Ú¯Ø±ÙˆÙ‡ Ø´ÛŒÙØª','branch':'Ø³Ø§Ø¹Øª Ø´Ø¹Ø¨Ù‡','default':'ØªØ¹ÛŒÛŒÙ† Ù†Ø´Ø¯Ù‡'}
-    for user in scoped_users.values():
-        rule=shift_rule(user,day)
-        rows.append({'user':user,'start':rule.get('start'),'end':rule.get('end'),'source':source_labels.get(rule.get('source'),'Ø¨Ø±Ù†Ø§Ù…Ù‡ Ù¾Ø§ÛŒÙ‡'),'is_personal':user.pk in assignments,'is_off':rule.get('is_off',False)})
-
-    active_filter=Q(effective_until__isnull=True)|Q(effective_until__gte=day)
-    personal_weekly_user_ids=set(
-        EmployeeWorkSchedule.objects.filter(
-            user_id__in=scoped_users,effective_from__lte=day,
-        ).filter(active_filter).values_list('user_id',flat=True)
-    )
-    for row in rows:
-        row['has_weekly_override']=row['user'].pk in personal_weekly_user_ids
-    branch_rules={}
-    if selected_branch:
-        for rule in BranchWorkSchedule.objects.filter(branch=selected_branch,effective_from__lte=day).filter(active_filter).order_by('weekday','-effective_from','-pk'):
-            branch_rules.setdefault(rule.weekday,rule)
-    branch_days=[]
-    for weekday,label in weekday_order:
-        rule=branch_rules.get(weekday)
-        branch_days.append({'weekday':weekday,'label':label,'is_working':rule.is_working if rule else True,'start':rule.start_time if rule else getattr(selected_branch,'work_start',None),'end':rule.end_time if rule else getattr(selected_branch,'work_end',None),'configured':bool(rule)})
-
-    employee_id=request.POST.get('employee') or request.GET.get('employee')
-    try: employee_id=int(employee_id) if employee_id else None
-    except (TypeError,ValueError): employee_id=None
-    selected_employee=scoped_users.get(employee_id) if employee_id else (next(iter(scoped_users.values()),None))
-    employee_rules={}
-    if selected_employee:
-        for rule in EmployeeWorkSchedule.objects.filter(user=selected_employee,effective_from__lte=day).filter(active_filter).order_by('weekday','-effective_from','-pk'):
-            employee_rules.setdefault(rule.weekday,rule)
-    branch_day_map={x['weekday']:x for x in branch_days}
-    all_employee_rules={}
-    for rule in EmployeeWorkSchedule.objects.filter(
-        user_id__in=scoped_users,effective_from__lte=day,
-    ).filter(active_filter).order_by('user_id','weekday','-effective_from','-pk'):
-        all_employee_rules.setdefault((rule.user_id,rule.weekday),rule)
-    for row in rows:
-        weekly_days=[]
-        for weekday,label in weekday_order:
-            personal=all_employee_rules.get((row['user'].pk,weekday))
-            inherited=branch_day_map[weekday]
-            weekly_days.append({
-                'weekday':weekday,
-                'label':label,
-                'is_working':personal.is_working if personal else inherited['is_working'],
-                'start':personal.start_time if personal else inherited['start'],
-                'end':personal.end_time if personal else inherited['end'],
-                'personal':bool(personal),
-            })
-        row['weekly_days']=weekly_days
-    employee_days=[]
-    for weekday,label in weekday_order:
-        personal=employee_rules.get(weekday); inherited=branch_day_map[weekday]
-        employee_days.append({'weekday':weekday,'label':label,'is_working':personal.is_working if personal else inherited['is_working'],'start':personal.start_time if personal else inherited['start'],'end':personal.end_time if personal else inherited['end'],'personal':bool(personal)})
-
-    return render(request,'core/shift_today_bulk.html',{
-        'rows':rows,'today':day,'branches':branches,'selected_branch':selected_branch,
-        'weekday_order':weekday_order,'branch_days':branch_days,'employee_days':employee_days,
-        'selected_employee':selected_employee,'mode':request.GET.get('mode','today'),
-    })
-
-@login_required
-def correction_list(request):
-    role=role_of(request.user); qs=AttendanceCorrectionRequest.objects.select_related('user','attendance').all()
-    if role in PERSONNEL_ROLES: qs=qs.filter(user=request.user)
-    elif role=='manager': qs=qs.filter(user__profile__branch=request.user.profile.branch)
-    return render(request,'core/correction_list.html',{'items':qs[:100],'can_review':role in MANAGEMENT_ROLES})
-
-@login_required
-def correction_create(request):
-    form=AttendanceCorrectionForm(request.POST or None)
-    if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False); obj.user=request.user
-        obj.attendance=Attendance.objects.filter(user=request.user,date=obj.date).first(); obj.save()
-        messages.success(request,'Ø¯Ø±Ø®ÙˆØ§Ø³Øª Ø§ØµÙ„Ø§Ø­ Ø­Ø¶ÙˆØ± Ø§Ø±Ø³Ø§Ù„ Ø´Ø¯.'); return redirect('correction_list')
-    return render(request,'core/generic_form.html',{'form':form,'title':'Ø¯Ø±Ø®ÙˆØ§Ø³Øª Ø§ØµÙ„Ø§Ø­ Ø­Ø¶ÙˆØ±','button':'Ø§Ø±Ø³Ø§Ù„ Ø¯Ø±Ø®ÙˆØ§Ø³Øª'})
-
-@manager_required
-def correction_review(request,pk):
-    obj=get_object_or_404(AttendanceCorrectionRequest,pk=pk)
-    if role_of(request.user)=='manager' and obj.user.profile.branch_id!=request.user.profile.branch_id: return redirect('correction_list')
-    form=AttendanceCorrectionReviewForm(request.POST or None,instance=obj)
-    if request.method=='POST' and form.is_valid():
-        approve_correction(obj,request.user,form.cleaned_data['status'],form.cleaned_data.get('manager_note',''))
-        messages.success(request,'Ø¯Ø±Ø®ÙˆØ§Ø³Øª Ø§ØµÙ„Ø§Ø­ Ø­Ø¶ÙˆØ± Ø¨Ø±Ø±Ø³ÛŒ Ø´Ø¯.'); return redirect('correction_list')
-    return render(request,'core/generic_form.html',{'form':form,'title':'Ø¨Ø±Ø±Ø³ÛŒ Ø§ØµÙ„Ø§Ø­ Ø­Ø¶ÙˆØ±','button':'Ø«Ø¨Øª Ù†ØªÛŒØ¬Ù‡'})
-
-@manager_required
-def automatic_kpi_dashboard(request):
-    end=timezone.localdate(); start=end-timedelta(days=29)
-    users=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
-    if role_of(request.user)=='manager': users=users.filter(profile__branch=request.user.profile.branch)
-    elif role_of(request.user)=='internal_manager': users=users.filter(profile__role__in=PERSONNEL_ROLES)
-    rows=[]
-    for u in users:
-        data=auto_kpi(u,start,end); data['user']=u; rows.append(data)
-    rows.sort(key=lambda x:x['score'],reverse=True)
-    return render(request,'core/automatic_kpi.html',{'rows':rows,'start':start,'end':end})
-
-def management_employee_status_api(request):
-    if not _api_manager(request): return JsonResponse({'error':'unauthorized'},status=401)
-    uid=request.GET.get('user_id'); name=(request.GET.get('name') or '').strip()
-    users=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
-    if request.user.is_authenticated and role_of(request.user)=='internal_manager':
-        users=users.filter(profile__role__in=PERSONNEL_ROLES)
-    if uid: users=users.filter(pk=uid)
-    elif name: users=users.filter(Q(first_name__icontains=name)|Q(last_name__icontains=name)|Q(username__icontains=name))
-    user=users.first()
-    if not user: return JsonResponse({'error':'employee not found'},status=404)
-    today=timezone.localdate(); rec=Attendance.objects.filter(user=user,date=today).first(); today_rule=shift_rule(user,today)
-    missing=missing_report_days(user,days=31,end=today-timedelta(days=1))
-    kpi=auto_kpi(user,today-timedelta(days=29),today)
-    return JsonResponse({'name':user.get_full_name() or user.username,'branch':user.profile.branch.name if user.profile.branch else None,
-        'date':format_jalali(today),'check_in':timezone.localtime(rec.check_in).strftime('%H:%M') if rec and rec.check_in else None,
-        'check_out':timezone.localtime(rec.check_out).strftime('%H:%M') if rec and rec.check_out else None,
-        'status':rec.status if rec else ('off' if today_rule.get('is_off') else 'missing'),'missing_report_nights_31d':len(missing),'missing_report_dates':[format_jalali(x) for x in missing],
-        'auto_kpi_30d':kpi},json_dumps_params={'ensure_ascii':False})
-
-
-def _branch_scope_for_manager(request):
-    branch_id = request.GET.get('branch')
-    if role_of(request.user) == 'manager':
-        return request.user.profile.branch
-    if branch_id:
-        from .models import Branch
-        return Branch.objects.filter(pk=branch_id, is_active=True).first()
-    return None
-
-
-def _branch_live_payload(branch=None, day=None):
-    from .models import Branch, FinancialTransaction
-    day = day or timezone.localdate()
-    users = User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
-    if branch:
-        users = users.filter(profile__branch=branch)
-    rows=[]
-    counters={'present':0,'late':0,'missing':0,'leave':0}
-    for u in users.order_by('profile__branch__name','last_name','first_name','username'):
-        leave = LeaveRequest.objects.filter(user=u,status='approved',start_date__lte=day,end_date__gte=day).first()
-        rec = Attendance.objects.filter(user=u,date=day).first()
-        shift=shift_rule(u,day)
-        if leave:
-            status='leave'; label=leave.get_request_type_display()
-        elif rec and rec.check_in:
-            status=attendance_status_for(u,day,rec.check_in)
-            label='Ø¨Ø§ ØªØ£Ø®ÛŒØ±' if status=='late' else 'Ø­Ø§Ø¶Ø±'
-        elif shift.get('is_off'):
-            status='off'; label='Ø±ÙˆØ² ØºÛŒØ±Ú©Ø§Ø±ÛŒ'
-        else:
-            status='missing'; label='ÙˆØ±ÙˆØ¯ Ø«Ø¨Øª Ù†Ø´Ø¯Ù‡'
-        counters[status] = counters.get(status,0)+1
-        overdue = Task.objects.filter(assigned_to=u,status__in=('todo','doing'),due_date__lt=day).count()
-        missing_reports = len(missing_report_days(u,days=7,end=day-timedelta(days=1)))
-        expected_start=shift.get('start')
-        late_minutes=0
-        if rec and rec.check_in and expected_start:
-            expected_dt=timezone.make_aware(datetime.combine(day,expected_start),timezone.get_current_timezone())
-            late_minutes=max(0,int((rec.check_in-expected_dt).total_seconds()//60))
-        report_today=DailyReport.objects.filter(user=u,created_at__date=day).exists()
-        rows.append({
-            'id':u.id,
-            'name':u.get_full_name() or u.username,
-            'branch':u.profile.branch.name if u.profile.branch else 'â€”',
-            'job_title':u.profile.job_title,
-            'avatar':u.profile.avatar.url if u.profile.avatar else None,
-            'status':status,
-            'status_label':label,
-            'check_in':timezone.localtime(rec.check_in).strftime('%H:%M') if rec and rec.check_in else None,
-            'check_out':timezone.localtime(rec.check_out).strftime('%H:%M') if rec and rec.check_out else None,
-            'expected_start':expected_start.strftime('%H:%M') if expected_start else None,
-            'late_minutes':late_minutes,
-            'location_status':rec.check_in_location_status if rec else None,
-            'location_distance_m':rec.check_in_distance_m if rec else None,
-            'report_today':report_today,
-            'is_off':bool(shift.get('is_off')),
-            'overdue_tasks':overdue,
-            'missing_reports_7d':missing_reports,
-        })
-    tx = FinancialTransaction.objects.filter(occurred_at__date=day)
-    if branch: tx=tx.filter(branch=branch)
-    revenue = tx.aggregate(x=Sum('amount'))['x'] or 0
-    overdue_tasks = Task.objects.filter(status__in=('todo','doing'),due_date__lt=day,assigned_to__profile__is_active=True)
-    if branch: overdue_tasks=overdue_tasks.filter(assigned_to__profile__branch=branch)
-    reports_today = DailyReport.objects.filter(created_at__date=day)
-    if branch: reports_today=reports_today.filter(user__profile__branch=branch)
-    scheduled_rows=[p for p in rows if not p['is_off']]
-    total_people=max(1,len(scheduled_rows))
-    present_people=counters.get('present',0)+counters.get('late',0)
-    attendance_rate=round(present_people*100/total_people)
-    ontime_rate=round(counters.get('present',0)*100/total_people)
-    missing_reports_today=sum(1 for p in scheduled_rows if not p['report_today'])
-    report_rate=round((len(scheduled_rows)-missing_reports_today)*100/total_people)
-
-    # Real task completion metric for today (no decorative/hard-coded KPI).
-    tasks_today = Task.objects.filter(
-        assigned_to__in=users,
-        due_date=day,
-        assigned_to__profile__is_active=True,
-    )
-    if branch:
-        tasks_today = tasks_today.filter(assigned_to__profile__branch=branch)
-    tasks_today_total = tasks_today.count()
-    tasks_today_done = tasks_today.filter(status='done').count()
-    task_completion_rate = round(tasks_today_done * 100 / max(1, tasks_today_total)) if tasks_today_total else 100
-
-    # Internal-request data powers the approved owner dashboard. Keep the
-    # branch scope aligned with the rest of the management payload so a branch
-    # manager never sees another branch's requests.
-    internal_requests_qs = InternalRequest.objects.select_related(
-        'requester', 'requester__profile', 'assigned_to'
-    ).order_by('-created_at')
-    if branch:
-        internal_requests_qs = internal_requests_qs.filter(requester__profile__branch=branch)
-    request_counts = {'open': 0, 'doing': 0, 'done': 0, 'rejected': 0}
-    for item in internal_requests_qs.values('status').annotate(n=Count('id')):
-        request_counts[item['status']] = item['n']
-    request_total = sum(request_counts.values())
-    request_open = request_counts['open'] + request_counts['doing']
-    request_base = max(1, request_total)
-    request_open_end = round(request_counts['open'] * 100 / request_base)
-    request_doing_end = request_open_end + round(request_counts['doing'] * 100 / request_base)
-    request_done_end = request_doing_end + round(request_counts['done'] * 100 / request_base)
-
-    recent_request_activity = []
-    activity_colors = {'open': 'green', 'doing': 'blue', 'done': 'teal', 'rejected': 'red'}
-    for item in internal_requests_qs[:5]:
-        requester_name = item.requester.get_full_name() or item.requester.username
-        profile = getattr(item.requester, 'profile', None)
-        recent_request_activity.append({
-            'title': item.title,
-            'person': requester_name,
-            'job_title': getattr(profile, 'job_title', '') or 'Ù¾Ø±Ø³Ù†Ù„',
-            'avatar': profile.avatar.url if profile and profile.avatar else '',
-            'status': item.status,
-            'status_label': item.get_status_display(),
-            'color': activity_colors.get(item.status, 'green'),
-            'time': timezone.localtime(item.updated_at).strftime('%H:%M'),
-        })
-
-    # Lightweight 7-day management trend data.
-    trend=[]
-    request_trend=[]
-    for offset in range(6,-1,-1):
-        d=day-timedelta(days=offset)
-        active_users=users
-        daily_records=Attendance.objects.filter(date=d,user__in=active_users)
-        present_count=daily_records.filter(check_in__isnull=False).values('user').distinct().count()
-        late_count=daily_records.filter(status='late').values('user').distinct().count()
-        report_count=DailyReport.objects.filter(created_at__date=d,user__in=active_users).values('user').distinct().count()
-        trend.append({
-            'label':format_jalali(d)[5:],
-            'present':present_count,
-            'late':late_count,
-            'reports':report_count,
-        })
-        daily_request_count = internal_requests_qs.filter(created_at__date=d).count()
-        request_trend.append({'label': format_jalali(d)[5:], 'count': daily_request_count})
-
-    device_issues = DeviceIssue.objects.filter(reporter__in=users).select_related('reporter','branch').order_by('-created_at')
-    if branch:
-        device_issues = device_issues.filter(branch=branch)
-    device_open = device_issues.exclude(status='resolved')
-    device_recent = [{
-        'id': x.id, 'device_name': x.device_name, 'description': x.description[:90],
-        'status': x.status, 'status_label': x.get_status_display(),
-        'reporter': x.reporter.get_full_name() or x.reporter.username,
-        'branch': x.branch.name if x.branch else 'â€”',
-        'time': timezone.localtime(x.created_at).strftime('%H:%M'),
-    } for x in device_issues[:4]]
-
-    rejected_attempts=AuditLog.objects.filter(
-        action='attendance_location_rejected',
-        created_at__date=day,
-    )
-
-    device_issues_qs=DeviceIssue.objects.exclude(status='resolved')
-    if branch:
-        device_issues_qs=device_issues_qs.filter(branch=branch)
-    device_open_count=device_issues_qs.count()
-    device_new_count=device_issues_qs.filter(status='new').count()
-    device_reviewing_count=device_issues_qs.filter(status='reviewing').count()
-    if branch:
-        rejected_attempts=rejected_attempts.filter(metadata__branch_id=branch.id)
-
-    return {
-        'date':format_jalali(day),
-        'branch':branch.name if branch else 'Ù‡Ù…Ù‡ Ø´Ø¹Ø¨',
-        'counts':counters,
-        'revenue_today':str(revenue),
-        'overdue_tasks':overdue_tasks.count(),
-        'reports_today':reports_today.values('user').distinct().count(),
-        'missing_reports_today':missing_reports_today,
-        'unverified_locations':sum(1 for p in rows if p['check_in'] and p['location_status'] not in ('verified','manual')),
-        'rejected_location_attempts':rejected_attempts.count(),
-        'device_open_count':device_open_count,
-        'device_new_count':device_new_count,
-        'device_reviewing_count':device_reviewing_count,
-        'attendance_rate':attendance_rate,
-        'ontime_rate':ontime_rate,
-        'report_rate':report_rate,
-        'task_completion_rate':task_completion_rate,
-        'average_kpi':round((attendance_rate+report_rate+task_completion_rate)/3),
-        'tasks_today_total':tasks_today_total,
-        'tasks_today_done':tasks_today_done,
-        'present_people':present_people,
-        'action_required_count':(
-            counters.get('late',0) + missing_reports_today
-            + overdue_tasks.count() + device_open_count
-        ),
-        'request_total':request_total,
-        'request_open':request_open,
-        'request_counts':request_counts,
-        'request_open_end':request_open_end,
-        'request_doing_end':request_doing_end,
-        'request_done_end':request_done_end,
-        'request_activity':recent_request_activity,
-        'request_trend':request_trend,
-        'device_open':device_open.count(),
-        'device_recent':device_recent,
-        'total_people':len(rows),
-        'trend':trend,
-        'people':rows,
-        'generated_at':timezone.localtime().strftime('%H:%M:%S'),
-    }
-
-
-@manager_required
-def branch_live_dashboard(request):
-    from .models import Branch
-    branch = _branch_scope_for_manager(request)
-    branches = Branch.objects.filter(is_active=True).order_by('name')
-    if role_of(request.user)=='manager':
-        branches=branches.filter(pk=request.user.profile.branch_id)
-        branch=request.user.profile.branch
-    data=_branch_live_payload(branch)
-    if role_of(request.user)=='internal_manager':
-        data.pop('revenue_today',None)
-    alerts=StaffNotification.objects.filter(user=request.user,is_read=False)[:12]
-    announcements=Announcement.objects.filter(is_active=True)
-    if branch:
-        announcements=announcements.filter(Q(branch__isnull=True)|Q(branch=branch))
-    return render(request,'core/branch_live.html',{
-        'data':data,
-        'branches':branches,
-        'selected_branch':branch,
-        'alerts':alerts,
-        'dashboard_announcements':announcements.order_by('-created_at')[:4],
-    })
-
-
-@manager_required
-def branch_live_api(request):
-    branch=_branch_scope_for_manager(request)
-    data=_branch_live_payload(branch)
-    if role_of(request.user)=='internal_manager':
-        data.pop('revenue_today',None)
-    return JsonResponse(data,json_dumps_params={'ensure_ascii':False})
-
-
-@manager_required
-def smart_alerts_run(request):
-    if request.method!='POST':
-        return JsonResponse({'error':'POST required'},status=405)
-    count=generate_smart_alerts()
-    return JsonResponse({'created':count,'message':f'{count} Ø§Ø¹Ù„Ø§Ù† Ø¬Ø¯ÛŒØ¯ Ø³Ø§Ø®ØªÙ‡ Ø´Ø¯.'},json_dumps_params={'ensure_ascii':False})
-
-
-def _employee_access(request, employee):
-    if role_of(request.user)=='admin':
-        return True
-    if role_of(request.user)=='internal_manager':
-        return employee.role in PERSONNEL_ROLES
-    if role_of(request.user)=='manager':
-        return employee.branch_id == getattr(request.user.profile,'branch_id',None)
-    return employee.user_id == request.user.id
-
-
-def _employee_or_redirect(request, pk):
-    employee=get_object_or_404(
-        EmployeeProfile.objects.select_related('user','branch'),pk=pk
-    )
-    if not _employee_access(request,employee):
-        messages.error(request,'Ø¨Ù‡ Ø§Ø·Ù„Ø§Ø¹Ø§Øª Ø§ÛŒÙ† Ù¾Ø±Ø³Ù†Ù„ Ø¯Ø³ØªØ±Ø³ÛŒ Ù†Ø¯Ø§Ø±ÛŒØ¯.')
-        return None
-    return employee
-
-
-@manager_required
-def employee_reports(request,pk):
-    employee=_employee_or_redirect(request,pk)
-    if employee is None:
-        return redirect('employee_list')
-    reports=(DailyReport.objects.select_related('user','branch','user__profile')
-             .filter(user=employee.user).order_by('-created_at')[:200])
-    return render(request,'core/report_list.html',{
-        'reports':reports,
-        'filtered_employee':employee,
-    })
-
-
-@manager_required
-def employee_attendance(request,pk):
-    employee=_employee_or_redirect(request,pk)
-    if employee is None:
-        return redirect('employee_list')
-    try:
-        period=int(request.GET.get('days','30'))
-    except (TypeError,ValueError):
-        period=30
-    if period not in (30,60,90):
-        period=30
-    today=timezone.localdate()
-    start=today-timedelta(days=period-1)
-    records=list(
-        Attendance.objects.filter(user=employee.user,date__range=(start,today))
-        .select_related('branch').order_by('-date')
-    )
-    worked_total=0
-    for record in records:
-        minutes=record.worked_minutes
-        if minutes is not None:
-            worked_total+=minutes
-            record.worked_label=f'{minutes//60:02d}:{minutes%60:02d}'
-        else:
-            record.worked_label='â€”'
-    stats={
-        'present':sum(1 for r in records if r.check_in),
-        'on_time':sum(1 for r in records if r.check_in and r.status=='present'),
-        'late':sum(1 for r in records if r.status=='late'),
-        'worked':f'{worked_total//60:02d}:{worked_total%60:02d}',
-    }
-    return render(request,'core/employee_attendance.html',{
-        'employee':employee,
-        'records':records,
-        'stats':stats,
-        'period':period,
-        'start':start,
-        'today':today,
-    })
-
-
-@manager_required
-def employee_task_create(request,pk):
-    employee=_employee_or_redirect(request,pk)
-    if employee is None:
-        return redirect('employee_list')
-    form=TaskForm(request.POST or None)
-    form.fields.pop('assigned_to',None)
-    if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False)
-        obj.assigned_to=employee.user
-        obj.created_by=request.user
-        obj.save()
-        messages.success(request,f'ÙˆØ¸ÛŒÙÙ‡ Ø¬Ø¯ÛŒØ¯ Ø¨Ø±Ø§ÛŒ {employee.user.get_full_name() or employee.user.username} Ø«Ø¨Øª Ø´Ø¯.')
-        return redirect('employee_file',pk=employee.pk)
-    return render(request,'core/employee_management_form.html',{
-        'form':form,
-        'employee':employee,
-        'title':'ÙˆØ¸ÛŒÙÙ‡ Ø¬Ø¯ÛŒØ¯',
-        'subtitle':'ÙˆØ¸ÛŒÙÙ‡ Ù…Ø³ØªÙ‚ÛŒÙ…Ø§Ù‹ Ø¨Ø±Ø§ÛŒ Ù‡Ù…ÛŒÙ† Ù¾Ø±Ø³Ù†Ù„ Ø«Ø¨Øª Ù…ÛŒâ€ŒØ´ÙˆØ¯.',
-        'button':'Ø«Ø¨Øª ÙˆØ¸ÛŒÙÙ‡',
-        'form_kind':'task',
-    })
-
-
-@manager_required
-def employee_file(request,pk):
-    employee=get_object_or_404(EmployeeProfile.objects.select_related('user','branch'),pk=pk)
-    if not _employee_access(request,employee):
-        messages.error(request,'Ø¨Ù‡ Ø§ÛŒÙ† Ù¾Ø±ÙˆÙ†Ø¯Ù‡ Ø¯Ø³ØªØ±Ø³ÛŒ Ù†Ø¯Ø§Ø±ÛŒØ¯.')
-        return redirect('employee_list')
-    user=employee.user
-    today=timezone.localdate()
-    start=today-timedelta(days=29)
-    attendance=Attendance.objects.filter(user=user,date__range=(start,today)).order_by('-date')
-    leaves=LeaveRequest.objects.filter(user=user).order_by('-created_at')[:20]
-    tasks=Task.objects.filter(assigned_to=user).order_by('status','due_date')[:30]
-    reports=DailyReport.objects.filter(user=user).order_by('-created_at')[:20]
-    scores=ScoreEvent.objects.filter(user=user).order_by('-event_date','-created_at')[:30]
-    actions=PersonnelAction.objects.filter(user=user).order_by('-event_date','-created_at')
-    kpi=auto_kpi(user,start,today)
-    documents=employee.documents.all()
-    stats={
-        'attendance_days':attendance.filter(check_in__isnull=False).count(),
-        'late_days':attendance.filter(status='late').count(),
-        'reports':DailyReport.objects.filter(user=user,created_at__date__range=(start,today)).count(),
-        'task_done':Task.objects.filter(assigned_to=user,status='done',updated_at__date__range=(start,today)).count(),
-        'task_open':Task.objects.filter(assigned_to=user,status__in=('todo','doing')).count(),
-        'documents':documents.count(),
-        'actions':actions.count(),
-    }
-    return render(request,'core/employee_file.html',{
-        'employee':employee,'attendance':attendance[:15],'leaves':leaves,'tasks':tasks,
-        'reports':reports,'scores':scores,'actions':actions[:12],'documents':documents,'kpi':kpi,'stats':stats,
-        'start':start,'today':today
-    })
-
-
-@manager_required
-def employee_document_add(request,pk):
-    employee=get_object_or_404(EmployeeProfile.objects.select_related('user','branch'),pk=pk)
-    if not _employee_access(request,employee):
-        messages.error(request,'Ø¨Ù‡ Ø§ÛŒÙ† Ù¾Ø±Ø³Ù†Ù„ Ø¯Ø³ØªØ±Ø³ÛŒ Ù†Ø¯Ø§Ø±ÛŒØ¯.')
-        return redirect('employee_list')
-    form=EmployeeDocumentForm(request.POST or None,request.FILES or None)
-    if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False)
-        obj.employee=employee
-        obj.uploaded_by=request.user
-        obj.save()
-        messages.success(request,'Ù…Ø¯Ø±Ú© Ø¨Ù‡ Ù¾Ø±ÙˆÙ†Ø¯Ù‡ Ù¾Ø±Ø³Ù†Ù„ÛŒ Ø§Ø¶Ø§ÙÙ‡ Ø´Ø¯.')
-        return redirect('employee_file',pk=pk)
-    return render(request,'core/generic_form.html',{'form':form,'title':f'Ø§ÙØ²ÙˆØ¯Ù† Ù…Ø¯Ø±Ú© Ø¨Ø±Ø§ÛŒ {employee.user.get_full_name() or employee.user.username}','button':'Ø°Ø®ÛŒØ±Ù‡ Ù…Ø¯Ø±Ú©'})
-
-
-def _checklist_templates_for(user):
-    p=user.profile
-    return ChecklistTemplate.objects.filter(is_active=True).filter(
-        Q(branch__isnull=True)|Q(branch=p.branch)
-    ).filter(
-        Q(role='')|Q(role=p.role)
-    ).filter(
-        Q(job_title='')|Q(job_title=p.job_title)
-    ).prefetch_related('items').order_by('name').distinct()
-
-
-@login_required
-def checklist_today(request):
-    day=timezone.localdate()
-    templates=_checklist_templates_for(request.user)
-    completions={
-        x.item_id:x for x in ChecklistCompletion.objects.filter(user=request.user,date=day).select_related('item')
-    }
-    rows=[]
-    total=done=0
-    for template in templates:
-        item_rows=[]
-        for item in template.items.all():
-            comp=completions.get(item.id)
-            total+=1
-            if comp and comp.is_done: done+=1
-            item_rows.append({'item':item,'completion':comp,'done':bool(comp and comp.is_done)})
-        rows.append({'template':template,'items':item_rows})
-    progress=round(done*100/total) if total else 100
-    return render(request,'core/checklist_today.html',{'rows':rows,'day':day,'total':total,'done':done,'progress':progress})
-
-
-@login_required
-def checklist_toggle(request,item_id):
-    if request.method!='POST':
-        return redirect('checklist_today')
-    item=get_object_or_404(ChecklistItem.objects.select_related('template'),pk=item_id,template__is_active=True)
-    allowed_ids={i.id for t in _checklist_templates_for(request.user) for i in t.items.all()}
-    if item.id not in allowed_ids:
-        messages.error(request,'Ø§ÛŒÙ† Ù…ÙˆØ±Ø¯ Ø¨Ø±Ø§ÛŒ Ø´Ù…Ø§ ØªØ¹Ø±ÛŒÙ Ù†Ø´Ø¯Ù‡ Ø§Ø³Øª.')
-        return redirect('checklist_today')
-    day=timezone.localdate()
-    obj,_=ChecklistCompletion.objects.get_or_create(user=request.user,item=item,date=day)
-    obj.is_done=not obj.is_done
-    obj.completed_at=timezone.now() if obj.is_done else None
-    obj.note=request.POST.get('note','')[:250]
-    obj.save()
-    return redirect('checklist_today')
-
-
-@manager_required
-def checklist_templates(request):
-    qs=ChecklistTemplate.objects.select_related('branch','created_by').prefetch_related('items').order_by('branch__name','name')
-    if role_of(request.user)=='manager':
-        qs=qs.filter(Q(branch=request.user.profile.branch)|Q(branch__isnull=True))
-    return render(request,'core/checklist_templates.html',{'templates':qs})
-
-
-@manager_required
-def checklist_template_create(request):
-    form=ChecklistTemplateForm(request.POST or None)
-    if role_of(request.user)=='manager':
-        form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=request.user.profile.branch_id)
-        form.fields['branch'].initial=request.user.profile.branch
-        form.fields['role'].choices=[('employee','Ú©Ø§Ø±Ù…Ù†Ø¯'),('manager','Ù…Ø¯ÛŒØ± Ø´Ø¹Ø¨Ù‡')]
-    if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False); obj.created_by=request.user
-        if role_of(request.user)=='manager': obj.branch=request.user.profile.branch
-        obj.save()
-        messages.success(request,'Ú†Ú©â€ŒÙ„ÛŒØ³Øª Ø³Ø§Ø®ØªÙ‡ Ø´Ø¯Ø› Ø­Ø§Ù„Ø§ Ù…ÙˆØ§Ø±Ø¯ Ø¢Ù† Ø±Ø§ Ø§Ø¶Ø§ÙÙ‡ Ú©Ù†ÛŒØ¯.')
-        return redirect('checklist_template_detail',pk=obj.pk)
-    return render(request,'core/generic_form.html',{'form':form,'title':'Ø³Ø§Ø®Øª Ú†Ú©â€ŒÙ„ÛŒØ³Øª Ø±ÙˆØ²Ø§Ù†Ù‡','button':'Ø³Ø§Ø®Øª'})
-
-
-@manager_required
-def checklist_template_detail(request,pk):
-    template=get_object_or_404(ChecklistTemplate.objects.select_related('branch'),pk=pk)
-    if role_of(request.user)=='manager' and template.branch_id not in (None,request.user.profile.branch_id):
-        messages.error(request,'Ø¯Ø³ØªØ±Ø³ÛŒ Ù…Ø¬Ø§Ø² Ù†ÛŒØ³Øª.')
-        return redirect('checklist_templates')
-    form=ChecklistItemForm(request.POST or None)
-    if request.method=='POST' and form.is_valid():
-        item=form.save(commit=False); item.template=template; item.save()
-        messages.success(request,'Ù…ÙˆØ±Ø¯ Ø¬Ø¯ÛŒØ¯ Ø§Ø¶Ø§ÙÙ‡ Ø´Ø¯.')
-        return redirect('checklist_template_detail',pk=pk)
-    return render(request,'core/checklist_template_detail.html',{'template':template,'form':form})
-
-
-@manager_required
-def checklist_team_status(request):
-    day=timezone.localdate()
-    try:
-        if request.GET.get('date'): day=parse_jalali(request.GET['date'])
-    except Exception:
-        pass
-    users=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
-    if role_of(request.user)=='manager':
-        users=users.filter(profile__branch=request.user.profile.branch)
-    rows=[]
-    for user in users.order_by('profile__branch__name','last_name','first_name','username'):
-        templates=_checklist_templates_for(user)
-        item_ids=[i.id for t in templates for i in t.items.all()]
-        total=len(item_ids)
-        done=ChecklistCompletion.objects.filter(user=user,date=day,item_id__in=item_ids,is_done=True).count() if item_ids else 0
-        required_ids=[i.id for t in templates for i in t.items.all() if i.is_required]
-        required_done=ChecklistCompletion.objects.filter(user=user,date=day,item_id__in=required_ids,is_done=True).count() if required_ids else 0
-        rows.append({
-            'user':user,'total':total,'done':done,
-            'required_total':len(required_ids),'required_done':required_done,
-            'percent':round(done*100/total) if total else 100,
-        })
-    return render(request,'core/checklist_team.html',{'rows':rows,'day':day})
-
-
-@finance_required
-def executive_today(request):
-    from .models import Branch, FinancialTransaction
-    day=timezone.localdate()
-    branch=_branch_scope_for_manager(request)
-    users=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
-    if branch:
-        users=users.filter(profile__branch=branch)
-
-    late_people=[]
-    missing_people=[]
-    leave_people=[]
-    checklist_issues=[]
-    kpi_issues=[]
-    report_issues=[]
-
-    for u in users.order_by('profile__branch__name','last_name','first_name','username'):
-        p=u.profile
-        leave=LeaveRequest.objects.filter(user=u,status='approved',start_date__lte=day,end_date__gte=day).first()
-        rec=Attendance.objects.filter(user=u,date=day).first()
-        work_rule=shift_rule(u,day)
-        avatar=p.avatar.url if p.avatar else None
-        base={'id':u.id,'profile_id':p.id,'name':u.get_full_name() or u.username,'branch':p.branch.name if p.branch else 'â€”','job_title':p.job_title,'avatar':avatar}
-
-        if leave:
-            leave_people.append({**base,'label':leave.get_request_type_display()})
-        elif rec and rec.check_in:
-            status=attendance_status_for(u,day,rec.check_in)
-            if status=='late':
-                late_people.append({**base,'time':timezone.localtime(rec.check_in).strftime('%H:%M')})
-        elif not work_rule.get('is_off'):
-            missing_people.append(base)
-
-        # checklist status
-        templates=_checklist_templates_for(u)
-        items=[i for t in templates for i in t.items.all()]
-        required=[i for i in items if i.is_required]
-        if required and not work_rule.get('is_off'):
-            done_ids=set(ChecklistCompletion.objects.filter(user=u,date=day,is_done=True,item__in=required).values_list('item_id',flat=True))
-            missing_required=[i for i in required if i.id not in done_ids]
-            if missing_required:
-                checklist_issues.append({**base,'missing':len(missing_required),'total':len(required)})
-
-        # KPI issue
-        kpi=auto_kpi(u,day-timedelta(days=29),day)
-        if kpi['score']<70:
-            kpi_issues.append({**base,'score':kpi['score']})
-
-        # missed nightly reports in last 7 completed days
-        missed=missing_report_days(u,days=7,end=day-timedelta(days=1))
-        if missed:
-            report_issues.append({**base,'count':len(missed)})
-
-    overdue_qs=Task.objects.filter(status__in=('todo','doing'),due_date__lt=day).select_related('assigned_to','assigned_to__profile','assigned_to__profile__branch')
-    if branch:
-        overdue_qs=overdue_qs.filter(assigned_to__profile__branch=branch)
-    overdue_tasks=list(overdue_qs.order_by('due_date')[:12])
-
-    tx=FinancialTransaction.objects.filter(occurred_at__date=day)
-    if branch: tx=tx.filter(branch=branch)
-    revenue_today=tx.aggregate(x=Sum('amount'))['x'] or 0
-
-    yesterday=day-timedelta(days=1)
-    tx_y=FinancialTransaction.objects.filter(occurred_at__date=yesterday)
-    if branch: tx_y=tx_y.filter(branch=branch)
-    revenue_yesterday=tx_y.aggregate(x=Sum('amount'))['x'] or 0
-    revenue_change=None
-    if revenue_yesterday:
-        revenue_change=round((float(revenue_today)-float(revenue_yesterday))*100/float(revenue_yesterday),1)
-
-    branches=Branch.objects.filter(is_active=True).order_by('name')
-    if role_of(request.user)=='manager':
-        branches=branches.filter(pk=request.user.profile.branch_id)
-
-    branch_cards=[]
-    branch_scope=branches if role_of(request.user)=='admin' else branches
-    for b in branch_scope:
-        bu=User.objects.filter(profile__is_active=True,profile__branch=b)
-        present=Attendance.objects.filter(user__in=bu,date=day,check_in__isnull=False).count()
-        late=Attendance.objects.filter(user__in=bu,date=day,status='late').count()
-        total=bu.count()
-        btx=FinancialTransaction.objects.filter(branch=b,occurred_at__date=day).aggregate(x=Sum('amount'))['x'] or 0
-        branch_cards.append({'branch':b,'present':present,'late':late,'total':total,'revenue':btx})
-
-    risk_count=len(late_people)+len(missing_people)+len(checklist_issues)+len(kpi_issues)+overdue_qs.count()
-
-    return render(request,'core/executive_today.html',{
-        'day':day,'selected_branch':branch,'branches':branches,
-        'late_people':late_people,'missing_people':missing_people,'leave_people':leave_people,
-        'checklist_issues':checklist_issues,'kpi_issues':kpi_issues,'report_issues':report_issues,
-        'overdue_tasks':overdue_tasks,'revenue_today':revenue_today,'revenue_yesterday':revenue_yesterday,
-        'revenue_change':revenue_change,'branch_cards':branch_cards,'risk_count':risk_count,
-        'team_count':users.count(),
-    })
-
-
-def morning_brief_data(user, branch=None):
-    day=timezone.localdate()
-    users=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
-    if branch: users=users.filter(profile__branch=branch)
-    late=[]; missing=[]; low_kpi=[]
-    for u in users:
-        leave=LeaveRequest.objects.filter(user=u,status='approved',start_date__lte=day,end_date__gte=day).exists()
-        if leave: continue
-        rec=Attendance.objects.filter(user=u,date=day).first()
-        work_rule=shift_rule(u,day)
-        if rec and rec.check_in and attendance_status_for(u,day,rec.check_in)=='late':
-            late.append(u)
-        elif (not rec or not rec.check_in) and not work_rule.get('is_off'): missing.append(u)
-        k=auto_kpi(u,day-timedelta(days=29),day)
-        if k['score']<70: low_kpi.append((u,k['score']))
-    overdue=Task.objects.filter(status__in=('todo','doing'),due_date__lt=day)
-    if branch: overdue=overdue.filter(assigned_to__profile__branch=branch)
-    from .models import FinancialTransaction
-    revenue=FinancialTransaction.objects.filter(occurred_at__date=day)
-    if branch: revenue=revenue.filter(branch=branch)
-    revenue=revenue.aggregate(x=Sum('amount'))['x'] or 0
-    return {'day':day,'team':users.count(),'late':late,'missing':missing,'low_kpi':low_kpi,'overdue':overdue.count(),'revenue':revenue}
-
-@finance_required
-def morning_brief(request):
-    branch=_branch_scope_for_manager(request)
-    return render(request,'core/morning_brief.html',{'brief':morning_brief_data(request.user,branch)})
-
-@manager_required
-def employee_360(request,pk):
-    employee=get_object_or_404(
-        EmployeeProfile.objects.select_related('user','branch','shift_group'),
-        pk=pk
-    )
-    if not _employee_access(request,employee):
-        messages.error(request,'Ø¯Ø³ØªØ±Ø³ÛŒ Ù…Ø¬Ø§Ø² Ù†ÛŒØ³Øª.')
-        return redirect('employee_list')
-
-    u=employee.user
-    day=timezone.localdate()
-    start30=day-timedelta(days=29)
-    start90=day-timedelta(days=89)
-
-    attendance_qs=Attendance.objects.filter(user=u,date__gte=start30).order_by('-date')
-    attendance_total=attendance_qs.count()
-    attendance_present=attendance_qs.filter(check_in__isnull=False).count()
-    late_count=attendance_qs.filter(status='late').count()
-    missing_count=max(0,30-attendance_present)
-    attendance_rate=round(attendance_present*100/max(1,attendance_total)) if attendance_total else 0
-
-    reports30=DailyReport.objects.filter(user=u,created_at__date__gte=start30,created_at__date__lte=day)
-    report_count=reports30.values('created_at__date').distinct().count()
-
-    tasks=Task.objects.filter(assigned_to=u)
-    task_total=tasks.count()
-    task_done=tasks.filter(status='done').count()
-    task_overdue=tasks.filter(status__in=('todo','doing'),due_date__lt=day).count()
-    task_rate=round(task_done*100/max(1,task_total)) if task_total else 100
-
-    leaves=LeaveRequest.objects.filter(user=u).order_by('-created_at')[:8]
-    corrections=AttendanceCorrectionRequest.objects.filter(user=u).order_by('-created_at')[:8]
-    device_issues=DeviceIssue.objects.filter(reporter=u).order_by('-created_at')[:8]
-    report_items=DailyReport.objects.filter(user=u).order_by('-created_at')[:8]
-    documents=EmployeeDocument.objects.filter(employee=employee).order_by('-created_at')[:8]
-    guideline_ack_count=GuidelineAcknowledgement.objects.filter(user=u).count()
-    guideline_total=_guidelines_for_user(u).count()
-
-    score30=ScoreEvent.objects.filter(user=u,event_date__gte=start30,event_date__lte=day)
-    score_total=score30.aggregate(x=Sum('points'))['x'] or 0
-
-    events=[]
-    for a in Attendance.objects.filter(user=u,date__gte=start90):
-        if a.check_in:
-            label='ØªØ£Ø®ÛŒØ±' if a.status=='late' else 'Ø­Ø¶ÙˆØ±'
-            text=timezone.localtime(a.check_in).strftime('%H:%M')
-            events.append({'date':a.date,'type':a.status,'title':label,'text':text,'icon':'â—·'})
-    for x in PersonnelAction.objects.filter(user=u,event_date__gte=start90):
-        events.append({'date':x.event_date,'type':x.action_type,'title':x.get_action_type_display(),'text':x.title,'icon':'âš‘'})
-    for x in ScoreEvent.objects.filter(user=u,event_date__gte=start90):
-        events.append({'date':x.event_date,'type':'score','title':'Ø§Ù…ØªÛŒØ§Ø²','text':f'{x.points:+d} Â· {x.description}','icon':'â˜…'})
-    for x in DeviceIssue.objects.filter(reporter=u,created_at__date__gte=start90):
-        events.append({'date':timezone.localdate(x.created_at),'type':'device','title':'Ú¯Ø²Ø§Ø±Ø´ Ø®Ø±Ø§Ø¨ÛŒ Ø¯Ø³ØªÚ¯Ø§Ù‡','text':x.device_name,'icon':'âš’'})
-    for x in DailyReport.objects.filter(user=u,created_at__date__gte=start90):
-        events.append({'date':timezone.localdate(x.created_at),'type':'report','title':'Ú¯Ø²Ø§Ø±Ø´ Ø±ÙˆØ²Ø§Ù†Ù‡','text':normalize_ai_text(x.ai_summary or x.text or x.transcript)[:100],'icon':'â–¤'})
-    events=sorted(events,key=lambda x:x['date'],reverse=True)[:60]
-
-    goals=PerformanceGoal.objects.filter(employee=u,is_active=True)
-    kpi=auto_kpi(u,start30,day)
-    today_shift=shift_rule(u,day)
-
-    summary={
-        'attendance_rate':attendance_rate,
-        'late_count':late_count,
-        'report_count':report_count,
-        'task_rate':task_rate,
-        'task_overdue':task_overdue,
-        'score_total':score_total,
-        'guideline_ack_count':guideline_ack_count,
-        'guideline_total':guideline_total,
-    }
-
-    return render(request,'core/employee_360.html',{
-        'employee':employee,
-        'events':events,
-        'goals':goals,
-        'kpi':kpi,
-        'summary':summary,
-        'today_shift':today_shift,
-        'attendance_recent':attendance_qs[:10],
-        'reports_recent':report_items,
-        'leaves':leaves,
-        'corrections':corrections,
-        'device_issues':device_issues,
-        'documents':documents,
-    })
-
-@manager_required
-def personnel_action_add(request,pk):
-    employee=_employee_or_redirect(request,pk)
-    if employee is None:
-        return redirect('employee_list')
-    form=PersonnelActionForm(request.POST or None)
-    if request.method=='POST' and form.is_valid():
-        x=form.save(commit=False); x.user=employee.user; x.created_by=request.user; x.save()
-        StaffNotification.objects.create(user=employee.user,title=x.get_action_type_display(),message=x.title,notification_type='personnel_action',related_date=x.event_date)
-        messages.success(request,f'Ø§Ù‚Ø¯Ø§Ù… Ù…Ø¯ÛŒØ±ÛŒØªÛŒ Ø¨Ø±Ø§ÛŒ {employee.user.get_full_name() or employee.user.username} Ø«Ø¨Øª Ø´Ø¯.')
-        return redirect('employee_360',pk=pk)
-    return render(request,'core/employee_management_form.html',{
-        'form':form,
-        'employee':employee,
-        'title':'Ø§Ù‚Ø¯Ø§Ù… Ù…Ø¯ÛŒØ±ÛŒØªÛŒ',
-        'subtitle':'ØªØ´ÙˆÛŒÙ‚ØŒ ØªØ°Ú©Ø±ØŒ Ø§Ø®Ø·Ø§Ø± ÛŒØ§ ÛŒØ§Ø¯Ø¯Ø§Ø´Øª Ù…Ø¯ÛŒØ±ÛŒØªÛŒ Ø±Ø§ Ø¨Ø§ Ø´Ø±Ø­ Ø±ÙˆØ´Ù† Ø«Ø¨Øª Ú©Ù†ÛŒØ¯.',
-        'button':'Ø«Ø¨Øª Ø§Ù‚Ø¯Ø§Ù…',
-        'form_kind':'management',
-    })
-
-@login_required
-def personnel_action_ack(request,pk):
-    x=get_object_or_404(PersonnelAction,pk=pk,user=request.user)
-    if request.method=='POST' and not x.acknowledged_at:
-        x.acknowledged_at=timezone.now(); x.save(update_fields=['acknowledged_at'])
-    return redirect('profile')
-
-@manager_required
-def goals(request):
-    qs=PerformanceGoal.objects.select_related('employee','branch')
-    if role_of(request.user)=='manager': qs=qs.filter(Q(branch=request.user.profile.branch)|Q(employee__profile__branch=request.user.profile.branch))
-    return render(request,'core/goals.html',{'goals':qs})
-
-@manager_required
-def goal_add(request):
-    form=PerformanceGoalForm(request.POST or None)
-    if request.method=='POST' and form.is_valid():
-        x=form.save(commit=False); x.created_by=request.user; x.save(); return redirect('goals')
-    return render(request,'core/generic_form.html',{'form':form,'title':'Ù‡Ø¯Ù Ø¬Ø¯ÛŒØ¯','button':'Ø«Ø¨Øª Ù‡Ø¯Ù'})
-
-@login_required
-def internal_requests(request):
-    qs=InternalRequest.objects.select_related('requester','assigned_to')
-    if role_of(request.user) in PERSONNEL_ROLES: qs=qs.filter(requester=request.user)
-    elif role_of(request.user)=='manager': qs=qs.filter(Q(requester__profile__branch=request.user.profile.branch)|Q(assigned_to=request.user))
-    return render(request,'core/internal_requests.html',{'requests':qs[:100]})
-
-@login_required
-def internal_request_add(request):
-    form=InternalRequestForm(request.POST or None)
-    if request.method=='POST' and form.is_valid():
-        x=form.save(commit=False); x.requester=request.user; x.save(); return redirect('internal_requests')
-    return render(request,'core/generic_form.html',{'form':form,'title':'Ø¯Ø±Ø®ÙˆØ§Ø³Øª Ø¯Ø§Ø®Ù„ÛŒ Ø¬Ø¯ÛŒØ¯','button':'Ø§Ø±Ø³Ø§Ù„ Ø¯Ø±Ø®ÙˆØ§Ø³Øª'})
-
-@manager_required
-def command_center(request):
-    q=(request.GET.get('q') or '').strip()
-    answer=None; data=None
-    if q:
-        qn=q.replace('ÙŠ','ÛŒ').replace('Ùƒ','Ú©')
-        branch=_branch_scope_for_manager(request)
-        data=morning_brief_data(request.user,branch)
-        if 'Ù…Ø´Ú©Ù„' in qn or 'Ø§Ù…Ø±ÙˆØ²' in qn:
-            answer=f"Ø§Ù…Ø±ÙˆØ² {len(data['late'])} ØªØ£Ø®ÛŒØ±ØŒ {len(data['missing'])} ÙˆØ±ÙˆØ¯ Ø«Ø¨Øªâ€ŒÙ†Ø´Ø¯Ù‡ØŒ {data['overdue']} Task Ø¹Ù‚Ø¨â€ŒØ§ÙØªØ§Ø¯Ù‡ Ùˆ {len(data['low_kpi'])} KPI Ø²ÛŒØ± Û·Û° Ø¯Ø§Ø±ÛŒÙ…."
-        elif 'Ø¯ÛŒØ±' in qn or 'ØªØ§Ø®ÛŒØ±' in qn or 'ØªØ£Ø®ÛŒØ±' in qn:
-            answer='ØŒ '.join([u.get_full_name() or u.username for u in data['late']]) or 'Ø§Ù…Ø±ÙˆØ² ØªØ£Ø®ÛŒØ±ÛŒ Ø«Ø¨Øª Ù†Ø´Ø¯Ù‡ Ø§Ø³Øª.'
-        elif 'Ø¯Ø±Ø¢Ù…Ø¯' in qn or 'ÙØ±ÙˆØ´' in qn or 'Ù…Ø§Ù„ÛŒ' in qn:
-            if role_of(request.user)=='internal_manager':
-                answer='Ø¯Ø³ØªØ±Ø³ÛŒ Ø¨Ø®Ø´ Ù…Ø§Ù„ÛŒ Ø¨Ø±Ø§ÛŒ Ù†Ù‚Ø´ Ù…Ø¯ÛŒØ± Ø¯Ø§Ø®Ù„ÛŒ ÙØ¹Ø§Ù„ Ù†ÛŒØ³Øª.'
-            else:
-                answer=f"Ø¯Ø±Ø¢Ù…Ø¯ Ø«Ø¨Øªâ€ŒØ´Ø¯Ù‡ Ø§Ù…Ø±ÙˆØ² {data['revenue']} Ø§Ø³Øª."
-        elif 'kpi' in qn.lower() or 'Ø¹Ù…Ù„Ú©Ø±Ø¯' in qn:
-            answer='Ø› '.join([f"{u.get_full_name() or u.username}: {s}" for u,s in data['low_kpi']]) or 'KPI Ø²ÛŒØ± Û·Û° Ø¯ÛŒØ¯Ù‡ Ù†Ù…ÛŒâ€ŒØ´ÙˆØ¯.'
-        else:
-            answer='Ù…ÛŒâ€ŒØªÙˆØ§Ù†ÛŒ Ø¯Ø±Ø¨Ø§Ø±Ù‡ Ù…Ø´Ú©Ù„Ø§Øª Ø§Ù…Ø±ÙˆØ²ØŒ ØªØ£Ø®ÛŒØ±Ù‡Ø§ØŒ KPI ÛŒØ§ TaskÙ‡Ø§ÛŒ Ø¹Ù‚Ø¨â€ŒØ§ÙØªØ§Ø¯Ù‡ Ø³Ø¤Ø§Ù„ Ú©Ù†ÛŒ.' if role_of(request.user)=='internal_manager' else 'Ù…ÛŒâ€ŒØªÙˆØ§Ù†ÛŒ Ø¯Ø±Ø¨Ø§Ø±Ù‡ Ù…Ø´Ú©Ù„Ø§Øª Ø§Ù…Ø±ÙˆØ²ØŒ ØªØ£Ø®ÛŒØ±Ù‡Ø§ØŒ Ø¯Ø±Ø¢Ù…Ø¯ØŒ KPI ÛŒØ§ TaskÙ‡Ø§ÛŒ Ø¹Ù‚Ø¨â€ŒØ§ÙØªØ§Ø¯Ù‡ Ø³Ø¤Ø§Ù„ Ú©Ù†ÛŒ.'
-    return render(request,'core/command_center.html',{'q':q,'answer':answer,'data':data})
-
-
-@finance_required
-def ceo_score_view(request):
-    branch=_branch_scope_for_manager(request)
-    data=ceo_score(branch)
-    trends=trend_alerts(branch)
-    history=CEOScoreSnapshot.objects.filter(branch=branch).order_by('-date')[:30]
-    history=list(reversed(list(history)))
-    return render(request,'core/ceo_score.html',{'score':data,'trends':trends,'history':history,'selected_branch':branch})
-
-@finance_required
-def trend_dashboard(request):
-    branch=_branch_scope_for_manager(request)
-    return render(request,'core/trends.html',{'trends':trend_alerts(branch),'selected_branch':branch})
-
-@manager_required
-def management_calendar(request):
-    from .jalali import gregorian_to_jalali, jalali_to_gregorian
-    from datetime import date
-    branch=_branch_scope_for_manager(request)
-    today=timezone.localdate()
-    jy,jm,_=gregorian_to_jalali(today.year,today.month,today.day)
-    try:
-        jy=int(request.GET.get('year') or jy); jm=int(request.GET.get('month') or jm)
-    except Exception:
-        pass
-    data=calendar_events(branch,jy,jm)
-    first=data['start']
-    # Saturday-first calendar: Python weekday Monday=0; Saturday -> 0
-    offset=(first.weekday()+2)%7
-    days=[]
-    for _ in range(offset): days.append(None)
-    event_map={}
-    for e in data['events']: event_map.setdefault(e['date'],[]).append(e)
-    d=data['start']
-    while d<=data['end']:
-        _,_,jd=gregorian_to_jalali(d.year,d.month,d.day)
-        days.append({'date':d,'jd':jd,'events':event_map.get(d,[]),'today':d==today})
-        d+=timedelta(days=1)
-    while len(days)%7: days.append(None)
-    prev_y,prev_m=(jy-1,12) if jm==1 else (jy,jm-1)
-    next_y,next_m=(jy+1,1) if jm==12 else (jy,jm+1)
-    return render(request,'core/management_calendar.html',{'days':days,'jy':jy,'jm':jm,'prev_y':prev_y,'prev_m':prev_m,'next_y':next_y,'next_m':next_m,'selected_branch':branch})
-
-@manager_required
-def management_event_add(request):
-    form=ManagementEventForm(request.POST or None)
-    if role_of(request.user)=='manager':
-        form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=request.user.profile.branch_id)
-        form.fields['branch'].initial=request.user.profile.branch
-    if request.method=='POST' and form.is_valid():
-        x=form.save(commit=False); x.created_by=request.user
-        if role_of(request.user)=='manager': x.branch=request.user.profile.branch
-        x.save()
-        messages.success(request,'Ø±ÙˆÛŒØ¯Ø§Ø¯ Ù…Ø¯ÛŒØ±ÛŒØªÛŒ Ø«Ø¨Øª Ø´Ø¯.')
-        return redirect('management_calendar')
-    return render(request,'core/generic_form.html',{'form':form,'title':'Ø±ÙˆÛŒØ¯Ø§Ø¯ ØªÙ‚ÙˆÛŒÙ… Ù…Ø¯ÛŒØ±ÛŒØªÛŒ','button':'Ø«Ø¨Øª Ø±ÙˆÛŒØ¯Ø§Ø¯'})
-
-@standard_manager_required
-def audit_log_view(request):
-    qs=AuditLog.objects.select_related('actor')
-    if role_of(request.user)=='manager':
-        # Managers see audit entries from users in their own branch plus themselves.
-        branch=request.user.profile.branch
-        qs=qs.filter(Q(actor=request.user)|Q(actor__profile__branch=branch))
-    actor=request.GET.get('actor')
-    action=request.GET.get('action')
-    if actor: qs=qs.filter(actor_id=actor)
-    if action: qs=qs.filter(action=action)
-    return render(request,'core/audit_log.html',{'logs':qs[:300]})
-
-@finance_required
-def ceo_score_api(request):
-    branch=_branch_scope_for_manager(request)
-    return JsonResponse({'score':ceo_score(branch),'trends':trend_alerts(branch)},json_dumps_params={'ensure_ascii':False})
-
-
-def _guidelines_for_user(user):
-    profile=getattr(user,'profile',None)
-    qs=Guideline.objects.filter(is_active=True)
-    if not profile:
-        return qs.filter(audience='all')
-    return qs.filter(
-        Q(audience='all') |
-        Q(audience='branch',branch=profile.branch) |
-        Q(audience='job',job_title=profile.job_title)
-    ).distinct().order_by('-published_at')
-
-def _job_duties_for_user(user):
-    profile=getattr(user,'profile',None)
-    if not profile: return JobDutyTemplate.objects.none()
-    qs=JobDutyTemplate.objects.filter(is_active=True)
-    return qs.filter(
-        (Q(branch__isnull=True)|Q(branch=profile.branch)) &
-        (Q(job_title='')|Q(job_title=profile.job_title))
-    ).order_by('title')
-
-@login_required
-def my_guidelines(request):
-    guidelines=_guidelines_for_user(request.user)
-    ack_ids=set(GuidelineAcknowledgement.objects.filter(user=request.user,guideline__in=guidelines).values_list('guideline_id',flat=True))
-    duties=_job_duties_for_user(request.user)
-    return render(request,'core/my_guidelines.html',{'guidelines':guidelines,'ack_ids':ack_ids,'duties':duties})
-
-@login_required
-def guideline_ack(request,pk):
-    if request.method!='POST': return redirect('my_guidelines')
-    guideline=get_object_or_404(_guidelines_for_user(request.user),pk=pk)
-    GuidelineAcknowledgement.objects.get_or_create(guideline=guideline,user=request.user)
-    messages.success(request,'Ù…Ø·Ø§Ù„Ø¹Ù‡ Ø¯Ø³ØªÙˆØ±Ø§Ù„Ø¹Ù…Ù„ Ø«Ø¨Øª Ø´Ø¯.')
-    return redirect('my_guidelines')
-
-@manager_required
-def guidelines_manage(request):
-    profile=getattr(request.user,'profile',None)
-    guidelines=Guideline.objects.all().order_by('-published_at')
-    duties=JobDutyTemplate.objects.all().order_by('title')
-    if role_of(request.user)=='manager':
-        guidelines=guidelines.filter(Q(branch=profile.branch)|Q(branch__isnull=True))
-        duties=duties.filter(Q(branch=profile.branch)|Q(branch__isnull=True))
-    return render(request,'core/guidelines_manage.html',{'guidelines':guidelines,'duties':duties})
-
-@manager_required
-def guideline_create(request):
-    form=GuidelineForm(request.POST or None)
-    if role_of(request.user)=='manager':
-        form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=request.user.profile.branch_id)
-    if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False); obj.created_by=request.user
-        if role_of(request.user)=='manager' and not obj.branch: obj.branch=request.user.profile.branch
-        obj.save(); messages.success(request,'Ø¯Ø³ØªÙˆØ±Ø§Ù„Ø¹Ù…Ù„ Ù…Ù†ØªØ´Ø± Ø´Ø¯.'); return redirect('guidelines_manage')
-    return render(request,'core/generic_form.html',{'form':form,'title':'Ø¯Ø³ØªÙˆØ±Ø§Ù„Ø¹Ù…Ù„ Ø¬Ø¯ÛŒØ¯','button':'Ø§Ù†ØªØ´Ø§Ø±'})
-
-@manager_required
-def job_duty_create(request):
-    form=JobDutyTemplateForm(request.POST or None)
-    if role_of(request.user)=='manager':
-        form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=request.user.profile.branch_id)
-    if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False); obj.created_by=request.user
-        if role_of(request.user)=='manager' and not obj.branch: obj.branch=request.user.profile.branch
-        obj.save(); messages.success(request,'Ø´Ø±Ø­ ÙˆØ¸Ø§ÛŒÙ Ø«Ø¨Øª Ø´Ø¯.'); return redirect('guidelines_manage')
-    return render(request,'core/generic_form.html',{'form':form,'title':'Ø´Ø±Ø­ ÙˆØ¸Ø§ÛŒÙ Ø¬Ø¯ÛŒØ¯','button':'Ø°Ø®ÛŒØ±Ù‡'})
-
-
-DEVICE_ISSUE_RECIPIENT_USERNAMES=('admin','manager1','sadeghi')
-
-def _device_issue_recipients(issue):
-    qs=User.objects.filter(is_active=True).filter(
-        Q(username__in=DEVICE_ISSUE_RECIPIENT_USERNAMES) |
-        Q(profile__role='admin') |
-        Q(profile__role='internal_manager') |
-        Q(profile__role='manager',profile__branch=issue.branch)
-    ).distinct()
-    return qs
-
-def _can_manage_device_issues(user):
-    return role_of(user) in MANAGEMENT_ROLES or user.username.lower()=='sadeghi'
-
-@login_required
-def device_issue_create(request):
-    form=DeviceIssueForm(request.POST or None)
-    if request.method=='POST' and form.is_valid():
-        issue=form.save(commit=False)
-        issue.reporter=request.user
-        issue.branch=getattr(getattr(request.user,'profile',None),'branch',None)
-        issue.save()
-        title=f'Ø®Ø±Ø§Ø¨ÛŒ Ø¯Ø³ØªÚ¯Ø§Ù‡: {issue.device_name}'
-        reporter_name=request.user.get_full_name() or request.user.username
-        for recipient in _device_issue_recipients(issue):
-            StaffNotification.objects.create(
-                user=recipient,
-                title=title,
-                message=f'{reporter_name} Ø®Ø±Ø§Ø¨ÛŒ Ø¯Ø³ØªÚ¯Ø§Ù‡ Â«{issue.device_name}Â» Ø±Ø§ Ú¯Ø²Ø§Ø±Ø´ Ú©Ø±Ø¯Ù‡ Ø§Ø³Øª. Ù„Ø·ÙØ§Ù‹ Ø¨Ø±Ø±Ø³ÛŒ Ø´ÙˆØ¯.',
-                notification_type='device_issue',
-                related_date=timezone.localdate(),
-            )
-        messages.success(request,'Ú¯Ø²Ø§Ø±Ø´ Ø®Ø±Ø§Ø¨ÛŒ Ø«Ø¨Øª Ø´Ø¯ Ùˆ Ø¨Ø±Ø§ÛŒ Ù…Ø³Ø¦ÙˆÙ„Ø§Ù† Ù…Ø±Ø¨ÙˆØ·Ù‡ Ø§Ø±Ø³Ø§Ù„ Ø´Ø¯.')
-        return redirect('device_issue_mine')
-    return render(request,'core/device_issue_form.html',{'form':form})
-
-@login_required
-def device_issue_mine(request):
-    issues=DeviceIssue.objects.filter(reporter=request.user).select_related('branch','resolved_by')
-    return render(request,'core/device_issue_mine.html',{'issues':issues})
-
-@login_required
-def device_issue_manage(request):
-    if not _can_manage_device_issues(request.user):
-        messages.error(request,'Ø¯Ø³ØªØ±Ø³ÛŒ Ù…Ø¬Ø§Ø² Ù†ÛŒØ³Øª.')
-        return redirect('dashboard')
-    issues=DeviceIssue.objects.select_related('reporter','reporter__profile','branch','resolved_by')
-    if role_of(request.user)=='manager':
-        issues=issues.filter(branch=request.user.profile.branch)
-    status=request.GET.get('status')
-    if status in ('new','reviewing','resolved'):
-        issues=issues.filter(status=status)
-    return render(request,'core/device_issue_manage.html',{'issues':issues,'selected_status':status or ''})
-
-@login_required
-def device_issue_review(request,pk):
-    if not _can_manage_device_issues(request.user):
-        messages.error(request,'Ø¯Ø³ØªØ±Ø³ÛŒ Ù…Ø¬Ø§Ø² Ù†ÛŒØ³Øª.')
-        return redirect('dashboard')
-    issue=get_object_or_404(DeviceIssue,pk=pk)
-    if role_of(request.user)=='manager' and issue.branch_id!=request.user.profile.branch_id:
-        messages.error(request,'Ø¯Ø³ØªØ±Ø³ÛŒ Ù…Ø¬Ø§Ø² Ù†ÛŒØ³Øª.')
-        return redirect('device_issue_manage')
-    old_status=issue.status
-    form=DeviceIssueReviewForm(request.POST or None,instance=issue)
-    if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False)
-        if obj.status=='resolved' and old_status!='resolved':
-            obj.resolved_at=timezone.now()
-            obj.resolved_by=request.user
-        elif obj.status!='resolved':
-            obj.resolved_at=None
-            obj.resolved_by=None
-        obj.save()
-        if obj.reporter_id:
-            StaffNotification.objects.create(
-                user=obj.reporter,
-                title=f'Ù¾ÛŒÚ¯ÛŒØ±ÛŒ Ø®Ø±Ø§Ø¨ÛŒ: {obj.device_name}',
-                message=f'ÙˆØ¶Ø¹ÛŒØª Ú¯Ø²Ø§Ø±Ø´ Ø®Ø±Ø§Ø¨ÛŒ Ø´Ù…Ø§ Ø¨Ù‡ Â«{obj.get_status_display()}Â» ØªØºÛŒÛŒØ± Ú©Ø±Ø¯.'
-                        + (f' ØªÙˆØ¶ÛŒØ­: {obj.manager_note}' if obj.manager_note else ''),
-                notification_type='device_issue',
-                related_date=timezone.localdate(),
-            )
-        messages.success(request,'ÙˆØ¶Ø¹ÛŒØª Ø®Ø±Ø§Ø¨ÛŒ Ø¨Ø±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ø´Ø¯.')
-        return redirect('device_issue_manage')
-    return render(request,'core/device_issue_review.html',{'form':form,'issue':issue})
-
-
-@manager_required
-def action_center(request):
-    role=role_of(request.user)
-    profile=getattr(request.user,'profile',None)
-    day=timezone.localdate()
-
-    # Operational alerts belong to employee accounts. Manager/admin accounts
-    # must not appear as absent or missing-report staff in their own queue.
-    users=User.objects.filter(
-        profile__is_active=True,
-        profile__role__in=PERSONNEL_ROLES,
-    ).select_related('profile','profile__branch')
-    if role=='manager':
-        users=users.filter(profile__branch=getattr(profile,'branch',None))
-    user_ids=list(users.values_list('id',flat=True))
-
-    items=[]
-
-    def add_item(kind,priority,title,subtitle,user=None,url='#',created_at=None,icon='â€¢',meta=None):
-        rank={'critical':0,'high':1,'medium':2,'low':3}.get(priority,4)
-        dt=created_at or timezone.now()
-        if not hasattr(dt,'timestamp'):
-            dt=timezone.now()
-        items.append({
-            'kind':kind,'priority':priority,'rank':rank,
-            'title':title,'subtitle':subtitle,'user':user,
-            'url':url,'created_at':dt,'icon':icon,'meta':meta or {},
-        })
-
-    # Pending leave requests
-    for x in LeaveRequest.objects.filter(user_id__in=user_ids,status='pending').select_related('user','user__profile','user__profile__branch'):
-        add_item(
-            'leave','medium','Ø¯Ø±Ø®ÙˆØ§Ø³Øª Ù…Ø±Ø®ØµÛŒ/Ù…Ø§Ù…ÙˆØ±ÛŒØª',
-            f'{x.get_request_type_display()} Â· {format_jalali(x.start_date)} ØªØ§ {format_jalali(x.end_date)}',
-            x.user,f'/requests/{x.pk}/review/',x.created_at,'â—«'
-        )
-
-    # Pending attendance corrections
-    for x in AttendanceCorrectionRequest.objects.filter(user_id__in=user_ids,status='pending').select_related('user','user__profile'):
-        add_item(
-            'correction','high','Ø¯Ø±Ø®ÙˆØ§Ø³Øª Ø§ØµÙ„Ø§Ø­ Ø­Ø¶ÙˆØ±',
-            f'{format_jalali(x.date)} Â· {(x.reason or "")[:90]}',
-            x.user,f'/attendance/corrections/{x.pk}/review/',x.created_at,'â—·'
-        )
-
-    # Open device issues
-    for x in DeviceIssue.objects.filter(reporter_id__in=user_ids).exclude(status='resolved').select_related('reporter','branch'):
-        add_item(
-            'device','high' if x.status=='new' else 'medium',
-            f'Ø®Ø±Ø§Ø¨ÛŒ Ø¯Ø³ØªÚ¯Ø§Ù‡: {x.device_name}',
-            (x.description or '')[:110],
-            x.reporter,f'/device-issues/{x.pk}/review/',x.created_at,'âš’',
-            {'status':x.get_status_display()}
-        )
-
-    # Overdue tasks
-    overdue_qs=Task.objects.filter(
-        assigned_to_id__in=user_ids,
-        status__in=('todo','doing'),
-        due_date__lt=day
-    ).select_related('assigned_to','assigned_to__profile')
-    for x in overdue_qs:
-        days=(day-x.due_date).days if x.due_date else 0
-        add_item(
-            'task','high' if days>=3 else 'medium',
-            'ÙˆØ¸ÛŒÙÙ‡ Ø¹Ù‚Ø¨â€ŒØ§ÙØªØ§Ø¯Ù‡',
-            f'{x.title} Â· {days} Ø±ÙˆØ² ØªØ£Ø®ÛŒØ±',
-            x.assigned_to,
-            f'/employees/{x.assigned_to.profile.pk}/360/' if hasattr(x.assigned_to,'profile') else '/tasks/',
-            timezone.now(),'âœ“',{'days':days}
-        )
-
-    # Attendance exceptions today
-    recs={r.user_id:r for r in Attendance.objects.filter(user_id__in=user_ids,date=day).select_related('user')}
-    approved_leave_ids=set(LeaveRequest.objects.filter(
-        user_id__in=user_ids,status='approved',start_date__lte=day,end_date__gte=day
-    ).values_list('user_id',flat=True))
-
-    for u in users:
-        if u.id in approved_leave_ids:
-            continue
-        rec=recs.get(u.id)
-        try:
-            shift=shift_rule(u,day) or {}
-        except Exception:
-            shift={}
-
-        if shift.get('is_off'):
-            continue
-
-        if rec and rec.check_in:
-            current_status=attendance_status_for(u,day,rec.check_in)
-            if current_status=='late':
-                late_mins=0
-                if shift.get('start'):
-                    expected=timezone.make_aware(datetime.combine(day,shift['start']),timezone.get_current_timezone())
-                    late_mins=max(0,int((rec.check_in-expected).total_seconds()//60))
-                add_item(
-                    'late','medium','ØªØ£Ø®ÛŒØ± Ø§Ù…Ø±ÙˆØ²',
-                    f'ÙˆØ±ÙˆØ¯ {timezone.localtime(rec.check_in).strftime("%H:%M")}'
-                    + (f' Â· {late_mins} Ø¯Ù‚ÛŒÙ‚Ù‡ Ø¯ÛŒØ±ØªØ±' if late_mins else ''),
-                    u,f'/employees/{u.profile.pk}/360/',rec.check_in,'â—·',
-                    {'late_minutes':late_mins}
-                )
-        else:
-            is_due=True
-            if shift.get('start'):
-                due_dt=timezone.make_aware(datetime.combine(day,shift['start']),timezone.get_current_timezone())
-                is_due=timezone.now() > due_dt + timedelta(minutes=int(shift.get('grace') or 0))
-            if is_due:
-                add_item(
-                    'missing_attendance','critical','ÙˆØ±ÙˆØ¯ Ø§Ù…Ø±ÙˆØ² Ø«Ø¨Øª Ù†Ø´Ø¯Ù‡',
-                    'Ø§Ø² Ø²Ù…Ø§Ù† Ø´Ø±ÙˆØ¹ Ø´ÛŒÙØª Ú¯Ø°Ø´ØªÙ‡ Ùˆ ÙˆØ±ÙˆØ¯ Ø«Ø¨Øª Ù†Ø´Ø¯Ù‡ Ø§Ø³Øª.',
-                    u,f'/employees/{u.profile.pk}/360/',timezone.now(),'!'
-                )
-
-    # Missing report from yesterday, computed directly from DailyReport to avoid helper coupling.
-    yesterday=day-timedelta(days=1)
-    submitted_ids=set(DailyReport.objects.filter(
-        user_id__in=user_ids,
-        created_at__date=yesterday
-    ).values_list('user_id',flat=True))
-    for u in users:
-        # Only create the alert when the user had an expected workday.
-        try:
-            shift=shift_rule(u,yesterday) or {}
-            should_report=bool(shift) and not shift.get('is_off',False)
-        except Exception:
-            should_report=True
-        if should_report and u.id not in submitted_ids:
-            add_item(
-                'report','medium','Ú¯Ø²Ø§Ø±Ø´ Ø±ÙˆØ²Ø§Ù†Ù‡ Ø§Ø±Ø³Ø§Ù„ Ù†Ø´Ø¯Ù‡',
-                f'Ú¯Ø²Ø§Ø±Ø´ {format_jalali(yesterday)} Ø«Ø¨Øª Ù†Ø´Ø¯Ù‡ Ø§Ø³Øª.',
-                u,f'/employees/{u.profile.pk}/360/',timezone.now(),'â–¤'
-            )
-
-    items.sort(key=lambda x:(x['rank'],-x['created_at'].timestamp()))
-    counts={
-        'all':len(items),
-        'critical':sum(1 for x in items if x['priority']=='critical'),
-        'high':sum(1 for x in items if x['priority']=='high'),
-        'medium':sum(1 for x in items if x['priority']=='medium'),
-        'people':len({x['user'].id for x in items if x.get('user')}),
-    }
-
-    priority_filter=request.GET.get('priority','')
-    kind_filter=request.GET.get('kind','')
-    filtered=items
-    if priority_filter in ('critical','high','medium','low'):
-        filtered=[x for x in filtered if x['priority']==priority_filter]
-    if kind_filter:
-        filtered=[x for x in filtered if x['kind']==kind_filter]
-
-    return render(request,'core/action_center.html',{
-        'items':filtered[:200],
-        'counts':counts,
-        'priority_filter':priority_filter,
-        'kind_filter':kind_filter,
-        'today':day,
-    })
-
-
-@executive_required
-def executive_workspace(request):
-    """Private application-level command center for the configured executive account.
-
-    It deliberately reuses the normal Task model, so delegated items instantly appear
-    in the assignee's existing Staff task cartable. This is UI/application isolation,
-    not encryption against server/database administrators.
-    """
-    today=timezone.localdate()
-
-    def audit_exec(action,task,metadata=None):
-        try:
-            AuditLog.objects.create(
-                actor=request.user,
-                action=f'executive_{action}',
-                path=request.path[:255],
-                method=request.method[:10],
-                object_type='Task',
-                object_id=str(task.pk),
-                summary=task.title[:250],
-                metadata=metadata or {},
-                ip_address=_request_ip(request),
-            )
-        except Exception:
-            pass
-
-    active_people=User.objects.filter(
-        is_active=True,
-        profile__is_active=True,
-    ).select_related('profile','profile__branch').order_by('first_name','last_name','username')
-
-    if request.method=='POST':
-        action=(request.POST.get('action') or '').strip()
-
-        if action=='create':
-            title=(request.POST.get('title') or '').strip()
-            description=(request.POST.get('description') or '').strip()
-            priority=(request.POST.get('priority') or 'normal').strip()
-            if priority not in {'low','normal','high'}:
-                priority='normal'
-            bucket=(request.POST.get('bucket') or 'inbox').strip()
-            due_date=None
-            due_raw=(request.POST.get('due_date') or '').strip()
-            if due_raw:
-                try:
-                    due_date=parse_jalali(due_raw)
-                except Exception:
-                    messages.error(request,'ØªØ§Ø±ÛŒØ® Ù…Ù‡Ù„Øª Ù…Ø¹ØªØ¨Ø± Ù†ÛŒØ³Øª. Ù†Ù…ÙˆÙ†Ù‡: Û±Û´Û°Ûµ/Û°Û¶/Û±Û³')
-                    return redirect('executive_workspace')
-            elif bucket=='today':
-                due_date=today
-
-            assigned_to=request.user
-            assigned_raw=(request.POST.get('assigned_to') or '').strip()
-            if assigned_raw and assigned_raw!='self':
-                assigned_to=get_object_or_404(active_people,pk=assigned_raw)
-
-            if not title:
-                messages.error(request,'Ø¹Ù†ÙˆØ§Ù† Ú©Ø§Ø± Ø±Ø§ Ø¨Ù†ÙˆÛŒØ³ÛŒØ¯.')
-                return redirect('executive_workspace')
-
-            task=Task.objects.create(
-                title=title,
-                description=description,
-                assigned_to=assigned_to,
-                created_by=request.user,
-                due_date=due_date,
-                priority=priority,
-            )
-            audit_exec('create',task,{'assigned_to':assigned_to.username,'due_date':str(due_date or '')})
-            if assigned_to.pk!=request.user.pk:
-                StaffNotification.objects.create(
-                    user=assigned_to,
-                    title='ÙˆØ¸ÛŒÙÙ‡ Ø¬Ø¯ÛŒØ¯ Ø§Ø² Ø¯ÙØªØ± Ø¯Ú©ØªØ±',
-                    message=title[:240],
-                    notification_type='task',
-                    related_date=due_date or today,
-                )
-                messages.success(request,f'Ú©Ø§Ø± Ø¨Ù‡ {assigned_to.get_full_name() or assigned_to.username} ÙˆØ§Ú¯Ø°Ø§Ø± Ø´Ø¯.')
-            else:
-                messages.success(request,'Ú©Ø§Ø± Ø¨Ù‡ Ø¯ÙØªØ± Ù…Ù† Ø§Ø¶Ø§ÙÙ‡ Ø´Ø¯.')
-            return redirect('executive_workspace')
-
-        if action=='delegate':
-            task=get_object_or_404(Task,pk=request.POST.get('task_id'),created_by=request.user)
-            assignee=get_object_or_404(active_people,pk=request.POST.get('assigned_to'))
-            task.assigned_to=assignee
-            if task.status=='done':
-                task.status='todo'
-            task.save(update_fields=['assigned_to','status','updated_at'])
-            audit_exec('delegate',task,{'assigned_to':assignee.username})
-            StaffNotification.objects.create(
-                user=assignee,
-                title='ÙˆØ¸ÛŒÙÙ‡ Ø¬Ø¯ÛŒØ¯ Ø§Ø² Ø¯ÙØªØ± Ø¯Ú©ØªØ±',
-                message=task.title[:240],
-                notification_type='task',
-                related_date=task.due_date or today,
-            )
-            messages.success(request,f'Â«{task.title}Â» Ø¨Ù‡ {assignee.get_full_name() or assignee.username} ÙˆØ§Ú¯Ø°Ø§Ø± Ø´Ø¯.')
-            return redirect('executive_workspace')
-
-        if action=='reclaim':
-            task=get_object_or_404(Task,pk=request.POST.get('task_id'),created_by=request.user)
-            task.assigned_to=request.user
-            if task.status=='done':
-                task.status='todo'
-            task.save(update_fields=['assigned_to','status','updated_at'])
-            audit_exec('reclaim',task)
-            messages.success(request,'Ú©Ø§Ø± Ø¨Ù‡ Ø¯ÙØªØ± Ù…Ù† Ø¨Ø±Ú¯Ø´Øª.')
-            return redirect('executive_workspace')
-
-        if action=='done':
-            task=get_object_or_404(Task,pk=request.POST.get('task_id'),created_by=request.user,assigned_to=request.user)
-            task.status='done'
-            task.save(update_fields=['status','updated_at'])
-            audit_exec('done',task)
-            award_task(task)
-            messages.success(request,'Ø§Ù†Ø¬Ø§Ù… Ø´Ø¯ âœ“')
-            return redirect('executive_workspace')
-
-    own_open=list(Task.objects.filter(
-        created_by=request.user,
-        assigned_to=request.user,
-        status__in=('todo','doing'),
-    ).order_by('due_date','-priority','-updated_at'))
-    delegated=list(Task.objects.filter(
-        created_by=request.user,
-        status__in=('todo','doing'),
-    ).exclude(assigned_to=request.user).select_related('assigned_to','assigned_to__profile').order_by('due_date','-priority','-updated_at'))
-
-    today_tasks=[t for t in own_open if t.due_date and t.due_date<=today]
-    inbox_tasks=[t for t in own_open if not t.due_date]
-    later_tasks=[t for t in own_open if t.due_date and t.due_date>today]
-
-    def task_rank(t):
-        return ({'high':0,'normal':1,'low':2}.get(t.priority,1), t.due_date or date.max, -int(t.updated_at.timestamp()))
-
-    candidates=sorted(today_tasks+inbox_tasks,key=task_rank)
-    the_thing=candidates[0] if candidates else (sorted(later_tasks,key=task_rank)[0] if later_tasks else None)
-    would_be_nice=[t for t in candidates if not the_thing or t.pk!=the_thing.pk][:2]
-    on_fire=sorted(later_tasks,key=task_rank)[:3]
-
-    delegated_overdue=sum(1 for t in delegated if t.due_date and t.due_date<today)
-    done_today=Task.objects.filter(
-        created_by=request.user,
-        status='done',
-        updated_at__date=today,
-    ).count()
-
-    return render(request,'core/executive_workspace.html',{
-        'today':today,
-        'the_thing':the_thing,
-        'would_be_nice':would_be_nice,
-        'on_fire':on_fire,
-        'today_tasks':today_tasks,
-        'inbox_tasks':inbox_tasks,
-        'later_tasks':later_tasks,
-        'delegated':delegated,
-        'delegated_overdue':delegated_overdue,
-        'done_today':done_today,
-        'assignees':active_people.exclude(pk=request.user.pk),
-    })
-
-@login_required
-def service_worker(request):
-    response=HttpResponse("const CACHE='greenlife-staff-v41.0';\nconst STATIC=[\n  '/static/core/app.css?v=v41.0.0',\n  '/static/core/referral.css?v=v40.2',\n  '/static/core/icon-192.png?v=v40.2',\n  '/static/core/icon-512.png?v=v40.2',\n  '/static/core/manifest.webmanifest?v=v40.2'\n];\nself.addEventListener('install',e=>{\n  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC).catch(()=>{})));\n  self.skipWaiting();\n});\nself.addEventListener('activate',e=>{\n  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));\n  self.clients.claim();\n});\nself.addEventListener('fetch',e=>{\n  if(e.request.method!=='GET') return;\n  const url=new URL(e.request.url);\n  if(url.origin!==location.origin) return;\n  // Network-first for dynamic authenticated pages so stale staff data is not shown.\n  if(url.pathname.startsWith('/static/')){\n    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{\n      const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return resp;\n    })));\n    return;\n  }\n  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));\n});\n", content_type='application/javascript')
-    response['Cache-Control']='no-cache, no-store, must-revalidate'
-    return response
+YªçŠx-®éÜj×¢ëiºÚ+Š§j[h‘éÜ¢éíçouá:-jZ.¶›­–)Ş³V–×÷'BÖF€¦–×÷'BWV–@¦g&öÒFFWF–ÖR–×÷'BFFRÂFFWF–ÖRÂF–ÖVFVÇF¦g&öÒF¦ævòæ‡GG–×÷'B§6öå&W7öç6P¦g&öÒF¦ævòæ6öæb–×÷'B6WGF–æw0¦g&öÒF¦ævòæ6÷&RæW†6WF–öç2–×÷'BW&Ö—76–öäFVæ–V@¦g&öÒgVæ7FööÇ2–×÷'Bw&0¦g&öÒF¦ævòæ6öçG&–"–×÷'BÖW76vW0¦g&öÒF¦ævòæ6öçG&–"æWF‚–×÷'BWF†VçF–6FRÂÆöv–âÂÆöv÷W@¦g&öÒF¦ævòæ6öçG&–"æWF‚æFV6÷&F÷'2–×÷'BÆöv–å÷&WV—&V@¦g&öÒF¦ævòæ6öçG&–"æWF‚æÖöFVÇ2–×÷'BW6W ¦g&öÒF¦ævòç6†÷'F7WG2–×÷'BvWEöö&¦V7Eö÷%óCBÂ&VF—&V7BÂ&VæFW ¦g&öÒF¦ævòæF"–×÷'B–çFVw&—G”W'&÷"ÂG&ç67F–öà¦g&öÒF¦ævòæF"æÖöFVÇ2–×÷'B6÷VçBÂÂ7VĞ¦g&öÒF¦ævòçWF–Ç2–×÷'BF–ÖW¦öæP¦g&öÒæf÷&×2–×÷'B&W÷'Df÷&ÒÂF6µ7FGW4f÷&ÒÂF6´f÷&ÒÂÆVfU&WVW7Df÷&ÒÂÆVfU&Wf–Wtf÷&ÒÂææ÷Væ6VÖVçDf÷&ÒÂ&Æ6¶&ö&DÖW76vTf÷&ÒÂV×Æ÷–VT7&VFTf÷&ÒÂV×Æ÷–VTVF—Df÷&ÒÂGFVæFæ6TÖçVÄf÷&ÒÂµ•&V6÷&Df÷&ÒÂ66÷&TWfVçDf÷&ÒÂv÷&µ6†–gDf÷&ÒÂ6†–gD76–væÖVçDf÷&ÒÂGFVæFæ6T6÷'&V7F–öäf÷&ÒÂGFVæFæ6T6÷'&V7F–öå&Wf–Wtf÷&ÒÂV×Æ÷–VTfF$f÷&ÒÂV×Æ÷–VTFö7VÖVçDf÷&ÒÂ6†V6¶Æ—7EFV×ÆFTf÷&ÒÂ6†V6¶Æ—7D—FVÔf÷&ÒÂW'6öææVÄ7F–öäf÷&ÒÂW&f÷&Öæ6TvöÄf÷&ÒÂ–çFW&æÅ&WVW7Df÷&ÒÂÖævVÖVçDWfVçDf÷&ÒÂÖævW%&W÷'D6öÖÖVçDf÷&ÒÂ¦ö$GWG•FV×ÆFTf÷&ÒÂwV–FVÆ–æTf÷&ÒÂFWf–6T—77VTf÷&ÒÂFWf–6T—77VU&Wf–Wtf÷&ÒÂ6öç7VÇFçDf–ææ6TVçG'”f÷&ÒÂ7FfdÆöv–äf÷&ÒÂ7Ffd7&VFVçF–ÅWFFTf÷&Ğ¦g&öÒæÖöFVÇ2–×÷'Bææ÷Væ6VÖVçBÂ&Æ6¶&ö&DÖW76vRÂF–Ç•&W÷'BÂF6²ÂÆVfU&WVW7BÂ4õFö7VÖVçBÂV×Æ÷–VU&öf–ÆRÂGFVæFæ6RÂµ•&V6÷&BÂ66÷&TWfVçBÂv÷&µ6†–gBÂ6†–gD76–væÖVçBÂ'&æ6‚Â'&æ6…v÷&µ66†VGVÆRÂV×Æ÷–VUv÷&µ66†VGVÆRÂGFVæFæ6T6÷'&V7F–öå&WVW7BÂ7Ffdæ÷F–f–6F–öâÂV×Æ÷–VTFö7VÖVçBÂ6†V6¶Æ—7EFV×ÆFRÂ6†V6¶Æ—7D—FVÒÂ6†V6¶Æ—7D6ö×ÆWF–öâÂW'6öææVÄ7F–öâÂW&f÷&Öæ6TvöÂÂ–çFW&æÅ&WVW7BÂVF—DÆörÂÖævVÖVçDWfVçBÂ4Tõ66÷&U6æ6†÷BÂ¦ö$GWG•FV×ÆFRÂwV–FVÆ–æRÂwV–FVÆ–æT6¶æ÷vÆVFvVÖVçBÂFWf–6T—77VRÂf–ææ6–ÅG&ç67F–öâÂÖVWF–æt7F–öåWFFRÂ7Ffd7&VFVçF–ÂÂf—6—Dö–çFÖVç@¦g&öÒæ’–×÷'BæÇ—¦Uöf–ææ6U÷&V6V—BÂ&ö6W75÷&W÷'@¦g&öÒæ¦ÆÆ’–×÷'Bf÷&ÖEö¦ÆÆ’Âw&Vv÷&–å÷Fõö¦ÆÆ’Â¦ÆÆ•÷Fõöw&Vv÷&–âÂ'6Uö¦ÆÆ¦g&öÒç&W÷'F–ær–×÷'BF•÷7VÖÖ'’ÂÆVFW&&ö&BÂç7vW%÷VW'¦g&öÒæ÷W&F–öç2–×÷'B6†–gE÷'VÆRÂGFVæFæ6U÷7FGW5öf÷"Â÷fW'F–ÖUöÖ–çWFW2Âv&E÷&W÷'BÂv&E÷F6²ÂÖ—76–æu÷&W÷'EöF—2ÂWFõö·’Â&÷fUö6÷'&V7F–öâÂ&W÷'E÷&WV—&VBÂ&W÷'EöW†—7G0¦g&öÒç6Ö'EöÆW'G2–×÷'BvVæW&FU÷6Ö'EöÆW'G0¦g&öÒæW†V7WF—fUöVæv–æR–×÷'B6Võ÷66÷&RÂG&VæEöÆW'G2Â6ÆVæF%öWfVçG0¦g&öÒæ7&VFVçF–Å÷6V7W&—G’–×÷'B€¢6†ævUöFW6·F÷÷77v÷&BÂ6†ævUöÖö&–ÆU÷–âÂFV7'—E÷6V7&WBÀ¢&V6÷&EöFW6·F÷öÆöv–âÂ&V6÷&EöÖö&–ÆUöÆöv–âÂ&VÖVÖ&W%öFW6·F÷÷77v÷&BÀ¢fW&–g•öÖö&–ÆU÷–âÀ¢ ¦FVb&öÆUööb‡W6W"“¢&WGW&âvWFGG"†vWFGG"‡W6W"Âw&öf–ÆRrÄæöæR’Âw&öÆRrÂvV×Æ÷–VRr ¤ÔätTÔTåEõ$ôÄU3Ò‚vFÖ–ârÂv–çFW&æÅöÖævW"rÂvÖævW"r¤d”ää4Uõ$ôÄU3Ò‚vFÖ–ârÂvÖævW"r¥U%4ôääTÅõ$ôÄU3Ò‚vV×Æ÷–VRrÂv6ÆÅö6VçFW"rÂv6öç7VÇFçBrÂw&V6WF–öæ—7Br  ¦FVbö—5öÖö&–ÆU÷&WVW7B‡&WVW7B“ ¢""$¶VWF†RW7F&Æ—6†VBF&²W'6öææVÂW‡W&–Væ6Röâ†öæW2â"" ¢–b‡&WVW7BäÔUDævWB‚t…EEõ4T5ô4…õTôÔô$”ÄRr’÷"rr’ç7G&—‚’ÓÒsós ¢&WGW&âG'VP¢VÒ‡&WVW7BäÔUDævWB‚t…EEõU4U%ôtTåBr’÷"rr’æÆ÷vW"‚¢Öö&–ÆU÷Fö¶Vç3Ò‚v—†öæRrÂv—öBrÂvÖö&–ÆRrÂwv–æF÷w2†öæRrÂv÷W&Ö–æ’r¢&WGW&âç’‡Fö¶Vâ–âVf÷"Fö¶Vâ–âÖö&–ÆU÷Fö¶Vç2  ¦FVbö—5öW†V7WF—fU÷W6W"‡W6W"“ ¢&WGW&â&ööÂ€¢vWFGG"‡W6W"Âv—5öWF†VçF–6FVBrÄfÇ6R¢æB†vWFGG"‡W6W"ÂwW6W&æÖRrÂrr’÷"rr’æÆ÷vW"‚’–â6WGF–æw2äU„T5UD•dUõU4U$äÔU0¢  ¦FVbW†V7WF—fU÷&WV—&VB‡f–Wr“ ¢w&2‡f–Wr¢Æöv–å÷&WV—&V@¢FVbw&W"‡&WVW7BÂ¦&w2Â¢¦·v&w2“ ¢–bæ÷Bö—5öW†V7WF—fU÷W6W"‡&WVW7BçW6W"“ ¢&—6RW&Ö—76–öäFVæ–VB‚tW†V7WF—fRv÷&·76R66W72FVæ–VBâr¢&WGW&âf–Wr‡&WVW7BÂ¦&w2Â¢¦·v&w2¢&WGW&âw&W   ¦FVb7&VFVçF–ÅöFÖ–å÷&WV—&VB‡f–Wr“ ¢w&2‡f–Wr¢Æöv–å÷&WV—&V@¢FVbw&W"‡&WVW7BÂ¦&w2Â¢¦·v&w2“ ¢–bæ÷B‡&WVW7BçW6W"æ—5÷7WW'W6W"÷"ö—5öW†V7WF—fU÷W6W"‡&WVW7BçW6W"’“ ¢&—6RW&Ö—76–öäFVæ–VB‚t7&VFVçF–ÂFÖ–æ—7G&F–öâ66W72FVæ–VBâr¢&WGW&âf–Wr‡&WVW7BÂ¦&w2Â¢¦·v&w2¢&WGW&âw&W  ¦FVb÷&WVW7Eö—‡&WVW7B“ ¢f÷'v&FVC×&WVW7BäÔUDævWB‚t…EEõ…ôdõ%t$DTEôdõ"rÂrr¢–bf÷'v&FVC ¢&WGW&âf÷'v&FVBç7Æ—B‚rÂr•³Òç7G&—‚¢&WGW&â&WVW7BäÔUDævWB‚u$TÔõDUôDE"r’÷"æöæP ¦FVböGFVæFæ6UöVF—B‡&WVW7BÂ7F–öâÂ7VÖÖ'“ÒrrÂÖWFFFÔæöæRÂö&£ÔæöæR“ ¢""$&W7BÖVff÷'BVF—BÆövv–æs²æWfW"&Æö6·2GFVæFæ6R–bÆövv–ær—G6VÆbf–Ç2â"" ¢G'“ ¢VF—DÆöræö&¦V7G2æ7&VFR€¢7F÷#×&WVW7BçW6W"–bvWFGG"‡&WVW7BÂwW6W"rÄæöæR’æB&WVW7BçW6W"æ—5öWF†VçF–6FVBVÇ6RæöæRÀ¢7F–öãÖ7F–öâÀ¢Fƒ×&WVW7BçF…³£#SUÒÀ¢ÖWF†öC×&WVW7BæÖWF†öE³£ÒÀ¢ö&¦V7E÷G—SÒtGFVæFæ6RrÀ¢ö&¦V7Eö–C×7G"†vWFGG"†ö&¢Âw²rÂrr’÷"rr’À¢7VÖÖ'“Ò‡7VÖÖ'’÷"rr•³£#SÒÀ¢ÖWFFFÖÖWFFF÷"·ÒÀ¢—öFG&W73Õ÷&WVW7Eö—‡&WVW7B’À¢¢W†6WBW†6WF–öã ¢70  ¥õTä”4ôDUôU44U2Ò°¢"uÇS#2s¢~(ÂrÂ"uÇS#bs¢~(òrÂ"uÇS#Rs¢~(ârÂ"uÆâs¢uÆârÂ"uÇBs¢uÇBp§Ğ¦FVbæ÷&ÖÆ—¦Uö•÷FW‡B‡fÇVR“ ¢–bæ÷B—6–ç7Fæ6R‡fÇVRÇ7G"“¢&WGW&âfÇVP¢÷WC×fÇVP¢f÷"&rÇ&VÂ–âõTä”4ôDUôU44U2æ—FV×2‚“ ¢÷WCÖ÷WBç&WÆ6R‡&rÇ&VÂ¢&WGW&â÷W@ ¦FVbÖævW%÷&WV—&VB‡f–Wr“ ¢w&2‡f–Wr¢Æöv–å÷&WV—&V@¢FVbw&W"‡&WVW7BÂ¦&w2Â¢¦·v&w2“ ¢–b&öÆUööb‡&WVW7BçW6W"’æ÷B–âÔätTÔTåEõ$ôÄU3 ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}Šı‹=Š­‹‹=¸Â˜]ŠÍŠ}‹"˜m¸Í‹=Š¢âr¢&WGW&â&VF—&V7B‚vF6†&ö&Br¢&WGW&âf–Wr‡&WVW7BÂ¦&w2Â¢¦·v&w2¢&WGW&âw&W  ¦FVb7FæF&EöÖævW%÷&WV—&VB‡f–Wr“ ¢w&2‡f–Wr¢Æöv–å÷&WV—&V@¢FVbw&W"‡&WVW7BÂ¦&w2Â¢¦·v&w2“ ¢–b&öÆUööb‡&WVW7BçW6W"’æ÷B–â‚vFÖ–ârÂvÖævW"r“ ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}Š}¸Í˜bŠŠí‹BŠ‹Š}¸Â˜]Šı¸Í‹ŠıŠ}Ší˜M¸Â˜‹Š}˜B˜m¸Í‹=Š¢âr¢&WGW&â&VF—&V7B‚vF6†&ö&Br¢&WGW&âf–Wr‡&WVW7BÂ¦&w2Â¢¦·v&w2¢&WGW&âw&W  ¦FVbf–ææ6U÷&WV—&VB‡f–Wr“ ¢w&2‡f–Wr¢Æöv–å÷&WV—&V@¢FVbw&W"‡&WVW7BÂ¦&w2Â¢¦·v&w2“ ¢–b&öÆUööb‡&WVW7BçW6W"’æ÷B–âd”ää4Uõ$ôÄU3 ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}ŠŠí‹B˜]Š}˜M¸ÂŠ‹Š}¸Â˜m˜-‹B˜]Šı¸Í‹ŠıŠ}Ší˜M¸Â˜‹Š}˜B˜m¸Í‹=Š¢âr¢&WGW&â&VF—&V7B‚vF6†&ö&Br¢&WGW&âf–Wr‡&WVW7BÂ¦&w2Â¢¦·v&w2¢&WGW&âw&W  ¦FVbf–ææ6UöVçG'•÷&WV—&VB‡f–Wr“ ¢w&2‡f–Wr¢Æöv–å÷&WV—&V@¢FVbw&W"‡&WVW7BÂ¦&w2Â¢¦·v&w2“ ¢–b&öÆUööb‡&WVW7BçW6W"’æ÷B–â‚v6öç7VÇFçBrÂw&V6WF–öæ—7Br“ ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}Š½ŠŠ¢˜]Š}˜M¸Â˜˜-‹rŠ‹Š}¸Â˜m˜-‹B˜]‹MŠ}˜‹¸ÍŠr˜]˜m‹M¸Â˜‹Š}˜BŠ}‹=Š¢âr¢&WGW&â&VF—&V7B‚vF6†&ö&Br¢–bæ÷BvWFGG"‡&WVW7BçW6W"ç&öf–ÆRÂv'&æ6…ö–BrÄæöæR“ ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}Š‹Š}¸ÂŠ½ŠŠ¢˜]Š}˜M¸ÂŠŠ}¸ÍŠò‹M‹Š˜rªŠ}‹Š‹˜]‹MŠí‹RŠŠ}‹MŠòâr¢&WGW&â&VF—&V7B‚vF6†&ö&Br¢&WGW&âf–Wr‡&WVW7BÂ¦&w2Â¢¦·v&w2¢&WGW&âw&W  ¦FVbÆöv–å÷f–Wr‡&WVW7B“ ¢–b&WVW7BçW6W"æ—5öWF†VçF–6FVC ¢&WGW&â&VF—&V7B‚vF6†&ö&Br ¢Öö&–ÆUöÆöv–ãÕö—5öÖö&–ÆU÷&WVW7B‡&WVW7B¢f÷&ÓÕ7FfdÆöv–äf÷&Ò‡&WVW7Båõ5B÷"æöæRÆÖö&–ÆSÖÖö&–ÆUöÆöv–â¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢&u÷W6W&æÖSÒ†f÷&Òæ6ÆVæVEöFFævWB‚wW6W&æÖRr’÷"rr’ç7G&—‚¢6V7&WCÖf÷&Òæ6ÆVæVEöFFævWB‚w77v÷&Br’÷"rp¢ÖF6†VCÕW6W"æö&¦V7G2æf–ÇFW"‡W6W&æÖUõö–W†7C×&u÷W6W&æÖRÆ—5ö7F—fSÕG'VR’æ÷&FW%ö'’‚v–Br’æf—'7B‚¢W6W#ÔæöæP¢WF…öW'&÷#Ò}˜mŠ}˜RªŠ}‹Š‹¸Â¸ÍŠr‹˜]‹"‹]Šİ¸ÍŠÒ˜m¸Í‹=Š¢âp ¢–bÖF6†VC ¢–bÖö&–ÆUöÆöv–ã ¢fW&–f–VBÇ7FGW3×fW&–g•öÖö&–ÆU÷–â†ÖF6†VBÇ6V7&WB¢–bfW&–f–VB—2G'VS ¢W6W#ÖÖF6†V@¢VÆ–bfW&–f–VB—2æöæS ¢26fR&öÆÆ÷WC¢W6W'2v—F†÷WBÖö&–ÆR”â¶VWW6–ærF†V— ¢2W†—7F–ærFW6·F÷77v÷&BöâÖö&–ÆRVçF–Â”â—276–væVBà¢W6W#ÖWF†VçF–6FR‡&WVW7BÇW6W&æÖSÖÖF6†VBçW6W&æÖRÇ77v÷&C×6V7&WB¢VÆ–b7FGW3ÓÒvÆö6¶VBs ¢WF…öW'&÷#Ò}˜‹˜Šò˜]˜ŠŠ}¸Í˜B˜]˜˜-Š­Š}˜²˜-˜˜B‹MŠı˜rŠ}‹=Š¢âŠı˜rŠı˜-¸Í˜-˜rŠı¸Íªı‹Šı˜ŠŠ}‹˜rŠ}˜]Š­ŠİŠ}˜bª˜m¸ÍŠòâp¢VÇ6S ¢W6W#ÖWF†VçF–6FR‡&WVW7BÇW6W&æÖSÖÖF6†VBçW6W&æÖRÇ77v÷&C×6V7&WB ¢–bW6W# ¢V×Æ÷–VU&öf–ÆRæö&¦V7G2ævWEö÷%ö7&VFR€¢W6W#×W6W"À¢FVfVÇG3×°¢w&öÆRs¢vFÖ–âr–bW6W"æ—5÷7WW'W6W"VÇ6RvV×Æ÷–VRrÀ¢v—5ö7F—fRs§W6W"æ—5ö7F—fRÀ¢ÒÀ¢¢Æöv–â‡&WVW7BÇW6W"Æ&6¶VæCÒvF¦ævòæ6öçG&–"æWF‚æ&6¶VæG2äÖöFVÄ&6¶VæBr¢&WVW7Bç6W76–öå²vÆöv–åöFWf–6RuÓÒvÖö&–ÆRr–bÖö&–ÆUöÆöv–âVÇ6RvFW6·F÷p¢–bÖö&–ÆUöÆöv–ã ¢&V6÷&EöÖö&–ÆUöÆöv–â‡W6W"¢VÇ6S ¢&V6÷&EöFW6·F÷öÆöv–â‡W6W"¢&WGW&â&VF—&V7B‡&WVW7Båõ5BævWB‚væW‡Br’÷"vF6†&ö&Br ¢f÷&ÒæFEöW'&÷"„æöæRÆWF…öW'&÷" ¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RöÆöv–âæ‡FÖÂrÇ°¢vf÷&Òs¦f÷&ÒÀ¢vÖö&–ÆUöÆöv–âs¦Öö&–ÆUöÆöv–âÀ¢væW‡Bs§&WVW7Båõ5BævWB‚væW‡Br’÷"&WVW7BätUBævWB‚væW‡Br’÷"rrÀ¢Ò ¤7&VFVçF–ÅöFÖ–å÷&WV—&V@¦FVb7&VFVçF–Å÷6WGF–æw2‡&WVW7B“ ¢&öf–ÆW3Ò€¢V×Æ÷–VU&öf–ÆRæö&¦V7G2æW†6ÇVFR‡&öÆSÒw&VfW'&W"r¢ç6VÆV7E÷&VÆFVB‚wW6W"rÂv'&æ6‚rÂwW6W%õ÷7Ffeö7&VFVçF–Âr¢æ÷&FW%ö'’‚v'&æ6…õöæÖRrÂwW6W%õöÆ7EöæÖRrÂwW6W%õöf—'7EöæÖRrÂwW6W%õ÷W6W&æÖRr¢¢&÷w3ÕµĞ¢f÷"&öf–ÆR–â&öf–ÆW3 ¢7&VFVçF–ÃÖvWFGG"‡&öf–ÆRçW6W"Âw7Ffeö7&VFVçF–ÂrÄæöæR¢&÷w2æVæB‡°¢w&öf–ÆRs§&öf–ÆRÀ¢v7&VFVçF–Âs¦7&VFVçF–ÂÀ¢vFW6·F÷÷&WfVÆ&ÆRs¦&ööÂ†7&VFVçF–ÂæB7&VFVçF–ÂæFW6·F÷÷77v÷&Eö6—†W"’À¢vÖö&–ÆU÷&WfVÆ&ÆRs¦&ööÂ†7&VFVçF–ÂæB7&VFVçF–ÂæÖö&–ÆU÷–åö6—†W"’À¢Ò¢&W7öç6S×&VæFW"‡&WVW7BÂv6÷&Rö7&VFVçF–Å÷6WGF–æw2æ‡FÖÂrÇ²v7&VFVçF–Å÷&÷w2s§&÷w7Ò¢&W7öç6U²t66†RÔ6öçG&öÂuÓÒvæò×7F÷&RÂ&—fFRp¢&W7öç6U²u&vÖuÓÒvæòÖ66†Rp¢&WGW&â&W7öç6P  ¤7&VFVçF–ÅöFÖ–å÷&WV—&V@¦FVb7&VFVçF–Å÷WFFR‡&WVW7BÇ²“ ¢&öf–ÆSÖvWEöö&¦V7Eö÷%óCB„V×Æ÷–VU&öf–ÆRæö&¦V7G2ç6VÆV7E÷&VÆFVB‚wW6W"rÂv'&æ6‚r’Ç³×²¢–b&WVW7BæÖWF†öBÒuõ5Bs ¢&WGW&â&VF—&V7B‚v7&VFVçF–Å÷6WGF–æw2r¢f÷&ÓÕ7Ffd7&VFVçF–ÅWFFTf÷&Ò‡&WVW7Båõ5B¢–bf÷&Òæ—5÷fÆ–B‚“ ¢FW6·F÷Öf÷&Òæ6ÆVæVEöFFævWB‚vFW6·F÷÷77v÷&Br’÷"rp¢Öö&–ÆSÖf÷&Òæ6ÆVæVEöFFævWB‚vÖö&–ÆU÷–âr’÷"rp¢–bFW6·F÷ ¢6†ævUöFW6·F÷÷77v÷&B‡&öf–ÆRçW6W"ÆFW6·F÷Æ7F÷#×&WVW7BçW6W"¢–bÖö&–ÆS ¢6†ævUöÖö&–ÆU÷–â‡&öf–ÆRçW6W"ÆÖö&–ÆRÆ7F÷#×&WVW7BçW6W"¢VF—DÆöræö&¦V7G2æ7&VFR€¢7F÷#×&WVW7BçW6W"Æ7F–öãÒv7&VFVçF–Å÷WFFRrÇFƒ×&WVW7BçF‚ÆÖWF†öCÒuõ5BrÀ¢ö&¦V7E÷G—SÒuW6W"rÆö&¦V7Eö–C×7G"‡&öf–ÆRçW6W%ö–B’À¢7VÖÖ'“Öbt7&VFVçF–ÂWFFRf÷"·&öf–ÆRçW6W"çW6W&æÖWÒrÀ¢ÖWFFF×²vFW6·F÷ö6†ævVBs¦&ööÂ†FW6·F÷’ÂvÖö&–ÆUö6†ævVBs¦&ööÂ†Öö&–ÆR—ÒÀ¢—öFG&W73Õ÷&WVW7Eö—‡&WVW7B’À¢¢ÖW76vW2ç7V66W72‡&WVW7BÆb}Šı‹=Š­‹‹=¸Î(Í˜}Š}¸Â·&öf–ÆRçW6W"ævWEögVÆÅöæÖR‚’÷"&öf–ÆRçW6W"çW6W&æÖWÒŠ˜~(Í‹˜‹-‹‹=Š}˜m¸Â‹MŠòâr¢VÇ6S ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}‹˜]‹-˜}Šr‹Ší¸Í‹˜r˜m‹MŠı˜mŠó¢r²rræ¦ö–â€¢×6rf÷"f–VÆB–âf÷&ÒæW'&÷'2çfÇVW2‚’f÷"×6r–âf–VÆ@¢’¢&WGW&â&VF—&V7B‚v7&VFVçF–Å÷6WGF–æw2r  ¤7&VFVçF–ÅöFÖ–å÷&WV—&V@¦FVb7&VFVçF–Å÷&WfVÂ‡&WVW7BÇ²Æ¶–æB“ ¢–b&WVW7BæÖWF†öBÒuõ5Bs ¢&WGW&â§6öå&W7öç6R‡²vö²s¤fÇ6RÂvW'&÷"s¢uõ5B&WV—&VBwÒÇ7FGW3ÓCR¢&öf–ÆSÖvWEöö&¦V7Eö÷%óCB„V×Æ÷–VU&öf–ÆRæö&¦V7G2ç6VÆV7E÷&VÆFVB‚wW6W"r’Ç³×²¢7&VFVçF–ÃÖvWFGG"‡&öf–ÆRçW6W"Âw7Ffeö7&VFVçF–ÂrÄæöæR¢6—†W#Òrp¢–b7&VFVçF–Ã ¢–b¶–æCÓÒvFW6·F÷s ¢6—†W#Ö7&VFVçF–ÂæFW6·F÷÷77v÷&Eö6—†W ¢VÆ–b¶–æCÓÒvÖö&–ÆRs ¢6—†W#Ö7&VFVçF–ÂæÖö&–ÆU÷–åö6—†W ¢–b¶–æBæ÷B–â‚vFW6·F÷rÂvÖö&–ÆRr“ ¢&WGW&â§6öå&W7öç6R‡²vö²s¤fÇ6RÂvW'&÷"s¢v–çfÆ–B¶–æBwÒÇ7FGW3ÓC¢6V7&WCÖFV7'—E÷6V7&WB†6—†W"¢–bæ÷B6V7&WC ¢&WGW&â§6öå&W7öç6R‡²vö²s¤fÇ6RÂvW'&÷"s¢}Š}¸Í˜b‹˜]‹"˜}˜m˜‹"Š‹Š}¸Â˜m˜]Š}¸Í‹B‹Ší¸Í‹˜r˜m‹MŠı˜rŠ}‹=Š¢âwÒÇ7FGW3ÓCB¢VF—DÆöræö&¦V7G2æ7&VFR€¢7F÷#×&WVW7BçW6W"Æ7F–öãÒv7&VFVçF–Å÷&WfVÂrÇFƒ×&WVW7BçF‚ÆÖWF†öCÒuõ5BrÀ¢ö&¦V7E÷G—SÒuW6W"rÆö&¦V7Eö–C×7G"‡&öf–ÆRçW6W%ö–B’À¢7VÖÖ'“Öbw¶¶–æGÒ7&VFVçF–Â&WfVÆVBf÷"·&öf–ÆRçW6W"çW6W&æÖWÒrÀ¢ÖWFFF×²v¶–æBs¦¶–æGÒÀ¢—öFG&W73Õ÷&WVW7Eö—‡&WVW7B’À¢¢&W7öç6SÔ§6öå&W7öç6R‡²vö²s¥G'VRÂw6V7&WBs§6V7&WGÒ¢&W7öç6U²t66†RÔ6öçG&öÂuÓÒvæò×7F÷&RÂ&—fFRp¢&W7öç6U²u&vÖuÓÒvæòÖ66†Rp¢&WGW&â&W7öç6P  ¤7&VFVçF–ÅöFÖ–å÷&WV—&V@¦FVb–×W'6öæFU÷7F'B‡&WVW7BÇ²“ ¢–b&WVW7BæÖWF†öBÒuõ5Bs ¢&WGW&â&VF—&V7B‚v7&VFVçF–Å÷6WGF–æw2r¢F&vWE÷&öf–ÆSÖvWEöö&¦V7Eö÷%óCB„V×Æ÷–VU&öf–ÆRæö&¦V7G2ç6VÆV7E÷&VÆFVB‚wW6W"r’Ç³×²Æ—5ö7F—fSÕG'VR¢F&vWC×F&vWE÷&öf–ÆRçW6W ¢–bF&vWBæ—5÷7WW'W6W"÷"F&vWE÷&öf–ÆRç&öÆSÓÒvFÖ–âs ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}Š‹Š}¸ÂŠ}˜]˜m¸ÍŠ­ˆÂ˜‹˜ŠòŠ-‹-˜]Š}¸Í‹M¸ÂŠ˜rŠİ‹=Š}Š‚˜]Šı¸Í‹‹=¸Í‹=Š­˜RŠ}‹"Š}¸Í˜b‹]˜Šİ˜r˜]ŠÍŠ}‹"˜m¸Í‹=Š¢âr¢&WGW&â&VF—&V7B‚v7&VFVçF–Å÷6WGF–æw2r¢÷&–v–æÅö–C×&WVW7BçW6W"ç°¢VF—DÆöræö&¦V7G2æ7&VFR€¢7F÷#×&WVW7BçW6W"Æ7F–öãÒv–×W'6öæF–öå÷7F'BrÇFƒ×&WVW7BçF‚ÆÖWF†öCÒuõ5BrÀ¢ö&¦V7E÷G—SÒuW6W"rÆö&¦V7Eö–C×7G"‡F&vWBç²’À¢7VÖÖ'“Öbuf–Wr2·F&vWBçW6W&æÖWÒrÆÖWFFF×·ÒÀ¢—öFG&W73Õ÷&WVW7Eö—‡&WVW7B’À¢¢Æöv–â‡&WVW7BÇF&vWBÆ&6¶VæCÒvF¦ævòæ6öçG&–"æWF‚æ&6¶VæG2äÖöFVÄ&6¶VæBr¢&WVW7Bç6W76–öå²v–×W'6öæF÷%÷W6W%ö–BuÓÖ÷&–v–æÅö–@¢&WVW7Bç6W76–öå²v–×W'6öæF÷%÷7F'FVEöBuÓ×F–ÖW¦öæRææ÷r‚’æ—6öf÷&ÖB‚¢&WVW7Bç6W76–öå²vÆöv–åöFWf–6RuÓÒvFW6·F÷p¢&WGW&â&VF—&V7B‚vF6†&ö&Br  ¤Æöv–å÷&WV—&V@¦FVb–×W'6öæFU÷&WGW&â‡&WVW7B“ ¢–b&WVW7BæÖWF†öBÒuõ5Bs ¢&WGW&â&VF—&V7B‚vF6†&ö&Br¢÷&–v–æÅö–C×&WVW7Bç6W76–öâævWB‚v–×W'6öæF÷%÷W6W%ö–Br¢–bæ÷B÷&–v–æÅö–C ¢&WGW&â&VF—&V7B‚vF6†&ö&Br¢÷&–v–æÃÕW6W"æö&¦V7G2æf–ÇFW"‡³Ö÷&–v–æÅö–BÆ—5ö7F—fSÕG'VR’æf—'7B‚¢–bæ÷B÷&–v–æÂ÷"æ÷B†÷&–v–æÂæ—5÷7WW'W6W"÷"ö—5öW†V7WF—fU÷W6W"†÷&–v–æÂ’“ ¢Æöv÷WB‡&WVW7B¢&WGW&â&VF—&V7B‚vÆöv–âr¢F&vWEö–C×&WVW7BçW6W"ç°¢VF—DÆöræö&¦V7G2æ7&VFR€¢7F÷#Ö÷&–v–æÂÆ7F–öãÒv–×W'6öæF–öåöVæBrÇFƒ×&WVW7BçF‚ÆÖWF†öCÒuõ5BrÀ¢ö&¦V7E÷G—SÒuW6W"rÆö&¦V7Eö–C×7G"‡F&vWEö–B’À¢7VÖÖ'“Öbu&WGW&æVBg&öÒf–WrÖ2W6W"·F&vWEö–GÒrÆÖWFFF×·ÒÀ¢—öFG&W73Õ÷&WVW7Eö—‡&WVW7B’À¢¢Æöv–â‡&WVW7BÆ÷&–v–æÂÆ&6¶VæCÒvF¦ævòæ6öçG&–"æWF‚æ&6¶VæG2äÖöFVÄ&6¶VæBr¢&WVW7Bç6W76–öâç÷‚v–×W'6öæF÷%÷W6W%ö–BrÄæöæR¢&WVW7Bç6W76–öâç÷‚v–×W'6öæF÷%÷7F'FVEöBrÄæöæR¢&WVW7Bç6W76–öå²vÆöv–åöFWf–6RuÓÒvFW6·F÷p¢&WGW&â&VF—&V7B‚v7&VFVçF–Å÷6WGF–æw2r  ¦FVbÆöv÷WE÷f–Wr‡&WVW7B“¢Æöv÷WB‡&WVW7B“²&WGW&â&VF—&V7B‚vÆöv–âr ¤Æöv–å÷&WV—&V@¦FVbF6†&ö&B‡&WVW7B“ ¢&öÆS×&öÆUööb‡&WVW7BçW6W"¢–bö—5öW†V7WF—fU÷W6W"‡&WVW7BçW6W"“ ¢&WGW&â&VF—&V7B‚vW†V7WF—fU÷v÷&·76Rr¢–b&öÆSÓÒw&VfW'&Å÷7WW'f—6÷"s ¢&WGW&â&VF—&V7B‚w&VfW'&Å÷7WW'f—6÷%öF6†&ö&Br¢–b&öÆSÓÒw&V6WF–öæ—7BræBæ÷Bö—5öÖö&–ÆU÷&WVW7B‡&WVW7B“ ¢&öf–ÆSÖvWFGG"‡&WVW7BçW6W"Âw&öf–ÆRrÄæöæR¢FöF•öÆö6Ã×F–ÖW¦öæRæÆö6ÆFFR‚¢¦ÆÆ•÷–V"Æ¦ÆÆ•öÖöçF‚Æ¦ÆÆ•öF“Öw&Vv÷&–å÷Fõö¦ÆÆ’€¢FöF•öÆö6Âç–V"ÇFöF•öÆö6ÂæÖöçF‚ÇFöF•öÆö6ÂæF¢¢vVV¶F•öæÖW3×³¢}Šı˜‹M˜mŠ˜rrÃ¢}‹=˜~(Í‹M˜mŠ˜rrÃ#¢}¨m˜}Š}‹‹M˜mŠ˜rrÃ3¢}›í˜mŠÍ‹M˜mŠ˜rrÃC¢}ŠÍ˜]‹˜rrÃS¢}‹M˜mŠ˜rrÃc¢}¸Íª‹M˜mŠ˜rwĞ¢¦ÆÆ•öÖöçF…öæÖW3Õ²}˜‹˜‹Šı¸Í˜brÂ}Š}‹Šı¸ÍŠ˜}‹MŠ¢rÂ}Ší‹ŠıŠ}ŠòrÂ}Š­¸Í‹rÂ}˜]‹ŠıŠ}ŠòrÂ}‹M˜}‹¸Í˜‹rÂ}˜]˜}‹rÂ}Š-ŠŠ}˜brÂ}Š-‹‹rÂ}Šı¸ÂrÂ}Š˜}˜]˜brÂ}Š}‹=˜˜mŠòuĞ¢¦ÆÆ•öF6†&ö&EöFFSÖb'·vVV¶F•öæÖW5·FöF•öÆö6ÂçvVV¶F’‚•×Ò¶¦ÆÆ•öF—Ò¶¦ÆÆ•öÖöçF…öæÖW5¶¦ÆÆ•öÖöçF‚Ó×Ò¶¦ÆÆ•÷–V'Ò ¢&V6WF–öæ—7E÷F6·3ÕF6²æö&¦V7G2æf–ÇFW"€¢76–væVE÷Fó×&WVW7BçW6W ¢’æW†6ÇVFR‡7FGW3ÒvFöæRr’æ÷&FW%ö'’‚vGVUöFFRrÂr×&–÷&—G’rÂv–Br•³£UĞ¢&V6WF–öæ—7Eöæ÷F–f–6F–öç3Õ7Ffdæ÷F–f–6F–öâæö&¦V7G2æf–ÇFW"€¢W6W#×&WVW7BçW6W"Æ—5÷&VCÔfÇ6P¢’æ÷&FW%ö'’‚rÖ7&VFVEöBr•³£EĞ¢GFVæFæ6U÷FöF“ÔGFVæFæ6Ræö&¦V7G2æf–ÇFW"€¢W6W#×&WVW7BçW6W"ÆFFS×FöF•öÆö6À¢’æf—'7B‚¢&V6WF–öæ—7Eö'&æ6ƒÖvWFGG"‡&öf–ÆRÂv'&æ6‚rÄæöæR¢–b&V6WF–öæ—7Eö'&æ6ƒ ¢&V6WF–öæ—7Eöö–çFÖVçG3Õf—6—Dö–çFÖVçBæö&¦V7G2æf–ÇFW"€¢'&æ6ƒ×&V6WF–öæ—7Eö'&æ6‚Æö–çFÖVçEöFFS×FöF•öÆö6À¢’æW†6ÇVFR‡7FGW3Òv6æ6VÆÆVBr’æ÷&FW%ö'’‚vö–çFÖVçE÷F–ÖRr¢VÇ6S ¢&V6WF–öæ—7Eöö–çFÖVçG3Õf—6—Dö–çFÖVçBæö&¦V7G2ææöæR‚¢&V6WF–öæ—7Eöö–çFÖVçEö6÷VçC×&V6WF–öæ—7Eöö–çFÖVçG2æ6÷VçB‚¢&V6WF–öæ—7Eö'&—fVEö6÷VçC×&V6WF–öæ—7Eöö–çFÖVçG2æf–ÇFW"€¢7FGW5õö–ãÒ‚v'&—fVBrÂv6ö×ÆWFVBr¢’æ6÷VçB‚¢&V6WF–öæ—7E÷–ÖVçEö6÷VçCÔf–ææ6–ÅG&ç67F–öâæö&¦V7G2æf–ÇFW"€¢6÷W&6SÒvÖçVÂrÇ&V6÷&FVEö'“×&WVW7BçW6W"Æ7&VFVEöEõöFFS×FöF•öÆö6ÂÀ¢’æW†6ÇVFR‡&Wf–Wu÷7FGW3Òv6æ6VÆÆVBr’æ6÷VçB‚¢&WGW&â&VæFW"‡&WVW7BÂv6÷&R÷&V6WF–öæ—7EöF6†&ö&Bæ‡FÖÂrÇ°¢w&öÆRs§&öÆRÀ¢w&öf–ÆRs§&öf–ÆRÀ¢w&V6WF–öæ—7E÷F6·2s§&V6WF–öæ—7E÷F6·2À¢w&V6WF–öæ—7E÷F6µö6÷VçBs¥F6²æö&¦V7G2æf–ÇFW"€¢76–væVE÷Fó×&WVW7BçW6W ¢’æW†6ÇVFR‡7FGW3ÒvFöæRr’æ6÷VçB‚’À¢w&V6WF–öæ—7Eöæ÷F–f–6F–öç2s§&V6WF–öæ—7Eöæ÷F–f–6F–öç2À¢væ÷F–f–6F–öåö6÷VçBs¥7Ffdæ÷F–f–6F–öâæö&¦V7G2æf–ÇFW"€¢W6W#×&WVW7BçW6W"Æ—5÷&VCÔfÇ6P¢’æ6÷VçB‚’À¢vGFVæFæ6U÷FöF’s¦GFVæFæ6U÷FöF’À¢wFöF•÷6†–gBs§6†–gE÷'VÆR‡&WVW7BçW6W"ÇFöF•öÆö6Â’À¢v¦ÆÆ•öF6†&ö&EöFFRs¦¦ÆÆ•öF6†&ö&EöFFRÀ¢w&V6WF–öæ—7Eöö–çFÖVçG2s§&V6WF–öæ—7Eöö–çFÖVçG2À¢w&V6WF–öæ—7Eöö–çFÖVçEö6÷VçBs§&V6WF–öæ—7Eöö–çFÖVçEö6÷VçBÀ¢w&V6WF–öæ—7Eö'&—fVEö6÷VçBs§&V6WF–öæ—7Eö'&—fVEö6÷VçBÀ¢w&V6WF–öæ—7E÷–ÖVçEö6÷VçBs§&V6WF–öæ—7E÷–ÖVçEö6÷VçBÀ¢Ò¢–b&öÆSÓÒv6ÆÅö6VçFW"ræBæ÷Bö—5öÖö&–ÆU÷&WVW7B‡&WVW7B“ ¢&WGW&â&VF—&V7B‚v6ÆÅö6VçFW%öF6†&ö&Br¢–b&öÆSÓÒw&VfW'&W"s ¢&WGW&â&VF—&V7B‚w&VfW'&ÅöF6†&ö&Br¢–b&öÆR–âÔätTÔTåEõ$ôÄU3 ¢&WGW&â&VF—&V7B‚v'&æ6…öÆ—fUöF6†&ö&Br¢W6W%÷F6·3ÕF6²æö&¦V7G2æf–ÇFW"†76–væVE÷Fó×&WVW7BçW6W"¢F6·3×W6W%÷F6·2æ÷&FW%ö'’‚w7FGW2rÂvGVUöFFRr•³£…Ğ¢&öf–ÆSÖvWFGG"‡&WVW7BçW6W"Âw&öf–ÆRrÄæöæR¢ææ÷Væ6VÖVçG3Ôææ÷Væ6VÖVçBæö&¦V7G2æf–ÇFW"†—5ö7F—fSÕG'VR’æf–ÇFW"…†'&æ6…õö—6çVÆÃÕG'VR—Å†'&æ6ƒÖvWFGG"‡&öf–ÆRÂv'&æ6‚rÄæöæR’’’æ÷&FW%ö'’‚rÖ7&VFVEöBr•³£EĞ¢&Æ6¶&ö&E÷3Ô&Æ6¶&ö&DÖW76vRæö&¦V7G2æf–ÇFW"†—5ö7F—fSÕG'VR¢&öf–ÆUö'&æ6ƒÖvWFGG"‡&öf–ÆRÂv'&æ6‚rÄæöæR¢&Æ6¶&ö&CÒ†&Æ6¶&ö&E÷2æf–ÇFW"†'&æ6ƒ×&öf–ÆUö'&æ6‚’æf—'7B‚’–b&öf–ÆUö'&æ6‚VÇ6RæöæR’÷"&Æ6¶&ö&E÷2æf–ÇFW"†'&æ6…õö—6çVÆÃÕG'VR’æf—'7B‚¢6÷VçG3×W6W%÷F6·2çfÇVW2‚w7FGW2r’æææ÷FFR†ãÔ6÷VçB‚v–Br’“²7FG3×·…²w7FGW2uÓ§…²vâuÒf÷"‚–â6÷VçG7Ğ¢VæF–æuöÆVfSÔÆVfU&WVW7Bæö&¦V7G2æf–ÇFW"‡W6W#×&WVW7BçW6W"Ç7FGW3ÒwVæF–ærr’æ6÷VçB‚¢GFVæFæ6U÷FöF“ÔGFVæFæ6Ræö&¦V7G2æf–ÇFW"‡W6W#×&WVW7BçW6W"ÆFFS×F–ÖW¦öæRæÆö6ÆFFR‚’’æf—'7B‚¢FöF•öÆö6Ã×F–ÖW¦öæRæÆö6ÆFFR‚¢¦ÆÆ•÷–V"Æ¦ÆÆ•öÖöçF‚Æ¦ÆÆ•öF“Öw&Vv÷&–å÷Fõö¦ÆÆ’€¢FöF•öÆö6Âç–V"ÇFöF•öÆö6ÂæÖöçF‚ÇFöF•öÆö6ÂæF¢¢¦ÆÆ•öÖöçF…÷7F'CÖFFR‚¦¦ÆÆ•÷Fõöw&Vv÷&–â†¦ÆÆ•÷–V"Æ¦ÆÆ•öÖöçF‚Ã’¢&W÷'EöVæC×FöF•öÆö6Â×F–ÖVFVÇF†F—3Ó¢–b&W÷'EöVæBÂ¦ÆÆ•öÖöçF…÷7F'C ¢Ö—76–æu÷&W÷'G3ÕµĞ¢VÇ6S ¢ÖöçF…öF—3Ò‡&W÷'EöVæBÖ¦ÆÆ•öÖöçF…÷7F'B’æF—2³¢Ö—76–æu÷&W÷'G3ÖÖ—76–æu÷&W÷'EöF—2‡&WVW7BçW6W"ÆF—3ÖÖöçF…öF—2ÆVæC×&W÷'EöVæB¢æ÷F–f–6F–öç5÷3Õ7Ffdæ÷F–f–6F–öâæö&¦V7G2æf–ÇFW"‡W6W#×&WVW7BçW6W"Æ—5÷&VCÔfÇ6R¢æ÷F–f–6F–öç3Öæ÷F–f–6F–öç5÷5³£UĞ¢æ÷F–f–6F–öåö6÷VçCÖæ÷F–f–6F–öç5÷2æ6÷VçB‚¢FöF•÷6†–gC×6†–gE÷'VÆR‡&WVW7BçW6W"ÇF–ÖW¦öæRæÆö6ÆFFR‚’¢f–ææ6U÷7FG3×·Ğ¢–b&öÆSÓÒv6öç7VÇFçBs ¢f–ææ6U÷3Ôf–ææ6–ÅG&ç67F–öâæö&¦V7G2æf–ÇFW"‡6÷W&6SÒvÖçVÂrÇ&V6÷&FVEö'“×&WVW7BçW6W"¢f–ææ6U÷7FG3×°¢wFöF’s¦f–ææ6U÷2æf–ÇFW"†7&VFVEöEõöFFS×FöF•öÆö6Â’æ6÷VçB‚’À¢wVæF–ærs¦f–ææ6U÷2æf–ÇFW"‡&Wf–Wu÷7FGW3ÒwVæF–ærr’æ6÷VçB‚’À¢v6÷'&V7F–öâs¦f–ææ6U÷2æf–ÇFW"‡&Wf–Wu÷7FGW3ÒvæVVG5ö6÷'&V7F–öâr’æ6÷VçB‚’À¢vÆ7Bs¦f–ææ6U÷2æ÷&FW%ö'’‚rÖ7&VFVEöBr’æf—'7B‚’À¢Ğ ¢2&VÂV×Æ÷–VRÖF6†&ö&B7FGW2†æòÖö6²fÇVW2’à¢FöF•÷&W÷'EöW†—7G3ÔF–Ç•&W÷'Bæö&¦V7G2æf–ÇFW"€¢W6W#×&WVW7BçW6W"À¢7&VFVEöEõöFFS×FöF•öÆö6ÂÀ¢’æW†—7G2‚ ¢6†V6¶Æ—7E÷FV×ÆFW3Õö6†V6¶Æ—7E÷FV×ÆFW5öf÷"‡&WVW7BçW6W"¢6†V6¶Æ—7Eö—FVÕö–G3ÖÆ—7B€¢6†V6¶Æ—7D—FVÒæö&¦V7G2æf–ÇFW"‡FV×ÆFUõö–ãÖ6†V6¶Æ—7E÷FV×ÆFW2’çfÇVW5öÆ—7B‚v–BrÆfÆCÕG'VR¢¢6†V6¶Æ—7E÷F÷FÃÖÆVâ†6†V6¶Æ—7Eö—FVÕö–G2¢6†V6¶Æ—7EöFöæSÔ6†V6¶Æ—7D6ö×ÆWF–öâæö&¦V7G2æf–ÇFW"€¢W6W#×&WVW7BçW6W"À¢FFS×FöF•öÆö6ÂÀ¢—FVÕö–Eõö–ãÖ6†V6¶Æ—7Eö—FVÕö–G2À¢—5öFöæSÕG'VRÀ¢’æ6÷VçB‚’–b6†V6¶Æ—7Eö—FVÕö–G2VÇ6R  ¢F6µ÷F÷FÃ×W6W%÷F6·2æ6÷VçB‚¢F6µöFöæS×W6W%÷F6·2æf–ÇFW"‡7FGW3ÒvFöæRr’æ6÷VçB‚¢F6µ÷&öw&W73×&÷VæB‡F6µöFöæR£÷F6µ÷F÷FÂ’–bF6µ÷F÷FÂVÇ6R ¢6†V6¶Æ—7E÷&öw&W73×&÷VæB†6†V6¶Æ—7EöFöæR£ö6†V6¶Æ—7E÷F÷FÂ’–b6†V6¶Æ—7E÷F÷FÂVÇ6R ¢÷fW&ÆÅ÷&öw&W73×&÷VæB‚‡F6µ÷&öw&W72¶6†V6¶Æ—7E÷&öw&W72²ƒ–bFöF•÷&W÷'EöW†—7G2VÇ6R’’ó2 ¢vVV¶F•öæÖW3×³¢}Šı˜‹M˜mŠ˜rrÃ¢}‹=˜~(Í‹M˜mŠ˜rrÃ#¢}¨m˜}Š}‹‹M˜mŠ˜rrÃ3¢}›í˜mŠÍ‹M˜mŠ˜rrÃC¢}ŠÍ˜]‹˜rrÃS¢}‹M˜mŠ˜rrÃc¢}¸Íª‹M˜mŠ˜rwĞ¢¦ÆÆ•öÖöçF…öæÖW3Õ²}˜‹˜‹Šı¸Í˜brÂ}Š}‹Šı¸ÍŠ˜}‹MŠ¢rÂ}Ší‹ŠıŠ}ŠòrÂ}Š­¸Í‹rÂ}˜]‹ŠıŠ}ŠòrÂ}‹M˜}‹¸Í˜‹rÂ}˜]˜}‹rÂ}Š-ŠŠ}˜brÂ}Š-‹‹rÂ}Šı¸ÂrÂ}Š˜}˜]˜brÂ}Š}‹=˜˜mŠòuĞ¢¦ÆÆ•öF6†&ö&EöFFSÖb'·vVV¶F•öæÖW5·FöF•öÆö6ÂçvVV¶F’‚•×Ò¶¦ÆÆ•öF—Ò¶¦ÆÆ•öÖöçF…öæÖW5¶¦ÆÆ•öÖöçF‚Ó×Ò¶¦ÆÆ•÷–V'Ò  ¢&öÆS×&öÆUööb‡&WVW7BçW6W"¢ÖævW%÷7FG3×·Ğ¢–b&öÆR–âÔätTÔTåEõ$ôÄU3 ¢3ÕF6²æö&¦V7G2æÆÂ‚¢–b&öÆSÓÒvÖævW"s¢3×2æf–ÇFW"†76–væVE÷Fõõ÷&öf–ÆUõö'&æ6ƒÖvWFGG"‡&öf–ÆRÂv'&æ6‚rÄæöæR’¢ÖævW%÷7FG3×²vÆÅ÷F6·2s§2æ6÷VçB‚’Âv÷fW&GVRs§2æf–ÇFW"†GVUöFFUõöÇC×F–ÖW¦öæRæÆö6ÆFFR‚’’æW†6ÇVFR‡7FGW3ÒvFöæRr’æ6÷VçB‚’ÂwVæF–æuöÆVfRs¤ÆVfU&WVW7Bæö&¦V7G2æf–ÇFW"‡7FGW3ÒwVæF–ærr’æ6÷VçB‚—Ğ¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RöF6†&ö&Bæ‡FÖÂrÇ°¢wF6·2s§F6·2À¢vææ÷Væ6VÖVçG2s¦ææ÷Væ6VÖVçG2À¢v&Æ6¶&ö&Bs¦&Æ6¶&ö&BÀ¢w7FG2s§7FG2À¢wVæF–æuöÆVfRs§VæF–æuöÆVfRÀ¢vÖævW%÷7FG2s¦ÖævW%÷7FG2À¢w&öÆRs§&öÆRÀ¢vGFVæFæ6U÷FöF’s¦GFVæFæ6U÷FöF’À¢vÖ—76–æu÷&W÷'G2s¦Ö—76–æu÷&W÷'G2À¢væ÷F–f–6F–öç2s¦æ÷F–f–6F–öç2À¢væ÷F–f–6F–öåö6÷VçBs¦æ÷F–f–6F–öåö6÷VçBÀ¢wFöF•÷6†–gBs§FöF•÷6†–gBÀ¢vf–ææ6U÷7FG2s¦f–ææ6U÷7FG2À¢wFöF•÷&W÷'EöW†—7G2s§FöF•÷&W÷'EöW†—7G2À¢v6†V6¶Æ—7E÷F÷FÂs¦6†V6¶Æ—7E÷F÷FÂÀ¢v6†V6¶Æ—7EöFöæRs¦6†V6¶Æ—7EöFöæRÀ¢v6†V6¶Æ—7E÷&öw&W72s¦6†V6¶Æ—7E÷&öw&W72À¢wF6µ÷F÷FÂs§F6µ÷F÷FÂÀ¢wF6µöFöæRs§F6µöFöæRÀ¢wF6µ÷&öw&W72s§F6µ÷&öw&W72À¢v÷fW&ÆÅ÷&öw&W72s¦÷fW&ÆÅ÷&öw&W72À¢v¦ÆÆ•öF6†&ö&EöFFRs¦¦ÆÆ•öF6†&ö&EöFFRÀ¢Ò ¤Æöv–å÷&WV—&V@¦FVb&W÷'Eö7&VFR‡&WVW7B“ ¢27F&ÆRFö¶Vâ—2&VæFW&VBv—F‚F†Rf÷&ÒæB6VçB&6²öâõ5Bà¢2–bF†R'&÷w6W"öæWGv÷&²&WG&–W2F†R6ÖR7V&Ö—76–öâÂ&WGW&âF†RÇ&VG¢27&VFVB&W÷'B–ç7FVBöb–ç6W'F–æræ÷F†W"F–Ç•&W÷'B&÷rà¢7V&Ö—76–öåö–CÒ‡&WVW7Båõ5BævWB‚w7V&Ö—76–öåö–Br’÷"rr’ç7G&—‚’–b&WVW7BæÖWF†öCÓÒuõ5BrVÇ6RWV–BçWV–CB‚’æ†W€ ¢–b&WVW7BæÖWF†öCÓÒuõ5BræB7V&Ö—76–öåö–C ¢W†—7F–æsÔF–Ç•&W÷'Bæö&¦V7G2æf–ÇFW"†6Æ–VçE÷7V&Ö—76–öåö–C×7V&Ö—76–öåö–BÇW6W#×&WVW7BçW6W"’æf—'7B‚¢–bW†—7F–æs ¢ÖW76vW2æ–æfò‡&WVW7BÂ}Š}¸Í˜bªı‹-Š}‹‹B˜-Š˜MŠ}˜²Š½ŠŠ¢‹MŠı˜rŠ˜Šı‰²Š}‹"Š½ŠŠ¢Š­ª‹Š}‹¸ÂŠÍ˜M˜ªı¸Í‹¸Â‹MŠòâr¢&WGW&â&VF—&V7B‚w&W÷'EöFWF–ÂrÇ³ÖW†—7F–ærç² ¢f÷&ÓÕ&W÷'Df÷&Ò‡&WVW7Båõ5B÷"æöæRÇ&WVW7Bäd”ÄU2÷"æöæR¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢ö&£Öf÷&Òç6fR†6öÖÖ—CÔfÇ6R¢ö&¢çW6W#×&WVW7BçW6W ¢ö&¢æ'&æ6ƒÖvWFGG"†vWFGG"‡&WVW7BçW6W"Âw&öf–ÆRrÄæöæR’Âv'&æ6‚rÄæöæR¢ö&¢æ6Æ–VçE÷7V&Ö—76–öåö–C×7V&Ö—76–öåö–B÷"WV–BçWV–CB‚’æ†W€¢ö&¢ç6fR‚¢v&E÷&W÷'B‡&WVW7BçW6W"ÇF–ÖW¦öæRæÆö6ÆFFR‚’ ¢–b&WVW7Båõ5BævWB‚w&ö6W75ö’r“ÓÒss ¢G'“ ¢ö²Æ×6s×&ö6W75÷&W÷'B†ö&¢“²ÖW76vW2ç7V66W72‡&WVW7BÆ×6r’–bö²VÇ6RÖW76vW2çv&æ–ær‡&WVW7BÆ×6r¢W†6WBW†6WF–öâ2S ¢ö&¢ç&ö6W75÷7FGW3Òvf–ÆVBs²ö&¢ç6fR‡WFFUöf–VÆG3Õ²w&ö6W75÷7FGW2uÒ“²ÖW76vW2æW'&÷"‡&WVW7BÆb}ªı‹-Š}‹‹B‹Ší¸Í‹˜r‹MŠıˆÂ˜˜M¸Â›í‹ŠıŠ}‹-‹B˜}˜‹B˜]‹]˜m˜‹¸ÂŠ}˜mŠÍŠ}˜R˜m‹MŠó¢¶WÒr¢VÇ6S ¢ÖW76vW2ç7V66W72‡&WVW7BÂ}ªı‹-Š}‹‹BŠŠr˜]˜˜˜-¸ÍŠ¢Š½ŠŠ¢‹MŠòâr¢&WGW&â&VF—&V7B‚w&W÷'EöFWF–ÂrÇ³Öö&¢ç² ¢–bæ÷B7V&Ö—76–öåö–C ¢7V&Ö—76–öåö–C×WV–BçWV–CB‚’æ†W€¢&WGW&â&VæFW"‡&WVW7BÂv6÷&R÷&W÷'Eöf÷&Òæ‡FÖÂrÇ²vf÷&Òs¦f÷&ÒÂw7V&Ö—76–öåö–Bs§7V&Ö—76–öåö–GÒ ¤Æöv–å÷&WV—&V@¦FVb&W÷'EöÆ—7B‡&WVW7B“ ¢3ÔF–Ç•&W÷'Bæö&¦V7G2ç6VÆV7E÷&VÆFVB‚wW6W"rÂv'&æ6‚r’æ÷&FW%ö'’‚rÖ7&VFVEöBr“²&öÆS×&öÆUööb‡&WVW7BçW6W"¢–b&öÆR–âU%4ôääTÅõ$ôÄU3¢3×2æf–ÇFW"‡W6W#×&WVW7BçW6W"¢VÆ–b&öÆSÓÒvÖævW"s¢3×2æf–ÇFW"†'&æ6ƒÖvWFGG"‡&WVW7BçW6W"ç&öf–ÆRÂv'&æ6‚rÄæöæR’¢&WGW&â&VæFW"‡&WVW7BÂv6÷&R÷&W÷'EöÆ—7Bæ‡FÖÂrÇ²w&W÷'G2s§5³£#×Ò ¤Æöv–å÷&WV—&V@¦FVb&W÷'EöFWF–Â‡&WVW7BÇ²“ ¢ö&£ÖvWEöö&¦V7Eö÷%óCB„F–Ç•&W÷'BÇ³×²¢&öÆS×&öÆUööb‡&WVW7BçW6W"¢–b&öÆR–âU%4ôääTÅõ$ôÄU2æBö&¢çW6W%ö–B×&WVW7BçW6W"æ–C ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}Šı‹=Š­‹‹=¸Â˜]ŠÍŠ}‹"˜m¸Í‹=Š¢âr¢&WGW&â&VF—&V7B‚w&W÷'EöÆ—7Br¢–b&öÆSÓÒvÖævW"ræBvWFGG"†ö&¢çW6W"ç&öf–ÆRÂv'&æ6…ö–BrÄæöæR’ÖvWFGG"‡&WVW7BçW6W"ç&öf–ÆRÂv'&æ6…ö–BrÄæöæR“ ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}Šı‹=Š­‹‹=¸Â˜]ŠÍŠ}‹"˜m¸Í‹=Š¢âr¢&WGW&â&VF—&V7B‚w&W÷'EöÆ—7Br ¢26ÆVâW66VBVæ–6öFR6WVVæ6W2f÷"6÷'&V7BW'6–â&VæFW&–ærà¢ö&¢çFW‡CÖæ÷&ÖÆ—¦Uö•÷FW‡B†ö&¢çFW‡B¢ö&¢çG&ç67&—CÖæ÷&ÖÆ—¦Uö•÷FW‡B†ö&¢çG&ç67&—B¢ö&¢æ•÷7VÖÖ'“Öæ÷&ÖÆ—¦Uö•÷FW‡B†ö&¢æ•÷7VÖÖ'’¢ö&¢æföÆÆ÷u÷WÖæ÷&ÖÆ—¦Uö•÷FW‡B†ö&¢æföÆÆ÷u÷W¢ö&¢æÖævW%ö6öÖÖVçCÖæ÷&ÖÆ—¦Uö•÷FW‡B†ö&¢æÖævW%ö6öÖÖVçB ¢6öÖÖVçEöf÷&ÓÔæöæP¢–b&öÆR–âÔätTÔTåEõ$ôÄU3 ¢6öÖÖVçEöf÷&ÓÔÖævW%&W÷'D6öÖÖVçDf÷&Ò‡&WVW7Båõ5B÷"æöæRÆ–ç7Fæ6SÖö&¢¢–b&WVW7BæÖWF†öCÓÒuõ5BræB&WVW7Båõ5BævWB‚v7F–öâr“ÓÒvÖævW%ö6öÖÖVçBræB6öÖÖVçEöf÷&Òæ—5÷fÆ–B‚“ ¢F&vWCÖ6öÖÖVçEöf÷&Òç6fR†6öÖÖ—CÔfÇ6R¢F&vWBæÖævW%ö6öÖÖVçCÖæ÷&ÖÆ—¦Uö•÷FW‡B‡F&vWBæÖævW%ö6öÖÖVçB¢F&vWBæÖævW%ö6öÖÖVçEö'“×&WVW7BçW6W ¢F&vWBæÖævW%ö6öÖÖVçEöC×F–ÖW¦öæRææ÷r‚¢F&vWBç6fR‡WFFUöf–VÆG3Õ²vÖævW%ö6öÖÖVçBrÂvÖævW%ö6öÖÖVçEö'’rÂvÖævW%ö6öÖÖVçEöBuÒ¢ÖW76vW2ç7V66W72‡&WVW7BÂ}ªŠ}˜]˜mŠ¢˜]Šı¸Í‹Š½ŠŠ¢‹MŠòâr¢&WGW&â&VF—&V7B‚w&W÷'EöFWF–ÂrÇ³Öö&¢ç² ¢&WGW&â&VæFW"‡&WVW7BÂv6÷&R÷&W÷'EöFWF–Âæ‡FÖÂrÇ²w&W÷'Bs¦ö&¢Âv6öÖÖVçEöf÷&Òs¦6öÖÖVçEöf÷&×Ò ¤Æöv–å÷&WV—&V@¦FVbF6µöÆ—7B‡&WVW7B“ ¢&öÆS×&öÆUööb‡&WVW7BçW6W"¢3ÕF6²æö&¦V7G2ç6VÆV7E÷&VÆFVB‚v76–væVE÷FòrÂvÖVWF–æuö7F–öâr’æ÷&FW%ö'’‚w7FGW2rÂvGVUöFFRr¢–b&öÆR–âU%4ôääTÅõ$ôÄU3¢3×2æf–ÇFW"†76–væVE÷Fó×&WVW7BçW6W"¢VÆ–b&öÆSÓÒvÖævW"s¢3×2æf–ÇFW"†76–væVE÷Fõõ÷&öf–ÆUõö'&æ6ƒ×&WVW7BçW6W"ç&öf–ÆRæ'&æ6‚¢&WGW&â&VæFW"‡&WVW7BÂv6÷&R÷F6µöÆ—7Bæ‡FÖÂrÇ²wF6·2s§2Âv6åöÖævRs§&öÆR–âÔätTÔTåEõ$ôÄU7Ò ¤Æöv–å÷&WV—&V@¦FVb×•÷F6µöÆ—7B‡&WVW7B“ ¢3ÕF6²æö&¦V7G2æf–ÇFW"†76–væVE÷Fó×&WVW7BçW6W"’ç6VÆV7E÷&VÆFVB‚v76–væVE÷FòrÂvÖVWF–æuö7F–öâr’æ÷&FW%ö'’‚w7FGW2rÂvGVUöFFRrÂr×&–÷&—G’r¢&WGW&â&VæFW"‡&WVW7BÂv6÷&R÷F6µöÆ—7Bæ‡FÖÂrÇ²wF6·2s§2Âv6åöÖævRs¤fÇ6WÒ ¤Æöv–å÷&WV—&V@¦FVbF6µ÷WFFR‡&WVW7BÇ²“ ¢F6³ÖvWEöö&¦V7Eö÷%óCB…F6²Ç³×²Æ76–væVE÷Fó×&WVW7BçW6W"“²f÷&ÓÕF6µ7FGW4f÷&Ò‡&WVW7Båõ5B÷"æöæRÆ–ç7Fæ6S×F6²¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢ö&£Öf÷&Òç6fR‚¢ÖVWF–æuö7F–öãÖvWFGG"†ö&¢ÂvÖVWF–æuö7F–öârÄæöæR¢–bÖVWF–æuö7F–öã ¢&Vf÷&SÖÖVWF–æuö7F–öâç7FGW0¢&WVW7FVCÖö&¢ç7FGW0¢ÖVWF–æuö7F–öâç7FGW3×²wFöFòs¢wFöFòrÂvFö–ærs¢vFö–ærrÂvFöæRs¢vv—F–æuö&÷fÂwÕ·&WVW7FVEĞ¢ÖVWF–æuö7F–öâç6fR‡WFFUöf–VÆG3Õ²w7FGW2rÂwWFFVEöBuÒ¢ÖVWF–æt7F–öåWFFRæö&¦V7G2æ7&VFR€¢7F–öãÖÖVWF–æuö7F–öâÇW6W#×&WVW7BçW6W"Ç&Wf–÷W5÷7FGW3Ö&Vf÷&RÀ¢æWu÷7FGW3ÖÖVWF–æuö7F–öâç7FGW2À¢æ÷FSÒ}Š}‹"ŠŠí‹BªŠ}‹˜}Š}¸Â˜]˜bŠ˜~(Í‹˜‹-‹‹=Š}˜m¸Â‹MŠòârÀ¢¢–b&WVW7FVCÓÒvFöæRs ¢ö&¢ç7FGW3ÒvFö–ærs²ö&¢ç6fR‡WFFUöf–VÆG3Õ²w7FGW2rÂwWFFVEöBuÒ¢ÖW76vW2ç7V66W72‡&WVW7BÂ}Š}˜mŠÍŠ}˜RªŠ}‹Š½ŠŠ¢‹MŠò˜‚Š‹Š}¸ÂŠ­Š=¸Í¸ÍŠò˜]Šı¸Í‹ŠıŠ}Ší˜M¸ÂŠ}‹‹=Š}˜B‹MŠòâr¢VÇ6S ¢ÖW76vW2ç7V66W72‡&WVW7BÂ}›í¸Í‹M‹˜Š¢˜]‹]˜Š˜rŠ˜~(Í‹˜‹-‹‹=Š}˜m¸Â‹MŠòâr¢VÇ6S ¢v&E÷F6²†ö&¢“²ÖW76vW2ç7V66W72‡&WVW7BÂ}˜‹m‹¸ÍŠ¢˜‹¸Í˜˜rŠ˜~(Í‹˜‹-‹‹=Š}˜m¸Â‹MŠòâr¢–bö&¢æ7&VFVEö'•ö–BæBö&¢æ7&VFVEö'•ö–B×&WVW7BçW6W"æ–BæBö—5öW†V7WF—fU÷W6W"†ö&¢æ7&VFVEö'’“ ¢7F÷#×&WVW7BçW6W"ævWEögVÆÅöæÖR‚’÷"&WVW7BçW6W"çW6W&æÖP¢7Ffdæ÷F–f–6F–öâæö&¦V7G2æ7&VFR€¢W6W#Öö&¢æ7&VFVEö'’À¢F—FÆSÖb}Š‹˜‹-‹‹=Š}˜m¸ÂªŠ}‹¢¶ö&¢çF—FÆU³£#×ÒrÀ¢ÖW76vSÖbw¶7F÷'Ò˜‹m‹¸ÍŠ¢ªŠ}‹‹ŠrŠ˜r*·¶ö&¢ævWE÷7FGW5öF—7Æ’‚—Ü+²Š­‹­¸Í¸Í‹ŠıŠ}ŠòârÀ¢æ÷F–f–6F–öå÷G—SÒwF6µ÷WFFRrÀ¢&VÆFVEöFFSÖö&¢æGVUöFFR÷"F–ÖW¦öæRæÆö6ÆFFR‚’À¢¢&WGW&â&VF—&V7B‚v×•÷F6µöÆ—7Br–b&öÆUööb‡&WVW7BçW6W"’–âÔätTÔTåEõ$ôÄU2VÇ6RwF6µöÆ—7Br¢&WGW&â&VæFW"‡&WVW7BÂv6÷&R÷F6µ÷WFFRæ‡FÖÂrÇ²vf÷&Òs¦f÷&ÒÂwF6²s§F6·Ò ¤ÖævW%÷&WV—&V@¦FVbF6µö7&VFR‡&WVW7B“ ¢f÷&ÓÕF6´f÷&Ò‡&WVW7Båõ5B÷"æöæR¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"s¢f÷&Òæf–VÆG5²v76–væVE÷FòuÒçVW'—6WCÕW6W"æö&¦V7G2æf–ÇFW"‡&öf–ÆUõö'&æ6ƒ×&WVW7BçW6W"ç&öf–ÆRæ'&æ6‚Ç&öf–ÆUõö—5ö7F—fSÕG'VR¢VÆ–b&öÆUööb‡&WVW7BçW6W"“ÓÒv–çFW&æÅöÖævW"s¢f÷&Òæf–VÆG5²v76–væVE÷FòuÒçVW'—6WCÕW6W"æö&¦V7G2æf–ÇFW"‡&öf–ÆUõ÷&öÆUõö–ãÕU%4ôääTÅõ$ôÄU2Ç&öf–ÆUõö—5ö7F—fSÕG'VR¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢ö&£Öf÷&Òç6fR†6öÖÖ—CÔfÇ6R“²ö&¢æ7&VFVEö'“×&WVW7BçW6W#²ö&¢ç6fR‚“²ÖW76vW2ç7V66W72‡&WVW7BÂ}˜‹¸Í˜˜rŠ}¸ÍŠÍŠ}Šò‹MŠòâr“²&WGW&â&VF—&V7B‚wF6µöÆ—7Br¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RövVæW&–5öf÷&Òæ‡FÖÂrÇ²vf÷&Òs¦f÷&ÒÂwF—FÆRs¢}Š­‹‹¸Í˜˜‹¸Í˜˜rŠÍŠı¸ÍŠòrÂv'WGFöâs¢}Š½ŠŠ¢˜‹¸Í˜˜rwÒ ¤Æöv–å÷&WV—&V@¦FVbææ÷Væ6VÖVçEöÆ—7B‡&WVW7B“ ¢&öf–ÆSÖvWFGG"‡&WVW7BçW6W"Âw&öf–ÆRrÄæöæR¢3Ôææ÷Væ6VÖVçBæö&¦V7G2æf–ÇFW"†—5ö7F—fSÕG'VR¢–b&öÆUööb‡&WVW7BçW6W"’æ÷B–â‚vFÖ–ârÂv–çFW&æÅöÖævW"r“ ¢3×2æf–ÇFW"…†'&æ6…õö—6çVÆÃÕG'VR—Å†'&æ6ƒÖvWFGG"‡&öf–ÆRÂv'&æ6‚rÄæöæR’’¢3×2æ÷&FW%ö'’‚rÖ7&VFVEöBr¢&WGW&â&VæFW"‡&WVW7BÂv6÷&Röææ÷Væ6VÖVçEöÆ—7Bæ‡FÖÂrÇ²vææ÷Væ6VÖVçG2s§2Âv6åöÖævRs§&öÆUööb‡&WVW7BçW6W"’–âÔätTÔTåEõ$ôÄU7Ò ¤ÖævW%÷&WV—&V@¦FVbææ÷Væ6VÖVçEö7&VFR‡&WVW7B“ ¢f÷&ÓÔææ÷Væ6VÖVçDf÷&Ò‡&WVW7Båõ5B÷"æöæR¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"s ¢f÷&Òæf–VÆG5²v'&æ6‚uÒçVW'—6WCÖf÷&Òæf–VÆG5²v'&æ6‚uÒçVW'—6WBæf–ÇFW"‡³×&WVW7BçW6W"ç&öf–ÆRæ'&æ6…ö–B“²f÷&Òæf–VÆG5²v'&æ6‚uÒæ–æ—F–Ã×&WVW7BçW6W"ç&öf–ÆRæ'&æ6€¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢ö&£Öf÷&Òç6fR†6öÖÖ—CÔfÇ6R“²ö&¢æ7&VFVEö'“×&WVW7BçW6W#²ö&¢ç6fR‚“²ÖW76vW2ç7V66W72‡&WVW7BÂ}Š}‹}˜MŠ}‹¸Í˜r˜]˜mŠ­‹M‹‹MŠòâr“²&WGW&â&VF—&V7B‚vææ÷Væ6VÖVçEöÆ—7Br¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RövVæW&–5öf÷&Òæ‡FÖÂrÇ²vf÷&Òs¦f÷&ÒÂwF—FÆRs¢}Š}‹}˜MŠ}‹¸Í˜rŠÍŠı¸ÍŠòrÂv'WGFöâs¢}Š}˜mŠ­‹MŠ}‹wÒ ¤ÖævW%÷&WV—&V@¦FVb&Æ6¶&ö&EöÖævR‡&WVW7B“ ¢3Ô&Æ6¶&ö&DÖW76vRæö&¦V7G2ç6VÆV7E÷&VÆFVB‚v'&æ6‚rÂv7&VFVEö'’r¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"s ¢3×2æf–ÇFW"†'&æ6ƒ×&WVW7BçW6W"ç&öf–ÆRæ'&æ6‚¢&WGW&â&VæFW"‡&WVW7BÂv6÷&Rö&Æ6¶&ö&EöÖævRæ‡FÖÂrÇ²v&Æ6¶&ö&G2s§7Ò ¤ÖævW%÷&WV—&V@¦FVb&Æ6¶&ö&EöVF—B‡&WVW7BÇ³ÔæöæR“ ¢—FVÓÖvWEöö&¦V7Eö÷%óCB„&Æ6¶&ö&DÖW76vRÇ³×²’–b²VÇ6RæöæP¢&öÆS×&öÆUööb‡&WVW7BçW6W"¢–b—FVÒæB&öÆSÓÒvÖævW"ræB—FVÒæ'&æ6…ö–B×&WVW7BçW6W"ç&öf–ÆRæ'&æ6…ö–C ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}Šı‹=Š­‹‹=¸ÂŠ˜r›í¸ÍŠ}˜RŠ}¸Í˜b‹M‹Š˜r˜]ŠÍŠ}‹"˜m¸Í‹=Š¢âr¢&WGW&â&VF—&V7B‚v&Æ6¶&ö&EöÖævRr¢f÷&ÓÔ&Æ6¶&ö&DÖW76vTf÷&Ò‡&WVW7Båõ5B÷"æöæRÆ–ç7Fæ6SÖ—FVÒ¢–b&öÆSÓÒvÖævW"s ¢f÷&Òæf–VÆG5²v'&æ6‚uÒçVW'—6WCÖf÷&Òæf–VÆG5²v'&æ6‚uÒçVW'—6WBæf–ÇFW"‡³×&WVW7BçW6W"ç&öf–ÆRæ'&æ6…ö–B¢f÷&Òæf–VÆG5²v'&æ6‚uÒæ–æ—F–Ã×&WVW7BçW6W"ç&öf–ÆRæ'&æ6€¢f÷&Òæf–VÆG5²v'&æ6‚uÒç&WV—&VCÕG'VP¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢ö&£Öf÷&Òç6fR†6öÖÖ—CÔfÇ6R¢–b&öÆSÓÒvÖævW"s¢ö&¢æ'&æ6ƒ×&WVW7BçW6W"ç&öf–ÆRæ'&æ6€¢–bæ÷Bö&¢æ7&VFVEö'•ö–C¢ö&¢æ7&VFVEö'“×&WVW7BçW6W ¢ö&¢ç6fR‚¢ÖW76vW2ç7V66W72‡&WVW7BÂ}›í¸ÍŠ}˜RŠ­ŠíŠ­˜~(Í‹=¸ÍŠ}˜r‹Ší¸Í‹˜r˜‚Š‹Š}¸Â›í‹‹=˜m˜B˜]˜mŠ­‹M‹‹MŠòâr–bö&¢æ—5ö7F—fRVÇ6R}›í¸ÍŠ}˜RŠ­ŠíŠ­˜~(Í‹=¸ÍŠ}˜r‹Ší¸Í‹˜r‹MŠòâr¢&WGW&â&VF—&V7B‚v&Æ6¶&ö&EöÖævRr¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RövVæW&–5öf÷&Òæ‡FÖÂrÇ°¢vf÷&Òs¦f÷&ÒÂwF—FÆRs¢}˜¸Í‹Š}¸Í‹BŠ­ŠíŠ­˜~(Í‹=¸ÍŠ}˜rr–b—FVÒVÇ6R}›í¸ÍŠ}˜RŠÍŠı¸ÍŠòŠ­ŠíŠ­˜~(Í‹=¸ÍŠ}˜rrÂv'WGFöâs¢}‹Ší¸Í‹˜r˜‚Š}˜mŠ­‹MŠ}‹rÀ¢Ò ¤Æöv–å÷&WV—&V@¦FVbÆVfUöÆ—7B‡&WVW7B“ ¢&öÆS×&öÆUööb‡&WVW7BçW6W"“²3ÔÆVfU&WVW7Bæö&¦V7G2ç6VÆV7E÷&VÆFVB‚wW6W"r’æ÷&FW%ö'’‚rÖ7&VFVEöBr¢–b&öÆR–âU%4ôääTÅõ$ôÄU3¢3×2æf–ÇFW"‡W6W#×&WVW7BçW6W"¢VÆ–b&öÆSÓÒvÖævW"s¢3×2æf–ÇFW"‡W6W%õ÷&öf–ÆUõö'&æ6ƒ×&WVW7BçW6W"ç&öf–ÆRæ'&æ6‚¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RöÆVfUöÆ—7Bæ‡FÖÂrÇ²w&WVW7G2s§2Âv6å÷&Wf–Wrs§&öÆR–âÔätTÔTåEõ$ôÄU7Ò ¤Æöv–å÷&WV—&V@¦FVbÆVfUö7&VFR‡&WVW7B“ ¢f÷&ÓÔÆVfU&WVW7Df÷&Ò‡&WVW7Båõ5B÷"æöæR¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢ö&£Öf÷&Òç6fR†6öÖÖ—CÔfÇ6R“²ö&¢çW6W#×&WVW7BçW6W#²ö&¢ç6fR‚“²ÖW76vW2ç7V66W72‡&WVW7BÂ}Šı‹Ší˜Š}‹=Š¢Š½ŠŠ¢‹MŠòâr“²&WGW&â&VF—&V7B‚vÆVfUöÆ—7Br¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RövVæW&–5öf÷&Òæ‡FÖÂrÇ²vf÷&Òs¦f÷&ÒÂwF—FÆRs¢}Šı‹Ší˜Š}‹=Š¢ŠÍŠı¸ÍŠòrÂv'WGFöâs¢}Š}‹‹=Š}˜BŠı‹Ší˜Š}‹=Š¢wÒ ¤ÖævW%÷&WV—&V@¦FVbÆVfU÷&Wf–Wr‡&WVW7BÇ²“ ¢ö&£ÖvWEöö&¦V7Eö÷%óCB„ÆVfU&WVW7BÇ³×²¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"ræBvWFGG"†ö&¢çW6W"ç&öf–ÆRÂv'&æ6…ö–BrÄæöæR’×&WVW7BçW6W"ç&öf–ÆRæ'&æ6…ö–C¢&WGW&â&VF—&V7B‚vÆVfUöÆ—7Br¢f÷&ÓÔÆVfU&Wf–Wtf÷&Ò‡&WVW7Båõ5B÷"æöæRÆ–ç7Fæ6SÖö&¢¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢—FVÓÖf÷&Òç6fR†6öÖÖ—CÔfÇ6R“²—FVÒç&Wf–WvVEö'“×&WVW7BçW6W#²—FVÒç6fR‚“²ÖW76vW2ç7V66W72‡&WVW7BÂ}Šı‹Ší˜Š}‹=Š¢Š‹‹‹=¸Â‹MŠòâr“²&WGW&â&VF—&V7B‚vÆVfUöÆ—7Br¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RövVæW&–5öf÷&Òæ‡FÖÂrÇ²vf÷&Òs¦f÷&ÒÂwF—FÆRs¢}Š‹‹‹=¸ÂŠı‹Ší˜Š}‹=Š¢rÂv'WGFöâs¢}Š½ŠŠ¢˜mŠ­¸ÍŠÍ˜rwÒ ¤Æöv–å÷&WV—&V@¦FVb6÷öÆ—7B‡&WVW7B“ ¢&öf–ÆSÖvWFGG"‡&WVW7BçW6W"Âw&öf–ÆRrÄæöæR¢3Õ4õFö7VÖVçBæö&¦V7G2æf–ÇFW"†—5ö7F—fSÕG'VR’æf–ÇFW"…†'&æ6…õö—6çVÆÃÕG'VR—Å†'&æ6ƒÖvWFGG"‡&öf–ÆRÂv'&æ6‚rÄæöæR’’’æf–ÇFW"…†¦ö%÷F—FÆSÒrr—Å†¦ö%÷F—FÆSÖvWFGG"‡&öf–ÆRÂv¦ö%÷F—FÆRrÂrr’’’æ÷&FW%ö'’‚wF—FÆRr¢&WGW&â&VæFW"‡&WVW7BÂv6÷&R÷6÷öÆ—7Bæ‡FÖÂrÇ²vFö7VÖVçG2s§7Ò ¤ÖævW%÷&WV—&V@¦FVbV×Æ÷–VUöÆ—7B‡&WVW7B“ ¢&öÆS×&öÆUööb‡&WVW7BçW6W"¢3ÔV×Æ÷–VU&öf–ÆRæö&¦V7G2æW†6ÇVFR‡&öÆSÒw&VfW'&W"r’ç6VÆV7E÷&VÆFVB‚wW6W"rÂv'&æ6‚r’æ÷&FW%ö'’‚v'&æ6…õöæÖRrÂwW6W%õöÆ7EöæÖRr¢–b&öÆSÓÒvÖævW"s¢3×2æf–ÇFW"†'&æ6ƒ×&WVW7BçW6W"ç&öf–ÆRæ'&æ6‚¢VÆ–b&öÆSÓÒv–çFW&æÅöÖævW"s¢3×2æf–ÇFW"‡&öÆUõö–ãÕU%4ôääTÅõ$ôÄU2¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RöV×Æ÷–VUöÆ—7Bæ‡FÖÂrÇ°¢vV×Æ÷–VW2s§2À¢v6åöÖævRs§&öÆR–âÔätTÔTåEõ$ôÄU2À¢Ò ¤ÖævW%÷&WV—&V@¦FVbV×Æ÷–VUö7&VFR‡&WVW7B“ ¢f÷&ÓÔV×Æ÷–VT7&VFTf÷&Ò‡&WVW7Båõ5B÷"æöæR¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"s ¢f÷&Òæf–VÆG5²v'&æ6‚uÒçVW'—6WCÖf÷&Òæf–VÆG5²v'&æ6‚uÒçVW'—6WBæf–ÇFW"‡³×&WVW7BçW6W"ç&öf–ÆRæ'&æ6…ö–B“²f÷&Òæf–VÆG5²v'&æ6‚uÒæ–æ—F–Ã×&WVW7BçW6W"ç&öf–ÆRæ'&æ6ƒ²f÷&Òæf–VÆG5²w&öÆRuÒæ6†ö–6W3Õ²‚vV×Æ÷–VRrÂ}ªŠ}‹˜]˜mŠòr•Ğ¢VÆ–b&öÆUööb‡&WVW7BçW6W"“ÓÒv–çFW&æÅöÖævW"s ¢f÷&Òæf–VÆG5²w&öÆRuÒæ6†ö–6W3Õ²‚vV×Æ÷–VRrÂ}ªŠ}‹˜]˜mŠòr’Â‚v6ÆÅö6VçFW"rÂ}ªŠ}˜N(Í‹=˜mŠ­‹r’Â‚v6öç7VÇFçBrÂ}˜]‹MŠ}˜‹r•Ğ¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢CÖf÷&Òæ6ÆVæVEöFF²W6W#ÕW6W"æö&¦V7G2æ7&VFU÷W6W"‡W6W&æÖSÖE²wW6W&æÖRuÒÇ77v÷&CÖE²w77v÷&BuÒÆf—'7EöæÖSÖE²vf—'7EöæÖRuÒÆÆ7EöæÖSÖE²vÆ7EöæÖRuÒ¢V×Æ÷–VU&öf–ÆRæö&¦V7G2çWFFUö÷%ö7&VFR‡W6W#×W6W"ÆFVfVÇG3×°¢v'&æ6‚s¦E²v'&æ6‚uÒÂw&öÆRs¦E²w&öÆRuÒÀ¢v¦ö%÷F—FÆRs¦E²v¦ö%÷F—FÆRuÒ÷"‚}ªŠ}‹‹M˜mŠ}‹2ªŠ}˜N(Í‹=˜mŠ­‹r–bE²w&öÆRuÓÓÒv6ÆÅö6VçFW"rVÇ6R}˜]‹MŠ}˜‹r–bE²w&öÆRuÓÓÒv6öç7VÇFçBrVÇ6R}˜]˜m‹M¸Âr–bE²w&öÆRuÓÓÒw&V6WF–öæ—7BrVÇ6Rrr’À¢vV×Æ÷–VUö6öFRs¦E²vV×Æ÷–VUö6öFRuÒ÷"æöæRÂw†öæRs¦E²w†öæRuÒÀ¢v&—'F…öFFRs¦BævWB‚v&—'F…öFFRr’Âv—5ö7F—fRs§W6W"æ—5ö7F—fRÀ¢Ò¢&VÖVÖ&W%öFW6·F÷÷77v÷&B‡W6W"ÆE²w77v÷&BuÒÆ7F÷#×&WVW7BçW6W"¢–bBævWB‚vÖö&–ÆU÷–âr“ ¢6†ævUöÖö&–ÆU÷–â‡W6W"ÆE²vÖö&–ÆU÷–âuÒÆ7F÷#×&WVW7BçW6W"¢ÖW76vW2ç7V66W72‡&WVW7BÂ}ªŠ}‹˜]˜mŠòŠ}¸ÍŠÍŠ}Šò‹MŠòâr“²&WGW&â&VF—&V7B‚vV×Æ÷–VUöÆ—7Br¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RövVæW&–5öf÷&Òæ‡FÖÂrÇ²vf÷&Òs¦f÷&ÒÂwF—FÆRs¢}Š}˜‹-˜Šı˜bªŠ}‹˜]˜mŠòrÂv'WGFöâs¢}‹=Š}ŠíŠ¢Šİ‹=Š}Š‚wÒ ¤ÖævW%÷&WV—&V@¦FVbV×Æ÷–VUöVF—B‡&WVW7BÇ²“ ¢V×Æ÷–VSÖvWEöö&¦V7Eö÷%óCB„V×Æ÷–VU&öf–ÆRæö&¦V7G2ç6VÆV7E÷&VÆFVB‚wW6W"rÂv'&æ6‚rÂw6†–gEöw&÷Wr’Ç³×²¢–bæ÷BöV×Æ÷–VUö66W72‡&WVW7BÆV×Æ÷–VR“ ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}Š˜rŠ}¸Í˜b›í‹‹=˜m˜BŠı‹=Š­‹‹=¸Â˜mŠıŠ}‹¸ÍŠòâr¢&WGW&â&VF—&V7B‚vV×Æ÷–VUöÆ—7Br¢f÷&ÓÔV×Æ÷–VTVF—Df÷&Ò‡&WVW7Båõ5B÷"æöæRÆV×Æ÷–VSÖV×Æ÷–VR¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"s ¢f÷&Òæf–VÆG5²v'&æ6‚uÒçVW'—6WCÖf÷&Òæf–VÆG5²v'&æ6‚uÒçVW'—6WBæf–ÇFW"‡³×&WVW7BçW6W"ç&öf–ÆRæ'&æ6…ö–B¢f÷&Òæf–VÆG5²w&öÆRuÒæ6†ö–6W3Õ²‚vV×Æ÷–VRrÂ}ªŠ}‹˜]˜mŠòr•Ğ¢f÷&Òæf–VÆG5²w6†–gEöw&÷WuÒçVW'—6WCÖf÷&Òæf–VÆG5²w6†–gEöw&÷WuÒçVW'—6WBæf–ÇFW"†'&æ6ƒ×&WVW7BçW6W"ç&öf–ÆRæ'&æ6‚¢VÆ–b&öÆUööb‡&WVW7BçW6W"“ÓÒv–çFW&æÅöÖævW"s ¢f÷&Òæf–VÆG5²w&öÆRuÒæ6†ö–6W3Õ²‚vV×Æ÷–VRrÂ}ªŠ}‹˜]˜mŠòr’Â‚v6ÆÅö6VçFW"rÂ}ªŠ}˜N(Í‹=˜mŠ­‹r’Â‚v6öç7VÇFçBrÂ}˜]‹MŠ}˜‹r•Ğ¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢v—F‚G&ç67F–öâæFöÖ–2‚“ ¢f÷&Òç6fR‚¢–bf÷&Òæ6ÆVæVEöFFævWB‚væWu÷77v÷&Br“ ¢&VÖVÖ&W%öFW6·F÷÷77v÷&B†V×Æ÷–VRçW6W"Æf÷&Òæ6ÆVæVEöFF²væWu÷77v÷&BuÒÆ7F÷#×&WVW7BçW6W"¢ÖW76vW2ç7V66W72‡&WVW7BÂ}˜]‹MŠí‹]Š}Š¢›í‹‹=˜m˜BŠ˜~(Í‹˜‹-‹‹=Š}˜m¸Â‹MŠòâr¢&WGW&â&VF—&V7B‚vV×Æ÷–VUöf–ÆRrÇ³×²¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RöV×Æ÷–VUöÖævVÖVçEöf÷&Òæ‡FÖÂrÇ°¢vf÷&Òs¦f÷&ÒÂvV×Æ÷–VRs¦V×Æ÷–VRÂwF—FÆRs¢}˜¸Í‹Š}¸Í‹B˜]‹MŠí‹]Š}Š¢rÀ¢w7V'F—FÆRs¢}Š}‹}˜MŠ}‹Š}Š¢˜}˜¸ÍŠ­¸ÍˆÂ‹M‹­˜M¸ÍˆÂŠ­˜]Š}‹=ˆÂŠ¸Í˜]˜r˜‚‹M¸Í˜Š¢Š}¸Í˜b›í‹‹=˜m˜B‹ŠrŠ˜~(Í‹˜‹-‹‹=Š}˜m¸Âª˜m¸ÍŠòârÀ¢v'WGFöâs¢}‹Ší¸Í‹˜rŠ­‹­¸Í¸Í‹Š}Š¢rÂvf÷&Õö¶–æBs¢vVF—BrÀ¢Ò ¤Æöv–å÷&WV—&V@¦FVb&öf–ÆU÷f–Wr‡&WVW7B“ ¢&öf–ÆSÖvWFGG"‡&WVW7BçW6W"Âw&öf–ÆRrÄæöæR¢f÷&ÓÔV×Æ÷–VTfF$f÷&Ò‡&WVW7Båõ5B÷"æöæRÇ&WVW7Bäd”ÄU2÷"æöæRÆ–ç7Fæ6S×&öf–ÆR’–b&öf–ÆRVÇ6RæöæP¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&ÒæBf÷&Òæ—5÷fÆ–B‚“ ¢f÷&Òç6fR‚¢ÖW76vW2ç7V66W72‡&WVW7BÂ}‹ª‹2›í‹˜˜Š}¸Í˜BŠ˜~(Í‹˜‹-‹‹=Š}˜m¸Â‹MŠòâr¢&WGW&â&VF—&V7B‚w&öf–ÆRr¢FöF•÷6†–gC×6†–gE÷'VÆR‡&WVW7BçW6W"ÇF–ÖW¦öæRæÆö6ÆFFR‚’’–b&öf–ÆRVÇ6RæöæP¢&WGW&â&VæFW"‡&WVW7BÂv6÷&R÷&öf–ÆRæ‡FÖÂrÇ°¢w&öf–ÆRs§&öf–ÆRÀ¢vfF%öf÷&Òs¦f÷&ÒÀ¢wFöF•÷6†–gBs§FöF•÷6†–gBÀ¢Ò ¤ÖævW%÷&WV—&V@¦FVbV×Æ÷–VUöfF%öVF—B‡&WVW7BÇ²“ ¢V×Æ÷–VSÖvWEöö&¦V7Eö÷%óCB„V×Æ÷–VU&öf–ÆRæö&¦V7G2ç6VÆV7E÷&VÆFVB‚wW6W"rÂv'&æ6‚r’Ç³×²¢–bæ÷BöV×Æ÷–VUö66W72‡&WVW7BÆV×Æ÷–VR“ ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}Š˜rŠ}¸Í˜b›í‹‹=˜m˜BŠı‹=Š­‹‹=¸Â˜mŠıŠ}‹¸ÍŠòâr¢&WGW&â&VF—&V7B‚vV×Æ÷–VUöÆ—7Br¢f÷&ÓÔV×Æ÷–VTfF$f÷&Ò‡&WVW7Båõ5B÷"æöæRÇ&WVW7Bäd”ÄU2÷"æöæRÆ–ç7Fæ6SÖV×Æ÷–VR¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢f÷&Òç6fR‚¢ÖW76vW2ç7V66W72‡&WVW7BÂ}‹ª‹2›í‹‹=˜m˜BŠ˜~(Í‹˜‹-‹‹=Š}˜m¸Â‹MŠòâr¢&WGW&â&VF—&V7B‚vV×Æ÷–VUöÆ—7Br¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RöV×Æ÷–VUöfF%öf÷&Òæ‡FÖÂrÇ²vf÷&Òs¦f÷&ÒÂvV×Æ÷–VRs¦V×Æ÷–VWÒ  ¦FVb†VÇF…ö6†V6²‡&WVW7B“ ¢&WGW&â§6öå&W7öç6R‡²'7FGW2#¢&ö²"Â'6W'f–6R#¢$w&VVäÆ–fR7Ffb’"Â&•÷fW'6–öâ#¢#ã'Ò ¤Æöv–å÷&WV—&V@¦FVbGFVæFæ6R‡&WVW7B“ ¢FöF“×F–ÖW¦öæRæÆö6ÆFFR‚¢&öf–ÆSÖvWFGG"‡&WVW7BçW6W"Âw&öf–ÆRrÄæöæR¢'&æ6ƒÖvWFGG"‡&öf–ÆRÂv'&æ6‚rÄæöæR¢&V6÷&CÔGFVæFæ6Ræö&¦V7G2æf–ÇFW"‡W6W#×&WVW7BçW6W"ÆFFS×FöF’’æf—'7B‚ ¢FVbfW&–g•öÆö6F–öâ‚“ ¢""%&WGW&â†ö²ÂÖW76vRÂÖWFFF’âu2—2&WV—&VBöæÇ’v†Vâ'&æ6‚vVöfVæ6R—2Væ&ÆVBâ"" ¢–bæ÷B'&æ6‚÷"æ÷B'&æ6‚ævVöfVæ6UöVæ&ÆVC ¢&WGW&âG'VRÂrrÂ²w7FGW2s¢vÆVv7’wĞ¢–b'&æ6‚æÆF—GVFR—2æöæR÷"'&æ6‚æÆöæv—GVFR—2æöæS ¢&WGW&âfÇ6RÂ}˜]˜˜-‹¸ÍŠ¢‹M‹Š˜r˜}˜m˜‹"Š­˜‹=‹r˜]Šı¸Í‹Š­˜m‹¸Í˜R˜m‹MŠı˜rŠ}‹=Š¢ârÂ²w7FGW2s¢wVæf–Æ&ÆRwĞ¢G'“ ¢ÆCÖfÆöB‡&WVW7Båõ5BævWB‚vÆF—GVFRrÂrr’¢ÆöãÖfÆöB‡&WVW7Båõ5BævWB‚vÆöæv—GVFRrÂrr’¢67W&7“ÖfÆöB‡&WVW7Båõ5BævWB‚v67W&7’rÂrr’¢W†6WB…G—TW'&÷"ÅfÇVTW'&÷"“ ¢&WGW&âfÇ6RÂ}Š‹Š}¸ÂŠ½ŠŠ¢˜‹˜ŠòŠŠ}¸ÍŠòŠı‹=Š­‹‹=¸Â˜]˜˜-‹¸ÍŠ¢˜]ªŠ}˜m¸Â‹Šr˜‹Š}˜Bª˜m¸ÍŠòârÂ²w7FGW2s¢wVæf–Æ&ÆRwĞ ¢2&V¦V7BÖÆf÷&ÖVBö–×÷76–&ÆRÆö6F–öâfÇVW2&Vf÷&RF—7Fæ6R6Æ7VÆF–öâà¢–bæ÷B‚Ó“ãÃÒÆBÃÒ“ãæBÓƒãÃÒÆöâÃÒƒã’÷"67W&7’ÃÒ ¢&WGW&âfÇ6RÂ}Š}‹}˜MŠ}‹Š}Š¢˜]˜˜-‹¸ÍŠ¢˜]ªŠ}˜m¸Â˜]‹Š­Š‹˜m¸Í‹=Š¢âu2‹ŠrŠíŠ}˜]˜‹B˜‚‹˜‹M˜bª˜m¸ÍŠò˜‚Šı˜ŠŠ}‹˜rŠ}˜]Š­ŠİŠ}˜bª˜m¸ÍŠòârÂ°¢w7FGW2s¢wVæf–Æ&ÆRrÂvÆBs¦ÆBÂvÆöâs¦ÆöâÂv67W&7’s¦67W&7¢Ğ ¢2&V¦V7BfW'’–×&V6—6Rf—†W3²÷F†W'v—6RW6W"6÷VÆBV"–ç6–FRÆ&vRVæ6W'F–çG’6—&6ÆRà¢–b67W&7’â# ¢&WGW&âfÇ6RÂb}Šı˜-Š¢u2ªŠ}˜¸Â˜m¸Í‹=Š¢‡¶–çB†67W&7’—Ò˜]Š­‹’âª˜mŠ}‹›í˜mŠÍ‹˜r¸ÍŠr˜‹mŠ}¸ÂŠŠ}‹"Šı˜ŠŠ}‹˜rŠ}˜]Š­ŠİŠ}˜bª˜m¸ÍŠòârÂ°¢w7FGW2s¢vÆ÷uö67W&7’rÂvÆBs¦ÆBÂvÆöâs¦ÆöâÂv67W&7’s¦67W&7¢Ğ ¢2†fW'6–æRF—7Fæ6RÂÖWFW'2à¢#Óc3sã ¢ÆCÆÆöãÖÖF‚ç&F–ç2†fÆöB†'&æ6‚æÆF—GVFR’’ÆÖF‚ç&F–ç2†fÆöB†'&æ6‚æÆöæv—GVFR’¢ÆC"ÆÆöã#ÖÖF‚ç&F–ç2†ÆB’ÆÖF‚ç&F–ç2†Æöâ¢FÆBÆFÆöãÖÆC"ÖÆCÆÆöã"ÖÆöã¢ÖÖF‚ç6–â†FÆBó"’¢£"²ÖF‚æ6÷2†ÆC’¦ÖF‚æ6÷2†ÆC"’¦ÖF‚ç6–â†FÆöâó"’¢£ ¢F—7Fæ6S×"¢ƒ"¦ÖF‚æFã"†ÖF‚ç7'B†’ÆÖF‚ç7'BƒÖ’’¢ÆÆ÷vVCÖfÆöB†'&æ6‚æGFVæFæ6U÷&F—W5öÒ’²Ö–â†67W&7’ÃSã¢ÖWF×²w7FGW2s¢wfW&–f–VBr–bF—7Fæ6RÃÒÆÆ÷vVBVÇ6Rv÷WG6–FRrÀ¢vÆBs¦ÆBÂvÆöâs¦ÆöâÂv67W&7’s¦67W&7’ÂvF—7Fæ6Rs§&÷VæB†F—7Fæ6R—Ğ¢–bF—7Fæ6RâÆÆ÷vVC ¢&WGW&âfÇ6RÂb}‹M˜]ŠrŠİŠı˜Šò¶–çB†F—7Fæ6R—Ò˜]Š­‹Š}‹"‹M‹Š˜r˜Š}‹]˜M˜rŠıŠ}‹¸ÍŠı‰²Š½ŠŠ¢˜‹˜Šò˜˜-‹rŠıŠ}Ší˜B˜]ŠİŠı˜Šı˜r˜]ŠÍŠ}‹"Š}‹=Š¢ârÂÖWF¢&WGW&âG'VRÂrrÂÖWF ¢–b&WVW7BæÖWF†öCÓÒuõ5Bs ¢7F–öã×&WVW7Båõ5BævWB‚v7F–öâr¢–b7F–öãÓÒv6†V6¶–âs ¢2fW&–g’$Tdõ$R7&VF–ærFöF’w2&V6÷&B6òf–ÆVBGFV×G2Fòæ÷B7&VFR†çFöÒGFVæFæ6Rà¢ö²Æ×6rÆÖWF×fW&–g•öÆö6F–öâ‚¢–bæ÷Bö³ ¢öGFVæFæ6UöVF—B€¢&WVW7BÂvGFVæFæ6UöÆö6F–öå÷&V¦V7FVBrÆ×6rÀ¢²v7F–öâs¢v6†V6¶–ârÂv'&æ6…ö–Bs¦vWFGG"†'&æ6‚Âv–BrÄæöæR’Â¢¦ÖWFĞ¢¢ÖW76vW2æW'&÷"‡&WVW7BÆ×6r¢&WGW&â&VF—&V7B‚vGFVæFæ6Rr¢&V6÷&BÅóÔGFVæFæ6Ræö&¦V7G2ævWEö÷%ö7&VFR€¢W6W#×&WVW7BçW6W"ÆFFS×FöF’ÆFVfVÇG3×²v'&æ6‚s¦'&æ6‡Ğ¢¢æ÷s×F–ÖW¦öæRææ÷r‚¢–bæ÷B&V6÷&Bæ6†V6µö–ã ¢&V6÷&Bæ6†V6µö–ãÖæ÷p¢&V6÷&Bç7FGW3ÖGFVæFæ6U÷7FGW5öf÷"‡&WVW7BçW6W"ÇFöF’Ææ÷r¢&V6÷&Bæ6†V6µö–åöÆö6F–öå÷7FGW3ÖÖWFævWB‚w7FGW2rÂvÆVv7’r¢–bÖWFævWB‚vÆBr’—2æ÷BæöæS ¢&V6÷&Bæ6†V6µö–åöÆF—GVFSÖÖWF²vÆBuĞ¢&V6÷&Bæ6†V6µö–åöÆöæv—GVFSÖÖWF²vÆöâuĞ¢&V6÷&Bæ6†V6µö–åö67W&7•öÓÖÖWFævWB‚v67W&7’r¢&V6÷&Bæ6†V6µö–åöF—7Fæ6UöÓÖÖWFævWB‚vF—7Fæ6Rr¢–b&V6÷&Bç7FGW3ÓÒw&W6VçBræBæ÷B66÷&TWfVçBæö&¦V7G2æf–ÇFW"€¢W6W#×&WVW7BçW6W"ÆWfVçEöFFS×FöF’Ç&V6öãÒvGFVæFæ6Rp¢’æW†—7G2‚“ ¢66÷&TWfVçBæö&¦V7G2æ7&VFR€¢W6W#İ¶÷^-¢G§²ÚîÆ­yÒÂv6÷&Rö6†V6¶Æ—7E÷FV×ÆFW2æ‡FÖÂrÇ²wFV×ÆFW2s§7Ò  ¤ÖævW%÷&WV—&V@¦FVb6†V6¶Æ—7E÷FV×ÆFUö7&VFR‡&WVW7B“ ¢f÷&ÓÔ6†V6¶Æ—7EFV×ÆFTf÷&Ò‡&WVW7Båõ5B÷"æöæR¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"s ¢f÷&Òæf–VÆG5²v'&æ6‚uÒçVW'—6WCÖf÷&Òæf–VÆG5²v'&æ6‚uÒçVW'—6WBæf–ÇFW"‡³×&WVW7BçW6W"ç&öf–ÆRæ'&æ6…ö–B¢f÷&Òæf–VÆG5²v'&æ6‚uÒæ–æ—F–Ã×&WVW7BçW6W"ç&öf–ÆRæ'&æ6€¢f÷&Òæf–VÆG5²w&öÆRuÒæ6†ö–6W3Õ²‚vV×Æ÷–VRrÂ}ªŠ}‹˜]˜mŠòr’Â‚vÖævW"rÂ}˜]Šı¸Í‹‹M‹Š˜rr•Ğ¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢ö&£Öf÷&Òç6fR†6öÖÖ—CÔfÇ6R“²ö&¢æ7&VFVEö'“×&WVW7BçW6W ¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"s¢ö&¢æ'&æ6ƒ×&WVW7BçW6W"ç&öf–ÆRæ'&æ6€¢ö&¢ç6fR‚¢ÖW76vW2ç7V66W72‡&WVW7BÂ}¨mª(Í˜M¸Í‹=Š¢‹=Š}ŠíŠ­˜r‹MŠı‰²ŠİŠ}˜MŠr˜]˜Š}‹ŠòŠ-˜b‹ŠrŠ}‹mŠ}˜˜rª˜m¸ÍŠòâr¢&WGW&â&VF—&V7B‚v6†V6¶Æ—7E÷FV×ÆFUöFWF–ÂrÇ³Öö&¢ç²¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RövVæW&–5öf÷&Òæ‡FÖÂrÇ²vf÷&Òs¦f÷&ÒÂwF—FÆRs¢}‹=Š}ŠíŠ¢¨mª(Í˜M¸Í‹=Š¢‹˜‹-Š}˜m˜rrÂv'WGFöâs¢}‹=Š}ŠíŠ¢wÒ  ¤ÖævW%÷&WV—&V@¦FVb6†V6¶Æ—7E÷FV×ÆFUöFWF–Â‡&WVW7BÇ²“ ¢FV×ÆFSÖvWEöö&¦V7Eö÷%óCB„6†V6¶Æ—7EFV×ÆFRæö&¦V7G2ç6VÆV7E÷&VÆFVB‚v'&æ6‚r’Ç³×²¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"ræBFV×ÆFRæ'&æ6…ö–Bæ÷B–â„æöæRÇ&WVW7BçW6W"ç&öf–ÆRæ'&æ6…ö–B“ ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}Šı‹=Š­‹‹=¸Â˜]ŠÍŠ}‹"˜m¸Í‹=Š¢âr¢&WGW&â&VF—&V7B‚v6†V6¶Æ—7E÷FV×ÆFW2r¢f÷&ÓÔ6†V6¶Æ—7D—FVÔf÷&Ò‡&WVW7Båõ5B÷"æöæR¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢—FVÓÖf÷&Òç6fR†6öÖÖ—CÔfÇ6R“²—FVÒçFV×ÆFS×FV×ÆFS²—FVÒç6fR‚¢ÖW76vW2ç7V66W72‡&WVW7BÂ}˜]˜‹ŠòŠÍŠı¸ÍŠòŠ}‹mŠ}˜˜r‹MŠòâr¢&WGW&â&VF—&V7B‚v6†V6¶Æ—7E÷FV×ÆFUöFWF–ÂrÇ³×²¢&WGW&â&VæFW"‡&WVW7BÂv6÷&Rö6†V6¶Æ—7E÷FV×ÆFUöFWF–Âæ‡FÖÂrÇ²wFV×ÆFRs§FV×ÆFRÂvf÷&Òs¦f÷&×Ò  ¤ÖævW%÷&WV—&V@¦FVb6†V6¶Æ—7E÷FVÕ÷7FGW2‡&WVW7B“ ¢F“×F–ÖW¦öæRæÆö6ÆFFR‚¢G'“ ¢–b&WVW7BätUBævWB‚vFFRr“¢F“×'6Uö¦ÆÆ’‡&WVW7BätUE²vFFRuÒ¢W†6WBW†6WF–öã ¢70¢W6W'3ÕW6W"æö&¦V7G2æf–ÇFW"‡&öf–ÆUõö—5ö7F—fSÕG'VR’ç6VÆV7E÷&VÆFVB‚w&öf–ÆRrÂw&öf–ÆUõö'&æ6‚r¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"s ¢W6W'3×W6W'2æf–ÇFW"‡&öf–ÆUõö'&æ6ƒ×&WVW7BçW6W"ç&öf–ÆRæ'&æ6‚¢&÷w3ÕµĞ¢f÷"W6W"–âW6W'2æ÷&FW%ö'’‚w&öf–ÆUõö'&æ6…õöæÖRrÂvÆ7EöæÖRrÂvf—'7EöæÖRrÂwW6W&æÖRr“ ¢FV×ÆFW3Õö6†V6¶Æ—7E÷FV×ÆFW5öf÷"‡W6W"¢—FVÕö–G3Õ¶’æ–Bf÷"B–âFV×ÆFW2f÷"’–âBæ—FV×2æÆÂ‚•Ğ¢F÷FÃÖÆVâ†—FVÕö–G2¢FöæSÔ6†V6¶Æ—7D6ö×ÆWF–öâæö&¦V7G2æf–ÇFW"‡W6W#×W6W"ÆFFSÖF’Æ—FVÕö–Eõö–ãÖ—FVÕö–G2Æ—5öFöæSÕG'VR’æ6÷VçB‚’–b—FVÕö–G2VÇ6R ¢&WV—&VEö–G3Õ¶’æ–Bf÷"B–âFV×ÆFW2f÷"’–âBæ—FV×2æÆÂ‚’–b’æ—5÷&WV—&VEĞ¢&WV—&VEöFöæSÔ6†V6¶Æ—7D6ö×ÆWF–öâæö&¦V7G2æf–ÇFW"‡W6W#×W6W"ÆFFSÖF’Æ—FVÕö–Eõö–ã×&WV—&VEö–G2Æ—5öFöæSÕG'VR’æ6÷VçB‚’–b&WV—&VEö–G2VÇ6R ¢&÷w2æVæB‡°¢wW6W"s§W6W"ÂwF÷FÂs§F÷FÂÂvFöæRs¦FöæRÀ¢w&WV—&VE÷F÷FÂs¦ÆVâ‡&WV—&VEö–G2’Âw&WV—&VEöFöæRs§&WV—&VEöFöæRÀ¢wW&6VçBs§&÷VæB†FöæR£÷F÷FÂ’–bF÷FÂVÇ6RÀ¢Ò¢&WGW&â&VæFW"‡&WVW7BÂv6÷&Rö6†V6¶Æ—7E÷FVÒæ‡FÖÂrÇ²w&÷w2s§&÷w2ÂvF’s¦F—Ò  ¤f–ææ6U÷&WV—&V@¦FVbW†V7WF—fU÷FöF’‡&WVW7B“ ¢g&öÒæÖöFVÇ2–×÷'B'&æ6‚Âf–ææ6–ÅG&ç67F–öà¢F“×F–ÖW¦öæRæÆö6ÆFFR‚¢'&æ6ƒÕö'&æ6…÷66÷Uöf÷%öÖævW"‡&WVW7B¢W6W'3ÕW6W"æö&¦V7G2æf–ÇFW"‡&öf–ÆUõö—5ö7F—fSÕG'VR’ç6VÆV7E÷&VÆFVB‚w&öf–ÆRrÂw&öf–ÆUõö'&æ6‚r¢–b'&æ6ƒ ¢W6W'3×W6W'2æf–ÇFW"‡&öf–ÆUõö'&æ6ƒÖ'&æ6‚ ¢ÆFU÷V÷ÆSÕµĞ¢Ö—76–æu÷V÷ÆSÕµĞ¢ÆVfU÷V÷ÆSÕµĞ¢6†V6¶Æ—7Eö—77VW3ÕµĞ¢·•ö—77VW3ÕµĞ¢&W÷'Eö—77VW3ÕµĞ ¢f÷"R–âW6W'2æ÷&FW%ö'’‚w&öf–ÆUõö'&æ6…õöæÖRrÂvÆ7EöæÖRrÂvf—'7EöæÖRrÂwW6W&æÖRr“ ¢×Rç&öf–ÆP¢ÆVfSÔÆVfU&WVW7Bæö&¦V7G2æf–ÇFW"‡W6W#×RÇ7FGW3Òv&÷fVBrÇ7F'EöFFUõöÇFSÖF’ÆVæEöFFUõöwFSÖF’’æf—'7B‚¢&V3ÔGFVæFæ6Ræö&¦V7G2æf–ÇFW"‡W6W#×RÆFFSÖF’’æf—'7B‚¢v÷&µ÷'VÆS×6†–gE÷'VÆR‡RÆF’¢fF#×æfF"çW&Â–bæfF"VÇ6RæöæP¢&6S×²v–Bs§Ræ–BÂw&öf–ÆUö–Bs§æ–BÂvæÖRs§RævWEögVÆÅöæÖR‚’÷"RçW6W&æÖRÂv'&æ6‚s§æ'&æ6‚ææÖR–bæ'&æ6‚VÇ6R~(	BrÂv¦ö%÷F—FÆRs§æ¦ö%÷F—FÆRÂvfF"s¦fF'Ğ ¢–bÆVfS ¢ÆVfU÷V÷ÆRæVæB‡²¢¦&6RÂvÆ&VÂs¦ÆVfRævWE÷&WVW7E÷G—UöF—7Æ’‚—Ò¢VÆ–b&V2æB&V2æ6†V6µö–ã ¢7FGW3ÖGFVæFæ6U÷7FGW5öf÷"‡RÆF’Ç&V2æ6†V6µö–â¢–b7FGW3ÓÒvÆFRs ¢ÆFU÷V÷ÆRæVæB‡²¢¦&6RÂwF–ÖRs§F–ÖW¦öæRæÆö6ÇF–ÖR‡&V2æ6†V6µö–â’ç7G&gF–ÖR‚rTƒ¢TÒr—Ò¢VÆ–bæ÷Bv÷&µ÷'VÆRævWB‚v—5ööfbr“ ¢Ö—76–æu÷V÷ÆRæVæB†&6R ¢26†V6¶Æ—7B7FGW0¢FV×ÆFW3Õö6†V6¶Æ—7E÷FV×ÆFW5öf÷"‡R¢—FV×3Õ¶’f÷"B–âFV×ÆFW2f÷"’–âBæ—FV×2æÆÂ‚•Ğ¢&WV—&VCÕ¶’f÷"’–â—FV×2–b’æ—5÷&WV—&VEĞ¢–b&WV—&VBæBæ÷Bv÷&µ÷'VÆRævWB‚v—5ööfbr“ ¢FöæUö–G3×6WB„6†V6¶Æ—7D6ö×ÆWF–öâæö&¦V7G2æf–ÇFW"‡W6W#×RÆFFSÖF’Æ—5öFöæSÕG'VRÆ—FVÕõö–ã×&WV—&VB’çfÇVW5öÆ—7B‚v—FVÕö–BrÆfÆCÕG'VR’¢Ö—76–æu÷&WV—&VCÕ¶’f÷"’–â&WV—&VB–b’æ–Bæ÷B–âFöæUö–G5Ğ¢–bÖ—76–æu÷&WV—&VC ¢6†V6¶Æ—7Eö—77VW2æVæB‡²¢¦&6RÂvÖ—76–ærs¦ÆVâ†Ö—76–æu÷&WV—&VB’ÂwF÷FÂs¦ÆVâ‡&WV—&VB—Ò ¢2µ’—77VP¢·“ÖWFõö·’‡RÆF’×F–ÖVFVÇF†F—3Ó#’’ÆF’¢–b·•²w66÷&RuÓÃs ¢·•ö—77VW2æVæB‡²¢¦&6RÂw66÷&Rs¦·•²w66÷&Ru×Ò ¢2Ö—76VBæ–v‡FÇ’&W÷'G2–âÆ7Br6ö×ÆWFVBF—0¢Ö—76VCÖÖ—76–æu÷&W÷'EöF—2‡RÆF—3ÓrÆVæCÖF’×F–ÖVFVÇF†F—3Ó’¢–bÖ—76VC ¢&W÷'Eö—77VW2æVæB‡²¢¦&6RÂv6÷VçBs¦ÆVâ†Ö—76VB—Ò ¢÷fW&GVU÷3ÕF6²æö&¦V7G2æf–ÇFW"‡7FGW5õö–ãÒ‚wFöFòrÂvFö–ærr’ÆGVUöFFUõöÇCÖF’’ç6VÆV7E÷&VÆFVB‚v76–væVE÷FòrÂv76–væVE÷Fõõ÷&öf–ÆRrÂv76–væVE÷Fõõ÷&öf–ÆUõö'&æ6‚r¢–b'&æ6ƒ ¢÷fW&GVU÷3Ö÷fW&GVU÷2æf–ÇFW"†76–væVE÷Fõõ÷&öf–ÆUõö'&æ6ƒÖ'&æ6‚¢÷fW&GVU÷F6·3ÖÆ—7B†÷fW&GVU÷2æ÷&FW%ö'’‚vGVUöFFRr•³£%Ò ¢GƒÔf–ææ6–ÅG&ç67F–öâæö&¦V7G2æf–ÇFW"†ö67W'&VEöEõöFFSÖF’¢–b'&æ6ƒ¢Gƒ×G‚æf–ÇFW"†'&æ6ƒÖ'&æ6‚¢&WfVçVU÷FöF“×G‚ævw&VvFR‡ƒÕ7VÒ‚vÖ÷VçBr’•²w‚uÒ÷"  ¢–W7FW&F“ÖF’×F–ÖVFVÇF†F—3Ó¢G…÷“Ôf–ææ6–ÅG&ç67F–öâæö&¦V7G2æf–ÇFW"†ö67W'&VEöEõöFFS×–W7FW&F’¢–b'&æ6ƒ¢G…÷“×G…÷’æf–ÇFW"†'&æ6ƒÖ'&æ6‚¢&WfVçVU÷–W7FW&F“×G…÷’ævw&VvFR‡ƒÕ7VÒ‚vÖ÷VçBr’•²w‚uÒ÷" ¢&WfVçVUö6†ævSÔæöæP¢–b&WfVçVU÷–W7FW&F“ ¢&WfVçVUö6†ævS×&÷VæB‚†fÆöB‡&WfVçVU÷FöF’’ÖfÆöB‡&WfVçVU÷–W7FW&F’’’£öfÆöB‡&WfVçVU÷–W7FW&F’’Ã ¢'&æ6†W3Ô'&æ6‚æö&¦V7G2æf–ÇFW"†—5ö7F—fSÕG'VR’æ÷&FW%ö'’‚væÖRr¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"s ¢'&æ6†W3Ö'&æ6†W2æf–ÇFW"‡³×&WVW7BçW6W"ç&öf–ÆRæ'&æ6…ö–B ¢'&æ6…ö6&G3ÕµĞ¢'&æ6…÷66÷SÖ'&æ6†W2–b&öÆUööb‡&WVW7BçW6W"“ÓÒvFÖ–ârVÇ6R'&æ6†W0¢f÷""–â'&æ6…÷66÷S ¢'SÕW6W"æö&¦V7G2æf–ÇFW"‡&öf–ÆUõö—5ö7F—fSÕG'VRÇ&öf–ÆUõö'&æ6ƒÖ"¢&W6VçCÔGFVæFæ6Ræö&¦V7G2æf–ÇFW"‡W6W%õö–ãÖ'RÆFFSÖF’Æ6†V6µö–åõö—6çVÆÃÔfÇ6R’æ6÷VçB‚¢ÆFSÔGFVæFæ6Ræö&¦V7G2æf–ÇFW"‡W6W%õö–ãÖ'RÆFFSÖF’Ç7FGW3ÒvÆFRr’æ6÷VçB‚¢F÷FÃÖ'Ræ6÷VçB‚¢'GƒÔf–ææ6–ÅG&ç67F–öâæö&¦V7G2æf–ÇFW"†'&æ6ƒÖ"Æö67W'&VEöEõöFFSÖF’’ævw&VvFR‡ƒÕ7VÒ‚vÖ÷VçBr’•²w‚uÒ÷" ¢'&æ6…ö6&G2æVæB‡²v'&æ6‚s¦"Âw&W6VçBs§&W6VçBÂvÆFRs¦ÆFRÂwF÷FÂs§F÷FÂÂw&WfVçVRs¦'G‡Ò ¢&—6µö6÷VçCÖÆVâ†ÆFU÷V÷ÆR’¶ÆVâ†Ö—76–æu÷V÷ÆR’¶ÆVâ†6†V6¶Æ—7Eö—77VW2’¶ÆVâ†·•ö—77VW2’¶÷fW&GVU÷2æ6÷VçB‚ ¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RöW†V7WF—fU÷FöF’æ‡FÖÂrÇ°¢vF’s¦F’Âw6VÆV7FVEö'&æ6‚s¦'&æ6‚Âv'&æ6†W2s¦'&æ6†W2À¢vÆFU÷V÷ÆRs¦ÆFU÷V÷ÆRÂvÖ—76–æu÷V÷ÆRs¦Ö—76–æu÷V÷ÆRÂvÆVfU÷V÷ÆRs¦ÆVfU÷V÷ÆRÀ¢v6†V6¶Æ—7Eö—77VW2s¦6†V6¶Æ—7Eö—77VW2Âv·•ö—77VW2s¦·•ö—77VW2Âw&W÷'Eö—77VW2s§&W÷'Eö—77VW2À¢v÷fW&GVU÷F6·2s¦÷fW&GVU÷F6·2Âw&WfVçVU÷FöF’s§&WfVçVU÷FöF’Âw&WfVçVU÷–W7FW&F’s§&WfVçVU÷–W7FW&F’À¢w&WfVçVUö6†ævRs§&WfVçVUö6†ævRÂv'&æ6…ö6&G2s¦'&æ6…ö6&G2Âw&—6µö6÷VçBs§&—6µö6÷VçBÀ¢wFVÕö6÷VçBs§W6W'2æ6÷VçB‚’À¢Ò  ¦FVbÖ÷&æ–æuö'&–VeöFF‡W6W"Â'&æ6ƒÔæöæR“ ¢F“×F–ÖW¦öæRæÆö6ÆFFR‚¢W6W'3ÕW6W"æö&¦V7G2æf–ÇFW"‡&öf–ÆUõö—5ö7F—fSÕG'VR’ç6VÆV7E÷&VÆFVB‚w&öf–ÆRrÂw&öf–ÆUõö'&æ6‚r¢–b'&æ6ƒ¢W6W'3×W6W'2æf–ÇFW"‡&öf–ÆUõö'&æ6ƒÖ'&æ6‚¢ÆFSÕµÓ²Ö—76–æsÕµÓ²Æ÷uö·“ÕµĞ¢f÷"R–âW6W'3 ¢ÆVfSÔÆVfU&WVW7Bæö&¦V7G2æf–ÇFW"‡W6W#×RÇ7FGW3Òv&÷fVBrÇ7F'EöFFUõöÇFSÖF’ÆVæEöFFUõöwFSÖF’’æW†—7G2‚¢–bÆVfS¢6öçF–çVP¢&V3ÔGFVæFæ6Ræö&¦V7G2æf–ÇFW"‡W6W#×RÆFFSÖF’’æf—'7B‚¢v÷&µ÷'VÆS×6†–gE÷'VÆR‡RÆF’¢–b&V2æB&V2æ6†V6µö–âæBGFVæFæ6U÷7FGW5öf÷"‡RÆF’Ç&V2æ6†V6µö–â“ÓÒvÆFRs ¢ÆFRæVæB‡R¢VÆ–b†æ÷B&V2÷"æ÷B&V2æ6†V6µö–â’æBæ÷Bv÷&µ÷'VÆRævWB‚v—5ööfbr“¢Ö—76–æræVæB‡R¢³ÖWFõö·’‡RÆF’×F–ÖVFVÇF†F—3Ó#’’ÆF’¢–bµ²w66÷&RuÓÃs¢Æ÷uö·’æVæB‚‡RÆµ²w66÷&RuÒ’¢÷fW&GVSÕF6²æö&¦V7G2æf–ÇFW"‡7FGW5õö–ãÒ‚wFöFòrÂvFö–ærr’ÆGVUöFFUõöÇCÖF’¢–b'&æ6ƒ¢÷fW&GVSÖ÷fW&GVRæf–ÇFW"†76–væVE÷Fõõ÷&öf–ÆUõö'&æ6ƒÖ'&æ6‚¢g&öÒæÖöFVÇ2–×÷'Bf–ææ6–ÅG&ç67F–öà¢&WfVçVSÔf–ææ6–ÅG&ç67F–öâæö&¦V7G2æf–ÇFW"†ö67W'&VEöEõöFFSÖF’¢–b'&æ6ƒ¢&WfVçVS×&WfVçVRæf–ÇFW"†'&æ6ƒÖ'&æ6‚¢&WfVçVS×&WfVçVRævw&VvFR‡ƒÕ7VÒ‚vÖ÷VçBr’•²w‚uÒ÷" ¢&WGW&â²vF’s¦F’ÂwFVÒs§W6W'2æ6÷VçB‚’ÂvÆFRs¦ÆFRÂvÖ—76–ærs¦Ö—76–ærÂvÆ÷uö·’s¦Æ÷uö·’Âv÷fW&GVRs¦÷fW&GVRæ6÷VçB‚’Âw&WfVçVRs§&WfVçVWĞ ¤f–ææ6U÷&WV—&V@¦FVbÖ÷&æ–æuö'&–Vb‡&WVW7B“ ¢'&æ6ƒÕö'&æ6…÷66÷Uöf÷%öÖævW"‡&WVW7B¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RöÖ÷&æ–æuö'&–Vbæ‡FÖÂrÇ²v'&–Vbs¦Ö÷&æ–æuö'&–VeöFF‡&WVW7BçW6W"Æ'&æ6‚—Ò ¤ÖævW%÷&WV—&V@¦FVbV×Æ÷–VUó3c‡&WVW7BÇ²“ ¢V×Æ÷–VSÖvWEöö&¦V7Eö÷%óCB€¢V×Æ÷–VU&öf–ÆRæö&¦V7G2ç6VÆV7E÷&VÆFVB‚wW6W"rÂv'&æ6‚rÂw6†–gEöw&÷Wr’À¢³×°¢¢–bæ÷BöV×Æ÷–VUö66W72‡&WVW7BÆV×Æ÷–VR“ ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}Šı‹=Š­‹‹=¸Â˜]ŠÍŠ}‹"˜m¸Í‹=Š¢âr¢&WGW&â&VF—&V7B‚vV×Æ÷–VUöÆ—7Br ¢SÖV×Æ÷–VRçW6W ¢F“×F–ÖW¦öæRæÆö6ÆFFR‚¢7F'C3ÖF’×F–ÖVFVÇF†F—3Ó#’¢7F'C“ÖF’×F–ÖVFVÇF†F—3Óƒ’ ¢GFVæFæ6U÷3ÔGFVæFæ6Ræö&¦V7G2æf–ÇFW"‡W6W#×RÆFFUõöwFS×7F'C3’æ÷&FW%ö'’‚rÖFFRr¢GFVæFæ6U÷F÷FÃÖGFVæFæ6U÷2æ6÷VçB‚¢GFVæFæ6U÷&W6VçCÖGFVæFæ6U÷2æf–ÇFW"†6†V6µö–åõö—6çVÆÃÔfÇ6R’æ6÷VçB‚¢ÆFUö6÷VçCÖGFVæFæ6U÷2æf–ÇFW"‡7FGW3ÒvÆFRr’æ6÷VçB‚¢Ö—76–æuö6÷VçCÖÖ‚ƒÃ3ÖGFVæFæ6U÷&W6VçB¢GFVæFæ6U÷&FS×&÷VæB†GFVæFæ6U÷&W6VçB£öÖ‚ƒÆGFVæFæ6U÷F÷FÂ’’–bGFVæFæ6U÷F÷FÂVÇ6R  ¢&W÷'G33ÔF–Ç•&W÷'Bæö&¦V7G2æf–ÇFW"‡W6W#×RÆ7&VFVEöEõöFFUõöwFS×7F'C3Æ7&VFVEöEõöFFUõöÇFSÖF’¢&W÷'Eö6÷VçC×&W÷'G33çfÇVW2‚v7&VFVEöEõöFFRr’æF—7F–æ7B‚’æ6÷VçB‚ ¢F6·3ÕF6²æö&¦V7G2æf–ÇFW"†76–væVE÷Fó×R¢F6µ÷F÷FÃ×F6·2æ6÷VçB‚¢F6µöFöæS×F6·2æf–ÇFW"‡7FGW3ÒvFöæRr’æ6÷VçB‚¢F6µö÷fW&GVS×F6·2æf–ÇFW"‡7FGW5õö–ãÒ‚wFöFòrÂvFö–ærr’ÆGVUöFFUõöÇCÖF’’æ6÷VçB‚¢F6µ÷&FS×&÷VæB‡F6µöFöæR£öÖ‚ƒÇF6µ÷F÷FÂ’’–bF6µ÷F÷FÂVÇ6R  ¢ÆVfW3ÔÆVfU&WVW7Bæö&¦V7G2æf–ÇFW"‡W6W#×R’æ÷&FW%ö'’‚rÖ7&VFVEöBr•³£…Ğ¢6÷'&V7F–öç3ÔGFVæFæ6T6÷'&V7F–öå&WVW7Bæö&¦V7G2æf–ÇFW"‡W6W#×R’æ÷&FW%ö'’‚rÖ7&VFVEöBr•³£…Ğ¢FWf–6Uö—77VW3ÔFWf–6T—77VRæö&¦V7G2æf–ÇFW"‡&W÷'FW#×R’æ÷&FW%ö'’‚rÖ7&VFVEöBr•³£…Ğ¢&W÷'Eö—FV×3ÔF–Ç•&W÷'Bæö&¦V7G2æf–ÇFW"‡W6W#×R’æ÷&FW%ö'’‚rÖ7&VFVEöBr•³£…Ğ¢Fö7VÖVçG3ÔV×Æ÷–VTFö7VÖVçBæö&¦V7G2æf–ÇFW"†V×Æ÷–VSÖV×Æ÷–VR’æ÷&FW%ö'’‚rÖ7&VFVEöBr•³£…Ğ¢wV–FVÆ–æUö6µö6÷VçCÔwV–FVÆ–æT6¶æ÷vÆVFvVÖVçBæö&¦V7G2æf–ÇFW"‡W6W#×R’æ6÷VçB‚¢wV–FVÆ–æU÷F÷FÃÕöwV–FVÆ–æW5öf÷%÷W6W"‡R’æ6÷VçB‚ ¢66÷&S3Õ66÷&TWfVçBæö&¦V7G2æf–ÇFW"‡W6W#×RÆWfVçEöFFUõöwFS×7F'C3ÆWfVçEöFFUõöÇFSÖF’¢66÷&U÷F÷FÃ×66÷&S3ævw&VvFR‡ƒÕ7VÒ‚wö–çG2r’•²w‚uÒ÷"  ¢WfVçG3ÕµĞ¢f÷"–âGFVæFæ6Ræö&¦V7G2æf–ÇFW"‡W6W#×RÆFFUõöwFS×7F'C““ ¢–bæ6†V6µö–ã ¢Æ&VÃÒ}Š­Š=Ší¸Í‹r–bç7FGW3ÓÒvÆFRrVÇ6R}Šİ‹m˜‹p¢FW‡C×F–ÖW¦öæRæÆö6ÇF–ÖR†æ6†V6µö–â’ç7G&gF–ÖR‚rTƒ¢TÒr¢WfVçG2æVæB‡²vFFRs¦æFFRÂwG—Rs¦ç7FGW2ÂwF—FÆRs¦Æ&VÂÂwFW‡Bs§FW‡BÂv–6öâs¢~){rwÒ¢f÷"‚–âW'6öææVÄ7F–öâæö&¦V7G2æf–ÇFW"‡W6W#×RÆWfVçEöFFUõöwFS×7F'C““ ¢WfVçG2æVæB‡²vFFRs§‚æWfVçEöFFRÂwG—Rs§‚æ7F–öå÷G—RÂwF—FÆRs§‚ævWEö7F–öå÷G—UöF—7Æ’‚’ÂwFW‡Bs§‚çF—FÆRÂv–6öâs¢~)©wÒ¢f÷"‚–â66÷&TWfVçBæö&¦V7G2æf–ÇFW"‡W6W#×RÆWfVçEöFFUõöwFS×7F'C““ ¢WfVçG2æVæB‡²vFFRs§‚æWfVçEöFFRÂwG—Rs¢w66÷&RrÂwF—FÆRs¢}Š}˜]Š­¸ÍŠ}‹"rÂwFW‡Bs¦bw·‚çö–çG3¢¶GÒ+r·‚æFW67&—F–öçÒrÂv–6öâs¢~)ˆRwÒ¢f÷"‚–âFWf–6T—77VRæö&¦V7G2æf–ÇFW"‡&W÷'FW#×RÆ7&VFVEöEõöFFUõöwFS×7F'C““ ¢WfVçG2æVæB‡²vFFRs§F–ÖW¦öæRæÆö6ÆFFR‡‚æ7&VFVEöB’ÂwG—Rs¢vFWf–6RrÂwF—FÆRs¢}ªı‹-Š}‹‹BŠí‹Š}Š¸ÂŠı‹=Š­ªıŠ}˜rrÂwFW‡Bs§‚æFWf–6UöæÖRÂv–6öâs¢~)©"wÒ¢f÷"‚–âF–Ç•&W÷'Bæö&¦V7G2æf–ÇFW"‡W6W#×RÆ7&VFVEöEõöFFUõöwFS×7F'C““ ¢WfVçG2æVæB‡²vFFRs§F–ÖW¦öæRæÆö6ÆFFR‡‚æ7&VFVEöB’ÂwG—Rs¢w&W÷'BrÂwF—FÆRs¢}ªı‹-Š}‹‹B‹˜‹-Š}˜m˜rrÂwFW‡Bs¦æ÷&ÖÆ—¦Uö•÷FW‡B‡‚æ•÷7VÖÖ'’÷"‚çFW‡B÷"‚çG&ç67&—B•³£ÒÂv–6öâs¢~)jBwÒ¢WfVçG3×6÷'FVB†WfVçG2Æ¶W“ÖÆÖ&Fƒ§…²vFFRuÒÇ&WfW'6SÕG'VR•³£cĞ ¢vöÇ3ÕW&f÷&Öæ6TvöÂæö&¦V7G2æf–ÇFW"†V×Æ÷–VS×RÆ—5ö7F—fSÕG'VR¢·“ÖWFõö·’‡RÇ7F'C3ÆF’¢FöF•÷6†–gC×6†–gE÷'VÆR‡RÆF’ ¢7VÖÖ'“×°¢vGFVæFæ6U÷&FRs¦GFVæFæ6U÷&FRÀ¢vÆFUö6÷VçBs¦ÆFUö6÷VçBÀ¢w&W÷'Eö6÷VçBs§&W÷'Eö6÷VçBÀ¢wF6µ÷&FRs§F6µ÷&FRÀ¢wF6µö÷fW&GVRs§F6µö÷fW&GVRÀ¢w66÷&U÷F÷FÂs§66÷&U÷F÷FÂÀ¢vwV–FVÆ–æUö6µö6÷VçBs¦wV–FVÆ–æUö6µö6÷VçBÀ¢vwV–FVÆ–æU÷F÷FÂs¦wV–FVÆ–æU÷F÷FÂÀ¢Ğ ¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RöV×Æ÷–VUó3cæ‡FÖÂrÇ°¢vV×Æ÷–VRs¦V×Æ÷–VRÀ¢vWfVçG2s¦WfVçG2À¢vvöÇ2s¦vöÇ2À¢v·’s¦·’À¢w7VÖÖ'’s§7VÖÖ'’À¢wFöF•÷6†–gBs§FöF•÷6†–gBÀ¢vGFVæFæ6U÷&V6VçBs¦GFVæFæ6U÷5³£ÒÀ¢w&W÷'G5÷&V6VçBs§&W÷'Eö—FV×2À¢vÆVfW2s¦ÆVfW2À¢v6÷'&V7F–öç2s¦6÷'&V7F–öç2À¢vFWf–6Uö—77VW2s¦FWf–6Uö—77VW2À¢vFö7VÖVçG2s¦Fö7VÖVçG2À¢Ò ¤ÖævW%÷&WV—&V@¦FVbW'6öææVÅö7F–öåöFB‡&WVW7BÇ²“ ¢V×Æ÷–VSÕöV×Æ÷–VUö÷%÷&VF—&V7B‡&WVW7BÇ²¢–bV×Æ÷–VR—2æöæS ¢&WGW&â&VF—&V7B‚vV×Æ÷–VUöÆ—7Br¢f÷&ÓÕW'6öææVÄ7F–öäf÷&Ò‡&WVW7Båõ5B÷"æöæR¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢ƒÖf÷&Òç6fR†6öÖÖ—CÔfÇ6R“²‚çW6W#ÖV×Æ÷–VRçW6W#²‚æ7&VFVEö'“×&WVW7BçW6W#²‚ç6fR‚¢7Ffdæ÷F–f–6F–öâæö&¦V7G2æ7&VFR‡W6W#ÖV×Æ÷–VRçW6W"ÇF—FÆS×‚ævWEö7F–öå÷G—UöF—7Æ’‚’ÆÖW76vS×‚çF—FÆRÆæ÷F–f–6F–öå÷G—SÒwW'6öææVÅö7F–öârÇ&VÆFVEöFFS×‚æWfVçEöFFR¢ÖW76vW2ç7V66W72‡&WVW7BÆb}Š}˜-ŠıŠ}˜R˜]Šı¸Í‹¸ÍŠ­¸ÂŠ‹Š}¸Â¶V×Æ÷–VRçW6W"ævWEögVÆÅöæÖR‚’÷"V×Æ÷–VRçW6W"çW6W&æÖWÒŠ½ŠŠ¢‹MŠòâr¢&WGW&â&VF—&V7B‚vV×Æ÷–VUó3crÇ³×²¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RöV×Æ÷–VUöÖævVÖVçEöf÷&Òæ‡FÖÂrÇ°¢vf÷&Òs¦f÷&ÒÀ¢vV×Æ÷–VRs¦V×Æ÷–VRÀ¢wF—FÆRs¢}Š}˜-ŠıŠ}˜R˜]Šı¸Í‹¸ÍŠ­¸ÂrÀ¢w7V'F—FÆRs¢}Š­‹M˜¸Í˜-ˆÂŠ­‹ª‹ˆÂŠ}Ší‹}Š}‹¸ÍŠr¸ÍŠ}ŠıŠıŠ}‹MŠ¢˜]Šı¸Í‹¸ÍŠ­¸Â‹ŠrŠŠr‹M‹ŠÒ‹˜‹M˜bŠ½ŠŠ¢ª˜m¸ÍŠòârÀ¢v'WGFöâs¢}Š½ŠŠ¢Š}˜-ŠıŠ}˜RrÀ¢vf÷&Õö¶–æBs¢vÖævVÖVçBrÀ¢Ò ¤Æöv–å÷&WV—&V@¦FVbW'6öææVÅö7F–öåö6²‡&WVW7BÇ²“ ¢ƒÖvWEöö&¦V7Eö÷%óCB…W'6öææVÄ7F–öâÇ³×²ÇW6W#×&WVW7BçW6W"¢–b&WVW7BæÖWF†öCÓÒuõ5BræBæ÷B‚æ6¶æ÷vÆVFvVEöC ¢‚æ6¶æ÷vÆVFvVEöC×F–ÖW¦öæRææ÷r‚“²‚ç6fR‡WFFUöf–VÆG3Õ²v6¶æ÷vÆVFvVEöBuÒ¢&WGW&â&VF—&V7B‚w&öf–ÆRr ¤ÖævW%÷&WV—&V@¦FVbvöÇ2‡&WVW7B“ ¢3ÕW&f÷&Öæ6TvöÂæö&¦V7G2ç6VÆV7E÷&VÆFVB‚vV×Æ÷–VRrÂv'&æ6‚r¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"s¢3×2æf–ÇFW"…†'&æ6ƒ×&WVW7BçW6W"ç&öf–ÆRæ'&æ6‚—Å†V×Æ÷–VUõ÷&öf–ÆUõö'&æ6ƒ×&WVW7BçW6W"ç&öf–ÆRæ'&æ6‚’¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RövöÇ2æ‡FÖÂrÇ²vvöÇ2s§7Ò ¤ÖævW%÷&WV—&V@¦FVbvöÅöFB‡&WVW7B“ ¢f÷&ÓÕW&f÷&Öæ6TvöÄf÷&Ò‡&WVW7Båõ5B÷"æöæR¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢ƒÖf÷&Òç6fR†6öÖÖ—CÔfÇ6R“²‚æ7&VFVEö'“×&WVW7BçW6W#²‚ç6fR‚“²&WGW&â&VF—&V7B‚vvöÇ2r¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RövVæW&–5öf÷&Òæ‡FÖÂrÇ²vf÷&Òs¦f÷&ÒÂwF—FÆRs¢}˜}Šı˜ŠÍŠı¸ÍŠòrÂv'WGFöâs¢}Š½ŠŠ¢˜}Šı˜wÒ ¤Æöv–å÷&WV—&V@¦FVb–çFW&æÅ÷&WVW7G2‡&WVW7B“ ¢3Ô–çFW&æÅ&WVW7Bæö&¦V7G2ç6VÆV7E÷&VÆFVB‚w&WVW7FW"rÂv76–væVE÷Fòr¢–b&öÆUööb‡&WVW7BçW6W"’–âU%4ôääTÅõ$ôÄU3¢3×2æf–ÇFW"‡&WVW7FW#×&WVW7BçW6W"¢VÆ–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"s¢3×2æf–ÇFW"…‡&WVW7FW%õ÷&öf–ÆUõö'&æ6ƒ×&WVW7BçW6W"ç&öf–ÆRæ'&æ6‚—Å†76–væVE÷Fó×&WVW7BçW6W"’¢&WGW&â&VæFW"‡&WVW7BÂv6÷&Rö–çFW&æÅ÷&WVW7G2æ‡FÖÂrÇ²w&WVW7G2s§5³£×Ò ¤Æöv–å÷&WV—&V@¦FVb–çFW&æÅ÷&WVW7EöFB‡&WVW7B“ ¢f÷&ÓÔ–çFW&æÅ&WVW7Df÷&Ò‡&WVW7Båõ5B÷"æöæR¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢ƒÖf÷&Òç6fR†6öÖÖ—CÔfÇ6R“²‚ç&WVW7FW#×&WVW7BçW6W#²‚ç6fR‚“²&WGW&â&VF—&V7B‚v–çFW&æÅ÷&WVW7G2r¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RövVæW&–5öf÷&Òæ‡FÖÂrÇ²vf÷&Òs¦f÷&ÒÂwF—FÆRs¢}Šı‹Ší˜Š}‹=Š¢ŠıŠ}Ší˜M¸ÂŠÍŠı¸ÍŠòrÂv'WGFöâs¢}Š}‹‹=Š}˜BŠı‹Ší˜Š}‹=Š¢wÒ ¤ÖævW%÷&WV—&V@¦FVb6öÖÖæEö6VçFW"‡&WVW7B“ ¢Ò‡&WVW7BätUBævWB‚wr’÷"rr’ç7G&—‚¢ç7vW#ÔæöæS²FFÔæöæP¢–b ¢ã×ç&WÆ6R‚}˜¢rÂ}¸Âr’ç&WÆ6R‚}˜2rÂ}ª’r¢'&æ6ƒÕö'&æ6…÷66÷Uöf÷%öÖævW"‡&WVW7B¢FFÖÖ÷&æ–æuö'&–VeöFF‡&WVW7BçW6W"Æ'&æ6‚¢–b}˜]‹Mª˜Br–ââ÷"}Š}˜]‹˜‹"r–âã ¢ç7vW#Öb-Š}˜]‹˜‹"¶ÆVâ†FF²vÆFRuÒ—ÒŠ­Š=Ší¸Í‹ˆÂ¶ÆVâ†FF²vÖ—76–æruÒ—Ò˜‹˜ŠòŠ½ŠŠ®(Í˜m‹MŠı˜}ˆÂ¶FF²v÷fW&GVRu×ÒF6²‹˜-Š(ÍŠ}˜Š­Š}Šı˜r˜‚¶ÆVâ†FF²vÆ÷uö·’uÒ—Òµ’‹-¸Í‹»}»ŠıŠ}‹¸Í˜Râ ¢VÆ–b}Šı¸Í‹r–ââ÷"}Š­Š}Ší¸Í‹r–ââ÷"}Š­Š=Ší¸Í‹r–âã ¢ç7vW#Ò}ˆÂræ¦ö–â…·RævWEögVÆÅöæÖR‚’÷"RçW6W&æÖRf÷"R–âFF²vÆFRuÕÒ’÷"}Š}˜]‹˜‹"Š­Š=Ší¸Í‹¸ÂŠ½ŠŠ¢˜m‹MŠı˜rŠ}‹=Š¢âp¢VÆ–b}Šı‹Š-˜]Šòr–ââ÷"}˜‹˜‹Br–ââ÷"}˜]Š}˜M¸Âr–âã ¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒv–çFW&æÅöÖævW"s ¢ç7vW#Ò}Šı‹=Š­‹‹=¸ÂŠŠí‹B˜]Š}˜M¸ÂŠ‹Š}¸Â˜m˜-‹B˜]Šı¸Í‹ŠıŠ}Ší˜M¸Â˜‹Š}˜B˜m¸Í‹=Š¢âp¢VÇ6S ¢ç7vW#Öb-Šı‹Š-˜]ŠòŠ½ŠŠ®(Í‹MŠı˜rŠ}˜]‹˜‹"¶FF²w&WfVçVRu×ÒŠ}‹=Š¢â ¢VÆ–bv·’r–ââæÆ÷vW"‚’÷"}‹˜]˜Mª‹Šòr–âã ¢ç7vW#Ò}‰²ræ¦ö–â…¶b'·RævWEögVÆÅöæÖR‚’÷"RçW6W&æÖWÓ¢·7Ò"f÷"RÇ2–âFF²vÆ÷uö·’uÕÒ’÷"tµ’‹-¸Í‹»}»Šı¸ÍŠı˜r˜m˜]¸Î(Í‹M˜Šòâp¢VÇ6S ¢ç7vW#Ò}˜]¸Î(ÍŠ­˜Š}˜m¸ÂŠı‹ŠŠ}‹˜r˜]‹Mª˜MŠ}Š¢Š}˜]‹˜‹-ˆÂŠ­Š=Ší¸Í‹˜}Š}ˆÂµ’¸ÍŠrF6½˜}Š}¸Â‹˜-Š(ÍŠ}˜Š­Š}Šı˜r‹=ŠMŠ}˜Bª˜m¸Ââr–b&öÆUööb‡&WVW7BçW6W"“ÓÒv–çFW&æÅöÖævW"rVÇ6R}˜]¸Î(ÍŠ­˜Š}˜m¸ÂŠı‹ŠŠ}‹˜r˜]‹Mª˜MŠ}Š¢Š}˜]‹˜‹-ˆÂŠ­Š=Ší¸Í‹˜}Š}ˆÂŠı‹Š-˜]ŠıˆÂµ’¸ÍŠrF6½˜}Š}¸Â‹˜-Š(ÍŠ}˜Š­Š}Šı˜r‹=ŠMŠ}˜Bª˜m¸Ââp¢&WGW&â&VæFW"‡&WVW7BÂv6÷&Rö6öÖÖæEö6VçFW"æ‡FÖÂrÇ²ws§Âvç7vW"s¦ç7vW"ÂvFFs¦FFÒ  ¤f–ææ6U÷&WV—&V@¦FVb6Võ÷66÷&U÷f–Wr‡&WVW7B“ ¢'&æ6ƒÕö'&æ6…÷66÷Uöf÷%öÖævW"‡&WVW7B¢FFÖ6Võ÷66÷&R†'&æ6‚¢G&VæG3×G&VæEöÆW'G2†'&æ6‚¢†—7F÷'“Ô4Tõ66÷&U6æ6†÷Bæö&¦V7G2æf–ÇFW"†'&æ6ƒÖ'&æ6‚’æ÷&FW%ö'’‚rÖFFRr•³£3Ğ¢†—7F÷'“ÖÆ—7B‡&WfW'6VB†Æ—7B††—7F÷'’’’¢&WGW&â&VæFW"‡&WVW7BÂv6÷&Rö6Võ÷66÷&Ræ‡FÖÂrÇ²w66÷&Rs¦FFÂwG&VæG2s§G&VæG2Âv†—7F÷'’s¦†—7F÷'’Âw6VÆV7FVEö'&æ6‚s¦'&æ6‡Ò ¤f–ææ6U÷&WV—&V@¦FVbG&VæEöF6†&ö&B‡&WVW7B“ ¢'&æ6ƒÕö'&æ6…÷66÷Uöf÷%öÖævW"‡&WVW7B¢&WGW&â&VæFW"‡&WVW7BÂv6÷&R÷G&VæG2æ‡FÖÂrÇ²wG&VæG2s§G&VæEöÆW'G2†'&æ6‚’Âw6VÆV7FVEö'&æ6‚s¦'&æ6‡Ò ¤ÖævW%÷&WV—&V@¦FVbÖævVÖVçEö6ÆVæF"‡&WVW7B“ ¢g&öÒæ¦ÆÆ’–×÷'Bw&Vv÷&–å÷Fõö¦ÆÆ’Â¦ÆÆ•÷Fõöw&Vv÷&–à¢g&öÒFFWF–ÖR–×÷'BFFP¢'&æ6ƒÕö'&æ6…÷66÷Uöf÷%öÖævW"‡&WVW7B¢FöF“×F–ÖW¦öæRæÆö6ÆFFR‚¢§’Æ¦ÒÅóÖw&Vv÷&–å÷Fõö¦ÆÆ’‡FöF’ç–V"ÇFöF’æÖöçF‚ÇFöF’æF’¢G'“ ¢§“Ö–çB‡&WVW7BätUBævWB‚w–V"r’÷"§’“²¦ÓÖ–çB‡&WVW7BätUBævWB‚vÖöçF‚r’÷"¦Ò¢W†6WBW†6WF–öã ¢70¢FFÖ6ÆVæF%öWfVçG2†'&æ6‚Æ§’Æ¦Ò¢f—'7CÖFF²w7F'BuĞ¢26GW&F’Öf—'7B6ÆVæF#¢—F†öâvVV¶F’ÖöæF“Ó²6GW&F’Óâ ¢öfg6WCÒ†f—'7BçvVV¶F’‚’³"’Sp¢F—3ÕµĞ¢f÷"ò–â&ævR†öfg6WB“¢F—2æVæB„æöæR¢WfVçEöÖ×·Ğ¢f÷"R–âFF²vWfVçG2uÓ¢WfVçEöÖç6WFFVfVÇB†U²vFFRuÒÅµÒ’æVæB†R¢CÖFF²w7F'BuĞ¢v†–ÆRCÃÖFF²vVæBuÓ ¢òÅòÆ¦CÖw&Vv÷&–å÷Fõö¦ÆÆ’†Bç–V"ÆBæÖöçF‚ÆBæF’¢F—2æVæB‡²vFFRs¦BÂv¦Bs¦¦BÂvWfVçG2s¦WfVçEöÖævWB†BÅµÒ’ÂwFöF’s¦CÓ×FöF—Ò¢B³×F–ÖVFVÇF†F—3Ó¢v†–ÆRÆVâ†F—2’Ss¢F—2æVæB„æöæR¢&We÷’Ç&WeöÓÒ†§’ÓÃ"’–b¦ÓÓÓVÇ6R†§’Æ¦ÒÓ¢æW‡E÷’ÆæW‡EöÓÒ†§’³Ã’–b¦ÓÓÓ"VÇ6R†§’Æ¦Ò³¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RöÖævVÖVçEö6ÆVæF"æ‡FÖÂrÇ²vF—2s¦F—2Âv§’s¦§’Âv¦Òs¦¦ÒÂw&We÷’s§&We÷’Âw&WeöÒs§&WeöÒÂvæW‡E÷’s¦æW‡E÷’ÂvæW‡EöÒs¦æW‡EöÒÂw6VÆV7FVEö'&æ6‚s¦'&æ6‡Ò ¤ÖævW%÷&WV—&V@¦FVbÖævVÖVçEöWfVçEöFB‡&WVW7B“ ¢f÷&ÓÔÖævVÖVçDWfVçDf÷&Ò‡&WVW7Båõ5B÷"æöæR¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"s ¢f÷&Òæf–VÆG5²v'&æ6‚uÒçVW'—6WCÖf÷&Òæf–VÆG5²v'&æ6‚uÒçVW'—6WBæf–ÇFW"‡³×&WVW7BçW6W"ç&öf–ÆRæ'&æ6…ö–B¢f÷&Òæf–VÆG5²v'&æ6‚uÒæ–æ—F–Ã×&WVW7BçW6W"ç&öf–ÆRæ'&æ6€¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢ƒÖf÷&Òç6fR†6öÖÖ—CÔfÇ6R“²‚æ7&VFVEö'“×&WVW7BçW6W ¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"s¢‚æ'&æ6ƒ×&WVW7BçW6W"ç&öf–ÆRæ'&æ6€¢‚ç6fR‚¢ÖW76vW2ç7V66W72‡&WVW7BÂ}‹˜¸ÍŠıŠ}Šò˜]Šı¸Í‹¸ÍŠ­¸ÂŠ½ŠŠ¢‹MŠòâr¢&WGW&â&VF—&V7B‚vÖævVÖVçEö6ÆVæF"r¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RövVæW&–5öf÷&Òæ‡FÖÂrÇ²vf÷&Òs¦f÷&ÒÂwF—FÆRs¢}‹˜¸ÍŠıŠ}ŠòŠ­˜-˜¸Í˜R˜]Šı¸Í‹¸ÍŠ­¸ÂrÂv'WGFöâs¢}Š½ŠŠ¢‹˜¸ÍŠıŠ}ŠòwÒ ¤7FæF&EöÖævW%÷&WV—&V@¦FVbVF—EöÆöu÷f–Wr‡&WVW7B“ ¢3ÔVF—DÆöræö&¦V7G2ç6VÆV7E÷&VÆFVB‚v7F÷"r¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"s ¢2ÖævW'26VRVF—BVçG&–W2g&öÒW6W'2–âF†V—"÷vâ'&æ6‚ÇW2F†V×6VÇfW2à¢'&æ6ƒ×&WVW7BçW6W"ç&öf–ÆRæ'&æ6€¢3×2æf–ÇFW"…†7F÷#×&WVW7BçW6W"—Å†7F÷%õ÷&öf–ÆUõö'&æ6ƒÖ'&æ6‚’¢7F÷#×&WVW7BätUBævWB‚v7F÷"r¢7F–öã×&WVW7BätUBævWB‚v7F–öâr¢–b7F÷#¢3×2æf–ÇFW"†7F÷%ö–CÖ7F÷"¢–b7F–öã¢3×2æf–ÇFW"†7F–öãÖ7F–öâ¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RöVF—EöÆöræ‡FÖÂrÇ²vÆöw2s§5³£3×Ò ¤f–ææ6U÷&WV—&V@¦FVb6Võ÷66÷&Uö’‡&WVW7B“ ¢'&æ6ƒÕö'&æ6…÷66÷Uöf÷%öÖævW"‡&WVW7B¢&WGW&â§6öå&W7öç6R‡²w66÷&Rs¦6Võ÷66÷&R†'&æ6‚’ÂwG&VæG2s§G&VæEöÆW'G2†'&æ6‚—ÒÆ§6öåöGV×5÷&×3×²vVç7W&Uö66–’s¤fÇ6WÒ  ¦FVböwV–FVÆ–æW5öf÷%÷W6W"‡W6W"“ ¢&öf–ÆSÖvWFGG"‡W6W"Âw&öf–ÆRrÄæöæR¢3ÔwV–FVÆ–æRæö&¦V7G2æf–ÇFW"†—5ö7F—fSÕG'VR¢–bæ÷B&öf–ÆS ¢&WGW&â2æf–ÇFW"†VF–Væ6SÒvÆÂr¢&WGW&â2æf–ÇFW"€¢†VF–Væ6SÒvÆÂr’À¢†VF–Væ6SÒv'&æ6‚rÆ'&æ6ƒ×&öf–ÆRæ'&æ6‚’À¢†VF–Væ6SÒv¦ö"rÆ¦ö%÷F—FÆS×&öf–ÆRæ¦ö%÷F—FÆR¢’æF—7F–æ7B‚’æ÷&FW%ö'’‚r×V&Æ—6†VEöBr ¦FVbö¦ö%öGWF–W5öf÷%÷W6W"‡W6W"“ ¢&öf–ÆSÖvWFGG"‡W6W"Âw&öf–ÆRrÄæöæR¢–bæ÷B&öf–ÆS¢&WGW&â¦ö$GWG•FV×ÆFRæö&¦V7G2ææöæR‚¢3Ô¦ö$GWG•FV×ÆFRæö&¦V7G2æf–ÇFW"†—5ö7F—fSÕG'VR¢&WGW&â2æf–ÇFW"€¢…†'&æ6…õö—6çVÆÃÕG'VR—Å†'&æ6ƒ×&öf–ÆRæ'&æ6‚’’`¢…†¦ö%÷F—FÆSÒrr—Å†¦ö%÷F—FÆS×&öf–ÆRæ¦ö%÷F—FÆR’¢’æ÷&FW%ö'’‚wF—FÆRr ¤Æöv–å÷&WV—&V@¦FVb×•öwV–FVÆ–æW2‡&WVW7B“ ¢wV–FVÆ–æW3ÕöwV–FVÆ–æW5öf÷%÷W6W"‡&WVW7BçW6W"¢6µö–G3×6WB„wV–FVÆ–æT6¶æ÷vÆVFvVÖVçBæö&¦V7G2æf–ÇFW"‡W6W#×&WVW7BçW6W"ÆwV–FVÆ–æUõö–ãÖwV–FVÆ–æW2’çfÇVW5öÆ—7B‚vwV–FVÆ–æUö–BrÆfÆCÕG'VR’¢GWF–W3Õö¦ö%öGWF–W5öf÷%÷W6W"‡&WVW7BçW6W"¢&WGW&â&VæFW"‡&WVW7BÂv6÷&Rö×•öwV–FVÆ–æW2æ‡FÖÂrÇ²vwV–FVÆ–æW2s¦wV–FVÆ–æW2Âv6µö–G2s¦6µö–G2ÂvGWF–W2s¦GWF–W7Ò ¤Æöv–å÷&WV—&V@¦FVbwV–FVÆ–æUö6²‡&WVW7BÇ²“ ¢–b&WVW7BæÖWF†öBÒuõ5Bs¢&WGW&â&VF—&V7B‚v×•öwV–FVÆ–æW2r¢wV–FVÆ–æSÖvWEöö&¦V7Eö÷%óCB…öwV–FVÆ–æW5öf÷%÷W6W"‡&WVW7BçW6W"’Ç³×²¢wV–FVÆ–æT6¶æ÷vÆVFvVÖVçBæö&¦V7G2ævWEö÷%ö7&VFR†wV–FVÆ–æSÖwV–FVÆ–æRÇW6W#×&WVW7BçW6W"¢ÖW76vW2ç7V66W72‡&WVW7BÂ}˜]‹}Š}˜M‹˜rŠı‹=Š­˜‹Š}˜M‹˜]˜BŠ½ŠŠ¢‹MŠòâr¢&WGW&â&VF—&V7B‚v×•öwV–FVÆ–æW2r ¤ÖævW%÷&WV—&V@¦FVbwV–FVÆ–æW5öÖævR‡&WVW7B“ ¢&öf–ÆSÖvWFGG"‡&WVW7BçW6W"Âw&öf–ÆRrÄæöæR¢wV–FVÆ–æW3ÔwV–FVÆ–æRæö&¦V7G2æÆÂ‚’æ÷&FW%ö'’‚r×V&Æ—6†VEöBr¢GWF–W3Ô¦ö$GWG•FV×ÆFRæö&¦V7G2æÆÂ‚’æ÷&FW%ö'’‚wF—FÆRr¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"s ¢wV–FVÆ–æW3ÖwV–FVÆ–æW2æf–ÇFW"…†'&æ6ƒ×&öf–ÆRæ'&æ6‚—Å†'&æ6…õö—6çVÆÃÕG'VR’¢GWF–W3ÖGWF–W2æf–ÇFW"…†'&æ6ƒ×&öf–ÆRæ'&æ6‚—Å†'&æ6…õö—6çVÆÃÕG'VR’¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RöwV–FVÆ–æW5öÖævRæ‡FÖÂrÇ²vwV–FVÆ–æW2s¦wV–FVÆ–æW2ÂvGWF–W2s¦GWF–W7Ò ¤ÖævW%÷&WV—&V@¦FVbwV–FVÆ–æUö7&VFR‡&WVW7B“ ¢f÷&ÓÔwV–FVÆ–æTf÷&Ò‡&WVW7Båõ5B÷"æöæR¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"s ¢f÷&Òæf–VÆG5²v'&æ6‚uÒçVW'—6WCÖf÷&Òæf–VÆG5²v'&æ6‚uÒçVW'—6WBæf–ÇFW"‡³×&WVW7BçW6W"ç&öf–ÆRæ'&æ6…ö–B¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢ö&£Öf÷&Òç6fR†6öÖÖ—CÔfÇ6R“²ö&¢æ7&VFVEö'“×&WVW7BçW6W ¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"ræBæ÷Bö&¢æ'&æ6ƒ¢ö&¢æ'&æ6ƒ×&WVW7BçW6W"ç&öf–ÆRæ'&æ6€¢ö&¢ç6fR‚“²ÖW76vW2ç7V66W72‡&WVW7BÂ}Šı‹=Š­˜‹Š}˜M‹˜]˜B˜]˜mŠ­‹M‹‹MŠòâr“²&WGW&â&VF—&V7B‚vwV–FVÆ–æW5öÖævRr¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RövVæW&–5öf÷&Òæ‡FÖÂrÇ²vf÷&Òs¦f÷&ÒÂwF—FÆRs¢}Šı‹=Š­˜‹Š}˜M‹˜]˜BŠÍŠı¸ÍŠòrÂv'WGFöâs¢}Š}˜mŠ­‹MŠ}‹wÒ ¤ÖævW%÷&WV—&V@¦FVb¦ö%öGWG•ö7&VFR‡&WVW7B“ ¢f÷&ÓÔ¦ö$GWG•FV×ÆFTf÷&Ò‡&WVW7Båõ5B÷"æöæR¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"s ¢f÷&Òæf–VÆG5²v'&æ6‚uÒçVW'—6WCÖf÷&Òæf–VÆG5²v'&æ6‚uÒçVW'—6WBæf–ÇFW"‡³×&WVW7BçW6W"ç&öf–ÆRæ'&æ6…ö–B¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢ö&£Öf÷&Òç6fR†6öÖÖ—CÔfÇ6R“²ö&¢æ7&VFVEö'“×&WVW7BçW6W ¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"ræBæ÷Bö&¢æ'&æ6ƒ¢ö&¢æ'&æ6ƒ×&WVW7BçW6W"ç&öf–ÆRæ'&æ6€¢ö&¢ç6fR‚“²ÖW76vW2ç7V66W72‡&WVW7BÂ}‹M‹ŠÒ˜‹Š}¸Í˜Š½ŠŠ¢‹MŠòâr“²&WGW&â&VF—&V7B‚vwV–FVÆ–æW5öÖævRr¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RövVæW&–5öf÷&Òæ‡FÖÂrÇ²vf÷&Òs¦f÷&ÒÂwF—FÆRs¢}‹M‹ŠÒ˜‹Š}¸Í˜ŠÍŠı¸ÍŠòrÂv'WGFöâs¢}‹Ší¸Í‹˜rwÒ  ¤DUd”4Uô•55TUõ$T4•”TåEõU4U$äÔU3Ò‚vFÖ–ârÂvÖævW#rÂw6FVv†’r ¦FVböFWf–6Uö—77VU÷&V6—–VçG2†—77VR“ ¢3ÕW6W"æö&¦V7G2æf–ÇFW"†—5ö7F—fSÕG'VR’æf–ÇFW"€¢‡W6W&æÖUõö–ãÔDUd”4Uô•55TUõ$T4•”TåEõU4U$äÔU2’À¢‡&öf–ÆUõ÷&öÆSÒvFÖ–âr’À¢‡&öf–ÆUõ÷&öÆSÒv–çFW&æÅöÖævW"r’À¢‡&öf–ÆUõ÷&öÆSÒvÖævW"rÇ&öf–ÆUõö'&æ6ƒÖ—77VRæ'&æ6‚¢’æF—7F–æ7B‚¢&WGW&â0 ¦FVbö6åöÖævUöFWf–6Uö—77VW2‡W6W"“ ¢&WGW&â&öÆUööb‡W6W"’–âÔätTÔTåEõ$ôÄU2÷"W6W"çW6W&æÖRæÆ÷vW"‚“ÓÒw6FVv†’p ¤Æöv–å÷&WV—&V@¦FVbFWf–6Uö—77VUö7&VFR‡&WVW7B“ ¢f÷&ÓÔFWf–6T—77VTf÷&Ò‡&WVW7Båõ5B÷"æöæR¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢—77VSÖf÷&Òç6fR†6öÖÖ—CÔfÇ6R¢—77VRç&W÷'FW#×&WVW7BçW6W ¢—77VRæ'&æ6ƒÖvWFGG"†vWFGG"‡&WVW7BçW6W"Âw&öf–ÆRrÄæöæR’Âv'&æ6‚rÄæöæR¢—77VRç6fR‚¢F—FÆSÖb}Ší‹Š}Š¸ÂŠı‹=Š­ªıŠ}˜s¢¶—77VRæFWf–6UöæÖWÒp¢&W÷'FW%öæÖS×&WVW7BçW6W"ævWEögVÆÅöæÖR‚’÷"&WVW7BçW6W"çW6W&æÖP¢f÷"&V6—–VçB–âöFWf–6Uö—77VU÷&V6—–VçG2†—77VR“ ¢7Ffdæ÷F–f–6F–öâæö&¦V7G2æ7&VFR€¢W6W#×&V6—–VçBÀ¢F—FÆS×F—FÆRÀ¢ÖW76vSÖbw·&W÷'FW%öæÖWÒŠí‹Š}Š¸ÂŠı‹=Š­ªıŠ}˜r*·¶—77VRæFWf–6UöæÖWÜ+²‹Šrªı‹-Š}‹‹Bª‹Šı˜rŠ}‹=Š¢â˜M‹}˜Š}˜²Š‹‹‹=¸Â‹M˜ŠòârÀ¢æ÷F–f–6F–öå÷G—SÒvFWf–6Uö—77VRrÀ¢&VÆFVEöFFS×F–ÖW¦öæRæÆö6ÆFFR‚’À¢¢ÖW76vW2ç7V66W72‡&WVW7BÂ}ªı‹-Š}‹‹BŠí‹Š}Š¸ÂŠ½ŠŠ¢‹MŠò˜‚Š‹Š}¸Â˜]‹=Šm˜˜MŠ}˜b˜]‹Š˜‹}˜rŠ}‹‹=Š}˜B‹MŠòâr¢&WGW&â&VF—&V7B‚vFWf–6Uö—77VUöÖ–æRr¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RöFWf–6Uö—77VUöf÷&Òæ‡FÖÂrÇ²vf÷&Òs¦f÷&×Ò ¤Æöv–å÷&WV—&V@¦FVbFWf–6Uö—77VUöÖ–æR‡&WVW7B“ ¢—77VW3ÔFWf–6T—77VRæö&¦V7G2æf–ÇFW"‡&W÷'FW#×&WVW7BçW6W"’ç6VÆV7E÷&VÆFVB‚v'&æ6‚rÂw&W6öÇfVEö'’r¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RöFWf–6Uö—77VUöÖ–æRæ‡FÖÂrÇ²v—77VW2s¦—77VW7Ò ¤Æöv–å÷&WV—&V@¦FVbFWf–6Uö—77VUöÖævR‡&WVW7B“ ¢–bæ÷Bö6åöÖævUöFWf–6Uö—77VW2‡&WVW7BçW6W"“ ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}Šı‹=Š­‹‹=¸Â˜]ŠÍŠ}‹"˜m¸Í‹=Š¢âr¢&WGW&â&VF—&V7B‚vF6†&ö&Br¢—77VW3ÔFWf–6T—77VRæö&¦V7G2ç6VÆV7E÷&VÆFVB‚w&W÷'FW"rÂw&W÷'FW%õ÷&öf–ÆRrÂv'&æ6‚rÂw&W6öÇfVEö'’r¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"s ¢—77VW3Ö—77VW2æf–ÇFW"†'&æ6ƒ×&WVW7BçW6W"ç&öf–ÆRæ'&æ6‚¢7FGW3×&WVW7BätUBævWB‚w7FGW2r¢–b7FGW2–â‚væWrrÂw&Wf–Wv–ærrÂw&W6öÇfVBr“ ¢—77VW3Ö—77VW2æf–ÇFW"‡7FGW3×7FGW2¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RöFWf–6Uö—77VUöÖævRæ‡FÖÂrÇ²v—77VW2s¦—77VW2Âw6VÆV7FVE÷7FGW2s§7FGW2÷"rwÒ ¤Æöv–å÷&WV—&V@¦FVbFWf–6Uö—77VU÷&Wf–Wr‡&WVW7BÇ²“ ¢–bæ÷Bö6åöÖævUöFWf–6Uö—77VW2‡&WVW7BçW6W"“ ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}Šı‹=Š­‹‹=¸Â˜]ŠÍŠ}‹"˜m¸Í‹=Š¢âr¢&WGW&â&VF—&V7B‚vF6†&ö&Br¢—77VSÖvWEöö&¦V7Eö÷%óCB„FWf–6T—77VRÇ³×²¢–b&öÆUööb‡&WVW7BçW6W"“ÓÒvÖævW"ræB—77VRæ'&æ6…ö–B×&WVW7BçW6W"ç&öf–ÆRæ'&æ6…ö–C ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}Šı‹=Š­‹‹=¸Â˜]ŠÍŠ}‹"˜m¸Í‹=Š¢âr¢&WGW&â&VF—&V7B‚vFWf–6Uö—77VUöÖævRr¢öÆE÷7FGW3Ö—77VRç7FGW0¢f÷&ÓÔFWf–6T—77VU&Wf–Wtf÷&Ò‡&WVW7Båõ5B÷"æöæRÆ–ç7Fæ6SÖ—77VR¢–b&WVW7BæÖWF†öCÓÒuõ5BræBf÷&Òæ—5÷fÆ–B‚“ ¢ö&£Öf÷&Òç6fR†6öÖÖ—CÔfÇ6R¢–bö&¢ç7FGW3ÓÒw&W6öÇfVBræBöÆE÷7FGW2Òw&W6öÇfVBs ¢ö&¢ç&W6öÇfVEöC×F–ÖW¦öæRææ÷r‚¢ö&¢ç&W6öÇfVEö'“×&WVW7BçW6W ¢VÆ–bö&¢ç7FGW2Òw&W6öÇfVBs ¢ö&¢ç&W6öÇfVEöCÔæöæP¢ö&¢ç&W6öÇfVEö'“ÔæöæP¢ö&¢ç6fR‚¢–bö&¢ç&W÷'FW%ö–C ¢7Ffdæ÷F–f–6F–öâæö&¦V7G2æ7&VFR€¢W6W#Öö&¢ç&W÷'FW"À¢F—FÆSÖb}›í¸Íªı¸Í‹¸ÂŠí‹Š}Š¸Ã¢¶ö&¢æFWf–6UöæÖWÒrÀ¢ÖW76vSÖb}˜‹m‹¸ÍŠ¢ªı‹-Š}‹‹BŠí‹Š}Š¸Â‹M˜]ŠrŠ˜r*·¶ö&¢ævWE÷7FGW5öF—7Æ’‚—Ü+²Š­‹­¸Í¸Í‹ª‹Šòâp¢²†brŠ­˜‹m¸ÍŠÓ¢¶ö&¢æÖævW%öæ÷FWÒr–bö&¢æÖævW%öæ÷FRVÇ6Rrr’À¢æ÷F–f–6F–öå÷G—SÒvFWf–6Uö—77VRrÀ¢&VÆFVEöFFS×F–ÖW¦öæRæÆö6ÆFFR‚’À¢¢ÖW76vW2ç7V66W72‡&WVW7BÂ}˜‹m‹¸ÍŠ¢Ší‹Š}Š¸ÂŠ‹˜‹-‹‹=Š}˜m¸Â‹MŠòâr¢&WGW&â&VF—&V7B‚vFWf–6Uö—77VUöÖævRr¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RöFWf–6Uö—77VU÷&Wf–Wræ‡FÖÂrÇ²vf÷&Òs¦f÷&ÒÂv—77VRs¦—77VWÒ  ¤ÖævW%÷&WV—&V@¦FVb7F–öåö6VçFW"‡&WVW7B“ ¢&öÆS×&öÆUööb‡&WVW7BçW6W"¢&öf–ÆSÖvWFGG"‡&WVW7BçW6W"Âw&öf–ÆRrÄæöæR¢F“×F–ÖW¦öæRæÆö6ÆFFR‚ ¢2÷W&F–öæÂÆW'G2&VÆöærFòV×Æ÷–VR66÷VçG2âÖævW"öFÖ–â66÷VçG0¢2×W7Bæ÷BV"2'6VçB÷"Ö—76–ær×&W÷'B7Ffb–âF†V—"÷vâVWVRà¢W6W'3ÕW6W"æö&¦V7G2æf–ÇFW"€¢&öf–ÆUõö—5ö7F—fSÕG'VRÀ¢&öf–ÆUõ÷&öÆUõö–ãÕU%4ôääTÅõ$ôÄU2À¢’ç6VÆV7E÷&VÆFVB‚w&öf–ÆRrÂw&öf–ÆUõö'&æ6‚r¢–b&öÆSÓÒvÖævW"s ¢W6W'3×W6W'2æf–ÇFW"‡&öf–ÆUõö'&æ6ƒÖvWFGG"‡&öf–ÆRÂv'&æ6‚rÄæöæR’¢W6W%ö–G3ÖÆ—7B‡W6W'2çfÇVW5öÆ—7B‚v–BrÆfÆCÕG'VR’ ¢—FV×3ÕµĞ ¢FVbFEö—FVÒ†¶–æBÇ&–÷&—G’ÇF—FÆRÇ7V'F—FÆRÇW6W#ÔæöæRÇW&ÃÒr2rÆ7&VFVEöCÔæöæRÆ–6öãÒ~(
+"rÆÖWFÔæöæR“ ¢&æ³×²v7&—F–6Âs£Âv†–v‚s£ÂvÖVF—VÒs£"ÂvÆ÷rs£7ÒævWB‡&–÷&—G’ÃB¢GCÖ7&VFVEöB÷"F–ÖW¦öæRææ÷r‚¢–bæ÷B†6GG"†GBÂwF–ÖW7F×r“ ¢GC×F–ÖW¦öæRææ÷r‚¢—FV×2æVæB‡°¢v¶–æBs¦¶–æBÂw&–÷&—G’s§&–÷&—G’Âw&æ²s§&æ²À¢wF—FÆRs§F—FÆRÂw7V'F—FÆRs§7V'F—FÆRÂwW6W"s§W6W"À¢wW&Âs§W&ÂÂv7&VFVEöBs¦GBÂv–6öâs¦–6öâÂvÖWFs¦ÖWF÷"·ÒÀ¢Ò ¢2VæF–ærÆVfR&WVW7G0¢f÷"‚–âÆVfU&WVW7Bæö&¦V7G2æf–ÇFW"‡W6W%ö–Eõö–ã×W6W%ö–G2Ç7FGW3ÒwVæF–ærr’ç6VÆV7E÷&VÆFVB‚wW6W"rÂwW6W%õ÷&öf–ÆRrÂwW6W%õ÷&öf–ÆUõö'&æ6‚r“ ¢FEö—FVÒ€¢vÆVfRrÂvÖVF—VÒrÂ}Šı‹Ší˜Š}‹=Š¢˜]‹Ší‹]¸Âı˜]Š}˜]˜‹¸ÍŠ¢rÀ¢bw·‚ævWE÷&WVW7E÷G—UöF—7Æ’‚—Ò+r¶f÷&ÖEö¦ÆÆ’‡‚ç7F'EöFFR—ÒŠ­Šr¶f÷&ÖEö¦ÆÆ’‡‚æVæEöFFR—ÒrÀ¢‚çW6W"Æbr÷&WVW7G2÷·‚ç·Ò÷&Wf–WròrÇ‚æ7&VFVEöBÂ~)z²p¢ ¢2VæF–ærGFVæFæ6R6÷'&V7F–öç0¢f÷"‚–âGFVæFæ6T6÷'&V7F–öå&WVW7Bæö&¦V7G2æf–ÇFW"‡W6W%ö–Eõö–ã×W6W%ö–G2Ç7FGW3ÒwVæF–ærr’ç6VÆV7E÷&VÆFVB‚wW6W"rÂwW6W%õ÷&öf–ÆRr“ ¢FEö—FVÒ€¢v6÷'&V7F–öârÂv†–v‚rÂ}Šı‹Ší˜Š}‹=Š¢Š}‹]˜MŠ}ŠÒŠİ‹m˜‹rÀ¢bw¶f÷&ÖEö¦ÆÆ’‡‚æFFR—Ò+r²‡‚ç&V6öâ÷"""•³£“×ÒrÀ¢‚çW6W"ÆbröGFVæFæ6Rö6÷'&V7F–öç2÷·‚ç·Ò÷&Wf–WròrÇ‚æ7&VFVEöBÂ~){rp¢ ¢2÷VâFWf–6R—77VW0¢f÷"‚–âFWf–6T—77VRæö&¦V7G2æf–ÇFW"‡&W÷'FW%ö–Eõö–ã×W6W%ö–G2’æW†6ÇVFR‡7FGW3Òw&W6öÇfVBr’ç6VÆV7E÷&VÆFVB‚w&W÷'FW"rÂv'&æ6‚r“ ¢FEö—FVÒ€¢vFWf–6RrÂv†–v‚r–b‚ç7FGW3ÓÒvæWrrVÇ6RvÖVF—VÒrÀ¢b}Ší‹Š}Š¸ÂŠı‹=Š­ªıŠ}˜s¢·‚æFWf–6UöæÖWÒrÀ¢‡‚æFW67&—F–öâ÷"rr•³£ÒÀ¢‚ç&W÷'FW"ÆbröFWf–6RÖ—77VW2÷·‚ç·Ò÷&Wf–WròrÇ‚æ7&VFVEöBÂ~)©"rÀ¢²w7FGW2s§‚ævWE÷7FGW5öF—7Æ’‚—Ğ¢ ¢2÷fW&GVRF6·0¢÷fW&GVU÷3ÕF6²æö&¦V7G2æf–ÇFW"€¢76–væVE÷Fõö–Eõö–ã×W6W%ö–G2À¢7FGW5õö–ãÒ‚wFöFòrÂvFö–ærr’À¢GVUöFFUõöÇCÖF¢’ç6VÆV7E÷&VÆFVB‚v76–væVE÷FòrÂv76–væVE÷Fõõ÷&öf–ÆRr¢f÷"‚–â÷fW&GVU÷3 ¢F—3Ò†F’×‚æGVUöFFR’æF—2–b‚æGVUöFFRVÇ6R ¢FEö—FVÒ€¢wF6²rÂv†–v‚r–bF—3ãÓ2VÇ6RvÖVF—VÒrÀ¢}˜‹¸Í˜˜r‹˜-Š(ÍŠ}˜Š­Š}Šı˜rrÀ¢bw·‚çF—FÆWÒ+r¶F—7Ò‹˜‹"Š­Š=Ší¸Í‹rÀ¢‚æ76–væVE÷FòÀ¢bröV×Æ÷–VW2÷·‚æ76–væVE÷Fòç&öf–ÆRç·Òó3còr–b†6GG"‡‚æ76–væVE÷FòÂw&öf–ÆRr’VÇ6Rr÷F6·2òrÀ¢F–ÖW¦öæRææ÷r‚’Â~)É2rÇ²vF—2s¦F—7Ğ¢ ¢2GFVæFæ6RW†6WF–öç2FöF¢&V73×·"çW6W%ö–C§"f÷""–âGFVæFæ6Ræö&¦V7G2æf–ÇFW"‡W6W%ö–Eõö–ã×W6W%ö–G2ÆFFSÖF’’ç6VÆV7E÷&VÆFVB‚wW6W"r—Ğ¢&÷fVEöÆVfUö–G3×6WB„ÆVfU&WVW7Bæö&¦V7G2æf–ÇFW"€¢W6W%ö–Eõö–ã×W6W%ö–G2Ç7FGW3Òv&÷fVBrÇ7F'EöFFUõöÇFSÖF’ÆVæEöFFUõöwFSÖF¢’çfÇVW5öÆ—7B‚wW6W%ö–BrÆfÆCÕG'VR’ ¢f÷"R–âW6W'3 ¢–bRæ–B–â&÷fVEöÆVfUö–G3 ¢6öçF–çVP¢&V3×&V72ævWB‡Ræ–B¢G'“ ¢6†–gC×6†–gE÷'VÆR‡RÆF’’÷"·Ğ¢W†6WBW†6WF–öã ¢6†–gC×·Ğ ¢–b6†–gBævWB‚v—5ööfbr“ ¢6öçF–çVP ¢–b&V2æB&V2æ6†V6µö–ã ¢7W'&VçE÷7FGW3ÖGFVæFæ6U÷7FGW5öf÷"‡RÆF’Ç&V2æ6†V6µö–â¢–b7W'&VçE÷7FGW3ÓÒvÆFRs ¢ÆFUöÖ–ç3Ó ¢–b6†–gBævWB‚w7F'Br“ ¢W‡V7FVC×F–ÖW¦öæRæÖ¶Uöv&R†FFWF–ÖRæ6öÖ&–æR†F’Ç6†–gE²w7F'BuÒ’ÇF–ÖW¦öæRævWEö7W'&VçE÷F–ÖW¦öæR‚’¢ÆFUöÖ–ç3ÖÖ‚ƒÆ–çB‚‡&V2æ6†V6µö–âÖW‡V7FVB’çF÷FÅ÷6V6öæG2‚’òóc’¢FEö—FVÒ€¢vÆFRrÂvÖVF—VÒrÂ}Š­Š=Ší¸Í‹Š}˜]‹˜‹"rÀ¢b}˜‹˜Šò·F–ÖW¦öæRæÆö6ÇF–ÖR‡&V2æ6†V6µö–â’ç7G&gF–ÖR‚"Tƒ¢TÒ"—Òp¢²†br+r¶ÆFUöÖ–ç7ÒŠı˜-¸Í˜-˜rŠı¸Í‹Š­‹r–bÆFUöÖ–ç2VÇ6Rrr’À¢RÆbröV×Æ÷–VW2÷·Rç&öf–ÆRç·Òó3còrÇ&V2æ6†V6µö–âÂ~){rrÀ¢²vÆFUöÖ–çWFW2s¦ÆFUöÖ–ç7Ğ¢¢VÇ6S ¢—5öGVSÕG'VP¢–b6†–gBævWB‚w7F'Br“ ¢GVUöGC×F–ÖW¦öæRæÖ¶Uöv&R†FFWF–ÖRæ6öÖ&–æR†F’Ç6†–gE²w7F'BuÒ’ÇF–ÖW¦öæRævWEö7W'&VçE÷F–ÖW¦öæR‚’¢—5öGVS×F–ÖW¦öæRææ÷r‚’âGVUöGB²F–ÖVFVÇF†Ö–çWFW3Ö–çB‡6†–gBævWB‚vw&6Rr’÷"’¢–b—5öGVS ¢FEö—FVÒ€¢vÖ—76–æuöGFVæFæ6RrÂv7&—F–6ÂrÂ}˜‹˜ŠòŠ}˜]‹˜‹"Š½ŠŠ¢˜m‹MŠı˜rrÀ¢}Š}‹"‹-˜]Š}˜b‹M‹˜‹’‹M¸Í˜Š¢ªı‹‹MŠ­˜r˜‚˜‹˜ŠòŠ½ŠŠ¢˜m‹MŠı˜rŠ}‹=Š¢ârÀ¢RÆbröV×Æ÷–VW2÷·Rç&öf–ÆRç·Òó3còrÇF–ÖW¦öæRææ÷r‚’Ârp¢ ¢2Ö—76–ær&W÷'Bg&öÒ–W7FW&F’Â6ö×WFVBF—&V7FÇ’g&öÒF–Ç•&W÷'BFòfö–B†VÇW"6÷WÆ–ærà¢–W7FW&F“ÖF’×F–ÖVFVÇF†F—3Ó¢7V&Ö—GFVEö–G3×6WB„F–Ç•&W÷'Bæö&¦V7G2æf–ÇFW"€¢W6W%ö–Eõö–ã×W6W%ö–G2À¢7&VFVEöEõöFFS×–W7FW&F¢’çfÇVW5öÆ—7B‚wW6W%ö–BrÆfÆCÕG'VR’¢f÷"R–âW6W'3 ¢2öæÇ’7&VFRF†RÆW'Bv†VâF†RW6W"†BâW‡V7FVBv÷&¶F’à¢G'“ ¢6†–gC×6†–gE÷'VÆR‡RÇ–W7FW&F’’÷"·Ğ¢6†÷VÆE÷&W÷'CÖ&ööÂ‡6†–gB’æBæ÷B6†–gBævWB‚v—5ööfbrÄfÇ6R¢W†6WBW†6WF–öã ¢6†÷VÆE÷&W÷'CÕG'VP¢–b6†÷VÆE÷&W÷'BæBRæ–Bæ÷B–â7V&Ö—GFVEö–G3 ¢FEö—FVÒ€¢w&W÷'BrÂvÖVF—VÒrÂ}ªı‹-Š}‹‹B‹˜‹-Š}˜m˜rŠ}‹‹=Š}˜B˜m‹MŠı˜rrÀ¢b}ªı‹-Š}‹‹B¶f÷&ÖEö¦ÆÆ’‡–W7FW&F’—ÒŠ½ŠŠ¢˜m‹MŠı˜rŠ}‹=Š¢ârÀ¢RÆbröV×Æ÷–VW2÷·Rç&öf–ÆRç·Òó3còrÇF–ÖW¦öæRææ÷r‚’Â~)jBp¢ ¢—FV×2ç6÷'B†¶W“ÖÆÖ&Fƒ¢‡…²w&æ²uÒÂ×…²v7&VFVEöBuÒçF–ÖW7F×‚’’¢6÷VçG3×°¢vÆÂs¦ÆVâ†—FV×2’À¢v7&—F–6Âs§7VÒƒf÷"‚–â—FV×2–b…²w&–÷&—G’uÓÓÒv7&—F–6Âr’À¢v†–v‚s§7VÒƒf÷"‚–â—FV×2–b…²w&–÷&—G’uÓÓÒv†–v‚r’À¢vÖVF—VÒs§7VÒƒf÷"‚–â—FV×2–b…²w&–÷&—G’uÓÓÒvÖVF—VÒr’À¢wV÷ÆRs¦ÆVâ‡·…²wW6W"uÒæ–Bf÷"‚–â—FV×2–b‚ævWB‚wW6W"r—Ò’À¢Ğ ¢&–÷&—G•öf–ÇFW#×&WVW7BätUBævWB‚w&–÷&—G’rÂrr¢¶–æEöf–ÇFW#×&WVW7BätUBævWB‚v¶–æBrÂrr¢f–ÇFW&VCÖ—FV×0¢–b&–÷&—G•öf–ÇFW"–â‚v7&—F–6ÂrÂv†–v‚rÂvÖVF—VÒrÂvÆ÷rr“ ¢f–ÇFW&VCÕ·‚f÷"‚–âf–ÇFW&VB–b…²w&–÷&—G’uÓÓ×&–÷&—G•öf–ÇFW%Ğ¢–b¶–æEöf–ÇFW# ¢f–ÇFW&VCÕ·‚f÷"‚–âf–ÇFW&VB–b…²v¶–æBuÓÓÖ¶–æEöf–ÇFW%Ğ ¢&WGW&â&VæFW"‡&WVW7BÂv6÷&Rö7F–öåö6VçFW"æ‡FÖÂrÇ°¢v—FV×2s¦f–ÇFW&VE³£#ÒÀ¢v6÷VçG2s¦6÷VçG2À¢w&–÷&—G•öf–ÇFW"s§&–÷&—G•öf–ÇFW"À¢v¶–æEöf–ÇFW"s¦¶–æEöf–ÇFW"À¢wFöF’s¦F’À¢Ò  ¤W†V7WF—fU÷&WV—&V@¦FVbW†V7WF—fU÷v÷&·76R‡&WVW7B“ ¢""%&—fFRÆ–6F–öâÖÆWfVÂ6öÖÖæB6VçFW"f÷"F†R6öæf–wW&VBW†V7WF—fR66÷VçBà ¢—BFVÆ–&W&FVÇ’&WW6W2F†Ræ÷&ÖÂF6²ÖöFVÂÂ6òFVÆVvFVB—FV×2–ç7FçFÇ’V ¢–âF†R76–væVRw2W†—7F–ær7FfbF6²6'F&ÆRâF†—2—2T’öÆ–6F–öâ—6öÆF–öâÀ¢æ÷BVæ7'—F–öâv–ç7B6W'fW"öFF&6RFÖ–æ—7G&F÷'2à¢"" ¢FöF“×F–ÖW¦öæRæÆö6ÆFFR‚ ¢FVbVF—EöW†V2†7F–öâÇF6²ÆÖWFFFÔæöæR“ ¢G'“ ¢VF—DÆöræö&¦V7G2æ7&VFR€¢7F÷#×&WVW7BçW6W"À¢7F–öãÖbvW†V7WF—fU÷¶7F–öçÒrÀ¢Fƒ×&WVW7BçF…³£#SUÒÀ¢ÖWF†öC×&WVW7BæÖWF†öE³£ÒÀ¢ö&¦V7E÷G—SÒuF6²rÀ¢ö&¦V7Eö–C×7G"‡F6²ç²’À¢7VÖÖ'“×F6²çF—FÆU³£#SÒÀ¢ÖWFFFÖÖWFFF÷"·ÒÀ¢—öFG&W73Õ÷&WVW7Eö—‡&WVW7B’À¢¢W†6WBW†6WF–öã ¢70 ¢7F—fU÷V÷ÆSÕW6W"æö&¦V7G2æf–ÇFW"€¢—5ö7F—fSÕG'VRÀ¢&öf–ÆUõö—5ö7F—fSÕG'VRÀ¢’ç6VÆV7E÷&VÆFVB‚w&öf–ÆRrÂw&öf–ÆUõö'&æ6‚r’æ÷&FW%ö'’‚vf—'7EöæÖRrÂvÆ7EöæÖRrÂwW6W&æÖRr ¢–b&WVW7BæÖWF†öCÓÒuõ5Bs ¢7F–öãÒ‡&WVW7Båõ5BævWB‚v7F–öâr’÷"rr’ç7G&—‚ ¢–b7F–öãÓÒv7&VFRs ¢F—FÆSÒ‡&WVW7Båõ5BævWB‚wF—FÆRr’÷"rr’ç7G&—‚¢FW67&—F–öãÒ‡&WVW7Båõ5BævWB‚vFW67&—F–öâr’÷"rr’ç7G&—‚¢&–÷&—G“Ò‡&WVW7Båõ5BævWB‚w&–÷&—G’r’÷"væ÷&ÖÂr’ç7G&—‚¢–b&–÷&—G’æ÷B–â²vÆ÷rrÂvæ÷&ÖÂrÂv†–v‚wÓ ¢&–÷&—G“Òvæ÷&ÖÂp¢'V6¶WCÒ‡&WVW7Båõ5BævWB‚v'V6¶WBr’÷"v–æ&÷‚r’ç7G&—‚¢GVUöFFSÔæöæP¢GVU÷&sÒ‡&WVW7Båõ5BævWB‚vGVUöFFRr’÷"rr’ç7G&—‚¢–bGVU÷&s ¢G'“ ¢GVUöFFS×'6Uö¦ÆÆ’†GVU÷&r¢W†6WBW†6WF–öã ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}Š­Š}‹¸ÍŠâ˜]˜}˜MŠ¢˜]‹Š­Š‹˜m¸Í‹=Š¢â˜m˜]˜˜m˜s¢»»M»»Rı»»bı»»2r¢&WGW&â&VF—&V7B‚vW†V7WF—fU÷v÷&·76Rr¢VÆ–b'V6¶WCÓÒwFöF’s ¢GVUöFFS×FöF ¢76–væVE÷Fó×&WVW7BçW6W ¢76–væVE÷&sÒ‡&WVW7Båõ5BævWB‚v76–væVE÷Fòr’÷"rr’ç7G&—‚¢–b76–væVE÷&ræB76–væVE÷&rÒw6VÆbs ¢76–væVE÷FóÖvWEöö&¦V7Eö÷%óCB†7F—fU÷V÷ÆRÇ³Ö76–væVE÷&r ¢–bæ÷BF—FÆS ¢ÖW76vW2æW'&÷"‡&WVW7BÂ}‹˜m˜Š}˜bªŠ}‹‹ŠrŠ˜m˜¸Í‹=¸ÍŠòâr¢&WGW&â&VF—&V7B‚vW†V7WF—fU÷v÷&·76Rr ¢F6³ÕF6²æö&¦V7G2æ7&VFR€¢F—FÆS×F—FÆRÀ¢FW67&—F–öãÖFW67&—F–öâÀ¢76–væVE÷FóÖ76–væVE÷FòÀ¢7&VFVEö'“×&WVW7BçW6W"À¢GVUöFFSÖGVUöFFRÀ¢&–÷&—G“×&–÷&—G’À¢¢VF—EöW†V2‚v7&VFRrÇF6²Ç²v76–væVE÷Fòs¦76–væVE÷FòçW6W&æÖRÂvGVUöFFRs§7G"†GVUöFFR÷"rr—Ò¢–b76–væVE÷Fòç²×&WVW7BçW6W"ç³ ¢7Ffdæ÷F–f–6F–öâæö&¦V7G2æ7&VFR€¢W6W#Ö76–væVE÷FòÀ¢F—FÆSÒ}˜‹¸Í˜˜rŠÍŠı¸ÍŠòŠ}‹"Šı˜Š­‹ŠıªŠ­‹rÀ¢ÖW76vS×F—FÆU³£#CÒÀ¢æ÷F–f–6F–öå÷G—SÒwF6²rÀ¢&VÆFVEöFFSÖGVUöFFR÷"FöF’À¢¢ÖW76vW2ç7V66W72‡&WVW7BÆb}ªŠ}‹Š˜r¶76–væVE÷FòævWEögVÆÅöæÖR‚’÷"76–væVE÷FòçW6W&æÖWÒ˜Š}ªı‹Š}‹‹MŠòâr¢VÇ6S ¢ÖW76vW2ç7V66W72‡&WVW7BÂ}ªŠ}‹Š˜rŠı˜Š­‹˜]˜bŠ}‹mŠ}˜˜r‹MŠòâr¢&WGW&â&VF—&V7B‚vW†V7WF—fU÷v÷&·76Rr ¢–b7F–öãÓÒvFVÆVvFRs ¢F6³ÖvWEöö&¦V7Eö÷%óCB…F6²Ç³×&WVW7Båõ5BævWB‚wF6µö–Br’Æ7&VFVEö'“×&WVW7BçW6W"¢76–væVSÖvWEöö&¦V7Eö÷%óCB†7F—fU÷V÷ÆRÇ³×&WVW7Båõ5BævWB‚v76–væVE÷Fòr’¢F6²æ76–væVE÷FóÖ76–væVP¢–bF6²ç7FGW3ÓÒvFöæRs ¢F6²ç7FGW3ÒwFöFòp¢F6²ç6fR‡WFFUöf–VÆG3Õ²v76–væVE÷FòrÂw7FGW2rÂwWFFVEöBuÒ¢VF—EöW†V2‚vFVÆVvFRrÇF6²Ç²v76–væVE÷Fòs¦76–væVRçW6W&æÖWÒ¢7Ffdæ÷F–f–6F–öâæö&¦V7G2æ7&VFR€¢W6W#Ö76–væVRÀ¢F—FÆSÒ}˜‹¸Í˜˜rŠÍŠı¸ÍŠòŠ}‹"Šı˜Š­‹ŠıªŠ­‹rÀ¢ÖW76vS×F6²çF—FÆU³£#CÒÀ¢æ÷F–f–6F–öå÷G—SÒwF6²rÀ¢&VÆFVEöFFS×F6²æGVUöFFR÷"FöF’À¢¢ÖW76vW2ç7V66W72‡&WVW7BÆb|*··F6²çF—FÆWÜ+²Š˜r¶76–væVRævWEögVÆÅöæÖR‚’÷"76–væVRçW6W&æÖWÒ˜Š}ªı‹Š}‹‹MŠòâr¢&WGW&â&VF—&V7B‚vW†V7WF—fU÷v÷&·76Rr ¢–b7F–öãÓÒw&V6Æ–Òs ¢F6³ÖvWEöö&¦V7Eö÷%óCB…F6²Ç³×&WVW7Båõ5BævWB‚wF6µö–Br’Æ7&VFVEö'“×&WVW7BçW6W"¢F6²æ76–væVE÷Fó×&WVW7BçW6W ¢–bF6²ç7FGW3ÓÒvFöæRs ¢F6²ç7FGW3ÒwFöFòp¢F6²ç6fR‡WFFUöf–VÆG3Õ²v76–væVE÷FòrÂw7FGW2rÂwWFFVEöBuÒ¢VF—EöW†V2‚w&V6Æ–ÒrÇF6²¢ÖW76vW2ç7V66W72‡&WVW7BÂ}ªŠ}‹Š˜rŠı˜Š­‹˜]˜bŠ‹ªı‹MŠ¢âr¢&WGW&â&VF—&V7B‚vW†V7WF—fU÷v÷&·76Rr ¢–b7F–öãÓÒvFöæRs ¢F6³ÖvWEöö&¦V7Eö÷%óCB…F6²Ç³×&WVW7Båõ5BævWB‚wF6µö–Br’Æ7&VFVEö'“×&WVW7BçW6W"Æ76–væVE÷Fó×&WVW7BçW6W"¢F6²ç7FGW3ÒvFöæRp¢F6²ç6fR‡WFFUöf–VÆG3Õ²w7FGW2rÂwWFFVEöBuÒ¢VF—EöW†V2‚vFöæRrÇF6²¢v&E÷F6²‡F6²¢ÖW76vW2ç7V66W72‡&WVW7BÂ}Š}˜mŠÍŠ}˜R‹MŠò)É2r¢&WGW&â&VF—&V7B‚vW†V7WF—fU÷v÷&·76Rr ¢÷våö÷VãÖÆ—7B…F6²æö&¦V7G2æf–ÇFW"€¢7&VFVEö'“×&WVW7BçW6W"À¢76–væVE÷Fó×&WVW7BçW6W"À¢7FGW5õö–ãÒ‚wFöFòrÂvFö–ærr’À¢’æ÷&FW%ö'’‚vGVUöFFRrÂr×&–÷&—G’rÂr×WFFVEöBr’¢FVÆVvFVCÖÆ—7B…F6²æö&¦V7G2æf–ÇFW"€¢7&VFVEö'“×&WVW7BçW6W"À¢7FGW5õö–ãÒ‚wFöFòrÂvFö–ærr’À¢’æW†6ÇVFR†76–væVE÷Fó×&WVW7BçW6W"’ç6VÆV7E÷&VÆFVB‚v76–væVE÷FòrÂv76–væVE÷Fõõ÷&öf–ÆRr’æ÷&FW%ö'’‚vGVUöFFRrÂr×&–÷&—G’rÂr×WFFVEöBr’ ¢FöF•÷F6·3Õ·Bf÷"B–â÷våö÷Vâ–bBæGVUöFFRæBBæGVUöFFSÃ×FöF•Ğ¢–æ&÷…÷F6·3Õ·Bf÷"B–â÷våö÷Vâ–bæ÷BBæGVUöFFUĞ¢ÆFW%÷F6·3Õ·Bf÷"B–â÷våö÷Vâ–bBæGVUöFFRæBBæGVUöFFSçFöF•Ğ ¢FVbF6µ÷&æ²‡B“ ¢&WGW&â‡²v†–v‚s£Âvæ÷&ÖÂs£ÂvÆ÷rs£'ÒævWB‡Bç&–÷&—G’Ã’ÂBæGVUöFFR÷"FFRæÖ‚ÂÖ–çB‡BçWFFVEöBçF–ÖW7F×‚’’ ¢6æF–FFW3×6÷'FVB‡FöF•÷F6·2¶–æ&÷…÷F6·2Æ¶W“×F6µ÷&æ²¢F†U÷F†–æsÖ6æF–FFW5³Ò–b6æF–FFW2VÇ6R‡6÷'FVB†ÆFW%÷F6·2Æ¶W“×F6µ÷&æ²•³Ò–bÆFW%÷F6·2VÇ6RæöæR¢v÷VÆEö&Uöæ–6SÕ·Bf÷"B–â6æF–FFW2–bæ÷BF†U÷F†–ær÷"Bç²×F†U÷F†–ærçµÕ³£%Ğ¢öåöf—&S×6÷'FVB†ÆFW%÷F6·2Æ¶W“×F6µ÷&æ²•³£5Ğ ¢FVÆVvFVEö÷fW&GVS×7VÒƒf÷"B–âFVÆVvFVB–bBæGVUöFFRæBBæGVUöFFSÇFöF’¢FöæU÷FöF“ÕF6²æö&¦V7G2æf–ÇFW"€¢7&VFVEö'“×&WVW7BçW6W"À¢7FGW3ÒvFöæRrÀ¢WFFVEöEõöFFS×FöF’À¢’æ6÷VçB‚ ¢&WGW&â&VæFW"‡&WVW7BÂv6÷&RöW†V7WF—fU÷v÷&·76Ræ‡FÖÂrÇ°¢wFöF’s§FöF’À¢wF†U÷F†–ærs§F†U÷F†–ærÀ¢wv÷VÆEö&Uöæ–6Rs§v÷VÆEö&Uöæ–6RÀ¢vöåöf—&Rs¦öåöf—&RÀ¢wFöF•÷F6·2s§FöF•÷F6·2À¢v–æ&÷…÷F6·2s¦–æ&÷…÷F6·2À¢vÆFW%÷F6·2s¦ÆFW%÷F6·2À¢vFVÆVvFVBs¦FVÆVvFVBÀ¢vFVÆVvFVEö÷fW&GVRs¦FVÆVvFVEö÷fW&GVRÀ¢vFöæU÷FöF’s¦FöæU÷FöF’À¢v76–væVW2s¦7F—fU÷V÷ÆRæW†6ÇVFR‡³×&WVW7BçW6W"ç²’À¢Ò ¤Æöv–å÷&WV—&V@¦FVb6W'f–6U÷v÷&¶W"‡&WVW7B“ ¢&W7öç6SÔ‡GG&W7öç6R‚&6öç7B44„SÒvw&VVæÆ–fR×7Ffb×cCãsµÆæ6öç7B5DD”3ÕµÆâr÷7FF–2ö6÷&Röæ773÷c×cCããrÅÆâr÷7FF–2ö6÷&R÷&VfW'&Âæ773÷c×cCã"rÅÆâr÷7FF–2ö6÷&Rö–6öâÓ“"çæs÷c×cCã"rÅÆâr÷7FF–2ö6÷&Rö–6öâÓS"çæs÷c×cCã"rÅÆâr÷7FF–2ö6÷&RöÖæ–fW7BçvV&Öæ–fW7C÷c×cCã"uÆåÓµÆç6VÆbæFDWfVçDÆ—7FVæW"‚v–ç7FÆÂrÆSÓçµÆâRçv—EVçF–Â†66†W2æ÷Vâ„44„R’çF†Vâ†3Óæ2æFDÆÂ…5DD”2’æ6F6‚‚‚“Óç·Ò’’“µÆâ6VÆbç6¶—v—F–ær‚“µÆçÒ“µÆç6VÆbæFDWfVçDÆ—7FVæW"‚v7F—fFRrÆSÓçµÆâRçv—EVçF–Â†66†W2æ¶W—2‚’çF†Vâ†¶W—3Óå&öÖ—6RæÆÂ†¶W—2æf–ÇFW"†³Óæ²ÓÔ44„R’æÖ†³Óæ66†W2æFVÆWFR†²’’’’“µÆâ6VÆbæ6Æ–VçG2æ6Æ–Ò‚“µÆçÒ“µÆç6VÆbæFDWfVçDÆ—7FVæW"‚vfWF6‚rÆSÓçµÆâ–b†Rç&WVW7BæÖWF†öBÓÒttUBr’&WGW&ãµÆâ6öç7BW&ÃÖæWrU$Â†Rç&WVW7BçW&Â“µÆâ–b‡W&Âæ÷&–v–âÓÖÆö6F–öâæ÷&–v–â’&WGW&ãµÆâòòæWGv÷&²Öf—'7Bf÷"G–æÖ–2WF†VçF–6FVBvW26ò7FÆR7FfbFF—2æ÷B6†÷vâåÆâ–b‡W&ÂçF†æÖRç7F'G5v—F‚‚r÷7FF–2òr’—µÆâRç&W7öæEv—F‚†66†W2æÖF6‚†Rç&WVW7B’çF†Vâ‡#Óç'ÇÆfWF6‚†Rç&WVW7B’çF†Vâ‡&W7ÓçµÆâ6öç7B6÷“×&W7æ6ÆöæR‚“²66†W2æ÷Vâ„44„R’çF†Vâ†3Óæ2çWB†Rç&WVW7BÆ6÷’’“²&WGW&â&W7µÆâÒ’’“µÆâ&WGW&ãµÆâÕÆâRç&W7öæEv—F‚†fWF6‚†Rç&WVW7B’æ6F6‚‚‚“Óæ66†W2æÖF6‚†Rç&WVW7B’’“µÆçÒ“µÆâ"Â6öçFVçE÷G—SÒvÆ–6F–öâö¦f67&—Br¢&W7öç6U²t66†RÔ6öçG&öÂuÓÒvæòÖ66†RÂæò×7F÷&RÂ×W7B×&WfÆ–FFRp¢&WGW&â&W7öç6P

@@ -8,7 +8,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Max, Q, Sum
+from django.db.models.functions import TruncDate
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -40,6 +41,16 @@ def referral_manager_required(view):
     return wrapper
 
 
+def referral_supervisor_required(view):
+    @wraps(view)
+    @login_required
+    def wrapper(request, *args, **kwargs):
+        if _role(request.user)!='referral_supervisor':
+            raise PermissionDenied('این صفحه فقط برای ناظر شبکه فروش قابل دسترسی است.')
+        return view(request, *args, **kwargs)
+    return wrapper
+
+
 def _new_code():
     while True:
         code=f'GL{uuid.uuid4().hex[:8].upper()}'
@@ -48,6 +59,8 @@ def _new_code():
 
 
 def _ensure_profile(user):
+    if _role(user)=='referral_supervisor':
+        raise PermissionDenied('ناظر شبکه فروش فقط به داشبورد آماری دسترسی دارد.')
     if _role(user)=='call_center':
         raise PermissionDenied('دسترسی شبکه معرفی برای این نقش فعال نیست.')
     profile, _=ReferralProfile.objects.get_or_create(
@@ -61,6 +74,66 @@ def _ensure_profile(user):
     return ReferralProfile.objects.select_related(
         'user', 'user__profile', 'sponsor', 'sponsor__user', 'sponsor__sponsor'
     ).get(pk=profile.pk)
+
+
+@referral_supervisor_required
+def referral_supervisor_dashboard(request):
+    """PII-free, read-only oversight for the referral-network supervisor."""
+    today=timezone.localdate()
+    month_start=today.replace(day=1)
+    profiles=ReferralProfile.objects.filter(is_active=True).select_related(
+        'user','user__profile','sponsor__user',
+    )
+    leads=ReferralLead.objects.filter(referrer__is_active=True)
+    total_leads=leads.count()
+    won_count=leads.filter(status='won').count()
+    status_rows=[
+        {'code':code,'label':label,'count':leads.filter(status=code).count()}
+        for code,label in ReferralLead.STATUS
+    ]
+    source_rows=[
+        {'code':code,'label':label,'count':leads.filter(source=code).count()}
+        for code,label in ReferralLead.SOURCE
+    ]
+    member_rows=[]
+    for profile in profiles.annotate(
+        lead_count=Count('leads',distinct=True),
+        won_count=Count('leads',filter=Q(leads__status='won'),distinct=True),
+        open_count=Count('leads',filter=~Q(leads__status__in=('won','lost')),distinct=True),
+        last_lead_at=Max('leads__created_at'),
+    ).order_by('-lead_count','user__last_name','user__first_name'):
+        member_rows.append({
+            'name':profile.user.get_full_name() or profile.user.username,
+            'branch':getattr(getattr(profile.user,'profile',None),'branch',None),
+            'level':profile.level,
+            'leads':profile.lead_count,
+            'won':profile.won_count,
+            'open':profile.open_count,
+            'conversion':round(profile.won_count*100/max(1,profile.lead_count)),
+            'last_activity':profile.last_lead_at,
+        })
+    daily_map={
+        row['day']:row['count'] for row in
+        leads.filter(created_at__date__gte=today-timezone.timedelta(days=29))
+        .annotate(day=TruncDate('created_at')).values('day').annotate(count=Count('id'))
+    }
+    trend=[]
+    max_daily=max([*daily_map.values(),1])
+    for offset in range(29,-1,-1):
+        day=today-timezone.timedelta(days=offset)
+        count=daily_map.get(day,0)
+        trend.append({'day':day,'count':count,'percent':round(count*100/max_daily)})
+    return render(request,'core/referrals/supervisor_dashboard.html',{
+        'member_count':profiles.count(),'total_leads':total_leads,
+        'today_leads':leads.filter(created_at__date=today).count(),
+        'month_leads':leads.filter(created_at__date__gte=month_start).count(),
+        'won_count':won_count,'conversion_rate':round(won_count*100/max(1,total_leads)),
+        'needs_action':leads.filter(
+            Q(status__in=('new','contacted'))|Q(next_follow_up__lte=today)
+        ).exclude(status__in=('won','lost')).distinct().count(),
+        'status_rows':status_rows,'source_rows':source_rows,
+        'member_rows':member_rows,'trend':trend,
+    })
 
 
 def _subtree_ids(profile):

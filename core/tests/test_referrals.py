@@ -52,7 +52,7 @@ class ReferralModuleTests(TestCase):
         self.client.force_login(self.admin)
         response=self.client.get(reverse('referral_dashboard'))
         self.assertEqual(response.status_code,200)
-        for label in ('مرکز مدیریت معرفی مشتری','قیف تبدیل مشتری','پیگیری‌های سررسیدشده','پورسانت معوق'):
+        for label in ('مرکز مدیریت شبکه فروش','قیف تبدیل مشتری','پیگیری‌های سررسیدشده','پورسانت معوق'):
             self.assertContains(response,label)
         self.assertNotContains(response,'لینک و QR شما')
 
@@ -174,3 +174,35 @@ class ReferralModuleTests(TestCase):
         self.client.force_login(self.admin)
         personnel=self.client.get(reverse('employee_list'))
         self.assertNotContains(personnel,'external-login')
+
+    def test_referral_supervisor_sees_aggregate_dashboard_without_lead_pii(self):
+        root=self.profile(self.staff)
+        ReferralLead.objects.create(
+            referrer=root,full_name='نام محرمانه مشتری',phone='09121234567',
+            alternate_phone='09351234567',notes='یادداشت کاملاً محرمانه',status='contacted',
+        )
+        supervisor=User.objects.create_user(
+            'eybpoosh',password='pass',first_name='فرامرز',last_name='عیب‌پوش',
+        )
+        EmployeeProfile.objects.update_or_create(
+            user=supervisor,defaults={'role':'referral_supervisor','branch':self.branch,'is_active':True},
+        )
+        self.client.force_login(supervisor)
+        response=self.client.get(reverse('dashboard'))
+        self.assertRedirects(response,reverse('referral_supervisor_dashboard'))
+        response=self.client.get(reverse('referral_supervisor_dashboard'))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'نظارت شبکه فروش')
+        self.assertContains(response,self.staff.get_full_name())
+        for secret in ('نام محرمانه مشتری','09121234567','09351234567','یادداشت کاملاً محرمانه'):
+            self.assertNotContains(response,secret)
+
+    def test_referral_supervisor_cannot_open_operational_or_export_pages(self):
+        supervisor=User.objects.create_user('network-watch',password='pass')
+        EmployeeProfile.objects.update_or_create(
+            user=supervisor,defaults={'role':'referral_supervisor','is_active':True},
+        )
+        self.client.force_login(supervisor)
+        self.assertEqual(self.client.get(reverse('referral_dashboard')).status_code,403)
+        self.assertNotEqual(self.client.get(reverse('referral_export_csv')).status_code,200)
+        self.assertNotEqual(self.client.get(reverse('referral_crm_export')).status_code,200)

@@ -1,0 +1,36 @@
+{% extends 'core/base.html' %}{% load static jalali_tags %}{% block content %}
+<link rel="stylesheet" href="{% static 'core/referral-supervisor.css' %}?v=v41.1">
+<section class="rfs-shell">
+  <header class="rfs-hero">
+    <div><span>GREENLIFE NETWORK CONTROL</span><h1>نظارت شبکه فروش</h1><p>{{ user.get_full_name|default:user.username }} · نمای آماری و محرمانه اعضا و مسیر تبدیل لیدها</p></div>
+    <b>فقط آمار · بدون اطلاعات تماس</b>
+  </header>
+
+  <div class="rfs-kpis">
+    <article><span>اعضای فعال</span><strong>{{ member_count|fa }}</strong><small>کل شبکه فروش</small></article>
+    <article><span>لید امروز</span><strong>{{ today_leads|fa }}</strong><small>{{ month_leads|fa }} لید در ماه جاری</small></article>
+    <article><span>فروش موفق</span><strong>{{ won_count|fa }}</strong><small>نرخ تبدیل {{ conversion_rate|fa }}٪</small></article>
+    <article class="warn"><span>نیازمند پیگیری</span><strong>{{ needs_action|fa }}</strong><small>جدید یا سررسیدشده</small></article>
+  </div>
+
+  <div class="rfs-grid">
+    <article class="rfs-card rfs-trend"><div class="rfs-head"><div><h2>روند ورود لید</h2><small>۳۰ روز اخیر</small></div><strong>{{ total_leads|fa }} کل لید</strong></div>
+      <div class="rfs-bars">{% for row in trend %}<i style="--h:{{ row.percent }}%" title="{{ row.day|jdate }}: {{ row.count|fa }} لید"><b>{{ row.count|fa }}</b></i>{% endfor %}</div>
+    </article>
+    <article class="rfs-card"><div class="rfs-head"><div><h2>قیف وضعیت لیدها</h2><small>فقط تعداد؛ بدون نام و تلفن مشتری</small></div></div>
+      <div class="rfs-funnel">{% for row in status_rows %}<div><span>{{ row.label }}</span><strong>{{ row.count|fa }}</strong><i style="--w:{% widthratio row.count total_leads 100 %}%"></i></div>{% endfor %}</div>
+    </article>
+  </div>
+
+  <article class="rfs-card"><div class="rfs-head"><div><h2>عملکرد اعضای شبکه</h2><small>برای تشخیص اعضای فعال و موارد نیازمند پیگیری</small></div></div>
+    <div class="rfs-table-wrap"><table><thead><tr><th>عضو</th><th>شعبه</th><th>سطح</th><th>کل لید</th><th>باز</th><th>فروش موفق</th><th>تبدیل</th><th>آخرین فعالیت</th></tr></thead><tbody>
+    {% for row in member_rows %}<tr><td><strong>{{ row.name }}</strong></td><td>{{ row.branch|default:'—' }}</td><td>{{ row.level|fa }}</td><td>{{ row.leads|fa }}</td><td>{{ row.open|fa }}</td><td>{{ row.won|fa }}</td><td><em>{{ row.conversion|fa }}٪</em></td><td>{% if row.last_activity %}{{ row.last_activity|jdate }}{% else %}<span class="rfs-idle">بدون فعالیت</span>{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="8">هنوز عضوی در شبکه ثبت نشده است.</td></tr>{% endfor %}</tbody></table></div>
+  </article>
+
+  <article class="rfs-card"><div class="rfs-head"><div><h2>منشأ ورود لیدها</h2><small>ترکیب کانال‌های جذب شبکه</small></div></div>
+    <div class="rfs-sources">{% for row in source_rows %}<div><span>{{ row.label }}</span><strong>{{ row.count|fa }}</strong></div>{% endfor %}</div>
+  </article>
+  <p class="rfs-privacy">در این پنل نام و شماره تلفن لیدها، یادداشت‌ها، رسیدها و ابزارهای ویرایش عمداً نمایش داده نمی‌شوند.</p>
+</section>
+{% endblock %}

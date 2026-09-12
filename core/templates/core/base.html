@@ -132,6 +132,10 @@ html.gl-call-center-html{background:#f5f7fb!important;background-image:none!impo
     <a href="/notifications/" class="employee-bottom-nav {% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico">♢</span><span>اعلان‌ها</span></a>
     <a href="/profile/"><span class="nav-ico">◉</span><span>پروفایل</span></a>
     <a href="/logout/"><span class="nav-ico">↪</span><span>خروج</span></a>
+    {% elif user.profile.role == 'referral_supervisor' %}
+    <a href="{% url 'referral_supervisor_dashboard' %}" class="is-active"><span class="nav-ico">◉</span><span>نظارت شبکه فروش</span></a>
+    <a href="/profile/"><span class="nav-ico">♙</span><span>پروفایل</span></a>
+    <a href="/logout/"><span class="nav-ico">↪</span><span>خروج</span></a>
     {% elif user.profile.role == 'referrer' %}
     <a href="/referrals/" class="{% if request.path == '/referrals/' %}is-active{% endif %}"><span class="nav-ico">✦</span><span>شبکه فروش من</span></a>
     <a href="/referrals/leads/" class="{% if '/referrals/leads/' in request.path %}is-active{% endif %}"><span class="nav-ico">◈</span><span>لیدهای من</span></a>
