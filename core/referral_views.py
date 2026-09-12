@@ -3,6 +3,7 @@ import io
 import os
 import uuid
 from functools import wraps
+from urllib.parse import quote
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -353,12 +354,31 @@ def referral_member_create(request):
                 'branch':_root_branch(sponsor),'role':'referrer','phone':d['phone'],
                 'job_title':'معرف مشتری','is_active':True,
             })
-            ReferralProfile.objects.create(
+            member=ReferralProfile.objects.create(
                 user=user,sponsor=sponsor,referral_code=_new_code(),phone=d['phone'],
                 photo=d.get('photo'),created_by=request.user,
             )
-        messages.success(request,'عضو جدید شبکه ساخته شد و اکنون می‌تواند وارد پنل شود.')
-        return redirect('referral_network')
+        public_base=os.getenv('PUBLIC_BASE_URL','https://staff.greenlifeclinics.com').rstrip('/')
+        login_url=f'{public_base}{reverse("login")}'
+        full_name=user.get_full_name() or user.username
+        invite_text=(
+            f'سلام {full_name}\n'
+            'عضویت شما در شبکه فروش گرین‌لایف فعال شد.\n\n'
+            f'نام کاربری: {user.username}\n'
+            f'رمز ورود: {d["password"]}\n'
+            f'لینک ورود: {login_url}\n\n'
+            'لطفاً این اطلاعات را محرمانه نگه دارید.'
+        )
+        phone=''.join(ch for ch in d['phone'] if ch.isdigit())
+        if phone.startswith('0'):
+            phone='98'+phone[1:]
+        elif not phone.startswith('98'):
+            phone='98'+phone
+        whatsapp_url=f'https://wa.me/{phone}?text={quote(invite_text)}'
+        return render(request,'core/referrals/member_invite.html',{
+            'member':member,'plain_password':d['password'],'login_url':login_url,
+            'invite_text':invite_text,'whatsapp_url':whatsapp_url,
+        })
     return render(request,'core/referrals/form.html',{
         'form':form,'title':'افزودن عضو شبکه','subtitle':f'زیرمجموعه {sponsor}',
         'button':'ساخت حساب معرف','sponsor':sponsor,

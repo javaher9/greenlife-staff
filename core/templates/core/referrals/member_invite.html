@@ -1,0 +1,29 @@
+{% extends 'core/base.html' %}{% block content %}
+<section class="rf-shell rf-form-shell">
+  {% include 'core/referrals/_nav.html' %}
+  <article class="rf-form-card rf-invite-card">
+    <div class="rf-invite-check">✓</div>
+    <span class="rf-eyebrow">حساب با موفقیت ساخته شد</span>
+    <h1>ارسال اطلاعات ورود برای {{ member.user.get_full_name|default:member.user.username }}</h1>
+    <p class="rf-invite-warning">رمز فقط در همین صفحه نمایش داده می‌شود. آن را همین حالا در واتساپ ارسال کنید.</p>
+    <div class="rf-invite-credentials">
+      <div><span>نام کاربری</span><strong>{{ member.user.username }}</strong></div>
+      <div><span>رمز ورود</span><strong>{{ plain_password }}</strong></div>
+      <div class="wide"><span>لینک ورود</span><strong dir="ltr">{{ login_url }}</strong></div>
+    </div>
+    <div class="rf-invite-actions">
+      <a class="rf-whatsapp-btn" href="{{ whatsapp_url }}" target="_blank" rel="noopener">ارسال در واتساپ</a>
+      <button type="button" class="rf-copy-btn" id="copyInvite">کپی پیام</button>
+      <a class="rf-btn" href="{% url 'referral_network' %}">بازگشت به شبکه</a>
+    </div>
+    <textarea id="inviteText" hidden>{{ invite_text }}</textarea>
+  </article>
+</section>
+<script>
+document.getElementById('copyInvite').addEventListener('click',async function(){
+  const text=document.getElementById('inviteText').value;
+  try{await navigator.clipboard.writeText(text);this.textContent='پیام کپی شد ✓';}
+  catch(e){document.getElementById('inviteText').hidden=false;document.getElementById('inviteText').select();}
+});
+</script>
+{% endblock %}

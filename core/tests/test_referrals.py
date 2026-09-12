@@ -99,11 +99,20 @@ class ReferralModuleTests(TestCase):
             'sponsor':root.pk,'first_name':'سارا','last_name':'احمدی','phone':'09123334444',
             'username':'sara-referrer','password':'safe-pass-123',
         })
-        self.assertRedirects(response,reverse('referral_network'))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'ارسال اطلاعات ورود')
+        self.assertContains(response,'ارسال در واتساپ')
+        self.assertContains(response,'https://wa.me/989123334444?text=',html=False)
+        self.assertContains(response,'https://staff.greenlifeclinics.com/login/')
+        self.assertContains(response,'sara-referrer')
+        self.assertContains(response,'safe-pass-123')
         created=ReferralProfile.objects.get(user__username='sara-referrer')
         self.assertEqual(created.sponsor,root)
         self.assertEqual(created.level,1)
         self.assertEqual(created.user.profile.role,'referrer')
+
+        network=self.client.get(reverse('referral_network'))
+        self.assertNotContains(network,'safe-pass-123')
 
     def test_public_link_records_lead_for_exact_referrer(self):
         root=self.profile(self.staff,code='GLPUBLIC1')
