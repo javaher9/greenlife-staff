@@ -235,7 +235,14 @@ def receptionist_appointment_status(request,pk,status):
         pk=pk,
         branch=request.user.profile.branch,
     )
-    item.status=status
-    item.save(update_fields=['status','updated_at'])
+    with transaction.atomic():
+        item.status=status
+        item.save(update_fields=['status','updated_at'])
+        # Close the operational loop back to call center. Arrival/completion means
+        # the lead has actually visited, but never downgrade a won/lost lead.
+        if item.lead_id and status in ('arrived','completed'):
+            ReferralLead.objects.filter(pk=item.lead_id).exclude(
+                status__in=('won','lost')
+            ).update(status='visited',updated_at=timezone.now())
     messages.success(request,f'وضعیت نوبت {item.full_name} به «{item.get_status_display()}» تغییر کرد.')
     return redirect(f"{reverse('appointment_schedule')}?date={item.appointment_date.isoformat()}")

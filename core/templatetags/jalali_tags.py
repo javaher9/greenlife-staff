@@ -1,4 +1,5 @@
 from django import template
+from django.db.models import Sum
 from django.utils import timezone
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from core.jalali import format_jalali, to_persian_digits
@@ -53,3 +54,19 @@ def million_toman(value):
         return '0'
     rendered=f'{millions.quantize(Decimal("0.001"),rounding=ROUND_HALF_UP):f}'.rstrip('0').rstrip('.')
     return rendered or '0'
+
+@register.filter
+def appointment_paid_million(appointment):
+    """Approved income linked to one appointment, in compact million tomans."""
+    if not appointment or not getattr(appointment, 'pk', None):
+        return '0'
+    try:
+        amount=(
+            appointment.financial_transactions
+            .filter(entry_type='inc',review_status='approved')
+            .aggregate(value=Sum('amount'))['value']
+            or Decimal('0')
+        )
+    except Exception:
+        return '0'
+    return million_toman(amount)
