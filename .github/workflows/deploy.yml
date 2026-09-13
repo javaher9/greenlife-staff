@@ -196,6 +196,76 @@ jobs:
             printf '\nPUBLIC_BASE_URL=https://staff.greenlifeclinics.com\n' >> "$DEPLOY_PATH/.env"
           fi
 
+      - name: Rebase source-only app changes from local runtime image
+        shell: bash
+        env:
+          DEPLOY_PATH: /home/ubuntu/greenlife-staff-runtime
+        run: |
+          set -Eeuo pipefail
+
+          if [[ "${APP_BUILD_REQUIRED:-0}" != "1" ]]; then
+            echo "No application rebuild requested; local source rebase not needed."
+            exit 0
+          fi
+
+          runtime_container="greenlife-staff-runtime-web-1"
+          if ! docker ps --format '{{.Names}}' | grep -qx "$runtime_container"; then
+            echo "Running production web container not found; leaving normal build path enabled."
+            exit 0
+          fi
+
+          current_image="$(docker inspect -f '{{.Image}}' "$runtime_container")"
+          old_requirements="$(mktemp)"
+          old_dockerfile="$(mktemp)"
+          temp_container=""
+          cleanup() {
+            rm -f "$old_requirements" "$old_dockerfile"
+            if [[ -n "$temp_container" ]]; then
+              docker rm -f "$temp_container" >/dev/null 2>&1 || true
+            fi
+          }
+          trap cleanup EXIT
+
+          if ! docker run --rm --entrypoint cat "$current_image" /app/requirements.txt >"$old_requirements" 2>/dev/null \
+            || ! docker run --rm --entrypoint cat "$current_image" /app/Dockerfile >"$old_dockerfile" 2>/dev/null; then
+            echo "Could not inspect current runtime manifests; leaving normal build path enabled."
+            exit 0
+          fi
+
+          if ! cmp -s "$DEPLOY_PATH/requirements.txt" "$old_requirements" \
+            || ! cmp -s "$DEPLOY_PATH/Dockerfile" "$old_dockerfile"; then
+            echo "Dependencies or Dockerfile changed; leaving normal full-build path enabled."
+            exit 0
+          fi
+
+          echo "Source-only application change detected. Rebasing from the local production image without Docker Hub."
+          temp_container="greenlife-source-rebase-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          docker rm -f "$temp_container" >/dev/null 2>&1 || true
+          docker create --name "$temp_container" "$current_image" >/dev/null
+
+          tar \
+            --exclude='.git' \
+            --exclude='.env' \
+            --exclude='docker-compose.yml' \
+            --exclude='backups' \
+            --exclude='.rollback' \
+            --exclude='media' \
+            --exclude='staticfiles' \
+            -C "$DEPLOY_PATH" -cf - . \
+            | docker cp - "$temp_container":/app
+
+          docker export "$temp_container" \
+            | docker import \
+                --change 'WORKDIR /app' \
+                --change 'ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1' \
+                --change 'ENTRYPOINT ["/app/entrypoint.sh"]' \
+                - greenlife-staff-runtime-web:latest >/dev/null
+
+          docker tag greenlife-staff-runtime-web:latest greenlife-staff-runtime-web_lan:latest
+          echo "APP_BUILD_REQUIRED=0" >> "$GITHUB_ENV"
+          echo "LOCAL_SOURCE_REBASE=1" >> "$GITHUB_ENV"
+          echo "Local source rebase image prepared successfully."
+
       - name: Deploy containers
         shell: bash
         env:
