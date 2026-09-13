@@ -10,6 +10,7 @@ from .models import CallCenterLeadGroup, EmployeeProfile, ReferralLead, Referral
 
 INSTAGRAM_GROUP_NAME = 'اینستاگرام - لینک'
 INSTAGRAM_MANUAL_GROUP_NAME = 'اینستاگرام - دستی'
+TELEGRAM_GROUP_NAME = 'تلگرام - لینک'
 
 
 class InstagramLeadForm(forms.Form):
@@ -71,6 +72,29 @@ def _instagram_source_profile():
     return profile
 
 
+def _telegram_source_profile():
+    user, _ = User.objects.get_or_create(
+        username='telegram-lead-source',
+        defaults={
+            'first_name': 'تلگرام',
+            'last_name': 'گرین‌لایف',
+            'is_active': False,
+        },
+    )
+    if user.has_usable_password():
+        user.set_unusable_password()
+        user.save(update_fields=['password'])
+    profile, _ = ReferralProfile.objects.get_or_create(
+        user=user,
+        defaults={
+            'referral_code': 'GLTELEGRAM',
+            'is_active': False,
+            'created_by': None,
+        },
+    )
+    return profile
+
+
 def _assign_instagram_lead(lead, group_name=INSTAGRAM_GROUP_NAME, notification_title='لید جدید اینستاگرام'):
     operator = (
         EmployeeProfile.objects
@@ -119,6 +143,35 @@ def instagram_lead(request):
             notes='ورودی مستقیم فرم اینستاگرام Green Life',
         )
         _assign_instagram_lead(lead)
+        completed = True
+        form = InstagramLeadForm()
+
+    return render(request, 'core/instagram_lead.html', {
+        'form': form,
+        'completed': completed,
+    })
+
+
+def telegram_lead(request):
+    form = InstagramLeadForm(request.POST or None)
+    completed = False
+    if request.method == 'POST' and form.is_valid():
+        data = form.cleaned_data
+        lead = ReferralLead.objects.create(
+            referrer=_telegram_source_profile(),
+            full_name=data['full_name'].strip(),
+            phone=data['phone'],
+            interested_service=(data.get('interested_service') or '').strip(),
+            status='new',
+            source='link',
+            source_url=request.build_absolute_uri()[:500],
+            notes='ورودی مستقیم فرم تلگرام Green Life',
+        )
+        _assign_instagram_lead(
+            lead,
+            group_name=TELEGRAM_GROUP_NAME,
+            notification_title='لید جدید تلگرام',
+        )
         completed = True
         form = InstagramLeadForm()
 
