@@ -46,4 +46,4 @@ jobs:
       - name: Django system check
         run: python manage.py check
       - name: Receptionist, call center, finance and lead-ingest regression tests
-        run: python manage.py test core.tests.test_receptionist_role core.tests.test_call_center_role core.tests.test_call_center_kpis core.tests.test_appointment_payment_visibility core.tests.test_telegram_lead core.tests.test_consultant_finance core.tests.test_lead_ingest --verbosity 2
+        run: python manage.py test core.tests.test_receptionist_role core.tests.test_call_center_role core.tests.test_call_center_kpis core.tests.test_appointment_payment_visibility core.tests.test_telegram_lead core.tests.test_telegram_agent core.tests.test_consultant_finance core.tests.test_lead_ingest --verbosity 2
