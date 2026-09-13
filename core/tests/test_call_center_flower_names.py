@@ -32,6 +32,7 @@ class CallCenterFlowerNameTests(TestCase):
             ('حدیث', 'توانا', 'tavana-test', 'بنفشه'),
             ('پریسا', 'کلکلی', 'kolkoli-test', 'کاملیا'),
             ('شیما', 'عباسی', 'abbasi-test', 'لاله'),
+            ('زهرا', 'آزادی', 'zahra-azadi', 'یاسمن'),
         )
         for first_name, last_name, username, expected in cases:
             user, profile = self._operator(first_name, last_name, username)
