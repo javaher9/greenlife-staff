@@ -5,6 +5,7 @@ from django.db.models import Count, Q, Sum
 from django.shortcuts import render
 from django.utils import timezone
 
+from .call_center_identity import call_center_display_name
 from .models import EmployeeProfile, ReferralLead, ReferralSale
 
 
@@ -124,7 +125,7 @@ def lead_management_dashboard(request):
         op_contacted = qs.filter(status__in=('contacted', 'appointment', 'visited', 'won')).count()
         operator_rows.append({
             'id': op.id,
-            'name': op.user.get_full_name() or op.user.username,
+            'name': call_center_display_name(op),
             'total': op_total,
             'new': qs.filter(status='new').count(),
             'open': qs.filter(status__in=OPEN_STATUSES).count(),
