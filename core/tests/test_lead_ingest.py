@@ -2,9 +2,11 @@ import json
 import os
 from unittest.mock import patch
 
+from django.contrib.auth.models import User
 from django.test import TestCase
 
-from core.models import ReferralLead
+from core.lead_ingest_views import _operator_weight
+from core.models import EmployeeProfile, ReferralLead
 
 
 class LeadIngestTests(TestCase):
@@ -58,3 +60,15 @@ class LeadIngestTests(TestCase):
         lead = ReferralLead.objects.get()
         self.assertEqual(lead.phone, '09120000000')
         self.assertEqual(lead.source_url, 'https://greenlifeclinics.com/fast-slimming/')
+
+    def test_operator_weights(self):
+        cases = (
+            ('فاطمه', 'بابایی', 'babayi', 6),
+            ('محمد', 'صالحی', 'salehi', 4),
+            ('علی', 'عباسی', 'abbasi', 1),
+            ('حدیث', 'توانا', 'tavana', 3),
+        )
+        for index, (first_name, last_name, username, expected) in enumerate(cases, start=1):
+            user = User(username=f'{username}-{index}', first_name=first_name, last_name=last_name)
+            operator = EmployeeProfile(user=user, role='call_center')
+            self.assertEqual(_operator_weight(operator), expected)
