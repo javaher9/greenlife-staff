@@ -30,3 +30,57 @@ def call_center_display_name(value):
             return flower_name
 
     return full_name or username or str(value)
+
+
+class FlowerUserProxy:
+    """User proxy that changes only the call-center display name."""
+    def __init__(self, user):
+        self._flower_user = user
+
+    def __getattr__(self, name):
+        return getattr(self._flower_user, name)
+
+    @property
+    def first_name(self):
+        return call_center_display_name(self._flower_user)
+
+    @property
+    def last_name(self):
+        return ''
+
+    def get_full_name(self):
+        return call_center_display_name(self._flower_user)
+
+    def __str__(self):
+        return call_center_display_name(self._flower_user)
+
+
+class FlowerProfileProxy:
+    """EmployeeProfile proxy for lead/call-center templates."""
+    def __init__(self, profile):
+        self._flower_profile = profile
+
+    def __getattr__(self, name):
+        return getattr(self._flower_profile, name)
+
+    @property
+    def user(self):
+        return FlowerUserProxy(self._flower_profile.user)
+
+    def __str__(self):
+        return call_center_display_name(self._flower_profile)
+
+
+class FlowerLeadProxy:
+    """Lead proxy that exposes the assignee through the flower-name profile proxy."""
+    def __init__(self, lead):
+        self._flower_lead = lead
+
+    def __getattr__(self, name):
+        return getattr(self._flower_lead, name)
+
+    @property
+    def assigned_to(self):
+        if not self._flower_lead.assigned_to_id:
+            return None
+        return FlowerProfileProxy(self._flower_lead.assigned_to)
