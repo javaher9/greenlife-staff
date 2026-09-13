@@ -76,13 +76,15 @@ class AppointmentPaymentVisibilityTests(TestCase):
         )
 
     def test_only_approved_income_is_shown_as_appointment_payment(self):
-        self._payment(20_000_000, 'approved')
-        self._payment(30_000_000, 'pending')
+        payment = self._payment(30_000_000, 'pending')
+        self.assertEqual(appointment_paid_million(self.appointment), '0')
+        payment.amount = Decimal('20000000')
+        payment.review_status = 'approved'
+        payment.save(update_fields=['amount', 'review_status'])
         self.assertEqual(appointment_paid_million(self.appointment), '2')
 
     def test_shared_schedule_shows_approved_payment_to_receptionist_and_call_center(self):
         self._payment(20_000_000, 'approved')
-        self._payment(30_000_000, 'pending')
         day = timezone.localdate().isoformat()
 
         self.client.force_login(self.receptionist)
