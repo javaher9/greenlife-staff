@@ -24,6 +24,15 @@ CHANNEL_LABELS = {
     'partner': 'همکار',
 }
 
+# Weighted call-center routing. Higher weight means a larger share of new leads.
+# Current requested policy: Babayi 6, Salehi 4, regular operators 3, Abbasi 1.
+OPERATOR_WEIGHT_RULES = (
+    (('بابایی', 'babaei', 'babayi', 'babaee'), 6),
+    (('صالحی', 'salehi'), 4),
+    (('عباسی', 'abbasi'), 1),
+)
+DEFAULT_OPERATOR_WEIGHT = 3
+
 # Safe to keep in source control: this is only a SHA-256 digest of a long,
 # random token. The plaintext token lives only in WordPress and can be rotated
 # by setting LEAD_INGEST_TOKEN_SHA256 on the Staff server.
@@ -152,19 +161,49 @@ def _source_profile(channel):
     return profile
 
 
+def _operator_identity(operator):
+    user = operator.user
+    identity = ' '.join(
+        part for part in (user.first_name, user.last_name, user.username) if part
+    ).lower()
+    return identity.replace('ي', 'ی').replace('ك', 'ک')
+
+
+def _operator_weight(operator):
+    identity = _operator_identity(operator)
+    for aliases, weight in OPERATOR_WEIGHT_RULES:
+        if any(alias in identity for alias in aliases):
+            return weight
+    return DEFAULT_OPERATOR_WEIGHT
+
+
 def _assign_lead(lead, channel):
-    operator = (
+    today = timezone.localdate()
+    operators = list(
         EmployeeProfile.objects
         .filter(role='call_center', is_active=True, user__is_active=True)
-        .annotate(open_leads=Count(
-            'assigned_referral_leads',
-            filter=Q(assigned_referral_leads__status__in=('new', 'contacted', 'appointment')),
-        ))
-        .order_by('open_leads', 'id')
-        .first()
+        .select_related('user')
+        .annotate(
+            today_leads=Count(
+                'assigned_referral_leads',
+                filter=Q(assigned_referral_leads__created_at__date=today),
+            )
+        )
     )
-    if not operator:
+    if not operators:
         return None
+
+    # Weighted fair routing. Using (today_leads + 1) / weight prevents low-weight
+    # operators from winning every zero-count tie at the start of the day while
+    # still guaranteeing that they receive their proportional share over time.
+    operator = min(
+        operators,
+        key=lambda op: (
+            (op.today_leads + 1) / _operator_weight(op),
+            -_operator_weight(op),
+            op.id,
+        ),
+    )
 
     group_name = 'اینستاگرام جدید' if channel == 'instagram' else f'ورودی {CHANNEL_LABELS.get(channel, channel)}'
     group, _ = CallCenterLeadGroup.objects.get_or_create(
