@@ -5,6 +5,9 @@ from django.db.models import Count, Q, Sum
 from django.shortcuts import render
 from django.utils import timezone
 
+from .call_center_identity import (
+    FlowerLeadProxy, FlowerProfileProxy, call_center_display_name,
+)
 from .models import EmployeeProfile, ReferralLead, ReferralSale
 
 
@@ -124,7 +127,7 @@ def lead_management_dashboard(request):
         op_contacted = qs.filter(status__in=('contacted', 'appointment', 'visited', 'won')).count()
         operator_rows.append({
             'id': op.id,
-            'name': op.user.get_full_name() or op.user.username,
+            'name': call_center_display_name(op),
             'total': op_total,
             'new': qs.filter(status='new').count(),
             'open': qs.filter(status__in=OPEN_STATUSES).count(),
@@ -148,12 +151,12 @@ def lead_management_dashboard(request):
     instagram_sales_amount = sales.filter(lead__in=leads.filter(_channel_q('instagram'))).aggregate(v=Sum('amount'))['v'] or 0
     website_sales_amount = sales.filter(lead__in=leads.filter(_channel_q('website'))).aggregate(v=Sum('amount'))['v'] or 0
 
-    recent = filtered.order_by('-created_at')[:150]
-    attention = leads.filter(
+    recent = list(filtered.order_by('-created_at')[:150])
+    attention = list(leads.filter(
         Q(assigned_to__isnull=True) |
         Q(status='new', created_at__lt=now - timedelta(hours=2)) |
         Q(status__in=OPEN_STATUSES, next_follow_up__lt=today)
-    ).distinct().order_by('created_at')[:20]
+    ).distinct().order_by('created_at')[:20])
 
     integration_rows = [
         {'name': 'Instagram Form', 'state': 'connected', 'detail': 'فرم فعلی مستقیماً وارد ReferralLead می‌شود.'},
@@ -185,10 +188,10 @@ def lead_management_dashboard(request):
         'source_rows': source_rows,
         'group_rows': group_rows,
         'operator_rows': operator_rows,
-        'recent_leads': recent,
-        'attention_leads': attention,
+        'recent_leads': [FlowerLeadProxy(lead) for lead in recent],
+        'attention_leads': [FlowerLeadProxy(lead) for lead in attention],
         'integration_rows': integration_rows,
-        'operators': operators,
+        'operators': [FlowerProfileProxy(op) for op in operators],
         'source_filter': source_filter,
         'status_filter': status_filter,
         'operator_filter': operator_filter,
