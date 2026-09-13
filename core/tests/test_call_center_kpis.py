@@ -11,8 +11,9 @@ class CallCenterKpiPanelTests(TestCase):
         self.operator = self._user('kpi-operator', 'نرگس')
         self.other_operator = self._user('kpi-other', 'خورشیدی')
         referrer_user = User.objects.create_user('kpi-referrer', password='pass', first_name='معرف')
-        EmployeeProfile.objects.create(
-            user=referrer_user, role='employee', branch=self.branch, is_active=True,
+        EmployeeProfile.objects.update_or_create(
+            user=referrer_user,
+            defaults={'role':'employee','branch':self.branch,'is_active':True},
         )
         self.referrer = ReferralProfile.objects.create(
             user=referrer_user, referral_code='GLKPITEST', created_by=referrer_user,
@@ -35,12 +36,14 @@ class CallCenterKpiPanelTests(TestCase):
 
     def _user(self, username, first_name):
         user = User.objects.create_user(username, password='pass', first_name=first_name)
-        EmployeeProfile.objects.create(
+        EmployeeProfile.objects.update_or_create(
             user=user,
-            role='call_center',
-            branch=self.branch,
-            job_title='کارشناس کال‌سنتر',
-            is_active=True,
+            defaults={
+                'role':'call_center',
+                'branch':self.branch,
+                'job_title':'کارشناس کال‌سنتر',
+                'is_active':True,
+            },
         )
         return User.objects.get(pk=user.pk)
 
