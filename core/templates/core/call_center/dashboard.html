@@ -65,6 +65,16 @@
 .cc-v5-kpi strong{display:block;margin-top:9px;color:#fff;font-size:30px;line-height:1}
 .cc-v5-kpi small{display:block;margin-top:7px;color:rgba(255,255,255,.78);font-size:7px;line-height:1.65}
 
+.cc-v7-performance{padding:13px 14px 14px}
+.cc-v7-performance-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.cc-v7-performance-head h2{margin:0;color:#1d2a41;font-size:12px}.cc-v7-performance-head p{margin:3px 0 0;color:#8b96a5;font-size:7px}.cc-v7-period{padding:5px 8px;border-radius:999px;background:#f1eafa;color:#684793;font-size:7px;font-weight:900;white-space:nowrap}
+.cc-v7-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.cc-v7-metric{min-height:82px;padding:10px 11px;border:1px solid #e7ebf1;border-radius:13px;background:#fbfcfe}
+.cc-v7-metric span{display:block;color:#7b8797;font-size:7px;font-weight:900}.cc-v7-metric strong{display:block;margin-top:6px;color:#26344b;font-size:20px;line-height:1}.cc-v7-metric small{display:block;margin-top:6px;color:#9aa3af;font-size:6px;line-height:1.55}
+.cc-v7-metric.attention{background:#fff7f8;border-color:#f0dde2}.cc-v7-metric.attention strong{color:#a9445d}.cc-v7-metric.good{background:#f3faf6;border-color:#dceee4}.cc-v7-metric.good strong{color:#277654}.cc-v7-metric.purple{background:#f8f5fc;border-color:#e8e0f2}.cc-v7-metric.purple strong{color:#65458f}
+.cc-v7-funnel{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:8px;padding-top:9px;border-top:1px solid #edf0f4}
+.cc-v7-funnel-step{position:relative;padding:8px 7px;border-radius:11px;background:#f8fafc;text-align:center}.cc-v7-funnel-step:not(:last-child):after{content:"←";position:absolute;left:-7px;top:19px;color:#b5bdc8;font-size:10px;font-weight:900}.cc-v7-funnel-step span{display:block;color:#8b96a5;font-size:6px;font-weight:900}.cc-v7-funnel-step b{display:block;margin-top:4px;color:#27354b;font-size:14px}
+
 .cc-v5-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
 .cc-v5-action{height:44px;display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid #e2e7ee;border-radius:12px;background:#fff;color:#566379;font-size:9px;font-weight:900;box-shadow:0 4px 14px rgba(42,54,78,.025)}
 .cc-v5-action:hover{background:#fafbfe}.cc-v5-action.primary{background:#239b68;color:#fff;border-color:#239b68}.cc-v5-action.purple{background:#f2ecfb;color:#674795;border-color:#e1d5ef}.cc-v5-action.blue{background:#eef5ff;color:#416da9;border-color:#dce9fa}
@@ -147,12 +157,14 @@
 @media(min-width:821px) and (max-width:1180px){
   .cc-v5{gap:9px}.cc-v5-hero{grid-template-columns:1fr 290px;padding:14px}.cc-v5-hero h1{font-size:18px}.cc-v5-operator-avatar{width:50px;height:50px;flex-basis:50px}
   .cc-v5-kpis{gap:6px}.cc-v5-kpi{min-height:92px;padding:10px}.cc-v5-kpi strong{font-size:24px}
+  .cc-v7-metrics{grid-template-columns:repeat(4,minmax(120px,1fr))}.cc-v7-metric{min-height:76px;padding:9px}
   .cc-v5-stage{grid-template-columns:minmax(0,1fr) 255px;gap:8px}.cc-v5-patient{grid-template-columns:minmax(210px,1.2fr) 82px 78px 86px 125px;padding:8px}.cc-v5-person-avatar{width:44px;height:44px}.cc-v5-person{grid-template-columns:44px minmax(0,1fr);gap:8px}
   .cc-v6-lower{grid-template-columns:1fr}.cc-v6-chat-form{grid-template-columns:135px minmax(0,1fr) 66px}
   .cc-v5-group-label{display:none}.cc-v5-group-new input{width:115px}.cc-mini-panel{width:305px}
 }
 @media(max-width:900px) and (min-width:821px){
   .cc-v5-motto{display:none}.cc-v5-hero{grid-template-columns:1fr}.cc-v5-kpis{grid-template-columns:repeat(5,minmax(100px,1fr));overflow:auto}.cc-v5-actions{grid-template-columns:repeat(5,minmax(110px,1fr));overflow:auto}
+  .cc-v7-metrics{grid-template-columns:repeat(4,minmax(115px,1fr));overflow:auto}.cc-v7-funnel{grid-template-columns:repeat(5,minmax(95px,1fr));overflow:auto}
   .cc-v5-stage{grid-template-columns:minmax(0,1fr) 225px}.cc-v5-patient{grid-template-columns:minmax(190px,1fr) 105px}.cc-v5-service,.cc-v5-status,.cc-v5-follow{grid-column:1}.cc-v5-row-actions{grid-column:2;grid-row:1/5;align-self:center;flex-direction:column}
 }
 @media(max-width:820px){
@@ -160,6 +172,7 @@
   .cc-v5{gap:10px;color:#edf5f8}.cc-v5-card,.cc-v5-hero,.cc-v5-kpi,.cc-v5-toolbar,.cc-v5-groups{background:#101d2a;border-color:#2a4051;box-shadow:none}
   .cc-v5-hero{grid-template-columns:1fr;align-items:start}.cc-v5-hero h1{color:#fff}.cc-v5-hero p{color:#b9c7d0}.cc-v5-motto{background:#2b2240;border-color:#4a3c63}.cc-v5-motto strong{color:#eadcfb}
   .cc-v5-kpis{grid-template-columns:repeat(2,1fr)}.cc-v5-kpi strong{color:#fff}.cc-v5-kpi-label,.cc-v5-kpi small{color:#b7c5ce}
+  .cc-v7-performance{background:#101d2a;border-color:#2a4051}.cc-v7-performance-head h2{color:#fff}.cc-v7-performance-head p{color:#aebdc7}.cc-v7-period{background:#2b2240;color:#eadcfb}.cc-v7-metrics{grid-template-columns:repeat(2,1fr)}.cc-v7-metric,.cc-v7-metric.attention,.cc-v7-metric.good,.cc-v7-metric.purple{background:#0d1925;border-color:#2a4051}.cc-v7-metric span,.cc-v7-metric small{color:#9fb0bc}.cc-v7-metric strong,.cc-v7-metric.attention strong,.cc-v7-metric.good strong,.cc-v7-metric.purple strong{color:#fff}.cc-v7-funnel{grid-template-columns:repeat(5,minmax(82px,1fr));overflow:auto;border-color:#2a4051}.cc-v7-funnel-step{background:#0d1925}.cc-v7-funnel-step span{color:#9fb0bc}.cc-v7-funnel-step b{color:#fff}
   .cc-v5-actions{grid-template-columns:repeat(2,1fr)}.cc-v5-action{background:#101d2a;color:#e4edf2;border-color:#2a4051}.cc-v5-action.primary{background:#1f8d60}.cc-v5-action.purple{background:#2b2240;color:#eadcfb}
   .cc-v5-toolbar{grid-template-columns:1fr}.cc-v5-search input,.cc-v5-select,.cc-v5-group-new input{background:#09131c!important;color:#fff!important;border-color:#31495b!important}.cc-v5-quick button{background:#101d2a!important;color:#dbe4ea!important;border-color:#395367!important}
   .cc-v5-groups{align-items:stretch;flex-direction:column}.cc-v5-chip{background:#111f2c;color:#dce6eb;border-color:#385064}.cc-v5-chip b{background:#233242}.cc-v5-group-new input{width:100%}.cc-v5-group-new{width:100%}
@@ -197,6 +210,27 @@
     <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">پیگیری باز</span><span class="cc-v5-kpi-icon">!</span></div><strong>{{ stats.follow_up }}</strong><small>امروز یا عقب‌افتاده</small></article>
     <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">نوبت امروز</span><span class="cc-v5-kpi-icon">▣</span></div><strong>{{ stats.appointment_today }}</strong><small>نوبت واقعی امروز</small></article>
     <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">نوبت‌های آینده</span><span class="cc-v5-kpi-icon">↗</span></div><strong>{{ stats.appointment }}</strong><small>از امروز به بعد</small></article>
+  </section>
+
+  <section class="cc-v7-performance cc-v5-card" aria-label="عملکرد من">
+    <div class="cc-v7-performance-head"><div><h2>عملکرد من</h2><p>آمار واقعی از لید، نوبت، مراجعه و فروش؛ بدون تغییر در بخش‌های قبلی.</p></div><span class="cc-v7-period">ماه جاری</span></div>
+    <div class="cc-v7-metrics">
+      <article class="cc-v7-metric attention"><span>بدون تماس امروز</span><strong>{{ performance.today_uncontacted }}</strong><small>از {{ stats.today }} لید امروز</small></article>
+      <article class="cc-v7-metric purple"><span>سهم لید امروز</span><strong>{{ performance.lead_share_today }}%</strong><small>از {{ performance.team_today }} لید کل تیم</small></article>
+      <article class="cc-v7-metric"><span>نرخ رسیدگی ماه</span><strong>{{ performance.care_rate }}%</strong><small>{{ performance.month_handled }} از {{ performance.month_total }} لید</small></article>
+      <article class="cc-v7-metric good"><span>نوبت‌سازی ماه</span><strong>{{ performance.appointment_rate }}%</strong><small>{{ performance.month_appointments }} لید با نوبت واقعی</small></article>
+      <article class="cc-v7-metric good"><span>مراجعه از نوبت</span><strong>{{ performance.visit_rate }}%</strong><small>{{ performance.month_visits }} مراجعه ثبت‌شده</small></article>
+      <article class="cc-v7-metric purple"><span>تبدیل ماه</span><strong>{{ performance.conversion_rate }}%</strong><small>{{ performance.month_won }} فروش موفق</small></article>
+      <article class="cc-v7-metric"><span>فروش ماه</span><strong>{{ performance.sales_million|floatformat:-1 }}</strong><small>میلیون تومان</small></article>
+      <article class="cc-v7-metric attention"><span>پیگیری عقب‌افتاده</span><strong>{{ performance.overdue }}</strong><small>موارد گذشته از موعد</small></article>
+    </div>
+    <div class="cc-v7-funnel" aria-label="قیف ماه جاری">
+      <div class="cc-v7-funnel-step"><span>لید ماه</span><b>{{ performance.month_total }}</b></div>
+      <div class="cc-v7-funnel-step"><span>رسیدگی</span><b>{{ performance.month_handled }}</b></div>
+      <div class="cc-v7-funnel-step"><span>نوبت</span><b>{{ performance.month_appointments }}</b></div>
+      <div class="cc-v7-funnel-step"><span>مراجعه</span><b>{{ performance.month_visits }}</b></div>
+      <div class="cc-v7-funnel-step"><span>فروش</span><b>{{ performance.month_won }}</b></div>
+    </div>
   </section>
 
   <nav class="cc-v5-actions">

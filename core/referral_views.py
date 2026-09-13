@@ -515,12 +515,74 @@ def call_center_dashboard(request):
         leads=leads.filter(group_id=int(group_filter),group__owner=operator)
 
     today=timezone.localdate()
+    month_start=today.replace(day=1)
+    today_leads=all_leads.filter(created_at__date=today)
+    month_leads=all_leads.filter(created_at__date__gte=month_start)
+    month_total=month_leads.count()
+    month_handled=month_leads.exclude(status='new').count()
+    month_appointments=(
+        VisitAppointment.objects.filter(
+            lead__assigned_to=operator,
+            source='call_center',
+            created_by=request.user,
+            created_at__date__gte=month_start,
+        )
+        .exclude(status='cancelled')
+        .exclude(lead__isnull=True)
+        .values('lead_id').distinct().count()
+    )
+    month_visits=(
+        VisitAppointment.objects.filter(
+            lead__assigned_to=operator,
+            source='call_center',
+            created_by=request.user,
+            appointment_date__gte=month_start,
+            appointment_date__lte=today,
+            status__in=('arrived','completed'),
+        )
+        .exclude(lead__isnull=True)
+        .values('lead_id').distinct().count()
+    )
+    month_won=month_leads.filter(status='won').count()
+    month_sales=(
+        ReferralSale.objects.filter(
+            lead__assigned_to=operator,
+            sale_date__gte=month_start,
+            status__in=('approved','paid'),
+        ).aggregate(x=Sum('amount'))['x'] or 0
+    )
+    team_today=ReferralLead.objects.filter(
+        assigned_to__role='call_center',
+        assigned_to__is_active=True,
+        assigned_to__user__is_active=True,
+        created_at__date=today,
+    ).count()
+    performance={
+        'today_uncontacted':today_leads.filter(status='new').count(),
+        'today_handled':today_leads.exclude(status='new').count(),
+        'team_today':team_today,
+        'lead_share_today':round(today_leads.count()*100/max(1,team_today)),
+        'month_total':month_total,
+        'month_handled':month_handled,
+        'care_rate':round(month_handled*100/max(1,month_total)),
+        'month_appointments':month_appointments,
+        'appointment_rate':round(month_appointments*100/max(1,month_total)),
+        'month_visits':month_visits,
+        'visit_rate':round(month_visits*100/max(1,month_appointments)),
+        'month_won':month_won,
+        'conversion_rate':round(month_won*100/max(1,month_total)),
+        'sales_million':round(float(month_sales)/1_000_000,1),
+        'overdue':all_leads.filter(
+            status__in=('new','contacted','appointment'),
+            next_follow_up__lt=today,
+        ).count(),
+    }
     groups=(CallCenterLeadGroup.objects.filter(owner=operator)
             .annotate(lead_count=Count('leads',filter=Q(leads__assigned_to=operator)))
             .order_by('-is_default','name','id'))
     stats={
         'all':all_leads.count(),
-        'today':all_leads.filter(created_at__date=today).count(),
+        'today':today_leads.count(),
         'new':all_leads.filter(status='new').count(),
         'follow_up':all_leads.filter(next_follow_up__lte=today).exclude(status__in=('won','lost')).count(),
         'appointment':VisitAppointment.objects.filter(
@@ -572,7 +634,7 @@ def call_center_dashboard(request):
     return render(request,'core/call_center/dashboard.html',{
         'leads':leads,'statuses':ReferralLead.STATUS,'status_filter':status,
         'group_filter':group_filter,'groups':groups,
-        'stats':stats,'today':today,
+        'stats':stats,'performance':performance,'today':today,
         'today_appointments':today_appointments,
         'appointment_slots':appointment_slots,
         'recent_internal_messages':recent_internal_messages,
