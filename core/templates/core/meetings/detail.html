@@ -1,6 +1,109 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}
 {% block content %}
-<div class="mtg-page">
+<style>
+/* Meeting detail — high contrast readability */
+.mtg-detail-page{color:#f3f7f8!important}
+.mtg-detail-page .mtg-detail-head{
+  background:linear-gradient(135deg,#132430,#0b1821)!important;
+  border-color:#405564!important;
+  box-shadow:0 16px 36px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.03)!important;
+}
+.mtg-detail-page .mtg-detail-head>div:first-child>a{
+  color:#cdbbff!important;font-size:11px!important;font-weight:900!important;opacity:1!important
+}
+.mtg-detail-page .mtg-detail-head h1{
+  color:#fff!important;font-size:26px!important;font-weight:900!important;text-shadow:0 2px 10px rgba(0,0,0,.22)!important
+}
+.mtg-detail-page .mtg-detail-head p{
+  color:#d5dfe4!important;font-size:11.5px!important;font-weight:700!important;opacity:1!important
+}
+.mtg-detail-page .mtg-detail-head .mtg-status{
+  font-size:9.5px!important;color:#dccfff!important;border:1px solid rgba(165,133,240,.28)!important;background:rgba(139,92,246,.18)!important
+}
+.mtg-detail-page .mtg-outline-button{
+  color:#f3f7f8!important;border-color:#526875!important;background:#14242e!important;font-size:10.5px!important;font-weight:900!important
+}
+
+.mtg-detail-page .mtg-surface{
+  background:linear-gradient(145deg,#13232d,#0b1821)!important;
+  border-color:#3a4f5c!important;
+  box-shadow:0 12px 28px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.025)!important
+}
+.mtg-detail-page .mtg-panel-head h2{
+  color:#fff!important;font-size:17px!important;font-weight:900!important
+}
+.mtg-detail-page .mtg-panel-head p{
+  color:#c6d1d6!important;font-size:10.5px!important;line-height:1.8!important;opacity:1!important
+}
+.mtg-detail-page .mtg-panel-head>span{
+  color:#d7e1e5!important;font-size:10.5px!important;font-weight:800!important;opacity:1!important
+}
+.mtg-detail-page .mtg-panel-head>strong{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  min-height:29px!important;padding:5px 10px!important;border-radius:10px!important;
+  background:rgba(53,208,127,.12)!important;border:1px solid rgba(83,224,148,.22)!important;
+  color:#a8f1c7!important;font-size:11.5px!important;font-weight:900!important;opacity:1!important
+}
+.mtg-detail-page .mtg-summary{
+  color:#edf3f5!important;font-size:12.5px!important;font-weight:600!important;line-height:2.05!important;opacity:1!important
+}
+
+.mtg-detail-page .mtg-people-grid>div{
+  background:#10212b!important;border:1px solid #2d414c!important;padding:11px!important
+}
+.mtg-detail-page .mtg-people-grid span{
+  color:#f4f7f8!important;font-size:11.5px!important;font-weight:800!important;opacity:1!important
+}
+.mtg-detail-page .mtg-people-grid small{
+  color:#becbd1!important;font-size:9.5px!important;font-weight:600!important;opacity:1!important
+}
+.mtg-detail-page .mtg-people-grid i{
+  background:#754fd1!important;color:#fff!important;border-color:#3a3151!important;font-weight:900!important
+}
+
+.mtg-detail-page .mtg-actions-panel{padding-bottom:10px!important}
+.mtg-detail-page .mtg-detail-action{
+  min-height:70px!important;padding:14px 6px!important;border-top-color:#344955!important;
+  color:#f1f6f7!important;transition:.16s ease!important
+}
+.mtg-detail-page .mtg-detail-action:hover{
+  background:rgba(139,92,246,.055)!important;box-shadow:inset 3px 0 #7859de!important
+}
+.mtg-detail-page .mtg-priority{width:7px!important;height:48px!important}
+.mtg-detail-page .mtg-action-copy strong{
+  color:#fbfcfd!important;font-size:12.5px!important;font-weight:900!important;line-height:1.75!important;opacity:1!important
+}
+.mtg-detail-page .mtg-action-copy small{
+  color:#cbd6db!important;font-size:10.5px!important;font-weight:700!important;line-height:1.7!important;opacity:1!important
+}
+.mtg-detail-page .mtg-action-meter b{
+  color:#f5f8f9!important;font-size:10.5px!important;font-weight:900!important;opacity:1!important
+}
+.mtg-detail-page .mtg-progress{
+  height:7px!important;background:#263944!important;border:1px solid rgba(255,255,255,.025)!important
+}
+.mtg-detail-page .mtg-progress i{
+  background:linear-gradient(90deg,#9b73ff,#47e6a0)!important
+}
+.mtg-detail-page .mtg-status{
+  font-size:9.5px!important;font-weight:900!important;opacity:1!important;border:1px solid rgba(255,255,255,.07)!important
+}
+.mtg-detail-page .status-doing,
+.mtg-detail-page .status-open{background:#292044!important;color:#d8c7ff!important;border-color:#5d4b8e!important}
+.mtg-detail-page .status-done,
+.mtg-detail-page .status-closed{background:#153c2b!important;color:#9bf0bd!important;border-color:#2f7050!important}
+.mtg-detail-page .status-awaiting_approval{background:#453318!important;color:#ffd88b!important;border-color:#7d602e!important}
+.mtg-detail-page .status-blocked,
+.mtg-detail-page .mtg-detail-action.is-overdue .mtg-status{background:#46232b!important;color:#ffb0bd!important;border-color:#7e3e4b!important}
+
+@media(max-width:700px){
+  .mtg-detail-page .mtg-detail-head h1{font-size:22px!important}
+  .mtg-detail-page .mtg-detail-action{min-height:62px!important}
+  .mtg-detail-page .mtg-action-copy strong{font-size:11.5px!important}
+  .mtg-detail-page .mtg-action-copy small{font-size:9.5px!important}
+}
+</style>
+<div class="mtg-page mtg-detail-page">
   <div class="mtg-detail-head"><div><a href="/meeting-minutes/">صورت‌جلسات ‹</a><span class="mtg-status status-{{ meeting.status }}">{{ meeting.get_status_display }}</span><h1>{{ meeting.title }}</h1><p>{{ meeting.meeting_date|jdate }}{% if meeting.start_time %} · {{ meeting.start_time|time:'H:i' }}{% endif %}{% if meeting.location %} · {{ meeting.location }}{% endif %}</p></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="toggle_close"><button class="mtg-outline-button">{% if meeting.status == 'open' %}بستن صورت‌جلسه{% else %}بازکردن مجدد{% endif %}</button></form></div>
   <div class="mtg-detail-grid">
     <article class="mtg-surface"><div class="mtg-panel-head"><h2>جمع‌بندی جلسه</h2><span>{{ meeting.created_by.get_full_name|default:meeting.created_by.username }}</span></div><div class="mtg-summary">{{ meeting.summary|default:'توضیحی ثبت نشده است.'|linebreaksbr }}</div></article>
