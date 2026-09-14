@@ -203,6 +203,8 @@ class ReferralModuleTests(TestCase):
         self.assertEqual(response.status_code,200)
         self.assertContains(response,'نظارت شبکه فروش')
         self.assertContains(response,self.staff.get_full_name())
+        self.assertContains(response,'0912***4567')
+        self.assertContains(response,'منشأ لید')
         for secret in ('نام محرمانه مشتری','09121234567','09351234567','یادداشت کاملاً محرمانه'):
             self.assertNotContains(response,secret)
 

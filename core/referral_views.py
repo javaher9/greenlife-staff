@@ -2,6 +2,7 @@ import csv
 import io
 import os
 import uuid
+from collections import Counter
 from functools import wraps
 from urllib.parse import quote
 
@@ -92,9 +93,31 @@ def referral_supervisor_dashboard(request):
         {'code':code,'label':label,'count':leads.filter(status=code).count()}
         for code,label in ReferralLead.STATUS
     ]
+    def lead_origin(lead):
+        if lead.group_id and lead.group.name:
+            return lead.group.name
+        source_url=(lead.source_url or '').lower()
+        for marker,label in (
+            ('/instagram/','اینستاگرام'),('/telegram/','تلگرام'),('/bale/','بله'),
+            ('/beytoote/','بیتوته'),
+        ):
+            if marker in source_url:
+                return label
+        return lead.get_source_display()
+
+    def masked_phone(value):
+        value=value or ''
+        if len(value)<8:
+            return 'ثبت شده'
+        return f'{value[:4]}***{value[-4:]}'
+
+    origin_counts=Counter(
+        lead_origin(lead)
+        for lead in leads.select_related('group').only('source','source_url','group__name')
+    )
     source_rows=[
-        {'code':code,'label':label,'count':leads.filter(source=code).count()}
-        for code,label in ReferralLead.SOURCE
+        {'label':label,'count':count,'percent':round(count*100/max(1,total_leads))}
+        for label,count in sorted(origin_counts.items(),key=lambda item:(-item[1],item[0]))
     ]
     member_rows=[]
     for profile in profiles.annotate(
@@ -123,7 +146,20 @@ def referral_supervisor_dashboard(request):
     for offset in range(29,-1,-1):
         day=today-timezone.timedelta(days=offset)
         count=daily_map.get(day,0)
-        trend.append({'day':day,'count':count,'percent':round(count*100/max_daily)})
+        trend.append({
+            'day':day,'count':count,'percent':round(count*100/max_daily),
+            'show_label':offset % 5 == 0 or offset in (29,0),
+        })
+    recent_rows=[]
+    for lead in leads.select_related('group','referrer__user').order_by('-created_at')[:20]:
+        recent_rows.append({
+            'phone':masked_phone(lead.phone),
+            'origin':lead_origin(lead),
+            'status':lead.get_status_display(),
+            'status_code':lead.status,
+            'referrer':lead.referrer.user.get_full_name() or lead.referrer.user.username,
+            'created_at':lead.created_at,
+        })
     return render(request,'core/referrals/supervisor_dashboard.html',{
         'member_count':profiles.count(),'total_leads':total_leads,
         'today_leads':leads.filter(created_at__date=today).count(),
@@ -133,7 +169,7 @@ def referral_supervisor_dashboard(request):
             Q(status__in=('new','contacted'))|Q(next_follow_up__lte=today)
         ).exclude(status__in=('won','lost')).distinct().count(),
         'status_rows':status_rows,'source_rows':source_rows,
-        'member_rows':member_rows,'trend':trend,
+        'member_rows':member_rows,'trend':trend,'recent_rows':recent_rows,
     })
 
 
