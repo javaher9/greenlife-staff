@@ -33,6 +33,34 @@ def call_center_display_name(value):
     return full_name or username or str(value)
 
 
+def call_center_lead_stage(lead):
+    """Operational wording for a lead inside call-center/Lead Hub screens.
+
+    The database status values stay unchanged. A contacted lead with a future
+    follow-up date is shown as needing another follow-up; an appointment and a
+    lost lead get the business wording used by the call-center team.
+    """
+    if lead is None:
+        return ''
+    status = getattr(lead, 'status', '') or ''
+    if status == 'contacted' and getattr(lead, 'next_follow_up', None):
+        return 'نیاز به پیگیری مجدد'
+    labels = {
+        'new': 'جدید',
+        'contacted': 'تماس گرفته شد',
+        'appointment': 'نوبت داده شد',
+        'visited': 'مراجعه کرد',
+        'won': 'فروش موفق',
+        'lost': 'تمایل به پیگیری ندارد',
+    }
+    if status in labels:
+        return labels[status]
+    try:
+        return lead.get_status_display()
+    except Exception:
+        return status
+
+
 class FlowerUserProxy:
     """User proxy that changes only the call-center display name."""
     def __init__(self, user):
@@ -73,7 +101,7 @@ class FlowerProfileProxy:
 
 
 class FlowerLeadProxy:
-    """Lead proxy that exposes the assignee through the flower-name profile proxy."""
+    """Lead proxy for call-center display wording and flower-name ownership."""
     def __init__(self, lead):
         self._flower_lead = lead
 
@@ -85,3 +113,6 @@ class FlowerLeadProxy:
         if not self._flower_lead.assigned_to_id:
             return None
         return FlowerProfileProxy(self._flower_lead.assigned_to)
+
+    def get_status_display(self):
+        return call_center_lead_stage(self._flower_lead)
