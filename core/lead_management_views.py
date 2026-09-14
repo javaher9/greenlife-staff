@@ -24,6 +24,46 @@ STATUS_FILTER_CHOICES = (
 )
 
 
+def _person_name(user):
+    if not user:
+        return '—'
+    return user.get_full_name() or user.username or '—'
+
+
+def _network_root(profile):
+    if not profile:
+        return None
+    root = profile
+    # Referral networks are limited to two levels, but keep this defensive.
+    seen = set()
+    while getattr(root, 'sponsor_id', None) and root.pk not in seen:
+        seen.add(root.pk)
+        root = root.sponsor
+    return root
+
+
+def _enrich_referral_group_label(lead):
+    """Use the existing group column to expose who sent a sales-network lead.
+
+    This changes only the in-memory label rendered in Lead Hub; the real
+    CallCenterLeadGroup name in the database remains untouched.
+    """
+    group = getattr(lead, 'group', None)
+    if not group or group.name != 'شبکه فروش پرسنل':
+        return
+    referrer = getattr(lead, 'referrer', None)
+    if not referrer:
+        return
+    root = _network_root(referrer)
+    referrer_name = _person_name(getattr(referrer, 'user', None))
+    root_name = _person_name(getattr(root, 'user', None)) if root else '—'
+    label = f'معرف: {referrer_name} · شبکه: {root_name}'
+    creator = getattr(lead, 'created_by', None)
+    if creator and getattr(creator, 'id', None) != getattr(referrer, 'user_id', None):
+        label += f' · ثبت: {_person_name(creator)}'
+    group.name = label
+
+
 def _channel_q(channel):
     marker = f'[channel:{channel}]'
     if channel == 'instagram':
@@ -136,7 +176,8 @@ def lead_management_dashboard(request):
     start_month = today.replace(day=1)
 
     leads = ReferralLead.objects.select_related(
-        'assigned_to__user', 'group', 'referrer__user'
+        'assigned_to__user', 'group', 'referrer__user',
+        'referrer__sponsor__user', 'referrer__sponsor__sponsor__user', 'created_by',
     ).prefetch_related('appointments')
 
     source_filter = (request.GET.get('source') or '').strip()
@@ -217,6 +258,9 @@ def lead_management_dashboard(request):
         Q(status='new', created_at__lt=now - timedelta(hours=2)) |
         Q(status__in=OPEN_STATUSES, next_follow_up__lt=today)
     ).distinct().order_by('created_at')[:20])
+
+    for lead in recent:
+        _enrich_referral_group_label(lead)
 
     integration_rows = [
         {'name': 'Instagram Form', 'state': 'connected', 'detail': 'فرم فعلی مستقیماً وارد ReferralLead می‌شود.'},
