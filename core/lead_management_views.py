@@ -13,6 +13,15 @@ from .models import EmployeeProfile, ReferralLead, ReferralSale
 
 ALLOWED_ROLES = ('admin', 'manager', 'internal_manager')
 OPEN_STATUSES = ('new', 'contacted', 'appointment')
+STATUS_FILTER_CHOICES = (
+    ('new', 'جدید'),
+    ('contacted', 'تماس گرفته شد'),
+    ('follow_up', 'نیاز به پیگیری مجدد'),
+    ('appointment', 'نوبت داده شد'),
+    ('visited', 'مراجعه کرد'),
+    ('won', 'فروش موفق'),
+    ('lost', 'تمایل به پیگیری ندارد'),
+)
 
 
 def _channel_q(channel):
@@ -84,6 +93,37 @@ def _channel_counts(leads):
     return rows
 
 
+def _operational_status_rows(leads, total):
+    """Call-center funnel: contact first, then explicit post-call outcomes."""
+    rows = [
+        ('new', 'جدید', leads.filter(status='new').count()),
+        (
+            'contacted', 'تماس گرفته شد',
+            leads.filter(status__in=('contacted', 'appointment', 'visited', 'won', 'lost')).count(),
+        ),
+        (
+            'appointment', 'نوبت داده شد',
+            leads.filter(status__in=('appointment', 'visited', 'won')).count(),
+        ),
+        (
+            'follow_up', 'نیاز به پیگیری مجدد',
+            leads.filter(status='contacted', next_follow_up__isnull=False).count(),
+        ),
+        ('lost', 'تمایل به پیگیری ندارد', leads.filter(status='lost').count()),
+        ('visited', 'مراجعه کرد', leads.filter(status__in=('visited', 'won')).count()),
+        ('won', 'فروش موفق', leads.filter(status='won').count()),
+    ]
+    return [
+        {
+            'key': key,
+            'label': label,
+            'count': count,
+            'percent': round(count * 100 / total, 1) if total else 0,
+        }
+        for key, label, count in rows
+    ]
+
+
 @login_required
 def lead_management_dashboard(request):
     profile = getattr(request.user, 'profile', None)
@@ -108,7 +148,9 @@ def lead_management_dashboard(request):
         filtered = filtered.filter(_channel_q(source_filter))
     elif source_filter in ('panel', 'qr', 'link'):
         filtered = filtered.filter(source=source_filter)
-    if status_filter:
+    if status_filter == 'follow_up':
+        filtered = filtered.filter(status='contacted', next_follow_up__isnull=False)
+    elif status_filter:
         filtered = filtered.filter(status=status_filter)
     if operator_filter.isdigit():
         filtered = filtered.filter(assigned_to_id=int(operator_filter))
@@ -117,7 +159,7 @@ def lead_management_dashboard(request):
     today_count = leads.filter(created_at__date=today).count()
     week_count = leads.filter(created_at__date__gte=start_week).count()
     month_count = leads.filter(created_at__date__gte=start_month).count()
-    contacted_count = leads.filter(status__in=('contacted', 'appointment', 'visited', 'won')).count()
+    contacted_count = leads.filter(status__in=('contacted', 'appointment', 'visited', 'won', 'lost')).count()
     appointment_count = leads.filter(status__in=('appointment', 'visited', 'won')).count()
     won_count = leads.filter(status='won').count()
     conversion = round((won_count * 100 / total), 1) if total else 0
@@ -130,17 +172,7 @@ def lead_management_dashboard(request):
         leads.exclude(phone='').values('phone').annotate(c=Count('id')).filter(c__gt=1).count()
     )
 
-    status_counts = {row['status']: row['c'] for row in leads.values('status').annotate(c=Count('id'))}
-    status_rows = []
-    for key, label in ReferralLead.STATUS:
-        count = status_counts.get(key, 0)
-        status_rows.append({
-            'key': key,
-            'label': label,
-            'count': count,
-            'percent': round(count * 100 / total, 1) if total else 0,
-        })
-
+    status_rows = _operational_status_rows(leads, total)
     source_rows = _channel_counts(leads)
 
     operator_rows = []
@@ -151,7 +183,7 @@ def lead_management_dashboard(request):
         qs = leads.filter(assigned_to=op)
         op_total = qs.count()
         op_won = qs.filter(status='won').count()
-        op_contacted = qs.filter(status__in=('contacted', 'appointment', 'visited', 'won')).count()
+        op_contacted = qs.filter(status__in=('contacted', 'appointment', 'visited', 'won', 'lost')).count()
         operator_rows.append({
             'id': op.id,
             'name': call_center_display_name(op),
@@ -222,5 +254,5 @@ def lead_management_dashboard(request):
         'source_filter': source_filter,
         'status_filter': status_filter,
         'operator_filter': operator_filter,
-        'status_choices': ReferralLead.STATUS,
+        'status_choices': STATUS_FILTER_CHOICES,
     })
