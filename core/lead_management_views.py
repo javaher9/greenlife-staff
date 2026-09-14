@@ -18,9 +18,35 @@ OPEN_STATUSES = ('new', 'contacted', 'appointment')
 def _channel_q(channel):
     marker = f'[channel:{channel}]'
     if channel == 'instagram':
-        return Q(group__name='اینستاگرام جدید') | Q(notes__icontains='[channel:instagram]')
+        return (
+            Q(group__name__in=('اینستاگرام جدید', 'اینستاگرام - لینک')) |
+            Q(notes__icontains='[channel:instagram]') |
+            Q(source_url__icontains='/instagram/')
+        )
+    if channel == 'telegram':
+        return (
+            Q(group__name='تلگرام - لینک') |
+            Q(notes__icontains='[channel:telegram]') |
+            Q(notes__icontains='ورودی مستقیم فرم تلگرام') |
+            Q(source_url__icontains='/telegram/')
+        )
+    if channel == 'bale':
+        return (
+            Q(group__name='بله - لینک') |
+            Q(notes__icontains='[channel:bale]') |
+            Q(notes__icontains='ورودی مستقیم فرم بله') |
+            Q(source_url__icontains='/bale/')
+        )
     if channel == 'website':
-        return Q(notes__icontains=marker) | Q(source_url__icontains='greenlifeclinics.com') & ~Q(source_url__icontains='/instagram/')
+        return (
+            Q(notes__icontains=marker) |
+            (
+                Q(source_url__icontains='greenlifeclinics.com') &
+                ~Q(source_url__icontains='/instagram/') &
+                ~Q(source_url__icontains='/telegram/') &
+                ~Q(source_url__icontains='/bale/')
+            )
+        )
     if channel == 'crm':
         return Q(notes__icontains=marker) | Q(source_url__icontains='crm')
     if channel == 'whatsapp':
@@ -37,6 +63,8 @@ def _channel_counts(leads):
         ('crm', 'CRM', '#8b5cf6'),
         ('whatsapp', 'واتس‌اپ', '#22c55e'),
         ('campaign', 'کمپین / UTM', '#f59e0b'),
+        ('telegram', 'تلگرام', '#38bdf8'),
+        ('bale', 'بله', '#10b981'),
     ]
     claimed = Q(pk__in=[])
     rows = []
@@ -48,7 +76,6 @@ def _channel_counts(leads):
     rows.extend([
         {'key': 'panel', 'label': 'ثبت در پنل', 'count': leads.filter(source='panel').count(), 'color': '#06b6d4'},
         {'key': 'qr', 'label': 'QR', 'count': leads.filter(source='qr').count(), 'color': '#14b8a6'},
-        {'key': 'import', 'label': 'Import', 'count': leads.filter(source='import').count(), 'color': '#64748b'},
         {'key': 'other', 'label': 'سایر / قدیمی', 'count': leads.exclude(claimed).filter(source='link').count(), 'color': '#94a3b8'},
     ])
     max_count = max([row['count'] for row in rows] or [1]) or 1
@@ -77,9 +104,9 @@ def lead_management_dashboard(request):
     operator_filter = (request.GET.get('operator') or '').strip()
 
     filtered = leads
-    if source_filter in ('instagram', 'website', 'crm', 'whatsapp', 'campaign'):
+    if source_filter in ('instagram', 'website', 'crm', 'whatsapp', 'campaign', 'telegram', 'bale'):
         filtered = filtered.filter(_channel_q(source_filter))
-    elif source_filter in ('panel', 'qr', 'import', 'link'):
+    elif source_filter in ('panel', 'qr', 'link'):
         filtered = filtered.filter(source=source_filter)
     if status_filter:
         filtered = filtered.filter(status=status_filter)
