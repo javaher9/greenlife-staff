@@ -9,10 +9,10 @@ from .models import ReferralLead
 @login_required
 @require_POST
 def mark_call_started(request, pk):
-    """Advance a brand-new call-center lead when the operator starts a call.
+    """Advance a brand-new call-center lead when the operator confirms contact.
 
-    Pressing the call button again never downgrades later outcomes such as
-    appointment, visit, won or lost.
+    Repeating the action never downgrades later outcomes such as appointment,
+    visit, won or lost.
     """
     profile = getattr(request.user, 'profile', None)
     if not profile or profile.role != 'call_center' or not profile.is_active:
@@ -57,8 +57,8 @@ _CALL_TRACKING_SCRIPT = r'''<script>
     return '';
   }
 
-  function leadIdFor(link){
-    var row=link.closest('.cc-v5-patient');
+  function leadIdFor(node){
+    var row=node&&node.closest?node.closest('.cc-v5-patient'):null;
     if(row){
       var open=row.querySelector('a.cc-v5-open[href*="/call-center/leads/"]');
       if(open){
@@ -70,8 +70,53 @@ _CALL_TRACKING_SCRIPT = r'''<script>
     return pm?pm[1]:null;
   }
 
-  function labelDashboardActions(){
-    if(location.pathname.indexOf('/call-center/')!==0)return;
+  function updateRow(row,label){
+    if(!row)return;
+    var badge=row.querySelector('.cc-v5-status');
+    if(badge)badge.textContent=label||'تماس گرفته شد';
+    var done=row.querySelector('.cc-contact-done');
+    if(done){
+      done.textContent='✓ تماس ثبت شد';
+      done.disabled=true;
+      done.setAttribute('aria-disabled','true');
+      done.style.opacity='.68';
+      done.style.cursor='default';
+    }
+  }
+
+  function postContact(leadId,row,options){
+    options=options||{};
+    var token=csrfToken();
+    var body=new FormData();
+    if(token)body.append('csrfmiddlewaretoken',token);
+    var endpoint='/call-center/leads/'+leadId+'/call-started/';
+
+    if(options.optimistic)updateRow(row,'تماس گرفته شد');
+
+    return fetch(endpoint,{
+      method:'POST',body:body,credentials:'same-origin',keepalive:true,
+      headers:{'X-Requested-With':'XMLHttpRequest'}
+    }).then(function(response){
+      if(!response.ok)throw new Error('contact status '+response.status);
+      return response.json();
+    }).then(function(data){
+      if(data&&data.ok)updateRow(row,data.label||'تماس گرفته شد');
+      return data;
+    }).catch(function(){
+      if(options.button){
+        options.button.textContent='دوباره ثبت کن';
+        options.button.disabled=false;
+        options.button.removeAttribute('aria-disabled');
+        options.button.style.opacity='1';
+        options.button.style.cursor='pointer';
+      }
+      return null;
+    });
+  }
+
+  function enhanceDashboard(){
+    if(location.pathname!='/call-center/'&&location.pathname!='/call-center')return;
+
     var actions=document.querySelectorAll('a.cc-v5-action[href*="status=contacted"]');
     for(var i=0;i<actions.length;i++){
       var text=(actions[i].textContent||'').trim();
@@ -79,46 +124,61 @@ _CALL_TRACKING_SCRIPT = r'''<script>
         actions[i].textContent='✓ تماس گرفته شد';
       }
     }
+
+    var rows=document.querySelectorAll('.cc-v5-patient');
+    for(var j=0;j<rows.length;j++){
+      var row=rows[j];
+      var actionsBox=row.querySelector('.cc-v5-row-actions');
+      var open=row.querySelector('a.cc-v5-open[href*="/call-center/leads/"]');
+      if(!actionsBox||!open||actionsBox.querySelector('.cc-contact-done'))continue;
+      var match=(open.getAttribute('href')||'').match(/\/call-center\/leads\/(\d+)\//);
+      if(!match)continue;
+      var badge=row.querySelector('.cc-v5-status');
+      if(!badge||badge.textContent.trim()!=='جدید')continue;
+
+      var button=document.createElement('button');
+      button.type='button';
+      button.className='cc-contact-done';
+      button.dataset.leadId=match[1];
+      button.textContent='✓ تماس انجام شد';
+      button.style.cssText='border:1px solid #cfe9df;background:#eef9f4;color:#247a58;border-radius:9px;padding:7px 9px;font:900 8px Tahoma;cursor:pointer;white-space:nowrap';
+      actionsBox.appendChild(button);
+    }
   }
 
   if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',labelDashboardActions);
+    document.addEventListener('DOMContentLoaded',enhanceDashboard);
   }else{
-    labelDashboardActions();
+    enhanceDashboard();
   }
 
   document.addEventListener('click',function(event){
+    var explicit=event.target.closest('.cc-contact-done');
+    if(explicit){
+      event.preventDefault();
+      if(explicit.disabled)return;
+      var row=explicit.closest('.cc-v5-patient');
+      var leadId=explicit.dataset.leadId||leadIdFor(explicit);
+      if(!leadId)return;
+      explicit.disabled=true;
+      explicit.textContent='در حال ثبت...';
+      postContact(leadId,row,{button:explicit});
+      return;
+    }
+
     var link=event.target.closest('a[href^="tel:"]');
     if(!link||location.pathname.indexOf('/call-center/')!==0)return;
     var leadId=leadIdFor(link);
     if(!leadId)return;
-
-    var token=csrfToken();
-    var body=new FormData();
-    if(token)body.append('csrfmiddlewaretoken',token);
-    var endpoint='/call-center/leads/'+leadId+'/call-started/';
-
     var row=link.closest('.cc-v5-patient');
-    if(row){
-      var badge=row.querySelector('.cc-v5-status');
-      if(badge&&badge.textContent.trim()==='جدید')badge.textContent='تماس گرفته شد';
-    }
-
-    try{
-      if(navigator.sendBeacon){
-        navigator.sendBeacon(endpoint,body);
-      }else{
-        fetch(endpoint,{method:'POST',body:body,credentials:'same-origin',keepalive:true,
-          headers:{'X-Requested-With':'XMLHttpRequest'}}).catch(function(){});
-      }
-    }catch(e){}
+    postContact(leadId,row,{optimistic:true});
   },true);
 })();
 </script>'''
 
 
 class CallCenterCallTrackingMiddleware:
-    """Inject lightweight call tracking only into authenticated call-center HTML pages."""
+    """Inject contact tracking only into authenticated call-center HTML pages."""
 
     def __init__(self, get_response):
         self.get_response = get_response
