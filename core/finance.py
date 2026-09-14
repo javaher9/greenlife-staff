@@ -1,79 +1,121 @@
-import json, os
+from hashlib import sha256
 from datetime import datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
-from urllib.request import Request, urlopen
-from urllib.parse import urlencode
 from django.db.models import Sum, Count, Q
 from django.utils import timezone
-from django.utils.dateparse import parse_datetime, parse_date
 from .models import Branch, EmployeeProfile, FinancialTransaction, IntegrationSyncLog, ReferralLead
 from .jalali import format_jalali, gregorian_to_jalali, jalali_to_gregorian
+from .integration_api import ApiServerError, call_api
 
 
-def _pick(d, path, default=None):
-    cur=d
-    for key in (path or '').split('.'):
-        if not key: continue
-        if isinstance(cur,dict): cur=cur.get(key)
-        else: return default
-        if cur is None: return default
-    return cur
+def _crm_date(value):
+    raw=str(value or '').strip()
+    for pattern in ('%m/%d/%Y','%Y-%m-%d','%Y/%m/%d'):
+        try:
+            return datetime.strptime(raw,pattern).date()
+        except ValueError:
+            pass
+    return None
 
-def _rows(payload):
-    if isinstance(payload,list): return payload
-    for key in ('results','data','items','transactions','revenues'):
-        v=payload.get(key) if isinstance(payload,dict) else None
-        if isinstance(v,list): return v
-        if isinstance(v,dict):
-            for sub in ('results','items','data'):
-                if isinstance(v.get(sub),list): return v[sub]
-    return []
 
-def _dt(value):
-    if not value: return None
-    if isinstance(value,datetime): x=value
-    else:
-        s=str(value).replace('Z','+00:00'); x=parse_datetime(s)
-        if not x:
-            d=parse_date(s[:10]); x=datetime.combine(d,time.min) if d else None
-    if x and timezone.is_naive(x): x=timezone.make_aware(x)
-    return x
+def _crm_external_id(row):
+    form_value=str(row.get('formValueId') or '').strip()
+    group=str(row.get('group') or '').strip()
+    if form_value and group:
+        return f'glapi:{form_value}:{group}'[:120]
+    # Defensive deterministic fallback; never create a fresh duplicate on refresh.
+    stable='|'.join(str(row.get(key) or '') for key in (
+        'CustomerId','تاریخ فیش پرداختی','مبلغ فیش پرداختی','کلینیک','مشتری',
+    ))
+    return f'glapi-hash:{sha256(stable.encode("utf-8")).hexdigest()}'
+
+
+def fetch_crm_finance_payload(*,allow_disabled=False):
+    _status,payload=call_api('/crm/finance_month',{},allow_disabled=allow_disabled)
+    if not isinstance(payload,dict) or payload.get('success') is not True:
+        raise ApiServerError(
+            'ساختار پاسخ مالی CRM معتبر نیست.',code='invalid_crm_response',payload=payload,
+        )
+    rows=payload.get('rows')
+    if not isinstance(rows,list):
+        raise ApiServerError(
+            'فیلد rows در پاسخ مالی CRM وجود ندارد.',code='invalid_crm_rows',payload=payload,
+        )
+    return payload,rows
+
 
 def sync_crm(start=None,end=None):
-    started=timezone.now(); base=os.getenv('CRM_BASE_URL','').rstrip('/'); endpoint=os.getenv('CRM_REVENUE_ENDPOINT','/api/revenues/')
-    if not base: raise RuntimeError('CRM_BASE_URL تنظیم نشده است')
-    params={}
-    if start: params[os.getenv('CRM_START_PARAM','start_date')]=str(start)
-    if end: params[os.getenv('CRM_END_PARAM','end_date')]=str(end)
-    url=base+endpoint+('?' + urlencode(params) if params else '')
-    headers={'Accept':'application/json'}; token=os.getenv('CRM_API_TOKEN','')
-    if token: headers[os.getenv('CRM_AUTH_HEADER','Authorization')]=os.getenv('CRM_AUTH_PREFIX','Bearer ')+token
-    req=Request(url,headers=headers,method='GET')
-    created=updated=0
+    """Import/upsert documented CRM payment rows from the shared API server."""
+    started=timezone.now()
+    created=updated=skipped=0
     try:
-        with urlopen(req,timeout=int(os.getenv('CRM_TIMEOUT','30'))) as resp: payload=json.loads(resp.read().decode('utf-8'))
-        fmap={
-            'id':os.getenv('CRM_FIELD_ID','id'),'amount':os.getenv('CRM_FIELD_AMOUNT','amount'),'date':os.getenv('CRM_FIELD_DATE','created_at'),
-            'branch':os.getenv('CRM_FIELD_BRANCH','branch.name'),'payment':os.getenv('CRM_FIELD_PAYMENT','payment_method'),
-            'service':os.getenv('CRM_FIELD_SERVICE','service'),'patient':os.getenv('CRM_FIELD_PATIENT','patient_id')}
-        for row in _rows(payload):
-            try: amount=Decimal(str(_pick(row,fmap['amount'],0) or 0))
-            except (InvalidOperation,ValueError): continue
-            occurred=_dt(_pick(row,fmap['date']));
-            if not occurred: continue
-            bname=str(_pick(row,fmap['branch'],'') or '').strip(); branch=None
-            if bname: branch,_=Branch.objects.get_or_create(name=bname,defaults={'is_active':True})
-            ext=str(_pick(row,fmap['id'],'') or '').strip() or None
-            defaults={'branch':branch,'occurred_at':occurred,'amount':amount,'payment_method':str(_pick(row,fmap['payment'],'') or ''),'service':str(_pick(row,fmap['service'],'') or ''),'patient_ref':str(_pick(row,fmap['patient'],'') or ''),'raw_data':row}
-            if ext:
-                obj,was_created=FinancialTransaction.objects.update_or_create(source='crm',external_id=ext,defaults=defaults)
-            else:
-                obj=FinancialTransaction.objects.create(source='crm',external_id=None,**defaults); was_created=True
-            created+=int(was_created); updated+=int(not was_created)
-        IntegrationSyncLog.objects.create(provider='crm',status='ok',imported=created,updated=updated,message=f'{len(_rows(payload))} رکورد دریافت شد',started_at=started)
-        return {'ok':True,'imported':created,'updated':updated,'received':len(_rows(payload))}
-    except Exception as e:
-        IntegrationSyncLog.objects.create(provider='crm',status='error',message=str(e)[:2000],started_at=started)
+        payload,rows=fetch_crm_finance_payload()
+        today=timezone.localdate()
+        current_jy,current_jm,_=gregorian_to_jalali(today.year,today.month,today.day)
+        for row in rows:
+            if not isinstance(row,dict):
+                skipped+=1
+                continue
+            paid_on=_crm_date(row.get('تاریخ فیش پرداختی'))
+            raw_amount=row.get('مبلغ فیش پرداختی')
+            if not paid_on or raw_amount in (None,''):
+                skipped+=1
+                continue
+            if start and paid_on<start:
+                continue
+            if end and paid_on>end:
+                continue
+            if not start and not end:
+                jy,jm,_=gregorian_to_jalali(paid_on.year,paid_on.month,paid_on.day)
+                if (jy,jm)!=(current_jy,current_jm):
+                    continue
+            try:
+                amount=Decimal(str(raw_amount).replace(',','').strip())
+            except (InvalidOperation,ValueError):
+                skipped+=1
+                continue
+            if amount<=0:
+                skipped+=1
+                continue
+            bname=str(row.get('کلینیک') or '').strip()
+            branch=None
+            if bname:
+                branch,_=Branch.objects.get_or_create(name=bname,defaults={'is_active':True})
+            occurred=timezone.make_aware(datetime.combine(paid_on,time.min))
+            defaults={
+                'branch':branch,
+                'occurred_at':occurred,
+                'amount':amount,
+                'entry_type':'inc',
+                'payment_method':str(row.get('نحوه پرداخت فیش') or '').strip(),
+                'service':str(row.get('پرداخت خدمات مرتبط') or '').strip(),
+                'patient_ref':str(row.get('CustomerId') or '')[:120],
+                'person_name':str(row.get('مشتری') or '')[:160],
+                'description':'دریافت خودکار از Greenlife API Server',
+                'review_status':'approved',
+                'raw_data':row,
+            }
+            _obj,was_created=FinancialTransaction.objects.update_or_create(
+                source='crm',external_id=_crm_external_id(row),defaults=defaults,
+            )
+            created+=int(was_created)
+            updated+=int(not was_created)
+        message=(
+            f'{len(rows)} رکورد دریافت شد؛ {created} جدید، {updated} به‌روزرسانی، '
+            f'{skipped} فاقد فیش معتبر'
+        )
+        IntegrationSyncLog.objects.create(
+            provider='crm_api',status='ok',imported=created,updated=updated,
+            message=message,started_at=started,
+        )
+        return {
+            'ok':True,'imported':created,'updated':updated,'received':len(rows),
+            'skipped':skipped,'reported_count':payload.get('count'),
+        }
+    except Exception as exc:
+        IntegrationSyncLog.objects.create(
+            provider='crm_api',status='error',message=str(exc)[:2000],started_at=started,
+        )
         raise
 
 def finance_summary(day=None,branch=None):

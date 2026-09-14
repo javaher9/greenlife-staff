@@ -1,0 +1,63 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<style>
+.api-page{max-width:1180px;margin:0 auto;padding:8px 0 40px;color:#263247}.api-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:10px 0 18px;padding:25px 27px;border:1px solid rgba(132,93,184,.34);border-radius:23px;background:radial-gradient(circle at 10% 0,rgba(74,220,160,.16),transparent 34%),linear-gradient(135deg,#35234f,#123848);box-shadow:0 18px 46px rgba(18,31,48,.2)}.api-hero h1{margin:0 0 7px;color:#fff;font-size:23px}.api-hero p{margin:0;color:#c7d4dc;font-size:10px}.api-state{padding:9px 13px;border:1px solid rgba(255,255,255,.15);border-radius:999px;font-size:9px;font-weight:900;white-space:nowrap}.api-state.on{background:rgba(49,210,135,.14);color:#83efb7}.api-state.off{background:rgba(255,184,62,.13);color:#ffd18a}.api-endpoints{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px}.api-endpoint{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border:1px solid #dfe6ed;border-radius:14px;background:#fff;box-shadow:0 8px 25px rgba(35,49,69,.05)}.api-endpoint strong{display:block;margin-bottom:3px;font-size:11px}.api-endpoint span{color:#8190a0;font-size:8px}.api-endpoint code{direction:ltr;padding:6px 8px;border-radius:8px;background:#f1edf8;color:#694694;font-size:9px}.api-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(290px,.8fr);gap:16px}.api-card{padding:21px;border:1px solid #dfe5ec;border-radius:19px;background:#fff;color:#273348;box-shadow:0 12px 34px rgba(37,48,70,.07)}.api-card h2{margin:0 0 5px;font-size:15px}.api-card>p{margin:0 0 18px;color:#7e8a99;font-size:9px;line-height:1.8}.api-row{margin-bottom:14px}.api-row label{display:block;margin-bottom:6px;color:#435066;font-size:9px;font-weight:900}.api-row input[type=text],.api-row input[type=url],.api-row input[type=password],.api-row input[type=number],.api-row textarea{box-sizing:border-box;width:100%;padding:10px 11px;border:1px solid #d8e0e8;border-radius:10px;background:#f9fbfc;color:#1f2c3d;font:10px/1.8 Tahoma,Arial,sans-serif;outline:none}.api-row input:focus,.api-row textarea:focus{border-color:#8560b2;box-shadow:0 0 0 3px rgba(133,96,178,.1)}.api-row small{display:block;margin-top:5px;color:#8794a3;font-size:8px;line-height:1.8}.api-check{display:flex;align-items:center;gap:9px;margin:9px 0;padding:11px;border:1px solid #e3e8ee;border-radius:10px;background:#fafbfd;font-size:9px;font-weight:800}.api-check input{width:16px;height:16px;accent-color:#694397}.api-error{margin:5px 0;color:#b6384c;font-size:8px}.api-btn{width:100%;margin-top:7px;padding:11px;border:0;border-radius:11px;background:linear-gradient(135deg,#684291,#8c63b5);color:#fff;font:900 10px Tahoma,Arial,sans-serif;cursor:pointer;box-shadow:0 9px 22px rgba(104,66,145,.2)}.api-btn.green{background:linear-gradient(135deg,#137b55,#31aa78)}.api-btn.blue{background:linear-gradient(135deg,#285ca8,#3e83d8)}.api-side{display:grid;gap:16px;align-content:start}.api-key-ok{margin-bottom:13px;padding:10px;border:1px solid #cdebdc;border-radius:10px;background:#eefaf4;color:#197451;font-size:8px;font-weight:850}.api-note{margin-top:12px!important;padding:11px;border-radius:10px;background:#fff8e9;color:#80602d!important}.api-log{grid-column:1/-1}.api-table-wrap{overflow:auto}.api-table{width:100%;border-collapse:collapse;font-size:9px}.api-table th,.api-table td{padding:10px 8px;border-bottom:1px solid #edf1f4;text-align:right;white-space:nowrap}.api-table th{color:#7c8998}.api-badge{display:inline-block;padding:4px 7px;border-radius:999px;font-weight:900}.api-badge.accepted{background:#e7f8ef;color:#13774f}.api-badge.failed{background:#fff0f2;color:#b33149}.api-empty{padding:22px;text-align:center;color:#8995a3;font-size:9px}@media(max-width:820px){.api-page{padding:4px 0 82px}.api-hero{align-items:flex-start;padding:19px;border-radius:17px}.api-endpoints,.api-grid{grid-template-columns:1fr}.api-card{padding:16px;border-radius:15px}.api-log{grid-column:auto}}
+</style>
+<section class="api-page">
+  <header class="api-hero">
+    <div><h1>اتصال API Server</h1><p>تنظیم مرکزی پیامک و داده‌های مالی CRM · فقط از سمت سرور</p></div>
+    <span class="api-state {% if api_config.is_enabled and api_config.is_configured %}on{% else %}off{% endif %}">{% if api_config.is_enabled and api_config.is_configured %}فعال و آماده{% elif api_config.is_configured %}تنظیم‌شده، غیرفعال{% else %}نیازمند X-API-Key{% endif %}</span>
+  </header>
+
+  <div class="api-endpoints">
+    <div class="api-endpoint"><div><strong>ارسال پیامک</strong><span>POST · JSON · isms.ir</span></div><code>/sms/send</code></div>
+    <div class="api-endpoint"><div><strong>مالی CRM</strong><span>POST · ماه جاری شمسی · Upsert</span></div><code>/crm/finance_month</code></div>
+  </div>
+
+  <div class="api-grid">
+    <article class="api-card">
+      <h2>تنظیمات مرکزی اتصال</h2><p>پروتکل، IP، پورت و Base Path داخل Base URL ذخیره می‌شود. X-API-Key رمزگذاری شده و هرگز دوباره نمایش داده نمی‌شود.</p>
+      <form method="post" autocomplete="off">
+        {% csrf_token %}<input type="hidden" name="action" value="save">
+        <div class="api-row"><label>{{ settings_form.base_url.label }}</label>{{ settings_form.base_url }}<small>{{ settings_form.base_url.help_text }} · مسیر endpoint را به این آدرس اضافه نکنید.</small>{% for error in settings_form.base_url.errors %}<div class="api-error">{{ error }}</div>{% endfor %}</div>
+        <div class="api-row"><label>{{ settings_form.api_key.label }}</label>{{ settings_form.api_key }}<small>{% if api_config.api_key_cipher %}X-API-Key فعلی رمزگذاری و محفوظ است؛ برای حفظ آن فیلد را خالی بگذارید.{% else %}X-API-Key ارائه‌شده برای API Server را وارد کنید.{% endif %}</small>{% for error in settings_form.api_key.errors %}<div class="api-error">{{ error }}</div>{% endfor %}</div>
+        <div class="api-row"><label>{{ settings_form.timeout_seconds.label }}</label>{{ settings_form.timeout_seconds }}{% for error in settings_form.timeout_seconds.errors %}<div class="api-error">{{ error }}</div>{% endfor %}</div>
+        <label class="api-check">{{ settings_form.is_enabled }} <span>{{ settings_form.is_enabled.label }}</span></label>
+        <label class="api-check">{{ settings_form.appointment_confirmation_enabled }} <span>{{ settings_form.appointment_confirmation_enabled.label }}</span></label>
+        {% for error in settings_form.appointment_confirmation_enabled.errors %}<div class="api-error">{{ error }}</div>{% endfor %}
+        <div class="api-row"><label>{{ settings_form.appointment_message_template.label }}</label>{{ settings_form.appointment_message_template }}<small>{{ settings_form.appointment_message_template.help_text }}</small>{% for error in settings_form.appointment_message_template.errors %}<div class="api-error">{{ error }}</div>{% endfor %}</div>
+        {% for error in settings_form.non_field_errors %}<div class="api-error">{{ error }}</div>{% endfor %}
+        <button class="api-btn" type="submit">ذخیره تنظیمات API</button>
+      </form>
+    </article>
+
+    <div class="api-side">
+      <article class="api-card">
+        <h2>تست اتصال CRM</h2><p>ساختار پاسخ، احراز هویت و تعداد ردیف‌های مالی بررسی می‌شود؛ در این تست چیزی وارد دیتابیس مالی نمی‌شود.</p>
+        {% if api_config.api_key_cipher %}<div class="api-key-ok">✓ X-API-Key ذخیره شده است</div>{% endif %}
+        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="test_crm"><button class="api-btn blue" type="submit">تست CRM Finance</button></form>
+      </article>
+
+      <article class="api-card">
+        <h2>ارسال پیامک آزمایشی</h2><p>تست پیامک حتی پیش از فعال‌کردن اتصال اصلی قابل اجراست.</p>
+        <form method="post">
+          {% csrf_token %}<input type="hidden" name="action" value="test">
+          <div class="api-row"><label>{{ test_form.number.label }}</label>{{ test_form.number }}{% for error in test_form.number.errors %}<div class="api-error">{{ error }}</div>{% endfor %}</div>
+          <div class="api-row"><label>{{ test_form.body.label }}</label>{{ test_form.body }}{% for error in test_form.body.errors %}<div class="api-error">{{ error }}</div>{% endfor %}</div>
+          <button class="api-btn green" type="submit">ارسال پیام آزمایشی</button>
+        </form>
+        <p class="api-note">«پذیرفته‌شده» یعنی درگاه پیام را دریافت کرده است؛ API فعلی گزارش تحویل به گوشی ندارد.</p>
+      </article>
+    </div>
+
+    <article class="api-card api-log">
+      <h2>آخرین ارسال‌های پیامک</h2><p>شماره‌ها برای حفظ حریم خصوصی به‌صورت ناقص نمایش داده می‌شوند.</p>
+      <div class="api-table-wrap">
+        {% if sms_logs %}<table class="api-table"><thead><tr><th>زمان</th><th>شماره</th><th>نوع</th><th>وضعیت</th><th>شناسه درگاه</th><th>خطا</th></tr></thead><tbody>
+        {% for log in sms_logs %}<tr><td dir="ltr">{{ log.created_at|date:'Y-m-d H:i' }}</td><td dir="ltr">{{ log.masked_number }}</td><td>{{ log.get_purpose_display }}</td><td><span class="api-badge {{ log.status }}">{{ log.get_status_display }}</span></td><td dir="ltr">{{ log.provider_ids|join:', '|default:'—' }}</td><td dir="ltr">{{ log.error_code|default:'—' }}</td></tr>{% endfor %}
+        </tbody></table>{% else %}<div class="api-empty">هنوز پیامکی ارسال نشده است.</div>{% endif %}
+      </div>
+    </article>
+  </div>
+</section>
+{% endblock %}

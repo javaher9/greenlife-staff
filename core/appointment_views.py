@@ -12,6 +12,7 @@ from django.utils import timezone
 from .forms import AppointmentFromLeadForm, ReceptionistAppointmentForm, visit_appointment_time_choices
 from .jalali import parse_jalali
 from .models import Branch, EmployeeProfile, ReferralLead, StaffNotification, VisitAppointment
+from .sms import send_appointment_confirmation
 
 
 ALLOWED_APPOINTMENT_ROLES={'admin','internal_manager','manager','call_center','receptionist'}
@@ -166,6 +167,9 @@ def call_center_appointment_create(request,pk):
                     lead.status='appointment'
                     lead.save(update_fields=['status','updated_at'])
                 _notify_branch_receptionists(appointment)
+                transaction.on_commit(
+                    lambda appointment_id=appointment.pk: send_appointment_confirmation(appointment_id)
+                )
         except (IntegrityError,ValidationError):
             form.add_error('appointment_time','این ساعت همین الان رزرو شده است؛ یک ساعت دیگر انتخاب کنید.')
         else:
@@ -206,6 +210,9 @@ def receptionist_appointment_create(request):
         try:
             with transaction.atomic():
                 item.save()
+                transaction.on_commit(
+                    lambda appointment_id=item.pk: send_appointment_confirmation(appointment_id)
+                )
         except (IntegrityError,ValidationError):
             form.add_error('appointment_time','این ساعت همین الان رزرو شده است؛ یک ساعت دیگر انتخاب کنید.')
         else:

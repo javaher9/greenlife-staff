@@ -248,6 +248,80 @@ class VisitAppointment(models.Model):
         return f'{self.appointment_date} {self.appointment_time:%H:%M} - {self.full_name}'
 
 
+class ApiServerSettings(models.Model):
+    """Singleton configuration shared by the Greenlife SMS and CRM clients."""
+    DEFAULT_BASE_URL='http://192.168.40.33:81/gl-api'
+    DEFAULT_APPOINTMENT_TEMPLATE=(
+        'گرین لایف\n'
+        '{name} عزیز، نوبت شما در شعبه {branch} برای تاریخ {date} '
+        'ساعت {time} ثبت شد.\n02134247'
+    )
+
+    base_url=models.URLField(max_length=500,default=DEFAULT_BASE_URL)
+    api_key_cipher=models.TextField(blank=True)
+    is_enabled=models.BooleanField(default=False)
+    timeout_seconds=models.PositiveSmallIntegerField(default=30)
+    appointment_confirmation_enabled=models.BooleanField(default=False)
+    appointment_message_template=models.TextField(default=DEFAULT_APPOINTMENT_TEMPLATE)
+    updated_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,
+        related_name='updated_api_server_settings',
+    )
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name='تنظیمات API Server'
+        verbose_name_plural='تنظیمات API Server'
+
+    @classmethod
+    def load(cls):
+        settings,_=cls.objects.get_or_create(pk=1)
+        return settings
+
+    @property
+    def is_configured(self):
+        return bool(self.base_url and self.api_key_cipher)
+
+    def __str__(self):
+        return 'API Server گرین لایف'
+
+
+class SmsMessageLog(models.Model):
+    STATUS=[('accepted','پذیرفته‌شده'),('failed','ناموفق')]
+    PURPOSE=[('test','آزمایشی'),('manual','دستی'),('appointment','تأیید نوبت')]
+
+    number=models.CharField(max_length=20,db_index=True)
+    body=models.TextField()
+    purpose=models.CharField(max_length=20,choices=PURPOSE,default='manual',db_index=True)
+    status=models.CharField(max_length=20,choices=STATUS,db_index=True)
+    provider_ids=models.JSONField(default=list,blank=True)
+    http_status=models.PositiveSmallIntegerField(null=True,blank=True)
+    error_code=models.CharField(max_length=120,blank=True)
+    response_payload=models.JSONField(default=dict,blank=True)
+    appointment=models.ForeignKey(
+        VisitAppointment,on_delete=models.SET_NULL,null=True,blank=True,
+        related_name='sms_logs',
+    )
+    created_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,
+        related_name='created_sms_messages',
+    )
+    created_at=models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering=['-created_at']
+        indexes=[models.Index(fields=['status','-created_at'],name='sms_status_created_idx')]
+
+    @property
+    def masked_number(self):
+        if len(self.number)<8:
+            return self.number
+        return f'{self.number[:4]}***{self.number[-4:]}'
+
+    def __str__(self):
+        return f'{self.number} - {self.get_status_display()}'
+
+
 class ReferralSale(models.Model):
     STATUS=[('draft','در انتظار تأیید'),('approved','تأیید شده'),('paid','پورسانت پرداخت شد'),('cancelled','لغو شده')]
     SYNC_STATUS=ReferralProfile.SYNC_STATUS

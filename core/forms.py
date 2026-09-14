@@ -1,5 +1,6 @@
 from io import BytesIO
 from datetime import time
+from string import Formatter
 from uuid import uuid4
 
 from django import forms
@@ -7,7 +8,7 @@ from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.utils import timezone
 from PIL import Image, ImageOps
-from .models import DailyReport, Task, LeaveRequest, Announcement, BlackboardMessage, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, Branch, JobDutyTemplate, Guideline, DeviceIssue, ReferralProfile, ReferralLead, ReferralSale, FinancialTransaction, CallCenterLeadGroup, VisitAppointment
+from .models import DailyReport, Task, LeaveRequest, Announcement, BlackboardMessage, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, Branch, JobDutyTemplate, Guideline, DeviceIssue, ReferralProfile, ReferralLead, ReferralSale, FinancialTransaction, CallCenterLeadGroup, VisitAppointment, ApiServerSettings
 from .jalali import parse_jalali, format_jalali
 
 class JalaliDateInput(forms.TextInput):
@@ -87,6 +88,78 @@ class StaffCredentialUpdateForm(forms.Form):
         if not data.get('desktop_password') and not data.get('mobile_pin'):
             raise forms.ValidationError('حداقل یکی از رمزها را وارد کنید.')
         return data
+
+
+class ApiServerSettingsForm(forms.Form):
+    base_url=forms.URLField(
+        label='آدرس API Server (IP، Port و Base Path)',max_length=500,
+        widget=forms.URLInput(attrs={'dir':'ltr','placeholder':ApiServerSettings.DEFAULT_BASE_URL}),
+        help_text='نمونه: http://192.168.40.33:81/gl-api',
+    )
+    api_key=forms.CharField(
+        label='X-API-Key',required=False,
+        widget=forms.PasswordInput(attrs={'dir':'ltr','autocomplete':'new-password'}),
+        help_text='برای حفظ کلید فعلی، این فیلد را خالی بگذارید.',
+    )
+    is_enabled=forms.BooleanField(label='اتصال API Server فعال باشد',required=False)
+    timeout_seconds=forms.IntegerField(
+        label='مهلت پاسخ سرور (ثانیه)',min_value=3,max_value=120,initial=30,
+        widget=forms.NumberInput(attrs={'dir':'ltr'}),
+    )
+    appointment_confirmation_enabled=forms.BooleanField(
+        label='پس از ثبت نوبت، پیام تأیید خودکار ارسال شود',required=False,
+    )
+    appointment_message_template=forms.CharField(
+        label='متن تأیید نوبت',
+        widget=forms.Textarea(attrs={'rows':6,'dir':'rtl'}),
+        help_text='متغیرهای مجاز: {name}، {branch}، {date} و {time}',
+    )
+
+    def __init__(self,*args,has_existing_key=False,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.has_existing_key=has_existing_key
+
+    def clean_base_url(self):
+        value=self.cleaned_data['base_url'].rstrip('/')
+        if not value.endswith('/gl-api'):
+            raise forms.ValidationError('آدرس باید Base Path یعنی /gl-api را در انتها داشته باشد.')
+        return value
+
+    def clean_api_key(self):
+        value=(self.cleaned_data.get('api_key') or '').strip()
+        if not value and not self.has_existing_key:
+            raise forms.ValidationError('در اولین تنظیم، وارد کردن API Key الزامی است.')
+        return value
+
+    def clean_appointment_message_template(self):
+        value=(self.cleaned_data.get('appointment_message_template') or '').strip()
+        try:
+            fields={field for _literal,field,_spec,_conversion in Formatter().parse(value) if field}
+            if not fields.issubset({'name','branch','date','time'}):
+                raise ValueError('unsupported placeholder')
+            value.format(name='نام مشتری',branch='نیاوران',date='۱۴۰۵/۰۶/۲۳',time='۱۰:۳۰')
+        except (KeyError,ValueError) as exc:
+            raise forms.ValidationError('قالب پیام یا نام متغیرها صحیح نیست.') from exc
+        return value
+
+    def clean(self):
+        data=super().clean()
+        if data.get('appointment_confirmation_enabled') and not data.get('is_enabled'):
+            self.add_error('appointment_confirmation_enabled','ابتدا اتصال API Server را فعال کنید.')
+        return data
+
+
+class SmsTestForm(forms.Form):
+    number=forms.RegexField(
+        label='شماره موبایل آزمایشی',regex=r'^09\d{9}$',max_length=11,
+        error_messages={'invalid':'شماره باید ۱۱ رقم و با 09 شروع شود.'},
+        widget=forms.TextInput(attrs={'dir':'ltr','inputmode':'numeric','placeholder':'09xxxxxxxxx'}),
+    )
+    body=forms.CharField(
+        label='متن پیام',max_length=1000,
+        initial='پیام آزمایشی اتصال سامانه پیامکی گرین لایف',
+        widget=forms.Textarea(attrs={'rows':4}),
+    )
 
 
 class ReportForm(forms.ModelForm):

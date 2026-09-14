@@ -95,7 +95,10 @@ html.gl-call-center-html{background:#f5f7fb!important;background-image:none!impo
   <nav class="app-nav">
     {% if executive_access %}
     <a href="/my-office/" class="gl-executive-nav {% if request.path|slice:':11' == '/my-office/' %}is-active{% endif %}"><span class="nav-ico">✦</span><span>دفتر من</span><b class="gl-private-badge">PRIVATE</b></a>
+    {% endif %}
+    {% if executive_access or user.is_superuser %}
     <a href="{% url 'credential_settings' %}" class="{% if request.resolver_match.url_name == 'credential_settings' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>تنظیمات دسترسی</span></a>
+    <a href="{% url 'api_server_settings' %}" class="{% if request.resolver_match.url_name == 'api_server_settings' %}is-active{% endif %}"><span class="nav-ico">⌁</span><span>اتصال API Server</span></a>
     {% endif %}
     {% if user.profile.role != 'referrer' %}
     <a href="{% url 'internal_messages' %}" class="{% if request.resolver_match.url_name == 'internal_messages' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>پیام داخلی</span></a>
@@ -329,7 +332,7 @@ html.gl-call-center-html{background:#f5f7fb!important;background-image:none!impo
 <script>
 (function(){
   if('serviceWorker' in navigator){
-    window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js?v=v41.0.0',{updateViaCache:'none'}).catch(()=>{}));
+    window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js?v=v42.0.0',{updateViaCache:'none'}).catch(()=>{}));
   }
   let deferredPrompt=null;
   const bar=document.getElementById('pwaInstallBar');
@@ -374,7 +377,7 @@ html.gl-call-center-html{background:#f5f7fb!important;background-image:none!impo
 </script>
 
 <div class="gl-version-footer">
-  GreenLife Staff <strong>v41.0 Executive Workspace</strong>
+  GreenLife Staff <strong>v42.0 API Server Integration</strong>
 </div>
 
 </body></html>
