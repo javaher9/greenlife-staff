@@ -52,7 +52,7 @@ def _channel_q(channel):
             (
                 Q(source_url__icontains='greenlifeclinics.com') &
                 ~Q(source_url__icontains='/instagram/') &
-                ~Q(source_url__icontains='/telegram/') &
+                ~Q(source_url__icontains('/telegram/')) &
                 ~Q(source_url__icontains='/bale/')
             )
         )
@@ -189,6 +189,7 @@ def lead_management_dashboard(request):
             'name': call_center_display_name(op),
             'total': op_total,
             'new': qs.filter(status='new').count(),
+            'contacted': op_contacted,
             'open': qs.filter(status__in=OPEN_STATUSES).count(),
             'overdue': qs.filter(status__in=OPEN_STATUSES, next_follow_up__lt=today).count(),
             'appointments': qs.filter(status__in=('appointment', 'visited', 'won')).count(),
