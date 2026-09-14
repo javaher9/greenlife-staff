@@ -52,7 +52,7 @@ def _channel_q(channel):
             (
                 Q(source_url__icontains='greenlifeclinics.com') &
                 ~Q(source_url__icontains='/instagram/') &
-                ~Q(source_url__icontains('/telegram/')) &
+                ~Q(source_url__icontains='/telegram/') &
                 ~Q(source_url__icontains='/bale/')
             )
         )
