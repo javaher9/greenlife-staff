@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
-from core import instagram_views, lead_ingest_views, lead_management_views
+from core import call_center_views, instagram_views, lead_ingest_views, lead_management_views
 
 urlpatterns=[
     path('admin/',admin.site.urls),
@@ -10,6 +10,7 @@ urlpatterns=[
     path('instagram/',instagram_views.instagram_lead,name='instagram_lead'),
     path('telegram/',instagram_views.telegram_lead,name='telegram_lead'),
     path('instagram/manual/',instagram_views.instagram_manual_lead,name='instagram_manual_lead'),
+    path('call-center/leads/<int:pk>/call-started/',call_center_views.mark_call_started,name='call_center_mark_call_started'),
     path('lead-management/',lead_management_views.lead_management_dashboard,name='lead_management_dashboard'),
     path('',include('public_network.urls')),
     path('',include('core.urls')),

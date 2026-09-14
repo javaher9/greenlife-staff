@@ -18,14 +18,14 @@ class CallCenterKpiPanelTests(TestCase):
         self.referrer = ReferralProfile.objects.create(
             user=referrer_user, referral_code='GLKPITEST', created_by=referrer_user,
         )
-        ReferralLead.objects.create(
+        self.my_lead = ReferralLead.objects.create(
             referrer=self.referrer,
             full_name='لید KPI من',
             phone='09120001111',
             assigned_to=self.operator.profile,
             status='new',
         )
-        ReferralLead.objects.create(
+        self.other_lead = ReferralLead.objects.create(
             referrer=self.referrer,
             full_name='لید KPI همکار',
             phone='09120002222',
@@ -70,3 +70,29 @@ class CallCenterKpiPanelTests(TestCase):
         self.assertEqual(performance['month_total'], 1)
         self.assertEqual(performance['team_today'], 2)
         self.assertEqual(performance['lead_share_today'], 50)
+
+    def test_call_started_advances_only_new_lead(self):
+        response = self.client.post(reverse('call_center_mark_call_started', args=[self.my_lead.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.my_lead.refresh_from_db()
+        self.assertEqual(self.my_lead.status, 'contacted')
+        self.assertEqual(response.json()['label'], 'تماس گرفته شد')
+
+        self.my_lead.status = 'appointment'
+        self.my_lead.save(update_fields=['status', 'updated_at'])
+        response = self.client.post(reverse('call_center_mark_call_started', args=[self.my_lead.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.my_lead.refresh_from_db()
+        self.assertEqual(self.my_lead.status, 'appointment')
+
+    def test_operator_cannot_mark_another_operators_lead(self):
+        response = self.client.post(reverse('call_center_mark_call_started', args=[self.other_lead.pk]))
+        self.assertEqual(response.status_code, 404)
+        self.other_lead.refresh_from_db()
+        self.assertEqual(self.other_lead.status, 'new')
+
+    def test_call_center_html_gets_call_tracking_script(self):
+        response = self.client.get(reverse('call_center_dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '__greenlifeCallTrackingInstalled')
+        self.assertContains(response, 'call-started')
