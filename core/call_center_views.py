@@ -70,6 +70,23 @@ _CALL_TRACKING_SCRIPT = r'''<script>
     return pm?pm[1]:null;
   }
 
+  function labelDashboardActions(){
+    if(location.pathname.indexOf('/call-center/')!==0)return;
+    var actions=document.querySelectorAll('a.cc-v5-action[href*="status=contacted"]');
+    for(var i=0;i<actions.length;i++){
+      var text=(actions[i].textContent||'').trim();
+      if(text.indexOf('ثبت نتیجه تماس')!==-1){
+        actions[i].textContent='✓ تماس گرفته شد';
+      }
+    }
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',labelDashboardActions);
+  }else{
+    labelDashboardActions();
+  }
+
   document.addEventListener('click',function(event){
     var link=event.target.closest('a[href^="tel:"]');
     if(!link||location.pathname.indexOf('/call-center/')!==0)return;
