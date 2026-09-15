@@ -1,0 +1,176 @@
+from django.db import transaction
+from django.db.models import Count, Max
+from django.utils import timezone
+
+from .models import CallCenterLeadGroup, EmployeeProfile, ReferralLead, StaffNotification
+
+
+CHANNEL_LABELS = {
+    'website': 'وب‌سایت',
+    'instagram': 'اینستاگرام',
+    'crm': 'CRM',
+    'whatsapp': 'واتس‌اپ',
+    'campaign': 'کمپین',
+    'partner': 'همکار',
+}
+
+# One routing policy for every lead source.
+# Target share when all six known operators are active:
+# Narges 30%, Khorshidi 20%, Banafsheh 15%, Kamelia 15%, Yasaman 15%, Laleh 5%.
+OPERATOR_WEIGHT_RULES = (
+    (('بابایی', 'babaei', 'babayi', 'babaee'), 6),
+    (('صالحی', 'salehi'), 4),
+    (('عباسی', 'abbasi'), 1),
+)
+DEFAULT_OPERATOR_WEIGHT = 3
+
+
+def _normalize(value):
+    return ' '.join(
+        str(value or '').strip().lower().replace('ي', 'ی').replace('ك', 'ک').split()
+    )
+
+
+def operator_weight(operator):
+    user = operator.user
+    identity = _normalize(' '.join(
+        part for part in (user.first_name, user.last_name, user.username) if part
+    ))
+    for aliases, weight in OPERATOR_WEIGHT_RULES:
+        if any(_normalize(alias) in identity for alias in aliases):
+            return weight
+    return DEFAULT_OPERATOR_WEIGHT
+
+
+def _locked_balanced_operator():
+    """Return the next active operator using a weighted round-robin balance.
+
+    All active call-center rows are locked until the caller's transaction commits,
+    so simultaneous lead submissions cannot all choose the same operator.
+
+    Selection uses today's assigned leads / operator weight. The operator with the
+    lowest ratio is chosen. That makes the first pass genuinely rotational (an
+    operator who just received a lead will not receive another while peers are at
+    zero), while the long-run distribution converges to the requested weights.
+    """
+    operators = list(
+        EmployeeProfile.objects
+        .select_for_update()
+        .filter(role='call_center', is_active=True, user__is_active=True)
+        .select_related('user')
+        .order_by('id')
+    )
+    if not operators:
+        return None
+
+    today = timezone.localdate()
+    ids = [operator.id for operator in operators]
+    stats = {
+        row['assigned_to_id']: row
+        for row in (
+            ReferralLead.objects
+            .filter(assigned_to_id__in=ids, created_at__date=today)
+            .values('assigned_to_id')
+            .annotate(count=Count('id'), last_at=Max('created_at'))
+        )
+    }
+
+    def key(operator):
+        row = stats.get(operator.id) or {}
+        count = row.get('count') or 0
+        last_at = row.get('last_at')
+        # The ratio provides weighted fairness. The second key prevents repeated
+        # assignment on ties by preferring the operator who has waited longest.
+        return (
+            count / operator_weight(operator),
+            last_at or timezone.datetime.min.replace(tzinfo=timezone.get_current_timezone()),
+            operator.id,
+        )
+
+    return min(operators, key=key)
+
+
+def _group_for(operator, name, *, is_default=False):
+    group, _ = CallCenterLeadGroup.objects.get_or_create(
+        owner=operator,
+        name=name,
+        defaults={'is_default': is_default},
+    )
+    if is_default and not group.is_default:
+        group.is_default = True
+        group.save(update_fields=['is_default'])
+    return group
+
+
+@transaction.atomic
+def assign_external_lead(lead, channel):
+    operator = _locked_balanced_operator()
+    if not operator:
+        return None
+
+    label = CHANNEL_LABELS.get(channel, channel)
+    group_name = 'اینستاگرام جدید' if channel == 'instagram' else f'ورودی {label}'
+    lead.assigned_to = operator
+    lead.group = _group_for(operator, group_name)
+    lead.save(update_fields=['assigned_to', 'group', 'updated_at'])
+    StaffNotification.objects.create(
+        user=operator.user,
+        title=f'لید جدید {label}',
+        message=f'{lead.full_name} با شماره {lead.phone} وارد «{group_name}» شد.',
+        notification_type='call_center_lead',
+        related_date=timezone.localdate(),
+    )
+    return operator
+
+
+@transaction.atomic
+def assign_referral_lead(lead):
+    if lead.assigned_to_id:
+        if not lead.group_id:
+            lead.group = _group_for(lead.assigned_to, 'شبکه فروش پرسنل', is_default=True)
+            lead.save(update_fields=['group', 'updated_at'])
+        return lead.assigned_to
+
+    operator = _locked_balanced_operator()
+    if not operator:
+        return None
+
+    lead.assigned_to = operator
+    lead.group = _group_for(operator, 'شبکه فروش پرسنل', is_default=True)
+    lead.save(update_fields=['assigned_to', 'group', 'updated_at'])
+    StaffNotification.objects.create(
+        user=operator.user,
+        title='لید جدید برای تماس',
+        message=f'{lead.full_name} با شماره {lead.phone} به صف پیگیری شما اضافه شد.',
+        notification_type='call_center_lead',
+        related_date=timezone.localdate(),
+    )
+    return operator
+
+
+@transaction.atomic
+def assign_social_lead(lead, group_name='اینستاگرام - لینک', notification_title='لید جدید اینستاگرام'):
+    operator = _locked_balanced_operator()
+    if not operator:
+        return None
+
+    lead.assigned_to = operator
+    lead.group = _group_for(operator, group_name)
+    lead.save(update_fields=['assigned_to', 'group', 'updated_at'])
+    StaffNotification.objects.create(
+        user=operator.user,
+        title=notification_title,
+        message=f'{lead.full_name} با شماره {lead.phone} به گروه «{group_name}» اضافه شد.',
+        notification_type='call_center_lead',
+        related_date=timezone.localdate(),
+    )
+    return operator
+
+
+def install_unified_lead_routing():
+    """Install one routing engine behind all existing lead-entry paths."""
+    from . import instagram_views, lead_ingest_views, referral_views
+
+    lead_ingest_views._assign_lead = assign_external_lead
+    referral_views._auto_assign_call_center = assign_referral_lead
+    instagram_views._assign_instagram_lead = assign_social_lead
