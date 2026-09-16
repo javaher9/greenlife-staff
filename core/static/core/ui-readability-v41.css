@@ -243,3 +243,46 @@ body.gl-public-network textarea,
 body.gl-public-network select{min-height:44px;font-size:15px!important;background:#0b1220!important;color:#fff!important;border-color:#3a4b61!important}
 body.gl-public-network input[type="file"]::file-selector-button{background:#242d42;color:#fff;border:1px solid #495978;border-radius:9px;padding:8px 11px}
 body.gl-public-network button,.gl-public-network .btn{min-height:44px;font-size:15px!important}
+
+/* Personnel task page: luxury polish with restrained purple accents. */
+body.gl-premium-dark .employee-form-page{--task-purple:#9b7af2;--task-purple-soft:rgba(139,92,246,.12);--task-green:#61dca2}
+body.gl-premium-dark .employee-form-page .employee-form-hero{border-color:#344b5a!important;background:linear-gradient(135deg,#0c1823 0%,#10232b 58%,#17192a 100%)!important;box-shadow:0 22px 52px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.07)!important}
+body.gl-premium-dark .employee-form-page .employee-form-hero:after{opacity:.52!important}
+body.gl-premium-dark .employee-form-page .employee-form-hero h1{color:#fff!important;text-shadow:0 2px 18px rgba(0,0,0,.2)}
+body.gl-premium-dark .employee-form-page .employee-form-hero p{color:#d2dde2!important;font-size:13px!important}
+body.gl-premium-dark .employee-form-page .employee-form-meta,body.gl-premium-dark .employee-form-page .employee-form-meta span{color:#b8c7ce!important;font-size:12px!important}
+body.gl-premium-dark .employee-form-page .employee-form-eyebrow{color:#8ceab8!important;font-size:12px!important}
+body.gl-premium-dark .employee-form-page .employee-form-chip{color:#dfd3ff!important;border-color:rgba(155,122,242,.35)!important;background:rgba(139,92,246,.09)!important;font-size:11px!important}
+body.gl-premium-dark .employee-form-page .employee-task-brief{border-color:#36505e;background:linear-gradient(120deg,#10222c 0%,#111d29 68%,#17182a 100%);box-shadow:0 14px 34px rgba(0,0,0,.22)}
+body.gl-premium-dark .employee-form-page .employee-task-brief strong{color:#f5faf8!important;font-size:14px!important}
+body.gl-premium-dark .employee-form-page .employee-task-brief p{color:#c0cdd3!important;font-size:12.5px!important}
+body.gl-premium-dark .employee-form-page .employee-task-owner{border-color:#3a5261;background:#0c1923;min-width:170px}
+body.gl-premium-dark .employee-form-page .employee-task-owner span{color:#a9bac2!important;font-size:11px!important}
+body.gl-premium-dark .employee-form-page .employee-task-owner strong{color:#f0f7f4!important;font-size:13px!important}
+body.gl-premium-dark .employee-form-page .employee-form-card{border-color:#344b59;background:linear-gradient(145deg,#101e29 0%,#0b1620 70%,#111522 100%);box-shadow:0 20px 46px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.05)}
+body.gl-premium-dark .employee-form-page .employee-form-card-head{border-bottom-color:#334856;background:linear-gradient(90deg,rgba(57,217,138,.04),rgba(139,92,246,.07))}
+body.gl-premium-dark .employee-form-page .employee-form-card-head span{color:#b6c5cd!important;font-size:11px!important}
+body.gl-premium-dark .employee-form-page .employee-form-card-head h2{color:#fff!important;font-size:18px!important}
+body.gl-premium-dark .employee-form-page .employee-form-card-head .employee-form-card-mark{color:#9be8bf!important;border-color:rgba(57,217,138,.27)!important;background:rgba(57,217,138,.08)!important;font-size:10px!important}
+body.gl-premium-dark .employee-form-page .employee-form-field>span{color:#f2f7f9!important;font-size:13px!important;font-weight:800!important}
+body.gl-premium-dark .employee-form-page .employee-form-field small{color:#b2c1c9!important;font-size:12px!important}
+body.gl-premium-dark .employee-form-page input:not([type=checkbox]):not([type=radio]),body.gl-premium-dark .employee-form-page textarea,body.gl-premium-dark .employee-form-page select{background:#0a1721!important;border-color:#3b5567!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)}
+body.gl-premium-dark .employee-form-page input::placeholder,body.gl-premium-dark .employee-form-page textarea::placeholder{color:#9eafb8!important}
+body.gl-premium-dark .employee-form-page input:focus,body.gl-premium-dark .employee-form-page textarea:focus,body.gl-premium-dark .employee-form-page select:focus{border-color:#8d70db!important;box-shadow:0 0 0 3px rgba(139,92,246,.13),0 8px 22px rgba(0,0,0,.16)!important}
+body.gl-premium-dark .employee-form-page .employee-task-submit{background:linear-gradient(135deg,#7051c8,#8b5cf6)!important;border:1px solid #9b7af2!important;color:#fff!important;box-shadow:0 10px 24px rgba(91,59,171,.24)!important}
+body.gl-premium-dark .employee-form-page .employee-form-secondary,body.gl-premium-dark .employee-form-page .employee-form-back{background:#101f2b!important;border-color:#3b5261!important;color:#e6eef2!important}
+body.gl-premium-dark .employee-form-page .employee-form-file{background:rgba(139,92,246,.10)!important;border-color:rgba(155,122,242,.32)!important;color:#ded2ff!important}
+body.gl-premium-dark .employee-form-page .employee-task-history{border-color:#344b59!important;background:linear-gradient(145deg,#0f1d27,#0b1620)!important;box-shadow:0 18px 42px rgba(0,0,0,.22)!important}
+body.gl-premium-dark .employee-form-page .employee-task-history h2,body.gl-premium-dark .employee-form-page .employee-task-title{color:#f7fbfc!important}
+body.gl-premium-dark .employee-form-page .employee-task-history p,body.gl-premium-dark .employee-form-page .employee-task-row p{color:#becbd1!important}
+body.gl-premium-dark .employee-form-page .employee-task-row{border-color:#314956!important;background:#0d1a24!important}
+body.gl-premium-dark .employee-form-page .employee-task-meta-row span{color:#b8c6cd!important}
+body.gl-premium-dark .employee-form-page .employee-task-meta-row b{color:#eef5f7!important}
+body.gl-premium-dark .employee-form-page .employee-task-count{border-color:rgba(139,92,246,.28)!important;background:rgba(139,92,246,.07)!important}
+body.gl-premium-dark .employee-form-page .employee-task-count strong{color:#c8b7ff!important}
+body.gl-premium-dark .employee-form-page .employee-task-count span{color:#c2cbd5!important}
+/* Django messages: eliminate the accidental white banner above this dark workflow. */
+body.gl-premium-dark:has(.employee-form-page) .msg{background:#10251f!important;color:#dff7ea!important;border:1px solid #2d654f!important;border-radius:14px!important;box-shadow:0 10px 26px rgba(0,0,0,.18)!important}
+body.gl-premium-dark:has(.employee-form-page) .msg.success{background:linear-gradient(90deg,#10251f,#13242a)!important;color:#dff7ea!important}
+body.gl-premium-dark:has(.employee-form-page) .msg.error{background:#2b171d!important;color:#ffdce4!important;border-color:#713647!important}
+@media(max-width:900px){body.gl-premium-dark .employee-form-page .employee-form-fields{gap:14px!important}body.gl-premium-dark .employee-form-page .employee-task-owner{min-width:145px}}
