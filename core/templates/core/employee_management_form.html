@@ -1,12 +1,12 @@
-{% extends 'core/base.html' %}{% block content %}
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
 <section class="employee-form-page employee-form-{{ form_kind }}">
   <header class="employee-form-hero">
     <div class="employee-form-person">
       <span class="employee-form-avatar">{% if employee.avatar %}<img src="{{ employee.avatar.url }}" alt="{{ employee.user.get_full_name|default:employee.user.username }}">{% else %}{{ employee.user.first_name|first|default:employee.user.username|first }}{% endif %}</span>
       <div class="employee-form-copy">
         <div class="employee-form-kicker-row">
-          <span class="employee-form-eyebrow">{% if form_kind == 'task' %}ماموریت جدید{% else %}{{ title }}{% endif %}</span>
-          {% if form_kind == 'task' %}<span class="employee-form-chip">انتساب مستقیم</span>{% endif %}
+          <span class="employee-form-eyebrow">{% if form_kind == 'task' %}ماموریت جدید{% elif form_kind == 'task_edit' %}اصلاح ماموریت{% else %}{{ title }}{% endif %}</span>
+          {% if form_kind == 'task' or form_kind == 'task_edit' %}<span class="employee-form-chip">انتساب مستقیم</span>{% endif %}
         </div>
         <h1>{{ title }} برای {{ employee.user.get_full_name|default:employee.user.username }}</h1>
         <p>{{ subtitle }}</p>
@@ -22,13 +22,13 @@
     </div>
   </header>
 
-  {% if form_kind == 'task' %}
+  {% if form_kind == 'task' or form_kind == 'task_edit' %}
   <div class="employee-task-brief">
     <div class="employee-task-brief-main">
       <span class="employee-task-brief-icon">✓</span>
       <div>
-        <strong>وظیفه را شفاف و قابل پیگیری ثبت کنید</strong>
-        <p>عنوان کوتاه، نتیجه مورد انتظار و مهلت مشخص باعث می‌شود پیگیری این کار در سیستم دقیق‌تر باشد.</p>
+        <strong>{% if form_kind == 'task_edit' %}در حال ویرایش وظیفه هستید{% else %}وظیفه را شفاف و قابل پیگیری ثبت کنید{% endif %}</strong>
+        <p>{% if form_kind == 'task_edit' %}اصلاحات را انجام دهید و «ذخیره تغییرات» را بزنید.{% else %}عنوان کوتاه، نتیجه مورد انتظار و مهلت مشخص باعث می‌شود پیگیری این کار در سیستم دقیق‌تر باشد.{% endif %}</p>
       </div>
     </div>
     <div class="employee-task-owner">
@@ -41,12 +41,12 @@
   <article class="employee-form-card">
     <div class="employee-form-card-head">
       <div>
-        <span>{% if form_kind == 'task' %}جزئیات وظیفه{% elif form_kind == 'management' %}جزئیات اقدام{% else %}اطلاعات پرسنل{% endif %}</span>
-        <h2>{% if form_kind == 'task' %}ثبت و واگذاری کار{% else %}{{ title }}{% endif %}</h2>
+        <span>{% if form_kind == 'task' or form_kind == 'task_edit' %}جزئیات وظیفه{% elif form_kind == 'management' %}جزئیات اقدام{% else %}اطلاعات پرسنل{% endif %}</span>
+        <h2>{% if form_kind == 'task' %}ثبت و واگذاری کار{% elif form_kind == 'task_edit' %}ویرایش وظیفه{% else %}{{ title }}{% endif %}</h2>
       </div>
-      {% if form_kind == 'task' %}<span class="employee-form-card-mark">TASK</span>{% endif %}
+      {% if form_kind == 'task' or form_kind == 'task_edit' %}<span class="employee-form-card-mark">TASK</span>{% endif %}
     </div>
-    <form method="post" novalidate>{% csrf_token %}
+    <form method="post" novalidate data-lock-submit="1">{% csrf_token %}
       {% if form.non_field_errors %}<div class="employee-form-errors">{{ form.non_field_errors }}</div>{% endif %}
       <div class="employee-form-fields">
         {% for field in form %}
@@ -59,11 +59,59 @@
         {% endfor %}
       </div>
       <div class="employee-form-submit">
-        <button class="primary" type="submit">{{ button }}</button>
-        <a class="employee-form-secondary" href="{% url 'employee_file' employee.pk %}">مشاهده پرونده</a>
+        <button class="primary employee-task-submit" type="submit"><span>{{ button }}</span></button>
+        <a class="employee-form-secondary" href="{% url 'employee_task_create' employee.pk %}">{% if form_kind == 'task_edit' %}انصراف از ویرایش{% else %}تازه‌سازی صفحه{% endif %}</a>
       </div>
     </form>
   </article>
+
+  {% if form_kind == 'task' or form_kind == 'task_edit' %}
+  <section class="employee-task-history">
+    <div class="employee-task-history-head">
+      <div>
+        <span>سوابق وظایف</span>
+        <h2>وظایف {{ employee.user.get_full_name|default:employee.user.username }}</h2>
+        <p>قبل از ثبت کار جدید، وظایف قبلی را همین‌جا ببینید؛ اشتباه‌ها را ویرایش یا حذف کنید.</p>
+      </div>
+      <div class="employee-task-count">
+        <strong>{{ employee.user.tasks.count }}</strong>
+        <span>وظیفه ثبت‌شده</span>
+      </div>
+    </div>
+
+    {% with sorted_tasks=employee.user.tasks.all|dictsortreversed:"created_at" %}
+    <div class="employee-task-list">
+      {% for task in sorted_tasks %}
+      <article class="employee-task-row {% if task.status == 'done' %}is-done{% elif task.status == 'doing' %}is-doing{% else %}is-todo{% endif %}">
+        <div class="employee-task-row-main">
+          <div class="employee-task-row-top">
+            <span class="employee-task-status {% if task.status == 'done' %}done{% elif task.status == 'doing' %}doing{% else %}todo{% endif %}">{{ task.get_status_display }}</span>
+            {% if task.meeting_action %}<span class="employee-task-source meeting">از صورتجلسه</span>{% else %}<span class="employee-task-source manual">ثبت مدیریتی</span>{% endif %}
+          </div>
+          <strong class="employee-task-title">{{ task.title }}</strong>
+          {% if task.description %}<p>{{ task.description|truncatechars:170 }}</p>{% endif %}
+          <div class="employee-task-meta-row">
+            <span>اولویت: <b>{{ task.get_priority_display }}</b></span>
+            <span>مهلت: <b>{% if task.due_date %}{{ task.due_date|jdate }}{% else %}بدون مهلت{% endif %}</b></span>
+            <span>ثبت: <b>{{ task.created_at|date:"Y/m/d H:i" }}</b></span>
+          </div>
+        </div>
+        <div class="employee-task-row-actions">
+          {% if task.meeting_action %}
+          <a class="task-action-btn edit" href="{% url 'meeting_action_update' task.meeting_action.pk %}">ویرایش در صورتجلسه</a>
+          {% else %}
+          <a class="task-action-btn edit" href="{% url 'manager_task_edit' task.pk %}">ویرایش</a>
+          <form method="post" action="{% url 'manager_task_delete' task.pk %}" onsubmit="return confirm('این وظیفه حذف شود؟');">{% csrf_token %}<button class="task-action-btn delete" type="submit">حذف</button></form>
+          {% endif %}
+        </div>
+      </article>
+      {% empty %}
+      <div class="employee-task-empty">هنوز هیچ وظیفه‌ای برای این پرسنل ثبت نشده است.</div>
+      {% endfor %}
+    </div>
+    {% endwith %}
+  </section>
+  {% endif %}
 </section>
 <style>
 .employee-form-page{max-width:1040px;margin:0 auto;display:grid;gap:16px;padding-bottom:28px}
@@ -77,7 +125,26 @@ body.gl-premium-dark .employee-form-page .employee-form-hero h1{margin:0!importa
 .employee-task-brief{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 17px;border:1px solid #29404d;border-radius:19px;background:linear-gradient(135deg,rgba(20,39,48,.96),rgba(19,31,44,.95));box-shadow:0 10px 28px rgba(0,0,0,.14)}.employee-task-brief:after{content:"";position:absolute;width:170px;height:170px;left:-65px;top:-95px;border-radius:50%;background:radial-gradient(circle,rgba(139,92,246,.12),transparent 70%);pointer-events:none}.employee-task-brief-main{display:flex;align-items:center;gap:12px;min-width:0}.employee-task-brief-icon{width:41px;height:41px;min-width:41px;display:grid;place-items:center;border-radius:13px;background:linear-gradient(145deg,#1d5b44,#174533);border:1px solid rgba(111,232,171,.22);color:#8bf0bb;font-size:19px;font-weight:900}.employee-task-brief strong{display:block;color:#edf6f2;font-size:13px;margin-bottom:3px}.employee-task-brief p{margin:0;color:#9fb2ba;font-size:11px;line-height:1.75}.employee-task-owner{min-width:155px;padding:10px 13px;border:1px solid #2a4150;border-radius:13px;background:#0d1b25;text-align:right}.employee-task-owner span{display:block!important;color:#829aa5!important;font-size:9.5px!important;margin:0 0 4px!important}.employee-task-owner strong{margin:0;color:#dce9e4;font-size:11.5px}
 .employee-form-card{padding:0 24px 24px;border:1px solid #2c414d;border-radius:22px;background:linear-gradient(145deg,#101d27,#0b151e);box-shadow:0 16px 38px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.035)}.employee-form-card-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 -24px 22px;padding:18px 24px 15px;border-bottom:1px solid #263a46;background:linear-gradient(90deg,rgba(57,217,138,.035),rgba(139,92,246,.025));border-radius:22px 22px 0 0}.employee-form-card-head span{display:block!important;margin:0 0 3px!important;color:#7f98a4!important;font-size:9.5px!important;font-weight:900!important}.employee-form-card-head h2{margin:0;color:#f0f6f4;font-size:17px;font-weight:900}.employee-form-card-head .employee-form-card-mark{margin:0!important;padding:5px 8px!important;border:1px solid rgba(57,217,138,.18)!important;border-radius:9px!important;background:rgba(57,217,138,.07)!important;color:#70dda9!important;font:900 9px/1 Tahoma,Arial,sans-serif!important;letter-spacing:1.3px!important}
 .employee-form-fields{display:grid;grid-template-columns:1fr 1fr;gap:18px}.employee-form-field{display:grid;gap:8px;color:#eef4f1;font-size:12px;font-weight:800}.employee-form-field:has(textarea){grid-column:1/-1}.employee-form-field>span{color:#c8d6db!important;font-size:11.5px!important;margin:0!important;font-weight:800!important}.employee-form-field input,.employee-form-field select,.employee-form-field textarea{width:100%;background:#0b1822!important;border:1px solid #314958!important;color:#f7fbfa!important;border-radius:13px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.018)}.employee-form-field input:focus,.employee-form-field select:focus,.employee-form-field textarea:focus{border-color:#4f8a72!important;box-shadow:0 0 0 3px rgba(57,217,138,.09)!important}.employee-form-field textarea{min-height:128px;resize:vertical}.employee-form-field small{color:#91a69d!important;font-size:10.5px!important;font-weight:500!important}.employee-form-field em,.employee-form-errors{color:#ff9da5;font-size:11px;font-style:normal}.employee-form-errors{padding:10px 12px;margin-bottom:14px;border:1px solid rgba(255,111,124,.22);border-radius:12px;background:rgba(117,30,42,.15)}
-.employee-form-submit{display:flex;align-items:center;gap:10px;margin-top:23px;padding-top:18px;border-top:1px solid #263a46}.employee-form-submit .primary{min-width:160px!important;min-height:43px!important;border-radius:13px!important;background:linear-gradient(135deg,#35c984,#278c61)!important;color:#06271b!important;box-shadow:0 10px 25px rgba(39,140,97,.20)!important}.employee-form-secondary{border:1px solid #314854;background:#101f29;color:#c9d7dc}.employee-form-management .employee-form-eyebrow{color:#c5a2ef!important}
-@media(max-width:760px){body.gl-premium-dark .employee-form-page .employee-form-hero{align-items:flex-start!important;padding:17px!important;flex-direction:column!important}.employee-form-person{align-items:flex-start}.employee-form-avatar{width:64px;height:64px;min-width:64px;border-radius:18px}.employee-form-hero h1{font-size:19px!important}.employee-form-hero-actions{width:100%}.employee-form-hero-actions a{flex:1}.employee-task-brief{align-items:stretch;flex-direction:column}.employee-task-owner{width:100%}.employee-form-card{padding:0 17px 18px}.employee-form-card-head{margin:0 -17px 18px;padding:16px 17px 13px}.employee-form-fields{grid-template-columns:1fr}.employee-form-field{grid-column:1!important}.employee-form-submit{flex-wrap:wrap}.employee-form-submit>*{flex:1 1 auto;text-align:center}.employee-form-submit .primary{min-width:0!important}}
+.employee-form-submit{display:flex;align-items:center;gap:10px;margin-top:23px;padding-top:18px;border-top:1px solid #263a46}.employee-form-submit .primary{min-width:160px!important;min-height:43px!important;border-radius:13px!important;background:linear-gradient(135deg,#35c984,#278c61)!important;color:#06271b!important;box-shadow:0 10px 25px rgba(39,140,97,.20)!important}.employee-form-submit .primary:disabled{cursor:wait!important;opacity:.68!important;box-shadow:none!important}.employee-form-secondary{border:1px solid #314854;background:#101f29;color:#c9d7dc}.employee-form-management .employee-form-eyebrow{color:#c5a2ef!important}
+.employee-task-history{padding:0;border:1px solid #2b414d;border-radius:22px;background:linear-gradient(145deg,#101d27,#0b151e);overflow:hidden;box-shadow:0 16px 38px rgba(0,0,0,.18)}.employee-task-history-head{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px 22px;border-bottom:1px solid #263a46;background:linear-gradient(90deg,rgba(139,92,246,.055),rgba(57,217,138,.035))}.employee-task-history-head>div:first-child>span{display:block;color:#a890d4;font-size:10px;font-weight:900;margin-bottom:4px}.employee-task-history-head h2{margin:0;color:#f2f7f5;font-size:18px}.employee-task-history-head p{margin:5px 0 0;color:#96aab3;font-size:11px;line-height:1.7}.employee-task-count{min-width:110px;padding:10px 13px;border:1px solid #304958;border-radius:14px;background:#0c1a24;text-align:center}.employee-task-count strong{display:block;color:#7fe7b1;font-size:21px;line-height:1.1}.employee-task-count span{display:block;margin-top:4px;color:#8fa3af;font-size:9.5px}.employee-task-list{max-height:560px;overflow:auto;padding:8px 18px 16px}.employee-task-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:15px 4px;border-bottom:1px solid #223541}.employee-task-row:last-child{border-bottom:0}.employee-task-row.is-done{opacity:.72}.employee-task-row-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:6px}.employee-task-status,.employee-task-source{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;font-size:9.5px;font-weight:900}.employee-task-status.todo{background:rgba(238,180,77,.10);border:1px solid rgba(238,180,77,.22);color:#f2cd80}.employee-task-status.doing{background:rgba(88,155,255,.11);border:1px solid rgba(88,155,255,.22);color:#9bc3ff}.employee-task-status.done{background:rgba(57,217,138,.10);border:1px solid rgba(57,217,138,.20);color:#83eab5}.employee-task-source.manual{background:rgba(139,92,246,.10);border:1px solid rgba(139,92,246,.18);color:#cbb3ef}.employee-task-source.meeting{background:rgba(48,189,194,.10);border:1px solid rgba(48,189,194,.20);color:#89dfe2}.employee-task-title{display:block;color:#eef6f3;font-size:13px;line-height:1.6}.employee-task-row-main p{margin:5px 0 0;color:#9eb0b8;font-size:10.5px;line-height:1.7}.employee-task-meta-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}.employee-task-meta-row span{color:#8096a0;font-size:9.5px}.employee-task-meta-row b{color:#b8c7cd;font-weight:800}.employee-task-row-actions{display:flex;align-items:center;gap:7px}.employee-task-row-actions form{margin:0}.task-action-btn{display:inline-flex!important;align-items:center;justify-content:center;min-height:34px!important;padding:7px 11px!important;border-radius:10px!important;text-decoration:none!important;font:800 10px/1.3 Tahoma,Arial,sans-serif!important;white-space:nowrap;cursor:pointer}.task-action-btn.edit{background:#142831!important;border:1px solid #365160!important;color:#cce0e7!important}.task-action-btn.delete{background:rgba(146,43,59,.13)!important;border:1px solid rgba(230,94,113,.28)!important;color:#ff9baa!important}.employee-task-empty{padding:30px 10px;text-align:center;color:#8fa3af;font-size:12px}
+@media(max-width:760px){body.gl-premium-dark .employee-form-page .employee-form-hero{align-items:flex-start!important;padding:17px!important;flex-direction:column!important}.employee-form-person{align-items:flex-start}.employee-form-avatar{width:64px;height:64px;min-width:64px;border-radius:18px}.employee-form-hero h1{font-size:19px!important}.employee-form-hero-actions{width:100%}.employee-form-hero-actions a{flex:1}.employee-task-brief{align-items:stretch;flex-direction:column}.employee-task-owner{width:100%}.employee-form-card{padding:0 17px 18px}.employee-form-card-head{margin:0 -17px 18px;padding:16px 17px 13px}.employee-form-fields{grid-template-columns:1fr}.employee-form-field{grid-column:1!important}.employee-form-submit{flex-wrap:wrap}.employee-form-submit>*{flex:1 1 auto;text-align:center}.employee-form-submit .primary{min-width:0!important}.employee-task-history-head{align-items:flex-start;flex-direction:column}.employee-task-count{width:100%;display:flex;align-items:center;justify-content:space-between;text-align:right}.employee-task-count strong{font-size:18px}.employee-task-count span{margin:0}.employee-task-list{max-height:none;padding:6px 14px 14px}.employee-task-row{grid-template-columns:1fr;gap:10px}.employee-task-row-actions{justify-content:flex-start;flex-wrap:wrap}.task-action-btn{min-height:38px!important}}
 </style>
+<script>
+(function(){
+  document.querySelectorAll('form[data-lock-submit="1"]').forEach(function(form){
+    form.addEventListener('submit',function(event){
+      var button=form.querySelector('button[type="submit"]');
+      if(!button)return;
+      if(button.dataset.locked==='1'){
+        event.preventDefault();
+        return false;
+      }
+      button.dataset.locked='1';
+      button.disabled=true;
+      var label=button.querySelector('span');
+      if(label)label.textContent='{% if form_kind == "task_edit" %}در حال ذخیره...{% else %}در حال ثبت...{% endif %}';
+    });
+  });
+})();
+</script>
 {% endblock %}
