@@ -1,0 +1,30 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<style>
+.cso{display:grid;gap:14px}.cso-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.cso-card{padding:14px;border:1px solid rgba(120,145,165,.2);border-radius:15px;background:rgba(255,255,255,.035);margin-bottom:10px}.cso-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.cso-name{font-size:16px;font-weight:950}.cso-meta{color:#93a7b8;font-size:12px;line-height:1.8}.cso-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.cso-btn{border:0;border-radius:11px;padding:11px;font-weight:950;cursor:pointer}.cso-success{background:#1f9d70;color:#fff}.cso-fail{background:#6c3440;color:#fff}.cso-form{display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(120,145,165,.16)}.cso-form.open{display:block}.cso-options{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.cso-options label{padding:9px;border:1px solid rgba(130,155,175,.22);border-radius:10px}.cso-form input[type=number],.cso-form textarea{width:100%;box-sizing:border-box;margin-top:7px}.cso-submit{margin-top:8px;width:100%}.happy-row{padding:11px 0;border-bottom:1px solid rgba(120,145,165,.13)}.happy-row:last-child{border:0}.happy-money{font-weight:950;direction:ltr}.cso-note{font-size:11px;color:#8fa2b2}.cso-empty{padding:22px;text-align:center;color:#8ea2b4}@media(max-width:850px){.cso-grid{grid-template-columns:1fr}.cso-options{grid-template-columns:1fr}.cso-actions{grid-template-columns:1fr 1fr}}
+</style>
+<div class="cso">
+<section class="hero"><div><span class="eyebrow">پنل مشاور</span><h1>نتیجه مراجعه و فروش</h1><p>مراجعه‌های ورودی از لید Staff را تعیین تکلیف کنید. فروش ناموفق برای پیگیری فردا به کال‌سنتر برمی‌گردد و فروش موفق در Happy Call باقی می‌ماند.</p></div></section>
+<div class="cso-grid">
+<section class="panel"><div class="sectionhead"><div><h2>مراجعه‌های نیازمند نتیجه</h2><small>فقط لیدهای دارای نوبت کال‌سنتر شعبه شما</small></div></div>
+{% for x in pending %}<article class="cso-card">
+ <div class="cso-head"><div><div class="cso-name">{{ x.full_name }}</div><div class="cso-meta">{{ x.phone }} · {{ x.appointment_date|jdate }} · {{ x.service|default:'بدون خدمت ثبت‌شده' }}</div></div><span class="badge">{{ x.lead.get_status_display }}</span></div>
+ <div class="cso-actions"><button type="button" class="cso-btn cso-success" onclick="toggleOutcome('s{{x.pk}}')">فروش موفق</button><button type="button" class="cso-btn cso-fail" onclick="toggleOutcome('f{{x.pk}}')">فروش ناموفق</button></div>
+ <form method="post" class="cso-form" id="s{{x.pk}}">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{x.pk}}"><input type="hidden" name="result" value="success">
+  <div class="cso-options">{% for key,label in success_types.items %}<label><input type="radio" name="sale_type" value="{{key}}" required> {{label}}</label>{% endfor %}</div>
+  <label>مبلغ فروش (تومان)<input type="number" name="amount_toman" min="1" step="1" inputmode="numeric" required></label>
+  <label>توضیحات اختیاری<textarea name="note" rows="2"></textarea></label><button class="primary cso-submit" type="submit">ثبت فروش موفق</button>
+ </form>
+ <form method="post" class="cso-form" id="f{{x.pk}}">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{x.pk}}"><input type="hidden" name="result" value="failed">
+  <div class="cso-options">{% for key,label in failure_reasons.items %}<label><input type="radio" name="failure_reason" value="{{key}}" required onchange="failureReason(this)"> {{label}}</label>{% endfor %}</div>
+  <label>توضیحات <span class="cso-note">اختیاری؛ برای «سایر» اجباری</span><textarea name="note" rows="2"></textarea></label><button class="primary cso-submit" type="submit">ثبت و ارجاع برای پیگیری فردا</button>
+ </form>
+</article>{% empty %}<div class="cso-empty">مراجعه‌ای برای تعیین نتیجه باقی نمانده است.</div>{% endfor %}
+</section>
+<section class="panel"><div class="sectionhead"><div><h2>مخزن Happy Call</h2><small>فروش‌های موفق ثبت‌شده توسط شما</small></div></div>
+{% for s in happy_calls %}<div class="happy-row"><div class="cso-head"><strong>{{s.lead.full_name}}</strong><span class="happy-money">{{s.amount|floatformat:0}} تومان</span></div><div class="cso-meta">{{s.sale_date|jdate}} · {{s.lead.phone}}</div>{% if s.note %}<div class="cso-note">{{s.note}}</div>{% endif %}</div>{% empty %}<div class="cso-empty">هنوز فروش موفقی برای Happy Call ثبت نشده است.</div>{% endfor %}
+</section></div></div>
+<script>
+function toggleOutcome(id){document.querySelectorAll('.cso-form').forEach(function(x){if(x.id!==id)x.classList.remove('open')});document.getElementById(id).classList.toggle('open')}
+function failureReason(r){var f=r.closest('form'),t=f.querySelector('textarea[name=note]');t.required=(r.value==='other');t.placeholder=t.required?'توضیح برای «سایر» الزامی است':'توضیحات اختیاری'}
+</script>
+{% endblock %}
