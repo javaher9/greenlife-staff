@@ -1,6 +1,24 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}
 {% block content %}
 {% if user.profile.role == "employee" or user.profile.role == "consultant" or user.profile.role == "receptionist" %}
+<style>
+@media(max-width:700px){
+  body.gl-role-employee.gl-page-dashboard .gl-task-row strong,
+  body.gl-role-employee.gl-page-dashboard .gl-notification-row strong{color:#f7fafb!important;font-size:15px!important;font-weight:800!important;line-height:1.65!important;text-shadow:0 1px 0 rgba(0,0,0,.35)}
+  body.gl-role-employee.gl-page-dashboard .gl-task-row small,
+  body.gl-role-employee.gl-page-dashboard .gl-notification-row small{color:#c3ced4!important;font-size:12.5px!important;line-height:1.7!important}
+  body.gl-role-employee.gl-page-dashboard .gl-report-lines p{color:#e2e9ec!important;font-size:13px!important;font-weight:700!important;line-height:1.7!important}
+  body.gl-role-employee.gl-page-dashboard .gl-report-lines small{color:#bdc9cf!important;font-size:12px!important;line-height:1.65!important}
+  body.gl-role-employee.gl-page-dashboard .gl-month-copy small{color:#d1dade!important;font-size:12px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-month-copy p{color:#b5c2c8!important;font-size:11.5px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-list-head h2{color:#fff!important;font-size:18px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-list-head a{color:#8bea6f!important;font-size:12.5px!important}
+  body.gl-role-employee.gl-page-dashboard .gl-task-check{border-color:#8fa1a9!important;color:#cbd5da!important}
+  .gl-employee-install-hint{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 2px 78px;padding:9px 11px;border:1px solid rgba(130,229,104,.22);border-radius:13px;background:rgba(11,23,32,.86);color:#cbd6db;font-size:10.5px;line-height:1.5;box-shadow:0 8px 22px rgba(0,0,0,.14)}
+  .gl-employee-install-hint button{min-height:30px!important;padding:6px 11px!important;border-radius:9px!important;background:linear-gradient(135deg,#55b94f,#32843d)!important;color:#fff!important;border:0!important;font-size:11px!important;white-space:nowrap}
+}
+@media(min-width:701px){.gl-employee-install-hint{display:none!important}}
+</style>
 <div class="gl-employee-dashboard">
 
   <header class="gl-employee-mobile-head">
@@ -8,148 +26,50 @@
       {% if user.profile.avatar %}<img src="{{ user.profile.avatar.url }}" alt="{{ user.get_full_name|default:user.username }}">{% else %}<span>{{ user.first_name|first|default:user.username|first }}</span>{% endif %}
       <i></i>
     </a>
-    <div class="gl-head-copy">
-      <h1>سلام {{ user.first_name|default:user.username }} 👋</h1>
-      <p>{{ jalali_dashboard_date }}</p>
-    </div>
-    <a class="gl-head-bell" href="/notifications/" aria-label="اعلان‌ها">
-      <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Zm-8 11a2 2 0 0 0 4 0h-4Z"/></svg>
-      {% if notification_count %}<b>{{ notification_count }}</b>{% endif %}
-    </a>
+    <div class="gl-head-copy"><h1>سلام {{ user.first_name|default:user.username }} 👋</h1><p>{{ jalali_dashboard_date }}</p></div>
+    <a class="gl-head-bell" href="/notifications/" aria-label="اعلان‌ها"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Zm-8 11a2 2 0 0 0 4 0h-4Z"/></svg>{% if notification_count %}<b>{{ notification_count }}</b>{% endif %}</a>
   </header>
 
-  <section class="gl-blackboard" aria-label="پیام امروز مجموعه">
-    <span class="gl-blackboard-pin pin-a"></span><span class="gl-blackboard-pin pin-b"></span>
-    <div class="gl-blackboard-copy">
-      <small>تخته‌سیاه</small>
-      <strong>{{ blackboard.message|default:'امروز می‌ترکونیم! شبکه فروشت یادت نره.'|linebreaksbr }}</strong>
-    </div>
-    <span class="gl-blackboard-chalk" aria-hidden="true"></span>
-  </section>
+  <section class="gl-blackboard" aria-label="پیام امروز مجموعه"><span class="gl-blackboard-pin pin-a"></span><span class="gl-blackboard-pin pin-b"></span><div class="gl-blackboard-copy"><small>تخته‌سیاه</small><strong>{{ blackboard.message|default:'امروز می‌ترکونیم! شبکه فروشت یادت نره.'|linebreaksbr }}</strong></div><span class="gl-blackboard-chalk" aria-hidden="true"></span></section>
 
-  {% if user.profile.role == 'consultant' %}
-  <section class="gl-finance-launch" aria-label="ثبت مالی مشاور">
-    <a href="/finance/entry/" class="gl-finance-launch-main">
-      <span class="gl-finance-launch-icon">＋</span>
-      <div><small>ثبت مالی مشاور</small><h2>ثبت مالی جدید</h2><p>مبلغ، مقصد و عکس تراکنش را ثبت کنید.</p></div>
-      <b>شروع ثبت ←</b>
-    </a>
-    <div class="gl-finance-launch-stats">
-      <a href="/finance/entry/"><span>ثبت امروز</span><strong>{{ finance_stats.today|default:0 }}</strong></a>
-      <a href="/finance/entry/"><span>در انتظار تأیید</span><strong>{{ finance_stats.pending|default:0 }}</strong></a>
-      <a href="/finance/entry/" class="{% if finance_stats.correction %}needs-attention{% endif %}"><span>نیازمند اصلاح</span><strong>{{ finance_stats.correction|default:0 }}</strong></a>
-    </div>
-  </section>
-  {% endif %}
+  {% if user.profile.role == 'consultant' %}<section class="gl-finance-launch" aria-label="ثبت مالی مشاور"><a href="/finance/entry/" class="gl-finance-launch-main"><span class="gl-finance-launch-icon">＋</span><div><small>ثبت مالی مشاور</small><h2>ثبت مالی جدید</h2><p>مبلغ، مقصد و عکس تراکنش را ثبت کنید.</p></div><b>شروع ثبت ←</b></a><div class="gl-finance-launch-stats"><a href="/finance/entry/"><span>ثبت امروز</span><strong>{{ finance_stats.today|default:0 }}</strong></a><a href="/finance/entry/"><span>در انتظار تأیید</span><strong>{{ finance_stats.pending|default:0 }}</strong></a><a href="/finance/entry/" class="{% if finance_stats.correction %}needs-attention{% endif %}"><span>نیازمند اصلاح</span><strong>{{ finance_stats.correction|default:0 }}</strong></a></div></section>{% endif %}
 
   <section class="gl-quick-actions">
-    <a href="/attendance/" class="gl-quick-card gl-quick-attendance">
-      <svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2h2V2Zm12 8H5v9h14v-9Zm-7 1a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7Zm0 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"/></svg>
-      <span>حضور و غیاب</span>
-    </a>
-    <a href="/tasks/" class="gl-quick-card gl-quick-work">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M9 3h6l1 2h3v17H5V5h3l1-2Zm1.2 2-.4 1h4.4l-.4-1h-3.6ZM8 10l2 2 4-4 1.4 1.4L10 14.8 6.6 11.4 8 10Zm0 6 2 2 4-4 1.4 1.4L10 20.8 6.6 17.4 8 16Z"/>
-        <circle class="gl-work-purple" cx="17.7" cy="17.8" r="1.35"/>
-      </svg>
-      <span>کارهای من</span>
-    </a>
-    <a href="/reports/new/" class="gl-quick-card">
-      <svg viewBox="0 0 24 24"><path d="M12 15a4 4 0 0 0 4-4V5a4 4 0 1 0-8 0v6a4 4 0 0 0 4 4Zm-7-4h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.9V22h-2v-4.1A7 7 0 0 1 5 11Z"/></svg>
-      <span>گزارش صوتی</span>
-    </a>
-    <a href="/referrals/" class="gl-quick-card gl-quick-referral">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM8 13c-4.1 0-7 2.1-7 5v3h11v-3c0-1.2.4-2.3 1.2-3.2A9.5 9.5 0 0 0 8 13Zm8 0c-1 0-1.9.2-2.7.5.5.5.9 1.1 1.2 1.8.4.8.5 1.7.5 2.7v3h8v-3c0-2.8-2.9-5-7-5Z"/></svg>
-      <span>شبکه فروش من</span>
-      <small>جدید</small>
-    </a>
+    <a href="/attendance/" class="gl-quick-card gl-quick-attendance"><svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2h2V2Zm12 8H5v9h14v-9Zm-7 1a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7Zm0 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"/></svg><span>حضور و غیاب</span></a>
+    <a href="/tasks/" class="gl-quick-card gl-quick-work"><svg viewBox="0 0 24 24"><path d="M9 3h6l1 2h3v17H5V5h3l1-2Zm1.2 2-.4 1h4.4l-.4-1h-3.6ZM8 10l2 2 4-4 1.4 1.4L10 14.8 6.6 11.4 8 10Zm0 6 2 2 4-4 1.4 1.4L10 20.8 6.6 17.4 8 16Z"/><circle class="gl-work-purple" cx="17.7" cy="17.8" r="1.35"/></svg><span>کارهای من</span></a>
+    <a href="/reports/new/" class="gl-quick-card"><svg viewBox="0 0 24 24"><path d="M12 15a4 4 0 0 0 4-4V5a4 4 0 1 0-8 0v6a4 4 0 0 0 4 4Zm-7-4h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.9V22h-2v-4.1A7 7 0 0 1 5 11Z"/></svg><span>گزارش صوتی</span></a>
+    <a href="/referrals/" class="gl-quick-card gl-quick-referral"><svg viewBox="0 0 24 24"><path d="M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM8 13c-4.1 0-7 2.1-7 5v3h11v-3c0-1.2.4-2.3 1.2-3.2A9.5 9.5 0 0 0 8 13Zm8 0c-1 0-1.9.2-2.7.5.5.5.9 1.1 1.2 1.8.4.8.5 1.7.5 2.7v3h8v-3c0-2.8-2.9-5-7-5Z"/></svg><span>شبکه فروش من</span><small>جدید</small></a>
   </section>
 
   <section class="gl-dashboard-pair">
-    <a class="gl-dash-card gl-attendance-card" href="/attendance/">
-      <div class="gl-card-title"><h2>وضعیت امروز</h2><span>◷</span></div>
-      {% if today_shift.is_off and not attendance_today.check_in %}
-        <span class="gl-state-pill ok">روز غیرکاری</span>
-        <strong class="gl-entry-time gl-entry-empty">—</strong>
-        <small>امروز طبق برنامه نیازی به ثبت ورود نیست</small>
-      {% elif attendance_today.check_in %}
-        <span class="gl-state-pill ok">✓ حضور ثبت شده</span>
-        <strong class="gl-entry-time">{{ attendance_today.check_in|date:'H:i' }}</strong>
-        <small>ساعت ورود</small>
-      {% else %}
-        <span class="gl-state-pill warning">هنوز ورود ثبت نشده</span>
-        <strong class="gl-entry-time gl-entry-empty">--:--</strong>
-        <small>برای ثبت ورود لمس کنید</small>
-      {% endif %}
-      {% if today_shift.start %}<p class="gl-shift-line">شیفت: {{ today_shift.start|time:'H:i' }} - {{ today_shift.end|time:'H:i' }}</p>{% endif %}
-    </a>
-
-    <a class="gl-dash-card gl-report-card" href="{% if today_shift.is_off or today_report_exists %}/reports/{% else %}/reports/new/{% endif %}">
-      <div class="gl-card-title"><h2>گزارش امروز</h2><span>▤</span></div>
-      <div class="gl-report-body">
-        <div class="gl-ring" style="--progress:{{ overall_progress }};">
-          <span>{{ overall_progress }}%</span>
-        </div>
-        <div class="gl-report-lines">
-          <p class="{% if today_shift.is_off or today_report_exists %}ok{% endif %}">{% if today_shift.is_off %}امروز گزارش الزامی نیست{% elif today_report_exists %}✓ گزارش ارسال شده{% else %}گزارش هنوز ارسال نشده{% endif %}</p>
-          <small>{% if today_shift.is_off %}روز غیرکاری در برنامه هفتگی{% elif today_report_exists %}برای مشاهده گزارش لمس کنید{% else %}برای ثبت گزارش لمس کنید{% endif %}</small>
-        </div>
-      </div>
-    </a>
+    <a class="gl-dash-card gl-attendance-card" href="/attendance/"><div class="gl-card-title"><h2>وضعیت امروز</h2><span>◷</span></div>{% if today_shift.is_off and not attendance_today.check_in %}<span class="gl-state-pill ok">روز غیرکاری</span><strong class="gl-entry-time gl-entry-empty">—</strong><small>امروز طبق برنامه نیازی به ثبت ورود نیست</small>{% elif attendance_today.check_in %}<span class="gl-state-pill ok">✓ حضور ثبت شده</span><strong class="gl-entry-time">{{ attendance_today.check_in|date:'H:i' }}</strong><small>ساعت ورود</small>{% else %}<span class="gl-state-pill warning">هنوز ورود ثبت نشده</span><strong class="gl-entry-time gl-entry-empty">--:--</strong><small>برای ثبت ورود لمس کنید</small>{% endif %}{% if today_shift.start %}<p class="gl-shift-line">شیفت: {{ today_shift.start|time:'H:i' }} - {{ today_shift.end|time:'H:i' }}</p>{% endif %}</a>
+    <a class="gl-dash-card gl-report-card" href="{% if today_shift.is_off or today_report_exists %}/reports/{% else %}/reports/new/{% endif %}"><div class="gl-card-title"><h2>گزارش امروز</h2><span>▤</span></div><div class="gl-report-body"><div class="gl-ring" style="--progress:{{ overall_progress }};"><span>{{ overall_progress }}%</span></div><div class="gl-report-lines"><p class="{% if today_shift.is_off or today_report_exists %}ok{% endif %}">{% if today_shift.is_off %}امروز گزارش الزامی نیست{% elif today_report_exists %}✓ گزارش ارسال شده{% else %}گزارش هنوز ارسال نشده{% endif %}</p><small>{% if today_shift.is_off %}روز غیرکاری در برنامه هفتگی{% elif today_report_exists %}برای مشاهده گزارش لمس کنید{% else %}برای ثبت گزارش لمس کنید{% endif %}</small></div></div></a>
   </section>
 
-  <section class="gl-month-banner {% if missing_reports %}has-missing{% endif %}">
-    <div class="gl-month-copy">
-      <span class="gl-month-icon">{% if missing_reports %}!{% else %}✓{% endif %}</span>
-      <div>
-        <small>گزارش‌های ارسال نشده این ماه</small>
-        <strong>{{ missing_reports|length }} شب</strong>
-        <p>از اول ماه شمسی تا امروز</p>
-      </div>
-    </div>
-    <div class="gl-month-result">
-      {% if missing_reports %}
-        <b>نیاز به توجه</b>
-        <p>گزارش‌های عقب‌افتاده را بررسی کنید.</p>
-      {% else %}
-        <b>عالیه! 🎉</b>
-        <p>همه روزهای لازم این ماه گزارش شده‌اند.</p>
-      {% endif %}
-    </div>
-  </section>
+  <section class="gl-month-banner {% if missing_reports %}has-missing{% endif %}"><div class="gl-month-copy"><span class="gl-month-icon">{% if missing_reports %}!{% else %}✓{% endif %}</span><div><small>گزارش‌های ارسال نشده این ماه</small><strong>{{ missing_reports|length }} شب</strong><p>از اول ماه شمسی تا امروز</p></div></div><div class="gl-month-result">{% if missing_reports %}<b>نیاز به توجه</b><p>گزارش‌های عقب‌افتاده را بررسی کنید.</p>{% else %}<b>عالیه! 🎉</b><p>همه روزهای لازم این ماه گزارش شده‌اند.</p>{% endif %}</div></section>
 
-  <section class="gl-list-card">
-    <div class="gl-list-head"><h2>کارهای امروز</h2><a href="/tasks/">مشاهده همه</a></div>
-    {% for t in tasks %}
-    <a class="gl-task-row" href="/tasks/">
-      <span class="gl-task-check {% if t.status == 'done' %}done{% endif %}">{% if t.status == 'done' %}✓{% else %}○{% endif %}</span>
-      <div><strong>{{ t.title }}</strong><small>{{ t.get_priority_display }}{% if t.due_date %} · {{ t.due_date|jdate }}{% endif %}</small></div>
-    </a>
-    {% empty %}
-    <div class="gl-empty-row">وظیفه‌ای برای امروز ثبت نشده است.</div>
-    {% endfor %}
-  </section>
+  <section class="gl-list-card"><div class="gl-list-head"><h2>کارهای امروز</h2><a href="/tasks/">مشاهده همه</a></div>{% for t in tasks %}<a class="gl-task-row" href="/tasks/"><span class="gl-task-check {% if t.status == 'done' %}done{% endif %}">{% if t.status == 'done' %}✓{% else %}○{% endif %}</span><div><strong>{{ t.title }}</strong><small>{{ t.get_priority_display }}{% if t.due_date %} · {{ t.due_date|jdate }}{% endif %}</small></div></a>{% empty %}<div class="gl-empty-row">وظیفه‌ای برای امروز ثبت نشده است.</div>{% endfor %}</section>
 
-  <section class="gl-list-card gl-notification-card">
-    <div class="gl-list-head"><h2>اعلان‌ها</h2><a href="/notifications/">همه</a></div>
-    {% for n in notifications %}
-    <a class="gl-notification-row" href="/notifications/">
-      <span class="gl-notification-dot"></span>
-      <div><strong>{{ n.title }}</strong><small>{{ n.message|truncatechars:90 }}</small></div>
-    </a>
-    {% empty %}
-    <div class="gl-empty-row">اعلان جدیدی نیست.</div>
-    {% endfor %}
-  </section>
+  <section class="gl-list-card gl-notification-card"><div class="gl-list-head"><h2>اعلان‌ها</h2><a href="/notifications/">همه</a></div>{% for n in notifications %}<a class="gl-notification-row" href="/notifications/"><span class="gl-notification-dot"></span><div><strong>{{ n.title }}</strong><small>{{ n.message|truncatechars:90 }}</small></div></a>{% empty %}<div class="gl-empty-row">اعلان جدیدی نیست.</div>{% endfor %}</section>
 
+  <div id="employeeInstallHint" class="gl-employee-install-hint" hidden><span>برای دسترسی سریع‌تر، GreenLife Staff را روی گوشی نصب کنید.</span><button id="employeeInstallBtn" type="button">نصب اپ</button></div>
 </div>
+<script>
+(function(){
+  const hint=document.getElementById('employeeInstallHint');
+  const btn=document.getElementById('employeeInstallBtn');
+  if(!hint||!btn) return;
+  const standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+  if(standalone) return;
+  let promptEvent=null;
+  const isiOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(isiOS){hint.hidden=false;btn.textContent='راهنمای نصب';btn.addEventListener('click',()=>alert('در Safari روی Share بزنید و سپس Add to Home Screen را انتخاب کنید.'));}
+  window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();promptEvent=e;hint.hidden=false;});
+  btn.addEventListener('click',async function(){if(!promptEvent)return;promptEvent.prompt();await promptEvent.userChoice;promptEvent=null;hint.hidden=true;});
+  window.addEventListener('appinstalled',()=>{hint.hidden=true;});
+})();
+</script>
 {% else %}
-<section class="hero"><div><h1>سلام {{ user.first_name|default:user.username }} 👋</h1><p>کارهای مهم امروزت، گزارش‌ها و اطلاعیه‌ها در یک نگاه.</p></div><div><a class="primary" href="/reports/new/">🎙 ثبت گزارش امروز</a> <a class="primary ghost" href="/checklists/">✓ چک‌لیست امروز</a></div></section><section class="stats"><div><b>{{ stats.todo|default:0 }}</b><span>انجام‌نشده</span></div><div><b>{{ stats.doing|default:0 }}</b><span>درحال انجام</span></div><div><b>{{ stats.done|default:0 }}</b><span>انجام‌شده</span></div><div><b>{{ pending_leave }}</b><span>درخواست باز</span></div></section>{% if manager_stats %}<section class="manager-strip"><div><b>{{ manager_stats.all_tasks }}</b><span>کل وظایف تیم</span></div><div><b>{{ manager_stats.overdue }}</b><span>عقب‌افتاده</span></div><div><b>{{ manager_stats.pending_leave }}</b><span>درخواست منتظر بررسی</span></div></section>{% endif %}{% if missing_reports %}<section class="panel"><div class="sectionhead"><h2>هشدار گزارش روزانه</h2><a href="/reports/new/">ارسال گزارش</a></div><p><strong>{{ missing_reports|length|fa }} شب</strong> در ۳۱ روز اخیر گزارش ارسال نشده است. این موارد روی امتیاز شما اثر منفی دارند.</p></section>{% endif %}{% if notifications %}<section class="panel"><div class="sectionhead"><h2>اعلان‌های جدید</h2><a href="/notifications/">همه اعلان‌ها</a></div>{% for n in notifications %}<div class="row"><strong>{{ n.title }}</strong><span>{{ n.message|truncatechars:110 }}</span></div>{% endfor %}</section>{% endif %}<section class="panel"><div class="sectionhead"><h2>حضور امروز</h2><a href="/attendance/">جزئیات</a></div><p>شیفت امروز: <strong>{{ today_shift.name }}</strong>{% if today_shift.start %} · {{ today_shift.start|time:'H:i' }} تا {{ today_shift.end|time:'H:i' }}{% endif %}</p><p>{% if attendance_today.check_in %}ورود: <strong>{{ attendance_today.check_in|date:'H:i' }}</strong>{% else %}هنوز ورود ثبت نشده است.{% endif %}{% if attendance_today.check_out %} · خروج: <strong>{{ attendance_today.check_out|date:'H:i' }}</strong>{% endif %}</p>{% if not attendance_today.check_in %}<a class="primary" href="/attendance/">ثبت ورود</a>{% endif %}</section><div class="grid"><section class="panel"><div class="sectionhead"><h2>وظایف امروز</h2><a href="/tasks/">مشاهده همه</a></div>{% for t in tasks %}<article class="task"><div><strong>{{ t.title }}</strong><small>{{ t.assigned_to.get_full_name|default:t.assigned_to.username }} · {{ t.get_priority_display }} · {% if t.due_date %}{{ t.due_date|jdate }}{% else %}بدون مهلت{% endif %}</small></div><span class="badge {{ t.status }}">{{ t.get_status_display }}</span></article>{% empty %}<p class="muted">وظیفه‌ای ثبت نشده است.</p>{% endfor %}</section><section class="panel"><div class="sectionhead"><h2>اطلاعیه‌ها</h2><a href="/announcements/">همه</a></div>{% for a in announcements %}<article class="notice"><strong>{{ a.title }}</strong><p>{{ a.body|truncatechars:140 }}</p></article>{% empty %}<p class="muted">اطلاعیه جدیدی نیست.</p>{% endfor %}</section></div><section class="panel"><div class="sectionhead"><div><span class="eyebrow">GREENLIFE OPERATIONS</span><h2>مرکز عملیات مجموعه</h2></div></div><div class="ecosystem-grid">
-<a href="/camp/" class="ecosystem-card"><strong>Camp</strong><small>هزینه، خرید، انبار، کارگر، پروژه و عکس روزانه</small><span class="eco-status">فعال</span></a>
-<a href="/today/" class="ecosystem-card"><strong>Staff</strong><small>پرسنل، حضور، KPI، وظایف و گزارش‌ها</small><span class="eco-status">فعال</span></a>
-<a href="/finance/" class="ecosystem-card"><strong>Finance</strong><small>درآمد و اتصال CRM</small><span class="eco-status">فعال</span></a>
-<div class="ecosystem-card placeholder"><strong>Clinic</strong><small>آماده اتصال به CRM کلینیک</small><span class="eco-status">آینده</span></div>
-<div class="ecosystem-card placeholder"><strong>Call Center</strong><small>آماده اتصال و گزارش تماس‌ها</small><span class="eco-status">آینده</span></div>
-</div></section>
+<section class="hero"><div><h1>سلام {{ user.first_name|default:user.username }} 👋</h1><p>کارهای مهم امروزت، گزارش‌ها و اطلاعیه‌ها در یک نگاه.</p></div><div><a class="primary" href="/reports/new/">🎙 ثبت گزارش امروز</a> <a class="primary ghost" href="/checklists/">✓ چک‌لیست امروز</a></div></section><section class="stats"><div><b>{{ stats.todo|default:0 }}</b><span>انجام‌نشده</span></div><div><b>{{ stats.doing|default:0 }}</b><span>درحال انجام</span></div><div><b>{{ stats.done|default:0 }}</b><span>انجام‌شده</span></div><div><b>{{ pending_leave }}</b><span>درخواست باز</span></div></section>{% if manager_stats %}<section class="manager-strip"><div><b>{{ manager_stats.all_tasks }}</b><span>کل وظایف تیم</span></div><div><b>{{ manager_stats.overdue }}</b><span>عقب‌افتاده</span></div><div><b>{{ manager_stats.pending_leave }}</b><span>درخواست منتظر بررسی</span></div></section>{% endif %}{% if missing_reports %}<section class="panel"><div class="sectionhead"><h2>هشدار گزارش روزانه</h2><a href="/reports/new/">ارسال گزارش</a></div><p><strong>{{ missing_reports|length|fa }} شب</strong> در ۳۱ روز اخیر گزارش ارسال نشده است. این موارد روی امتیاز شما اثر منفی دارند.</p></section>{% endif %}{% if notifications %}<section class="panel"><div class="sectionhead"><h2>اعلان‌های جدید</h2><a href="/notifications/">همه اعلان‌ها</a></div>{% for n in notifications %}<div class="row"><strong>{{ n.title }}</strong><span>{{ n.message|truncatechars:110 }}</span></div>{% endfor %}</section>{% endif %}<section class="panel"><div class="sectionhead"><h2>حضور امروز</h2><a href="/attendance/">جزئیات</a></div><p>شیفت امروز: <strong>{{ today_shift.name }}</strong>{% if today_shift.start %} · {{ today_shift.start|time:'H:i' }} تا {{ today_shift.end|time:'H:i' }}{% endif %}</p><p>{% if attendance_today.check_in %}ورود: <strong>{{ attendance_today.check_in|date:'H:i' }}</strong>{% else %}هنوز ورود ثبت نشده است.{% endif %}{% if attendance_today.check_out %} · خروج: <strong>{{ attendance_today.check_out|date:'H:i' }}</strong>{% endif %}</p>{% if not attendance_today.check_in %}<a class="primary" href="/attendance/">ثبت ورود</a>{% endif %}</section><div class="grid"><section class="panel"><div class="sectionhead"><h2>وظایف امروز</h2><a href="/tasks/">مشاهده همه</a></div>{% for t in tasks %}<article class="task"><div><strong>{{ t.title }}</strong><small>{{ t.assigned_to.get_full_name|default:t.assigned_to.username }} · {{ t.get_priority_display }} · {% if t.due_date %}{{ t.due_date|jdate }}{% else %}بدون مهلت{% endif %}</small></div><span class="badge {{ t.status }}">{{ t.get_status_display }}</span></article>{% empty %}<p class="muted">وظیفه‌ای ثبت نشده است.</p>{% endfor %}</section><section class="panel"><div class="sectionhead"><h2>اطلاعیه‌ها</h2><a href="/announcements/">همه</a></div>{% for a in announcements %}<article class="notice"><strong>{{ a.title }}</strong><p>{{ a.body|truncatechars:140 }}</p></article>{% empty %}<p class="muted">اطلاعیه جدیدی نیست.</p>{% endfor %}</section></div><section class="panel"><div class="sectionhead"><div><span class="eyebrow">GREENLIFE OPERATIONS</span><h2>مرکز عملیات مجموعه</h2></div></div><div class="ecosystem-grid"><a href="/camp/" class="ecosystem-card"><strong>Camp</strong><small>هزینه، خرید، انبار، کارگر، پروژه و عکس روزانه</small><span class="eco-status">فعال</span></a><a href="/today/" class="ecosystem-card"><strong>Staff</strong><small>پرسنل، حضور، KPI، وظایف و گزارش‌ها</small><span class="eco-status">فعال</span></a><a href="/finance/" class="ecosystem-card"><strong>Finance</strong><small>درآمد و اتصال CRM</small><span class="eco-status">فعال</span></a><div class="ecosystem-card placeholder"><strong>Clinic</strong><small>آماده اتصال به CRM کلینیک</small><span class="eco-status">آینده</span></div><div class="ecosystem-card placeholder"><strong>Call Center</strong><small>آماده اتصال و گزارش تماس‌ها</small><span class="eco-status">آینده</span></div></div></section>
 {% endif %}
 {% endblock %}
