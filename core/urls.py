@@ -9,6 +9,7 @@ from . import meeting_views
 from . import appointment_views
 from . import message_views
 from . import sms_views
+from . import task_management_views
 from .mcp import mcp_endpoint
 urlpatterns=[path('service-worker.js',views.service_worker,name='service_worker'),path('camp/',camp_views.camp_dashboard,name='camp_dashboard'),
 path('call-center/',referral_views.call_center_dashboard,name='call_center_dashboard'),
@@ -71,7 +72,7 @@ path('attendance/corrections/',views.correction_list,name='correction_list'),pat
 path('kpi/automatic/',views.automatic_kpi_dashboard,name='automatic_kpi_dashboard'),
 path('login/',views.login_view,name='login'),path('logout/',views.logout_view,name='logout'),path('settings/access/',views.credential_settings,name='credential_settings'),path('settings/api/',sms_views.api_server_settings,name='api_server_settings'),path('settings/access/<int:pk>/update/',views.credential_update,name='credential_update'),path('settings/access/<int:pk>/reveal/<str:kind>/',views.credential_reveal,name='credential_reveal'),path('settings/access/<int:pk>/view-as/',views.impersonate_start,name='impersonate_start'),path('settings/access/return/',views.impersonate_return,name='impersonate_return'),path('',views.dashboard,name='dashboard'),
 path('reports/',views.report_list,name='report_list'),path('reports/new/',views.report_create,name='report_create'),path('reports/<int:pk>/',views.report_detail,name='report_detail'),
-path('tasks/',views.task_list,name='task_list'),path('my-tasks/',views.my_task_list,name='my_task_list'),path('tasks/new/',views.task_create,name='task_create'),path('tasks/<int:pk>/',views.task_update,name='task_update'),
+path('tasks/',views.task_list,name='task_list'),path('my-tasks/',views.my_task_list,name='my_task_list'),path('tasks/new/',views.task_create,name='task_create'),path('tasks/<int:pk>/manage/',task_management_views.manager_task_edit,name='manager_task_edit'),path('tasks/<int:pk>/delete/',task_management_views.manager_task_delete,name='manager_task_delete'),path('tasks/<int:pk>/',views.task_update,name='task_update'),
 path('meeting-minutes/',meeting_views.meeting_minute_list,name='meeting_minute_list'),
 path('meeting-minutes/new/',meeting_views.meeting_minute_create,name='meeting_minute_create'),
 path('meeting-minutes/dashboard/',meeting_views.meeting_dashboard,name='meeting_dashboard'),
