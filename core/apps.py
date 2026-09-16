@@ -16,3 +16,8 @@ class CoreConfig(AppConfig):
         # weighted round-robin engine.
         from .lead_routing import install_unified_lead_routing
         install_unified_lead_routing()
+
+        # Let finance managers correct a mistyped amount on the original
+        # transaction while keeping an immutable old/new audit trail.
+        from .finance_amount_correction import install_finance_amount_correction
+        install_finance_amount_correction()
