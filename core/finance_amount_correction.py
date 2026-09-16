@@ -8,6 +8,8 @@ from django.utils import timezone
 
 from .models import AuditLog, FinancialTransaction, StaffNotification
 
+MILLION_TOMAN_IN_RIAL = Decimal('10000000')
+
 
 def _role(user):
     profile = getattr(user, 'profile', None)
@@ -19,12 +21,16 @@ def _request_ip(request):
     return (forwarded.split(',')[0].strip() if forwarded else request.META.get('REMOTE_ADDR')) or None
 
 
+def _million_toman(amount):
+    return Decimal(amount or 0) / MILLION_TOMAN_IN_RIAL
+
+
 def finance_entry_review_with_amount(request, pk, action):
     """Finance review with an in-place, audited amount correction flow.
 
-    The existing correction button posts here with no corrected_amount and opens
-    a focused editor. Saving the editor updates the same transaction, preserving
-    its identity and all attribution links while recording old/new values in AuditLog.
+    Managers enter correction amounts in *million toman* (e.g. 44 means
+    44,000,000 toman). FinancialTransaction keeps its existing internal rial
+    storage, so the entered value is converted exactly once before saving.
     """
     if not request.user.is_authenticated:
         from django.contrib.auth.views import redirect_to_login
@@ -43,17 +49,26 @@ def finance_entry_review_with_amount(request, pk, action):
         return redirect('finance_dashboard')
 
     if action == 'correction':
+        current_amount_million = _million_toman(entry.amount)
         raw_amount = (request.POST.get('corrected_amount') or '').replace(',', '').replace('٬', '').strip()
         if not raw_amount:
-            return render(request, 'core/finance_amount_correction.html', {'entry': entry})
+            return render(request, 'core/finance_amount_correction.html', {
+                'entry': entry,
+                'current_amount_million': current_amount_million,
+            })
         try:
-            new_amount = Decimal(raw_amount)
+            entered_million = Decimal(raw_amount)
         except (InvalidOperation, ValueError):
-            new_amount = Decimal('0')
-        if new_amount <= 0:
+            entered_million = Decimal('0')
+        if entered_million <= 0:
             messages.error(request, 'مبلغ صحیح باید بیشتر از صفر باشد.')
-            return render(request, 'core/finance_amount_correction.html', {'entry': entry, 'entered_amount': raw_amount})
+            return render(request, 'core/finance_amount_correction.html', {
+                'entry': entry,
+                'entered_amount': raw_amount,
+                'current_amount_million': current_amount_million,
+            })
 
+        new_amount = entered_million * MILLION_TOMAN_IN_RIAL
         old_amount = entry.amount
         note = (request.POST.get('review_note') or '').strip()[:300]
         with transaction.atomic():
@@ -61,7 +76,7 @@ def finance_entry_review_with_amount(request, pk, action):
             entry.review_status = 'approved'
             entry.reviewed_by = request.user
             entry.reviewed_at = timezone.now()
-            entry.review_note = note or f'اصلاح مبلغ از {old_amount} به {new_amount}'
+            entry.review_note = note or f'اصلاح مبلغ از {_million_toman(old_amount)} به {entered_million} میلیون تومان'
             entry.save(update_fields=['amount', 'review_status', 'reviewed_by', 'reviewed_at', 'review_note'])
             AuditLog.objects.create(
                 actor=request.user,
@@ -70,10 +85,12 @@ def finance_entry_review_with_amount(request, pk, action):
                 method='POST',
                 object_type='FinancialTransaction',
                 object_id=str(entry.pk),
-                summary=f'اصلاح مبلغ تراکنش {entry.person_name}: {old_amount} → {new_amount}'[:250],
+                summary=f'اصلاح مبلغ تراکنش {entry.person_name}: {_million_toman(old_amount)} → {entered_million} میلیون تومان'[:250],
                 metadata={
                     'old_amount': str(old_amount),
                     'new_amount': str(new_amount),
+                    'old_amount_million_toman': str(_million_toman(old_amount)),
+                    'new_amount_million_toman': str(entered_million),
                     'review_status': 'approved',
                     'note': note,
                 },
@@ -87,7 +104,7 @@ def finance_entry_review_with_amount(request, pk, action):
                     notification_type='finance_review',
                     related_date=timezone.localdate(),
                 )
-        messages.success(request, 'مبلغ تراکنش اصلاح و ثبت شد؛ مبلغ قبلی در سابقه حسابرسی محفوظ است.')
+        messages.success(request, f'مبلغ تراکنش روی {entered_million:g} میلیون تومان اصلاح شد؛ مبلغ قبلی در سابقه حسابرسی محفوظ است.')
         return redirect('finance_dashboard')
 
     status_map = {'approve': 'approved', 'cancel': 'cancelled'}
