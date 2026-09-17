@@ -117,3 +117,77 @@ body.gl-page-kpi_list .kpi-table {
     padding-right:12px !important;
   }
 }
+
+/* KPI v2.2 — root-cause fix. Legacy app.css fixes every <aside> to the
+   viewport. KPI's "top performers" panel is also an <aside>, so it was being
+   pulled under the right navigation and its grid column stayed visually empty.
+   Force that panel back into normal flow, then use one full-width column. */
+body.gl-page-kpi_list aside.top-panel {
+  position:static !important;
+  inset:auto !important;
+  top:auto !important;
+  right:auto !important;
+  bottom:auto !important;
+  left:auto !important;
+  width:100% !important;
+  max-width:none !important;
+  height:auto !important;
+  min-height:0 !important;
+  padding:16px !important;
+  margin:0 !important;
+  overflow:visible !important;
+  z-index:auto !important;
+}
+body.gl-page-kpi_list .kpi-lower {
+  grid-template-columns:minmax(0,1fr) !important;
+}
+body.gl-page-kpi_list .kpi-lower .top-panel {
+  grid-column:1 / -1 !important;
+  order:1 !important;
+}
+body.gl-page-kpi_list .kpi-lower .people-card {
+  grid-column:1 / -1 !important;
+  order:2 !important;
+  width:100% !important;
+}
+body.gl-page-kpi_list .top-panel .top-list {
+  display:grid !important;
+  grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+  gap:8px !important;
+}
+body.gl-page-kpi_list .top-panel .top-row {
+  min-width:0 !important;
+}
+body.gl-page-kpi_list .top-panel .top-row > span:nth-child(3) {
+  min-width:0 !important;
+}
+body.gl-page-kpi_list .top-panel .top-row > span:nth-child(3) b,
+body.gl-page-kpi_list .top-panel .top-row > span:nth-child(3) small {
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
+}
+body.gl-page-kpi_list .app-sidebar {
+  scrollbar-width:none !important;
+  -ms-overflow-style:none !important;
+}
+body.gl-page-kpi_list .app-sidebar::-webkit-scrollbar {
+  width:0 !important;
+  height:0 !important;
+  display:none !important;
+}
+@media (max-width:1280px) {
+  body.gl-page-kpi_list .top-panel .top-list {
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  }
+}
+@media (max-width:900px) {
+  body.gl-page-kpi_list .top-panel .top-list {
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
+@media (max-width:620px) {
+  body.gl-page-kpi_list .top-panel .top-list {
+    grid-template-columns:1fr !important;
+  }
+}
