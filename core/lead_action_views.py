@@ -10,15 +10,13 @@ from .referral_views import _default_call_center_group, _notify_call_center_assi
 ALLOWED_ROLES = ('admin', 'manager', 'internal_manager')
 
 
+def _is_admin(user):
+    profile = getattr(user, 'profile', None)
+    return bool(user.is_superuser or (profile and profile.role == 'admin'))
+
+
 @login_required
 def management_lead_follow_up(request, pk):
-    """Management-safe follow-up page for Lead Hub urgent actions.
-
-    Lead Hub includes leads from technical/public sources whose referrer may be
-    inactive. The older referral-network manage view scopes by active referral
-    profiles, which can turn a valid Lead Hub action into a 404. This endpoint
-    authorizes against the management role instead and edits the lead directly.
-    """
     profile = getattr(request.user, 'profile', None)
     if not profile or profile.role not in ALLOWED_ROLES:
         messages.error(request, 'دسترسی به پیگیری مدیریتی لید ندارید.')
@@ -50,4 +48,39 @@ def management_lead_follow_up(request, pk):
         'subtitle': f'{lead.full_name} · {lead.phone}',
         'button': 'ثبت اقدام',
         'lead': lead,
+        'lead_admin_actions': _is_admin(request.user),
     })
+
+
+@login_required
+def admin_lead_edit(request, pk):
+    if not _is_admin(request.user):
+        messages.error(request, 'ویرایش لید فقط برای ادمین مجاز است.')
+        return redirect('lead_management_dashboard')
+    lead = get_object_or_404(ReferralLead, pk=pk)
+    if request.method == 'POST':
+        full_name = (request.POST.get('full_name') or '').strip()
+        phone = (request.POST.get('phone') or '').strip()
+        if not full_name or not phone:
+            messages.error(request, 'نام و موبایل الزامی است.')
+        else:
+            lead.full_name = full_name
+            lead.phone = phone
+            lead.save(update_fields=['full_name', 'phone', 'updated_at'])
+            messages.success(request, 'اطلاعات لید ویرایش شد.')
+            return redirect('lead_management_dashboard')
+    return render(request, 'core/lead_admin_edit.html', {'lead': lead})
+
+
+@login_required
+def admin_lead_delete(request, pk):
+    if not _is_admin(request.user):
+        messages.error(request, 'حذف لید فقط برای ادمین مجاز است.')
+        return redirect('lead_management_dashboard')
+    lead = get_object_or_404(ReferralLead, pk=pk)
+    if request.method == 'POST':
+        label = f'{lead.full_name} · {lead.phone}'
+        lead.delete()
+        messages.success(request, f'لید {label} حذف شد.')
+        return redirect('lead_management_dashboard')
+    return render(request, 'core/lead_admin_delete.html', {'lead': lead})
