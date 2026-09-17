@@ -1,298 +1,137 @@
-{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+{% extends 'core/base.html' %}{% load jalali_tags management_dashboard_metrics %}{% block content %}
+{% management_dashboard_metrics selected_branch as metrics %}
 <style>
-  .cmd{display:grid;gap:16px;padding:18px 0 28px}
+  .cmd{display:grid;gap:18px;padding:18px 0 30px;--mint:#2ee6a6;--cyan:#35bfff;--violet:#aa7cff;--amber:#ffc257;--rose:#ff6e9d}
   .cmd a{text-decoration:none;color:inherit}
-  .cmd-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:22px 24px;border:1px solid rgba(139,92,246,.24);border-radius:24px;background:linear-gradient(135deg,rgba(124,58,237,.16),rgba(8,15,28,.92) 42%,rgba(6,182,212,.08));box-shadow:0 18px 45px rgba(0,0,0,.18)}
-  .cmd-hero h1{margin:0 0 8px;font-size:clamp(26px,3vw,40px);font-weight:900;color:#f8fbff;text-shadow:0 0 22px rgba(167,139,250,.22)}.cmd-hero p{margin:0;color:#d7deea;font-size:14px}
-  .cmd-hero-actions{display:flex;flex-wrap:wrap;gap:10px}.cmd-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 14px;border:1px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.045);font-weight:700}.cmd-btn.primary{background:linear-gradient(135deg,#7c3aed,#9333ea);border-color:transparent}
-  .cmd-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-  /* Lightweight premium KPI plaques: rich color + CSS-only texture, no images/animations. */
-  .cmd-card{
-    position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;gap:7px;
-    min-height:132px;padding:19px;border:1px solid rgba(255,255,255,.16);border-radius:21px;
-    transition:transform .16s ease,border-color .16s ease,filter .16s ease;
-    box-shadow:0 14px 30px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.12)
-  }
-  .cmd-card::before{
-    content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.78;
-    background:
-      radial-gradient(circle at 84% 16%,rgba(255,255,255,.17),transparent 23%),
-      radial-gradient(circle at 10% 110%,rgba(255,255,255,.07),transparent 32%),
-      repeating-linear-gradient(118deg,rgba(255,255,255,.025) 0 1px,transparent 1px 9px)
-  }
-  .cmd-card::after{
-    content:"";position:absolute;inset:1px;z-index:1;pointer-events:none;border-radius:19px;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.13),inset 0 -18px 28px rgba(5,9,17,.12)
-  }
-  .cmd-card>small,.cmd-card>strong,.cmd-card>em{position:relative;z-index:2}
-  .cmd-card:hover{transform:translateY(-3px);filter:brightness(1.055);border-color:rgba(255,255,255,.24)}
-  .cmd-card small{color:#f1f4fa;font-size:13px;font-weight:850;letter-spacing:-.01em}
-  .cmd-card strong{font-size:34px;line-height:1.08;color:#ffffff;font-weight:950;text-shadow:0 2px 12px rgba(0,0,0,.18)}
-  .cmd-card em{font-style:normal;color:#e2e8f1;font-size:12px;font-weight:650}
-  .cmd-card .arrow{
-    position:absolute;left:14px;top:14px;z-index:3;width:30px;height:30px;display:grid;place-items:center;
-    border:1px solid rgba(255,255,255,.18);border-radius:10px;background:rgba(255,255,255,.09);
-    color:#fff;font-size:16px;font-weight:900;box-shadow:inset 0 1px 0 rgba(255,255,255,.10)
-  }
-  .cmd-card.purple{
-    background:linear-gradient(145deg,#6543a3 0%,#3b285f 45%,#191a2b 100%);
-    border-color:#8669c0;box-shadow:0 15px 30px rgba(67,38,112,.22),inset 0 1px 0 rgba(255,255,255,.12)
-  }
-  .cmd-card.amber{
-    background:linear-gradient(145deg,#8e4465 0%,#532b40 45%,#211925 100%);
-    border-color:#bd6f91;box-shadow:0 15px 30px rgba(105,42,71,.20),inset 0 1px 0 rgba(255,255,255,.12)
-  }
-  .cmd-card.cyan{
-    background:linear-gradient(145deg,#347a9b 0%,#24536d 45%,#18202c 100%);
-    border-color:#65a7c4;box-shadow:0 15px 30px rgba(24,79,104,.20),inset 0 1px 0 rgba(255,255,255,.12)
-  }
-  .cmd-card.green{
-    background:linear-gradient(145deg,#3a8169 0%,#265745 45%,#18231f 100%);
-    border-color:#69ae91;box-shadow:0 15px 30px rgba(24,82,61,.20),inset 0 1px 0 rgba(255,255,255,.12)
-  }
-  .cmd-section{display:grid;gap:12px}.cmd-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.cmd-section-head h2{margin:0;font-size:20px;color:#f8fbff;font-weight:900;letter-spacing:0}.cmd-section-head a{color:#c4b5fd;font-size:13px;font-weight:700}
-  .cmd-attention{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-  .cmd-attn{display:flex;align-items:center;gap:13px;padding:16px;border-radius:18px;border:1px solid rgba(255,255,255,.10);background:radial-gradient(circle at 92% 8%,rgba(139,92,246,.06),transparent 30%),linear-gradient(145deg,rgba(21,28,45,.98),rgba(9,14,25,.98));box-shadow:0 9px 22px rgba(0,0,0,.09),inset 0 1px 0 rgba(255,255,255,.035)}
-  .cmd-attn:hover{border-color:rgba(167,139,250,.45);transform:translateY(-1px)}
-  .cmd-attn i{display:grid;place-items:center;width:44px;height:44px;border-radius:14px;border:1px solid rgba(255,255,255,.10);font-style:normal;font-size:20px;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
-  .cmd-attn:nth-child(1) i{background:linear-gradient(135deg,#6849a8,#46336e)}
-  .cmd-attn:nth-child(2) i{background:linear-gradient(135deg,#9a4f70,#673349)}
-  .cmd-attn:nth-child(3) i{background:linear-gradient(135deg,#397e69,#285746)}
-  .cmd-attn:nth-child(4) i{background:linear-gradient(135deg,#3b7899,#2b536b)}
-  .cmd-attn b{display:block;font-size:22px;color:#fff}.cmd-attn span{display:block;color:#c3ccd9;font-size:12px;margin-top:2px}
-  .cmd-modules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-  .cmd-module{min-height:118px;padding:18px;border-radius:19px;border:1px solid rgba(255,255,255,.10);background:radial-gradient(circle at 94% 4%,rgba(255,255,255,.035),transparent 24%),linear-gradient(150deg,rgba(21,29,46,.985),rgba(9,14,26,.975));box-shadow:0 11px 26px rgba(0,0,0,.11),inset 0 1px 0 rgba(255,255,255,.025);position:relative;overflow:hidden}
-  .cmd-module:before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:linear-gradient(#8b5cf6,#6d4bb5);opacity:.88}
-  .cmd-module:nth-child(4n+2):before{background:linear-gradient(#bb6689,#81415d)}
-  .cmd-module:nth-child(4n+3):before{background:linear-gradient(#55a58b,#33705c)}
-  .cmd-module:nth-child(4n):before{background:linear-gradient(#5a9bb9,#39708b)}
-  .cmd-module:hover{border-color:rgba(167,139,250,.42);transform:translateY(-2px)}
-  .cmd-module strong{display:block;margin-bottom:7px;font-size:16px;color:#f8fbff;font-weight:850}.cmd-module small{display:block;color:#bdc7d7;line-height:1.8}.cmd-module b{display:inline-block;margin-top:10px;color:#c4b5fd;font-size:12px}
-  .cmd-two{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
-  .cmd-panel{padding:19px;border-radius:20px;border:1px solid rgba(255,255,255,.10);background:radial-gradient(circle at 100% 0,rgba(139,92,246,.045),transparent 30%),linear-gradient(160deg,rgba(16,23,38,.98),rgba(8,13,24,.98));box-shadow:0 14px 32px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.022)}
-  .cmd-list{display:grid;gap:8px;margin-top:12px}.cmd-list a{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border-radius:13px;background:rgba(255,255,255,.042);border:1px solid rgba(255,255,255,.025)}.cmd-list a:hover{background:rgba(139,92,246,.10);border-color:rgba(167,139,250,.18)}.cmd-list strong{font-size:13px;color:#f5f8fc}.cmd-list small{color:#b9c4d3}.cmd-person{display:flex;align-items:center;gap:10px;min-width:0}.cmd-avatar{width:38px;height:38px;border-radius:50%;flex:0 0 38px;display:grid;place-items:center;overflow:hidden;border:2px solid rgba(167,139,250,.42);background:linear-gradient(135deg,#6d28d9,#0f766e);color:#fff;font-weight:800;box-shadow:0 0 0 3px rgba(139,92,246,.07)}.cmd-avatar img{width:100%;height:100%;object-fit:cover;display:block}.cmd-person-copy{min-width:0}.cmd-person-copy strong,.cmd-person-copy small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .cmd-note textarea{width:100%;min-height:118px;resize:vertical;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:#0a101c;color:#fff;padding:12px;margin-top:10px}
-  .cmd-filter select{min-width:145px}
-  @media(max-width:1100px){.cmd-grid,.cmd-attention,.cmd-modules{grid-template-columns:repeat(2,minmax(0,1fr))}.cmd-two{grid-template-columns:1fr}}
-  @media(max-width:680px){.cmd{padding-top:8px}.cmd-hero{padding:18px;flex-direction:column}.cmd-grid,.cmd-attention,.cmd-modules{grid-template-columns:1fr 1fr}.cmd-card{min-height:112px;padding:15px}.cmd-card strong{font-size:25px}.cmd-module{min-height:100px}.cmd-two{grid-template-columns:1fr}}
-  @media(max-width:430px){.cmd-grid,.cmd-attention,.cmd-modules{grid-template-columns:1fr}.cmd-attn{min-height:74px}}
+  .cmd-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px 24px;border:1px solid rgba(139,92,246,.24);border-radius:24px;background:linear-gradient(135deg,rgba(124,58,237,.16),rgba(8,15,28,.93) 44%,rgba(46,230,166,.07));box-shadow:0 18px 45px rgba(0,0,0,.18)}
+  .cmd-hero h1{margin:4px 0 0;font-size:clamp(27px,3vw,40px);font-weight:950;color:#fff;text-shadow:0 0 24px rgba(167,139,250,.22)}
+  .cmd-hero-kicker{color:#d8c9ff;font-size:10px;font-weight:900;letter-spacing:.14em}
+  .cmd-hero-actions{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+  .cmd-btn{display:inline-flex;align-items:center;gap:7px;min-height:42px;padding:9px 13px;border:1px solid rgba(255,255,255,.12);border-radius:13px;background:rgba(255,255,255,.055);color:#f8fbff!important;font-size:12px;font-weight:850}
+  .cmd-btn.primary{background:linear-gradient(135deg,#1baa75,#238b69);border-color:rgba(80,255,185,.28);box-shadow:0 0 22px rgba(46,230,166,.12)}
+  .cmd-filter select{min-width:140px;height:42px;padding:0 12px;border:1px solid rgba(255,255,255,.15);border-radius:13px;background:#111a2b;color:#fff;font:800 11px Tahoma}
 
-  /* Management dashboard contrast floor: prevent global dark-theme rules
-     from washing out titles, labels or helper text on this page. */
-  body.gl-page-branch_live_dashboard .cmd-hero h1{
-    color:#ffffff!important;
-    opacity:1!important;
-    text-shadow:0 1px 0 rgba(0,0,0,.22),0 0 24px rgba(167,139,250,.22)!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-hero>div>small{
-    color:#d8c9ff!important;
-    opacity:1!important;
-    font-weight:900!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-hero p{
-    color:#e7edf6!important;
-    opacity:1!important;
-    font-weight:650!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-btn{
-    color:#f8fbff!important;
-    opacity:1!important;
-    font-weight:800!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-filter select{
-    color:#f8fbff!important;
-    background:#101827!important;
-    border:1px solid rgba(255,255,255,.18)!important;
-    opacity:1!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-filter select option{
-    color:#111827!important;
-    background:#ffffff!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-card small{
-    color:#eef3fa!important;
-    opacity:1!important;
-    font-weight:800!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-card strong{
-    color:#ffffff!important;
-    opacity:1!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-card em{
-    color:#d7e0ed!important;
-    opacity:1!important;
-    font-weight:650!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-section-head h2{
-    color:#ffffff!important;
-    opacity:1!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-section-head>a{
-    color:#d8c9ff!important;
-    opacity:1!important;
-    font-weight:800!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-section-head>span{
-    color:#d1d9e5!important;
-    opacity:1!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-attn b{
-    color:#ffffff!important;
-    opacity:1!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-attn span{
-    color:#d6dfeb!important;
-    opacity:1!important;
-    font-weight:650!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-module strong{
-    color:#ffffff!important;
-    opacity:1!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-module small{
-    color:#d6dfeb!important;
-    opacity:1!important;
-    font-weight:650!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-module b{
-    color:#d8c9ff!important;
-    opacity:1!important;
-    font-weight:850!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-list strong,
-  body.gl-page-branch_live_dashboard .cmd-person-copy strong{
-    color:#ffffff!important;
-    opacity:1!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-list small,
-  body.gl-page-branch_live_dashboard .cmd-person-copy small{
-    color:#d0d9e6!important;
-    opacity:1!important;
-    font-weight:650!important;
-  }
-  body.gl-page-branch_live_dashboard .owner-empty-v35{
-    color:#d2dbe7!important;
-    opacity:1!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-note textarea{
-    color:#ffffff!important;
-    opacity:1!important;
-    border-color:rgba(255,255,255,.16)!important;
-  }
-  body.gl-page-branch_live_dashboard .cmd-note textarea::placeholder{
-    color:#aeb9c8!important;
-    opacity:1!important;
-  }
-  body.gl-page-branch_live_dashboard #ownerNoteStateV35{
-    color:#c3cedd!important;
-    opacity:1!important;
-  }
+  /* Primary executive plaques: number + chart + tiny breakdown only. */
+  .cmd-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}
+  .cmd-kpi{--accent:var(--mint);position:relative;isolation:isolate;overflow:hidden;min-height:208px;padding:18px 18px 14px;border:1px solid color-mix(in srgb,var(--accent) 35%,rgba(255,255,255,.10));border-radius:23px;background:linear-gradient(155deg,color-mix(in srgb,var(--accent) 14%,#121b2c),#0a101d 62%,#080d18);box-shadow:0 15px 34px rgba(0,0,0,.16),0 0 28px color-mix(in srgb,var(--accent) 8%,transparent);display:flex;flex-direction:column;gap:8px}
+  .cmd-kpi:before{content:"";position:absolute;inset:auto -15% -45% -15%;height:70%;background:radial-gradient(ellipse at center,color-mix(in srgb,var(--accent) 18%,transparent),transparent 68%);pointer-events:none}
+  .cmd-kpi.sales{--accent:var(--mint)}.cmd-kpi.leads{--accent:var(--cyan)}.cmd-kpi.appts{--accent:var(--violet)}.cmd-kpi.team{--accent:var(--amber)}
+  .cmd-kpi-head{display:flex;align-items:center;justify-content:space-between;gap:10px;position:relative;z-index:2}
+  .cmd-kpi-title{font-size:14px;font-weight:950;color:#f8fbff}.cmd-kpi-unit{font-size:9px;font-weight:850;color:color-mix(in srgb,var(--accent) 78%,white)}
+  .cmd-kpi-value{position:relative;z-index:2;display:flex;align-items:baseline;gap:7px}.cmd-kpi-value strong{font-size:39px;line-height:1;color:#fff;font-weight:950;letter-spacing:-1px;text-shadow:0 0 20px color-mix(in srgb,var(--accent) 24%,transparent)}.cmd-kpi-value span{font-size:9px;color:#9eaabd;font-weight:800}
+  .cmd-spark{height:52px;display:flex;align-items:flex-end;gap:4px;position:relative;z-index:2;padding:6px 2px 2px;border-bottom:1px solid rgba(255,255,255,.07)}
+  .cmd-spark i{display:block;flex:1;min-width:3px;height:var(--h);border-radius:5px 5px 2px 2px;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 95%,white),color-mix(in srgb,var(--accent) 35%,transparent));box-shadow:0 0 10px color-mix(in srgb,var(--accent) 28%,transparent);opacity:.92}
+  .cmd-kpi-foot{position:relative;z-index:2;display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
+  .cmd-mini{display:inline-flex;align-items:center;gap:5px;min-height:27px;padding:4px 8px;border:1px solid rgba(255,255,255,.075);border-radius:9px;background:rgba(255,255,255,.035);font-size:9px;color:#cbd5e1;font-weight:750}.cmd-mini b{color:#fff;font-size:10px;font-weight:950}.cmd-mini .dot{width:6px;height:6px;border-radius:50%;background:var(--dot,var(--accent));box-shadow:0 0 8px var(--dot,var(--accent))}
+  .cmd-ring{width:55px;height:55px;border-radius:50%;background:conic-gradient(var(--accent) calc(var(--p)*1%),rgba(255,255,255,.07) 0);position:absolute;left:17px;top:51px;display:grid;place-items:center;box-shadow:0 0 22px color-mix(in srgb,var(--accent) 18%,transparent)}
+  .cmd-ring:after{content:"";width:41px;height:41px;border-radius:50%;background:#0d1523;border:1px solid rgba(255,255,255,.05)}
+  .cmd-segments{height:13px;display:flex;overflow:hidden;border-radius:8px;background:rgba(255,255,255,.05);position:relative;z-index:2;margin:12px 0 27px}.cmd-segments i{height:100%;flex:var(--n);background:var(--c);box-shadow:0 0 12px var(--c)}
+
+  .cmd-section{display:grid;gap:11px}.cmd-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.cmd-section-head h2{margin:0;font-size:19px;color:#fff;font-weight:950}.cmd-section-head a{color:#d8c9ff;font-size:11px;font-weight:850}.cmd-section-head>span{color:#8fa0b5;font-size:10px;font-weight:700}
+  .cmd-attention{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+  .cmd-attn{display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:17px;border:1px solid rgba(255,255,255,.085);background:linear-gradient(145deg,rgba(21,28,45,.98),rgba(9,14,25,.98));box-shadow:0 9px 22px rgba(0,0,0,.09)}
+  .cmd-attn i{display:grid;place-items:center;width:39px;height:39px;border-radius:12px;font-style:normal;font-size:17px;background:linear-gradient(135deg,#6d4bb5,#48346f);color:#fff}.cmd-attn:nth-child(2) i{background:linear-gradient(135deg,#bc5e87,#743b59)}.cmd-attn:nth-child(3) i{background:linear-gradient(135deg,#39a77e,#247056)}.cmd-attn:nth-child(4) i{background:linear-gradient(135deg,#3c9dcc,#276780)}
+  .cmd-attn b{display:block;color:#fff;font-size:22px;font-weight:950}.cmd-attn span{display:block;margin-top:1px;color:#cbd5e1;font-size:10px;font-weight:750}
+
+  /* Replaces the old explanatory module cards with compact analytics plaques. */
+  .cmd-modules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+  .cmd-module{--accent:var(--violet);min-height:126px;padding:15px 16px;border-radius:18px;border:1px solid rgba(255,255,255,.085);background:radial-gradient(circle at 93% 8%,color-mix(in srgb,var(--accent) 11%,transparent),transparent 32%),linear-gradient(150deg,#151d2f,#0a101d);box-shadow:0 11px 25px rgba(0,0,0,.12);position:relative;overflow:hidden}
+  .cmd-module:nth-child(4n+2){--accent:var(--cyan)}.cmd-module:nth-child(4n+3){--accent:var(--mint)}.cmd-module:nth-child(4n){--accent:var(--rose)}
+  .cmd-module:before{content:"";position:absolute;right:0;top:13px;bottom:13px;width:3px;border-radius:3px;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+  .cmd-module-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.cmd-module-head strong{font-size:13px;color:#f8fbff;font-weight:900}.cmd-module-head span{font-size:9px;color:color-mix(in srgb,var(--accent) 75%,white);font-weight:850}
+  .cmd-module-main{display:flex;align-items:baseline;gap:6px;margin-top:12px}.cmd-module-main b{font-size:27px;color:#fff;font-weight:950}.cmd-module-main small{font-size:9px;color:#8fa0b5;font-weight:750}
+  .cmd-module-stats{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}.cmd-module-stats span{padding:4px 7px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);color:#bac6d5;font-size:8.5px;font-weight:750}.cmd-module-stats b{color:#fff;font-weight:950}
+  .cmd-module-line{height:2px;margin-top:12px;background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 5%,transparent));box-shadow:0 0 8px color-mix(in srgb,var(--accent) 30%,transparent);border-radius:2px}
+
+  .cmd-two{display:grid;grid-template-columns:1.15fr .85fr;gap:13px}.cmd-panel{padding:17px;border-radius:20px;border:1px solid rgba(255,255,255,.09);background:linear-gradient(160deg,rgba(16,23,38,.98),rgba(8,13,24,.98));box-shadow:0 14px 30px rgba(0,0,0,.11)}
+  .cmd-list{display:grid;gap:7px;margin-top:11px}.cmd-list a{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 11px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.025)}.cmd-list strong{font-size:11px;color:#f7faff;font-weight:850}.cmd-list small{color:#aebdce;font-size:9px;font-weight:700}.cmd-person{display:flex;align-items:center;gap:9px;min-width:0}.cmd-avatar{width:36px;height:36px;border-radius:50%;flex:0 0 36px;display:grid;place-items:center;overflow:hidden;border:2px solid rgba(167,139,250,.4);background:linear-gradient(135deg,#6d28d9,#0f766e);color:#fff;font-weight:800}.cmd-avatar img{width:100%;height:100%;object-fit:cover}.cmd-person-copy{min-width:0}.cmd-person-copy strong,.cmd-person-copy small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cmd-note textarea{width:100%;min-height:105px;resize:vertical;border:1px solid rgba(255,255,255,.09);border-radius:13px;background:#0a111e;color:#fff;padding:11px;margin-top:9px}.owner-empty-v35{color:#aebdce;font-size:10px;padding:12px}
+
+  @media(max-width:1200px){.cmd-kpis,.cmd-attention,.cmd-modules{grid-template-columns:repeat(2,minmax(0,1fr))}.cmd-two{grid-template-columns:1fr}}
+  @media(max-width:700px){.cmd{padding-top:8px}.cmd-hero{align-items:flex-start;flex-direction:column;padding:17px}.cmd-kpis,.cmd-attention,.cmd-modules{grid-template-columns:1fr 1fr}.cmd-kpi{min-height:185px;padding:15px}.cmd-kpi-value strong{font-size:31px}}
+  @media(max-width:470px){.cmd-kpis,.cmd-attention,.cmd-modules{grid-template-columns:1fr}}
 </style>
 
 <div class="cmd">
   <section class="cmd-hero">
-    <div>
-      <small style="color:#c4b5fd;font-weight:800;letter-spacing:.08em">GREENLIFE COMMAND CENTER</small>
-      <h1>داشبورد مدیریتی امروز</h1>
-      <p>هر چیزی که نیاز به تصمیم، پیگیری یا ورود شما دارد از همین‌جا قابل دسترسی است.</p>
-    </div>
+    <div><span class="cmd-hero-kicker">GREENLIFE COMMAND CENTER</span><h1>داشبورد مدیریتی امروز</h1></div>
     <div class="cmd-hero-actions">
       <a class="cmd-btn primary" href="/action-center/">⚡ مرکز اقدام</a>
-      <a class="cmd-btn" href="/meeting-minutes/dashboard/">◈ پیگیری مصوبات</a>
-      <a class="cmd-btn" href="/referrals/">✦ مدیریت شبکه فروش</a>
-      <form method="get" class="owner-branch-filter cmd-filter">
-        <select name="branch" onchange="this.form.submit()">
-          {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' %}<option value="">همه شعب</option>{% endif %}
-          {% for b in branches %}<option value="{{ b.id }}" {% if selected_branch and selected_branch.id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
-        </select>
-      </form>
+      <a class="cmd-btn" href="/meeting-minutes/dashboard/">◈ مصوبات</a>
+      <a class="cmd-btn" href="/referrals/">✦ شبکه فروش</a>
+      <form method="get" class="owner-branch-filter cmd-filter"><select name="branch" onchange="this.form.submit()">{% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' %}<option value="">همه شعب</option>{% endif %}{% for b in branches %}<option value="{{ b.id }}" {% if selected_branch and selected_branch.id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></form>
     </div>
   </section>
 
-  <section class="cmd-grid" aria-label="شاخص‌های اصلی">
-    <a class="cmd-card purple" href="/action-center/"><span class="arrow">←</span><small>نیازمند اقدام</small><strong>{{ data.action_required_count }}</strong><em>موارد در انتظار پیگیری</em></a>
-    <a class="cmd-card amber" href="/reports/"><span class="arrow">←</span><small>گزارش ثبت‌نشده امروز</small><strong>{{ data.missing_reports_today }}</strong><em>نیازمند پیگیری پرسنل</em></a>
-    <a class="cmd-card cyan" href="/attendance/team/"><span class="arrow">←</span><small>حضور امروز</small><strong>{{ data.present_people }}</strong><em>{{ data.attendance_rate }}٪ از کل پرسنل</em></a>
-    <a class="cmd-card green" href="/kpi/"><span class="arrow">←</span><small>میانگین KPI</small><strong>{{ data.average_kpi }}٪</strong><em>حضور، گزارش و وظایف</em></a>
+  <section class="cmd-kpis" aria-label="شاخص‌های مدیریتی">
+    {% if user.profile.role != 'internal_manager' %}
+    <a class="cmd-kpi sales" href="/finance/">
+      <div class="cmd-kpi-head"><span class="cmd-kpi-title">فروش کل</span><span class="cmd-kpi-unit">میلیون تومان</span></div>
+      <div class="cmd-kpi-value"><strong>{{ metrics.sales_today_m|floatformat:0 }}</strong><span>امروز</span></div>
+      <div class="cmd-spark" aria-label="روند فروش هفت روز">{% for x in metrics.sales_7d %}<i style="--h:{{ x.height }}%"></i>{% endfor %}</div>
+      <div class="cmd-kpi-foot"><span class="cmd-mini"><b>{{ metrics.sales_month_m|floatformat:0 }}</b> ماه</span>{% for x in metrics.branch_sales|slice:':4' %}<span class="cmd-mini"><i class="dot" style="--dot:{{ x.color }}"></i>{{ x.name }} <b>{{ x.amount_m|floatformat:0 }}</b></span>{% endfor %}</div>
+    </a>
+    {% else %}
+    <a class="cmd-kpi sales" href="/action-center/"><div class="cmd-kpi-head"><span class="cmd-kpi-title">نیازمند اقدام</span><span class="cmd-kpi-unit">امروز</span></div><div class="cmd-kpi-value"><strong>{{ data.action_required_count }}</strong><span>مورد</span></div><div class="cmd-spark">{% for x in data.trend %}<i style="--h:{% if x.late %}70{% else %}18{% endif %}%"></i>{% endfor %}</div><div class="cmd-kpi-foot"><span class="cmd-mini">عقب‌افتاده <b>{{ data.overdue_tasks }}</b></span><span class="cmd-mini">خرابی <b>{{ data.device_open }}</b></span></div></a>
+    {% endif %}
+
+    <a class="cmd-kpi leads" href="/lead-management/">
+      <div class="cmd-kpi-head"><span class="cmd-kpi-title">لیدهای کل</span><span class="cmd-kpi-unit">ورودی و پیگیری</span></div>
+      <div class="cmd-kpi-value"><strong>{{ metrics.leads_total }}</strong><span>کل</span></div>
+      <div class="cmd-spark" aria-label="روند لید هفت روز">{% for x in metrics.leads_7d %}<i style="--h:{{ x.height }}%"></i>{% endfor %}</div>
+      <div class="cmd-kpi-foot"><span class="cmd-mini">امروز <b>{{ metrics.leads_today }}</b></span><span class="cmd-mini">باز <b>{{ metrics.leads_open }}</b></span>{% for x in metrics.lead_sources|slice:':3' %}<span class="cmd-mini"><i class="dot" style="--dot:{{ x.color }}"></i>{{ x.name }} <b>{{ x.value }}</b></span>{% endfor %}</div>
+    </a>
+
+    <a class="cmd-kpi appts" href="/appointments/schedule/">
+      <div class="cmd-kpi-head"><span class="cmd-kpi-title">نوبت‌های امروز</span><span class="cmd-kpi-unit">مراجعه</span></div>
+      <div class="cmd-kpi-value"><strong>{{ metrics.appointments_today }}</strong><span>نوبت</span></div>
+      <div class="cmd-segments">{% for x in metrics.appointment_mix %}<i style="--n:{{ x.value }};--c:{{ x.color }}"></i>{% empty %}<i style="--n:1;--c:#342a52"></i>{% endfor %}</div>
+      <div class="cmd-kpi-foot"><span class="cmd-mini">مراجعه <b>{{ metrics.arrived_today }}</b></span>{% for x in metrics.appointment_mix|slice:':3' %}<span class="cmd-mini"><i class="dot" style="--dot:{{ x.color }}"></i>{{ x.name }} <b>{{ x.value }}</b></span>{% endfor %}</div>
+    </a>
+
+    <a class="cmd-kpi team" href="/kpi/" style="--p:{{ data.average_kpi }}">
+      <div class="cmd-kpi-head"><span class="cmd-kpi-title">عملکرد تیم</span><span class="cmd-kpi-unit">KPI</span></div>
+      <div class="cmd-kpi-value"><strong>{{ data.average_kpi }}٪</strong><span>میانگین</span></div><div class="cmd-ring" aria-hidden="true"></div>
+      <div style="height:57px"></div>
+      <div class="cmd-kpi-foot"><span class="cmd-mini">حاضر <b>{{ data.present_people }}</b></span><span class="cmd-mini">تأخیر <b>{{ data.counts.late }}</b></span><span class="cmd-mini">گزارش <b>{{ data.reports_today }}</b></span><span class="cmd-mini">تکمیل کار <b>{{ data.task_completion_rate }}٪</b></span></div>
+    </a>
   </section>
 
   <section class="cmd-section">
-    <div class="cmd-section-head"><h2>نیاز به توجه</h2><a href="/action-center/">مشاهده مرکز اقدام</a></div>
+    <div class="cmd-section-head"><h2>نیاز به توجه</h2><a href="/action-center/">مرکز اقدام ←</a></div>
     <div class="cmd-attention">
       <a class="cmd-attn" href="/tasks/"><i>✓</i><div><b>{{ data.overdue_tasks }}</b><span>وظیفه عقب‌افتاده</span></div></a>
-      <a class="cmd-attn" href="/device-issues/manage/"><i>⚒</i><div><b>{{ data.device_open }}</b><span>خرابی دستگاه باز</span></div></a>
-      <a class="cmd-attn" href="/service-requests/"><i>▤</i><div><b>{{ data.request_open }}</b><span>درخواست داخلی باز</span></div></a>
+      <a class="cmd-attn" href="/device-issues/manage/"><i>⚒</i><div><b>{{ data.device_open }}</b><span>خرابی باز</span></div></a>
+      <a class="cmd-attn" href="/service-requests/"><i>▤</i><div><b>{{ data.request_open }}</b><span>درخواست باز</span></div></a>
       <a class="cmd-attn" href="/attendance/team/"><i>◷</i><div><b>{{ data.counts.late }}</b><span>تأخیر امروز</span></div></a>
     </div>
   </section>
 
   <section class="cmd-section">
-    <div class="cmd-section-head"><h2>بخش‌های اصلی</h2><span style="color:#b7c0ce;font-size:12px">برای ورود، روی هر کارت بزنید</span></div>
+    <div class="cmd-section-head"><h2>بخش‌های اصلی</h2><span>عددها جای توضیح را گرفته‌اند</span></div>
     <div class="cmd-modules">
-      <a class="cmd-module" href="/meeting-minutes/dashboard/"><strong>◈ صورت‌جلسات و مصوبات</strong><small>پیگیری مصوبات، مسئول اجرا و مراحل انجام</small><b>ورود به بخش ←</b></a>
-      <a class="cmd-module" href="/referrals/"><strong>✦ شبکه فروش</strong><small>اعضا، لیدها، فروش و عملکرد شبکه</small><b>مدیریت شبکه ←</b></a>
-      {% if user.profile.role != 'internal_manager' %}<a class="cmd-module" href="/finance/"><strong>▧ مالی و درآمد</strong><small>ثبت‌ها، وضعیت تراکنش‌ها و گزارش مالی</small><b>مشاهده مالی ←</b></a>{% endif %}
-      <a class="cmd-module" href="/reports/"><strong>▥ گزارش‌های پرسنل</strong><small>گزارش‌های روزانه و موارد ارسال‌نشده</small><b>مشاهده گزارش‌ها ←</b></a>
-      <a class="cmd-module" href="/employees/"><strong>♙ پرسنل</strong><small>پرونده، نقش، وضعیت و عملکرد اعضای تیم</small><b>مدیریت پرسنل ←</b></a>
-      <a class="cmd-module" href="/attendance/team/"><strong>◷ حضور و غیاب</strong><small>حضور امروز، تأخیر و وضعیت تیم</small><b>مشاهده حضور ←</b></a>
-      <a class="cmd-module" href="/blackboard/"><strong>▰ تخته‌سیاه</strong><small>پیام روز و اطلاع‌رسانی سریع به پرسنل</small><b>مدیریت تخته‌سیاه ←</b></a>
-      <a class="cmd-module" href="/camp/"><strong>△ کمپ گرین‌لایف</strong><small>خرید، انبار، کارگر، پروژه و گزارش‌های کمپ</small><b>ورود به کمپ ←</b></a>
+      {% if user.profile.role != 'internal_manager' %}<a class="cmd-module" href="/finance/"><div class="cmd-module-head"><strong>▧ مالی و درآمد</strong><span>LIVE</span></div><div class="cmd-module-main"><b>{{ metrics.sales_month_m|floatformat:0 }}</b><small>م.ت ماه</small></div><div class="cmd-module-stats"><span>امروز <b>{{ metrics.sales_today_m|floatformat:0 }}</b></span><span>مراکز <b>{{ metrics.branch_sales|length }}</b></span></div><div class="cmd-module-line"></div></a>{% endif %}
+      <a class="cmd-module" href="/lead-management/"><div class="cmd-module-head"><strong>◉ لیدها</strong><span>LIVE</span></div><div class="cmd-module-main"><b>{{ metrics.leads_open }}</b><small>باز</small></div><div class="cmd-module-stats"><span>کل <b>{{ metrics.leads_total }}</b></span><span>امروز <b>{{ metrics.leads_today }}</b></span></div><div class="cmd-module-line"></div></a>
+      <a class="cmd-module" href="/referrals/"><div class="cmd-module-head"><strong>✦ شبکه فروش</strong><span>ماه</span></div><div class="cmd-module-main"><b>{{ metrics.won_month }}</b><small>فروش موفق</small></div><div class="cmd-module-stats"><span>لید امروز <b>{{ metrics.leads_today }}</b></span><span>پیگیری <b>{{ metrics.leads_open }}</b></span></div><div class="cmd-module-line"></div></a>
+      <a class="cmd-module" href="/meeting-minutes/dashboard/"><div class="cmd-module-head"><strong>◈ مصوبات</strong><span>۳۰ روز</span></div><div class="cmd-module-main"><b>{{ metrics.open_meetings }}</b><small>باز</small></div><div class="cmd-module-stats"><span>جلسات <b>{{ metrics.meetings_30d }}</b></span></div><div class="cmd-module-line"></div></a>
+      <a class="cmd-module" href="/reports/"><div class="cmd-module-head"><strong>▥ گزارش پرسنل</strong><span>امروز</span></div><div class="cmd-module-main"><b>{{ data.reports_today }}</b><small>ارسال</small></div><div class="cmd-module-stats"><span>ارسال‌نشده <b>{{ data.missing_reports_today }}</b></span><span>نرخ <b>{{ data.report_rate }}٪</b></span></div><div class="cmd-module-line"></div></a>
+      <a class="cmd-module" href="/attendance/team/"><div class="cmd-module-head"><strong>◷ حضور و غیاب</strong><span>امروز</span></div><div class="cmd-module-main"><b>{{ data.present_people }}</b><small>حاضر</small></div><div class="cmd-module-stats"><span>نرخ <b>{{ data.attendance_rate }}٪</b></span><span>تأخیر <b>{{ data.counts.late }}</b></span></div><div class="cmd-module-line"></div></a>
+      <a class="cmd-module" href="/tasks/"><div class="cmd-module-head"><strong>✓ وظایف</strong><span>LIVE</span></div><div class="cmd-module-main"><b>{{ metrics.open_tasks }}</b><small>باز</small></div><div class="cmd-module-stats"><span>عقب‌افتاده <b>{{ metrics.overdue_tasks }}</b></span><span>تکمیل امروز <b>{{ data.task_completion_rate }}٪</b></span></div><div class="cmd-module-line"></div></a>
+      <a class="cmd-module" href="/device-issues/manage/"><div class="cmd-module-head"><strong>⚒ دستگاه‌ها</strong><span>LIVE</span></div><div class="cmd-module-main"><b>{{ data.device_open }}</b><small>خرابی باز</small></div><div class="cmd-module-stats"><span>جدید <b>{{ data.device_new_count }}</b></span><span>بررسی <b>{{ data.device_reviewing_count }}</b></span></div><div class="cmd-module-line"></div></a>
     </div>
   </section>
 
   <section class="cmd-two">
-    <article class="cmd-panel">
-      <div class="cmd-section-head"><h2>وضعیت پرسنل امروز</h2><a href="/attendance/team/">مشاهده همه</a></div>
-      <div class="cmd-list">
-        {% for p in data.people|slice:':6' %}
-        <a href="/attendance/team/"><div class="cmd-person"><span class="cmd-avatar">{% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.name }}">{% else %}{{ p.name|first }}{% endif %}</span><div class="cmd-person-copy"><strong>{{ p.name }}</strong><small>{{ p.job_title|default:'پرسنل' }} · {{ p.branch }}</small></div></div><span class="status {{ p.status }}">{{ p.status_label }} {% if p.check_in %}· {{ p.check_in }}{% endif %}</span></a>
-        {% empty %}<div class="owner-empty-v35">پرسنلی یافت نشد.</div>{% endfor %}
-      </div>
-    </article>
-
-    <article class="cmd-panel">
-      <div class="cmd-section-head"><h2>اعلان‌های مهم</h2><a href="/notifications/">همه اعلان‌ها</a></div>
-      <div class="cmd-list">
-        {% for n in alerts|slice:':5' %}
-          <a href="/notifications/"><div><strong>{{ n.title }}</strong><small>{{ n.message|truncatechars:70 }}</small></div><span>←</span></a>
-        {% empty %}
-          {% for a in dashboard_announcements|slice:':5' %}<a href="/announcements/"><div><strong>{{ a.title }}</strong><small>{{ a.body|truncatechars:70 }}</small></div><span>←</span></a>
-          {% empty %}<div class="owner-empty-v35">اعلان مهمی وجود ندارد.</div>{% endfor %}
-        {% endfor %}
-      </div>
-    </article>
+    <article class="cmd-panel"><div class="cmd-section-head"><h2>وضعیت پرسنل امروز</h2><a href="/attendance/team/">همه ←</a></div><div class="cmd-list">{% for p in data.people|slice:':6' %}<a href="/attendance/team/"><div class="cmd-person"><span class="cmd-avatar">{% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.name }}">{% else %}{{ p.name|first }}{% endif %}</span><div class="cmd-person-copy"><strong>{{ p.name }}</strong><small>{{ p.job_title|default:'پرسنل' }} · {{ p.branch }}</small></div></div><span class="status {{ p.status }}">{{ p.status_label }} {% if p.check_in %}· {{ p.check_in }}{% endif %}</span></a>{% empty %}<div class="owner-empty-v35">پرسنلی یافت نشد.</div>{% endfor %}</div></article>
+    <article class="cmd-panel"><div class="cmd-section-head"><h2>اعلان‌های مهم</h2><a href="/notifications/">همه ←</a></div><div class="cmd-list">{% for n in alerts|slice:':5' %}<a href="/notifications/"><div><strong>{{ n.title }}</strong><small>{{ n.message|truncatechars:70 }}</small></div><span>←</span></a>{% empty %}{% for a in dashboard_announcements|slice:':5' %}<a href="/announcements/"><div><strong>{{ a.title }}</strong><small>{{ a.body|truncatechars:70 }}</small></div><span>←</span></a>{% empty %}<div class="owner-empty-v35">اعلان مهمی وجود ندارد.</div>{% endfor %}{% endfor %}</div></article>
   </section>
 
   <section class="cmd-two">
-    <article class="cmd-panel">
-      <div class="cmd-section-head"><h2>آخرین درخواست‌های داخلی</h2><a href="/service-requests/">مشاهده همه</a></div>
-      <div class="cmd-list">
-        {% for item in data.request_activity|slice:':5' %}
-          <a href="/service-requests/"><div class="cmd-person"><span class="cmd-avatar">{% if item.avatar %}<img src="{{ item.avatar }}" alt="{{ item.person }}">{% else %}{{ item.person|first }}{% endif %}</span><div class="cmd-person-copy"><strong>{{ item.title|truncatechars:44 }}</strong><small>{{ item.person }} · {{ item.status_label }}</small></div></div><span>←</span></a>
-        {% empty %}<div class="owner-empty-v35">هنوز درخواستی ثبت نشده است.</div>{% endfor %}
-      </div>
-    </article>
-
-    <article class="cmd-panel cmd-note">
-      <div class="cmd-section-head"><h2>یادداشت سریع من</h2><span>✎</span></div>
-      <textarea id="ownerQuickNoteV35" rows="4" placeholder="یادداشتی بنویسید..."></textarea>
-      <small id="ownerNoteStateV35" style="color:#8d98a8">به‌صورت خودکار روی همین دستگاه ذخیره می‌شود.</small>
-    </article>
+    <article class="cmd-panel"><div class="cmd-section-head"><h2>آخرین درخواست‌های داخلی</h2><a href="/service-requests/">همه ←</a></div><div class="cmd-list">{% for item in data.request_activity|slice:':5' %}<a href="/service-requests/"><div class="cmd-person"><span class="cmd-avatar">{% if item.avatar %}<img src="{{ item.avatar }}" alt="{{ item.person }}">{% else %}{{ item.person|first }}{% endif %}</span><div class="cmd-person-copy"><strong>{{ item.title|truncatechars:44 }}</strong><small>{{ item.person }} · {{ item.status_label }}</small></div></div><span>←</span></a>{% empty %}<div class="owner-empty-v35">هنوز درخواستی ثبت نشده است.</div>{% endfor %}</div></article>
+    <article class="cmd-panel cmd-note"><div class="cmd-section-head"><h2>یادداشت سریع من</h2><span>✎</span></div><textarea id="ownerQuickNoteV35" rows="4" placeholder="یادداشتی بنویسید..."></textarea><small id="ownerNoteStateV35" style="color:#9cacbf">خودکار روی همین دستگاه ذخیره می‌شود.</small></article>
   </section>
 </div>
-
 <script>
-(function(){
-  const note=document.getElementById('ownerQuickNoteV35'),state=document.getElementById('ownerNoteStateV35');
-  if(!note)return;
-  const key='greenlife_owner_quick_note_v35';
-  note.value=localStorage.getItem(key)||'';
-  let timer;
-  note.addEventListener('input',()=>{
-    clearTimeout(timer);
-    if(state)state.textContent='در حال ذخیره...';
-    timer=setTimeout(()=>{localStorage.setItem(key,note.value);if(state)state.textContent='ذخیره شد ✓';},300);
-  });
-})();
+(function(){const note=document.getElementById('ownerQuickNoteV35'),state=document.getElementById('ownerNoteStateV35');if(!note)return;const key='greenlife_owner_quick_note_v35';note.value=localStorage.getItem(key)||'';let timer;note.addEventListener('input',()=>{clearTimeout(timer);if(state)state.textContent='در حال ذخیره...';timer=setTimeout(()=>{localStorage.setItem(key,note.value);if(state)state.textContent='ذخیره شد ✓';},300);});})();
 </script>
 {% endblock %}
