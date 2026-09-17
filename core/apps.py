@@ -32,3 +32,8 @@ class CoreConfig(AppConfig):
         # dashboard flow; wide screens place the explanation beside the value.
         from .call_center_performance_readability import install_call_center_performance_readability
         install_call_center_performance_readability()
+
+        # Recolor only neutral-black inherited buttons on the staff dashboard;
+        # semantic green/purple/blue controls keep their existing brand colors.
+        from .call_center_button_palette import install_call_center_button_palette
+        install_call_center_button_palette()
