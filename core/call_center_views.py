@@ -41,6 +41,86 @@ def mark_call_started(request, pk):
     })
 
 
+_CALL_CENTER_STAFF_STYLE = r'''<style id="greenlife-call-center-staff-ui-v8">
+/* Staff-only call-center readability + wide-screen workspace. */
+@media (min-width: 1180px){
+  .cc-v5{max-width:1880px!important;width:100%!important;gap:14px!important}
+  .cc-v5-stage{grid-template-columns:minmax(0,1fr) 340px!important;gap:14px!important}
+  .cc-v5-patient{grid-template-columns:minmax(300px,1.55fr) minmax(120px,.72fr) 110px 128px 185px!important;gap:12px!important;padding:12px 14px!important}
+  .cc-v5-hero{grid-template-columns:minmax(0,1.6fr) minmax(350px,.72fr)!important;padding:20px 24px!important}
+  .cc-v5-toolbar{grid-template-columns:minmax(380px,1fr) 170px auto!important;padding:10px!important}
+  .cc-v5-side{top:74px!important}
+}
+
+/* Raise contrast on the white theme. */
+.cc-v5{--muted:#59677a!important;color:#1f2d43!important}
+.cc-v5 p,.cc-v5 small{color:#59677a!important}
+.cc-v5-kpi small{color:rgba(255,255,255,.92)!important}
+.cc-v5 .cc-v5-hero p,
+.cc-v5 .cc-v5-motto small,
+.cc-v5 .cc-v6-flow-step small,
+.cc-v5 .cc-v7-performance-head p,
+.cc-v5 .cc-v7-metric small,
+.cc-v5 .cc-v5-group-label small,
+.cc-v5 .cc-v5-section-head p{color:#526176!important}
+.cc-v5 .cc-v5-section-head a{color:#5f3f8d!important}
+.cc-v5 .cc-v6-flow-step strong,
+.cc-v5 .cc-v7-metric span,
+.cc-v5 .cc-v7-funnel-step span{color:#4b5b70!important}
+
+/* Font sizes on desktop were too small for the operators' wide monitors. */
+.cc-v5 p{font-size:11px!important;line-height:1.85!important}
+.cc-v5 small{font-size:10px!important;line-height:1.7!important}
+.cc-v5 label,.cc-v5 input,.cc-v5 select,.cc-v5 textarea{font-size:11px!important}
+.cc-v5 .cc-v5-eyebrow{font-size:10px!important}
+.cc-v5 .cc-v5-hero h1{font-size:25px!important}
+.cc-v5 .cc-v5-motto strong{font-size:12px!important}
+.cc-v5 .cc-v6-flow-step strong{font-size:10px!important}
+.cc-v5 .cc-v5-kpi-label{font-size:11px!important}
+.cc-v5 .cc-v5-kpi strong{font-size:32px!important}
+.cc-v5 .cc-v7-performance-head h2{font-size:14px!important}
+.cc-v5 .cc-v7-period{font-size:10px!important;padding:7px 11px!important}
+.cc-v5 .cc-v7-metric span{font-size:10px!important}
+.cc-v5 .cc-v7-metric strong{font-size:23px!important}
+.cc-v5 .cc-v7-funnel-step span{font-size:9px!important}
+.cc-v5 .cc-v7-funnel-step b{font-size:16px!important}
+.cc-v5 .cc-v5-action{height:48px!important;font-size:11px!important}
+.cc-v5 .cc-v5-count{font-size:9px!important;min-width:20px!important;height:20px!important}
+.cc-v5 .cc-v5-search input,.cc-v5 .cc-v5-select{height:42px!important;font-size:11px!important}
+.cc-v5 .cc-v5-quick button{height:36px!important;font:900 10px Tahoma!important}
+.cc-v5 .cc-v5-group-label strong{font-size:11px!important}
+.cc-v5 .cc-v5-chip{font-size:10px!important;padding:7px 10px!important}
+.cc-v5 .cc-v5-chip b{font-size:9px!important}
+.cc-v5 .cc-v5-group-new input{height:38px!important;font-size:10px!important}
+.cc-v5 .cc-v5-group-new button{height:38px!important;font:900 10px Tahoma!important}
+.cc-v5 .cc-v5-lead-new input,.cc-v5 .cc-v5-lead-new select{height:42px!important;font:800 11px Tahoma!important}
+.cc-v5 .cc-v5-lead-new button{height:42px!important;font:900 11px Tahoma!important}
+.cc-v5 .cc-v5-section-head h2,.cc-v5 .cc-v5-section-head h3{font-size:14px!important}
+.cc-v5 .cc-v5-section-head a{font-size:10px!important}
+.cc-v5 .cc-v5-patient{min-height:76px!important}
+.cc-v5 .cc-v5-person-avatar{width:54px!important;height:54px!important}
+.cc-v5 .cc-v5-person{grid-template-columns:54px minmax(0,1fr)!important}
+.cc-v5 .cc-v5-status{font-size:10px!important;padding:7px 9px!important}
+.cc-v5 .cc-v5-row-actions a,.cc-v5 .cc-v5-row-actions button{font-size:10px!important;min-height:35px!important}
+.cc-v5 .cc-v5-open{font-size:10px!important}
+
+/* Make the working list visually dominant. */
+.cc-v5-work-queue-card{border-color:#dce9e3!important;box-shadow:0 12px 34px rgba(31,91,65,.07)!important}
+.cc-v5-work-queue-card>.cc-v5-section-head{background:linear-gradient(90deg,#f3faf6,#fff)!important;border-radius:18px 18px 0 0}
+.cc-v5-work-queue-card>.cc-v5-section-head h2{color:#1f684b!important}
+.cc-v5-patient.cc-priority-new{border-color:#d7eade!important;background:#fbfffd!important}
+.cc-priority-pill{display:inline-flex;align-items:center;margin-inline-start:6px;padding:4px 7px;border-radius:999px;background:#eaf8f1;color:#247a58!important;font:900 9px Tahoma!important;white-space:nowrap}
+.cc-whatsapp-action{display:inline-flex;align-items:center;justify-content:center;padding:7px 9px;border:1px solid #d5e9df;border-radius:9px;background:#f2fbf6;color:#247a58!important;font:900 10px Tahoma!important;white-space:nowrap;text-decoration:none!important}
+.cc-result-action{background:#f3eef9!important;color:#64448f!important;border-color:#dfd4ec!important}
+
+@media (max-width: 1179px){
+  .cc-v5 p{font-size:10px!important}
+  .cc-v5 small{font-size:9px!important}
+  .cc-v5 .cc-v5-action{font-size:10px!important}
+}
+</style>'''
+
+
 _CALL_TRACKING_SCRIPT = r'''<script>
 (function(){
   if(window.__greenlifeCallTrackingInstalled)return;
@@ -70,10 +150,21 @@ _CALL_TRACKING_SCRIPT = r'''<script>
     return pm?pm[1]:null;
   }
 
+  function normalizeIranMobile(value){
+    var digits=String(value||'').replace(/\D/g,'');
+    if(digits.indexOf('0098')===0)digits=digits.slice(4);
+    if(digits.indexOf('98')===0)digits=digits.slice(2);
+    if(digits.indexOf('0')===0)digits=digits.slice(1);
+    return digits.length===10&&digits.indexOf('9')===0?'98'+digits:'';
+  }
+
   function updateRow(row,label){
     if(!row)return;
     var badge=row.querySelector('.cc-v5-status');
     if(badge)badge.textContent=label||'تماس گرفته شد';
+    row.classList.remove('cc-priority-new');
+    var priority=row.querySelector('.cc-priority-pill');
+    if(priority)priority.remove();
     var done=row.querySelector('.cc-contact-done');
     if(done){
       done.textContent='✓ تماس ثبت شد';
@@ -114,8 +205,24 @@ _CALL_TRACKING_SCRIPT = r'''<script>
     });
   }
 
+  function markWorkQueue(){
+    var patients=document.querySelector('.cc-v5-patients');
+    if(!patients)return;
+    var card=patients.closest('.cc-v5-card');
+    if(!card)return;
+    card.classList.add('cc-v5-work-queue-card');
+    var head=card.querySelector('.cc-v5-section-head');
+    if(!head)return;
+    var title=head.querySelector('h2,h3');
+    if(title)title.textContent='صف کار امروز';
+    var copy=head.querySelector('p');
+    if(copy)copy.textContent='از لیدهای نیازمند پیگیری شروع کن؛ نتیجه هر تماس را همان لحظه ثبت کن.';
+  }
+
   function enhanceDashboard(){
     if(location.pathname!='/call-center/'&&location.pathname!='/call-center')return;
+
+    markWorkQueue();
 
     var actions=document.querySelectorAll('a.cc-v5-action[href*="status=contacted"]');
     for(var i=0;i<actions.length;i++){
@@ -130,18 +237,45 @@ _CALL_TRACKING_SCRIPT = r'''<script>
       var row=rows[j];
       var actionsBox=row.querySelector('.cc-v5-row-actions');
       var open=row.querySelector('a.cc-v5-open[href*="/call-center/leads/"]');
-      if(!actionsBox||!open||actionsBox.querySelector('.cc-contact-done'))continue;
+      if(!actionsBox||!open)continue;
       var match=(open.getAttribute('href')||'').match(/\/call-center\/leads\/(\d+)\//);
       if(!match)continue;
+
+      open.classList.add('cc-result-action');
+      if((open.textContent||'').trim().length<18)open.textContent='نتیجه / نوبت';
+
+      var tel=row.querySelector('a[href^="tel:"]');
+      if(tel&&!actionsBox.querySelector('.cc-whatsapp-action')){
+        var mobile=normalizeIranMobile(tel.getAttribute('href'));
+        if(mobile){
+          var whatsapp=document.createElement('a');
+          whatsapp.className='cc-whatsapp-action';
+          whatsapp.href='https://wa.me/'+mobile;
+          whatsapp.target='_blank';
+          whatsapp.rel='noopener';
+          whatsapp.textContent='واتساپ';
+          actionsBox.appendChild(whatsapp);
+        }
+      }
+
       var badge=row.querySelector('.cc-v5-status');
       if(!badge||badge.textContent.trim()!=='جدید')continue;
+      row.classList.add('cc-priority-new');
+      var person=row.querySelector('.cc-v5-person');
+      if(person&&!row.querySelector('.cc-priority-pill')){
+        var pill=document.createElement('span');
+        pill.className='cc-priority-pill';
+        pill.textContent='اولویت تماس';
+        person.appendChild(pill);
+      }
+      if(actionsBox.querySelector('.cc-contact-done'))continue;
 
       var button=document.createElement('button');
       button.type='button';
       button.className='cc-contact-done';
       button.dataset.leadId=match[1];
       button.textContent='✓ تماس انجام شد';
-      button.style.cssText='border:1px solid #cfe9df;background:#eef9f4;color:#247a58;border-radius:9px;padding:7px 9px;font:900 8px Tahoma;cursor:pointer;white-space:nowrap';
+      button.style.cssText='border:1px solid #bfe1d1;background:#eef9f4;color:#176b4a;border-radius:9px;padding:7px 10px;font:900 10px Tahoma;cursor:pointer;white-space:nowrap';
       actionsBox.appendChild(button);
     }
   }
@@ -178,7 +312,7 @@ _CALL_TRACKING_SCRIPT = r'''<script>
 
 
 class CallCenterCallTrackingMiddleware:
-    """Inject contact tracking only into authenticated call-center HTML pages."""
+    """Inject staff-only call tracking and readability UI on call-center pages."""
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -200,8 +334,8 @@ class CallCenterCallTrackingMiddleware:
         content = response.content
         marker = b'</body>'
         if marker in content and b'__greenlifeCallTrackingInstalled' not in content:
-            script = _CALL_TRACKING_SCRIPT.encode('utf-8')
-            response.content = content.replace(marker, script + marker, 1)
+            payload = (_CALL_CENTER_STAFF_STYLE + _CALL_TRACKING_SCRIPT).encode('utf-8')
+            response.content = content.replace(marker, payload + marker, 1)
             if response.has_header('Content-Length'):
                 response['Content-Length'] = str(len(response.content))
         return response
