@@ -37,3 +37,8 @@ class CoreConfig(AppConfig):
         # semantic green/purple/blue controls keep their existing brand colors.
         from .call_center_button_palette import install_call_center_button_palette
         install_call_center_button_palette()
+
+        # Reserve extra horizontal space for the longer call-status action so
+        # labels such as «تماس انجام شد» / «تماس گرفته شد» never get clipped.
+        from .call_center_action_layout import install_call_center_action_layout
+        install_call_center_action_layout()
