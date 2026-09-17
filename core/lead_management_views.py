@@ -3,7 +3,9 @@ from datetime import timedelta
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q, Sum
 from django.shortcuts import render
+from django.urls import reverse
 from django.utils import timezone
+from django.utils.html import format_html
 
 from .call_center_identity import (
     FlowerLeadProxy, FlowerProfileProxy, call_center_display_name,
@@ -56,6 +58,46 @@ def _enrich_referral_group_label(lead):
     if creator and getattr(creator, 'id', None) != getattr(referrer, 'user_id', None):
         label += f' · ثبت: {_person_name(creator)}'
     group.name = label
+
+
+def _attention_reason(lead, now, today):
+    if not lead.assigned_to_id:
+        return 'بدون مسئول؛ باید به یک اپراتور تخصیص داده شود'
+    if lead.status == 'new' and lead.created_at < now - timedelta(hours=2):
+        return 'بیش از ۲ ساعت از ورود گذشته و هنوز تماس ثبت نشده'
+    if lead.status in OPEN_STATUSES and lead.next_follow_up and lead.next_follow_up < today:
+        return 'موعد پیگیری گذشته و باید دوباره پیگیری شود'
+    return 'نیاز به بررسی مدیر'
+
+
+class AttentionLeadProxy(FlowerLeadProxy):
+    """Lead Hub proxy that explains why a lead is urgent and gives managers actions."""
+
+    def __init__(self, lead, now, today):
+        super().__init__(lead)
+        self._attention_now = now
+        self._attention_today = today
+
+    @property
+    def full_name(self):
+        lead = self._flower_lead
+        reason = _attention_reason(lead, self._attention_now, self._attention_today)
+        manage_url = reverse('referral_lead_manage', args=[lead.pk])
+        phone = ''.join(ch for ch in (lead.phone or '') if ch.isdigit() or ch == '+')
+        manage_label = 'تخصیص مسئول' if not lead.assigned_to_id else 'باز کردن و پیگیری'
+        return format_html(
+            '<span style="display:block;font-weight:900;color:#fff;margin-bottom:4px">{}</span>'
+            '<span style="display:block;color:#ffd27d;font-size:9px;margin-bottom:6px;white-space:normal;line-height:1.7">علت: {}</span>'
+            '<span style="display:flex;gap:5px;flex-wrap:wrap">'
+            '<a href="tel:{}" style="display:inline-flex;align-items:center;padding:5px 8px;border-radius:8px;background:#153b32;color:#86f0c0;text-decoration:none;font-size:9px;font-weight:900">☎ تماس</a>'
+            '<a href="{}" style="display:inline-flex;align-items:center;padding:5px 8px;border-radius:8px;background:#302753;color:#d8ccff;text-decoration:none;font-size:9px;font-weight:900">{}</a>'
+            '</span>',
+            lead.full_name,
+            reason,
+            phone,
+            manage_url,
+            manage_label,
+        )
 
 
 def _channel_q(channel):
@@ -149,4 +191,4 @@ def lead_management_dashboard(request):
     recent=list(filtered.order_by('-created_at')[:150]); attention=list(leads.filter(Q(assigned_to__isnull=True)|Q(status='new',created_at__lt=now-timedelta(hours=2))|Q(status__in=OPEN_STATUSES,next_follow_up__lt=today)).distinct().order_by('created_at')[:20])
     for lead in recent: _enrich_referral_group_label(lead)
     integration_rows=[{'name':'Instagram Form','state':'connected','detail':'فرم فعلی مستقیماً وارد ReferralLead می‌شود.'},{'name':'Website','state':'ready','detail':'برای اتصال فرم سایت به ورودی یکپارچه آماده است.'},{'name':'CRM','state':'ready','detail':'وب‌هوک/API ورودی برای اتصال CRM طراحی شده است.'},{'name':'WhatsApp / Campaigns','state':'ready','detail':'قابل اتصال با source و UTM مستقل.'}]
-    return render(request,'core/lead_management_dashboard.html',{'lead_kpis':{'total':total,'today':today_count,'week':week_count,'month':month_count,'contacted':contacted_count,'appointments':appointment_count,'won':won_count,'conversion':conversion,'contact_rate':contact_rate,'unassigned':unassigned_count,'overdue':overdue_count,'untouched':untouched_count,'duplicates':duplicate_phones,'sales_amount':sales_amount,'instagram_sales_amount':instagram_sales_amount,'website_sales_amount':website_sales_amount},'status_rows':status_rows,'source_rows':source_rows,'group_rows':group_rows,'operator_rows':operator_rows,'recent_leads':[FlowerLeadProxy(lead) for lead in recent],'attention_leads':[FlowerLeadProxy(lead) for lead in attention],'integration_rows':integration_rows,'operators':[FlowerProfileProxy(op) for op in operators],'source_filter':source_filter,'status_filter':status_filter,'operator_filter':operator_filter,'status_choices':STATUS_FILTER_CHOICES})
+    return render(request,'core/lead_management_dashboard.html',{'lead_kpis':{'total':total,'today':today_count,'week':week_count,'month':month_count,'contacted':contacted_count,'appointments':appointment_count,'won':won_count,'conversion':conversion,'contact_rate':contact_rate,'unassigned':unassigned_count,'overdue':overdue_count,'untouched':untouched_count,'duplicates':duplicate_phones,'sales_amount':sales_amount,'instagram_sales_amount':instagram_sales_amount,'website_sales_amount':website_sales_amount},'status_rows':status_rows,'source_rows':source_rows,'group_rows':group_rows,'operator_rows':operator_rows,'recent_leads':[FlowerLeadProxy(lead) for lead in recent],'attention_leads':[AttentionLeadProxy(lead, now, today) for lead in attention],'integration_rows':integration_rows,'operators':[FlowerProfileProxy(op) for op in operators],'source_filter':source_filter,'status_filter':status_filter,'operator_filter':operator_filter,'status_choices':STATUS_FILTER_CHOICES})
