@@ -46,7 +46,7 @@ _CALL_CENTER_STAFF_STYLE = r'''<style id="greenlife-call-center-staff-ui-v8">
 @media (min-width: 1180px){
   .cc-v5{max-width:1880px!important;width:100%!important;gap:14px!important}
   .cc-v5-stage{grid-template-columns:minmax(0,1fr) 340px!important;gap:14px!important}
-  .cc-v5-patient{grid-template-columns:minmax(300px,1.55fr) minmax(120px,.72fr) 110px 128px 185px!important;gap:12px!important;padding:12px 14px!important}
+  .cc-v5-patient{grid-template-columns:minmax(300px,1.55fr) minmax(120px,.72fr) 110px 128px 220px!important;gap:12px!important;padding:12px 14px!important}
   .cc-v5-hero{grid-template-columns:minmax(0,1.6fr) minmax(350px,.72fr)!important;padding:20px 24px!important}
   .cc-v5-toolbar{grid-template-columns:minmax(380px,1fr) 170px auto!important;padding:10px!important}
   .cc-v5-side{top:74px!important}
@@ -101,6 +101,7 @@ _CALL_CENTER_STAFF_STYLE = r'''<style id="greenlife-call-center-staff-ui-v8">
 .cc-v5 .cc-v5-person-avatar{width:54px!important;height:54px!important}
 .cc-v5 .cc-v5-person{grid-template-columns:54px minmax(0,1fr)!important}
 .cc-v5 .cc-v5-status{font-size:10px!important;padding:7px 9px!important}
+.cc-v5 .cc-v5-row-actions{flex-wrap:wrap!important;align-items:center!important;row-gap:5px!important}
 .cc-v5 .cc-v5-row-actions a,.cc-v5 .cc-v5-row-actions button{font-size:10px!important;min-height:35px!important}
 .cc-v5 .cc-v5-open{font-size:10px!important}
 
@@ -109,7 +110,7 @@ _CALL_CENTER_STAFF_STYLE = r'''<style id="greenlife-call-center-staff-ui-v8">
 .cc-v5-work-queue-card>.cc-v5-section-head{background:linear-gradient(90deg,#f3faf6,#fff)!important;border-radius:18px 18px 0 0}
 .cc-v5-work-queue-card>.cc-v5-section-head h2{color:#1f684b!important}
 .cc-v5-patient.cc-priority-new{border-color:#d7eade!important;background:#fbfffd!important}
-.cc-priority-pill{display:inline-flex;align-items:center;margin-inline-start:6px;padding:4px 7px;border-radius:999px;background:#eaf8f1;color:#247a58!important;font:900 9px Tahoma!important;white-space:nowrap}
+.cc-priority-pill{display:inline-flex;align-items:center;margin-top:5px;margin-inline-start:6px;padding:4px 7px;border-radius:999px;background:#eaf8f1;color:#247a58!important;font:900 9px Tahoma!important;white-space:nowrap}
 .cc-whatsapp-action{display:inline-flex;align-items:center;justify-content:center;padding:7px 9px;border:1px solid #d5e9df;border-radius:9px;background:#f2fbf6;color:#247a58!important;font:900 10px Tahoma!important;white-space:nowrap;text-decoration:none!important}
 .cc-result-action{background:#f3eef9!important;color:#64448f!important;border-color:#dfd4ec!important}
 
@@ -261,12 +262,12 @@ _CALL_TRACKING_SCRIPT = r'''<script>
       var badge=row.querySelector('.cc-v5-status');
       if(!badge||badge.textContent.trim()!=='جدید')continue;
       row.classList.add('cc-priority-new');
-      var person=row.querySelector('.cc-v5-person');
-      if(person&&!row.querySelector('.cc-priority-pill')){
+      var personCopy=row.querySelector('.cc-v5-person-copy');
+      if(personCopy&&!row.querySelector('.cc-priority-pill')){
         var pill=document.createElement('span');
         pill.className='cc-priority-pill';
         pill.textContent='اولویت تماس';
-        person.appendChild(pill);
+        personCopy.appendChild(pill);
       }
       if(actionsBox.querySelector('.cc-contact-done'))continue;
 
