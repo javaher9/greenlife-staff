@@ -1,118 +1,174 @@
-"""Install a persistent, staff-only internal-message dock for call-center screens.
+"""Install the call-center staff cartable as an integrated left sidebar.
 
-The existing call-center middleware already injects staff-only CSS/JS.  This
-module extends those payloads during app startup, keeping the manager UI and
-other roles untouched.
+The call-center dashboard already has a left appointment column.  This module
+reuses that column instead of creating floating rails/panels, so the cartable
+never overlaps the lead workspace.  It is injected only for call-center staff
+through the existing role-scoped middleware.
 """
 
-_DOCK_STYLE = r'''<style id="greenlife-call-center-dock-v1">
+_DOCK_STYLE = r'''<style id="greenlife-call-center-dock-v2">
+/* Retire the old floating dock completely. */
+.cc-dock-rail,.cc-dock-panel{display:none!important}
+
 @media (min-width:1100px){
-  .cc-dock-rail{
-    position:fixed;left:16px;bottom:18px;z-index:132;width:64px;
-    display:flex;flex-direction:column;align-items:center;gap:8px;padding:9px 7px;
-    border:1px solid #dfe5ec;border-radius:20px;background:rgba(255,255,255,.97);
-    box-shadow:0 18px 45px rgba(31,45,68,.16);backdrop-filter:blur(12px);direction:rtl
+  .cc-v5-stage.cc-side-v2-ready{
+    grid-template-columns:minmax(0,1fr) 72px!important;
+    gap:14px!important;align-items:start!important;
+    transition:grid-template-columns .18s ease
   }
-  .cc-dock-main{
-    width:48px;height:48px;border:0;border-radius:15px;background:#7351a4;color:#fff;
-    display:grid;place-items:center;cursor:pointer;font:900 10px Tahoma;line-height:1.25;
-    box-shadow:0 8px 20px rgba(91,61,140,.22);position:relative
+  .cc-v5-stage.cc-side-v2-ready.cc-side-v2-expanded{
+    grid-template-columns:minmax(0,1fr) minmax(330px,360px)!important
   }
-  .cc-dock-main .cc-dock-unread{
-    position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;
-    border-radius:999px;background:#c73b59;color:#fff;border:2px solid #fff;
-    display:grid;place-items:center;font:900 8px Tahoma
+  .cc-v5-side.cc-side-v2{
+    position:sticky!important;top:74px!important;min-width:0!important;width:100%!important;
+    align-self:start!important;z-index:10!important;overflow:visible!important
   }
-  .cc-dock-favs{display:flex;flex-direction:column;gap:7px;align-items:center;max-height:290px;overflow:auto;width:100%}
-  .cc-dock-fav,.cc-dock-add{
-    width:46px;min-height:46px;border:1px solid #e1e6ed;border-radius:14px;background:#f8fafc;
-    color:#334157;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:2px;padding:4px;cursor:pointer;font-family:Tahoma;overflow:hidden
+  .cc-side-v2-shell{
+    width:100%;display:grid;grid-template-columns:72px minmax(0,1fr);direction:ltr;
+    border:1px solid #e0e6ed;border-radius:18px;background:#fff;
+    box-shadow:0 12px 30px rgba(35,47,67,.08);overflow:hidden;
+    transition:grid-template-columns .18s ease
   }
-  .cc-dock-fav:hover,.cc-dock-add:hover{border-color:#d5c6e7;background:#f7f2fc}
-  .cc-dock-fav b{font-size:12px;color:#684793;line-height:1}
-  .cc-dock-fav span{display:block;width:100%;font-size:7px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;color:#4e5c70}
-  .cc-dock-add{font-size:19px;font-weight:900;color:#7351a4}
-  .cc-dock-panel{
-    position:fixed!important;left:90px!important;bottom:18px!important;z-index:131!important;
-    width:min(410px,calc(100vw - 120px))!important;max-height:78vh!important;
-    display:grid!important;grid-template-rows:auto auto minmax(150px,1fr) auto!important;
-    border:1px solid #dfe5ec!important;border-radius:20px!important;background:#fff!important;
-    box-shadow:0 24px 60px rgba(28,40,61,.20)!important;overflow:hidden!important;
-    transform:translateX(-18px) scale(.98);opacity:0;pointer-events:none;
-    transition:transform .18s ease,opacity .18s ease
+  .cc-v5-stage:not(.cc-side-v2-expanded) .cc-side-v2-shell{grid-template-columns:72px 0}
+  .cc-side-v2-rail{
+    width:72px;min-height:420px;padding:9px 7px;display:flex;flex-direction:column;align-items:center;
+    gap:8px;background:linear-gradient(180deg,#fbfcfd,#f6f8fb);border-right:1px solid #e8ecf1;direction:rtl
   }
-  .cc-dock-panel.is-expanded{transform:translateX(0) scale(1);opacity:1;pointer-events:auto}
-  .cc-dock-panel .cc-v5-section-head{padding:13px 14px!important;background:linear-gradient(135deg,#fbf9fe,#f7fbf9)!important}
-  .cc-dock-panel .cc-v5-section-head h3{font-size:13px!important}
-  .cc-dock-minimize{
-    margin-inline-start:auto;border:1px solid #dfe5ec;background:#fff;color:#566379;border-radius:9px;
-    width:32px;height:32px;display:grid;place-items:center;cursor:pointer;font:900 15px Tahoma
+  .cc-side-v2-main,.cc-side-v2-schedule,.cc-side-v2-fav,.cc-side-v2-add{
+    width:54px;min-height:52px;border:1px solid #dfe5ec;border-radius:14px;background:#fff;color:#344258;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:5px;
+    cursor:pointer;font-family:Tahoma,sans-serif;text-decoration:none!important;position:relative;box-shadow:none
   }
-  .cc-dock-tools{padding:9px 11px;border-bottom:1px solid #edf0f4;background:#fff}
-  .cc-dock-tools-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
-  .cc-dock-tools-title{font:900 9px Tahoma;color:#425067}
-  .cc-dock-star-current{border:1px solid #ded3eb;background:#f6f1fb;color:#65458f;border-radius:9px;padding:6px 8px;cursor:pointer;font:900 8px Tahoma}
-  .cc-dock-fav-chips{display:flex;gap:5px;flex-wrap:wrap;min-height:28px}
-  .cc-dock-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 7px;border:1px solid #e1e6ed;border-radius:999px;background:#fafbfd;color:#46546b;font:900 8px Tahoma;cursor:pointer}
-  .cc-dock-chip button{width:17px;height:17px;padding:0;border:0;border-radius:50%;background:#eceff4;color:#6a7482;cursor:pointer;font:900 10px Tahoma}
-  .cc-dock-empty{color:#7f8b9b;font:800 8px Tahoma;padding:5px 1px}
-  .cc-dock-panel .cc-v6-chat-feed{max-height:300px!important;min-height:150px!important}
-  .cc-dock-panel .cc-v6-chat-compose{padding:10px!important}
-  .cc-dock-panel .cc-v6-chat-form{grid-template-columns:135px minmax(0,1fr) 64px!important}
-  .cc-dock-panel .cc-v6-chat-form select,.cc-dock-panel .cc-v6-chat-form textarea{font-size:10px!important}
-  .cc-dock-source-cleared{grid-template-columns:1fr!important}
+  .cc-side-v2-main{background:#eef8f3;border-color:#cfe5da;color:#1f7252;font-weight:900}
+  .cc-side-v2-schedule{margin-top:auto;background:#f6f1fb;border-color:#dfd4ec;color:#684793;font-weight:900}
+  .cc-side-v2-main:hover,.cc-side-v2-schedule:hover,.cc-side-v2-fav:hover,.cc-side-v2-add:hover{transform:translateY(-1px);box-shadow:0 6px 15px rgba(38,54,75,.09)}
+  .cc-side-v2-main .ico,.cc-side-v2-schedule .ico{font-size:17px;line-height:1}
+  .cc-side-v2-main .txt,.cc-side-v2-schedule .txt{font-size:8px;font-weight:900;line-height:1.3}
+  .cc-side-v2-unread{
+    position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;
+    background:#c6425e;color:#fff;border:2px solid #fff;display:grid;place-items:center;font:900 8px Tahoma
+  }
+  .cc-side-v2-favs{display:flex;flex-direction:column;align-items:center;gap:7px;width:100%;max-height:270px;overflow:auto;padding:2px 0}
+  .cc-side-v2-fav{min-height:50px;overflow:hidden}
+  .cc-side-v2-fav b{font-size:14px;color:#684793;line-height:1}
+  .cc-side-v2-fav span{display:block;width:100%;font-size:7px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;color:#4e5c70}
+  .cc-side-v2-add{min-height:44px;font-size:20px;font-weight:900;color:#7351a4;background:#faf8fc}
+  .cc-side-v2-divider{width:34px;height:1px;background:#e2e7ed;margin:2px 0}
+
+  .cc-side-v2-panel{
+    min-width:0;overflow:hidden;direction:rtl;background:#fff;opacity:1;transition:opacity .12s ease
+  }
+  .cc-v5-stage:not(.cc-side-v2-expanded) .cc-side-v2-panel{opacity:0;pointer-events:none}
+  .cc-side-v2-head{
+    height:54px;padding:8px 10px;display:grid;grid-template-columns:minmax(0,1fr) 34px;gap:8px;align-items:center;
+    border-bottom:1px solid #e9edf2;background:#fbfcfe
+  }
+  .cc-side-v2-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;background:#f0f3f7;border-radius:10px;padding:3px}
+  .cc-side-v2-tab{height:32px;border:0;border-radius:8px;background:transparent;color:#667489;font:900 9px Tahoma;cursor:pointer}
+  .cc-side-v2-tab.is-active{background:#fff;color:#26374d;box-shadow:0 2px 8px rgba(35,47,67,.09)}
+  .cc-side-v2-collapse{width:34px;height:34px;border:1px solid #dfe5ec;border-radius:9px;background:#fff;color:#536277;font:900 18px Tahoma;cursor:pointer}
+  .cc-side-v2-tools{padding:9px 10px;border-bottom:1px solid #edf0f4;background:#fff}
+  .cc-side-v2-tools-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
+  .cc-side-v2-tools-title{font:900 9px Tahoma;color:#45536a}
+  .cc-side-v2-star-current{border:1px solid #ded3eb;background:#f7f3fb;color:#65458f;border-radius:9px;padding:6px 8px;cursor:pointer;font:900 8px Tahoma}
+  .cc-side-v2-chips{display:flex;gap:5px;flex-wrap:wrap;min-height:25px}
+  .cc-side-v2-chip{display:inline-flex;align-items:center;gap:4px;padding:5px 7px;border:1px solid #e1e6ed;border-radius:999px;background:#fafbfd;color:#46546b;font:900 8px Tahoma;cursor:pointer}
+  .cc-side-v2-chip button{width:17px;height:17px;padding:0;border:0;border-radius:50%;background:#eceff4;color:#6a7482;cursor:pointer;font:900 10px Tahoma}
+  .cc-side-v2-empty{color:#7b8798;font:800 8px Tahoma;padding:4px 1px}
+  .cc-side-v2-body{min-width:0;max-height:calc(100vh - 145px);overflow:auto;background:#fff}
+  .cc-side-v2-view{display:none!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important}
+  .cc-side-v2-view.is-active{display:block!important}
+  .cc-side-v2-view>.cc-v5-section-head{display:none!important}
+  .cc-side-v2-view.cc-v6-chat{background:#fff!important}
+  .cc-side-v2-view .cc-v6-chat-feed{min-height:180px!important;max-height:310px!important;padding:10px!important}
+  .cc-side-v2-view .cc-v6-chat-compose{padding:10px!important;border-top:1px solid #edf0f4!important}
+  .cc-side-v2-view .cc-v6-chat-form{display:grid!important;grid-template-columns:1fr!important;gap:7px!important}
+  .cc-side-v2-view .cc-v6-chat-form select,.cc-side-v2-view .cc-v6-chat-form textarea,.cc-side-v2-view .cc-v6-chat-form button{width:100%!important;font-size:10px!important}
+  .cc-side-v2-view .cc-v6-chat-form textarea{min-height:66px!important;resize:vertical}
+  .cc-side-v2-view .cc-v6-chat-form button{min-height:38px!important}
+  .cc-side-v2-view .cc-v5-schedule-note{margin:10px!important}
+  .cc-side-v2-view .cc-v5-slots{padding:0 8px 10px!important;max-height:520px!important;overflow:auto!important}
+  .cc-side-v2-view .cc-v5-slot{grid-template-columns:46px 34px minmax(0,1fr) 14px!important;padding:7px 5px!important;gap:5px!important}
+  .cc-side-v2-view .cc-v5-slot-time{font-size:9px!important}
+  .cc-side-v2-view .cc-v5-slot-person strong{font-size:9px!important}
+  .cc-side-v2-view .cc-v5-slot-person small{font-size:8px!important}
+  .cc-side-v2-lower-single{grid-template-columns:1fr!important}
 }
-@media (max-width:1099px){.cc-dock-rail{display:none!important}.cc-dock-tools,.cc-dock-minimize{display:none!important}}
+
+@media (max-width:1099px){
+  .cc-side-v2-shell,.cc-side-v2-rail,.cc-side-v2-panel{display:none!important}
+}
 </style>'''
 
 
-_DOCK_SCRIPT = r'''<script id="greenlife-call-center-dock-script-v1">
+_DOCK_SCRIPT = r'''<script id="greenlife-call-center-dock-script-v2">
 (function(){
-  if(window.__greenlifeCallCenterDockInstalled)return;
-  window.__greenlifeCallCenterDockInstalled=true;
+  if(window.__greenlifeCallCenterDockInstalledV2)return;
+  window.__greenlifeCallCenterDockInstalledV2=true;
 
   function boot(){
     if(window.innerWidth<1100)return;
     if(location.pathname!='/call-center/'&&location.pathname!='/call-center')return;
+
+    var stage=document.querySelector('.cc-v5-stage');
+    var side=document.querySelector('.cc-v5-side');
     var chat=document.querySelector('.cc-v6-chat');
-    if(!chat||document.querySelector('.cc-dock-rail'))return;
+    if(!stage||!side||!chat||side.querySelector('.cc-side-v2-shell'))return;
+
     var select=chat.querySelector('select[name="recipient"]');
     if(!select)return;
+    var schedule=side.querySelector('.cc-v5-card');
+    if(!schedule)return;
 
-    var originalParent=chat.parentElement;
-    if(originalParent)originalParent.classList.add('cc-dock-source-cleared');
-    document.body.appendChild(chat);
-    chat.classList.add('cc-dock-panel');
+    /* Clean up anything left from the former floating version. */
+    Array.prototype.slice.call(document.querySelectorAll('.cc-dock-rail,.cc-dock-panel')).forEach(function(el){
+      if(el!==chat)el.remove();
+    });
+    chat.classList.remove('cc-dock-panel','is-expanded');
 
-    var head=chat.querySelector('.cc-v5-section-head');
-    var minimize=document.createElement('button');
-    minimize.type='button';minimize.className='cc-dock-minimize';minimize.title='مینیمال کردن';minimize.textContent='−';
-    if(head)head.appendChild(minimize);
+    var lower=chat.parentElement;
+    if(lower)lower.classList.add('cc-side-v2-lower-single');
 
-    var tools=document.createElement('div');
-    tools.className='cc-dock-tools';
-    tools.innerHTML='<div class="cc-dock-tools-top"><span class="cc-dock-tools-title">★ افراد پرکاربرد</span><button type="button" class="cc-dock-star-current">☆ افزودن فرد انتخاب‌شده</button></div><div class="cc-dock-fav-chips"></div>';
-    var feed=chat.querySelector('.cc-v6-chat-feed');
-    if(feed)chat.insertBefore(tools,feed);
+    stage.classList.add('cc-side-v2-ready');
+    side.classList.add('cc-side-v2');
 
-    var rail=document.createElement('aside');
-    rail.className='cc-dock-rail';
-    rail.setAttribute('aria-label','کارتابل سریع');
     var unreadNode=chat.querySelector('.cc-v5-count');
     var unread=unreadNode?(unreadNode.textContent||'').trim():'';
-    rail.innerHTML='<button type="button" class="cc-dock-main" title="باز کردن کارتابل"><span>کارتابل</span>'+(unread?'<b class="cc-dock-unread">'+unread+'</b>':'')+'</button><div class="cc-dock-favs"></div>';
-    document.body.appendChild(rail);
 
-    var key='greenlife.callcenter.favoriteContacts.v1';
-    var openKey='greenlife.callcenter.dockOpen.v1';
+    var shell=document.createElement('div');
+    shell.className='cc-side-v2-shell';
+    var rail=document.createElement('div');
+    rail.className='cc-side-v2-rail';
+    rail.innerHTML='<button type="button" class="cc-side-v2-main" title="کارتابل"><span class="ico">✉</span><span class="txt">کارتابل</span>'+(unread?'<b class="cc-side-v2-unread">'+unread+'</b>':'')+'</button><div class="cc-side-v2-favs"></div><div class="cc-side-v2-divider"></div><button type="button" class="cc-side-v2-schedule" title="نوبت‌های امروز"><span class="ico">▣</span><span class="txt">نوبت</span></button>';
+
+    var panel=document.createElement('div');
+    panel.className='cc-side-v2-panel';
+    panel.innerHTML='<div class="cc-side-v2-head"><div class="cc-side-v2-tabs"><button type="button" class="cc-side-v2-tab" data-view="messages">کارتابل</button><button type="button" class="cc-side-v2-tab" data-view="schedule">نوبت‌های امروز</button></div><button type="button" class="cc-side-v2-collapse" title="جمع کردن">‹</button></div><div class="cc-side-v2-tools"><div class="cc-side-v2-tools-top"><span class="cc-side-v2-tools-title">★ افراد پرکاربرد</span><button type="button" class="cc-side-v2-star-current">☆ افزودن فرد انتخاب‌شده</button></div><div class="cc-side-v2-chips"></div></div><div class="cc-side-v2-body"></div>';
+
+    shell.appendChild(rail);shell.appendChild(panel);
+    side.innerHTML='';side.appendChild(shell);
+
+    var body=panel.querySelector('.cc-side-v2-body');
+    schedule.classList.add('cc-side-v2-view','cc-side-v2-schedule-view');
+    chat.classList.add('cc-side-v2-view','cc-side-v2-chat-view');
+    body.appendChild(chat);body.appendChild(schedule);
+
+    var tools=panel.querySelector('.cc-side-v2-tools');
+    var chips=panel.querySelector('.cc-side-v2-chips');
+    var starBtn=panel.querySelector('.cc-side-v2-star-current');
+    var favsBox=rail.querySelector('.cc-side-v2-favs');
+    var tabButtons=Array.prototype.slice.call(panel.querySelectorAll('.cc-side-v2-tab'));
+    var favoriteKey='greenlife.callcenter.favoriteContacts.v1';
+    var openKey='greenlife.callcenter.integratedSidebarOpen.v2';
+    var viewKey='greenlife.callcenter.integratedSidebarView.v2';
+
     function allContacts(){
       return Array.prototype.slice.call(select.options).filter(function(o){return o.value;}).map(function(o){return {id:String(o.value),name:(o.textContent||'').trim()};});
     }
     function readFavs(){
-      try{var value=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(value)?value.map(String):[];}catch(e){return [];}
+      try{var value=JSON.parse(localStorage.getItem(favoriteKey)||'[]');return Array.isArray(value)?value.map(String):[];}catch(e){return [];}
     }
-    function saveFavs(ids){try{localStorage.setItem(key,JSON.stringify(ids.slice(0,6)));}catch(e){}}
+    function saveFavs(ids){try{localStorage.setItem(favoriteKey,JSON.stringify(ids.slice(0,6)));}catch(e){}}
     function contactById(id){
       var contacts=allContacts();
       for(var i=0;i<contacts.length;i++)if(contacts[i].id===String(id))return contacts[i];
@@ -123,51 +179,81 @@ _DOCK_SCRIPT = r'''<script id="greenlife-call-center-dock-script-v1">
       var parts=clean.split(/\s+/);return parts.length>1?parts[0]:clean;
     }
     function initial(name){var s=shortName(name);return s?s.charAt(0):'؟';}
-    function setOpen(open){
-      chat.classList.toggle('is-expanded',!!open);
+    function isExpanded(){return stage.classList.contains('cc-side-v2-expanded');}
+    function setExpanded(open){
+      stage.classList.toggle('cc-side-v2-expanded',!!open);
       try{localStorage.setItem(openKey,open?'1':'0');}catch(e){}
-      if(open){setTimeout(function(){var t=chat.querySelector('textarea[name="body"]');if(t)t.focus();},120);}
+    }
+    function showView(view,forceOpen){
+      view=view==='schedule'?'schedule':'messages';
+      chat.classList.toggle('is-active',view==='messages');
+      schedule.classList.toggle('is-active',view==='schedule');
+      tools.style.display=view==='messages'?'block':'none';
+      tabButtons.forEach(function(btn){btn.classList.toggle('is-active',btn.dataset.view===view);});
+      try{localStorage.setItem(viewKey,view);}catch(e){}
+      if(forceOpen!==false)setExpanded(true);
     }
     function choose(id){
-      select.value=String(id);select.dispatchEvent(new Event('change',{bubbles:true}));setOpen(true);
-      var textarea=chat.querySelector('textarea[name="body"]');if(textarea)textarea.focus();
+      select.value=String(id);
+      select.dispatchEvent(new Event('change',{bubbles:true}));
+      showView('messages',true);
+      setTimeout(function(){var textarea=chat.querySelector('textarea[name="body"]');if(textarea)textarea.focus();},80);
     }
-    function render(){
-      var ids=readFavs().filter(function(id){return !!contactById(id);});
-      if(ids.length!==readFavs().length)saveFavs(ids);
-      var railFavs=rail.querySelector('.cc-dock-favs');
-      var chips=tools.querySelector('.cc-dock-fav-chips');
-      railFavs.innerHTML='';chips.innerHTML='';
+    function updateStarButton(){
+      var id=String(select.value||'');
+      starBtn.textContent=id&&readFavs().indexOf(id)>=0?'★ حذف از پرکاربردها':'☆ افزودن فرد انتخاب‌شده';
+    }
+    function renderFavs(){
+      var raw=readFavs();
+      var ids=raw.filter(function(id){return !!contactById(id);});
+      if(ids.length!==raw.length)saveFavs(ids);
+      favsBox.innerHTML='';chips.innerHTML='';
+
       if(!ids.length){
-        var add=document.createElement('button');add.type='button';add.className='cc-dock-add';add.title='انتخاب فرد پرکاربرد';add.textContent='＋';add.addEventListener('click',function(){setOpen(true);select.focus();});railFavs.appendChild(add);
-        chips.innerHTML='<span class="cc-dock-empty">از لیست گیرنده یک نفر را انتخاب کنید و ستاره بزنید.</span>';
-        return;
+        var add=document.createElement('button');add.type='button';add.className='cc-side-v2-add';add.title='افزودن فرد پرکاربرد';add.textContent='＋';
+        add.addEventListener('click',function(){showView('messages',true);select.focus();});favsBox.appendChild(add);
+        chips.innerHTML='<span class="cc-side-v2-empty">یک همکار را انتخاب کنید و ستاره بزنید.</span>';
+        updateStarButton();return;
       }
+
       ids.forEach(function(id){
         var c=contactById(id);if(!c)return;
-        var fav=document.createElement('button');fav.type='button';fav.className='cc-dock-fav';fav.title=c.name;fav.innerHTML='<b>'+initial(c.name)+'</b><span>'+shortName(c.name)+'</span>';fav.addEventListener('click',function(){choose(id);});railFavs.appendChild(fav);
-        var chip=document.createElement('span');chip.className='cc-dock-chip';chip.innerHTML='<span>'+c.name+'</span><button type="button" title="حذف از پرکاربردها">×</button>';
-        chip.addEventListener('click',function(e){if(e.target.tagName==='BUTTON')return;choose(id);});
-        chip.querySelector('button').addEventListener('click',function(){saveFavs(readFavs().filter(function(x){return x!==id;}));render();});chips.appendChild(chip);
+        var fav=document.createElement('button');fav.type='button';fav.className='cc-side-v2-fav';fav.title=c.name;
+        fav.innerHTML='<b>'+initial(c.name)+'</b><span>'+shortName(c.name)+'</span>';
+        fav.addEventListener('click',function(){choose(id);});favsBox.appendChild(fav);
+
+        var chip=document.createElement('span');chip.className='cc-side-v2-chip';
+        chip.innerHTML='<span>'+c.name+'</span><button type="button" title="حذف">×</button>';
+        chip.addEventListener('click',function(e){if(e.target.tagName!=='BUTTON')choose(id);});
+        chip.querySelector('button').addEventListener('click',function(){saveFavs(readFavs().filter(function(x){return x!==id;}));renderFavs();});
+        chips.appendChild(chip);
       });
-      if(ids.length<6){var plus=document.createElement('button');plus.type='button';plus.className='cc-dock-add';plus.title='افزودن فرد دیگر';plus.textContent='＋';plus.addEventListener('click',function(){setOpen(true);select.focus();});railFavs.appendChild(plus);}
+      if(ids.length<6){
+        var plus=document.createElement('button');plus.type='button';plus.className='cc-side-v2-add';plus.title='افزودن فرد دیگر';plus.textContent='＋';
+        plus.addEventListener('click',function(){showView('messages',true);select.focus();});favsBox.appendChild(plus);
+      }
+      updateStarButton();
     }
 
-    rail.querySelector('.cc-dock-main').addEventListener('click',function(){setOpen(!chat.classList.contains('is-expanded'));});
-    minimize.addEventListener('click',function(){setOpen(false);});
-    tools.querySelector('.cc-dock-star-current').addEventListener('click',function(){
+    rail.querySelector('.cc-side-v2-main').addEventListener('click',function(){
+      if(isExpanded()&&chat.classList.contains('is-active'))setExpanded(false);else showView('messages',true);
+    });
+    rail.querySelector('.cc-side-v2-schedule').addEventListener('click',function(){
+      if(isExpanded()&&schedule.classList.contains('is-active'))setExpanded(false);else showView('schedule',true);
+    });
+    panel.querySelector('.cc-side-v2-collapse').addEventListener('click',function(){setExpanded(false);});
+    tabButtons.forEach(function(btn){btn.addEventListener('click',function(){showView(btn.dataset.view,true);});});
+    starBtn.addEventListener('click',function(){
       var id=String(select.value||'');if(!id){select.focus();return;}
-      var ids=readFavs();var pos=ids.indexOf(id);if(pos>=0){ids.splice(pos,1);}else{ids.unshift(id);}
-      saveFavs(ids);render();
+      var ids=readFavs();var pos=ids.indexOf(id);if(pos>=0)ids.splice(pos,1);else ids.unshift(id);
+      saveFavs(ids);renderFavs();
     });
-    select.addEventListener('change',function(){
-      var id=String(select.value||'');var active=id&&readFavs().indexOf(id)>=0;
-      tools.querySelector('.cc-dock-star-current').textContent=active?'★ حذف از پرکاربردها':'☆ افزودن فرد انتخاب‌شده';
-    });
+    select.addEventListener('change',updateStarButton);
 
-    render();
-    var shouldOpen=false;try{shouldOpen=localStorage.getItem(openKey)==='1';}catch(e){}
-    setOpen(shouldOpen);
+    renderFavs();
+    var savedView='messages';var savedOpen=false;
+    try{savedView=localStorage.getItem(viewKey)||'messages';savedOpen=localStorage.getItem(openKey)==='1';}catch(e){}
+    showView(savedView,false);setExpanded(savedOpen);
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
@@ -179,7 +265,7 @@ def install_call_center_dock():
     """Extend the existing call-center-only response injection once per process."""
     from . import call_center_views
 
-    if 'greenlife-call-center-dock-v1' in call_center_views._CALL_CENTER_STAFF_STYLE:
+    if 'greenlife-call-center-dock-v2' in call_center_views._CALL_CENTER_STAFF_STYLE:
         return
     call_center_views._CALL_CENTER_STAFF_STYLE += _DOCK_STYLE
     call_center_views._CALL_TRACKING_SCRIPT += _DOCK_SCRIPT
