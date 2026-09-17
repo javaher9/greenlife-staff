@@ -7,6 +7,7 @@
       <div class="rf-fields">{% for field in form %}<label class="rf-field {% if field.name == 'notes' or field.name == 'note' %}wide{% endif %}"><span>{{ field.label }}</span>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<em>{{ error }}</em>{% endfor %}</label>{% endfor %}</div>
       <button class="rf-submit" type="submit">{{ button }}</button>
     </form>
+    {% if lead and lead_admin_actions %}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid #334155"><a href="{% url 'admin_lead_edit' lead.pk %}" style="padding:9px 14px;border-radius:9px;background:#312e81;color:#fff;text-decoration:none;font-weight:800">✎ ویرایش لید</a><a href="{% url 'admin_lead_delete' lead.pk %}" style="padding:9px 14px;border-radius:9px;background:#7f1d1d;color:#fff;text-decoration:none;font-weight:800">⌫ حذف لید</a></div>{% endif %}
   </article>
 </section>
 {% endblock %}
