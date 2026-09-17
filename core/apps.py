@@ -27,3 +27,8 @@ class CoreConfig(AppConfig):
         # existing call-center response injection and does not touch manager UI.
         from .call_center_dock import install_call_center_dock
         install_call_center_dock()
+
+        # Improve low-contrast performance-card captions without changing the
+        # dashboard flow; wide screens place the explanation beside the value.
+        from .call_center_performance_readability import install_call_center_performance_readability
+        install_call_center_performance_readability()
