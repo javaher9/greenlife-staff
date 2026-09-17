@@ -21,3 +21,9 @@ class CoreConfig(AppConfig):
         # transaction while keeping an immutable old/new audit trail.
         from .finance_amount_correction import install_finance_amount_correction
         install_finance_amount_correction()
+
+        # Keep the call-center staff cartable available as a small left-side
+        # dock with operator-selected frequent contacts. This extends only the
+        # existing call-center response injection and does not touch manager UI.
+        from .call_center_dock import install_call_center_dock
+        install_call_center_dock()
