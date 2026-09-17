@@ -1,66 +1,79 @@
-"""Colorize neutral-black buttons on the call-center staff dashboard.
+"""Lighten every visually dark button on the call-center staff dashboard.
 
-The page already has semantic green/purple/blue controls. This small enhancer only
-recolors controls whose computed background is genuinely neutral-dark, so existing
-brand colors are left intact while inherited/global black buttons are removed.
+The previous pass only detected neutral black. Some controls were very dark green,
+blue, or purple and still looked black. This version measures visual luminance,
+including gradients, and recolors any genuinely dark control into the existing
+pastel Green Life palette while preserving already-light controls.
 """
 
-_BUTTON_PALETTE_STYLE = r'''<style id="greenlife-call-center-button-palette-v1">
-body.gl-role-call-center .cc-v5 .cc-colorized-neutral{
+_BUTTON_PALETTE_STYLE = r'''<style id="greenlife-call-center-button-palette-v2">
+body.gl-role-call-center .cc-v5 .cc-colorized-dark-v2{
   border-radius:11px!important;
   font-family:Tahoma,sans-serif!important;
   font-weight:900!important;
-  transition:background .14s ease,border-color .14s ease,box-shadow .14s ease,transform .14s ease!important;
   text-shadow:none!important;
+  transition:background .14s ease,border-color .14s ease,box-shadow .14s ease,transform .14s ease!important;
 }
-body.gl-role-call-center .cc-v5 .cc-colorized-neutral:hover{
+body.gl-role-call-center .cc-v5 .cc-colorized-dark-v2:hover{
   transform:translateY(-1px)!important;
 }
-body.gl-role-call-center .cc-v5 .cc-colorized-neutral.cc-tone-green{
-  background:linear-gradient(135deg,#e6f7ee,#f4fbf7)!important;
-  color:#176b4b!important;border:1px solid #bddfcd!important;
-  box-shadow:0 5px 13px rgba(28,118,82,.08)!important;
+body.gl-role-call-center .cc-v5 .cc-colorized-dark-v2.cc-tone-green{
+  background:linear-gradient(135deg,#e5f7ee,#f6fcf9)!important;
+  color:#176b4b!important;border:1px solid #b9ddca!important;
+  box-shadow:0 5px 14px rgba(28,118,82,.08)!important;
 }
-body.gl-role-call-center .cc-v5 .cc-colorized-neutral.cc-tone-blue{
-  background:linear-gradient(135deg,#edf4ff,#f7faff)!important;
-  color:#35669f!important;border:1px solid #cbdcf0!important;
-  box-shadow:0 5px 13px rgba(65,109,169,.08)!important;
+body.gl-role-call-center .cc-v5 .cc-colorized-dark-v2.cc-tone-blue{
+  background:linear-gradient(135deg,#ebf3ff,#f8fbff)!important;
+  color:#35669f!important;border:1px solid #c7d9ee!important;
+  box-shadow:0 5px 14px rgba(65,109,169,.08)!important;
 }
-body.gl-role-call-center .cc-v5 .cc-colorized-neutral.cc-tone-purple{
-  background:linear-gradient(135deg,#f1eafb,#faf7fd)!important;
-  color:#65458f!important;border:1px solid #d8cae8!important;
-  box-shadow:0 5px 13px rgba(104,71,147,.08)!important;
+body.gl-role-call-center .cc-v5 .cc-colorized-dark-v2.cc-tone-purple{
+  background:linear-gradient(135deg,#f0e9fb,#faf8fd)!important;
+  color:#65458f!important;border:1px solid #d6c8e7!important;
+  box-shadow:0 5px 14px rgba(104,71,147,.08)!important;
 }
-body.gl-role-call-center .cc-v5 .cc-colorized-neutral.cc-tone-amber{
-  background:linear-gradient(135deg,#fff5df,#fffaf0)!important;
-  color:#92651f!important;border:1px solid #ecd9aa!important;
-  box-shadow:0 5px 13px rgba(168,118,33,.08)!important;
+body.gl-role-call-center .cc-v5 .cc-colorized-dark-v2.cc-tone-amber{
+  background:linear-gradient(135deg,#fff4dd,#fffaf1)!important;
+  color:#8b601d!important;border:1px solid #ead5a3!important;
+  box-shadow:0 5px 14px rgba(168,118,33,.08)!important;
 }
-body.gl-role-call-center .cc-v5 .cc-colorized-neutral.cc-tone-rose{
-  background:linear-gradient(135deg,#fff0f4,#fff7f9)!important;
-  color:#a7445f!important;border:1px solid #edcbd5!important;
-  box-shadow:0 5px 13px rgba(189,79,107,.08)!important;
+body.gl-role-call-center .cc-v5 .cc-colorized-dark-v2.cc-tone-rose{
+  background:linear-gradient(135deg,#ffedf3,#fff8fa)!important;
+  color:#a3425d!important;border:1px solid #ebc6d1!important;
+  box-shadow:0 5px 14px rgba(189,79,107,.08)!important;
 }
-body.gl-role-call-center .cc-v5 .cc-colorized-neutral:focus-visible{
+body.gl-role-call-center .cc-v5 .cc-colorized-dark-v2:focus-visible{
   outline:3px solid rgba(79,121,190,.16)!important;outline-offset:2px!important;
 }
 </style>'''
 
-_BUTTON_PALETTE_SCRIPT = r'''<script id="greenlife-call-center-button-palette-script-v1">
+_BUTTON_PALETTE_SCRIPT = r'''<script id="greenlife-call-center-button-palette-script-v2">
 (function(){
-  if(window.__greenlifeButtonPaletteV1)return;
-  window.__greenlifeButtonPaletteV1=true;
+  if(window.__greenlifeButtonPaletteV2)return;
+  window.__greenlifeButtonPaletteV2=true;
 
-  function rgb(value){
-    var m=String(value||'').match(/rgba?\((\d+)[, ]+\s*(\d+)[, ]+\s*(\d+)(?:[, /]+\s*([\d.]+))?\)/i);
-    if(!m)return null;
-    return {r:+m[1],g:+m[2],b:+m[3],a:m[4]===undefined?1:+m[4]};
+  function parseColors(value){
+    var out=[];
+    var re=/rgba?\(\s*(\d+)\s*[, ]\s*(\d+)\s*[, ]\s*(\d+)(?:\s*[, /]\s*([\d.]+))?\s*\)/ig;
+    var m;
+    while((m=re.exec(String(value||'')))){
+      out.push({r:+m[1],g:+m[2],b:+m[3],a:m[4]===undefined?1:+m[4]});
+    }
+    return out;
   }
-  function isNeutralDark(el){
-    var c=rgb(getComputedStyle(el).backgroundColor);
-    if(!c||c.a<.55)return false;
-    var max=Math.max(c.r,c.g,c.b),min=Math.min(c.r,c.g,c.b);
-    return max<=92 && (max-min)<=28;
+  function luma(c){return .2126*c.r+.7152*c.g+.0722*c.b;}
+  function visualLuma(el){
+    var cs=getComputedStyle(el);
+    var colors=parseColors(cs.backgroundColor).concat(parseColors(cs.backgroundImage));
+    colors=colors.filter(function(c){return c.a>=.45;});
+    if(!colors.length)return null;
+    var total=0;
+    colors.forEach(function(c){total+=luma(c);});
+    return total/colors.length;
+  }
+  function isVisuallyDark(el){
+    var lum=visualLuma(el);
+    return lum!==null&&lum<=118;
   }
   function toneFor(el,index){
     var t=(el.textContent||el.value||el.getAttribute('aria-label')||el.title||'').trim();
@@ -68,31 +81,40 @@ _BUTTON_PALETTE_SCRIPT = r'''<script id="greenlife-call-center-button-palette-sc
     if(/پیگیری|امروز|بعدی/.test(t))return 'amber';
     if(/نوبت|نتیجه|تقویم/.test(t))return 'purple';
     if(/پیام|کارتابل|چت|داخلی/.test(t))return 'blue';
-    if(/تماس|ثبت|افزودن|ساخت|ارسال|ذخیره|واتساپ/.test(t))return 'green';
+    if(/تماس|ثبت|افزودن|ساخت|ارسال|ذخیره|واتساپ|تایید/.test(t))return 'green';
     return ['blue','purple','green','amber'][index%4];
   }
   function paint(root){
     root=root||document;
     var scope=root.querySelector?root:document;
-    var selector='.cc-v5 button,.cc-v5 input[type="button"],.cc-v5 input[type="submit"],.cc-v5 a[class*="action"],.cc-v5 a[class*="btn"],.cc-v5 a.cc-v5-open,.cc-v5 a.cc-v5-call';
+    var selector=[
+      '.cc-v5 button',
+      '.cc-v5 input[type="button"]',
+      '.cc-v5 input[type="submit"]',
+      '.cc-v5 a',
+      '.cc-v5 [role="button"]'
+    ].join(',');
     Array.prototype.slice.call(scope.querySelectorAll(selector)).forEach(function(el,index){
-      if(el.classList.contains('cc-colorized-neutral'))return;
-      if(!isNeutralDark(el))return;
-      el.classList.add('cc-colorized-neutral','cc-tone-'+toneFor(el,index));
+      if(el.classList.contains('cc-colorized-dark-v2'))return;
+      if(!isVisuallyDark(el))return;
+      el.classList.remove('cc-colorized-neutral');
+      el.classList.remove('cc-tone-green','cc-tone-blue','cc-tone-purple','cc-tone-amber','cc-tone-rose');
+      el.classList.add('cc-colorized-dark-v2','cc-tone-'+toneFor(el,index));
     });
   }
   function boot(){
     if(location.pathname!='/call-center/'&&location.pathname!='/call-center')return;
     paint(document);
-    setTimeout(function(){paint(document);},120);
-    setTimeout(function(){paint(document);},650);
+    [80,250,700,1500].forEach(function(ms){setTimeout(function(){paint(document);},ms);});
     var target=document.querySelector('.cc-v5');
     if(!target)return;
     new MutationObserver(function(mutations){
       var needs=false;
-      mutations.forEach(function(m){if(m.addedNodes&&m.addedNodes.length)needs=true;});
-      if(needs)paint(target);
-    }).observe(target,{childList:true,subtree:true});
+      mutations.forEach(function(m){
+        if((m.addedNodes&&m.addedNodes.length)||m.type==='attributes')needs=true;
+      });
+      if(needs)requestAnimationFrame(function(){paint(target);});
+    }).observe(target,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style']});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
@@ -100,10 +122,10 @@ _BUTTON_PALETTE_SCRIPT = r'''<script id="greenlife-call-center-button-palette-sc
 
 
 def install_call_center_button_palette():
-    """Append the neutral-black button palette to call-center staff responses."""
+    """Append the dark-control palette to call-center staff responses."""
     from . import call_center_views
 
-    if 'greenlife-call-center-button-palette-v1' not in call_center_views._CALL_CENTER_STAFF_STYLE:
+    if 'greenlife-call-center-button-palette-v2' not in call_center_views._CALL_CENTER_STAFF_STYLE:
         call_center_views._CALL_CENTER_STAFF_STYLE += _BUTTON_PALETTE_STYLE
-    if 'greenlife-call-center-button-palette-script-v1' not in call_center_views._CALL_TRACKING_SCRIPT:
+    if 'greenlife-call-center-button-palette-script-v2' not in call_center_views._CALL_TRACKING_SCRIPT:
         call_center_views._CALL_TRACKING_SCRIPT += _BUTTON_PALETTE_SCRIPT
