@@ -11,6 +11,7 @@ from .call_center_identity import (
     FlowerLeadProxy, FlowerProfileProxy, call_center_display_name,
 )
 from .models import EmployeeProfile, ReferralLead, ReferralSale
+from .instagram_views import INSTAGRAM_PAGE_SOURCES
 
 
 ALLOWED_ROLES = ('admin', 'manager', 'internal_manager')
@@ -131,6 +132,33 @@ def _channel_counts(leads):
     return rows
 
 
+def _instagram_page_rows(leads):
+    instagram = leads.filter(_channel_q('instagram'))
+    rows = []
+    claimed = Q(pk__in=[])
+    for slug, label in INSTAGRAM_PAGE_SOURCES.items():
+        q = Q(notes__icontains=f'[instagram_page:{slug}]')
+        page_qs = instagram.filter(q)
+        rows.append({
+            'slug': slug,
+            'label': label,
+            'total': page_qs.count(),
+            'link': page_qs.filter(source='link').count(),
+            'manual': page_qs.filter(source='panel').count(),
+        })
+        claimed |= q
+    legacy = instagram.exclude(claimed).count()
+    if legacy:
+        rows.append({
+            'slug': 'legacy',
+            'label': 'قدیمی / نامشخص',
+            'total': legacy,
+            'link': instagram.exclude(claimed).filter(source='link').count(),
+            'manual': instagram.exclude(claimed).filter(source='panel').count(),
+        })
+    return rows
+
+
 def _successful_lead_ids(leads):
     """A successful lead is either explicitly won or has a real approved/paid sale."""
     paid_ids = ReferralSale.objects.filter(
@@ -176,7 +204,7 @@ def lead_management_dashboard(request):
     conversion=round((won_count*100/total),1) if total else 0; contact_rate=round((contacted_count*100/total),1) if total else 0
     unassigned_count=leads.filter(assigned_to__isnull=True,status__in=OPEN_STATUSES).count(); overdue_count=leads.filter(status__in=OPEN_STATUSES,next_follow_up__lt=today).count(); untouched_count=leads.filter(status='new',created_at__lt=now-timedelta(hours=2)).count()
     duplicate_phones=leads.exclude(phone='').values('phone').annotate(c=Count('id')).filter(c__gt=1).count()
-    status_rows=_operational_status_rows(leads,total); source_rows=_channel_counts(leads)
+    status_rows=_operational_status_rows(leads,total); source_rows=_channel_counts(leads); instagram_page_rows=_instagram_page_rows(leads)
 
     operator_rows=[]
     operators=EmployeeProfile.objects.filter(role='call_center',is_active=True,user__is_active=True).select_related('user')
@@ -191,4 +219,4 @@ def lead_management_dashboard(request):
     recent=list(filtered.order_by('-created_at')[:150]); attention=list(leads.filter(Q(assigned_to__isnull=True)|Q(status='new',created_at__lt=now-timedelta(hours=2))|Q(status__in=OPEN_STATUSES,next_follow_up__lt=today)).distinct().order_by('created_at')[:20])
     for lead in recent: _enrich_referral_group_label(lead)
     integration_rows=[{'name':'Instagram Form','state':'connected','detail':'فرم فعلی مستقیماً وارد ReferralLead می‌شود.'},{'name':'Website','state':'ready','detail':'برای اتصال فرم سایت به ورودی یکپارچه آماده است.'},{'name':'CRM','state':'ready','detail':'وب‌هوک/API ورودی برای اتصال CRM طراحی شده است.'},{'name':'WhatsApp / Campaigns','state':'ready','detail':'قابل اتصال با source و UTM مستقل.'}]
-    return render(request,'core/lead_management_dashboard.html',{'lead_kpis':{'total':total,'today':today_count,'week':week_count,'month':month_count,'contacted':contacted_count,'appointments':appointment_count,'won':won_count,'conversion':conversion,'contact_rate':contact_rate,'unassigned':unassigned_count,'overdue':overdue_count,'untouched':untouched_count,'duplicates':duplicate_phones,'sales_amount':sales_amount,'instagram_sales_amount':instagram_sales_amount,'website_sales_amount':website_sales_amount},'status_rows':status_rows,'source_rows':source_rows,'group_rows':group_rows,'operator_rows':operator_rows,'recent_leads':[FlowerLeadProxy(lead) for lead in recent],'attention_leads':[AttentionLeadProxy(lead, now, today) for lead in attention],'integration_rows':integration_rows,'operators':[FlowerProfileProxy(op) for op in operators],'source_filter':source_filter,'status_filter':status_filter,'operator_filter':operator_filter,'status_choices':STATUS_FILTER_CHOICES})
+    return render(request,'core/lead_management_dashboard.html',{'lead_kpis':{'total':total,'today':today_count,'week':week_count,'month':month_count,'contacted':contacted_count,'appointments':appointment_count,'won':won_count,'conversion':conversion,'contact_rate':contact_rate,'unassigned':unassigned_count,'overdue':overdue_count,'untouched':untouched_count,'duplicates':duplicate_phones,'sales_amount':sales_amount,'instagram_sales_amount':instagram_sales_amount,'website_sales_amount':website_sales_amount},'status_rows':status_rows,'source_rows':source_rows,'instagram_page_rows':instagram_page_rows,'group_rows':group_rows,'operator_rows':operator_rows,'recent_leads':[FlowerLeadProxy(lead) for lead in recent],'attention_leads':[AttentionLeadProxy(lead, now, today) for lead in attention],'integration_rows':integration_rows,'operators':[FlowerProfileProxy(op) for op in operators],'source_filter':source_filter,'status_filter':status_filter,'operator_filter':operator_filter,'status_choices':STATUS_FILTER_CHOICES})
