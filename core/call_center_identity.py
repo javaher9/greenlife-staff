@@ -133,7 +133,7 @@ class FlowerLeadProxy:
     def source_origin_display(self):
         page = self.instagram_page_display
         if page:
-            return f'Instagram · {self.instagram_entry_display} · {page}'
+            return f'اینستاگرام · {self.instagram_entry_display} · {page}'
         try:
             return self._flower_lead.get_source_display()
         except Exception:
