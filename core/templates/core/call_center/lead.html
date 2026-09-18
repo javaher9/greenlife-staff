@@ -12,7 +12,7 @@ body.gl-page-call_center_lead .app-main{background:#f5f7fb!important}
   <div class="cc-detail-top"><div><span class="eyebrow">پرونده لید شبکه فروش</span></div><a class="cc-back" href="{% url 'call_center_dashboard' %}">بازگشت به میز کار ←</a></div>
   <section class="cc-detail">
     <article class="cc-card">
-      <h1>{{ lead.full_name }}</h1><div class="cc-sub">معرف: {{ lead.referrer }} · <span class="cc-source">{{ lead.get_source_display }}</span></div>
+      <h1>{{ lead.full_name }}</h1><div class="cc-sub">معرف: {{ lead.referrer }} · <span class="cc-source">{{ lead.source_origin_display }}</span></div>
       <div class="cc-phone"><b>{{ lead.phone }}</b><a href="tel:{{ lead.phone }}" data-phone="{{ lead.phone }}">☎ تماس مستقیم</a></div>
       <div class="cc-meta">
         <div><span>خدمت موردنظر</span><b>{{ lead.interested_service|default:'—' }}</b></div>
