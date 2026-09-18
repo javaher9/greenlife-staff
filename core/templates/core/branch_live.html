@@ -50,6 +50,37 @@
   @media(max-width:1200px){.cmd-kpis,.cmd-attention,.cmd-modules{grid-template-columns:repeat(2,minmax(0,1fr))}.cmd-two{grid-template-columns:1fr}}
   @media(max-width:700px){.cmd{padding-top:8px}.cmd-hero{align-items:flex-start;flex-direction:column;padding:17px}.cmd-kpis,.cmd-attention,.cmd-modules{grid-template-columns:1fr 1fr}.cmd-kpi{min-height:185px;padding:15px}.cmd-kpi-value strong{font-size:31px}}
   @media(max-width:470px){.cmd-kpis,.cmd-attention,.cmd-modules{grid-template-columns:1fr}}
+
+  /* Final scoped readability fix for the actual live management dashboard. */
+  body.gl-page-branch_live_dashboard .cmd,
+  body.gl-page-branch_live_dashboard .cmd *{opacity:1}
+  body.gl-page-branch_live_dashboard .cmd-hero h1,
+  body.gl-page-branch_live_dashboard .cmd-section-head h2,
+  body.gl-page-branch_live_dashboard .cmd-kpi-title,
+  body.gl-page-branch_live_dashboard .cmd-kpi-value strong,
+  body.gl-page-branch_live_dashboard .cmd-attn b,
+  body.gl-page-branch_live_dashboard .cmd-module-head strong,
+  body.gl-page-branch_live_dashboard .cmd-module-main b,
+  body.gl-page-branch_live_dashboard .cmd-module-stats b{
+    color:#f7fbff!important;-webkit-text-fill-color:#f7fbff!important;opacity:1!important;
+  }
+  body.gl-page-branch_live_dashboard .cmd-kpi-value span,
+  body.gl-page-branch_live_dashboard .cmd-mini,
+  body.gl-page-branch_live_dashboard .cmd-attn span,
+  body.gl-page-branch_live_dashboard .cmd-module-main small,
+  body.gl-page-branch_live_dashboard .cmd-module-stats span,
+  body.gl-page-branch_live_dashboard .cmd-section-head>span{
+    color:#cbd7e6!important;-webkit-text-fill-color:#cbd7e6!important;opacity:1!important;
+  }
+  body.gl-page-branch_live_dashboard .cmd-hero-kicker,
+  body.gl-page-branch_live_dashboard .cmd-kpi-unit,
+  body.gl-page-branch_live_dashboard .cmd-module-head span{
+    -webkit-text-fill-color:currentColor!important;opacity:1!important;
+  }
+  body.gl-page-branch_live_dashboard .cmd-module{
+    border:1px solid color-mix(in srgb,var(--accent) 52%,#53657b)!important;
+    box-shadow:0 11px 25px rgba(0,0,0,.12),inset 0 0 0 1px rgba(255,255,255,.025)!important;
+  }
 </style>
 
 <div class="cmd">
