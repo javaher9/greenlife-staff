@@ -56,7 +56,17 @@ body.gl-premium-dark .app-main .lead-page .badge.contacted{border-color:#2e746a!
 body.gl-premium-dark .app-main .lead-page .badge.won{border-color:#2e7150!important;background:#163727!important;color:#82efb1!important;-webkit-text-fill-color:#82efb1!important}
 body.gl-premium-dark .app-main .lead-page .badge.ig{border-color:#7a355c!important;background:#3a1b30!important;color:#ff9dd2!important;-webkit-text-fill-color:#ff9dd2!important}
 @media(max-width:600px){body.gl-premium-dark .app-main .lead-page .donut-wrap{grid-template-columns:1fr!important}body.gl-premium-dark .app-main .lead-page .donut{width:205px!important;height:205px!important}body.gl-premium-dark .app-main .lead-page .donut:after{inset:41px!important}}
- .latin-phone{font-family:Tahoma,Arial,sans-serif;direction:ltr;unicode-bidi:isolate;white-space:nowrap}</style>
+ .latin-phone{font-family:Tahoma,Arial,sans-serif;direction:ltr;unicode-bidi:isolate;white-space:nowrap}
+/* Keep the all-leads table readable and prevent edge columns/actions from escaping the card. */
+.lead-page .lead-card .scroll-x{max-width:100%;overflow-x:auto;overflow-y:visible;overscroll-behavior-inline:contain;scrollbar-gutter:stable}
+.lead-page .lead-table{min-width:980px;table-layout:auto}
+.lead-page .lead-table th,.lead-page .lead-table td{font-size:10px}
+.lead-page .lead-table th:nth-child(7),.lead-page .lead-table td:nth-child(7){font-size:10px!important;min-width:96px;max-width:132px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lead-page .lead-table th:first-child,.lead-page .lead-table td:first-child{padding-right:10px}
+.lead-page .lead-table th:last-child,.lead-page .lead-table td:last-child{padding-left:12px;min-width:76px}
+.lead-page .lead-table a,.lead-page .lead-table button{max-width:100%}
+@media(max-width:1200px){.lead-page .lead-card{overflow:hidden}.lead-page .lead-table{min-width:1040px}}
+</style>
 <div class="lead-page">
 <div class="lead-head"><div><h1>لیدها</h1><p>مرکز یکپارچه لید گرین‌لایف؛ از ورودی سایت و اینستاگرام تا تماس، نوبت، مراجعه و فروش.</p></div><div class="lead-chip">LIVE · LEAD HUB</div></div>
 <form class="lead-filters" method="get"><select name="source"><option value="">همه کانال‌ها</option><option value="instagram" {% if source_filter == 'instagram' %}selected{% endif %}>اینستاگرام</option><option value="website" {% if source_filter == 'website' %}selected{% endif %}>وب‌سایت</option><option value="crm" {% if source_filter == 'crm' %}selected{% endif %}>CRM</option><option value="whatsapp" {% if source_filter == 'whatsapp' %}selected{% endif %}>واتس‌اپ</option><option value="campaign" {% if source_filter == 'campaign' %}selected{% endif %}>کمپین / UTM</option><option value="telegram" {% if source_filter == 'telegram' %}selected{% endif %}>تلگرام</option><option value="bale" {% if source_filter == 'bale' %}selected{% endif %}>بله</option><option value="panel" {% if source_filter == 'panel' %}selected{% endif %}>ثبت در پنل</option><option value="qr" {% if source_filter == 'qr' %}selected{% endif %}>QR</option></select><select name="status"><option value="">همه وضعیت‌ها</option>{% for key,label in status_choices %}<option value="{{ key }}" {% if status_filter == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><select name="operator"><option value="">همه اپراتورها</option>{% for op in operators %}<option value="{{ op.id }}" {% if operator_filter == op.id|stringformat:'s' %}selected{% endif %}>{{ op.user.get_full_name|default:op.user.username }}</option>{% endfor %}</select><button type="submit">اعمال فیلتر</button></form>
