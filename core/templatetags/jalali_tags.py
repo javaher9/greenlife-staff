@@ -34,6 +34,12 @@ def toman(value):
     except Exception: return '۰ تومان'
 
 @register.filter
+def latin_digits(value):
+    """Render Persian/Arabic digits as Latin digits without changing other characters."""
+    text = str(value or '')
+    return text.translate(str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', '01234567890123456789'))
+
+@register.filter
 def en_number(value):
     """Render a numeric value with Latin digits and no unnecessary decimals."""
     try:
