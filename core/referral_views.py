@@ -23,6 +23,7 @@ from .forms import (
     ReferralMemberForm, ReferralSaleForm, CallCenterLeadForm, CallCenterLeadCreateForm,
 )
 from .models import CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification, VisitAppointment, InternalMessage
+from .call_center_identity import FlowerLeadProxy
 # Production rebuild marker after the previous deployment hit the workflow timeout.
 
 
@@ -668,7 +669,7 @@ def call_center_dashboard(request):
         .order_by('profile__branch__name','first_name','last_name','username')
     )
     return render(request,'core/call_center/dashboard.html',{
-        'leads':leads,'statuses':ReferralLead.STATUS,'status_filter':status,
+        'leads':[FlowerLeadProxy(lead) for lead in leads],'statuses':ReferralLead.STATUS,'status_filter':status,
         'group_filter':group_filter,'groups':groups,
         'stats':stats,'performance':performance,'today':today,
         'today_appointments':today_appointments,
@@ -783,7 +784,7 @@ def call_center_lead(request,pk):
         return redirect('call_center_dashboard')
     real_appointments=lead.appointments.exclude(status='cancelled').select_related('branch').order_by('-appointment_date','-appointment_time')[:5]
     return render(request,'core/call_center/lead.html',{
-        'lead':lead,'form':form,'real_appointments':real_appointments,
+        'lead':FlowerLeadProxy(lead),'form':form,'real_appointments':real_appointments,
     })
 
 
