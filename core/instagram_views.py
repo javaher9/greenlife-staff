@@ -12,6 +12,16 @@ INSTAGRAM_GROUP_NAME = 'اینستاگرام - لینک'
 INSTAGRAM_MANUAL_GROUP_NAME = 'اینستاگرام - دستی'
 TELEGRAM_GROUP_NAME = 'تلگرام - لینک'
 
+INSTAGRAM_PAGE_SOURCES = {
+    'greenlifeclinics': 'Greenlifeclinics',
+    'drjavaherian': 'Drjavaherian',
+    'greenlife_before_after': 'Greenlife.before.after',
+    'greenlife_cafe': 'Greenlife.cafe',
+    'greenlife_rejim_ir': 'Greenlife.rejim.ir',
+    'greenlife_camp': 'Greenlife.camp',
+}
+INSTAGRAM_DEFAULT_PAGE = 'greenlifeclinics'
+
 
 class InstagramLeadForm(forms.Form):
     full_name = forms.CharField(
@@ -47,6 +57,21 @@ class InstagramLeadForm(forms.Form):
         if len(value) < 10:
             raise forms.ValidationError('شماره موبایل معتبر وارد کنید.')
         return value
+
+
+class InstagramManualLeadForm(InstagramLeadForm):
+    instagram_page = forms.ChoiceField(
+        label='پیج مبدا',
+        choices=tuple(INSTAGRAM_PAGE_SOURCES.items()),
+        initial=INSTAGRAM_DEFAULT_PAGE,
+    )
+
+
+def _instagram_page_source(raw):
+    slug = str(raw or '').strip().lower()
+    if slug not in INSTAGRAM_PAGE_SOURCES:
+        slug = INSTAGRAM_DEFAULT_PAGE
+    return slug, INSTAGRAM_PAGE_SOURCES[slug]
 
 
 def _instagram_source_profile():
@@ -128,6 +153,7 @@ def _assign_instagram_lead(lead, group_name=INSTAGRAM_GROUP_NAME, notification_t
 
 
 def instagram_lead(request):
+    page_slug, page_label = _instagram_page_source(request.GET.get('source'))
     form = InstagramLeadForm(request.POST or None)
     completed = False
     if request.method == 'POST' and form.is_valid():
@@ -140,7 +166,7 @@ def instagram_lead(request):
             status='new',
             source='link',
             source_url=request.build_absolute_uri()[:500],
-            notes='ورودی مستقیم فرم اینستاگرام Green Life',
+            notes=f'ورودی مستقیم فرم اینستاگرام | پیج: {page_label} | [instagram_page:{page_slug}]',
         )
         _assign_instagram_lead(lead)
         completed = True
@@ -149,6 +175,7 @@ def instagram_lead(request):
     return render(request, 'core/instagram_lead.html', {
         'form': form,
         'completed': completed,
+        'instagram_page': page_label,
     })
 
 
@@ -189,11 +216,15 @@ def instagram_manual_lead(request):
         # The customer has already supplied their phone number in Instagram DM;
         # keep the public consent field out of the internal staff workflow.
         post_data['consent'] = 'on'
+        # Backward-compatible default for staff who submit an older cached form.
+        if not post_data.get('instagram_page'):
+            post_data['instagram_page'] = INSTAGRAM_DEFAULT_PAGE
 
-    form = InstagramLeadForm(post_data)
+    form = InstagramManualLeadForm(post_data, initial={'instagram_page': INSTAGRAM_DEFAULT_PAGE})
     completed = False
     if request.method == 'POST' and form.is_valid():
         data = form.cleaned_data
+        page_slug, page_label = _instagram_page_source(data.get('instagram_page'))
         staff_name = request.user.get_full_name() or request.user.username
         lead = ReferralLead.objects.create(
             referrer=_instagram_source_profile(),
@@ -203,7 +234,7 @@ def instagram_manual_lead(request):
             status='new',
             source='panel',
             source_url=request.build_absolute_uri()[:500],
-            notes=f'اینستاگرام - دستی | ثبت از دایرکت توسط {staff_name}',
+            notes=f'اینستاگرام - دستی | پیج: {page_label} | [instagram_page:{page_slug}] | ثبت از دایرکت توسط {staff_name}',
             created_by=request.user,
         )
         _assign_instagram_lead(
@@ -212,7 +243,7 @@ def instagram_manual_lead(request):
             notification_title='لید جدید اینستاگرام - دستی',
         )
         completed = True
-        form = InstagramLeadForm()
+        form = InstagramManualLeadForm(initial={'instagram_page': INSTAGRAM_DEFAULT_PAGE})
 
     return render(request, 'core/instagram_manual_lead.html', {
         'form': form,
