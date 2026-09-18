@@ -107,10 +107,10 @@
     {% endif %}
 
     <a class="cmd-kpi leads" href="/lead-management/">
-      <div class="cmd-kpi-head"><span class="cmd-kpi-title">لیدهای کل</span><span class="cmd-kpi-unit">ورودی و پیگیری</span></div>
-      <div class="cmd-kpi-value"><strong>{{ metrics.leads_total }}</strong><span>کل</span></div>
+      <div class="cmd-kpi-head"><span class="cmd-kpi-title">لیدهای امروز</span><span class="cmd-kpi-unit">ورودی امروز</span></div>
+      <div class="cmd-kpi-value"><strong>{{ metrics.leads_today }}</strong><span>امروز</span></div>
       <div class="cmd-spark" aria-label="روند لید هفت روز">{% for x in metrics.leads_7d %}<i style="--h:{{ x.height }}%"></i>{% endfor %}</div>
-      <div class="cmd-kpi-foot"><span class="cmd-mini">امروز <b>{{ metrics.leads_today }}</b></span><span class="cmd-mini">باز <b>{{ metrics.leads_open }}</b></span>{% for x in metrics.lead_sources|slice:':3' %}<span class="cmd-mini"><i class="dot" style="--dot:{{ x.color }}"></i>{{ x.name }} <b>{{ x.value }}</b></span>{% endfor %}</div>
+      <div class="cmd-kpi-foot"><span class="cmd-mini">کل <b>{{ metrics.leads_total }}</b></span><span class="cmd-mini">باز <b>{{ metrics.leads_open }}</b></span>{% for x in metrics.lead_sources|slice:':3' %}<span class="cmd-mini"><i class="dot" style="--dot:{{ x.color }}"></i>{{ x.name }} <b>{{ x.value }}</b></span>{% endfor %}</div>
     </a>
 
     <a class="cmd-kpi appts" href="/appointments/schedule/">
