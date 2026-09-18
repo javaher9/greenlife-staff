@@ -92,4 +92,4 @@ class InstagramPageSourceTests(TestCase):
         self.assertContains(hub, 'آمار پیج‌های اینستاگرام')
         self.assertContains(hub, 'Greenlife.cafe')
         self.assertContains(hub, 'Greenlife.cafe')
-        self.assertNotContains(hub, '<th>منبع</th>')
+        self.assertContains(hub, '<th>گروه</th><th>منبع</th><th>وضعیت</th>')
