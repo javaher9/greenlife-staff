@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .models import CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, StaffNotification
+from .models import Attendance, CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, StaffNotification
 
 
 CHANNEL_LABELS = {
@@ -32,6 +32,10 @@ OPERATOR_WEIGHT_RULES = (
     (('عباسی', 'abbasi'), 1),
 )
 DEFAULT_OPERATOR_WEIGHT = 3
+FRIDAY_DUTY_MIN_WEIGHT = 8
+FRIDAY_DUTY_WEIGHT_MULTIPLIER = 2
+FRIDAY_DUTY_START_HOUR = 12
+FRIDAY_DUTY_END_HOUR = 18
 
 # Safe to keep in source control: this is only a SHA-256 digest of a long,
 # random token. The plaintext token lives only in WordPress and can be rotated
@@ -177,6 +181,24 @@ def _operator_weight(operator):
     return DEFAULT_OPERATOR_WEIGHT
 
 
+def _effective_operator_weight(operator, now=None):
+    local_now = timezone.localtime(now or timezone.now())
+    today = local_now.date()
+    base = _operator_weight(operator)
+    if today.weekday() != 4 or not (FRIDAY_DUTY_START_HOUR <= local_now.hour < FRIDAY_DUTY_END_HOUR):
+        return base
+    attendance = Attendance.objects.filter(
+        user=operator.user,
+        date=today,
+        check_in__isnull=False,
+    ).only('check_in', 'check_out').first()
+    if not attendance:
+        return base
+    if attendance.check_out and timezone.localtime(attendance.check_out) <= local_now:
+        return base
+    return max(base * FRIDAY_DUTY_WEIGHT_MULTIPLIER, FRIDAY_DUTY_MIN_WEIGHT)
+
+
 def _assign_lead(lead, channel):
     today = timezone.localdate()
     operators = list(
@@ -199,8 +221,8 @@ def _assign_lead(lead, channel):
     operator = min(
         operators,
         key=lambda op: (
-            (op.today_leads + 1) / _operator_weight(op),
-            -_operator_weight(op),
+            (op.today_leads + 1) / _effective_operator_weight(op),
+            -_effective_operator_weight(op),
             op.id,
         ),
     )
