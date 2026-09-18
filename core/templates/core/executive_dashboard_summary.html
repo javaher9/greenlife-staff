@@ -9,7 +9,7 @@
 .glx .gpanel{border:1px solid #38506a!important}
 </style>
 <section class="glx">
-<header class="gxhero"><div><small>GREENLIFE COMMAND CENTER</small><h1>داشبورد مدیریتی</h1></div><nav class="gxnav"><a href="/finance/">مالی</a><a href="/lead-management/">لیدها</a><a href="/referrals/">شبکه فروش</a><a href="/attendance/manage/">حضور</a><a href="/meeting-minutes/">جلسات</a><a href="/reports/">گزارش‌ها</a><a href="#my-office">کارهای من</a></nav></header>
+<header class="gxhero"><div><small>GREENLIFE COMMAND CENTER</small><h1>داشبورد مدیریتی</h1></div><nav class="gxnav"><a href="/finance/">مالی</a><a href="/lead-command/">🤖 ایجنت‌ها</a><a href="/lead-management/">لیدها</a><a href="/referrals/">شبکه فروش</a><a href="/attendance/manage/">حضور</a><a href="/meeting-minutes/">جلسات</a><a href="/reports/">گزارش‌ها</a><a href="#my-office">کارهای من</a></nav></header>
 <div class="gkpis">
 <a class="gk" style="--c:#079c6b" href="/finance/"><span>فروش امروز</span><b>{{ exec_summary.finance_today_m|default:0|floatformat:"-1" }}M</b><em>میلیون تومان · تأییدشده</em><svg class="spark" viewBox="0 0 100 50" preserveAspectRatio="none"><path class="grid" d="M0 42H100"/><polyline class="ln" points="{{ exec_summary.sales_line_points }}"/></svg></a>
 <a class="gk" style="--c:#087ed4" href="/finance/"><span>فروش ماه</span><b>{{ exec_summary.finance_month_m|default:0|floatformat:"-1" }}M</b><em>مجموع تراکنش‌های تأییدشده</em><div class="microbars">{% for x in exec_summary.branch_sales|slice:':6' %}<i style="height:{{ x.percent }}%"></i>{% endfor %}</div></a>
