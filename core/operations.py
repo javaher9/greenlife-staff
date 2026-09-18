@@ -64,6 +64,22 @@ def shift_rule(user, day):
             'weekly_rule':weekly,
         }
 
+    # Call-center Friday rule: Friday is off by default for call-center staff.
+    # A one-day ShiftAssignment or an explicit EmployeeWorkSchedule above takes priority,
+    # so the single Friday duty operator can be scheduled without making the whole team absent.
+    if profile and profile.role=='call_center' and day.weekday()==4:
+        return {
+            'name':'جمعه - تعطیل کال‌سنتر',
+            'start':None,
+            'end':None,
+            'grace':0,
+            'report_required':False,
+            'assignment':None,
+            'source':'call_center_friday_default',
+            'is_working':False,
+            'is_off':True,
+        }
+
     branch=getattr(profile,'branch',None) if profile else None
     weekly=BranchWorkSchedule.objects.filter(
         branch=branch,weekday=day.weekday(),effective_from__lte=day,
