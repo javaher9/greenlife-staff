@@ -2,7 +2,7 @@ from django.db import transaction
 from django.db.models import Count, Max
 from django.utils import timezone
 
-from .models import CallCenterLeadGroup, EmployeeProfile, ReferralLead, StaffNotification
+from .models import Attendance, CallCenterLeadGroup, EmployeeProfile, ReferralLead, StaffNotification
 
 
 CHANNEL_LABELS = {
@@ -23,6 +23,10 @@ OPERATOR_WEIGHT_RULES = (
     (('عباسی', 'abbasi'), 1),
 )
 DEFAULT_OPERATOR_WEIGHT = 3
+FRIDAY_DUTY_MIN_WEIGHT = 8
+FRIDAY_DUTY_WEIGHT_MULTIPLIER = 2
+FRIDAY_DUTY_START_HOUR = 12
+FRIDAY_DUTY_END_HOUR = 18
 
 
 def _normalize(value):
@@ -40,6 +44,35 @@ def operator_weight(operator):
         if any(_normalize(alias) in identity for alias in aliases):
             return weight
     return DEFAULT_OPERATOR_WEIGHT
+
+
+def friday_duty_weight(operator, now=None):
+    """Boost the operator who is physically on Friday duty from 12:00 to 18:00.
+
+    Friday is normally off for call-center staff. If an operator has actually
+    checked in, they become the duty operator for routing purposes. The boost is
+    intentionally layered on top of the normal per-operator weights and expires
+    automatically at 18:00 (or immediately after check-out).
+    """
+    local_now = timezone.localtime(now or timezone.now())
+    today = local_now.date()
+    if today.weekday() != 4:
+        return operator_weight(operator)
+    if not (FRIDAY_DUTY_START_HOUR <= local_now.hour < FRIDAY_DUTY_END_HOUR):
+        return operator_weight(operator)
+
+    attendance = Attendance.objects.filter(
+        user=operator.user,
+        date=today,
+        check_in__isnull=False,
+    ).only('check_in', 'check_out').first()
+    if not attendance:
+        return operator_weight(operator)
+    if attendance.check_out and timezone.localtime(attendance.check_out) <= local_now:
+        return operator_weight(operator)
+
+    base = operator_weight(operator)
+    return max(base * FRIDAY_DUTY_WEIGHT_MULTIPLIER, FRIDAY_DUTY_MIN_WEIGHT)
 
 
 def _locked_balanced_operator():
@@ -81,8 +114,10 @@ def _locked_balanced_operator():
         last_at = row.get('last_at')
         # The ratio provides weighted fairness. The second key prevents repeated
         # assignment on ties by preferring the operator who has waited longest.
+        effective_weight = friday_duty_weight(operator)
         return (
-            count / operator_weight(operator),
+            count / effective_weight,
+            -effective_weight,
             last_at or timezone.datetime.min.replace(tzinfo=timezone.get_current_timezone()),
             operator.id,
         )
