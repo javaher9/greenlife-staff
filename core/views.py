@@ -924,8 +924,36 @@ def attendance_team(request):
     if role=='manager':
         users=users.filter(profile__branch=profile.branch); records=records.filter(branch=profile.branch)
     recmap={r.user_id:r for r in records}
-    rows=[(u,recmap.get(u.id)) for u in users.order_by('profile__branch__name','last_name','first_name')]
-    summary={'employees':len(rows),'present':sum(1 for _,r in rows if r and r.check_in),'late':sum(1 for _,r in rows if r and r.status=='late'),'missing':sum(1 for _,r in rows if not r or not r.check_in)}
+    approved_leave_ids=set(LeaveRequest.objects.filter(
+        user__in=users,status='approved',start_date__lte=selected,end_date__gte=selected,
+    ).values_list('user_id',flat=True))
+    rows=[]
+    for u in users.order_by('profile__branch__name','last_name','first_name'):
+        rec=recmap.get(u.id)
+        rule=shift_rule(u,selected) or {}
+        if rec and rec.check_in:
+            status=attendance_status_for(u,selected,rec.check_in)
+            status_label='با تأخیر' if status=='late' else 'حاضر'
+        elif u.id in approved_leave_ids:
+            status='leave'; status_label='مرخصی / مأموریت'
+        elif rule.get('is_off'):
+            status='off'; status_label='روز غیرکاری'
+        else:
+            status='missing'; status_label='ثبت نشده'
+        rows.append({
+            'user':u,'record':rec,'rule':rule,'status':status,
+            'status_label':status_label,'is_off':bool(rule.get('is_off')),
+        })
+    scheduled=[x for x in rows if x['status'] not in ('off','leave')]
+    summary={
+        'employees':len(rows),
+        'scheduled':len(scheduled),
+        'present':sum(1 for x in rows if x['record'] and x['record'].check_in),
+        'late':sum(1 for x in rows if x['status']=='late'),
+        'missing':sum(1 for x in rows if x['status']=='missing'),
+        'off':sum(1 for x in rows if x['status']=='off'),
+        'leave':sum(1 for x in rows if x['status']=='leave'),
+    }
     return render(request,'core/attendance_team.html',{'rows':rows,'selected':selected,'summary':summary})
 
 @manager_required
