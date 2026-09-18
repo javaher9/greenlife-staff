@@ -114,5 +114,14 @@ class FlowerLeadProxy:
             return None
         return FlowerProfileProxy(self._flower_lead.assigned_to)
 
+    @property
+    def instagram_page_display(self):
+        notes = str(getattr(self._flower_lead, 'notes', '') or '')
+        marker = 'پیج:'
+        if marker not in notes:
+            return ''
+        value = notes.split(marker, 1)[1].split('|', 1)[0].strip()
+        return value[:80]
+
     def get_status_display(self):
         return call_center_lead_stage(self._flower_lead)
