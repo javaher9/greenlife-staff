@@ -275,12 +275,12 @@
         <header class="cc-v5-section-head"><div><h2>مراجعین و لیدهای من</h2><p>آواتارها آماده‌اند تا بعداً با عکس واقعی پرونده جایگزین شوند.</p></div><a href="{% url 'appointment_schedule' %}">برنامه نوبت‌ها ←</a></header>
         <div class="cc-v5-patients" id="ccLeadList">
           {% for lead in leads %}
-          <article class="cc-v5-patient" data-source="{{ lead.source }}" data-followup="{{ lead.next_follow_up|date:'Y-m-d' }}" data-search="{{ lead.full_name }} {{ lead.phone }} {{ lead.interested_service }} {{ lead.referrer }} {{ lead.group.name|default:'' }}">
+          <article class="cc-v5-patient" data-source="{{ lead.source }}" data-followup="{{ lead.next_follow_up|date:'Y-m-d' }}" data-search="{{ lead.full_name }} {{ lead.phone }} {{ lead.interested_service }} {{ lead.referrer }} {{ lead.group.name|default:'' }} {{ lead.source_origin_display }}">
             <div class="cc-v5-person">
               <div class="cc-v5-person-avatar" title="جای عکس مراجع">{{ lead.full_name|first|default:"؟" }}</div>
               <div class="cc-v5-person-copy">
                 <strong>{{ lead.full_name }}</strong>
-                <div class="cc-v5-person-meta"><b>{{ lead.phone }}</b><span class="cc-v5-tag source">{{ lead.get_source_display }}</span><span class="cc-v5-tag group">{{ lead.group.name|default:'بدون گروه' }}</span><span>معرف: {{ lead.referrer }}</span></div>
+                <div class="cc-v5-person-meta"><b>{{ lead.phone }}</b><span class="cc-v5-tag source">{{ lead.source_origin_display }}</span><span class="cc-v5-tag group">{{ lead.group.name|default:'بدون گروه' }}</span><span>معرف: {{ lead.referrer }}</span></div>
               </div>
             </div>
             <div class="cc-v5-service">{{ lead.interested_service|default:'خدمت مشخص نشده' }}</div>
