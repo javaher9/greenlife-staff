@@ -1,0 +1,47 @@
+{% extends "core/base.html" %}
+{% block title %}Lead Command Center{% endblock %}
+{% block content %}
+<style>
+.lcc{direction:rtl;font-family:Tahoma,sans-serif;color:#eef6ff;display:grid;gap:12px}.lcc *{box-sizing:border-box}.lcc-top{padding:15px;border-radius:18px;border:1px solid #2b425b;background:linear-gradient(120deg,#11182e,#092523);display:flex;justify-content:space-between;gap:14px;align-items:center}.lcc-title small{color:#5ee9bd}.lcc-title h1{font-size:21px;margin:4px 0}.lcc-controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.lcc-btn{border:1px solid #38506b;background:#17243a;color:#eaf3ff;border-radius:10px;padding:8px 11px;cursor:pointer}.lcc-btn.on{border-color:#35d6a2;color:#65f0c2}.live-dot{width:8px;height:8px;border-radius:50%;background:#35d6a2;display:inline-block;box-shadow:0 0 10px #35d6a2}.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.kpi,.agent,.feed{border:1px solid #2d4259;background:#0d1a2a;border-radius:15px}.kpi{padding:12px}.kpi small{color:#9fb1c4;font-size:9px}.kpi b{display:block;font-size:22px;margin-top:5px}.agents{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.agent{padding:12px;min-height:126px}.agent-head{display:flex;justify-content:space-between;gap:8px}.agent h3{font-size:12px;margin:0}.agent p{font-size:9px;color:#9fb1c4;margin:5px 0 12px}.status{font-size:8px;border:1px solid #526173;border-radius:20px;padding:4px 7px;color:#bdc8d5}.status.running{color:#65f0c2;border-color:#35d6a2}.activity{font-size:9px;color:#dce7f3}.heartbeat{font-size:8px;color:#7f93a8;margin-top:9px}.feed{padding:13px}.feed-head{display:flex;justify-content:space-between;margin-bottom:9px}.event{display:flex;gap:8px;padding:8px 0;border-top:1px solid #1e3043;font-size:9px}.empty{padding:18px;text-align:center;color:#8195aa;font-size:9px}.truth{font-size:8px;color:#8fa4b8}.spin{display:inline-block;width:12px;height:12px;border:2px solid #35506c;border-top-color:#65f0c2;border-radius:50%;animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}@media(max-width:900px){.agents{grid-template-columns:repeat(2,1fr)}.kpis{grid-template-columns:repeat(3,1fr)}}@media(max-width:560px){.lcc-top{align-items:flex-start;flex-direction:column}.agents{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+<section class="lcc" id="leadCommand">
+ <header class="lcc-top">
+  <div class="lcc-title"><small>GREENLIFE · LEAD GENERATION HQ</small><h1>مرکز فرمان زنده ایجنت‌ها</h1><div class="truth" id="truthNote">فقط فعالیت واقعی Backend نمایش داده می‌شود.</div></div>
+  <div class="lcc-controls">
+   <span><i class="live-dot" id="liveDot"></i> <b id="liveLabel">LIVE</b></span>
+   <span class="truth" id="updated">در حال اتصال…</span><span class="spin" id="spinner"></span>
+   <button type="button" class="lcc-btn on" id="liveToggle">Live ON</button>
+   <button type="button" class="lcc-btn" id="refreshNow">↻ تازه‌سازی</button>
+  </div>
+ </header>
+ <div class="kpis">
+  <div class="kpi"><small>AGENTS</small><b id="kAgents">7</b></div>
+  <div class="kpi"><small>ACTIVE NOW</small><b id="kActive">0</b></div>
+  <div class="kpi"><small>QUALIFIED TODAY</small><b id="kQualified">0</b></div>
+  <div class="kpi"><small>OPPORTUNITIES</small><b id="kOpp">0</b></div>
+  <div class="kpi"><small>REVENUE TODAY</small><b id="kRevenue">0</b></div>
+ </div>
+ <div class="agents" id="agentGrid"></div>
+ <section class="feed"><div class="feed-head"><b>Live Agent Activity</b><span class="truth">Status 5s · KPI 30s</span></div><div id="eventFeed" aria-live="polite"><div class="empty">هنوز رویداد واقعی ثبت نشده است.</div></div></section>
+</section>
+<script>
+(function(){
+ const root=document.getElementById('leadCommand'); if(!root||root.dataset.init)return; root.dataset.init='1';
+ let live=true,timer=null,lastKpi=0; const $=id=>document.getElementById(id);
+ function money(v){return new Intl.NumberFormat('fa-IR').format(Number(v||0));}
+ function render(d){
+  $('updated').textContent='آپدیت '+new Date(d.server_time).toLocaleTimeString('fa-IR');
+  $('truthNote').textContent=d.note||'';
+  if(Date.now()-lastKpi>29000){$('kAgents').textContent=d.kpi.agents;$('kActive').textContent=d.kpi.active;$('kQualified').textContent=d.kpi.qualified_today;$('kOpp').textContent=d.kpi.opportunities;$('kRevenue').textContent=money(d.kpi.revenue_today);lastKpi=Date.now();}
+  $('agentGrid').innerHTML=d.agents.map(a=>'<article class="agent"><div class="agent-head"><h3>'+a.fa+'<br><small>'+a.name+'</small></h3><span class="status '+(a.status==='running'?'running':'')+'">'+a.status_label+'</span></div><p>'+a.mission+'</p><div class="activity">'+a.activity+'</div><div class="heartbeat">'+(a.heartbeat?'Heartbeat: '+a.heartbeat:'Heartbeat: —')+'</div></article>').join('');
+  $('eventFeed').innerHTML=d.events&&d.events.length?d.events.map(e=>'<div class="event"><b>'+e.time+'</b><span>'+e.agent+' → '+e.message+'</span></div>').join(''):'<div class="empty">هنوز رویداد واقعی ثبت نشده است.</div>';
+ }
+ async function pull(){if(!live)return;$('spinner').hidden=false;try{const r=await fetch('/lead-command/api/live/',{headers:{'X-Requested-With':'XMLHttpRequest'},cache:'no-store'});if(!r.ok)throw Error();render(await r.json());}catch(e){$('updated').textContent='ارتباط موقتاً قطع است';}finally{$('spinner').hidden=true;}}
+ function schedule(){clearInterval(timer);if(live){pull();timer=setInterval(pull,5000);}}
+ $('liveToggle').addEventListener('click',()=>{live=!live;$('liveToggle').textContent=live?'Live ON':'Live OFF';$('liveToggle').classList.toggle('on',live);$('liveLabel').textContent=live?'LIVE':'PAUSED';$('liveDot').style.opacity=live?'1':'.25';schedule();});
+ $('refreshNow').addEventListener('click',pull);
+ document.addEventListener('visibilitychange',()=>{if(document.hidden){clearInterval(timer);}else schedule();});
+ schedule();
+})();
+</script>
+{% endblock %}
