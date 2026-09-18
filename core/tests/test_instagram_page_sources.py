@@ -84,11 +84,11 @@ class InstagramPageSourceTests(TestCase):
         self.client.force_login(self.operator.user)
         dashboard = self.client.get(reverse('call_center_dashboard'))
         self.assertEqual(dashboard.status_code, 200)
-        self.assertContains(dashboard, 'Instagram · لینک · Greenlife.cafe')
+        self.assertContains(dashboard, 'اینستاگرام · لینک · Greenlife.cafe')
 
         self.client.force_login(self.manager.user)
         hub = self.client.get(reverse('lead_management_dashboard'))
         self.assertEqual(hub.status_code, 200)
         self.assertContains(hub, 'آمار پیج‌های اینستاگرام')
         self.assertContains(hub, 'Greenlife.cafe')
-        self.assertContains(hub, 'Instagram · لینک · Greenlife.cafe')
+        self.assertContains(hub, 'اینستاگرام · لینک · Greenlife.cafe')
