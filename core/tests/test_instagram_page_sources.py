@@ -14,6 +14,11 @@ class InstagramPageSourceTests(TestCase):
             defaults={'role': 'call_center', 'branch': branch, 'is_active': True},
         )
         self.staff = User.objects.create_user(username='ig-page-staff', password='x')
+        manager_user = User.objects.create_user(username='ig-page-manager', password='x')
+        self.manager, _ = EmployeeProfile.objects.update_or_create(
+            user=manager_user,
+            defaults={'role': 'manager', 'branch': branch, 'is_active': True},
+        )
 
     def _public_payload(self):
         return {
@@ -67,3 +72,23 @@ class InstagramPageSourceTests(TestCase):
         self.assertEqual(lead.source, 'panel')
         self.assertIn('پیج: Drjavaherian', lead.notes)
         self.assertIn('[instagram_page:drjavaherian]', lead.notes)
+
+
+    def test_origin_is_visible_to_call_center_and_management_statistics(self):
+        response = self.client.post(
+            reverse('instagram_lead') + '?source=greenlife_cafe',
+            self._public_payload(),
+        )
+        self.assertEqual(response.status_code, 200)
+
+        self.client.force_login(self.operator.user)
+        dashboard = self.client.get(reverse('call_center_dashboard'))
+        self.assertEqual(dashboard.status_code, 200)
+        self.assertContains(dashboard, 'Instagram · لینک · Greenlife.cafe')
+
+        self.client.force_login(self.manager.user)
+        hub = self.client.get(reverse('lead_management_dashboard'))
+        self.assertEqual(hub.status_code, 200)
+        self.assertContains(hub, 'آمار پیج‌های اینستاگرام')
+        self.assertContains(hub, 'Greenlife.cafe')
+        self.assertContains(hub, 'Instagram · لینک · Greenlife.cafe')
