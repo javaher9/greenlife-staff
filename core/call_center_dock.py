@@ -82,7 +82,7 @@ _DOCK_STYLE = r'''<style id="greenlife-call-center-dock-v2">
     transform:none!important;box-shadow:0 5px 14px rgba(38,54,75,.08)!important;border-color:#cbd5df!important
   }
   .cc-side-v2-main .ico,.cc-side-v2-schedule .ico{font-size:18px!important;line-height:1!important}
-  .cc-side-v2-main .txt,.cc-side-v2-schedule .txt{font-size:9px!important;font-weight:900!important;line-height:1.25!important}
+  .cc-side-v2-main .txt,.cc-side-v2-schedule .txt{display:block!important;width:100%!important;font-size:8.5px!important;font-weight:900!important;line-height:1.25!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:clip!important}
   .cc-side-v2-unread{
     position:absolute!important;top:-3px!important;right:-3px!important;min-width:20px!important;height:20px!important;
     padding:0 5px!important;border-radius:999px!important;background:#c6425e!important;color:#fff!important;
@@ -282,7 +282,7 @@ _DOCK_SCRIPT = r'''<script id="greenlife-call-center-dock-script-v2">
     shell.className='cc-side-v2-shell';
     var rail=document.createElement('div');
     rail.className='cc-side-v2-rail';
-    rail.innerHTML='<button type="button" class="cc-side-v2-main" title="کارتابل"><span class="ico">✉</span><span class="txt">کارتابل</span>'+(unread?'<b class="cc-side-v2-unread">'+unread+'</b>':'')+'</button><div class="cc-side-v2-favs"></div><div class="cc-side-v2-divider"></div><button type="button" class="cc-side-v2-schedule" title="نوبت‌های امروز"><span class="ico">▣</span><span class="txt">نوبت</span></button>';
+    rail.innerHTML='<button type="button" class="cc-side-v2-main" title="کارتابل"><span class="ico">✉</span><span class="txt">کارتابل</span>'+(unread?'<b class="cc-side-v2-unread">'+unread+'</b>':'')+'</button><div class="cc-side-v2-favs"></div><div class="cc-side-v2-divider"></div><button type="button" class="cc-side-v2-schedule" title="نوبت‌های امروز"><span class="ico">▣</span><span class="txt">نوبت امروز</span></button>';
 
     var panel=document.createElement('div');
     panel.className='cc-side-v2-panel';
