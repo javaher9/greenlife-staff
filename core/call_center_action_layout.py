@@ -61,6 +61,33 @@ _ACTION_LAYOUT_STYLE = r'''<style id="greenlife-call-center-action-layout-v1">
     padding-inline:5px!important;
   }
 }
+
+/* v2 final visual override — loaded last, so this is what operators actually see. */
+@media (min-width:1100px){
+ body.gl-role-call-center .cc-v5 .cc-v5-row-actions{gap:8px!important}
+ body.gl-role-call-center .cc-v5 .cc-v5-row-actions>a,
+ body.gl-role-call-center .cc-v5 .cc-v5-row-actions>button{
+   height:40px!important;min-height:40px!important;border-radius:12px!important;
+   font:900 10px Tahoma!important;box-shadow:0 3px 10px rgba(35,49,70,.055)!important
+ }
+ body.gl-role-call-center .cc-v5 .cc-v5-row-actions .cc-v5-call{
+   background:#edf8f3!important;color:#17684b!important;border:1px solid #c6e2d5!important
+ }
+ body.gl-role-call-center .cc-v5 .cc-v5-row-actions .cc-v5-open,
+ body.gl-role-call-center .cc-v5 .cc-v5-row-actions .cc-result-action{
+   background:#f5f1fa!important;color:#604786!important;border:1px solid #ddd3e9!important
+ }
+ body.gl-role-call-center .cc-v5 .cc-v5-row-actions .cc-whatsapp-action{
+   background:#f0f8f4!important;color:#287052!important;border:1px solid #cfe4d8!important
+ }
+ body.gl-role-call-center .cc-v5 .cc-v5-row-actions .cc-contact-done{
+   background:#e8f1ef!important;color:#285f55!important;border:1px solid #bfd5d0!important;
+   min-width:116px!important
+ }
+ body.gl-role-call-center .cc-v5 .cc-v5-row-actions .cc-contact-done[disabled]{
+   background:#f3f5f6!important;color:#77828c!important;border-color:#e0e5e8!important
+ }
+}
 </style>'''
 
 
