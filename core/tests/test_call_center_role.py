@@ -11,6 +11,12 @@ from core.referral_views import _auto_assign_call_center
 
 class CallCenterRoleTests(TestCase):
     def setUp(self):
+        # Keep routing tests deterministic; Friday production routing is covered separately.
+        from unittest.mock import patch
+        import datetime
+        self._localdate_patch = patch('core.referral_views.timezone.localdate', return_value=datetime.date(2026, 9, 17))
+        self._localdate_patch.start()
+        self.addCleanup(self._localdate_patch.stop)
         self.branch=Branch.objects.create(name='کال‌سنتر')
         self.operator_one=self.make_user('operator-one','call_center','نرگس')
         self.operator_two=self.make_user('operator-two','call_center','بنفشه')
@@ -137,8 +143,6 @@ class CallCenterRoleTests(TestCase):
         self.assertFalse(ReferralProfile.objects.filter(user=self.operator_one).exists())
 
     def test_new_leads_are_balanced_between_active_operators(self):
-        # Distribution tests must not depend on the wall-clock weekday (Friday has attendance-only routing).
-        from unittest.mock import patch
         extra=ReferralLead.objects.create(
             referrer=self.referrer,full_name='صف اضافه',phone='09120000003',
             assigned_to=self.operator_one.profile,
@@ -147,9 +151,7 @@ class CallCenterRoleTests(TestCase):
         new_lead=ReferralLead.objects.create(
             referrer=self.referrer,full_name='مشتری تازه',phone='09120000004',
         )
-        with patch('core.referral_views.timezone.localdate') as localdate:
-            localdate.return_value = __import__('datetime').date(2026, 9, 17)
-            assigned=_auto_assign_call_center(new_lead)
+        assigned=_auto_assign_call_center(new_lead)
         new_lead.refresh_from_db()
         self.assertEqual(assigned,self.operator_two.profile)
         self.assertEqual(new_lead.assigned_to,self.operator_two.profile)
