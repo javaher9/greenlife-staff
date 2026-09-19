@@ -276,7 +276,7 @@ _CALL_TRACKING_SCRIPT = r'''<script>
       button.className='cc-contact-done';
       button.dataset.leadId=match[1];
       button.textContent='✓ تماس انجام شد';
-      button.style.cssText='border:1px solid #bfe1d1;background:#eef9f4;color:#176b4a;border-radius:9px;padding:7px 10px;font:900 10px Tahoma;cursor:pointer;white-space:nowrap';
+      button.style.cssText='cursor:pointer;white-space:nowrap';
       actionsBox.appendChild(button);
     }
   }
