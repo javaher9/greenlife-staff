@@ -2,10 +2,12 @@ from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q, Sum
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
+from django.contrib import messages
+from django.views.decorators.http import require_POST
 
 from .call_center_identity import (
     FlowerLeadProxy, FlowerProfileProxy, call_center_display_name,
@@ -180,6 +182,42 @@ def _operational_status_rows(leads, total):
         ('won','فروش موفق',successful_count),
     ]
     return [{'key':key,'label':label,'count':count,'percent':round(count*100/total,1) if total else 0} for key,label,count in rows]
+
+
+
+@require_POST
+@login_required
+def lead_attention_bulk_action(request):
+    profile = getattr(request.user, 'profile', None)
+    if not profile or profile.role not in ALLOWED_ROLES:
+        return render(request, 'core/lead_management_forbidden.html', status=403)
+    ids = [int(x) for x in request.POST.getlist('lead_ids') if str(x).isdigit()]
+    if not ids:
+        messages.warning(request, 'حداقل یک لید را انتخاب کنید.')
+        return redirect('lead_management_dashboard')
+    operator_id = (request.POST.get('operator_id') or '').strip()
+    if not operator_id.isdigit():
+        messages.warning(request, 'مسئول پیگیری را انتخاب کنید.')
+        return redirect('lead_management_dashboard')
+    operator = EmployeeProfile.objects.filter(
+        pk=int(operator_id), role='call_center', is_active=True, user__is_active=True,
+    ).first()
+    if not operator:
+        messages.error(request, 'اپراتور انتخاب‌شده فعال نیست.')
+        return redirect('lead_management_dashboard')
+    leads = ReferralLead.objects.filter(pk__in=ids).exclude(status__in=('won','lost'))
+    changed = 0
+    from .referral_views import _default_call_center_group, _notify_call_center_assignment
+    for lead in leads:
+        was = lead.assigned_to_id
+        lead.assigned_to = operator
+        lead.group = _default_call_center_group(operator)
+        lead.save(update_fields=['assigned_to','group','updated_at'])
+        if was != operator.id:
+            _notify_call_center_assignment(lead)
+        changed += 1
+    messages.success(request, f'{changed} لید به {call_center_display_name(operator)} ارجاع شد.')
+    return redirect('lead_management_dashboard')
 
 
 @login_required
