@@ -121,7 +121,7 @@ class CallCenterRoleTests(TestCase):
 
     def test_operator_can_record_result_only_for_own_lead(self):
         response=self.client.post(reverse('call_center_lead',args=[self.lead_one.pk]),{
-            'status':'contacted','next_follow_up':'','interested_service':'لاغری موضعی',
+            'contact_result':'no_answer','next_follow_up':'','interested_service':'لاغری موضعی',
             'notes':'تماس انجام شد؛ عصر دوباره پیگیری شود.',
         })
         self.assertRedirects(response,reverse('call_center_dashboard'))
@@ -137,6 +137,8 @@ class CallCenterRoleTests(TestCase):
         self.assertFalse(ReferralProfile.objects.filter(user=self.operator_one).exists())
 
     def test_new_leads_are_balanced_between_active_operators(self):
+        # Distribution tests must not depend on the wall-clock weekday (Friday has attendance-only routing).
+        from unittest.mock import patch
         extra=ReferralLead.objects.create(
             referrer=self.referrer,full_name='صف اضافه',phone='09120000003',
             assigned_to=self.operator_one.profile,
@@ -145,7 +147,9 @@ class CallCenterRoleTests(TestCase):
         new_lead=ReferralLead.objects.create(
             referrer=self.referrer,full_name='مشتری تازه',phone='09120000004',
         )
-        assigned=_auto_assign_call_center(new_lead)
+        with patch('core.referral_views.timezone.localdate') as localdate:
+            localdate.return_value = __import__('datetime').date(2026, 9, 17)
+            assigned=_auto_assign_call_center(new_lead)
         new_lead.refresh_from_db()
         self.assertEqual(assigned,self.operator_two.profile)
         self.assertEqual(new_lead.assigned_to,self.operator_two.profile)
