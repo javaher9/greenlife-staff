@@ -81,7 +81,7 @@ _ACTION_LAYOUT_STYLE = r'''<style id="greenlife-call-center-action-layout-v1">
    background:#f0f8f4!important;color:#287052!important;border:1px solid #cfe4d8!important
  }
  body.gl-role-call-center .cc-v5 .cc-v5-row-actions .cc-contact-done{
-   background:#e8f1ef!important;color:#285f55!important;border:1px solid #bfd5d0!important;
+   background:#f1f4f3!important;color:#4d625d!important;border:1px solid #d4ddda!important;
    min-width:116px!important
  }
  body.gl-role-call-center .cc-v5 .cc-v5-row-actions .cc-contact-done[disabled]{
