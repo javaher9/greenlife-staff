@@ -22,7 +22,7 @@ from .forms import (
     PublicReferralLeadForm, ReferralLeadForm, ReferralLeadManageForm,
     ReferralMemberForm, ReferralSaleForm, CallCenterLeadForm, CallCenterLeadCreateForm,
 )
-from .models import CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification, VisitAppointment, InternalMessage
+from .models import Attendance, CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification, VisitAppointment, InternalMessage
 from .call_center_identity import FlowerLeadProxy
 # Production rebuild marker after the previous deployment hit the workflow timeout.
 
@@ -272,7 +272,18 @@ def _auto_assign_call_center(lead):
             lead.group=_default_call_center_group(lead.assigned_to)
             lead.save(update_fields=['group','updated_at'])
         return lead.assigned_to
-    operator=(EmployeeProfile.objects.filter(role='call_center',is_active=True,user__is_active=True)
+    candidates=EmployeeProfile.objects.filter(role='call_center',is_active=True,user__is_active=True)
+    today=timezone.localdate()
+    # Friday is an on-duty day: only call-center staff who actually checked in
+    # today may receive new leads. On other days the normal distribution stays unchanged.
+    if today.weekday() == 4:
+        present_user_ids=Attendance.objects.filter(
+            date=today,
+            status__in=('present','late'),
+            check_in__isnull=False,
+        ).values_list('user_id',flat=True)
+        candidates=candidates.filter(user_id__in=present_user_ids)
+    operator=(candidates
               .annotate(open_leads=Count(
                   'assigned_referral_leads',
                   filter=Q(assigned_referral_leads__status__in=('new','contacted','appointment')),
