@@ -88,6 +88,15 @@ _ACTION_LAYOUT_STYLE = r'''<style id="greenlife-call-center-action-layout-v1">
    background:#f3f5f6!important;color:#77828c!important;border-color:#e0e5e8!important
  }
 }
+
+/* screenshot fixes: compact premium completion action; never hide WhatsApp */
+body.gl-role-call-center .cc-v5 .cc-v5-row-actions .cc-contact-done{
+ background:#eef4f2!important;color:#315f57!important;border-color:#cadbd7!important;
+ box-shadow:none!important
+}
+body.gl-role-call-center .cc-v5 .cc-v5-row-actions .cc-whatsapp-action{
+ display:flex!important;visibility:visible!important;opacity:1!important
+}
 </style>'''
 
 
