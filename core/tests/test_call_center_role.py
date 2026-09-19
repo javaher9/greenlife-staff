@@ -11,6 +11,12 @@ from core.referral_views import _auto_assign_call_center
 
 class CallCenterRoleTests(TestCase):
     def setUp(self):
+        # Keep routing tests deterministic; Friday production routing is covered separately.
+        from unittest.mock import patch
+        import datetime
+        self._localdate_patch = patch('core.referral_views.timezone.localdate', return_value=datetime.date(2026, 9, 17))
+        self._localdate_patch.start()
+        self.addCleanup(self._localdate_patch.stop)
         self.branch=Branch.objects.create(name='کال‌سنتر')
         self.operator_one=self.make_user('operator-one','call_center','نرگس')
         self.operator_two=self.make_user('operator-two','call_center','بنفشه')
@@ -121,7 +127,7 @@ class CallCenterRoleTests(TestCase):
 
     def test_operator_can_record_result_only_for_own_lead(self):
         response=self.client.post(reverse('call_center_lead',args=[self.lead_one.pk]),{
-            'status':'contacted','next_follow_up':'','interested_service':'لاغری موضعی',
+            'contact_result':'no_answer','next_follow_up':'','interested_service':'لاغری موضعی',
             'notes':'تماس انجام شد؛ عصر دوباره پیگیری شود.',
         })
         self.assertRedirects(response,reverse('call_center_dashboard'))

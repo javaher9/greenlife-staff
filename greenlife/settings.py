@@ -1,3 +1,4 @@
+import sys
 import os
 from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,6 +41,7 @@ ROOT_URLCONF='greenlife.urls'
 TEMPLATES=[{'BACKEND':'django.template.backends.django.DjangoTemplates','DIRS':[BASE_DIR/'templates'],'APP_DIRS':True,'OPTIONS':{'context_processors':['django.template.context_processors.request','django.contrib.auth.context_processors.auth','django.contrib.messages.context_processors.messages','core.context_processors.executive_access','core.context_processors.call_center_flower_user']}}]
 WSGI_APPLICATION='greenlife.wsgi.application'
 DATABASES={'default':{'ENGINE':'django.db.backends.postgresql','NAME':os.getenv('POSTGRES_DB','greenlife'),'USER':os.getenv('POSTGRES_USER','greenlife'),'PASSWORD':os.getenv('POSTGRES_PASSWORD','change-me'),'HOST':os.getenv('POSTGRES_HOST','db'),'PORT':os.getenv('POSTGRES_PORT','5432')}}
+TESTING = 'test' in sys.argv
 AUTH_PASSWORD_VALIDATORS=[]
 LANGUAGE_CODE='fa-ir'; TIME_ZONE='Asia/Tehran'; USE_I18N=True; USE_TZ=True
 STATIC_URL='/static/'; STATIC_ROOT=BASE_DIR/'staticfiles'; STATICFILES_STORAGE='whitenoise.storage.CompressedManifestStaticFilesStorage'
