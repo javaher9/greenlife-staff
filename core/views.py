@@ -1172,7 +1172,7 @@ def finance_entry(request):
         obj.source='manual'
         obj.external_id=submission_external_id
         obj.review_status='pending'
-        obj.analysis_status='pending'
+        obj.analysis_status='pending' if obj.receipt_image else 'skipped'
         obj.recorded_by=request.user
         appointment=form.cleaned_data.get('appointment')
         obj.appointment=appointment
@@ -1199,6 +1199,10 @@ def finance_entry(request):
             'lead_id':appointment.lead_id if appointment else None,
             'call_center_user_id':obj.call_center_owner_id if appointment else None,
             'first_appointment_owner_id':obj.call_center_owner_id if appointment else None,
+            'payment_method':obj.payment_method,
+            'cash_currency':obj.cash_currency,
+            'cash_amount':str(obj.cash_amount) if obj.cash_amount is not None else None,
+            'cash_exchange_rate':str(obj.cash_exchange_rate) if obj.cash_exchange_rate is not None else None,
         }
         try:
             with transaction.atomic():
@@ -1217,6 +1221,9 @@ def finance_entry(request):
                     metadata={
                         'amount':str(obj.amount),'branch_id':obj.branch_id,'status':obj.review_status,
                         'sale_origin':obj.sale_origin,'sale_reason':obj.sale_reason,
+                        'payment_method':obj.payment_method,'cash_currency':obj.cash_currency,
+                        'cash_amount':str(obj.cash_amount) if obj.cash_amount is not None else None,
+                        'cash_exchange_rate':str(obj.cash_exchange_rate) if obj.cash_exchange_rate is not None else None,
                         'appointment_id':obj.appointment_id,
                         'receipt_original_size':obj.receipt_original_size,
                         'receipt_compressed_size':obj.receipt_compressed_size,
@@ -1236,9 +1243,12 @@ def finance_entry(request):
                 return redirect('finance_entry')
             raise
         messages.success(request,'تراکنش ثبت شد و برای بررسی مالی ارسال شد.')
-        ok,analysis_message=analyze_finance_receipt(obj)
-        if ok: messages.success(request,analysis_message)
-        else: messages.warning(request,analysis_message+' ثبت مالی شما محفوظ است و مدیر می‌تواند تحلیل را دوباره اجرا کند.')
+        if obj.receipt_image:
+            ok,analysis_message=analyze_finance_receipt(obj)
+            if ok: messages.success(request,analysis_message)
+            else: messages.warning(request,analysis_message+' ثبت مالی شما محفوظ است و مدیر می‌تواند تحلیل را دوباره اجرا کند.')
+        else:
+            messages.info(request,'پرداخت نقدی بدون تصویر رسید ثبت شد؛ اطلاعات ارز نقدی در تراکنش محفوظ است.')
         return redirect('finance_entry')
 
     today=timezone.localdate()

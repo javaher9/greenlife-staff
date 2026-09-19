@@ -1,6 +1,6 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
 <style>
-.cso{display:grid;gap:14px}.cso-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.cso-card{padding:14px;border:1px solid rgba(120,145,165,.2);border-radius:15px;background:rgba(255,255,255,.035);margin-bottom:10px}.cso-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.cso-name{font-size:16px;font-weight:950}.cso-meta{color:#93a7b8;font-size:12px;line-height:1.8}.cso-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.cso-btn{border:0;border-radius:11px;padding:11px;font-weight:950;cursor:pointer}.cso-success{background:#1f9d70;color:#fff}.cso-fail{background:#6c3440;color:#fff}.cso-form{display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(120,145,165,.16)}.cso-form.open{display:block}.cso-options{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.cso-options label{padding:9px;border:1px solid rgba(130,155,175,.22);border-radius:10px}.cso-form input[type=number],.cso-form textarea{width:100%;box-sizing:border-box;margin-top:7px}.cso-submit{margin-top:8px;width:100%}.happy-row{padding:11px 0;border-bottom:1px solid rgba(120,145,165,.13)}.happy-row:last-child{border:0}.happy-money{font-weight:950;direction:ltr}.cso-note{font-size:11px;color:#8fa2b2}.cso-empty{padding:22px;text-align:center;color:#8ea2b4}@media(max-width:850px){.cso-grid{grid-template-columns:1fr}.cso-options{grid-template-columns:1fr}.cso-actions{grid-template-columns:1fr 1fr}}
+.cso{display:grid;gap:14px}.cso-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.cso-card{padding:14px;border:1px solid rgba(120,145,165,.2);border-radius:15px;background:rgba(255,255,255,.035);margin-bottom:10px}.cso-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.cso-name{font-size:16px;font-weight:950}.cso-meta{color:#93a7b8;font-size:12px;line-height:1.8}.cso-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.cso-btn{border:0;border-radius:11px;padding:11px;font-weight:950;cursor:pointer}.cso-success{background:#1f9d70;color:#fff}.cso-fail{background:#6c3440;color:#fff}.cso-form{display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(120,145,165,.16)}.cso-form.open{display:block}.cso-options{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.cso-options label{padding:9px;border:1px solid rgba(130,155,175,.22);border-radius:10px}.cso-form input[type=number],.cso-form textarea{width:100%;box-sizing:border-box;margin-top:7px}.cso-submit{margin-top:8px;width:100%}.happy-row{padding:11px 0;border-bottom:1px solid rgba(120,145,165,.13)}.happy-row:last-child{border:0}.happy-money{font-weight:950;direction:ltr}.cso-note{font-size:11px;color:#8fa2b2}.cso-cash{display:none;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px;padding:10px;border:1px solid rgba(52,211,153,.25);border-radius:11px;background:rgba(16,185,129,.06)}.cso-cash.open{display:grid}.cso-cash label{margin:0}.cso-empty{padding:22px;text-align:center;color:#8ea2b4}@media(max-width:850px){.cso-grid{grid-template-columns:1fr}.cso-options{grid-template-columns:1fr}.cso-actions{grid-template-columns:1fr 1fr}.cso-cash.open{grid-template-columns:1fr}}
 </style>
 <div class="cso">
 <section class="hero"><div><span class="eyebrow">پنل مشاور</span><h1>نتیجه مراجعه و فروش</h1><p>مراجعه‌های ورودی از لید Staff را تعیین تکلیف کنید. فروش ناموفق برای پیگیری فردا به کال‌سنتر برمی‌گردد و فروش موفق در Happy Call باقی می‌ماند.</p></div></section>
@@ -11,7 +11,18 @@
  <div class="cso-actions"><button type="button" class="cso-btn cso-success" onclick="toggleOutcome('s{{x.pk}}')">فروش موفق</button><button type="button" class="cso-btn cso-fail" onclick="toggleOutcome('f{{x.pk}}')">فروش ناموفق</button></div>
  <form method="post" class="cso-form" id="s{{x.pk}}">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{x.pk}}"><input type="hidden" name="result" value="success">
   <div class="cso-options">{% for key,label in success_types.items %}<label><input type="radio" name="sale_type" value="{{key}}" required> {{label}}</label>{% endfor %}</div>
-  <label>مبلغ فروش (تومان)<input type="number" name="amount_toman" min="1" step="1" inputmode="numeric" required></label>
+  <label>مبلغ فروش / معادل کل (تومان)<input type="number" name="amount_toman" min="1" step="1" inputmode="numeric" required></label>
+  <label>روش پرداخت
+    <select name="payment_method" required onchange="toggleSaleCash(this)">
+      <option value="">انتخاب روش پرداخت</option>
+      {% for key,label in payment_methods %}<option value="{{key}}">{{label}}</option>{% endfor %}
+    </select>
+  </label>
+  <div class="cso-cash">
+    <label>ارز نقدی<select name="cash_currency"><option value="">انتخاب ارز</option>{% for key,label in cash_currencies %}<option value="{{key}}">{{label}}</option>{% endfor %}</select></label>
+    <label>مبلغ نقدی به ارز انتخابی<input type="number" name="cash_amount" min="0.01" step="0.01" inputmode="decimal"></label>
+    <label>نرخ تبدیل به تومان<input type="number" name="cash_exchange_rate" min="0.01" step="0.01" inputmode="decimal" placeholder="اختیاری"></label>
+  </div>
   <label>توضیحات اختیاری<textarea name="note" rows="2"></textarea></label><button class="primary cso-submit" type="submit">ثبت فروش موفق</button>
  </form>
  <form method="post" class="cso-form" id="f{{x.pk}}">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{x.pk}}"><input type="hidden" name="result" value="failed">
@@ -21,10 +32,11 @@
 </article>{% empty %}<div class="cso-empty">مراجعه‌ای برای تعیین نتیجه باقی نمانده است.</div>{% endfor %}
 </section>
 <section class="panel"><div class="sectionhead"><div><h2>مخزن Happy Call</h2><small>فروش‌های موفق ثبت‌شده توسط شما</small></div></div>
-{% for s in happy_calls %}<div class="happy-row"><div class="cso-head"><strong>{{s.lead.full_name}}</strong><span class="happy-money">{{s.amount|floatformat:0}} تومان</span></div><div class="cso-meta">{{s.sale_date|jdate}} · {{s.lead.phone}}</div>{% if s.note %}<div class="cso-note">{{s.note}}</div>{% endif %}</div>{% empty %}<div class="cso-empty">هنوز فروش موفقی برای Happy Call ثبت نشده است.</div>{% endfor %}
+{% for s in happy_calls %}<div class="happy-row"><div class="cso-head"><strong>{{s.lead.full_name}}</strong><span class="happy-money">{{s.amount|floatformat:0}} تومان</span></div><div class="cso-meta">{{s.sale_date|jdate}} · {{s.lead.phone}}</div><div class="cso-note">پرداخت: {{ s.get_payment_method_display|default:s.payment_method|default:'—' }}{% if s.payment_method == 'Cash' %} · {{ s.get_cash_currency_display|default:'—' }}{% if s.cash_amount %} · {{ s.cash_amount|floatformat:2 }}{% endif %}{% endif %}</div>{% if s.note %}<div class="cso-note">{{s.note}}</div>{% endif %}</div>{% empty %}<div class="cso-empty">هنوز فروش موفقی برای Happy Call ثبت نشده است.</div>{% endfor %}
 </section></div></div>
 <script>
 function toggleOutcome(id){document.querySelectorAll('.cso-form').forEach(function(x){if(x.id!==id)x.classList.remove('open')});document.getElementById(id).classList.toggle('open')}
+function toggleSaleCash(select){var form=select.closest('form'),box=form.querySelector('.cso-cash'),currency=box&&box.querySelector('select[name=cash_currency]');var on=select.value==='Cash';if(box)box.classList.toggle('open',on);if(currency&&on&&!currency.value)currency.value='IRT'}
 function failureReason(r){var f=r.closest('form'),t=f.querySelector('textarea[name=note]');t.required=(r.value==='other');t.placeholder=t.required?'توضیح برای «سایر» الزامی است':'توضیحات اختیاری'}
 </script>
 {% endblock %}

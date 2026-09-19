@@ -326,10 +326,22 @@ class SmsMessageLog(models.Model):
 
 class ReferralSale(models.Model):
     STATUS=[('draft','در انتظار تأیید'),('approved','تأیید شده'),('paid','پورسانت پرداخت شد'),('cancelled','لغو شده')]
+    PAYMENT_METHODS=[
+        ('Pos S','Pos S'),('Pos H','Pos H'),('CC P','CC P'),
+        ('CC D','CC D'),('CC S','CC S'),('Cash','نقدی'),
+    ]
+    CASH_CURRENCY=[
+        ('IRT','تومان ایران'),('IRR','ریال ایران'),('USD','دلار آمریکا'),
+        ('EUR','یورو'),('TRY','لیر ترکیه'),('AED','درهم امارات'),('OTHER','سایر ارزها'),
+    ]
     SYNC_STATUS=ReferralProfile.SYNC_STATUS
     lead=models.OneToOneField(ReferralLead,on_delete=models.PROTECT,related_name='sale')
     sale_date=models.DateField(default=timezone.localdate)
     amount=models.DecimalField(max_digits=18,decimal_places=0)
+    payment_method=models.CharField(max_length=20,choices=PAYMENT_METHODS,blank=True)
+    cash_currency=models.CharField(max_length=8,choices=CASH_CURRENCY,blank=True)
+    cash_amount=models.DecimalField(max_digits=18,decimal_places=2,null=True,blank=True)
+    cash_exchange_rate=models.DecimalField(max_digits=18,decimal_places=2,null=True,blank=True,help_text='نرخ هر واحد ارز به تومان')
     direct_commission=models.DecimalField(max_digits=18,decimal_places=0,default=0,help_text='سهم معرف مستقیم به تومان')
     level_two_commission=models.DecimalField(max_digits=18,decimal_places=0,default=0,help_text='سهم معرف بالادستی به تومان')
     status=models.CharField(max_length=20,choices=STATUS,default='draft',db_index=True)
@@ -630,6 +642,10 @@ class FinancialTransaction(models.Model):
         ('afsariyeh','فروش افسریه'),
         ('branch_walk_in','مراجعه مستقیم شعبه'),
     ]
+    CASH_CURRENCY=[
+        ('IRR','ریال ایران'),('USD','دلار آمریکا'),('EUR','یورو'),
+        ('TRY','لیر ترکیه'),('AED','درهم امارات'),('OTHER','سایر ارزها'),
+    ]
     external_id=models.CharField(max_length=120,blank=True,null=True)
     source=models.CharField(max_length=20,choices=SOURCE,default='crm')
     branch=models.ForeignKey(Branch,on_delete=models.SET_NULL,null=True,blank=True,related_name='financial_transactions')
@@ -641,6 +657,9 @@ class FinancialTransaction(models.Model):
     amount=models.DecimalField(max_digits=18,decimal_places=2)
     entry_type=models.CharField(max_length=10,choices=ENTRY_TYPE,default='inc')
     payment_method=models.CharField(max_length=80,blank=True)
+    cash_currency=models.CharField(max_length=8,choices=CASH_CURRENCY,blank=True)
+    cash_amount=models.DecimalField(max_digits=18,decimal_places=2,null=True,blank=True)
+    cash_exchange_rate=models.DecimalField(max_digits=18,decimal_places=2,null=True,blank=True,help_text='نرخ هر واحد ارز به ریال')
     sale_reason=models.CharField(max_length=30,choices=SALE_REASON,blank=True)
     sale_origin=models.CharField(max_length=30,choices=SALE_ORIGIN,blank=True)
     service=models.CharField(max_length=160,blank=True)

@@ -22,6 +22,8 @@
 .fin-today-meta b{color:inherit;font-weight:850}
 .fin-today-card-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(120,145,165,.13)}
 .fin-today-empty{padding:18px;text-align:center;color:#8498aa}
+.fin-cash-fields{display:none;grid-column:1/-1;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:12px;border:1px solid rgba(52,211,153,.28);border-radius:13px;background:rgba(16,185,129,.06)}
+.fin-cash-fields.open{display:grid}.fin-cash-note{grid-column:1/-1;color:#8fdcbc;font-size:11px;line-height:1.8}
 @media(max-width:700px){
   .finance-entry-shell{gap:10px}
   .finance-entry-form .grid{grid-template-columns:1fr!important}
@@ -31,6 +33,7 @@
   .fin-today-desktop{display:none}
   .fin-today-mobile{display:block}
   .panel .sectionhead{align-items:flex-start;gap:9px;flex-direction:column}
+  .fin-cash-fields.open{grid-template-columns:1fr}
 }
 </style>
 
@@ -65,13 +68,19 @@
       <label>{{ form.sale_reason.label }}{{ form.sale_reason }}{{ form.sale_reason.errors }}</label>
       <label>{{ form.sale_origin.label }}{{ form.sale_origin }}{{ form.sale_origin.errors }}</label>
       <label>{{ form.payment_method.label }}{{ form.payment_method }}{{ form.payment_method.errors }}</label>
+      <div class="fin-cash-fields" id="financeCashFields">
+        <label>{{ form.cash_currency.label }}{{ form.cash_currency }}{{ form.cash_currency.errors }}</label>
+        <label>{{ form.cash_amount.label }}{{ form.cash_amount }}{{ form.cash_amount.errors }}</label>
+        <label>{{ form.cash_exchange_rate.label }}{{ form.cash_exchange_rate }}{{ form.cash_exchange_rate.errors }}</label>
+        <div class="fin-cash-note">برای وجه نقد ریالی، مبلغ اصلی تراکنش مبنای گزارش است. برای دلار/یورو/لیر/درهم، مبلغ ارز را ثبت کنید؛ نرخ تبدیل اختیاری است ولی برای کنترل مالی توصیه می‌شود.</div>
+      </div>
       <label>{{ form.service.label }}{{ form.service }}{{ form.service.errors }}</label>
       <label>{{ form.terminal_or_payee.label }}{{ form.terminal_or_payee }}{{ form.terminal_or_payee.errors }}</label>
       <label>{{ form.tracking_number.label }}{{ form.tracking_number }}{{ form.tracking_number.errors }}</label>
       <label>{{ form.destination_card.label }}{{ form.destination_card }}{{ form.destination_card.errors }}</label>
     </div>
     <label>{{ form.description.label }}{{ form.description }}{{ form.description.errors }}</label>
-    <label>{{ form.receipt_image.label }}{{ form.receipt_image }}{{ form.receipt_image.errors }}<small>عکس رسید، کارت‌به‌کارت یا صفحه تراکنش؛ حداکثر ۱۰ مگابایت. تصویر خودکار فشرده و تحلیل می‌شود، اما مبلغ دستی تغییر نمی‌کند.</small></label>
+    <label>{{ form.receipt_image.label }}{{ form.receipt_image }}{{ form.receipt_image.errors }}<small>برای پرداخت غیرنقدی الزامی است. برای «نقدی» اختیاری است. حداکثر ۱۰ مگابایت؛ تصویر خودکار فشرده و تحلیل می‌شود.</small></label>
     <button class="primary fin-submit" id="financeSubmitButton" type="submit">
       <span class="fin-submit-icon">✓</span><span class="fin-submit-label">ثبت دریافت و ارسال برای بررسی</span>
     </button>
@@ -93,7 +102,7 @@
     <tr><th>تاریخ</th><th>نام فرد</th><th>مبدأ</th><th>علت فروش</th><th>مبلغ (میلیون تومان)</th><th>مقصد واریز</th><th>سند</th><th>وضعیت</th></tr>
     {% for x in entries %}<tr>
       <td>{{ x.occurred_at|jdate }}</td><td>{{ x.person_name }}</td><td>{{ x.get_sale_origin_display|default:'—' }}</td><td>{{ x.get_sale_reason_display|default:'—' }}</td>
-      <td>{{ x.amount|million_toman }}</td><td>{{ x.payment_method }}</td>
+      <td>{{ x.amount|million_toman }}</td><td>{{ x.payment_method }}{% if x.payment_method == 'Cash' %}<small style="display:block">نقدی · {{ x.get_cash_currency_display|default:'—' }}{% if x.cash_amount %} · {{ x.cash_amount|floatformat:2 }}{% endif %}{% if x.cash_exchange_rate %} · نرخ {{ x.cash_exchange_rate|floatformat:0 }}{% endif %}</small>{% endif %}</td>
       <td>{% if x.receipt_image %}<a href="{{ x.receipt_image.url }}" target="_blank" rel="noopener">مشاهده</a><small>{{ x.receipt_compressed_size|filesizeformat }}</small>{% else %}—{% endif %}</td>
       <td><span class="badge {{ x.review_status }}">{{ x.get_review_status_display }}</span>{% if x.review_note %}<small>{{ x.review_note }}</small>{% endif %}</td>
     </tr>{% empty %}<tr><td colspan="8">امروز هنوز ثبت مالی ندارید.</td></tr>{% endfor %}
@@ -111,6 +120,7 @@
           <span>مبدأ: <b>{{ x.get_sale_origin_display|default:'—' }}</b></span>
           <span>واریز: <b>{{ x.payment_method|default:'—' }}</b></span>
           <span>واحد: <b>میلیون تومان</b></span>
+          {% if x.payment_method == 'Cash' %}<span>ارز نقدی: <b>{{ x.get_cash_currency_display|default:'—' }}</b></span><span>مبلغ نقدی: <b>{{ x.cash_amount|default:'—' }}</b></span>{% endif %}
         </div>
         <div class="fin-today-card-foot">
           <span class="badge {{ x.review_status }}">{{ x.get_review_status_display }}</span>
@@ -130,6 +140,16 @@
   const button=document.getElementById('financeSubmitButton');
   const status=document.getElementById('financeSubmitStatus');
   if(!form||!button)return;
+
+  const method=document.getElementById('id_payment_method');
+  const cashFields=document.getElementById('financeCashFields');
+  const cashCurrency=document.getElementById('id_cash_currency');
+  function toggleCashFields(){
+    const isCash=method&&method.value==='Cash';
+    if(cashFields)cashFields.classList.toggle('open',isCash);
+    if(cashCurrency&&isCash&&!cashCurrency.value)cashCurrency.value='IRR';
+  }
+  if(method){method.addEventListener('change',toggleCashFields);toggleCashFields();}
 
   let submitted=false;
   form.addEventListener('submit',function(event){

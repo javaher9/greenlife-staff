@@ -569,6 +569,7 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
         ('CC P','CC P'),
         ('CC D','CC D'),
         ('CC S','CC S'),
+        ('Cash','نقدی'),
     ]
     date=JalaliDateField(label='تاریخ تراکنش',initial=timezone.localdate)
     appointment=forms.ModelChoiceField(
@@ -577,16 +578,28 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
     )
     sale_reason=forms.ChoiceField(label='علت فروش',choices=FinancialTransaction.SALE_REASON)
     sale_origin=forms.ChoiceField(label='مبدأ فروش',choices=FinancialTransaction.SALE_ORIGIN)
-    payment_method=forms.ChoiceField(label='مقصد واریز',choices=PAYMENT_METHODS)
+    payment_method=forms.ChoiceField(label='روش پرداخت / مقصد واریز',choices=PAYMENT_METHODS)
+    cash_currency=forms.ChoiceField(
+        label='ارز نقدی',required=False,choices=(('', 'انتخاب ارز'),)+tuple(FinancialTransaction.CASH_CURRENCY),
+    )
+    cash_amount=forms.DecimalField(
+        label='مبلغ نقدی به ارز انتخابی',required=False,min_value=0.01,max_digits=18,decimal_places=2,
+        widget=forms.NumberInput(attrs={'min':'0.01','step':'0.01','inputmode':'decimal','placeholder':'مثال: 500'}),
+    )
+    cash_exchange_rate=forms.DecimalField(
+        label='نرخ تبدیل هر واحد به ریال',required=False,min_value=0.01,max_digits=18,decimal_places=2,
+        widget=forms.NumberInput(attrs={'min':'0.01','step':'0.01','inputmode':'decimal','placeholder':'اختیاری؛ برای ارز خارجی'}),
+    )
     receipt_image=forms.ImageField(
-        label='تصویر تراکنش',required=True,
+        label='تصویر تراکنش',required=False,
         widget=forms.ClearableFileInput(attrs={'accept':'image/jpeg,image/png,image/webp'}),
     )
 
     class Meta:
         model=FinancialTransaction
         fields=[
-            'entry_type','appointment','person_name','amount','sale_reason','sale_origin','payment_method','service',
+            'entry_type','appointment','person_name','amount','sale_reason','sale_origin','payment_method',
+            'cash_currency','cash_amount','cash_exchange_rate','service',
             'account_heading','terminal_or_payee','tracking_number',
             'destination_card','description','receipt_image',
         ]
@@ -634,8 +647,24 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
             self.add_error('appointment','برای فروش افسریه باید نوبت مرتبط را انتخاب کنید.')
         if data.get('sale_reason')=='other' and not (data.get('description') or '').strip():
             self.add_error('description','برای «سایر» توضیح کوتاه علت فروش الزامی است.')
-        if data.get('payment_method')=='CC P' and not (data.get('terminal_or_payee') or '').strip():
+        payment_method=data.get('payment_method')
+        if payment_method=='CC P' and not (data.get('terminal_or_payee') or '').strip():
             self.add_error('terminal_or_payee','برای CC P نام شخص دریافت‌کننده الزامی است.')
+        if payment_method=='Cash':
+            currency=(data.get('cash_currency') or '').strip()
+            cash_amount=data.get('cash_amount')
+            if not currency:
+                self.add_error('cash_currency','نوع ارز نقدی را انتخاب کنید.')
+            elif currency=='IRR' and cash_amount in (None,''):
+                data['cash_amount']=data.get('amount')
+            elif currency!='IRR' and cash_amount in (None,''):
+                self.add_error('cash_amount','برای وجه نقد ارزی، مبلغ ارز را وارد کنید.')
+        else:
+            data['cash_currency']=''
+            data['cash_amount']=None
+            data['cash_exchange_rate']=None
+            if not data.get('receipt_image'):
+                self.add_error('receipt_image','برای پرداخت غیرنقدی، تصویر تراکنش الزامی است.')
         return data
 
     def clean_amount(self):
@@ -660,7 +689,11 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
         return value
 
     def clean_receipt_image(self):
-        image=self.cleaned_data['receipt_image']
+        image=self.cleaned_data.get('receipt_image')
+        if not image:
+            self.receipt_original_size=0
+            self.receipt_compressed_size=0
+            return None
         original_size=getattr(image,'size',0)
         if original_size>10*1024*1024:
             raise forms.ValidationError('حجم تصویر تراکنش باید کمتر از ۱۰ مگابایت باشد.')

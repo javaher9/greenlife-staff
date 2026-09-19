@@ -72,7 +72,47 @@ def consultant_sales_outcomes(request):
                 messages.error(request, 'مبلغ فروش را به تومان و بیشتر از صفر وارد کنید.')
                 return redirect('consultant_sales_outcomes')
 
-            outcome_note = f"نوع فروش: {SUCCESS_TYPES[sale_type]}"
+            payment_method=(request.POST.get('payment_method') or '').strip()
+            valid_methods=dict(ReferralSale.PAYMENT_METHODS)
+            if payment_method not in valid_methods:
+                messages.error(request, 'روش پرداخت را انتخاب کنید.')
+                return redirect('consultant_sales_outcomes')
+            cash_currency=''
+            cash_amount=None
+            cash_exchange_rate=None
+            if payment_method=='Cash':
+                cash_currency=(request.POST.get('cash_currency') or '').strip()
+                valid_currencies=dict(ReferralSale.CASH_CURRENCY)
+                if cash_currency not in valid_currencies:
+                    messages.error(request, 'نوع ارز نقدی را انتخاب کنید.')
+                    return redirect('consultant_sales_outcomes')
+                raw_cash=(request.POST.get('cash_amount') or '').replace(',','').strip()
+                try:
+                    cash_amount=Decimal(raw_cash) if raw_cash else None
+                except (InvalidOperation,AttributeError):
+                    cash_amount=None
+                if cash_currency=='IRT' and cash_amount is None:
+                    cash_amount=amount
+                elif cash_currency=='IRR' and cash_amount is None:
+                    cash_amount=amount*Decimal('10')
+                elif cash_currency not in ('IRT','IRR') and (cash_amount is None or cash_amount<=0):
+                    messages.error(request, 'برای وجه نقد ارزی، مبلغ ارز را وارد کنید.')
+                    return redirect('consultant_sales_outcomes')
+                raw_rate=(request.POST.get('cash_exchange_rate') or '').replace(',','').strip()
+                if raw_rate:
+                    try:
+                        cash_exchange_rate=Decimal(raw_rate)
+                    except (InvalidOperation,AttributeError):
+                        cash_exchange_rate=None
+                    if cash_exchange_rate is None or cash_exchange_rate<=0:
+                        messages.error(request, 'نرخ تبدیل ارز باید عددی و بیشتر از صفر باشد.')
+                        return redirect('consultant_sales_outcomes')
+
+            outcome_note = f"نوع فروش: {SUCCESS_TYPES[sale_type]} | روش پرداخت: {valid_methods[payment_method]}"
+            if payment_method=='Cash':
+                outcome_note += f" | ارز نقدی: {dict(ReferralSale.CASH_CURRENCY)[cash_currency]} | مبلغ نقدی: {cash_amount}"
+                if cash_exchange_rate:
+                    outcome_note += f" | نرخ تبدیل: {cash_exchange_rate}"
             if note:
                 outcome_note += f" | توضیح مشاور: {note}"
             with transaction.atomic():
@@ -81,6 +121,8 @@ def consultant_sales_outcomes(request):
                     defaults={
                         'sale_date': timezone.localdate(), 'amount': amount,
                         'status': 'approved', 'recorded_by': request.user,
+                        'payment_method':payment_method,'cash_currency':cash_currency,
+                        'cash_amount':cash_amount,'cash_exchange_rate':cash_exchange_rate,
                         'note': outcome_note,
                     },
                 )
@@ -89,8 +131,12 @@ def consultant_sales_outcomes(request):
                     sale.amount = amount
                     sale.status = 'approved'
                     sale.recorded_by = request.user
+                    sale.payment_method=payment_method
+                    sale.cash_currency=cash_currency
+                    sale.cash_amount=cash_amount
+                    sale.cash_exchange_rate=cash_exchange_rate
                     sale.note = outcome_note
-                    sale.save(update_fields=['sale_date', 'amount', 'status', 'recorded_by', 'note', 'updated_at'])
+                    sale.save(update_fields=['sale_date','amount','status','recorded_by','payment_method','cash_currency','cash_amount','cash_exchange_rate','note','updated_at'])
                 lead.status = 'won'
                 lead.next_follow_up = None
                 lead.save(update_fields=['status', 'next_follow_up', 'updated_at'])
@@ -147,4 +193,6 @@ def consultant_sales_outcomes(request):
         'happy_calls': happy_calls,
         'success_types': SUCCESS_TYPES,
         'failure_reasons': FAILURE_REASONS,
+        'payment_methods': ReferralSale.PAYMENT_METHODS,
+        'cash_currencies': ReferralSale.CASH_CURRENCY,
     })
