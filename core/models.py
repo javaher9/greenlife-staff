@@ -139,6 +139,7 @@ class CallCenterLeadGroup(models.Model):
 
 
 class ReferralLead(models.Model):
+    CONTACT_RESULT=[('follow_up','نیاز به پیگیری'),('appointment','نوبت داده شد'),('no_answer','پاسخ نداد'),('won','فروش موفق'),('sale_lost','فروش ناموفق'),('not_interested','تمایل ندارد')]
     STATUS=[
         ('new','جدید'),('contacted','تماس گرفته شد'),('appointment','نوبت ثبت شد'),
         ('visited','مراجعه کرد'),('won','فروش موفق'),('lost','ناموفق'),
@@ -151,6 +152,7 @@ class ReferralLead(models.Model):
     alternate_phone=models.CharField(max_length=30,blank=True)
     interested_service=models.CharField(max_length=160,blank=True)
     status=models.CharField(max_length=20,choices=STATUS,default='new',db_index=True)
+    contact_result=models.CharField(max_length=20,choices=CONTACT_RESULT,blank=True,db_index=True)
     source=models.CharField(max_length=20,choices=SOURCE,default='panel')
     assigned_to=models.ForeignKey(EmployeeProfile,on_delete=models.SET_NULL,null=True,blank=True,related_name='assigned_referral_leads')
     group=models.ForeignKey(CallCenterLeadGroup,on_delete=models.SET_NULL,null=True,blank=True,related_name='leads')

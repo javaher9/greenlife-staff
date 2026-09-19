@@ -285,9 +285,9 @@ class CallCenterLeadForm(forms.ModelForm):
     next_follow_up=JalaliDateField(label='پیگیری بعدی',required=False)
     class Meta:
         model=ReferralLead
-        fields=['status','group','next_follow_up','interested_service','notes']
+        fields=['contact_result','group','next_follow_up','interested_service','notes']
         labels={
-            'status':'نتیجه تماس','group':'گروه لید','interested_service':'خدمت موردنظر',
+            'contact_result':'نتیجه تماس','group':'گروه لید','interested_service':'خدمت موردنظر',
             'notes':'گزارش تماس و توضیحات مشتری',
         }
         widgets={'notes':forms.Textarea(attrs={
@@ -304,6 +304,26 @@ class CallCenterLeadForm(forms.ModelForm):
             self.fields['group'].queryset=CallCenterLeadGroup.objects.filter(owner=operator)
         self.fields['group'].required=False
         self.fields['group'].empty_label='بدون گروه'
+
+    def clean(self):
+        data=super().clean()
+        result=data.get('contact_result')
+        if result=='follow_up' and not data.get('next_follow_up'):
+            self.add_error('next_follow_up','برای «نیاز به پیگیری» تاریخ پیگیری بعدی را مشخص کنید.')
+        return data
+
+    def save(self,commit=True):
+        lead=super().save(commit=False)
+        result=self.cleaned_data.get('contact_result')
+        status_map={'follow_up':'contacted','no_answer':'contacted','appointment':'appointment','won':'won','sale_lost':'visited','not_interested':'lost'}
+        if result:
+            lead.status=status_map[result]
+        if result not in ('follow_up','no_answer'):
+            lead.next_follow_up=None
+        if commit:
+            lead.save()
+            self.save_m2m()
+        return lead
 
     def clean_group(self):
         if self.is_bound and 'group' not in self.data:

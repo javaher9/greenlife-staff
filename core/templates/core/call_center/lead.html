@@ -16,7 +16,7 @@ body.gl-page-call_center_lead .app-main{background:#f5f7fb!important}
       <div class="cc-phone"><b>{{ lead.phone }}</b><a href="tel:{{ lead.phone }}" data-phone="{{ lead.phone }}">☎ تماس مستقیم</a></div>
       <div class="cc-meta">
         <div><span>خدمت موردنظر</span><b>{{ lead.interested_service|default:'—' }}</b></div>
-        <div><span>وضعیت فعلی</span><b>{{ lead.get_status_display }}</b></div>
+        <div><span>وضعیت فعلی</span><b>{{ lead.get_status_display }}</b></div><div><span>نتیجه تماس</span><b>{{ lead.get_contact_result_display|default:'ثبت نشده' }}</b></div>
         <div><span>پیگیری بعدی</span><b>{{ lead.next_follow_up|jdate|default:'تعیین نشده' }}</b></div>
         <div><span>شماره جایگزین</span><b dir="ltr">{{ lead.alternate_phone|default:'—' }}</b></div>
       </div>
