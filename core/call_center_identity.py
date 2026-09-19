@@ -100,8 +100,18 @@ class FlowerProfileProxy:
         return call_center_display_name(self._flower_profile)
 
 
+INSTAGRAM_PAGE_LABELS = {
+    'greenlifeclinics': 'Greenlifeclinics',
+    'drjavaherian': 'Drjavaherian',
+    'greenlife_before_after': 'Greenlife.before.after',
+    'greenlife_cafe': 'Greenlife.cafe',
+    'greenlife_rejim_ir': 'Greenlife.rejim.ir',
+    'greenlife_camp': 'Greenlife.camp',
+}
+
+
 class FlowerLeadProxy:
-    """Lead proxy for call-center display wording and flower-name ownership."""
+    """Lead proxy for call-center display wording and normalized lead origins."""
     def __init__(self, lead):
         self._flower_lead = lead
 
@@ -114,35 +124,99 @@ class FlowerLeadProxy:
             return None
         return FlowerProfileProxy(self._flower_lead.assigned_to)
 
+    def _is_instagram_lead(self):
+        lead=self._flower_lead
+        notes=str(getattr(lead,'notes','') or '').lower()
+        source_url=str(getattr(lead,'source_url','') or '').lower()
+        group_name=str(getattr(getattr(lead,'group',None),'name','') or '')
+        ref_username=str(getattr(getattr(getattr(lead,'referrer',None),'user',None),'username','') or '').lower()
+        return (
+            'instagram' in source_url or '/instagram/' in source_url
+            or '[instagram_page:' in notes or '[channel:instagram]' in notes
+            or 'اینستاگرام' in group_name
+            or ref_username in ('instagram-lead-source','lead-source-instagram')
+        )
+
     @property
     def instagram_page_display(self):
-        notes = str(getattr(self._flower_lead, 'notes', '') or '')
-        marker = 'پیج:'
-        if marker not in notes:
-            return ''
-        value = notes.split(marker, 1)[1].split('|', 1)[0].strip()
-        return value[:80]
+        lead=self._flower_lead
+        notes=str(getattr(lead,'notes','') or '')
+        lowered=notes.lower()
+
+        # New structured marker is the strongest source of truth.
+        marker='[instagram_page:'
+        if marker in lowered:
+            raw=lowered.split(marker,1)[1].split(']',1)[0].strip()
+            if raw in INSTAGRAM_PAGE_LABELS:
+                return INSTAGRAM_PAGE_LABELS[raw]
+
+        # Older rows store a human-readable "پیج: ..." fragment.
+        human_marker='پیج:'
+        if human_marker in notes:
+            value=notes.split(human_marker,1)[1].split('|',1)[0].strip()
+            if value:
+                return value[:80]
+
+        # Public Instagram links carry the page slug in ?source=...
+        source_url=str(getattr(lead,'source_url','') or '')
+        if source_url:
+            try:
+                from urllib.parse import parse_qs, urlparse
+                slug=(parse_qs(urlparse(source_url).query).get('source') or [''])[0].strip().lower()
+                if slug in INSTAGRAM_PAGE_LABELS:
+                    return INSTAGRAM_PAGE_LABELS[slug]
+            except (ValueError,TypeError):
+                pass
+
+        # Legacy/API Instagram rows did not persist the page name. Their official
+        # Green Life source profile represents the main Greenlifeclinics page.
+        if self._is_instagram_lead():
+            ref_username=str(getattr(getattr(getattr(lead,'referrer',None),'user',None),'username','') or '').lower()
+            if ref_username in ('instagram-lead-source','lead-source-instagram'):
+                return 'Greenlifeclinics'
+        return ''
 
     @property
     def instagram_entry_display(self):
-        if not self.instagram_page_display:
+        if not self._is_instagram_lead():
             return ''
-        return 'لینک' if getattr(self._flower_lead, 'source', '') == 'link' else 'دستی'
+        return 'لینک' if getattr(self._flower_lead,'source','') in ('link','qr') else 'دستی'
+
+    @property
+    def lead_group_display(self):
+        lead=self._flower_lead
+        group=getattr(lead,'group',None)
+        raw=str(getattr(group,'name','') or '')
+        if self._is_instagram_lead():
+            return f'اینستاگرام - {self.instagram_entry_display}'
+        return raw or '—'
 
     @property
     def source_origin_display(self):
-        page = self.instagram_page_display
-        if page:
-            return f'اینستاگرام · {self.instagram_entry_display} · {page}'
+        page=self.instagram_page_display
+        if self._is_instagram_lead():
+            parts=['اینستاگرام',self.instagram_entry_display]
+            if page:
+                parts.append(page)
+            return ' · '.join(part for part in parts if part)
         try:
             return self._flower_lead.get_source_display()
         except Exception:
-            return str(getattr(self._flower_lead, 'source', '') or '')
+            return str(getattr(self._flower_lead,'source','') or '')
 
     @property
     def source_page_display(self):
-        """Compact origin label for tables where channel/method is already visible in group."""
-        return self.instagram_page_display or '—'
+        """Canonical page/source label used by the Lead Hub table."""
+        if self._is_instagram_lead():
+            return self.instagram_page_display or 'Greenlifeclinics'
+        source_url=str(getattr(self._flower_lead,'source_url','') or '').lower()
+        if 'greenlifeclinics.com' in source_url:
+            return 'Greenlifeclinics'
+        try:
+            label=self._flower_lead.get_source_display()
+        except Exception:
+            label=''
+        return label or '—'
 
     @property
     def notes(self):
