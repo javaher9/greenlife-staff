@@ -95,6 +95,7 @@ class InstagramPageSourceTests(TestCase):
         self.assertContains(hub, '<th>گروه</th><th>منبع</th><th>وضعیت</th>')
 
 
+# Numbered campaign links are intentionally covered separately from page sources.
 class InstagramStoryCampaignSourceTests(InstagramPageSourceTests):
     def test_numbered_story_campaign_sources_are_preserved(self):
         for number in range(1, 7):
