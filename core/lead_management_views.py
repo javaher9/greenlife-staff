@@ -2,6 +2,8 @@ from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q, Sum
+from django.db.models.functions import TruncDate
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -14,6 +16,7 @@ from .call_center_identity import (
 )
 from .models import EmployeeProfile, ReferralLead, ReferralSale
 from .instagram_views import INSTAGRAM_PAGE_SOURCES
+from .jalali import gregorian_to_jalali
 
 
 ALLOWED_ROLES = ('admin', 'manager', 'internal_manager')
@@ -183,6 +186,73 @@ def _operational_status_rows(leads, total):
     ]
     return [{'key':key,'label':label,'count':count,'percent':round(count*100/total,1) if total else 0} for key,label,count in rows]
 
+
+
+def _filtered_leads_for_trend(request):
+    """Apply only source/operator dimensions to the live 30-day trend."""
+    leads=ReferralLead.objects.all()
+    source_filter=(request.GET.get('source') or '').strip()
+    operator_filter=(request.GET.get('operator') or '').strip()
+    if source_filter in ('instagram','website','crm','whatsapp','campaign','telegram','bale'):
+        leads=leads.filter(_channel_q(source_filter))
+    elif source_filter in ('panel','qr','link'):
+        leads=leads.filter(source=source_filter)
+    if operator_filter.isdigit():
+        leads=leads.filter(assigned_to_id=int(operator_filter))
+    return leads
+
+
+@login_required
+def lead_management_trend_data(request):
+    """Live 30-day Lead Hub series, refreshed by the dashboard every 10 seconds."""
+    profile=getattr(request.user,'profile',None)
+    if not profile or profile.role not in ALLOWED_ROLES:
+        return JsonResponse({'detail':'forbidden'},status=403)
+
+    today=timezone.localdate()
+    start=today-timedelta(days=29)
+    leads=_filtered_leads_for_trend(request).filter(created_at__date__gte=start,created_at__date__lte=today)
+
+    rows={
+        row['day']:row
+        for row in leads.annotate(day=TruncDate('created_at')).values('day').annotate(
+            leads=Count('id',distinct=True),
+            contacted=Count(
+                'id',
+                filter=Q(status__in=('contacted','appointment','visited','won','lost'))|~Q(contact_result=''),
+                distinct=True,
+            ),
+            appointments=Count(
+                'id',
+                filter=Q(status__in=('appointment','visited','won'))|Q(appointments__isnull=False),
+                distinct=True,
+            ),
+            won=Count(
+                'id',
+                filter=Q(status='won')|Q(sale__status__in=('approved','paid')),
+                distinct=True,
+            ),
+        )
+    }
+
+    series=[]
+    for offset in range(29,-1,-1):
+        day=today-timedelta(days=offset)
+        row=rows.get(day,{})
+        jy,jm,jd=gregorian_to_jalali(day.year,day.month,day.day)
+        series.append({
+            'date':day.isoformat(),
+            'label':f'{jm:02d}/{jd:02d}',
+            'leads':int(row.get('leads') or 0),
+            'contacted':int(row.get('contacted') or 0),
+            'appointments':int(row.get('appointments') or 0),
+            'won':int(row.get('won') or 0),
+        })
+    return JsonResponse({
+        'series':series,
+        'generated_at':timezone.localtime().strftime('%H:%M:%S'),
+        'refresh_seconds':10,
+    })
 
 
 @require_POST
