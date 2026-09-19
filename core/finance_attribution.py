@@ -56,9 +56,10 @@ def sync_call_center_sale(transaction):
     if changed:
         changed.append('updated_at')
         sale.save(update_fields=changed)
-    if lead.status not in ('won','lost'):
+    if lead.status != 'won' or lead.contact_result != 'won':
         lead.status='won'
-        lead.save(update_fields=['status','updated_at'])
+        lead.contact_result='won'
+        lead.save(update_fields=['status','contact_result','updated_at'])
 
 
 @receiver(post_save, sender=FinancialTransaction, dispatch_uid='sync_call_center_sale_from_finance')
