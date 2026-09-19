@@ -142,7 +142,13 @@ class FlowerLeadProxy:
     @property
     def source_page_display(self):
         """Compact origin label for tables where channel/method is already visible in group."""
-        return self.instagram_page_display or '—'
+        if self.instagram_page_display:
+            return self.instagram_page_display
+        notes = str(getattr(self._flower_lead, 'notes', '') or '')
+        marker = '[external_source:'
+        if marker in notes:
+            return notes.split(marker, 1)[1].split(']', 1)[0].strip()[:80] or '—'
+        return '—'
 
     @property
     def notes(self):

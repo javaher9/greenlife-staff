@@ -93,3 +93,22 @@ class InstagramPageSourceTests(TestCase):
         self.assertContains(hub, 'Greenlife.cafe')
         self.assertContains(hub, 'Greenlife.cafe')
         self.assertContains(hub, '<th>گروه</th><th>منبع</th><th>وضعیت</th>')
+
+
+class BeytooteCampaignLeadTests(InstagramPageSourceTests):
+    def test_beytoote_banner_and_reportage_keep_distinct_groups_and_source(self):
+        for path, expected_group in (
+            ('/beytoote/banner/', 'وب سایت - بنر'),
+            ('/beytoote/reportage/', 'وب سایت - رپورتاژ'),
+        ):
+            response = self.client.post(path, {
+                'full_name': 'لید بیتوته',
+                'phone': '09120000001',
+                'interested_service': 'لاغری',
+                'consent': 'on',
+            })
+            self.assertEqual(response.status_code, 200)
+            lead = ReferralLead.objects.filter(full_name='لید بیتوته').latest('id')
+            self.assertEqual(lead.group.name, expected_group)
+            self.assertEqual(FlowerLeadProxy(lead).source_page_display, 'Beytoote.com')
+            lead.delete()

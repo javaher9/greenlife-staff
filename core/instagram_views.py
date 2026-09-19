@@ -11,6 +11,11 @@ from .models import CallCenterLeadGroup, EmployeeProfile, ReferralLead, Referral
 INSTAGRAM_GROUP_NAME = 'اینستاگرام - لینک'
 INSTAGRAM_MANUAL_GROUP_NAME = 'اینستاگرام - دستی'
 TELEGRAM_GROUP_NAME = 'تلگرام - لینک'
+BEYTOOTE_GROUPS = {
+    'banner': 'وب سایت - بنر',
+    'reportage': 'وب سایت - رپورتاژ',
+}
+BEYTOOTE_SOURCE_LABEL = 'Beytoote.com'
 
 INSTAGRAM_PAGE_SOURCES = {
     'greenlifeclinics': 'Greenlifeclinics',
@@ -150,6 +155,54 @@ def _assign_instagram_lead(lead, group_name=INSTAGRAM_GROUP_NAME, notification_t
         related_date=timezone.localdate(),
     )
     return operator
+
+
+def beytoote_lead(request, campaign_type):
+    group_name = BEYTOOTE_GROUPS.get(campaign_type)
+    if not group_name:
+        group_name = BEYTOOTE_GROUPS['banner']
+    form = InstagramLeadForm(request.POST or None)
+    completed = False
+    if request.method == 'POST' and form.is_valid():
+        data = form.cleaned_data
+        lead = ReferralLead.objects.create(
+            referrer=_source_profile_for_beytoote(),
+            full_name=data['full_name'].strip(),
+            phone=data['phone'],
+            interested_service=(data.get('interested_service') or '').strip(),
+            status='new',
+            source='link',
+            source_url=request.build_absolute_uri()[:500],
+            notes=f'ورودی تبلیغات بیتوته | منبع: {BEYTOOTE_SOURCE_LABEL} | [external_source:{BEYTOOTE_SOURCE_LABEL}] | [campaign_type:{campaign_type}]',
+        )
+        _assign_instagram_lead(
+            lead,
+            group_name=group_name,
+            notification_title=f'لید جدید {BEYTOOTE_SOURCE_LABEL}',
+        )
+        completed = True
+        form = InstagramLeadForm()
+
+    return render(request, 'core/instagram_lead.html', {
+        'form': form,
+        'completed': completed,
+        'campaign_source': BEYTOOTE_SOURCE_LABEL,
+    })
+
+
+def _source_profile_for_beytoote():
+    user, _ = User.objects.get_or_create(
+        username='beytoote-lead-source',
+        defaults={'first_name': 'Beytoote.com', 'last_name': '', 'is_active': False},
+    )
+    if user.has_usable_password():
+        user.set_unusable_password()
+        user.save(update_fields=['password'])
+    profile, _ = ReferralProfile.objects.get_or_create(
+        user=user,
+        defaults={'referral_code': 'GLBEYTOOTE', 'is_active': False, 'created_by': None},
+    )
+    return profile
 
 
 def instagram_lead(request):
