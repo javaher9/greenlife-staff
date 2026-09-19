@@ -304,6 +304,17 @@ class CallCenterLeadForm(forms.ModelForm):
             self.fields['group'].queryset=CallCenterLeadGroup.objects.filter(owner=operator)
         self.fields['group'].required=False
         self.fields['group'].empty_label='بدون گروه'
+        # Sales outcome is authoritative from receptionist/finance, not a call-center choice.
+        self.fields['contact_result'].choices=[
+            ('','---------'),
+            ('follow_up','نیاز به پیگیری'),
+            ('appointment','نوبت داده شد'),
+            ('no_answer','پاسخ نداد'),
+            ('not_interested','تمایل ندارد'),
+        ]
+        if self.instance and self.instance.contact_result in ('won','sale_lost'):
+            self.fields['contact_result'].disabled=True
+            self.fields['contact_result'].help_text='نتیجه فروش از ثبت منشی/مالی تعیین شده و توسط کال‌سنتر قابل تغییر نیست.'
 
     def clean(self):
         data=super().clean()
