@@ -246,6 +246,7 @@ _CALL_TRACKING_SCRIPT = r'''<script>
       if((open.textContent||'').trim().length<18)open.textContent='نتیجه / نوبت';
 
       var tel=row.querySelector('a[href^="tel:"]');
+      if(!tel){var raw=(row.textContent||'').match(/(?:\+98|0098|98|0)?9\d{9}/);if(raw)tel={getAttribute:function(){return raw[0];}};}
       if(tel&&!actionsBox.querySelector('.cc-whatsapp-action')){
         var mobile=normalizeIranMobile(tel.getAttribute('href'));
         if(mobile){
