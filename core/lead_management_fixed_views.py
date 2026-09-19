@@ -17,7 +17,7 @@ body.gl-premium-dark .lead-page table a:focus,body.gl-premium-dark .lead-page ta
 /* All-leads balance: spend the reclaimed gaps on a readable, exact source. */
 .lead-page .lead-all-table{font-size:9.5px!important}
 .lead-page .lead-all-table th,.lead-page .lead-all-table td{padding-left:4px!important;padding-right:4px!important}
-.lead-page .lead-all-table .lead-col-time{width:9%!important}
+.lead-page .lead-all-table .lead-col-time{width:9%!important}.lead-page .lead-created-at{white-space:nowrap!important}.lead-page .lead-created-date,.lead-page .lead-created-time{display:block!important}.lead-page .lead-created-time{font-size:11px!important;font-weight:800!important;margin-top:3px!important}
 .lead-page .lead-all-table .lead-col-name{width:11%!important;max-width:none!important}
 .lead-page .lead-all-table .lead-col-mobile{width:10%!important}
 .lead-page .lead-all-table .lead-col-source{width:11%!important;max-width:none!important;font-size:10.5px!important;text-overflow:ellipsis!important}
