@@ -2,7 +2,7 @@ from django.db import transaction
 from django.db.models import Count, Max
 from django.utils import timezone
 
-from .models import Attendance, CallCenterLeadGroup, EmployeeProfile, ReferralLead, StaffNotification
+from .models import Attendance, CallCenterLeadGroup, EmployeeProfile, LeaveRequest, ReferralLead, StaffNotification
 
 
 CHANNEL_LABELS = {
@@ -46,6 +46,37 @@ def operator_weight(operator):
     return DEFAULT_OPERATOR_WEIGHT
 
 
+def eligible_operator_user_ids(day=None):
+    """Users eligible to receive new leads right now.
+
+    An operator must have an active check-in for today, must not have checked out,
+    and must not be on approved leave. This keeps new leads away from absent or
+    unavailable call-center staff without changing their historical ownership.
+    """
+    day = day or timezone.localdate()
+    present_ids = set(
+        Attendance.objects.filter(
+            date=day,
+            check_in__isnull=False,
+            check_out__isnull=True,
+            user__profile__role='call_center',
+            user__profile__is_active=True,
+            user__is_active=True,
+        ).values_list('user_id', flat=True)
+    )
+    if not present_ids:
+        return set()
+    leave_ids = set(
+        LeaveRequest.objects.filter(
+            user_id__in=present_ids,
+            status='approved',
+            start_date__lte=day,
+            end_date__gte=day,
+        ).values_list('user_id', flat=True)
+    )
+    return present_ids - leave_ids
+
+
 def friday_duty_weight(operator, now=None):
     """Boost the operator who is physically on Friday duty from 12:00 to 18:00.
 
@@ -86,17 +117,26 @@ def _locked_balanced_operator():
     operator who just received a lead will not receive another while peers are at
     zero), while the long-run distribution converges to the requested weights.
     """
+    today = timezone.localdate()
+    eligible_user_ids = eligible_operator_user_ids(today)
+    if not eligible_user_ids:
+        return None
+
     operators = list(
         EmployeeProfile.objects
         .select_for_update()
-        .filter(role='call_center', is_active=True, user__is_active=True)
+        .filter(
+            role='call_center',
+            is_active=True,
+            user__is_active=True,
+            user_id__in=eligible_user_ids,
+        )
         .select_related('user')
         .order_by('id')
     )
     if not operators:
         return None
 
-    today = timezone.localdate()
     ids = [operator.id for operator in operators]
     stats = {
         row['assigned_to_id']: row
