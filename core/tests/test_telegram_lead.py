@@ -7,6 +7,11 @@ from core.models import Branch, CallCenterLeadGroup, EmployeeProfile, ReferralLe
 
 class TelegramLeadTests(TestCase):
     def setUp(self):
+        from unittest.mock import patch
+        import datetime
+        self._localdate_patch = patch('core.referral_views.timezone.localdate', return_value=datetime.date(2026, 9, 17))
+        self._localdate_patch.start()
+        self.addCleanup(self._localdate_patch.stop)
         call_branch = Branch.objects.create(name='کال‌سنتر')
         user = User.objects.create_user(username='telegram-operator', password='x')
         self.operator, _ = EmployeeProfile.objects.update_or_create(
