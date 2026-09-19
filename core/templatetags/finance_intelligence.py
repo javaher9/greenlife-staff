@@ -56,48 +56,60 @@ def _million_toman_display(value):
     return rendered or '0'
 
 
-def _clinic_revenue_snapshot(day):
-    """Load the real clinic revenue JSON snapshot and normalize it for finance UI charts."""
-    data_path = Path(settings.BASE_DIR) / 'core' / 'data' / 'clinic_revenue_timeline.json'
+def _app_revenue_snapshot(day, branch=None):
+    """Build the current Jalali-month branch curve from finance entries recorded in Staff App.
+
+    The legacy JSON snapshot stopped updating mid-month. From this point onward the
+    finance dashboard's monthly branch card and line chart are driven only by
+    approved manual FinancialTransaction rows, so the chart advances as staff
+    register and finance approves new sales in the App.
+    """
     empty = {
         'available': False, 'grand_total': 0, 'branches': [], 'timeline': [],
         'record_count': 0, 'period_label': 'ماه جاری', 'start_label': '', 'end_label': '',
+        'source_label': 'ثبت مالی App',
     }
-    try:
-        payload = json.loads(data_path.read_text(encoding='utf-8'))
-    except (OSError, ValueError, TypeError):
-        return empty
-
-    rows = payload.get('data') if isinstance(payload, dict) else None
-    if not isinstance(rows, list):
-        return empty
 
     jy, jm, _ = gregorian_to_jalali(day.year, day.month, day.day)
     month_start = datetime(*jalali_to_gregorian(jy, jm, 1)).date()
     next_jy, next_jm = (jy + 1, 1) if jm == 12 else (jy, jm + 1)
     month_end = datetime(*jalali_to_gregorian(next_jy, next_jm, 1)).date()
+    start = _aware_start(month_start)
+    end = _aware_start(month_end)
+
+    qs = FinancialTransaction.objects.filter(
+        source='manual',
+        review_status='approved',
+        entry_type='inc',
+        occurred_at__gte=start,
+        occurred_at__lt=end,
+    )
+    if branch:
+        qs = qs.filter(branch=branch)
+
+    grouped = list(
+        qs.values('branch__name', 'occurred_at__date')
+        .annotate(total=Sum('amount'), count=Count('id'))
+        .order_by('occurred_at__date', 'branch__name')
+    )
+    if not grouped:
+        return empty
 
     totals = {}
     date_values = {}
-    accepted = []
-    for row in rows:
-        if not isinstance(row, dict):
+    record_count = 0
+    for row in grouped:
+        clinic = row.get('branch__name') or 'بدون شعبه'
+        row_day = row.get('occurred_at__date')
+        amount = _money(row.get('total'))
+        count = int(row.get('count') or 0)
+        if not row_day:
             continue
-        try:
-            row_day = datetime.strptime(str(row.get('date', '')), '%m/%d/%Y').date()
-            amount = int(Decimal(str(row.get('total', 0) or 0)))
-        except (ValueError, TypeError, ArithmeticError):
-            continue
-        if not (month_start <= row_day < month_end):
-            continue
-        clinic = str(row.get('کلینیک') or row.get('clinic') or row.get('branch') or '').strip()
-        if not clinic:
-            continue
-        accepted.append((row_day, clinic, amount))
-        totals[clinic] = totals.get(clinic, 0) + amount
+        totals[clinic] = totals.get(clinic, ZERO) + amount
         date_values.setdefault(row_day, {})[clinic] = amount
+        record_count += count
 
-    if not accepted:
+    if not totals:
         return empty
 
     palette = {
@@ -105,32 +117,40 @@ def _clinic_revenue_snapshot(day):
         'پونک': '#3b82f6',
         'اصفهان': '#16d888',
         'ارومیه': '#f59e0b',
+        'افسریه': '#ec4899',
     }
-    fallback_colors = ['#22d3ee', '#ec4899', '#a3e635', '#f97316', '#c084fc']
-    grand_total = sum(totals.values())
-    max_branch_total = max(totals.values()) or 1
+    fallback_colors = ['#22d3ee', '#a3e635', '#f97316', '#c084fc']
+    grand_total = sum(totals.values(), ZERO)
+    max_branch_total = max(totals.values()) or Decimal('1')
     branches = []
     for idx, (name, total) in enumerate(sorted(totals.items(), key=lambda item: item[1], reverse=True)):
         branches.append({
             'name': name,
             'total': total,
             'total_display': _million_toman_display(total),
-            'pct': round((total * 100 / grand_total), 1) if grand_total else 0,
-            'relative': round((total * 100 / max_branch_total), 1),
+            'pct': round((float(total) * 100 / float(grand_total)), 1) if grand_total else 0,
+            'relative': round((float(total) * 100 / float(max_branch_total)), 1),
             'color': palette.get(name, fallback_colors[idx % len(fallback_colors)]),
         })
 
+    # Keep every calendar day from month start through the selected day on the
+    # X axis. Missing days are explicit zeros, so new App entries extend the
+    # existing curve instead of replacing sparse historical points.
+    last_visible_day = min(day, month_end - timedelta(days=1))
     timeline = []
-    for row_day in sorted(date_values):
-        rjy, rjm, rjd = gregorian_to_jalali(row_day.year, row_day.month, row_day.day)
+    cursor = month_start
+    while cursor <= last_visible_day:
+        _, rjm, rjd = gregorian_to_jalali(cursor.year, cursor.month, cursor.day)
         timeline.append({
-            'date': row_day.isoformat(),
+            'date': cursor.isoformat(),
             'label': f'{rjm:02d}/{rjd:02d}',
-            'values': date_values[row_day],
+            'values': date_values.get(cursor, {}),
         })
+        cursor += timedelta(days=1)
 
-    first_day = min(x[0] for x in accepted)
-    last_day = max(x[0] for x in accepted)
+    active_days = sorted(date_values)
+    first_day = active_days[0]
+    last_day = active_days[-1]
     _, first_month, first_dom = gregorian_to_jalali(first_day.year, first_day.month, first_day.day)
     _, last_month, last_dom = gregorian_to_jalali(last_day.year, last_day.month, last_day.day)
     return {
@@ -140,12 +160,12 @@ def _clinic_revenue_snapshot(day):
         'branches': branches,
         'timeline': timeline,
         'chart_data': {'branches': branches, 'timeline': timeline},
-        'record_count': len(accepted),
+        'record_count': record_count,
         'period_label': f'{jy}/{jm:02d}',
         'start_label': f'{first_month:02d}/{first_dom:02d}',
         'end_label': f'{last_month:02d}/{last_dom:02d}',
+        'source_label': 'ثبت مالی App',
     }
-
 
 def _apply_transaction_filters(qs, branch, flower_id, source, service):
     if branch:
@@ -340,7 +360,7 @@ def finance_intelligence(context):
     if service:
         entries = entries.filter(sale_reason=service)
 
-    external_revenue = _clinic_revenue_snapshot(day)
+    external_revenue = _app_revenue_snapshot(day, branch=branch)
 
     return {
         'period': period, 'period_label': period_label, 'start': start, 'end': end,
