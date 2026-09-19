@@ -128,6 +128,54 @@ body.gl-role-call-center .cc-v5 .cc-colorized-dark-v3.cc-tone-blue{background:#e
 body.gl-role-call-center .cc-v5 .cc-colorized-dark-v3.cc-tone-purple{background:#f0e9fb!important;color:#65458f!important;border:1px solid #d6c8e7!important}
 body.gl-role-call-center .cc-v5 .cc-colorized-dark-v3.cc-tone-amber{background:#fff4dd!important;color:#8b601d!important;border:1px solid #ead5a3!important}
 body.gl-role-call-center .cc-v5 .cc-colorized-dark-v3.cc-tone-rose{background:#ffedf3!important;color:#a3425d!important;border:1px solid #ebc6d1!important}
+
+/* v4 polish — calm premium action hierarchy and aligned controls */
+body.gl-role-call-center .cc-v5 .cc-v5-row-actions{
+  gap:7px!important;align-items:center!important
+}
+body.gl-role-call-center .cc-v5 .cc-v5-row-actions a,
+body.gl-role-call-center .cc-v5 .cc-v5-row-actions button{
+  height:38px!important;min-height:38px!important;border-radius:11px!important;
+  font:900 10px Tahoma!important;letter-spacing:0!important;padding:0 10px!important;
+  box-shadow:0 3px 10px rgba(35,49,70,.055)!important
+}
+body.gl-role-call-center .cc-v5 .cc-v5-row-actions .cc-v5-call{
+  background:#edf8f3!important;color:#17684b!important;border-color:#c6e2d5!important
+}
+body.gl-role-call-center .cc-v5 .cc-v5-row-actions .cc-v5-open,
+body.gl-role-call-center .cc-v5 .cc-v5-row-actions .cc-result-action{
+  background:#f5f1fa!important;color:#604786!important;border-color:#ddd3e9!important
+}
+body.gl-role-call-center .cc-v5 .cc-v5-row-actions .cc-whatsapp-action{
+  background:#f0f8f4!important;color:#287052!important;border-color:#cfe4d8!important
+}
+body.gl-role-call-center .cc-v5 .cc-v5-row-actions .cc-contact-done{
+  background:#e8f1ef!important;color:#285f55!important;border-color:#bfd5d0!important;
+  font-weight:900!important
+}
+body.gl-role-call-center .cc-v5 .cc-v5-row-actions .cc-contact-done:not([disabled]):hover{
+  background:#dcebe7!important;border-color:#a9cbc2!important
+}
+body.gl-role-call-center .cc-v5 .cc-v5-row-actions .cc-contact-done[disabled]{
+  background:#f3f5f6!important;color:#77828c!important;border-color:#e0e5e8!important
+}
+/* top quick/status controls: same geometry, restrained tones */
+body.gl-role-call-center .cc-v5 .cc-v5-actions{gap:9px!important}
+body.gl-role-call-center .cc-v5 .cc-v5-action{
+  height:42px!important;border-radius:11px!important;background:#fff!important;color:#405268!important;
+  border:1px solid #dbe3ea!important;box-shadow:0 3px 10px rgba(35,49,70,.045)!important;
+  font-size:10px!important
+}
+body.gl-role-call-center .cc-v5 .cc-v5-action.primary{
+  background:#eaf6f0!important;color:#17684b!important;border-color:#c3dfd1!important
+}
+body.gl-role-call-center .cc-v5 .cc-v5-action.purple{
+  background:#f4f0f9!important;color:#604786!important;border-color:#ddd3e9!important
+}
+body.gl-role-call-center .cc-v5 .cc-v5-action.blue{
+  background:#eff5fb!important;color:#3d658e!important;border-color:#d2e0ed!important
+}
+
 </style>'''
 
 _BUTTON_PALETTE_SCRIPT = r'''<script id="greenlife-call-center-button-palette-script-v3">
