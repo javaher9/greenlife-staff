@@ -11,6 +11,7 @@ urlpatterns=[
     path('telegram/',instagram_views.telegram_lead,name='telegram_lead'),
     path('instagram/manual/',instagram_views.instagram_manual_lead,name='instagram_manual_lead'),
     path('call-center/leads/<int:pk>/call-started/',call_center_views.mark_call_started,name='call_center_mark_call_started'),
+    path('call-center/leads/<int:pk>/result/',call_center_views.save_call_result,name='call_center_save_call_result'),
     path('lead-management/',lead_management_fixed_views.lead_management_dashboard,name='lead_management_dashboard'),
     path('lead-management/leads/<int:pk>/edit/',lead_admin_views.admin_lead_edit,name='admin_lead_edit'),
     path('lead-management/leads/<int:pk>/delete/',lead_admin_views.admin_lead_delete,name='admin_lead_delete'),

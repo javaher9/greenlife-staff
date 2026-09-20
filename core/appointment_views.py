@@ -163,9 +163,11 @@ def call_center_appointment_create(request,pk):
                     created_by=request.user,
                 )
                 appointment.save()
-                if lead.status!='appointment':
+                if lead.status!='appointment' or lead.contact_result!='appointment':
                     lead.status='appointment'
-                    lead.save(update_fields=['status','updated_at'])
+                    lead.contact_result='appointment'
+                    lead.next_follow_up=None
+                    lead.save(update_fields=['status','contact_result','next_follow_up','updated_at'])
                 _notify_branch_receptionists(appointment)
                 transaction.on_commit(
                     lambda appointment_id=appointment.pk: send_appointment_confirmation(appointment_id)

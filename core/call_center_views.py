@@ -9,10 +9,11 @@ from .models import ReferralLead
 @login_required
 @require_POST
 def mark_call_started(request, pk):
-    """Advance a brand-new call-center lead when the operator confirms contact.
+    """Record a call attempt without inventing a contact outcome.
 
-    Repeating the action never downgrades later outcomes such as appointment,
-    visit, won or lost.
+    A dial/call click is not a result. The lead status changes only after the
+    operator records an actual outcome, so management never sees "contacted"
+    with an empty contact_result.
     """
     profile = getattr(request.user, 'profile', None)
     if not profile or profile.role != 'call_center' or not profile.is_active:
@@ -20,10 +21,6 @@ def mark_call_started(request, pk):
 
     lead = get_object_or_404(ReferralLead, pk=pk, assigned_to=profile)
     changed = False
-    if lead.status == 'new':
-        lead.status = 'contacted'
-        lead.save(update_fields=['status', 'updated_at'])
-        changed = True
 
     labels = {
         'new': 'جدید',
@@ -38,6 +35,31 @@ def mark_call_started(request, pk):
         'changed': changed,
         'status': lead.status,
         'label': labels.get(lead.status, lead.get_status_display()),
+        'needs_result': not bool(lead.contact_result),
+    })
+
+
+@login_required
+@require_POST
+def save_call_result(request, pk):
+    """Persist simple call outcomes directly from the call-center work queue."""
+    profile=getattr(request.user,'profile',None)
+    if not profile or profile.role!='call_center' or not profile.is_active:
+        return JsonResponse({'ok':False,'error':'forbidden'},status=403)
+    lead=get_object_or_404(ReferralLead,pk=pk,assigned_to=profile)
+    result=(request.POST.get('result') or '').strip()
+    if result not in ('no_answer','not_interested'):
+        return JsonResponse({'ok':False,'error':'invalid_result'},status=400)
+    lead.contact_result=result
+    lead.status='contacted' if result=='no_answer' else 'lost'
+    lead.next_follow_up=None
+    lead.save(update_fields=['contact_result','status','next_follow_up','updated_at'])
+    return JsonResponse({
+        'ok':True,
+        'result':result,
+        'result_label':lead.get_contact_result_display(),
+        'status':lead.status,
+        'label':lead.get_status_display(),
     })
 
 
@@ -113,6 +135,9 @@ _CALL_CENTER_STAFF_STYLE = r'''<style id="greenlife-call-center-staff-ui-v8">
 .cc-priority-pill{display:inline-flex;align-items:center;margin-top:5px;margin-inline-start:6px;padding:4px 7px;border-radius:999px;background:#eaf8f1;color:#247a58!important;font:900 9px Tahoma!important;white-space:nowrap}
 .cc-whatsapp-action{display:inline-flex;align-items:center;justify-content:center;padding:7px 9px;border:1px solid #d5e9df;border-radius:9px;background:#f2fbf6;color:#247a58!important;font:900 10px Tahoma!important;white-space:nowrap;text-decoration:none!important}
 .cc-result-action{background:#f3eef9!important;color:#64448f!important;border-color:#dfd4ec!important}
+.cc-result-strip{grid-column:1/-1;display:grid;grid-template-columns:auto repeat(4,minmax(0,1fr));gap:6px;align-items:center;margin-top:6px;padding:8px;border:1px solid #e5d8f2;border-radius:11px;background:#faf7fd}
+.cc-result-strip strong{font-size:9px;color:#674795;white-space:nowrap}.cc-result-strip button,.cc-result-strip a{min-height:32px!important;display:flex!important;align-items:center!important;justify-content:center!important;border:1px solid #dfe5ec!important;border-radius:8px!important;background:#fff!important;color:#425067!important;font:900 9px Tahoma!important;text-decoration:none!important;cursor:pointer}.cc-result-strip .danger{background:#fff3f5!important;color:#a23b55!important;border-color:#f0d8de!important}.cc-result-strip .good{background:#eef9f3!important;color:#277654!important;border-color:#d4ebdf!important}
+@media(max-width:900px){.cc-result-strip{grid-template-columns:1fr 1fr}.cc-result-strip strong{grid-column:1/-1}}
 
 @media (max-width: 1179px){
   .cc-v5 p{font-size:10px!important}
@@ -162,18 +187,38 @@ _CALL_TRACKING_SCRIPT = r'''<script>
   function updateRow(row,label){
     if(!row)return;
     var badge=row.querySelector('.cc-v5-status');
-    if(badge)badge.textContent=label||'تماس گرفته شد';
-    row.classList.remove('cc-priority-new');
-    var priority=row.querySelector('.cc-priority-pill');
-    if(priority)priority.remove();
+    if(badge&&label)badge.textContent=label;
     var done=row.querySelector('.cc-contact-done');
     if(done){
-      done.textContent='✓ تماس ثبت شد';
-      done.disabled=true;
-      done.setAttribute('aria-disabled','true');
-      done.style.opacity='.68';
-      done.style.cursor='default';
+      done.textContent='ثبت نتیجه تماس';
+      done.disabled=false;
+      done.removeAttribute('aria-disabled');
+      done.style.opacity='1';
+      done.style.cursor='pointer';
     }
+  }
+
+  function resultStrip(row,leadId){
+    if(!row)return;
+    var old=row.querySelector('.cc-result-strip');if(old)return old;
+    var strip=document.createElement('div');strip.className='cc-result-strip';
+    strip.innerHTML='<strong>نتیجه تماس را ثبت کن:</strong>'+
+      '<button type="button" data-result="no_answer">پاسخ نداد</button>'+
+      '<a href="/call-center/leads/'+leadId+'/">نیاز به پیگیری</a>'+
+      '<a class="good" href="/call-center/leads/'+leadId+'/appointment/">ثبت نوبت</a>'+
+      '<button type="button" class="danger" data-result="not_interested">تمایل ندارد</button>';
+    row.appendChild(strip);
+    strip.querySelectorAll('button[data-result]').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        var body=new FormData(),token=csrfToken();if(token)body.append('csrfmiddlewaretoken',token);body.append('result',btn.dataset.result);
+        btn.disabled=true;btn.textContent='در حال ثبت...';
+        fetch('/call-center/leads/'+leadId+'/result/',{method:'POST',body:body,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}})
+          .then(function(r){if(!r.ok)throw new Error();return r.json()})
+          .then(function(data){if(data&&data.ok){updateRow(row,data.label);strip.innerHTML='<strong>✓ نتیجه ثبت شد: '+data.result_label+'</strong>';row.classList.remove('cc-priority-new');var p=row.querySelector('.cc-priority-pill');if(p)p.remove()}})
+          .catch(function(){btn.disabled=false;btn.textContent='دوباره ثبت کن'});
+      });
+    });
+    return strip;
   }
 
   function postContact(leadId,row,options){
@@ -192,7 +237,10 @@ _CALL_TRACKING_SCRIPT = r'''<script>
       if(!response.ok)throw new Error('contact status '+response.status);
       return response.json();
     }).then(function(data){
-      if(data&&data.ok)updateRow(row,data.label||'تماس گرفته شد');
+      if(data&&data.ok){
+        updateRow(row,data.label||'');
+        if(data.needs_result)resultStrip(row,leadId);
+      }
       return data;
     }).catch(function(){
       if(options.button){
@@ -276,7 +324,7 @@ _CALL_TRACKING_SCRIPT = r'''<script>
       button.type='button';
       button.className='cc-contact-done';
       button.dataset.leadId=match[1];
-      button.textContent='✓ تماس انجام شد';
+      button.textContent='ثبت نتیجه تماس';
       button.style.cssText='cursor:pointer;white-space:nowrap';
       actionsBox.appendChild(button);
     }
