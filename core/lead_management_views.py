@@ -77,7 +77,7 @@ def _attention_reason(lead, now, today):
 
 
 class AttentionLeadProxy(FlowerLeadProxy):
-    """Lead Hub proxy that explains why a lead is urgent and gives managers actions."""
+    """Structured urgent-queue row; presentation stays in the dashboard template."""
 
     def __init__(self, lead, now, today):
         super().__init__(lead)
@@ -86,24 +86,24 @@ class AttentionLeadProxy(FlowerLeadProxy):
 
     @property
     def full_name(self):
-        lead = self._flower_lead
-        reason = _attention_reason(lead, self._attention_now, self._attention_today)
-        manage_url = reverse('referral_lead_manage', args=[lead.pk])
-        phone = ''.join(ch for ch in (lead.phone or '') if ch.isdigit() or ch == '+')
-        manage_label = 'تخصیص مسئول' if not lead.assigned_to_id else 'باز کردن و پیگیری'
-        return format_html(
-            '<span style="display:block;font-weight:900;color:#fff;margin-bottom:4px">{}</span>'
-            '<span style="display:block;color:#ffd27d;font-size:9px;margin-bottom:6px;white-space:normal;line-height:1.7">علت: {}</span>'
-            '<span style="display:flex;gap:5px;flex-wrap:wrap">'
-            '<a href="tel:{}" style="display:inline-flex;align-items:center;padding:5px 8px;border-radius:8px;background:#153b32;color:#86f0c0;text-decoration:none;font-size:9px;font-weight:900">☎ تماس</a>'
-            '<a href="{}" style="display:inline-flex;align-items:center;padding:5px 8px;border-radius:8px;background:#302753;color:#d8ccff;text-decoration:none;font-size:9px;font-weight:900">{}</a>'
-            '</span>',
-            lead.full_name,
-            reason,
-            phone,
-            manage_url,
-            manage_label,
-        )
+        return self._flower_lead.full_name
+
+    @property
+    def attention_reason(self):
+        return _attention_reason(self._flower_lead, self._attention_now, self._attention_today)
+
+    @property
+    def call_url(self):
+        phone=''.join(ch for ch in (self._flower_lead.phone or '') if ch.isdigit() or ch=='+')
+        return f'tel:{phone}'
+
+    @property
+    def manage_url(self):
+        return reverse('referral_lead_manage', args=[self._flower_lead.pk])
+
+    @property
+    def manage_label(self):
+        return 'تخصیص مسئول' if not self._flower_lead.assigned_to_id else 'باز کردن و پیگیری'
 
 
 def _channel_q(channel):
