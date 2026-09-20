@@ -61,6 +61,44 @@ class LeadIngestTests(TestCase):
         self.assertEqual(lead.phone, '09120000000')
         self.assertEqual(lead.source_url, 'https://greenlifeclinics.com/fast-slimming/')
 
+    def test_rejects_random_numeric_bot_phone(self):
+        response = self._post({
+            'name': 'Robertsoync',
+            'mobile': '82311357535',
+            'source': 'website',
+            'page_url': 'https://greenlifeclinics.com/',
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(ReferralLead.objects.count(), 0)
+
+    def test_accepts_and_normalizes_iran_country_code_mobile(self):
+        response = self._post({
+            'name': 'مریم احمدی',
+            'mobile': '+989121234567',
+            'source': 'website',
+        })
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(ReferralLead.objects.get().phone, '09121234567')
+
+    def test_accepts_explicit_foreign_e164_phone(self):
+        response = self._post({
+            'name': 'International Client',
+            'mobile': '+31612345678',
+            'source': 'website',
+        })
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(ReferralLead.objects.get().phone, '+31612345678')
+
+    def test_rejects_filled_honeypot(self):
+        response = self._post({
+            'name': 'Bot',
+            'mobile': '09121234567',
+            'source': 'website',
+            'honeypot': 'https://spam.example',
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(ReferralLead.objects.count(), 0)
+
     def test_operator_weights(self):
         cases = (
             ('فاطمه', 'بابایی', 'babayi', 6),

@@ -106,6 +106,37 @@ def _lookup(payload, aliases=(), contains=(), limit=500):
     return ''
 
 
+_DIGIT_TRANSLATION = str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', '01234567890123456789')
+
+
+def _normalize_valid_lead_phone(raw_value):
+    """Return a canonical lead phone or '' when the value is not a plausible phone.
+
+    Iranian mobile numbers are stored in local 09xxxxxxxxx form. Non-Iranian
+    numbers must be explicitly international (+countrycode...), which blocks
+    random 10/11-digit bot payloads from becoming leads.
+    """
+    raw = _clean_scalar(raw_value, 80).translate(_DIGIT_TRANSLATION).strip()
+    compact = ''.join(ch for ch in raw if ch.isdigit() or ch == '+')
+    if compact.count('+') > 1 or ('+' in compact and not compact.startswith('+')):
+        return ''
+
+    digits = ''.join(ch for ch in compact if ch.isdigit())
+    # Iran local mobile: 09xxxxxxxxx
+    if len(digits) == 11 and digits.startswith('09'):
+        return digits
+    # Iran mobile without trunk prefix: 9xxxxxxxxx
+    if len(digits) == 10 and digits.startswith('9') and not compact.startswith('+'):
+        return '0' + digits
+    # Iran country code, with or without +: 989xxxxxxxxx
+    if len(digits) == 12 and digits.startswith('989'):
+        return '0' + digits[2:]
+    # Foreign numbers are allowed only in explicit E.164-like + format.
+    if compact.startswith('+') and 10 <= len(digits) <= 15 and not digits.startswith('98'):
+        return '+' + digits
+    return ''
+
+
 def _phone_value(payload):
     candidates = []
     exact = ('phone', 'mobile', 'tel', 'telephone', 'email')
@@ -117,11 +148,18 @@ def _phone_value(payload):
         if any(term in lowered for term in ('phone', 'mobile', 'tel', 'موبایل', 'تلفن', 'شماره')):
             candidates.append(value)
     for value in candidates:
-        raw = _clean_scalar(value, 80)
-        phone = ''.join(ch for ch in raw if ch.isdigit() or ch == '+')[:30]
-        if sum(ch.isdigit() for ch in phone) >= 10:
+        phone = _normalize_valid_lead_phone(value)
+        if phone:
             return phone
     return ''
+
+
+def _honeypot_triggered(payload):
+    """Recognize fields reserved only for invisible anti-bot inputs."""
+    for key in ('honeypot', 'hp_field', 'website_hp', 'company_hp', 'botcheck'):
+        if _clean_scalar(payload.get(key), 120):
+            return True
+    return False
 
 
 def _utm_from_url(source_url):
@@ -293,6 +331,8 @@ def ingest_lead(request):
         return JsonResponse({'ok': False, 'error': 'invalid_payload'}, status=400)
 
     data = _merged_payload(payload)
+    if _honeypot_triggered(data):
+        return JsonResponse({'ok': False, 'error': 'spam_rejected'}, status=400)
     phone = _phone_value(data)
     full_name = _lookup(
         data,
@@ -337,7 +377,7 @@ def ingest_lead(request):
     }
     campaign = _lookup(data, aliases=('campaign', 'utm_campaign'), limit=120) or utm['utm_campaign']
 
-    if sum(ch.isdigit() for ch in phone) < 10:
+    if not phone:
         return JsonResponse({'ok': False, 'error': 'valid_phone_required'}, status=400)
 
     duplicate = ReferralLead.objects.filter(
