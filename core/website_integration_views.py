@@ -57,6 +57,8 @@ def website_lead_settings(request):
 
     api_key=decrypt_secret(config.api_key_cipher) if config.api_key_cipher else ''
     endpoint_url=request.build_absolute_uri(reverse('lead_ingest'))
+    if request.get_host().lower() == 'staff.greenlifeclinics.com' and endpoint_url.startswith('http://'):
+        endpoint_url='https://'+endpoint_url[len('http://'):]
     response=render(request,'core/website_lead_settings.html',{
         'website_config':config,
         'endpoint_url':endpoint_url,
