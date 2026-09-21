@@ -12,7 +12,8 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .models import Attendance, CallCenterLeadGroup, EmployeeProfile, LeaveRequest, ReferralLead, ReferralProfile, StaffNotification
+from .credential_security import decrypt_secret
+from .models import Attendance, CallCenterLeadGroup, EmployeeProfile, LeaveRequest, ReferralLead, ReferralProfile, StaffNotification, WebsiteLeadIntegrationSettings
 
 
 CHANNEL_LABELS = {
@@ -61,11 +62,25 @@ def _authorized(request):
     if not supplied:
         return False
 
+    # Primary source of truth: the dedicated Website Leads settings in Staff App.
+    # If a DB key exists, the enable/disable switch is authoritative and legacy
+    # environment variables cannot bypass it.
+    config = WebsiteLeadIntegrationSettings.load()
+    if config.api_key_cipher:
+        if not config.is_enabled:
+            return False
+        expected = decrypt_secret(config.api_key_cipher)
+        return bool(expected) and hmac.compare_digest(supplied, expected)
+
+    # Backward-compatible fallback for servers that have not generated their
+    # Website Leads key yet. No secret or digest is committed to source control.
     expected_plain = os.getenv('LEAD_INGEST_TOKEN', '')
     if expected_plain and hmac.compare_digest(supplied, expected_plain):
         return True
 
-    expected_digest = os.getenv('LEAD_INGEST_TOKEN_SHA256') or DEFAULT_WEBSITE_LEAD_TOKEN_SHA256
+    expected_digest = os.getenv('LEAD_INGEST_TOKEN_SHA256', '').strip()
+    if not expected_digest:
+        return False
     supplied_digest = hashlib.sha256(supplied.encode('utf-8')).hexdigest()
     return hmac.compare_digest(supplied_digest, expected_digest)
 

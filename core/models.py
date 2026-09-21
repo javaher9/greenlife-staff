@@ -1203,3 +1203,37 @@ class CampCommanderCheck(models.Model):
     updated_at=models.DateTimeField(auto_now=True)
     class Meta:
         constraints=[models.UniqueConstraint(fields=['site','date','period'],name='uniq_camp_commander_check')]
+
+
+class WebsiteLeadIntegrationSettings(models.Model):
+    """Singleton settings for inbound website leads.
+
+    This integration is intentionally separate from ApiServerSettings, which is
+    the outbound SMS/CRM connection. The website key is encrypted at rest and
+    may be rotated from the Staff App by an executive administrator.
+    """
+    endpoint_path=models.CharField(max_length=255,default='/api/integrations/leads/')
+    api_key_cipher=models.TextField(blank=True)
+    is_enabled=models.BooleanField(default=False)
+    last_rotated_at=models.DateTimeField(null=True,blank=True)
+    updated_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,
+        related_name='updated_website_lead_settings',
+    )
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name='اتصال لید وب‌سایت'
+        verbose_name_plural='اتصال لید وب‌سایت'
+
+    @classmethod
+    def load(cls):
+        settings,_=cls.objects.get_or_create(pk=1)
+        return settings
+
+    @property
+    def is_configured(self):
+        return bool(self.api_key_cipher)
+
+    def __str__(self):
+        return 'اتصال لید وب‌سایت گرین لایف'
