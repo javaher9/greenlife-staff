@@ -3,11 +3,12 @@ from uuid import uuid4
 
 from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
+from django.db import transaction
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from PIL import Image, ImageOps
 
-from .models import EmployeeProfile
+from .models import Attendance, EmployeeProfile
 
 
 @receiver(post_save, sender=User)
@@ -78,3 +79,31 @@ def compress_employee_avatar(sender, instance, **kwargs):
             avatar.seek(0)
         except Exception:
             pass
+
+
+@receiver(post_save, sender=Attendance)
+def release_pending_call_center_leads(sender, instance, **kwargs):
+    """Release the pending lead queue when a call-center operator checks in.
+
+    The routing engine itself decides whether the overnight queue is ready to be
+    released (Friday duty, the whole expected team present, or 11:00+). Running
+    after commit ensures the new attendance row is visible to the routing query.
+    """
+    if not instance.check_in or instance.check_out:
+        return
+    try:
+        profile = instance.user.profile
+    except EmployeeProfile.DoesNotExist:
+        return
+    if (
+        profile.role != 'call_center'
+        or not profile.is_active
+        or not instance.user.is_active
+    ):
+        return
+
+    def _release():
+        from .lead_routing import release_pending_leads_if_ready
+        release_pending_leads_if_ready()
+
+    transaction.on_commit(_release)
