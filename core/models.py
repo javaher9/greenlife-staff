@@ -202,6 +202,7 @@ class ReferralLead(models.Model):
     contact_result=models.CharField(max_length=20,choices=CONTACT_RESULT,blank=True,db_index=True)
     source=models.CharField(max_length=20,choices=SOURCE,default='panel')
     assigned_to=models.ForeignKey(EmployeeProfile,on_delete=models.SET_NULL,null=True,blank=True,related_name='assigned_referral_leads')
+    assigned_at=models.DateTimeField(null=True,blank=True,db_index=True)
     group=models.ForeignKey(CallCenterLeadGroup,on_delete=models.SET_NULL,null=True,blank=True,related_name='leads')
     next_follow_up=models.DateField(null=True,blank=True)
     notes=models.TextField(blank=True)
