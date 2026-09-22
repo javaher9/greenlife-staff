@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from django.db import models
+from django.db import connection, models, transaction
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -222,16 +222,24 @@ class ReferralLead(models.Model):
 
     @classmethod
     def recent_duplicate_for_phone(cls, phone, *, exclude_pk=None, now=None):
-        variants=lead_phone_variants(phone)
+        canonical=normalize_lead_phone(phone)
+        variants=lead_phone_variants(canonical)
         if not variants:
             return None
         qs=cls.objects.filter(
-            phone__in=variants,
             created_at__gte=(now or timezone.now())-LEAD_DUPLICATE_WINDOW,
         )
         if exclude_pk:
             qs=qs.exclude(pk=exclude_pk)
-        return qs.order_by('-created_at').first()
+        direct=qs.filter(phone__in=variants).order_by('-created_at').first()
+        if direct:
+            return direct
+        # Fallback catches legacy formatting (Persian digits, spaces, dashes)
+        # without requiring a data migration.
+        for lead in qs.only('id','phone','created_at').order_by('-created_at'):
+            if normalize_lead_phone(lead.phone)==canonical:
+                return lead
+        return None
 
     def clean(self):
         super().clean()
@@ -243,10 +251,26 @@ class ReferralLead(models.Model):
 
     def save(self,*args,**kwargs):
         self.phone=normalize_lead_phone(self.phone)
-        if self._state.adding and self.phone:
-            duplicate=self.recent_duplicate_for_phone(self.phone)
-            if duplicate:
-                raise DuplicateLeadError(duplicate)
+        if not (self._state.adding and self.phone):
+            return super().save(*args,**kwargs)
+
+        # Serialize same-phone inserts in PostgreSQL so two simultaneous
+        # submissions cannot both pass the duplicate check.
+        if connection.vendor=='postgresql':
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "SELECT pg_advisory_xact_lock(hashtext(%s)::bigint)",
+                        [f'greenlife-lead:{self.phone}'],
+                    )
+                duplicate=self.recent_duplicate_for_phone(self.phone)
+                if duplicate:
+                    raise DuplicateLeadError(duplicate)
+                return super().save(*args,**kwargs)
+
+        duplicate=self.recent_duplicate_for_phone(self.phone)
+        if duplicate:
+            raise DuplicateLeadError(duplicate)
         return super().save(*args,**kwargs)
 
     def __str__(self): return f'{self.full_name} - {self.phone}'
