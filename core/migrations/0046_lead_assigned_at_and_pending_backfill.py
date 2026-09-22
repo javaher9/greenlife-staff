@@ -102,7 +102,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='referrallead',
             name='assigned_at',
-            field=models.DateTimeField(blank=True, db_index=True, null=True),
+            field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.RunPython(backfill_assignment_state, migrations.RunPython.noop),
     ]
