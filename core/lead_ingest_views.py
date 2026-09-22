@@ -2,7 +2,6 @@ import hashlib
 import hmac
 import json
 import os
-from datetime import timedelta
 from urllib.parse import parse_qs, urlparse
 
 from django.contrib.auth.models import User
@@ -13,7 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from .credential_security import decrypt_secret
-from .models import Attendance, CallCenterLeadGroup, EmployeeProfile, LeaveRequest, ReferralLead, ReferralProfile, StaffNotification, WebsiteLeadIntegrationSettings
+from .models import Attendance, CallCenterLeadGroup, DuplicateLeadError, EmployeeProfile, LeaveRequest, ReferralLead, ReferralProfile, StaffNotification, WebsiteLeadIntegrationSettings
 
 
 CHANNEL_LABELS = {
@@ -397,13 +396,14 @@ def ingest_lead(request):
     if not phone:
         return JsonResponse({'ok': False, 'error': 'valid_phone_required'}, status=400)
 
-    duplicate = ReferralLead.objects.filter(
-        phone=phone,
-        created_at__gte=timezone.now() - timedelta(minutes=10),
-        notes__icontains=f'[channel:{channel}]',
-    ).order_by('-created_at').first()
+    duplicate = ReferralLead.recent_duplicate_for_phone(phone)
     if duplicate:
-        return JsonResponse({'ok': True, 'duplicate': True, 'lead_id': duplicate.id}, status=200)
+        return JsonResponse({
+            'ok': True,
+            'duplicate': True,
+            'lead_id': duplicate.id,
+            'duplicate_window_hours': 24,
+        }, status=200)
 
     meta = [f'[channel:{channel}]']
     if external_id:
@@ -436,16 +436,25 @@ def ingest_lead(request):
         notes_parts.append('[attribution]' + json.dumps(website_meta, ensure_ascii=False, separators=(',', ':')))
     notes = '\n'.join(notes_parts)[:4000]
 
-    lead = ReferralLead.objects.create(
-        referrer=_source_profile(channel),
-        full_name=full_name[:140],
-        phone=phone,
-        interested_service=service,
-        status='new',
-        source='link',
-        source_url=source_url,
-        notes=notes,
-    )
+    try:
+        lead = ReferralLead.objects.create(
+            referrer=_source_profile(channel),
+            full_name=full_name[:140],
+            phone=phone,
+            interested_service=service,
+            status='new',
+            source='link',
+            source_url=source_url,
+            notes=notes,
+        )
+    except DuplicateLeadError as exc:
+        existing=exc.existing_lead or ReferralLead.recent_duplicate_for_phone(phone)
+        return JsonResponse({
+            'ok': True,
+            'duplicate': True,
+            'lead_id': existing.id if existing else None,
+            'duplicate_window_hours': 24,
+        }, status=200)
     operator = _assign_lead(lead, channel)
 
     return JsonResponse({
