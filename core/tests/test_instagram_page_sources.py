@@ -1,8 +1,9 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
-from core.models import Branch, EmployeeProfile, ReferralLead
+from core.models import Attendance, Branch, EmployeeProfile, ReferralLead
 
 
 class InstagramPageSourceTests(TestCase):
@@ -12,6 +13,10 @@ class InstagramPageSourceTests(TestCase):
         self.operator, _ = EmployeeProfile.objects.update_or_create(
             user=operator_user,
             defaults={'role': 'call_center', 'branch': branch, 'is_active': True},
+        )
+        Attendance.objects.create(
+            user=operator_user, branch=branch, date=timezone.localdate(),
+            check_in=timezone.now(), status='present',
         )
         self.staff = User.objects.create_user(username='ig-page-staff', password='x')
         manager_user = User.objects.create_user(username='ig-page-manager', password='x')
