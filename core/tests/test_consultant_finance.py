@@ -347,7 +347,7 @@ class ConsultantFinanceEntryTests(TestCase):
         missing_receipt.pop('receipt_image')
         response=self.client.post('/finance/entry/', data=missing_receipt)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'این فیلد لازم است')
+        self.assertContains(response, 'برای پرداخت غیرنقدی، تصویر تراکنش الزامی است.')
         self.assertFalse(FinancialTransaction.objects.exists())
 
         response=self.client.post('/finance/entry/', data=self.valid_payload(amount='0'))

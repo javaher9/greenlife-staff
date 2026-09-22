@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Q
 from django.utils import timezone
 
 from .models import Attendance, CallCenterLeadGroup, EmployeeProfile, LeaveRequest, ReferralLead, StaffNotification
@@ -14,19 +14,14 @@ CHANNEL_LABELS = {
     'partner': 'همکار',
 }
 
-# One routing policy for every lead source.
-# Target share when all six known operators are active:
-# Narges 30%, Khorshidi 20%, Banafsheh 15%, Kamelia 15%, Yasaman 15%, Laleh 5%.
-OPERATOR_WEIGHT_RULES = (
-    (('بابایی', 'babaei', 'babayi', 'babaee'), 6),
-    (('صالحی', 'salehi'), 4),
-    (('عباسی', 'abbasi'), 1),
-)
-DEFAULT_OPERATOR_WEIGHT = 3
-FRIDAY_DUTY_MIN_WEIGHT = 8
-FRIDAY_DUTY_WEIGHT_MULTIPLIER = 2
-FRIDAY_DUTY_START_HOUR = 12
-FRIDAY_DUTY_END_HOUR = 18
+OPEN_ROUTING_STATUSES = ('new', 'contacted', 'appointment')
+
+# Night/no-staff leads stay in a pending queue. On normal workdays that queue is
+# released at 11:00 (or earlier only if every expected operator has checked in).
+# This prevents the first person arriving at 09:00 from receiving the whole
+# overnight backlog. Friday keeps the existing duty-day behaviour and releases
+# as soon as the on-duty operator is present.
+PENDING_MORNING_RELEASE_HOUR = 11
 
 
 def _normalize(value):
@@ -36,22 +31,42 @@ def _normalize(value):
 
 
 def operator_weight(operator):
-    user = operator.user
-    identity = _normalize(' '.join(
-        part for part in (user.first_name, user.last_name, user.username) if part
-    ))
-    for aliases, weight in OPERATOR_WEIGHT_RULES:
-        if any(_normalize(alias) in identity for alias in aliases):
-            return weight
-    return DEFAULT_OPERATOR_WEIGHT
+    """Current phase: all present call-center operators have equal weight.
+
+    A KPI/performance multiplier can be added here later without changing the
+    pending-queue and attendance-aware routing flow.
+    """
+    return 1
+
+
+def expected_operator_user_ids(day=None):
+    """Active call-center users expected to work today, excluding approved leave."""
+    day = day or timezone.localdate()
+    user_ids = set(
+        EmployeeProfile.objects.filter(
+            role='call_center',
+            is_active=True,
+            user__is_active=True,
+        ).values_list('user_id', flat=True)
+    )
+    if not user_ids:
+        return set()
+    leave_ids = set(
+        LeaveRequest.objects.filter(
+            user_id__in=user_ids,
+            status='approved',
+            start_date__lte=day,
+            end_date__gte=day,
+        ).values_list('user_id', flat=True)
+    )
+    return user_ids - leave_ids
 
 
 def eligible_operator_user_ids(day=None):
     """Users eligible to receive new leads right now.
 
-    An operator must have an active check-in for today, must not have checked out,
-    and must not be on approved leave. This keeps new leads away from absent or
-    unavailable call-center staff without changing their historical ownership.
+    An operator must have checked in today, must not have checked out, and must
+    not be on approved leave. Historical ownership is never changed by absence.
     """
     day = day or timezone.localdate()
     present_ids = set(
@@ -77,52 +92,12 @@ def eligible_operator_user_ids(day=None):
     return present_ids - leave_ids
 
 
-def friday_duty_weight(operator, now=None):
-    """Boost the operator who is physically on Friday duty from 12:00 to 18:00.
-
-    Friday is normally off for call-center staff. If an operator has actually
-    checked in, they become the duty operator for routing purposes. The boost is
-    intentionally layered on top of the normal per-operator weights and expires
-    automatically at 18:00 (or immediately after check-out).
-    """
-    local_now = timezone.localtime(now or timezone.now())
-    today = local_now.date()
-    if today.weekday() != 4:
-        return operator_weight(operator)
-    if not (FRIDAY_DUTY_START_HOUR <= local_now.hour < FRIDAY_DUTY_END_HOUR):
-        return operator_weight(operator)
-
-    attendance = Attendance.objects.filter(
-        user=operator.user,
-        date=today,
-        check_in__isnull=False,
-    ).only('check_in', 'check_out').first()
-    if not attendance:
-        return operator_weight(operator)
-    if attendance.check_out and timezone.localtime(attendance.check_out) <= local_now:
-        return operator_weight(operator)
-
-    base = operator_weight(operator)
-    return max(base * FRIDAY_DUTY_WEIGHT_MULTIPLIER, FRIDAY_DUTY_MIN_WEIGHT)
-
-
-def _locked_balanced_operator():
-    """Return the next active operator using a weighted round-robin balance.
-
-    All active call-center rows are locked until the caller's transaction commits,
-    so simultaneous lead submissions cannot all choose the same operator.
-
-    Selection uses today's assigned leads / operator weight. The operator with the
-    lowest ratio is chosen. That makes the first pass genuinely rotational (an
-    operator who just received a lead will not receive another while peers are at
-    zero), while the long-run distribution converges to the requested weights.
-    """
-    today = timezone.localdate()
-    eligible_user_ids = eligible_operator_user_ids(today)
+def _locked_present_operators(day=None):
+    day = day or timezone.localdate()
+    eligible_user_ids = eligible_operator_user_ids(day)
     if not eligible_user_ids:
-        return None
-
-    operators = list(
+        return []
+    return list(
         EmployeeProfile.objects
         .select_for_update()
         .filter(
@@ -134,35 +109,54 @@ def _locked_balanced_operator():
         .select_related('user')
         .order_by('id')
     )
-    if not operators:
-        return None
 
+
+def _assignment_stats(operators, day):
     ids = [operator.id for operator in operators]
-    stats = {
+    return {
         row['assigned_to_id']: row
         for row in (
             ReferralLead.objects
-            .filter(assigned_to_id__in=ids, created_at__date=today)
+            .filter(assigned_to_id__in=ids)
+            .filter(
+                Q(assigned_at__date=day)
+                | Q(assigned_at__isnull=True, created_at__date=day)
+            )
             .values('assigned_to_id')
-            .annotate(count=Count('id'), last_at=Max('created_at'))
+            .annotate(count=Count('id'), last_at=Max('assigned_at'))
         )
     }
 
+
+def _pick_balanced_operator(operators, stats):
     def key(operator):
         row = stats.get(operator.id) or {}
         count = row.get('count') or 0
         last_at = row.get('last_at')
-        # The ratio provides weighted fairness. The second key prevents repeated
-        # assignment on ties by preferring the operator who has waited longest.
-        effective_weight = friday_duty_weight(operator)
         return (
-            count / effective_weight,
-            -effective_weight,
-            last_at or timezone.datetime.min.replace(tzinfo=timezone.get_current_timezone()),
+            count,
+            last_at or timezone.datetime.min.replace(
+                tzinfo=timezone.get_current_timezone()
+            ),
             operator.id,
         )
 
-    return min(operators, key=key)
+    return min(operators, key=key) if operators else None
+
+
+def _locked_balanced_operator(now=None):
+    """Pick the present operator with the fewest assignments made today.
+
+    Because the metric is assignment time (not lead creation time), an operator
+    arriving at 10:00 or 11:00 starts behind the people already present and
+    automatically receives subsequent leads until the daily counts catch up.
+    """
+    local_now = timezone.localtime(now or timezone.now())
+    day = local_now.date()
+    operators = _locked_present_operators(day)
+    if not operators:
+        return None
+    return _pick_balanced_operator(operators, _assignment_stats(operators, day))
 
 
 def _group_for(operator, name, *, is_default=False):
@@ -177,25 +171,148 @@ def _group_for(operator, name, *, is_default=False):
     return group
 
 
+def _pending_destination(lead):
+    """Recover the operational destination for an unassigned lead."""
+    notes = _normalize(getattr(lead, 'notes', ''))
+    source_url = _normalize(getattr(lead, 'source_url', ''))
+
+    if 'اینستاگرام - دستی' in notes:
+        return 'اینستاگرام - دستی', 'لید جدید اینستاگرام - دستی'
+    if 'تلگرام' in notes or '/telegram/' in source_url:
+        return 'تلگرام - لینک', 'لید جدید تلگرام'
+    if 'بله' in notes or '[channel:bale]' in notes or '/bale/' in source_url:
+        return 'بله - لینک', 'لید جدید بله'
+    if '[channel:instagram]' in notes or '[instagram_page:' in notes or '/instagram/' in source_url:
+        return 'اینستاگرام جدید', 'لید جدید اینستاگرام'
+    if '[channel:website]' in notes or 'greenlifeclinics.com' in source_url:
+        return 'ورودی وب‌سایت', 'لید جدید وب‌سایت'
+    if '[channel:crm]' in notes or 'crm' in source_url:
+        return 'ورودی CRM', 'لید جدید CRM'
+    if '[channel:whatsapp]' in notes or 'whatsapp' in source_url or 'wa.me' in source_url:
+        return 'ورودی واتس‌اپ', 'لید جدید واتس‌اپ'
+    if '[channel:campaign]' in notes or 'utm_campaign=' in source_url:
+        return 'ورودی کمپین', 'لید جدید کمپین'
+    return 'شبکه فروش پرسنل', 'لید جدید برای تماس'
+
+
+def _assign_to_operator(lead, operator, group_name, notification_title, *, notify=True, assigned_at=None):
+    lead.assigned_to = operator
+    lead.group = _group_for(
+        operator,
+        group_name,
+        is_default=(group_name == 'شبکه فروش پرسنل'),
+    )
+    lead.assigned_at = assigned_at or timezone.now()
+    lead.save(update_fields=['assigned_to', 'group', 'assigned_at', 'updated_at'])
+    if notify:
+        StaffNotification.objects.create(
+            user=operator.user,
+            title=notification_title,
+            message=f'{lead.full_name} با شماره {lead.phone} به گروه «{group_name}» اضافه شد.',
+            notification_type='call_center_lead',
+            related_date=timezone.localdate(),
+        )
+    return operator
+
+
+def _pending_release_ready(local_now, eligible_user_ids):
+    if not eligible_user_ids:
+        return False
+    # Friday is a duty day: do not wait for the normal team.
+    if local_now.weekday() == 4:
+        return True
+    expected = expected_operator_user_ids(local_now.date())
+    if expected and expected.issubset(eligible_user_ids):
+        return True
+    return local_now.hour >= PENDING_MORNING_RELEASE_HOUR
+
+
+@transaction.atomic
+def release_pending_leads_if_ready(*, force=False, now=None):
+    """Distribute queued unassigned leads equally among operators who are present.
+
+    Before 11:00 on normal workdays the overnight backlog is held unless all
+    expected operators have already arrived. This is intentionally different
+    from a brand-new daytime lead: new leads can still go immediately to whoever
+    is present, and late arrivals then catch up because routing uses assigned_at.
+    """
+    local_now = timezone.localtime(now or timezone.now())
+    day = local_now.date()
+    eligible_ids = eligible_operator_user_ids(day)
+    if not force and not _pending_release_ready(local_now, eligible_ids):
+        return 0
+
+    operators = _locked_present_operators(day)
+    if not operators:
+        return 0
+
+    pending = list(
+        ReferralLead.objects
+        .select_for_update()
+        .select_related('referrer')
+        .filter(
+            assigned_to__isnull=True,
+            status__in=OPEN_ROUTING_STATUSES,
+        )
+        .order_by('created_at', 'id')
+    )
+    if not pending:
+        return 0
+
+    stats = _assignment_stats(operators, day)
+    counts = {op.id: int((stats.get(op.id) or {}).get('count') or 0) for op in operators}
+    last_order = {op.id: index for index, op in enumerate(operators)}
+
+    assigned = 0
+    for lead in pending:
+        operator = min(
+            operators,
+            key=lambda op: (counts[op.id], last_order[op.id], op.id),
+        )
+        group_name, title = _pending_destination(lead)
+        _assign_to_operator(
+            lead,
+            operator,
+            group_name,
+            title,
+            notify=True,
+            assigned_at=timezone.now(),
+        )
+        counts[operator.id] += 1
+        # Move the selected operator to the back of equal-count ties.
+        for op_id in last_order:
+            last_order[op_id] -= 1
+        last_order[operator.id] = len(operators)
+        assigned += 1
+
+    return assigned
+
+
+def _release_before_live_assignment():
+    # After the morning release point (or when the whole expected team is in),
+    # clear the pending queue before routing the newest lead.
+    release_pending_leads_if_ready()
+
+
 @transaction.atomic
 def assign_external_lead(lead, channel):
+    _release_before_live_assignment()
+    lead.refresh_from_db(fields=['assigned_to', 'group', 'assigned_at'])
+    if lead.assigned_to_id:
+        return lead.assigned_to
+
     operator = _locked_balanced_operator()
     if not operator:
         return None
 
     label = CHANNEL_LABELS.get(channel, channel)
     group_name = 'اینستاگرام جدید' if channel == 'instagram' else f'ورودی {label}'
-    lead.assigned_to = operator
-    lead.group = _group_for(operator, group_name)
-    lead.save(update_fields=['assigned_to', 'group', 'updated_at'])
-    StaffNotification.objects.create(
-        user=operator.user,
-        title=f'لید جدید {label}',
-        message=f'{lead.full_name} با شماره {lead.phone} وارد «{group_name}» شد.',
-        notification_type='call_center_lead',
-        related_date=timezone.localdate(),
+    return _assign_to_operator(
+        lead,
+        operator,
+        group_name,
+        f'لید جدید {label}',
     )
-    return operator
 
 
 @transaction.atomic
@@ -204,42 +321,45 @@ def assign_referral_lead(lead):
         if not lead.group_id:
             lead.group = _group_for(lead.assigned_to, 'شبکه فروش پرسنل', is_default=True)
             lead.save(update_fields=['group', 'updated_at'])
+        if not lead.assigned_at:
+            lead.assigned_at = timezone.now()
+            lead.save(update_fields=['assigned_at', 'updated_at'])
+        return lead.assigned_to
+
+    _release_before_live_assignment()
+    lead.refresh_from_db(fields=['assigned_to', 'group', 'assigned_at'])
+    if lead.assigned_to_id:
         return lead.assigned_to
 
     operator = _locked_balanced_operator()
     if not operator:
         return None
 
-    lead.assigned_to = operator
-    lead.group = _group_for(operator, 'شبکه فروش پرسنل', is_default=True)
-    lead.save(update_fields=['assigned_to', 'group', 'updated_at'])
-    StaffNotification.objects.create(
-        user=operator.user,
-        title='لید جدید برای تماس',
-        message=f'{lead.full_name} با شماره {lead.phone} به صف پیگیری شما اضافه شد.',
-        notification_type='call_center_lead',
-        related_date=timezone.localdate(),
+    return _assign_to_operator(
+        lead,
+        operator,
+        'شبکه فروش پرسنل',
+        'لید جدید برای تماس',
     )
-    return operator
 
 
 @transaction.atomic
 def assign_social_lead(lead, group_name='اینستاگرام - لینک', notification_title='لید جدید اینستاگرام'):
+    _release_before_live_assignment()
+    lead.refresh_from_db(fields=['assigned_to', 'group', 'assigned_at'])
+    if lead.assigned_to_id:
+        return lead.assigned_to
+
     operator = _locked_balanced_operator()
     if not operator:
         return None
 
-    lead.assigned_to = operator
-    lead.group = _group_for(operator, group_name)
-    lead.save(update_fields=['assigned_to', 'group', 'updated_at'])
-    StaffNotification.objects.create(
-        user=operator.user,
-        title=notification_title,
-        message=f'{lead.full_name} با شماره {lead.phone} به گروه «{group_name}» اضافه شد.',
-        notification_type='call_center_lead',
-        related_date=timezone.localdate(),
+    return _assign_to_operator(
+        lead,
+        operator,
+        group_name,
+        notification_title,
     )
-    return operator
 
 
 def install_unified_lead_routing():

@@ -1,8 +1,9 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
-from core.models import Branch, CallCenterLeadGroup, EmployeeProfile, ReferralLead
+from core.models import Attendance, Branch, CallCenterLeadGroup, EmployeeProfile, ReferralLead
 
 
 class TelegramLeadTests(TestCase):
@@ -12,6 +13,10 @@ class TelegramLeadTests(TestCase):
         self.operator, _ = EmployeeProfile.objects.update_or_create(
             user=user,
             defaults={'role': 'call_center', 'branch': call_branch, 'is_active': True},
+        )
+        Attendance.objects.create(
+            user=user, branch=call_branch, date=timezone.localdate(),
+            check_in=timezone.now(), status='present',
         )
 
     def test_public_telegram_form_creates_lead_in_telegram_group(self):

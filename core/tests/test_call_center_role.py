@@ -3,9 +3,10 @@ from core.tests.test_appointments import SharedAppointmentTests as SharedAppoint
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from core.forms import ReferralLeadManageForm
-from core.models import Branch, CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, StaffNotification, Task
+from core.models import Attendance, Branch, CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, StaffNotification, Task
 from core.referral_views import _auto_assign_call_center
 
 
@@ -19,6 +20,12 @@ class CallCenterRoleTests(TestCase):
         self.referrer=ReferralProfile.objects.create(
             user=self.referrer_user,referral_code='GLTESTROOT',created_by=self.referrer_user,
         )
+        now=timezone.now(); today=timezone.localdate()
+        for operator in (self.operator_one,self.operator_two):
+            Attendance.objects.create(
+                user=operator,date=today,branch=self.branch,
+                check_in=now,status='present',
+            )
         self.lead_one=ReferralLead.objects.create(
             referrer=self.referrer,full_name='مشتری اول',phone='09120000001',
             interested_service='لاغری',assigned_to=self.operator_one.profile,
@@ -121,7 +128,7 @@ class CallCenterRoleTests(TestCase):
 
     def test_operator_can_record_result_only_for_own_lead(self):
         response=self.client.post(reverse('call_center_lead',args=[self.lead_one.pk]),{
-            'status':'contacted','next_follow_up':'','interested_service':'لاغری موضعی',
+            'contact_result':'no_answer','next_follow_up':'','interested_service':'لاغری موضعی',
             'notes':'تماس انجام شد؛ عصر دوباره پیگیری شود.',
         })
         self.assertRedirects(response,reverse('call_center_dashboard'))
@@ -170,7 +177,7 @@ class CallCenterRoleTests(TestCase):
         self.assertEqual(response.status_code,302)
         group=CallCenterLeadGroup.objects.get(owner=self.operator_one.profile,name='کمپ VIP')
         response=self.client.post(reverse('call_center_lead',args=[self.lead_one.pk]),{
-            'status':'contacted','group':group.pk,'next_follow_up':'',
+            'contact_result':'no_answer','group':group.pk,'next_follow_up':'',
             'interested_service':'لاغری','notes':'انتقال به گروه کمپ',
         })
         self.assertRedirects(response,reverse('call_center_dashboard'))
