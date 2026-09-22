@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Q
 from django.utils import timezone
 
 from .models import Attendance, CallCenterLeadGroup, EmployeeProfile, LeaveRequest, ReferralLead, StaffNotification
@@ -117,7 +117,11 @@ def _assignment_stats(operators, day):
         row['assigned_to_id']: row
         for row in (
             ReferralLead.objects
-            .filter(assigned_to_id__in=ids, assigned_at__date=day)
+            .filter(assigned_to_id__in=ids)
+            .filter(
+                Q(assigned_at__date=day)
+                | Q(assigned_at__isnull=True, created_at__date=day)
+            )
             .values('assigned_to_id')
             .annotate(count=Count('id'), last_at=Max('assigned_at'))
         )
