@@ -5,7 +5,7 @@ from django.db.models import Count, Q
 from django.shortcuts import render
 from django.utils import timezone
 
-from .models import CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, StaffNotification
+from .models import CallCenterLeadGroup, DuplicateLeadError, EmployeeProfile, LEAD_DUPLICATE_MESSAGE, ReferralLead, ReferralProfile, StaffNotification, normalize_lead_phone
 
 
 INSTAGRAM_GROUP_NAME = 'اینستاگرام - لینک'
@@ -53,9 +53,12 @@ class InstagramLeadForm(forms.Form):
     )
 
     def clean_phone(self):
-        value = ''.join(ch for ch in self.cleaned_data['phone'] if ch.isdigit() or ch == '+')
-        if len(value) < 10:
+        value = normalize_lead_phone(self.cleaned_data['phone'])
+        digits=''.join(ch for ch in value if ch.isdigit())
+        if len(digits) < 10:
             raise forms.ValidationError('شماره موبایل معتبر وارد کنید.')
+        if ReferralLead.recent_duplicate_for_phone(value):
+            raise forms.ValidationError(LEAD_DUPLICATE_MESSAGE)
         return value
 
 
@@ -158,19 +161,23 @@ def instagram_lead(request):
     completed = False
     if request.method == 'POST' and form.is_valid():
         data = form.cleaned_data
-        lead = ReferralLead.objects.create(
-            referrer=_instagram_source_profile(),
-            full_name=data['full_name'].strip(),
-            phone=data['phone'],
-            interested_service=(data.get('interested_service') or '').strip(),
-            status='new',
-            source='link',
-            source_url=request.build_absolute_uri()[:500],
-            notes=f'ورودی مستقیم فرم اینستاگرام | پیج: {page_label} | [instagram_page:{page_slug}]',
-        )
-        _assign_instagram_lead(lead)
-        completed = True
-        form = InstagramLeadForm()
+        try:
+            lead = ReferralLead.objects.create(
+                referrer=_instagram_source_profile(),
+                full_name=data['full_name'].strip(),
+                phone=data['phone'],
+                interested_service=(data.get('interested_service') or '').strip(),
+                status='new',
+                source='link',
+                source_url=request.build_absolute_uri()[:500],
+                notes=f'ورودی مستقیم فرم اینستاگرام | پیج: {page_label} | [instagram_page:{page_slug}]',
+            )
+        except DuplicateLeadError:
+            form.add_error('phone', LEAD_DUPLICATE_MESSAGE)
+        else:
+            _assign_instagram_lead(lead)
+            completed = True
+            form = InstagramLeadForm()
 
     return render(request, 'core/instagram_lead.html', {
         'form': form,
@@ -184,23 +191,27 @@ def telegram_lead(request):
     completed = False
     if request.method == 'POST' and form.is_valid():
         data = form.cleaned_data
-        lead = ReferralLead.objects.create(
-            referrer=_telegram_source_profile(),
-            full_name=data['full_name'].strip(),
-            phone=data['phone'],
-            interested_service=(data.get('interested_service') or '').strip(),
-            status='new',
-            source='link',
-            source_url=request.build_absolute_uri()[:500],
-            notes='ورودی مستقیم فرم تلگرام Green Life',
-        )
-        _assign_instagram_lead(
-            lead,
-            group_name=TELEGRAM_GROUP_NAME,
-            notification_title='لید جدید تلگرام',
-        )
-        completed = True
-        form = InstagramLeadForm()
+        try:
+            lead = ReferralLead.objects.create(
+                referrer=_telegram_source_profile(),
+                full_name=data['full_name'].strip(),
+                phone=data['phone'],
+                interested_service=(data.get('interested_service') or '').strip(),
+                status='new',
+                source='link',
+                source_url=request.build_absolute_uri()[:500],
+                notes='ورودی مستقیم فرم تلگرام Green Life',
+            )
+        except DuplicateLeadError:
+            form.add_error('phone', LEAD_DUPLICATE_MESSAGE)
+        else:
+            _assign_instagram_lead(
+                lead,
+                group_name=TELEGRAM_GROUP_NAME,
+                notification_title='لید جدید تلگرام',
+            )
+            completed = True
+            form = InstagramLeadForm()
 
     return render(request, 'core/instagram_lead.html', {
         'form': form,
@@ -226,24 +237,28 @@ def instagram_manual_lead(request):
         data = form.cleaned_data
         page_slug, page_label = _instagram_page_source(data.get('instagram_page'))
         staff_name = request.user.get_full_name() or request.user.username
-        lead = ReferralLead.objects.create(
-            referrer=_instagram_source_profile(),
-            full_name=data['full_name'].strip(),
-            phone=data['phone'],
-            interested_service=(data.get('interested_service') or '').strip(),
-            status='new',
-            source='panel',
-            source_url=request.build_absolute_uri()[:500],
-            notes=f'اینستاگرام - دستی | پیج: {page_label} | [instagram_page:{page_slug}] | ثبت از دایرکت توسط {staff_name}',
-            created_by=request.user,
-        )
-        _assign_instagram_lead(
-            lead,
-            group_name=INSTAGRAM_MANUAL_GROUP_NAME,
-            notification_title='لید جدید اینستاگرام - دستی',
-        )
-        completed = True
-        form = InstagramManualLeadForm(initial={'instagram_page': INSTAGRAM_DEFAULT_PAGE})
+        try:
+            lead = ReferralLead.objects.create(
+                referrer=_instagram_source_profile(),
+                full_name=data['full_name'].strip(),
+                phone=data['phone'],
+                interested_service=(data.get('interested_service') or '').strip(),
+                status='new',
+                source='panel',
+                source_url=request.build_absolute_uri()[:500],
+                notes=f'اینستاگرام - دستی | پیج: {page_label} | [instagram_page:{page_slug}] | ثبت از دایرکت توسط {staff_name}',
+                created_by=request.user,
+            )
+        except DuplicateLeadError:
+            form.add_error('phone', LEAD_DUPLICATE_MESSAGE)
+        else:
+            _assign_instagram_lead(
+                lead,
+                group_name=INSTAGRAM_MANUAL_GROUP_NAME,
+                notification_title='لید جدید اینستاگرام - دستی',
+            )
+            completed = True
+            form = InstagramManualLeadForm(initial={'instagram_page': INSTAGRAM_DEFAULT_PAGE})
 
     return render(request, 'core/instagram_manual_lead.html', {
         'form': form,
