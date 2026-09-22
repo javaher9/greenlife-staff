@@ -71,12 +71,13 @@ class CallCenterKpiPanelTests(TestCase):
         self.assertEqual(performance['team_today'], 2)
         self.assertEqual(performance['lead_share_today'], 50)
 
-    def test_call_started_advances_only_new_lead(self):
+    def test_call_started_does_not_invent_contact_result(self):
         response = self.client.post(reverse('call_center_mark_call_started', args=[self.my_lead.pk]))
         self.assertEqual(response.status_code, 200)
         self.my_lead.refresh_from_db()
-        self.assertEqual(self.my_lead.status, 'contacted')
-        self.assertEqual(response.json()['label'], 'تماس گرفته شد')
+        self.assertEqual(self.my_lead.status, 'new')
+        self.assertEqual(response.json()['label'], 'جدید')
+        self.assertTrue(response.json()['needs_result'])
 
         self.my_lead.status = 'appointment'
         self.my_lead.save(update_fields=['status', 'updated_at'])
