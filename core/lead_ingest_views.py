@@ -54,6 +54,8 @@ _RESERVED_KEYS = {
 
 def _authorized(request):
     supplied = request.headers.get('X-Lead-Token', '').strip()
+    if not supplied:
+        supplied = request.headers.get('X-API-Key', '').strip()
     authorization = request.headers.get('Authorization', '')
     if authorization.lower().startswith('bearer '):
         supplied = authorization[7:].strip()
