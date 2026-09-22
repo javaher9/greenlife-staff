@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 class Branch(models.Model):
@@ -138,6 +141,50 @@ class CallCenterLeadGroup(models.Model):
     def __str__(self): return self.name
 
 
+LEAD_DUPLICATE_WINDOW = timedelta(hours=24)
+LEAD_DUPLICATE_MESSAGE = 'این شماره در ۲۴ ساعت گذشته ثبت شده است. ثبت تکراری انجام نشد؛ پس از ۲۴ ساعت امکان ثبت مجدد وجود دارد.'
+_DIGIT_TRANSLATION = str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', '01234567890123456789')
+
+
+def normalize_lead_phone(raw_value):
+    """Normalize lead phones so equivalent Iranian formats deduplicate together."""
+    raw=str(raw_value or '').translate(_DIGIT_TRANSLATION).strip()
+    compact=''.join(ch for ch in raw if ch.isdigit() or ch=='+')
+    digits=''.join(ch for ch in compact if ch.isdigit())
+    if len(digits)==11 and digits.startswith('09'):
+        return digits
+    if len(digits)==10 and digits.startswith('9'):
+        return '0'+digits
+    if len(digits)==12 and digits.startswith('989'):
+        return '0'+digits[2:]
+    if len(digits)==14 and digits.startswith('00989'):
+        return '0'+digits[4:]
+    if compact.startswith('+') and 10 <= len(digits) <= 15:
+        return '+'+digits
+    return digits or compact
+
+
+def lead_phone_variants(raw_value):
+    """Return historical display variants that should count as the same phone."""
+    canonical=normalize_lead_phone(raw_value)
+    variants={canonical} if canonical else set()
+    if len(canonical)==11 and canonical.startswith('09'):
+        subscriber=canonical[1:]
+        variants.update({
+            subscriber,
+            '98'+subscriber,
+            '+98'+subscriber,
+            '0098'+subscriber,
+        })
+    return [value for value in variants if value]
+
+
+class DuplicateLeadError(ValidationError):
+    def __init__(self, existing_lead=None):
+        self.existing_lead=existing_lead
+        super().__init__(LEAD_DUPLICATE_MESSAGE)
+
+
 class ReferralLead(models.Model):
     CONTACT_RESULT=[('follow_up','نیاز به پیگیری'),('appointment','نوبت داده شد'),('no_answer','پاسخ نداد'),('won','فروش موفق'),('sale_lost','فروش ناموفق'),('not_interested','تمایل ندارد')]
     STATUS=[
@@ -172,6 +219,36 @@ class ReferralLead(models.Model):
     class Meta:
         ordering=['-created_at']
         indexes=[models.Index(fields=['referrer','status','-created_at'],name='reflead_ref_status_idx')]
+
+    @classmethod
+    def recent_duplicate_for_phone(cls, phone, *, exclude_pk=None, now=None):
+        variants=lead_phone_variants(phone)
+        if not variants:
+            return None
+        qs=cls.objects.filter(
+            phone__in=variants,
+            created_at__gte=(now or timezone.now())-LEAD_DUPLICATE_WINDOW,
+        )
+        if exclude_pk:
+            qs=qs.exclude(pk=exclude_pk)
+        return qs.order_by('-created_at').first()
+
+    def clean(self):
+        super().clean()
+        self.phone=normalize_lead_phone(self.phone)
+        if self._state.adding and self.phone:
+            duplicate=self.recent_duplicate_for_phone(self.phone)
+            if duplicate:
+                raise ValidationError({'phone':LEAD_DUPLICATE_MESSAGE})
+
+    def save(self,*args,**kwargs):
+        self.phone=normalize_lead_phone(self.phone)
+        if self._state.adding and self.phone:
+            duplicate=self.recent_duplicate_for_phone(self.phone)
+            if duplicate:
+                raise DuplicateLeadError(duplicate)
+        return super().save(*args,**kwargs)
+
     def __str__(self): return f'{self.full_name} - {self.phone}'
 
 
