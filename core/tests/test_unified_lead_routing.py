@@ -33,11 +33,11 @@ class UnifiedLeadRoutingTests(TestCase):
                 password='x',
                 is_active=True,
             )
-            self.operators.append(EmployeeProfile.objects.create(
-                user=user,
-                role='call_center',
-                is_active=True,
-            ))
+            profile = user.profile
+            profile.role = 'call_center'
+            profile.is_active = True
+            profile.save(update_fields=['role', 'is_active'])
+            self.operators.append(profile)
 
     def _new_lead(self, index):
         return ReferralLead.objects.create(
