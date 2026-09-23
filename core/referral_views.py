@@ -9,12 +9,11 @@ from urllib.parse import quote
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.conf import settings
 from django.db import transaction
 from django.db.models import Count, Max, Q, Sum
 from django.db.models.functions import TruncDate
 from django.core.exceptions import PermissionDenied
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -478,22 +477,34 @@ def referral_lead_create(request):
     })
 
 
-def _admin_qr_referrer():
-    """Return the central executive referral profile used only for the management QR."""
-    usernames=tuple(getattr(settings,'EXECUTIVE_USERNAMES',()) or ())
-    user=User.objects.filter(is_active=True,username__in=usernames).order_by('id').first()
-    if not user:
-        user=User.objects.filter(is_active=True,profile__role='admin').order_by('id').first()
-    if not user:
-        user=User.objects.filter(is_active=True,is_superuser=True).order_by('id').first()
-    if not user:
-        raise Http404('Central Green Life lead owner is not configured.')
-    return _ensure_profile(user)
+def _greenlife_qr_source():
+    """Technical Green Life source for public QR leads; never shown as a person."""
+    user,_=User.objects.get_or_create(
+        username='greenlife-public-qr-source',
+        defaults={
+            'first_name':'Green Life','last_name':'','is_active':False,
+        },
+    )
+    if user.has_usable_password():
+        user.set_unusable_password()
+        user.save(update_fields=['password'])
+    profile,_=ReferralProfile.objects.get_or_create(
+        user=user,
+        defaults={
+            'referral_code':_new_code(),
+            'is_active':False,
+            'created_by':None,
+        },
+    )
+    if profile.is_active:
+        profile.is_active=False
+        profile.save(update_fields=['is_active','updated_at'])
+    return profile
 
 
 def public_admin_qr_lead(request):
-    """Public free-consultation form for the central management QR."""
-    referrer=_admin_qr_referrer()
+    """Public Green Life QR form. Leads stay unassigned for central review."""
+    referrer=_greenlife_qr_source()
     form=PublicReferralLeadForm(request.POST or None)
     completed=False
     if request.method=='POST' and form.is_valid():
@@ -501,21 +512,16 @@ def public_admin_qr_lead(request):
         lead.referrer=referrer
         lead.source='qr'
         lead.source_url=request.build_absolute_uri()[:500]
+        lead.assigned_to=None
+        lead.group=None
+        lead.created_by=None
         lead.save()
-        assigned=_auto_assign_call_center(lead)
-        if assigned:
-            group,_=CallCenterLeadGroup.objects.get_or_create(
-                owner=assigned,name='QR مدیریت',defaults={'is_default':False},
-            )
-            if lead.group_id!=group.pk:
-                lead.group=group
-                lead.save(update_fields=['group','updated_at'])
         completed=True
         form=PublicReferralLeadForm()
     return render(request,'core/referrals/public_lead.html',{
         'form':form,'referrer':referrer,'completed':completed,'photo':'',
         'show_referrer':False,
-        'page_title':'مشاوره لاغری رایگان',
+        'page_title':'مشاوره لاغری رایگان | Green Life',
         'headline':'مشاوره لاغری رایگان',
         'intro':'اطلاعاتتان را ثبت کنید تا کارشناسان گرین‌لایف برای مشاوره رایگان با شما تماس بگیرند.',
         'submit_label':'ثبت درخواست مشاوره رایگان',
