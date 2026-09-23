@@ -6,7 +6,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from .models import AuditLog, FinancialTransaction, StaffNotification
+from .models import AuditLog, Branch, FinancialTransaction, StaffNotification
 
 MILLION_TOMAN_IN_RIAL = Decimal('10000000')
 
@@ -50,61 +50,174 @@ def finance_entry_review_with_amount(request, pk, action):
 
     if action == 'correction':
         current_amount_million = _million_toman(entry.amount)
+        payment_methods = [
+            ('Pos S','Pos S'),('Pos H','Pos H'),('CC P','CC P'),
+            ('CC D','CC D'),('CC S','CC S'),('LINK','LINK'),('Cash','نقدی'),
+        ]
+        branches = Branch.objects.filter(is_active=True).order_by('name')
+        context = {
+            'entry': entry,
+            'current_amount_million': current_amount_million,
+            'payment_methods': payment_methods,
+            'entry_types': FinancialTransaction.ENTRY_TYPE,
+            'sale_origins': FinancialTransaction.SALE_ORIGIN,
+            'sale_reasons': FinancialTransaction.SALE_REASON,
+            'cash_currencies': FinancialTransaction.CASH_CURRENCY,
+            'branches': branches,
+        }
         raw_amount = (request.POST.get('corrected_amount') or '').replace(',', '').replace('٬', '').strip()
         if not raw_amount:
-            return render(request, 'core/finance_amount_correction.html', {
-                'entry': entry,
-                'current_amount_million': current_amount_million,
-            })
+            return render(request, 'core/finance_amount_correction.html', context)
+
         try:
             entered_million = Decimal(raw_amount)
         except (InvalidOperation, ValueError):
             entered_million = Decimal('0')
         if entered_million <= 0:
             messages.error(request, 'مبلغ صحیح باید بیشتر از صفر باشد.')
-            return render(request, 'core/finance_amount_correction.html', {
-                'entry': entry,
-                'entered_amount': raw_amount,
-                'current_amount_million': current_amount_million,
-            })
+            context['entered_amount'] = raw_amount
+            return render(request, 'core/finance_amount_correction.html', context)
 
-        new_amount = entered_million * MILLION_TOMAN_IN_RIAL
-        old_amount = entry.amount
-        note = (request.POST.get('review_note') or '').strip()[:300]
+        entry_type=(request.POST.get('entry_type') or '').strip()
+        payment_method=(request.POST.get('payment_method') or '').strip()
+        sale_origin=(request.POST.get('sale_origin') or '').strip()
+        sale_reason=(request.POST.get('sale_reason') or '').strip()
+        branch_id=(request.POST.get('branch_id') or '').strip()
+        person_name=(request.POST.get('person_name') or '').strip()[:160]
+        service=(request.POST.get('service') or '').strip()[:160]
+        account_heading=(request.POST.get('account_heading') or '').strip()[:120]
+        terminal_or_payee=(request.POST.get('terminal_or_payee') or '').strip()[:160]
+        tracking_number=(request.POST.get('tracking_number') or '').strip()[:100]
+        destination_card=(request.POST.get('destination_card') or '').strip()[:80]
+        description=(request.POST.get('description') or '').strip()
+        cash_currency=(request.POST.get('cash_currency') or '').strip()
+
+        valid_entry_types=dict(FinancialTransaction.ENTRY_TYPE)
+        valid_payment_methods=dict(payment_methods)
+        valid_sale_origins=dict(FinancialTransaction.SALE_ORIGIN)
+        valid_sale_reasons=dict(FinancialTransaction.SALE_REASON)
+        valid_cash_currencies=dict(FinancialTransaction.CASH_CURRENCY)
+
+        errors=[]
+        if entry_type not in valid_entry_types:
+            errors.append('نوع ثبت معتبر نیست.')
+        if payment_method not in valid_payment_methods:
+            errors.append('روش پرداخت معتبر نیست.')
+        if sale_origin and sale_origin not in valid_sale_origins:
+            errors.append('مبدأ فروش معتبر نیست.')
+        if sale_reason and sale_reason not in valid_sale_reasons:
+            errors.append('علت فروش معتبر نیست.')
+        if not person_name:
+            errors.append('نام فرد نمی‌تواند خالی باشد.')
+        if payment_method=='CC P' and not terminal_or_payee:
+            errors.append('برای CC P نام شخص دریافت‌کننده الزامی است.')
+
+        selected_branch=entry.branch
+        if entry.appointment_id:
+            # Appointment attribution is authoritative; do not let an edit break branch/source linkage.
+            selected_branch=entry.appointment.branch
+            sale_origin='afsariyeh'
+        else:
+            if branch_id:
+                selected_branch=branches.filter(pk=int(branch_id)).first() if branch_id.isdigit() else None
+                if not selected_branch:
+                    errors.append('شعبه انتخاب‌شده معتبر نیست.')
+            else:
+                selected_branch=None
+
+        cash_amount=None
+        cash_exchange_rate=None
+        if payment_method=='Cash':
+            if cash_currency not in valid_cash_currencies:
+                errors.append('ارز نقدی را انتخاب کنید.')
+            raw_cash=(request.POST.get('cash_amount') or '').replace(',','').replace('٬','').strip()
+            raw_rate=(request.POST.get('cash_exchange_rate') or '').replace(',','').replace('٬','').strip()
+            try:
+                cash_amount=Decimal(raw_cash) if raw_cash else None
+            except (InvalidOperation,ValueError):
+                cash_amount=None
+                errors.append('مبلغ نقدی معتبر نیست.')
+            try:
+                cash_exchange_rate=Decimal(raw_rate) if raw_rate else None
+            except (InvalidOperation,ValueError):
+                cash_exchange_rate=None
+                errors.append('نرخ تبدیل معتبر نیست.')
+            if cash_currency=='IRR' and cash_amount is None:
+                cash_amount=entered_million * MILLION_TOMAN_IN_RIAL
+            elif cash_currency!='IRR' and (cash_amount is None or cash_amount<=0):
+                errors.append('برای وجه نقد ارزی، مبلغ ارز را وارد کنید.')
+            if cash_exchange_rate is not None and cash_exchange_rate<=0:
+                errors.append('نرخ تبدیل باید بیشتر از صفر باشد.')
+        else:
+            cash_currency=''
+
+        if errors:
+            for error in errors:
+                messages.error(request,error)
+            context.update({
+                'entered_amount':raw_amount,
+                'posted':request.POST,
+            })
+            return render(request,'core/finance_amount_correction.html',context)
+
+        new_amount=entered_million*MILLION_TOMAN_IN_RIAL
+        note=(request.POST.get('review_note') or '').strip()[:300]
+        tracked_fields=[
+            'amount','entry_type','payment_method','sale_origin','sale_reason','branch_id',
+            'person_name','service','account_heading','terminal_or_payee','tracking_number',
+            'destination_card','description','cash_currency','cash_amount','cash_exchange_rate',
+        ]
+        before={field:str(getattr(entry,field) if getattr(entry,field) is not None else '') for field in tracked_fields}
+
         with transaction.atomic():
-            entry.amount = new_amount
-            entry.review_status = 'approved'
-            entry.reviewed_by = request.user
-            entry.reviewed_at = timezone.now()
-            entry.review_note = note or f'اصلاح مبلغ از {_million_toman(old_amount)} به {entered_million} میلیون تومان'
-            entry.save(update_fields=['amount', 'review_status', 'reviewed_by', 'reviewed_at', 'review_note'])
+            entry.amount=new_amount
+            entry.entry_type=entry_type
+            entry.payment_method=payment_method
+            entry.sale_origin=sale_origin
+            entry.sale_reason=sale_reason
+            entry.branch=selected_branch
+            entry.person_name=person_name
+            entry.service=service
+            entry.account_heading=account_heading
+            entry.terminal_or_payee=terminal_or_payee
+            entry.tracking_number=tracking_number
+            entry.destination_card=destination_card
+            entry.description=description
+            entry.cash_currency=cash_currency
+            entry.cash_amount=cash_amount
+            entry.cash_exchange_rate=cash_exchange_rate
+            entry.review_status='approved'
+            entry.reviewed_by=request.user
+            entry.reviewed_at=timezone.now()
+            entry.review_note=note or 'اصلاح کامل تراکنش توسط مدیر'
+            entry.save(update_fields=[
+                'amount','entry_type','payment_method','sale_origin','sale_reason','branch',
+                'person_name','service','account_heading','terminal_or_payee','tracking_number',
+                'destination_card','description','cash_currency','cash_amount','cash_exchange_rate',
+                'review_status','reviewed_by','reviewed_at','review_note',
+            ])
+            after={field:str(getattr(entry,field) if getattr(entry,field) is not None else '') for field in tracked_fields}
+            changed={field:{'before':before[field],'after':after[field]} for field in tracked_fields if before[field]!=after[field]}
             AuditLog.objects.create(
                 actor=request.user,
-                action='finance_amount_correction',
+                action='finance_transaction_correction',
                 path=request.path,
                 method='POST',
                 object_type='FinancialTransaction',
                 object_id=str(entry.pk),
-                summary=f'اصلاح مبلغ تراکنش {entry.person_name}: {_million_toman(old_amount)} → {entered_million} میلیون تومان'[:250],
-                metadata={
-                    'old_amount': str(old_amount),
-                    'new_amount': str(new_amount),
-                    'old_amount_million_toman': str(_million_toman(old_amount)),
-                    'new_amount_million_toman': str(entered_million),
-                    'review_status': 'approved',
-                    'note': note,
-                },
+                summary=f'اصلاح کامل تراکنش مالی {entry.person_name}'[:250],
+                metadata={'changes':changed,'review_status':'approved','note':note},
                 ip_address=_request_ip(request),
             )
-            if entry.recorded_by_id and entry.recorded_by_id != request.user.pk:
+            if entry.recorded_by_id and entry.recorded_by_id!=request.user.pk:
                 StaffNotification.objects.create(
                     user=entry.recorded_by,
-                    title='اصلاح مبلغ ثبت مالی',
-                    message=f'مبلغ تراکنش {entry.person_name} توسط مدیر اصلاح و تأیید شد.',
+                    title='اصلاح ثبت مالی',
+                    message=f'اطلاعات تراکنش {entry.person_name} توسط مدیر اصلاح و تأیید شد.',
                     notification_type='finance_review',
                     related_date=timezone.localdate(),
                 )
-        messages.success(request, f'مبلغ تراکنش روی {entered_million:g} میلیون تومان اصلاح شد؛ مبلغ قبلی در سابقه حسابرسی محفوظ است.')
+        messages.success(request,'اطلاعات تراکنش اصلاح و تأیید شد؛ مقادیر قبلی در سابقه حسابرسی محفوظ است.')
         return redirect('finance_dashboard')
 
     status_map = {'approve': 'approved', 'cancel': 'cancelled'}

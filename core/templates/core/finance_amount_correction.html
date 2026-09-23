@@ -1,15 +1,49 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}
 {% block content %}
 <style>
-.fac-wrap{max-width:620px;margin:30px auto;direction:rtl}.fac-card{background:#0b1926;border:1px solid #24465f;border-radius:18px;padding:22px;color:#eef7ff;box-shadow:0 18px 45px rgba(0,0,0,.25)}.fac-card h1{margin:0 0 8px;font-size:22px}.fac-sub{color:#91a6b8;font-size:12px;margin-bottom:20px}.fac-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}.fac-meta div{background:#081722;border:1px solid #1d394f;border-radius:12px;padding:11px}.fac-meta small{display:block;color:#7f96a8;margin-bottom:5px}.fac-meta strong{color:#fff}.fac-field{margin:14px 0}.fac-field label{display:block;margin-bottom:7px;font-weight:900}.fac-field input,.fac-field textarea{width:100%;box-sizing:border-box;border:1px solid #315873;border-radius:11px;background:#071722;color:#fff;padding:12px;font-family:inherit}.fac-field input{font-size:20px;direction:ltr;text-align:right;font-variant-numeric:tabular-nums}.fac-field textarea{min-height:80px;resize:vertical}.fac-actions{display:flex;gap:9px;margin-top:18px}.fac-save,.fac-back{border:0;border-radius:11px;padding:11px 18px;font-family:inherit;font-weight:900;cursor:pointer;text-decoration:none}.fac-save{background:#16865d;color:#fff}.fac-back{background:#183047;color:#d8e8f3}.fac-warning{font-size:11px;color:#ffd987;background:#3f3114;border:1px solid #6c5520;border-radius:10px;padding:10px;margin-top:12px}@media(max-width:640px){.fac-wrap{margin:12px}.fac-meta{grid-template-columns:1fr}}
+.fac-wrap{max-width:980px;margin:30px auto;direction:rtl}.fac-card{background:#0b1926;border:1px solid #24465f;border-radius:18px;padding:22px;color:#eef7ff;box-shadow:0 18px 45px rgba(0,0,0,.25)}.fac-card h1{margin:0 0 8px;font-size:22px}.fac-sub{color:#91a6b8;font-size:12px;margin-bottom:20px}.fac-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}.fac-meta div{background:#081722;border:1px solid #1d394f;border-radius:12px;padding:11px}.fac-meta small{display:block;color:#7f96a8;margin-bottom:5px}.fac-meta strong{color:#fff}.fac-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.fac-field{margin:0}.fac-field.full{grid-column:1/-1}.fac-field.span2{grid-column:span 2}.fac-field label{display:block;margin-bottom:7px;font-weight:900;font-size:11px}.fac-field input,.fac-field textarea,.fac-field select{width:100%;box-sizing:border-box;border:1px solid #315873;border-radius:11px;background:#071722;color:#fff;padding:11px;font-family:inherit;min-height:42px}.fac-field textarea{min-height:82px;resize:vertical}.fac-actions{display:flex;gap:9px;margin-top:18px}.fac-save,.fac-back{border:0;border-radius:11px;padding:11px 18px;font-family:inherit;font-weight:900;cursor:pointer;text-decoration:none}.fac-save{background:#16865d;color:#fff}.fac-back{background:#183047;color:#d8e8f3}.fac-warning{font-size:11px;color:#ffd987;background:#3f3114;border:1px solid #6c5520;border-radius:10px;padding:10px;margin-top:14px}.fac-lock{font-size:10px;color:#9fc6dd;margin-top:5px}.fac-cash{display:none;grid-column:1/-1;grid-template-columns:repeat(3,1fr);gap:12px;padding:12px;border:1px solid rgba(52,211,153,.3);border-radius:12px;background:rgba(16,185,129,.06)}.fac-cash.open{display:grid}
+@media(max-width:800px){.fac-wrap{margin:12px}.fac-meta,.fac-grid{grid-template-columns:1fr 1fr}.fac-field.span2{grid-column:span 2}.fac-cash.open{grid-template-columns:1fr 1fr}}@media(max-width:560px){.fac-meta,.fac-grid,.fac-cash.open{grid-template-columns:1fr}.fac-field.span2,.fac-field.full{grid-column:1}}
 </style>
 <div class="fac-wrap"><div class="fac-card">
-<h1>اصلاح مبلغ تراکنش</h1><div class="fac-sub">مبلغ را فقط به «میلیون تومان» وارد کنید؛ مثلاً برای ۴۴ میلیون فقط 44 بنویسید. مبلغ قبلی برای سابقه حسابرسی نگهداری می‌شود.</div>
-<div class="fac-meta"><div><small>مراجع</small><strong>{{ entry.person_name|default:'—' }}</strong></div><div><small>مبلغ فعلی</small><strong>{{ current_amount_million|floatformat:"-3" }} میلیون تومان</strong></div><div><small>شعبه</small><strong>{{ entry.branch|default:'—' }}</strong></div><div><small>تاریخ</small><strong>{{ entry.occurred_at|jdate }}</strong></div></div>
+<h1>اصلاح کامل تراکنش</h1>
+<div class="fac-sub">فیلدهای عملیاتی تراکنش را اصلاح کنید. فیلدهای سیستمی، ثبت‌کننده، مالک کال‌سنتر، نوبت و رسید دست‌نخورده می‌مانند و همه تغییرات Audit می‌شوند.</div>
+<div class="fac-meta">
+<div><small>مراجع</small><strong>{{ entry.person_name|default:'—' }}</strong></div>
+<div><small>مبلغ فعلی</small><strong>{{ current_amount_million|floatformat:"-3" }} میلیون تومان</strong></div>
+<div><small>شعبه فعلی</small><strong>{{ entry.branch|default:'—' }}</strong></div>
+<div><small>تاریخ</small><strong>{{ entry.occurred_at|jdate }}</strong></div>
+</div>
 <form method="post" action="{% url 'finance_entry_review' entry.pk 'correction' %}">{% csrf_token %}
-<div class="fac-field"><label for="corrected_amount">مبلغ صحیح (میلیون تومان)</label><input id="corrected_amount" name="corrected_amount" type="number" min="0.001" step="0.001" inputmode="decimal" value="{{ entered_amount|default:current_amount_million|floatformat:'-3' }}" placeholder="مثلاً 44" required autofocus></div>
-<div class="fac-field"><label for="review_note">توضیح اصلاح <small style="color:#7f96a8">(اختیاری)</small></label><textarea id="review_note" name="review_note" placeholder="مثلاً اشتباه در ورود عدد توسط منشی"></textarea></div>
-<div class="fac-warning">مثال: 44 یعنی ۴۴ میلیون تومان. سیستم مقدار را با واحد داخلی مالی ذخیره می‌کند و صفر اضافه لازم نیست. همین تراکنش اصلاح و تأیید می‌شود؛ تراکنش تکراری ساخته نمی‌شود.</div>
-<div class="fac-actions"><button class="fac-save" type="submit">ثبت مبلغ اصلاح‌شده</button><a class="fac-back" href="{% url 'finance_dashboard' %}">انصراف</a></div>
+<div class="fac-grid">
+<div class="fac-field"><label>نوع ثبت</label><select name="entry_type">{% for code,label in entry_types %}<option value="{{ code }}" {% if posted.entry_type == code or not posted and entry.entry_type == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+<div class="fac-field"><label>مبلغ صحیح (میلیون تومان)</label><input name="corrected_amount" type="number" min="0.001" step="0.001" inputmode="decimal" value="{{ entered_amount|default:current_amount_million|floatformat:'-3' }}" required></div>
+<div class="fac-field"><label>روش پرداخت / مقصد</label><select id="facPayment" name="payment_method">{% for code,label in payment_methods %}<option value="{{ code }}" {% if posted.payment_method == code or not posted and entry.payment_method == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+
+<div class="fac-field"><label>شعبه</label>{% if entry.appointment_id %}<input value="{{ entry.appointment.branch }}" readonly><input type="hidden" name="branch_id" value="{{ entry.appointment.branch_id }}"><div class="fac-lock">به‌دلیل نوبت واقعی قفل است.</div>{% else %}<select name="branch_id"><option value="">بدون شعبه</option>{% for b in branches %}<option value="{{ b.id }}" {% if posted.branch_id == b.id|stringformat:"s" or not posted and entry.branch_id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select>{% endif %}</div>
+<div class="fac-field"><label>مبدأ فروش</label>{% if entry.appointment_id %}<input value="فروش افسریه" readonly><input type="hidden" name="sale_origin" value="afsariyeh"><div class="fac-lock">به‌دلیل نوبت واقعی قفل است.</div>{% else %}<select name="sale_origin"><option value="">—</option>{% for code,label in sale_origins %}<option value="{{ code }}" {% if posted.sale_origin == code or not posted and entry.sale_origin == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>{% endif %}</div>
+<div class="fac-field"><label>علت فروش</label><select name="sale_reason"><option value="">—</option>{% for code,label in sale_reasons %}<option value="{{ code }}" {% if posted.sale_reason == code or not posted and entry.sale_reason == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+
+<div class="fac-field"><label>نام فرد</label><input name="person_name" value="{{ posted.person_name|default:entry.person_name }}" required></div>
+<div class="fac-field"><label>پکیج / خدمت</label><input name="service" value="{{ posted.service|default:entry.service }}"></div>
+<div class="fac-field"><label>سرفصل دستگاه یا حساب</label><input name="account_heading" value="{{ posted.account_heading|default:entry.account_heading }}"></div>
+
+<div class="fac-field"><label>نام پایانه یا شخص دریافت‌کننده</label><input name="terminal_or_payee" value="{{ posted.terminal_or_payee|default:entry.terminal_or_payee }}"></div>
+<div class="fac-field"><label>شماره پیگیری</label><input name="tracking_number" value="{{ posted.tracking_number|default:entry.tracking_number }}"></div>
+<div class="fac-field"><label>کارت مقصد</label><input name="destination_card" value="{{ posted.destination_card|default:entry.destination_card }}"></div>
+
+<div class="fac-cash" id="facCash">
+<div class="fac-field"><label>ارز نقدی</label><select name="cash_currency"><option value="">انتخاب ارز</option>{% for code,label in cash_currencies %}<option value="{{ code }}" {% if posted.cash_currency == code or not posted and entry.cash_currency == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+<div class="fac-field"><label>مبلغ نقدی به ارز انتخابی</label><input name="cash_amount" type="number" step="0.01" value="{{ posted.cash_amount|default:entry.cash_amount }}"></div>
+<div class="fac-field"><label>نرخ تبدیل هر واحد به ریال</label><input name="cash_exchange_rate" type="number" step="0.01" value="{{ posted.cash_exchange_rate|default:entry.cash_exchange_rate }}"></div>
+</div>
+
+<div class="fac-field full"><label>توضیحات تراکنش</label><textarea name="description">{{ posted.description|default:entry.description }}</textarea></div>
+<div class="fac-field full"><label>توضیح اصلاح <small style="color:#7f96a8">(اختیاری)</small></label><textarea name="review_note" placeholder="مثلاً اصلاح روش پرداخت از POS H به LINK"></textarea></div>
+</div>
+<div class="fac-warning">ذخیره، همین تراکنش را اصلاح و تأیید می‌کند؛ تراکنش جدید ساخته نمی‌شود. مقادیر قبلی و جدید در Audit Log نگهداری می‌شوند.</div>
+<div class="fac-actions"><button class="fac-save" type="submit">ثبت اصلاحات و تأیید</button><a class="fac-back" href="{% url 'finance_dashboard' %}">انصراف</a></div>
 </form></div></div>
+<script>
+(function(){var p=document.getElementById('facPayment'),c=document.getElementById('facCash');function t(){if(c)c.classList.toggle('open',p&&p.value==='Cash')}if(p){p.addEventListener('change',t);t()}})();
+</script>
 {% endblock %}
