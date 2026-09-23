@@ -433,7 +433,7 @@ class ReferralSale(models.Model):
     STATUS=[('draft','در انتظار تأیید'),('approved','تأیید شده'),('paid','پورسانت پرداخت شد'),('cancelled','لغو شده')]
     PAYMENT_METHODS=[
         ('Pos S','Pos S'),('Pos H','Pos H'),('CC P','CC P'),
-        ('CC D','CC D'),('CC S','CC S'),('Cash','نقدی'),
+        ('CC D','CC D'),('CC S','CC S'),('LINK','LINK'),('Cash','نقدی'),
     ]
     CASH_CURRENCY=[
         ('IRT','تومان ایران'),('IRR','ریال ایران'),('USD','دلار آمریکا'),

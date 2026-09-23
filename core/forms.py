@@ -572,6 +572,7 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
         ('CC P','CC P'),
         ('CC D','CC D'),
         ('CC S','CC S'),
+        ('LINK','LINK'),
         ('Cash','نقدی'),
     ]
     date=JalaliDateField(label='تاریخ تراکنش',initial=timezone.localdate)
