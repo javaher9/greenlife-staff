@@ -9,11 +9,12 @@ from urllib.parse import quote
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Count, Max, Q, Sum
 from django.db.models.functions import TruncDate
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -477,6 +478,50 @@ def referral_lead_create(request):
     })
 
 
+def _admin_qr_referrer():
+    """Return the central executive referral profile used only for the management QR."""
+    usernames=tuple(getattr(settings,'EXECUTIVE_USERNAMES',()) or ())
+    user=User.objects.filter(is_active=True,username__in=usernames).order_by('id').first()
+    if not user:
+        user=User.objects.filter(is_active=True,profile__role='admin').order_by('id').first()
+    if not user:
+        user=User.objects.filter(is_active=True,is_superuser=True).order_by('id').first()
+    if not user:
+        raise Http404('Central Green Life lead owner is not configured.')
+    return _ensure_profile(user)
+
+
+def public_admin_qr_lead(request):
+    """Public free-consultation form for the central management QR."""
+    referrer=_admin_qr_referrer()
+    form=PublicReferralLeadForm(request.POST or None)
+    completed=False
+    if request.method=='POST' and form.is_valid():
+        lead=form.save(commit=False)
+        lead.referrer=referrer
+        lead.source='qr'
+        lead.source_url=request.build_absolute_uri()[:500]
+        lead.save()
+        assigned=_auto_assign_call_center(lead)
+        if assigned:
+            group,_=CallCenterLeadGroup.objects.get_or_create(
+                owner=assigned,name='QR مدیریت',defaults={'is_default':False},
+            )
+            if lead.group_id!=group.pk:
+                lead.group=group
+                lead.save(update_fields=['group','updated_at'])
+        completed=True
+        form=PublicReferralLeadForm()
+    return render(request,'core/referrals/public_lead.html',{
+        'form':form,'referrer':referrer,'completed':completed,'photo':'',
+        'show_referrer':False,
+        'page_title':'مشاوره لاغری رایگان',
+        'headline':'مشاوره لاغری رایگان',
+        'intro':'اطلاعاتتان را ثبت کنید تا کارشناسان گرین‌لایف برای مشاوره رایگان با شما تماس بگیرند.',
+        'submit_label':'ثبت درخواست مشاوره رایگان',
+    })
+
+
 def public_referral_lead(request,code):
     referrer=get_object_or_404(ReferralProfile.objects.select_related('user'),referral_code=code,is_active=True)
     form=PublicReferralLeadForm(request.POST or None)
@@ -488,6 +533,7 @@ def public_referral_lead(request,code):
         lead.save(); _auto_assign_call_center(lead); completed=True; form=PublicReferralLeadForm()
     return render(request,'core/referrals/public_lead.html',{
         'form':form,'referrer':referrer,'completed':completed,'photo':_photo_url(referrer),
+        'show_referrer':True,
     })
 
 
