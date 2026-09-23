@@ -2454,10 +2454,53 @@ def goal_add(request):
 
 @login_required
 def internal_requests(request):
-    qs=InternalRequest.objects.select_related('requester','assigned_to')
-    if role_of(request.user) in PERSONNEL_ROLES: qs=qs.filter(requester=request.user)
-    elif role_of(request.user)=='manager': qs=qs.filter(Q(requester__profile__branch=request.user.profile.branch)|Q(assigned_to=request.user))
-    return render(request,'core/internal_requests.html',{'requests':qs[:100]})
+    qs=InternalRequest.objects.select_related(
+        'requester','requester__profile','requester__profile__branch',
+        'assigned_to','assigned_to__profile',
+    )
+    if role_of(request.user) in PERSONNEL_ROLES:
+        qs=qs.filter(requester=request.user)
+    elif role_of(request.user)=='manager':
+        qs=qs.filter(
+            Q(requester__profile__branch=request.user.profile.branch) |
+            Q(assigned_to=request.user)
+        )
+
+    # Keep dashboard filtering read-only and isolated from request workflow.
+    base_qs=qs
+    status_counts={
+        row['status']:row['n']
+        for row in base_qs.values('status').annotate(n=Count('id'))
+    }
+    status_filter=(request.GET.get('status') or '').strip()
+    category_filter=(request.GET.get('category') or '').strip()
+    priority_filter=(request.GET.get('priority') or '').strip()
+    valid_status={code for code,_ in InternalRequest.STATUS}
+    valid_category={code for code,_ in InternalRequest.CATEGORIES}
+    valid_priority={code for code,_ in InternalRequest.PRIORITY}
+    if status_filter in valid_status:
+        qs=qs.filter(status=status_filter)
+    else:
+        status_filter=''
+    if category_filter in valid_category:
+        qs=qs.filter(category=category_filter)
+    else:
+        category_filter=''
+    if priority_filter in valid_priority:
+        qs=qs.filter(priority=priority_filter)
+    else:
+        priority_filter=''
+
+    return render(request,'core/internal_requests.html',{
+        'requests':qs.order_by('-created_at')[:150],
+        'request_status_counts':status_counts,
+        'request_total':base_qs.count(),
+        'status_filter':status_filter,
+        'category_filter':category_filter,
+        'priority_filter':priority_filter,
+        'request_categories':InternalRequest.CATEGORIES,
+        'request_priorities':InternalRequest.PRIORITY,
+    })
 
 @login_required
 def internal_request_add(request):
