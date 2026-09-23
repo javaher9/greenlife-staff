@@ -148,7 +148,7 @@ html.gl-call-center-html{background:#f5f7fb!important;background-image:none!impo
     <a href="/referrals/sales/" class="{% if '/referrals/sales/' in request.path %}is-active{% endif %}"><span class="nav-ico">◇</span><span>فروش و درآمد</span></a>
     <a href="/logout/"><span class="nav-ico">↪</span><span>خروج</span></a>
     {% else %}
-    <a href="/" class="nav-main employee-bottom-nav {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 11.2 12 3l9 8.2V21h-6v-6H9v6H3v-9.8Z"/></svg></span><span class="nav-label nav-label-desktop">داشبورد اصلی</span><span class="nav-label nav-label-mobile">خانه</span></a>
+    <a href="/" class="nav-main employee-bottom-nav {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 11.2 12 3l9 8.2V21h-6v-6H9v6H3v-9.8Z"/></svg></span><span class="nav-label nav-label-desktop">امروز چه خبر</span><span class="nav-label nav-label-mobile">خانه</span></a>
     {% if user.profile.role == 'internal_manager' %}
     <a href="/meeting-minutes/new/" class="{% if request.resolver_match.url_name == 'meeting_minute_create' %}is-active{% endif %}"><span class="nav-ico">＋</span><span>صورت‌جلسه جدید</span></a>
     <a href="/meeting-minutes/" class="{% if '/meeting-minutes/' in request.path and request.resolver_match.url_name != 'meeting_minute_create' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>لیست صورت‌جلسات</span></a>
