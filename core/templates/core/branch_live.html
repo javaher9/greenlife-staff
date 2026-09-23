@@ -50,6 +50,15 @@
   @media(max-width:1200px){.cmd-kpis,.cmd-attention,.cmd-modules{grid-template-columns:repeat(2,minmax(0,1fr))}.cmd-two{grid-template-columns:1fr}}
   @media(max-width:700px){.cmd{padding-top:8px}.cmd-hero{align-items:flex-start;flex-direction:column;padding:17px}.cmd-kpis,.cmd-attention,.cmd-modules{grid-template-columns:1fr 1fr}.cmd-kpi{min-height:185px;padding:15px}.cmd-kpi-value strong{font-size:31px}}
   @media(max-width:470px){.cmd-kpis,.cmd-attention,.cmd-modules{grid-template-columns:1fr}}
+  .cmd-pulse{display:grid;grid-template-columns:260px 260px minmax(0,1fr);gap:12px;align-items:stretch}
+  .cmd-pulse-card{padding:15px 16px;border-radius:18px;border:1px solid rgba(255,255,255,.085);background:linear-gradient(150deg,#121c2d,#09111d);position:relative;overflow:hidden}
+  .cmd-pulse-card:after{content:"";position:absolute;width:120px;height:120px;border-radius:50%;left:-44px;bottom:-62px;background:rgba(255,255,255,.035)}
+  .cmd-pulse-card small{display:block;color:#9fb0c2;font-size:9px;font-weight:800}.cmd-pulse-card strong{display:block;margin-top:9px;color:#fff;font-size:28px;font-weight:950}.cmd-pulse-card span{display:block;margin-top:7px;color:#c5d1df;font-size:9px;font-weight:800}
+  .cmd-pulse-card.sales strong{color:#78f0bd}.cmd-pulse-card.convert strong{color:#c4a9ff}.cmd-delta.up{color:#6ff0b8!important}.cmd-delta.down{color:#ff8ba6!important}
+  .cmd-trend30{padding:14px 15px;border-radius:18px;border:1px solid rgba(124,92,237,.24);background:linear-gradient(150deg,#111a2b,#08111d)}
+  .cmd-trend30-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.cmd-trend30-head strong{color:#fff;font-size:13px}.cmd-trend30-tabs{display:flex;gap:5px}.cmd-trend30-tabs button{border:1px solid rgba(255,255,255,.1);border-radius:9px;background:#111d2c;color:#aebdcb;padding:6px 9px;font:900 9px Tahoma;cursor:pointer}.cmd-trend30-tabs button.active{background:#6646a0;color:#fff;border-color:#8e6bc4}
+  .cmd-trend30-chart{height:145px;margin-top:8px;position:relative}.cmd-trend30-chart svg{width:100%;height:100%;overflow:visible}.cmd-trend30-grid{stroke:rgba(255,255,255,.06);stroke-width:1}.cmd-trend30-line{fill:none;stroke:#7c5ce8;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 5px rgba(124,92,232,.45))}.cmd-trend30-dot{fill:#bca8ff}.cmd-trend30-labels{display:flex;justify-content:space-between;color:#718499;font-size:7px;margin-top:4px}
+  @media(max-width:1100px){.cmd-pulse{grid-template-columns:1fr 1fr}.cmd-trend30{grid-column:1/-1}}@media(max-width:650px){.cmd-pulse{grid-template-columns:1fr}.cmd-trend30{grid-column:auto}}
 
   /* Final scoped readability fix for the actual live management dashboard. */
   body.gl-page-branch_live_dashboard .cmd,
@@ -129,6 +138,31 @@
   </section>
 
   <section class="cmd-section">
+    <div class="cmd-section-head"><h2>نبض امروز و ۳۰ روز</h2><span>امروز در متن روند دیده می‌شود</span></div>
+    <div class="cmd-pulse">
+      <article class="cmd-pulse-card sales">
+        <small>فروش امروز نسبت به میانگین ۷ روز قبل</small>
+        <strong>{{ metrics.sales_today_m|floatformat:0 }} <small style="display:inline;color:#8fa1b5">م.ت</small></strong>
+        <span>میانگین ۷ روز: <b>{{ metrics.sales_prev7_avg_m|floatformat:0 }}</b> م.ت</span>
+        {% if metrics.sales_vs_7d_pct != None %}<span class="cmd-delta {% if metrics.sales_vs_7d_pct >= 0 %}up{% else %}down{% endif %}">{% if metrics.sales_vs_7d_pct >= 0 %}▲{% else %}▼{% endif %} {{ metrics.sales_vs_7d_pct|floatformat:1 }}٪ نسبت به میانگین</span>{% else %}<span>برای مقایسه، داده ۷ روزه کافی نیست.</span>{% endif %}
+      </article>
+      <article class="cmd-pulse-card convert">
+        <small>تبدیل لیدهای امروز به نوبت</small>
+        <strong>{{ metrics.lead_to_appointment_today_pct }}٪</strong>
+        <span><b>{{ metrics.today_leads_with_appointment }}</b> لید از <b>{{ metrics.leads_today }}</b> لید امروز نوبت گرفته‌اند.</span>
+        <span>این شاخص فقط Cohort لیدهای ثبت‌شده امروز را می‌سنجد.</span>
+      </article>
+      <article class="cmd-trend30">
+        <div class="cmd-trend30-head"><strong id="cmdTrend30Title">روند فروش ۳۰ روز اخیر</strong><div class="cmd-trend30-tabs"><button type="button" class="active" data-series="sales">فروش</button><button type="button" data-series="leads">لید</button></div></div>
+        <div class="cmd-trend30-chart"><svg id="cmdTrend30Svg" viewBox="0 0 600 140" preserveAspectRatio="none" aria-label="نمودار ۳۰ روزه"><line class="cmd-trend30-grid" x1="0" y1="35" x2="600" y2="35"></line><line class="cmd-trend30-grid" x1="0" y1="70" x2="600" y2="70"></line><line class="cmd-trend30-grid" x1="0" y1="105" x2="600" y2="105"></line><polyline id="cmdTrend30Line" class="cmd-trend30-line" points=""></polyline><g id="cmdTrend30Dots"></g></svg></div>
+        <div class="cmd-trend30-labels"><span id="cmdTrend30Start">—</span><span>۳۰ روز</span><span id="cmdTrend30End">امروز</span></div>
+      </article>
+    </div>
+    {{ metrics.sales_30d|json_script:"cmdSales30dData" }}
+    {{ metrics.leads_30d|json_script:"cmdLeads30dData" }}
+  </section>
+
+  <section class="cmd-section">
     <div class="cmd-section-head"><h2>نیاز به توجه</h2><a href="/action-center/">مرکز اقدام ←</a></div>
     <div class="cmd-attention">
       <a class="cmd-attn" href="/tasks/"><i>✓</i><div><b>{{ data.overdue_tasks }}</b><span>وظیفه عقب‌افتاده</span></div></a>
@@ -163,6 +197,23 @@
   </section>
 </div>
 <script>
+(function(){
+  const salesEl=document.getElementById('cmdSales30dData'),leadsEl=document.getElementById('cmdLeads30dData');
+  const svg=document.getElementById('cmdTrend30Svg'),line=document.getElementById('cmdTrend30Line'),dots=document.getElementById('cmdTrend30Dots');
+  if(!salesEl||!leadsEl||!svg||!line||!dots)return;
+  const series={sales:JSON.parse(salesEl.textContent||'[]'),leads:JSON.parse(leadsEl.textContent||'[]')};
+  const title=document.getElementById('cmdTrend30Title'),start=document.getElementById('cmdTrend30Start'),end=document.getElementById('cmdTrend30End');
+  function draw(key){
+    const data=series[key]||[],max=Math.max(1,...data.map(x=>Number(x.value)||0));
+    const points=data.map((x,i)=>{const px=data.length>1?i*600/(data.length-1):300;const py=126-((Number(x.value)||0)/max)*112;return {x:px,y:py,row:x}}); 
+    line.setAttribute('points',points.map(p=>p.x.toFixed(1)+','+p.y.toFixed(1)).join(' '));
+    dots.innerHTML=points.filter((p,i)=>i===points.length-1||i%5===0).map(p=>'<circle class="cmd-trend30-dot" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3"><title>'+p.row.label+' · '+p.row.value+'</title></circle>').join('');
+    if(title)title.textContent=key==='sales'?'روند فروش ۳۰ روز اخیر':'روند لید ۳۰ روز اخیر';
+    if(start)start.textContent=data[0]?data[0].label:'—'; if(end)end.textContent=data[data.length-1]?data[data.length-1].label:'امروز';
+  }
+  document.querySelectorAll('.cmd-trend30-tabs button').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.cmd-trend30-tabs button').forEach(x=>x.classList.remove('active'));btn.classList.add('active');draw(btn.dataset.series)}));
+  draw('sales');
+})();
 (function(){const note=document.getElementById('ownerQuickNoteV35'),state=document.getElementById('ownerNoteStateV35');if(!note)return;const key='greenlife_owner_quick_note_v35';note.value=localStorage.getItem(key)||'';let timer;note.addEventListener('input',()=>{clearTimeout(timer);if(state)state.textContent='در حال ذخیره...';timer=setTimeout(()=>{localStorage.setItem(key,note.value);if(state)state.textContent='ذخیره شد ✓';},300);});})();
 </script>
 {% endblock %}

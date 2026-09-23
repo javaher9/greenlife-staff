@@ -5,6 +5,7 @@ from django import template
 from django.db.models import Count, Sum
 from django.utils import timezone
 
+from core.jalali import gregorian_to_jalali
 from core.models import (
     FinancialTransaction,
     MeetingMinute,
@@ -64,12 +65,35 @@ def management_dashboard_metrics(selected_branch=None):
     finance_month = finance.filter(occurred_at__date__range=(month_start, today))
     finance_year = finance.filter(occurred_at__date__range=(year_start, today))
 
+    # Compare today's sales with the seven completed days before today.
+    previous_7_sales = [
+        _money_million_toman(finance.filter(occurred_at__date=today - timedelta(days=offset)))
+        for offset in range(1, 8)
+    ]
+    sales_prev7_avg_m = sum(previous_7_sales, Decimal('0')) / Decimal('7')
+    sales_today_m = _money_million_toman(finance_today)
+    sales_vs_7d_pct = None
+    if sales_prev7_avg_m > 0:
+        sales_vs_7d_pct = round(
+            (float(sales_today_m - sales_prev7_avg_m) * 100) / float(sales_prev7_avg_m),
+            1,
+        )
+
     sales_7d_values = []
     leads_7d_values = []
-    for offset in range(6, -1, -1):
+    sales_30d = []
+    leads_30d = []
+    for offset in range(29, -1, -1):
         day = today - timedelta(days=offset)
-        sales_7d_values.append(float(_money_million_toman(finance.filter(occurred_at__date=day))))
-        leads_7d_values.append(leads.filter(created_at__date=day).count())
+        day_sales = float(_money_million_toman(finance.filter(occurred_at__date=day)))
+        day_leads = leads.filter(created_at__date=day).count()
+        jy, jm, jd = gregorian_to_jalali(day.year, day.month, day.day)
+        label = f'{jm:02d}/{jd:02d}'
+        sales_30d.append({'label': label, 'value': day_sales})
+        leads_30d.append({'label': label, 'value': day_leads})
+        if offset <= 6:
+            sales_7d_values.append(day_sales)
+            leads_7d_values.append(day_leads)
 
     branch_rows = list(
         finance_month.values('branch__name')
@@ -105,6 +129,18 @@ def management_dashboard_metrics(selected_branch=None):
     today_appointments = appointments.filter(appointment_date=today)
     month_appointments = appointments.filter(appointment_date__range=(month_start, today))
     year_appointments = appointments.filter(appointment_date__range=(year_start, today))
+
+    today_leads_qs = leads.filter(created_at__date=today)
+    today_lead_count = today_leads_qs.count()
+    today_leads_with_appointment = (
+        VisitAppointment.objects
+        .filter(lead__in=today_leads_qs)
+        .exclude(status='cancelled')
+        .values('lead_id').distinct().count()
+    )
+    lead_to_appointment_today_pct = round(
+        today_leads_with_appointment * 100 / max(1, today_lead_count)
+    ) if today_lead_count else 0
     appointment_rows = list(
         today_appointments.values('status').annotate(n=Count('id')).order_by('-n')
     )
@@ -121,19 +157,25 @@ def management_dashboard_metrics(selected_branch=None):
     meetings = MeetingMinute.objects.filter(meeting_date__gte=today - timedelta(days=30))
 
     return {
-        'sales_today_m': _money_million_toman(finance_today),
+        'sales_today_m': sales_today_m,
         'sales_yesterday_m': _money_million_toman(finance_yesterday),
+        'sales_prev7_avg_m': sales_prev7_avg_m,
+        'sales_vs_7d_pct': sales_vs_7d_pct,
         'sales_month_m': _money_million_toman(finance_month),
         'sales_year_m': _money_million_toman(finance_year),
         'sales_7d': _bar_rows(sales_7d_values),
+        'sales_30d': sales_30d,
         'branch_sales': branch_sales,
         'leads_total': leads.count(),
-        'leads_today': leads.filter(created_at__date=today).count(),
+        'leads_today': today_lead_count,
         'leads_month': leads.filter(created_at__date__range=(month_start, today)).count(),
         'leads_year': leads.filter(created_at__date__range=(year_start, today)).count(),
         'leads_open': leads.filter(status__in=('new', 'contacted', 'appointment', 'visited')).count(),
         'lead_sources': lead_sources,
         'leads_7d': _bar_rows(leads_7d_values),
+        'leads_30d': leads_30d,
+        'today_leads_with_appointment': today_leads_with_appointment,
+        'lead_to_appointment_today_pct': lead_to_appointment_today_pct,
         'appointments_today': today_appointments.count(),
         'appointments_month': month_appointments.count(),
         'appointments_year': year_appointments.count(),
