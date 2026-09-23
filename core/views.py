@@ -2491,8 +2491,30 @@ def internal_requests(request):
     else:
         priority_filter=''
 
+    request_rows=[]
+    now=timezone.now()
+    today=timezone.localdate()
+    for item in qs.order_by('-created_at')[:150]:
+        age=now-item.created_at
+        age_seconds=max(0,int(age.total_seconds()))
+        if age_seconds < 3600:
+            age_label=f'{max(1,age_seconds//60)} دقیقه'
+        elif age_seconds < 86400:
+            age_label=f'{age_seconds//3600} ساعت'
+        else:
+            age_label=f'{age_seconds//86400} روز'
+        is_active_request=item.status in ('open','doing')
+        is_overdue=bool(is_active_request and item.due_date and item.due_date < today)
+        due_today=bool(is_active_request and item.due_date == today)
+        request_rows.append({
+            'obj':item,
+            'age_label':age_label,
+            'is_overdue':is_overdue,
+            'due_today':due_today,
+        })
+
     return render(request,'core/internal_requests.html',{
-        'requests':qs.order_by('-created_at')[:150],
+        'requests':request_rows,
         'request_status_counts':status_counts,
         'request_total':base_qs.count(),
         'status_filter':status_filter,
