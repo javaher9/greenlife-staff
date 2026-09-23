@@ -85,7 +85,7 @@
 
 <div class="cmd">
   <section class="cmd-hero">
-    <div><span class="cmd-hero-kicker">GREENLIFE COMMAND CENTER</span><h1>داشبورد مدیریتی امروز</h1></div>
+    <div><span class="cmd-hero-kicker">GREENLIFE · DAILY COMMAND CENTER</span><h1>امروز چه خبر</h1></div>
     <div class="cmd-hero-actions">
       <a class="cmd-btn primary" href="/action-center/">⚡ مرکز اقدام</a>
       <a class="cmd-btn" href="/meeting-minutes/dashboard/">◈ مصوبات</a>
@@ -97,10 +97,10 @@
   <section class="cmd-kpis" aria-label="شاخص‌های مدیریتی">
     {% if user.profile.role != 'internal_manager' %}
     <a class="cmd-kpi sales" href="/finance/">
-      <div class="cmd-kpi-head"><span class="cmd-kpi-title">فروش کل</span><span class="cmd-kpi-unit">میلیون تومان</span></div>
+      <div class="cmd-kpi-head"><span class="cmd-kpi-title">فروش امروز</span><span class="cmd-kpi-unit">میلیون تومان</span></div>
       <div class="cmd-kpi-value"><strong>{{ metrics.sales_today_m|floatformat:0 }}</strong><span>امروز</span></div>
       <div class="cmd-spark" aria-label="روند فروش هفت روز">{% for x in metrics.sales_7d %}<i style="--h:{{ x.height }}%"></i>{% endfor %}</div>
-      <div class="cmd-kpi-foot"><span class="cmd-mini"><b>{{ metrics.sales_month_m|floatformat:0 }}</b> ماه</span>{% for x in metrics.branch_sales|slice:':4' %}<span class="cmd-mini"><i class="dot" style="--dot:{{ x.color }}"></i>{{ x.name }} <b>{{ x.amount_m|floatformat:0 }}</b></span>{% endfor %}</div>
+      <div class="cmd-kpi-foot"><span class="cmd-mini">دیروز <b>{{ metrics.sales_yesterday_m|floatformat:0 }}</b></span><span class="cmd-mini">ماه <b>{{ metrics.sales_month_m|floatformat:0 }}</b></span><span class="cmd-mini">سال <b>{{ metrics.sales_year_m|floatformat:0 }}</b></span>{% for x in metrics.branch_sales|slice:':3' %}<span class="cmd-mini"><i class="dot" style="--dot:{{ x.color }}"></i>{{ x.name }} <b>{{ x.amount_m|floatformat:0 }}</b></span>{% endfor %}</div>
     </a>
     {% else %}
     <a class="cmd-kpi sales" href="/action-center/"><div class="cmd-kpi-head"><span class="cmd-kpi-title">نیازمند اقدام</span><span class="cmd-kpi-unit">امروز</span></div><div class="cmd-kpi-value"><strong>{{ data.action_required_count }}</strong><span>مورد</span></div><div class="cmd-spark">{% for x in data.trend %}<i style="--h:{% if x.late %}70{% else %}18{% endif %}%"></i>{% endfor %}</div><div class="cmd-kpi-foot"><span class="cmd-mini">عقب‌افتاده <b>{{ data.overdue_tasks }}</b></span><span class="cmd-mini">خرابی <b>{{ data.device_open }}</b></span></div></a>
@@ -110,14 +110,14 @@
       <div class="cmd-kpi-head"><span class="cmd-kpi-title">لیدهای امروز</span><span class="cmd-kpi-unit">ورودی امروز</span></div>
       <div class="cmd-kpi-value"><strong>{{ metrics.leads_today }}</strong><span>امروز</span></div>
       <div class="cmd-spark" aria-label="روند لید هفت روز">{% for x in metrics.leads_7d %}<i style="--h:{{ x.height }}%"></i>{% endfor %}</div>
-      <div class="cmd-kpi-foot"><span class="cmd-mini">کل <b>{{ metrics.leads_total }}</b></span><span class="cmd-mini">باز <b>{{ metrics.leads_open }}</b></span>{% for x in metrics.lead_sources|slice:':3' %}<span class="cmd-mini"><i class="dot" style="--dot:{{ x.color }}"></i>{{ x.name }} <b>{{ x.value }}</b></span>{% endfor %}</div>
+      <div class="cmd-kpi-foot"><span class="cmd-mini">ماه <b>{{ metrics.leads_month }}</b></span><span class="cmd-mini">سال <b>{{ metrics.leads_year }}</b></span><span class="cmd-mini">باز <b>{{ metrics.leads_open }}</b></span>{% for x in metrics.lead_sources|slice:':2' %}<span class="cmd-mini"><i class="dot" style="--dot:{{ x.color }}"></i>{{ x.name }} <b>{{ x.value }}</b></span>{% endfor %}</div>
     </a>
 
     <a class="cmd-kpi appts" href="/appointments/schedule/">
       <div class="cmd-kpi-head"><span class="cmd-kpi-title">نوبت‌های امروز</span><span class="cmd-kpi-unit">مراجعه</span></div>
       <div class="cmd-kpi-value"><strong>{{ metrics.appointments_today }}</strong><span>نوبت</span></div>
       <div class="cmd-segments">{% for x in metrics.appointment_mix %}<i style="--n:{{ x.value }};--c:{{ x.color }}"></i>{% empty %}<i style="--n:1;--c:#342a52"></i>{% endfor %}</div>
-      <div class="cmd-kpi-foot"><span class="cmd-mini">مراجعه <b>{{ metrics.arrived_today }}</b></span>{% for x in metrics.appointment_mix|slice:':3' %}<span class="cmd-mini"><i class="dot" style="--dot:{{ x.color }}"></i>{{ x.name }} <b>{{ x.value }}</b></span>{% endfor %}</div>
+      <div class="cmd-kpi-foot"><span class="cmd-mini">مراجعه امروز <b>{{ metrics.arrived_today }}</b></span><span class="cmd-mini">ماه <b>{{ metrics.appointments_month }}</b></span><span class="cmd-mini">سال <b>{{ metrics.appointments_year }}</b></span>{% for x in metrics.appointment_mix|slice:':2' %}<span class="cmd-mini"><i class="dot" style="--dot:{{ x.color }}"></i>{{ x.name }} <b>{{ x.value }}</b></span>{% endfor %}</div>
     </a>
 
     <a class="cmd-kpi team" href="/kpi/" style="--p:{{ data.average_kpi }}">

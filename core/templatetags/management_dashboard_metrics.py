@@ -41,6 +41,8 @@ def management_dashboard_metrics(selected_branch=None):
     """
     today = timezone.localdate()
     month_start = today.replace(day=1)
+    year_start = today.replace(month=1, day=1)
+    yesterday = today - timedelta(days=1)
 
     finance = FinancialTransaction.objects.filter(
         entry_type='inc', review_status='approved'
@@ -57,14 +59,16 @@ def management_dashboard_metrics(selected_branch=None):
         sales = sales.filter(lead__assigned_to__branch=selected_branch)
         open_tasks = open_tasks.filter(assigned_to__profile__branch=selected_branch)
 
-    finance_today = finance.filter(occurred_at=today)
-    finance_month = finance.filter(occurred_at__gte=month_start, occurred_at__lte=today)
+    finance_today = finance.filter(occurred_at__date=today)
+    finance_yesterday = finance.filter(occurred_at__date=yesterday)
+    finance_month = finance.filter(occurred_at__date__range=(month_start, today))
+    finance_year = finance.filter(occurred_at__date__range=(year_start, today))
 
     sales_7d_values = []
     leads_7d_values = []
     for offset in range(6, -1, -1):
         day = today - timedelta(days=offset)
-        sales_7d_values.append(float(_money_million_toman(finance.filter(occurred_at=day))))
+        sales_7d_values.append(float(_money_million_toman(finance.filter(occurred_at__date=day))))
         leads_7d_values.append(leads.filter(created_at__date=day).count())
 
     branch_rows = list(
@@ -99,6 +103,8 @@ def management_dashboard_metrics(selected_branch=None):
     ]
 
     today_appointments = appointments.filter(appointment_date=today)
+    month_appointments = appointments.filter(appointment_date__range=(month_start, today))
+    year_appointments = appointments.filter(appointment_date__range=(year_start, today))
     appointment_rows = list(
         today_appointments.values('status').annotate(n=Count('id')).order_by('-n')
     )
@@ -116,15 +122,21 @@ def management_dashboard_metrics(selected_branch=None):
 
     return {
         'sales_today_m': _money_million_toman(finance_today),
+        'sales_yesterday_m': _money_million_toman(finance_yesterday),
         'sales_month_m': _money_million_toman(finance_month),
+        'sales_year_m': _money_million_toman(finance_year),
         'sales_7d': _bar_rows(sales_7d_values),
         'branch_sales': branch_sales,
         'leads_total': leads.count(),
         'leads_today': leads.filter(created_at__date=today).count(),
+        'leads_month': leads.filter(created_at__date__range=(month_start, today)).count(),
+        'leads_year': leads.filter(created_at__date__range=(year_start, today)).count(),
         'leads_open': leads.filter(status__in=('new', 'contacted', 'appointment', 'visited')).count(),
         'lead_sources': lead_sources,
         'leads_7d': _bar_rows(leads_7d_values),
         'appointments_today': today_appointments.count(),
+        'appointments_month': month_appointments.count(),
+        'appointments_year': year_appointments.count(),
         'appointment_mix': appointment_mix,
         'arrived_today': today_appointments.filter(status__in=('arrived', 'completed')).count(),
         'won_month': sales.filter(sale_date__gte=month_start, sale_date__lte=today).values('lead_id').distinct().count(),

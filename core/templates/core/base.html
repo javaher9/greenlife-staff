@@ -205,7 +205,7 @@ html.gl-call-center-html{background:#f5f7fb!important;background-image:none!impo
           <a href="/device-issues/mine/"><span>⚒</span>خرابی دستگاه</a>
           <a href="/logout/" class="employee-more-logout"><span>↪</span>خروج</a>
         {% else %}
-          <a href="/live/"><span>⌘</span>پنل مدیریتی</a>
+          <a href="/live/"><span>⌘</span>امروز چه خبر</a>
           {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}<a href="/lead-management/"><span>◉</span>لیدها</a>{% endif %}
           {% if user.profile.role == 'internal_manager' %}<a href="/meeting-minutes/new/"><span>＋</span>صورت‌جلسه جدید</a><a href="/meeting-minutes/"><span>▤</span>لیست صورت‌جلسات</a>{% elif user.profile.role == 'admin' %}<a href="/meeting-minutes/dashboard/"><span>◈</span>پیگیری مصوبات</a>{% endif %}
           <a href="/reports/"><span>▥</span>گزارش‌های پرسنل</a>
