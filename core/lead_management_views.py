@@ -69,8 +69,9 @@ def _enrich_referral_group_label(lead):
 def _attention_reason(lead, now, today):
     if not lead.assigned_to_id:
         return 'بدون مسئول؛ باید به یک اپراتور تخصیص داده شود'
-    if lead.status == 'new' and lead.created_at < now - timedelta(hours=2):
-        return 'بیش از ۲ ساعت از ورود گذشته و هنوز تماس ثبت نشده'
+    latest_assignment = lead.assigned_at or lead.created_at
+    if lead.status == 'new' and latest_assignment < now - timedelta(hours=2):
+        return 'بیش از ۲ ساعت از آخرین ارجاع گذشته و هنوز تماس ثبت نشده'
     if lead.status in OPEN_STATUSES and lead.next_follow_up and lead.next_follow_up < today:
         return 'موعد پیگیری گذشته و باید دوباره پیگیری شود'
     return 'نیاز به بررسی مدیر'
@@ -282,7 +283,8 @@ def lead_attention_bulk_action(request):
         was = lead.assigned_to_id
         lead.assigned_to = operator
         lead.group = _default_call_center_group(operator)
-        lead.save(update_fields=['assigned_to','group','updated_at'])
+        lead.assigned_at = timezone.now()
+        lead.save(update_fields=['assigned_to','group','assigned_at','updated_at'])
         if was != operator.id:
             _notify_call_center_assignment(lead)
         changed += 1
@@ -310,7 +312,12 @@ def lead_management_dashboard(request):
     contacted_count=leads.filter(status__in=('contacted','appointment','visited','won','lost')).count(); appointment_count=leads.filter(status__in=('appointment','visited','won')).count()
     successful_ids=_successful_lead_ids(leads); won_count=leads.filter(pk__in=successful_ids).count()
     conversion=round((won_count*100/total),1) if total else 0; contact_rate=round((contacted_count*100/total),1) if total else 0
-    unassigned_count=leads.filter(assigned_to__isnull=True,status__in=OPEN_STATUSES).count(); overdue_count=leads.filter(status__in=OPEN_STATUSES,next_follow_up__lt=today).count(); untouched_count=leads.filter(status='new',created_at__lt=now-timedelta(hours=2)).count()
+    urgent_cutoff=now-timedelta(hours=2)
+    stale_new_q=Q(status='new') & (
+        Q(assigned_at__lt=urgent_cutoff) |
+        Q(assigned_at__isnull=True,created_at__lt=urgent_cutoff)
+    )
+    unassigned_count=leads.filter(assigned_to__isnull=True,status__in=OPEN_STATUSES).count(); overdue_count=leads.filter(status__in=OPEN_STATUSES,next_follow_up__lt=today).count(); untouched_count=leads.filter(stale_new_q).count()
     duplicate_phones=leads.exclude(phone='').values('phone').annotate(c=Count('id')).filter(c__gt=1).count()
     status_rows=_operational_status_rows(leads,total); source_rows=_channel_counts(leads); instagram_page_rows=_instagram_page_rows(leads)
 
@@ -324,7 +331,7 @@ def lead_management_dashboard(request):
 
     sales=ReferralSale.objects.filter(status__in=('approved','paid')); sales_amount=sales.aggregate(v=Sum('amount'))['v'] or 0
     instagram_sales_amount=sales.filter(lead__in=leads.filter(_channel_q('instagram'))).aggregate(v=Sum('amount'))['v'] or 0; website_sales_amount=sales.filter(lead__in=leads.filter(_channel_q('website'))).aggregate(v=Sum('amount'))['v'] or 0
-    recent=list(filtered.order_by('-created_at')[:150]); attention=list(leads.filter(Q(assigned_to__isnull=True)|Q(status='new',created_at__lt=now-timedelta(hours=2))|Q(status__in=OPEN_STATUSES,next_follow_up__lt=today)).distinct().order_by('created_at')[:20])
+    recent=list(filtered.order_by('-created_at')[:150]); attention=list(leads.filter(Q(assigned_to__isnull=True)|stale_new_q|Q(status__in=OPEN_STATUSES,next_follow_up__lt=today)).distinct().order_by('created_at')[:20])
     for lead in recent: _enrich_referral_group_label(lead)
     integration_rows=[{'name':'Instagram Form','state':'connected','detail':'فرم فعلی مستقیماً وارد ReferralLead می‌شود.'},{'name':'Website','state':'ready','detail':'برای اتصال فرم سایت به ورودی یکپارچه آماده است.'},{'name':'CRM','state':'ready','detail':'وب‌هوک/API ورودی برای اتصال CRM طراحی شده است.'},{'name':'WhatsApp / Campaigns','state':'ready','detail':'قابل اتصال با source و UTM مستقل.'}]
     return render(request,'core/lead_management_dashboard.html',{'lead_kpis':{'total':total,'today':today_count,'week':week_count,'month':month_count,'contacted':contacted_count,'appointments':appointment_count,'won':won_count,'conversion':conversion,'contact_rate':contact_rate,'unassigned':unassigned_count,'overdue':overdue_count,'untouched':untouched_count,'duplicates':duplicate_phones,'sales_amount':sales_amount,'instagram_sales_amount':instagram_sales_amount,'website_sales_amount':website_sales_amount},'status_rows':status_rows,'source_rows':source_rows,'instagram_page_rows':instagram_page_rows,'group_rows':group_rows,'operator_rows':operator_rows,'recent_leads':[FlowerLeadProxy(lead) for lead in recent],'attention_leads':[AttentionLeadProxy(lead, now, today) for lead in attention],'integration_rows':integration_rows,'operators':[FlowerProfileProxy(op) for op in operators],'source_filter':source_filter,'status_filter':status_filter,'operator_filter':operator_filter,'status_choices':STATUS_FILTER_CHOICES})
