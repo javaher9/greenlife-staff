@@ -1,9 +1,101 @@
+from datetime import datetime, timedelta
+
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .models import ReferralLead
+from .models import Attendance, LeaveRequest, ReferralLead, StaffNotification
+from .operations import shift_rule
+
+
+def _call_center_is_on_duty(user, now=None):
+    now=timezone.localtime(now or timezone.now())
+    day=now.date()
+    if LeaveRequest.objects.filter(
+        user=user,status='approved',start_date__lte=day,end_date__gte=day
+    ).exists():
+        return False
+    attendance=Attendance.objects.filter(
+        user=user,date=day,check_in__isnull=False,check_out__isnull=True
+    ).first()
+    if not attendance:
+        return False
+    rule=shift_rule(user,day)
+    end=rule.get('end')
+    if end:
+        end_dt=timezone.make_aware(datetime.combine(day,end),timezone.get_current_timezone())
+        if now>end_dt+timedelta(minutes=15):
+            return False
+    return True
+
+
+def _lead_delay_alerts_for_user(user, now=None):
+    """Create at most one reminder/warning per lead and delay threshold."""
+    now=timezone.localtime(now or timezone.now())
+    if not _call_center_is_on_duty(user,now):
+        return {'created':0,'urgent':0,'latest_message':''}
+    profile=getattr(user,'profile',None)
+    if not profile or profile.role!='call_center' or not profile.is_active:
+        return {'created':0,'urgent':0,'latest_message':''}
+
+    threshold_30=now-timedelta(minutes=30)
+    qs=(
+        ReferralLead.objects
+        .filter(assigned_to=profile,status='new')
+        .filter(Q(contact_result='')|Q(contact_result__isnull=True))
+        .filter(
+            Q(assigned_at__lte=threshold_30) |
+            Q(assigned_at__isnull=True,created_at__lte=threshold_30)
+        )
+        .order_by('assigned_at','created_at','id')
+    )
+    created=0
+    urgent=0
+    latest=''
+    today=now.date()
+    for lead in qs[:80]:
+        started=lead.assigned_at or lead.created_at
+        age_minutes=max(0,int((now-started).total_seconds()//60))
+        if age_minutes>=60:
+            notification_type='lead_delay_60'
+            title='⚠ تأخیر در تماس با لید'
+            message=f'لید «{lead.full_name}» با شماره {lead.phone} حدود {age_minutes} دقیقه است به شما تخصیص داده شده و هنوز نتیجه تماس ثبت نشده است. لطفاً همین حالا پیگیری کنید. (کد {lead.pk})'
+            urgent+=1
+        else:
+            notification_type='lead_delay_30'
+            title='یادآوری تماس با لید'
+            message=f'لید «{lead.full_name}» با شماره {lead.phone} حدود {age_minutes} دقیقه است منتظر تماس شماست. لطفاً پیگیری و نتیجه را ثبت کنید. (کد {lead.pk})'
+        exists=StaffNotification.objects.filter(
+            user=user,
+            notification_type=notification_type,
+            related_date=today,
+            message=message,
+        ).exists()
+        if exists:
+            continue
+        StaffNotification.objects.create(
+            user=user,
+            title=title,
+            message=message,
+            notification_type=notification_type,
+            related_date=today,
+        )
+        created+=1
+        latest=message
+    return {'created':created,'urgent':urgent,'latest_message':latest}
+
+
+@login_required
+@require_POST
+def check_lead_delay_alerts(request):
+    profile=getattr(request.user,'profile',None)
+    if not profile or profile.role!='call_center' or not profile.is_active:
+        return JsonResponse({'ok':False,'error':'forbidden'},status=403)
+    result=_lead_delay_alerts_for_user(request.user)
+    return JsonResponse({'ok':True,**result})
 
 
 @login_required

@@ -353,6 +353,41 @@
 
 <script>
 (function(){
+  function csrfTokenForDelay(){
+    const input=document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if(input&&input.value)return input.value;
+    const names=['csrftoken','greenlife_lan_csrftoken'];
+    for(const name of names){const m=document.cookie.match(new RegExp('(?:^|;\\s*)'+name+'=([^;]+)'));if(m)return decodeURIComponent(m[1]);}
+    return '';
+  }
+  function showLeadDelayToast(message,urgent){
+    if(!message)return;
+    let toast=document.getElementById('ccLeadDelayToast');
+    if(!toast){
+      toast=document.createElement('div');toast.id='ccLeadDelayToast';
+      toast.style.cssText='position:fixed;left:24px;bottom:24px;z-index:99999;max-width:420px;padding:14px 16px;border-radius:14px;font:900 11px Tahoma;line-height:1.9;box-shadow:0 14px 40px rgba(0,0,0,.28);direction:rtl';
+      document.body.appendChild(toast);
+    }
+    toast.style.background=urgent?'#581f2d':'#173c31';
+    toast.style.color='#fff';
+    toast.style.border=urgent?'1px solid #a9455d':'1px solid #2a7e62';
+    toast.textContent=message;
+    toast.hidden=false;
+    clearTimeout(window.__ccLeadDelayToastTimer);
+    window.__ccLeadDelayToastTimer=setTimeout(()=>{toast.hidden=true},12000);
+  }
+  async function checkLeadDelays(){
+    try{
+      const body=new FormData(),token=csrfTokenForDelay();if(token)body.append('csrfmiddlewaretoken',token);
+      const response=await fetch('{% url "call_center_check_lead_delay_alerts" %}',{method:'POST',body,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}});
+      if(!response.ok)return;
+      const data=await response.json();
+      if(data.ok&&data.created)showLeadDelayToast(data.latest_message,Boolean(data.urgent));
+    }catch(e){}
+  }
+  checkLeadDelays();
+  window.setInterval(checkLeadDelays,300000);
+
   const list=document.getElementById('ccLeadList'),search=document.getElementById('ccSearch'),source=document.getElementById('ccSourceFilter'),buttons=[...document.querySelectorAll('[data-time]')];
   if(list&&search&&source){
     const rows=[...list.querySelectorAll('.cc-v5-patient')],today=new Date().toISOString().slice(0,10);let time='all';
