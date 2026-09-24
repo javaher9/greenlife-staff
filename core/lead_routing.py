@@ -128,35 +128,49 @@ def _assignment_stats(operators, day):
     }
 
 
-def _pick_balanced_operator(operators, stats):
-    def key(operator):
-        row = stats.get(operator.id) or {}
-        count = row.get('count') or 0
-        last_at = row.get('last_at')
-        return (
-            count,
-            last_at or timezone.datetime.min.replace(
-                tzinfo=timezone.get_current_timezone()
-            ),
-            operator.id,
-        )
-
-    return min(operators, key=key) if operators else None
-
-
-def _locked_balanced_operator(now=None):
-    """Pick the present operator with the fewest assignments made today.
-
-    Because the metric is assignment time (not lead creation time), an operator
-    arriving at 10:00 or 11:00 starts behind the people already present and
-    automatically receives subsequent leads until the daily counts catch up.
-    """
-    local_now = timezone.localtime(now or timezone.now())
-    day = local_now.date()
-    operators = _locked_present_operators(day)
-    if not operators:
+def _last_assigned_operator_id(operators, day):
+    """Return the most recently assigned eligible operator for today's rotation."""
+    ids=[operator.id for operator in operators]
+    if not ids:
         return None
-    return _pick_balanced_operator(operators, _assignment_stats(operators, day))
+    row=(
+        ReferralLead.objects
+        .filter(assigned_to_id__in=ids)
+        .filter(
+            Q(assigned_at__date=day)
+            | Q(assigned_at__isnull=True, created_at__date=day)
+        )
+        .order_by('-assigned_at','-created_at','-id')
+        .values('assigned_to_id')
+        .first()
+    )
+    return row['assigned_to_id'] if row else None
+
+
+def _rotation_order(operators, day):
+    """Round-robin order beginning immediately after the last recipient.
+
+    This deliberately avoids catch-up bursts. With multiple eligible operators,
+    the same operator will not receive two consecutive new leads until the
+    rotation has passed through the others.
+    """
+    operators=list(operators)
+    if not operators:
+        return []
+    last_id=_last_assigned_operator_id(operators, day)
+    if last_id is None:
+        return operators
+    last_index=next((i for i,op in enumerate(operators) if op.id==last_id),-1)
+    start=(last_index+1)%len(operators)
+    return operators[start:]+operators[:start]
+
+
+def _locked_round_robin_operator(now=None):
+    local_now=timezone.localtime(now or timezone.now())
+    day=local_now.date()
+    operators=_locked_present_operators(day)
+    order=_rotation_order(operators,day)
+    return order[0] if order else None
 
 
 def _group_for(operator, name, *, is_default=False):
@@ -229,12 +243,11 @@ def _pending_release_ready(local_now, eligible_user_ids):
 
 @transaction.atomic
 def release_pending_leads_if_ready(*, force=False, now=None):
-    """Distribute queued unassigned leads equally among operators who are present.
+    """Distribute queued leads in a smooth round-robin among present operators.
 
-    Before 11:00 on normal workdays the overnight backlog is held unless all
-    expected operators have already arrived. This is intentionally different
-    from a brand-new daytime lead: new leads can still go immediately to whoever
-    is present, and late arrivals then catch up because routing uses assigned_at.
+    The queue starts with the operator immediately after the most recent
+    recipient and then rotates one-by-one. This prevents a catch-up rule from
+    sending a visible burst of consecutive leads to one person.
     """
     local_now = timezone.localtime(now or timezone.now())
     day = local_now.date()
@@ -259,16 +272,11 @@ def release_pending_leads_if_ready(*, force=False, now=None):
     if not pending:
         return 0
 
-    stats = _assignment_stats(operators, day)
-    counts = {op.id: int((stats.get(op.id) or {}).get('count') or 0) for op in operators}
-    last_order = {op.id: index for index, op in enumerate(operators)}
+    rotation=_rotation_order(operators,day)
 
     assigned = 0
-    for lead in pending:
-        operator = min(
-            operators,
-            key=lambda op: (counts[op.id], last_order[op.id], op.id),
-        )
+    for index,lead in enumerate(pending):
+        operator=rotation[index % len(rotation)]
         group_name, title = _pending_destination(lead)
         _assign_to_operator(
             lead,
@@ -278,11 +286,6 @@ def release_pending_leads_if_ready(*, force=False, now=None):
             notify=True,
             assigned_at=timezone.now(),
         )
-        counts[operator.id] += 1
-        # Move the selected operator to the back of equal-count ties.
-        for op_id in last_order:
-            last_order[op_id] -= 1
-        last_order[operator.id] = len(operators)
         assigned += 1
 
     return assigned
@@ -301,7 +304,7 @@ def assign_external_lead(lead, channel):
     if lead.assigned_to_id:
         return lead.assigned_to
 
-    operator = _locked_balanced_operator()
+    operator = _locked_round_robin_operator()
     if not operator:
         return None
 
@@ -331,7 +334,7 @@ def assign_referral_lead(lead):
     if lead.assigned_to_id:
         return lead.assigned_to
 
-    operator = _locked_balanced_operator()
+    operator = _locked_round_robin_operator()
     if not operator:
         return None
 
@@ -350,7 +353,7 @@ def assign_social_lead(lead, group_name='اینستاگرام - لینک', notif
     if lead.assigned_to_id:
         return lead.assigned_to
 
-    operator = _locked_balanced_operator()
+    operator = _locked_round_robin_operator()
     if not operator:
         return None
 
