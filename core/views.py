@@ -419,6 +419,7 @@ def dashboard(request):
     notification_count=notifications_qs.count()
     today_shift=shift_rule(request.user,timezone.localdate())
     finance_stats={}
+    consultant_queue=[]
     if role=='consultant':
         finance_qs=FinancialTransaction.objects.filter(source='manual',recorded_by=request.user)
         finance_stats={
@@ -427,6 +428,27 @@ def dashboard(request):
             'correction':finance_qs.filter(review_status='needs_correction').count(),
             'last':finance_qs.order_by('-created_at').first(),
         }
+        if profile_branch:
+            queue_qs=(
+                VisitAppointment.objects
+                .filter(branch=profile_branch,care_stage='consultant')
+                .exclude(status='cancelled')
+                .select_related('doctor_completed_by','branch')
+                .prefetch_related('diet_programs','device_programs','lipolytic_programs')
+                .order_by('doctor_completed_at','appointment_time','id')[:12]
+            )
+            for appointment in queue_qs:
+                consultant_queue.append({
+                    'appointment':appointment,
+                    'doctor_name':(
+                        appointment.doctor_completed_by.get_full_name()
+                        if appointment.doctor_completed_by_id and appointment.doctor_completed_by.get_full_name()
+                        else (appointment.doctor_completed_by.username if appointment.doctor_completed_by_id else 'پزشک')
+                    ),
+                    'diet_count':len(appointment.diet_programs.all()),
+                    'device_count':len(appointment.device_programs.all()),
+                    'lipolytic_count':len(appointment.lipolytic_programs.all()),
+                })
 
     # Real employee-dashboard status (no mock values).
     today_report_exists=DailyReport.objects.filter(
@@ -476,6 +498,7 @@ def dashboard(request):
         'notification_count':notification_count,
         'today_shift':today_shift,
         'finance_stats':finance_stats,
+        'consultant_queue':consultant_queue,
         'today_report_exists':today_report_exists,
         'checklist_total':checklist_total,
         'checklist_done':checklist_done,
