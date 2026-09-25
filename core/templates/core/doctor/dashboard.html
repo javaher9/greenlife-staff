@@ -64,7 +64,7 @@
         </div>
         <div class="appt-list">
           {% for row in appointment_rows %}
-          <a class="appt-link {% if selected_appointment and selected_appointment.id == row.item.id %}active{% endif %}" href="{% url 'doctor_dashboard' %}?appointment={{ row.item.id }}">
+          <a class="appt-link {% if selected_appointment and selected_appointment.id == row.item.id %}active{% endif %}" href="{% url 'doctor_dashboard' %}?{% if doctor_branch %}branch={{ doctor_branch.id }}&{% endif %}appointment={{ row.item.id }}">
             <div class="appt-time">{{ row.item.appointment_time|time:"H:i" }}</div>
             <div>
               <div class="appt-name">{{ row.item.full_name }}</div>
