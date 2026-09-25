@@ -72,7 +72,7 @@
     <nav>
       <a class="active" href="#doctor-top"><span class="doctor-side-ico">⌂</span><span>داشبورد پزشک</span></a>
       <a href="#appointments"><span class="doctor-side-ico">▣</span><span>نوبت‌های امروز</span></a>
-      <a href="{% url 'internal_messages' %}"><span class="doctor-side-ico">✉</span><span>چت و پیام‌ها</span></a>
+      <a href="#" data-open-live-chat><span class="doctor-side-ico">✉</span><span>چت و پیام‌ها</span></a>
       <a href="#diet-panel"><span class="doctor-side-ico">◈</span><span>پرونده و درمان</span></a>
     </nav>
     <div class="doctor-side-foot">
@@ -97,7 +97,7 @@
       </form>
       {% endif %}
       <div class="doctor-shell-actions">
-        <a class="neon" href="{% url 'internal_messages' %}">✉ چت با پرسنل</a>
+        <a class="neon" href="#" data-open-live-chat>✉ چت با پرسنل</a>
         {% if executive_doctor_mode %}<a href="/my-office/">بازگشت به مدیریت</a>{% endif %}
       </div>
     </header>
@@ -156,7 +156,7 @@
         </div>
         <div class="hero-actions">
           <a class="hero-btn neon" href="#diet-panel">+ برنامه جدید</a>
-          <a class="hero-btn" href="{% url 'internal_messages' %}">✉ چت با پرسنل</a>
+          <a class="hero-btn" href="#" data-open-live-chat>✉ چت با پرسنل</a>
         </div>
       </section>
 
@@ -261,7 +261,7 @@
           <form method="post" class="clinical-form">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}">{% if doctor_branch %}<input type="hidden" name="branch_id" value="{{ doctor_branch.id }}">{% endif %}<input type="hidden" name="action" value="clinical_note"><input name="body" placeholder="یادداشت کوتاه پزشک…"><button type="submit">ثبت</button></form>
         </section>
         <section class="doctor-card">
-          <div class="doctor-card-head"><h3>چت با پرسنل</h3><a class="chat-open" href="{% url 'internal_messages' %}">باز کردن کارتابل پیام‌ها ←</a></div>
+          <div class="doctor-card-head"><h3>چت با پرسنل</h3><a class="chat-open" href="#" data-open-live-chat>باز کردن کارتابل پیام‌ها ←</a></div>
           <div class="chat-list">
             {% for msg in direct_messages %}
             <div class="chat-item"><div><b>{% if msg.sender_id == user.id %}به {{ msg.recipient.get_full_name|default:msg.recipient.username }}{% else %}{{ msg.sender.get_full_name|default:msg.sender.username }}{% endif %}</b> <small>{{ msg.created_at|jdate }}</small></div><p>{{ msg.body|truncatechars:120 }}</p></div>
@@ -276,5 +276,6 @@
     </div>
   </div>
 </div>
+{% include "core/_live_chat_widget.html" %}
 </body>
 </html>
