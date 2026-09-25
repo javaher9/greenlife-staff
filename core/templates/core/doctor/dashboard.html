@@ -41,6 +41,20 @@
 </style>
 
 <div class="doctor-workspace">
+  {% if executive_doctor_mode %}
+  <div class="doctor-card" style="margin-bottom:12px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+    <div><strong style="font-size:12px">حالت پزشک</strong><div style="font-size:9px;color:#96a3b7;margin-top:3px">دسترسی مدیریتی شما حفظ می‌شود.</div></div>
+    <form method="get" style="display:flex;align-items:center;gap:8px;margin:0">
+      <label style="font-size:9px;color:#96a3b7">مرکز ویزیت</label>
+      <select name="branch" style="border:1px solid #34445a;background:#0e1721;color:#eef3f9;border-radius:10px;padding:8px 10px;font:inherit;font-size:10px">
+        {% for center in doctor_branch_choices %}
+        <option value="{{ center.id }}" {% if doctor_branch and center.id == doctor_branch.id %}selected{% endif %}>{{ center.name }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" style="border:1px solid #6e60ff;background:#241f51;color:#d7d2ff;border-radius:10px;padding:8px 11px;font:inherit;font-size:9px;font-weight:900">نمایش</button>
+    </form>
+  </div>
+  {% endif %}
   <div class="doctor-grid">
     <aside class="appt-rail">
       <section class="doctor-card">
@@ -50,7 +64,7 @@
         </div>
         <div class="appt-list">
           {% for row in appointment_rows %}
-          <a class="appt-link {% if selected_appointment and selected_appointment.id == row.item.id %}active{% endif %}" href="{% url 'doctor_dashboard' %}?appointment={{ row.item.id }}">
+          <a class="appt-link {% if selected_appointment and selected_appointment.id == row.item.id %}active{% endif %}" href="{% url 'doctor_dashboard' %}?{% if doctor_branch %}branch={{ doctor_branch.id }}&{% endif %}appointment={{ row.item.id }}">
             <div class="appt-time">{{ row.item.appointment_time|time:"H:i" }}</div>
             <div>
               <div class="appt-name">{{ row.item.full_name }}</div>
@@ -132,7 +146,7 @@
               {% empty %}<div class="history-empty">هنوز برنامه غذایی در App ثبت نشده است.</div>{% endfor %}
             </div>
           </div>
-          <form method="post" class="new-box">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}"><input type="hidden" name="action" value="diet">
+          <form method="post" class="new-box">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}">{% if doctor_branch %}<input type="hidden" name="branch_id" value="{{ doctor_branch.id }}">{% endif %}<input type="hidden" name="action" value="diet">
             <div class="box-title"><span>انتخاب برنامه جدید</span><small>قابل اتصال به منوی CRM/API</small></div>
             <div class="form-grid">
               <div class="doctor-field"><label>برنامه غذایی</label><select name="diet_name" required><option value="">انتخاب کنید…</option>{% for x in diet_options %}<option>{{ x }}</option>{% endfor %}</select></div>
@@ -155,7 +169,7 @@
               {% empty %}<div class="history-empty">هنوز سابقه دستگاه در App ثبت نشده است.</div>{% endfor %}
             </div>
           </div>
-          <form method="post" class="new-box">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}"><input type="hidden" name="action" value="device">
+          <form method="post" class="new-box">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}">{% if doctor_branch %}<input type="hidden" name="branch_id" value="{{ doctor_branch.id }}">{% endif %}<input type="hidden" name="action" value="device">
             <div class="box-title"><span>افزودن دستگاه جدید</span><small>پیشنهاد پزشک</small></div>
             <div class="form-grid two">
               <div class="doctor-field"><label>دستگاه</label><select name="device_name" required><option value="">انتخاب دستگاه…</option>{% for x in device_options %}<option>{{ x }}</option>{% endfor %}</select></div>
@@ -178,7 +192,7 @@
               {% empty %}<div class="history-empty">هنوز سابقه لیپولیتیک در App ثبت نشده است.</div>{% endfor %}
             </div>
           </div>
-          <form method="post" class="new-box">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}"><input type="hidden" name="action" value="lipolytic">
+          <form method="post" class="new-box">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}">{% if doctor_branch %}<input type="hidden" name="branch_id" value="{{ doctor_branch.id }}">{% endif %}<input type="hidden" name="action" value="lipolytic">
             <div class="box-title"><span>افزودن برنامه جدید</span><small>پیشنهاد پزشک</small></div>
             <div class="form-grid two">
               <div class="doctor-field"><label>پروتکل</label><input name="protocol_name" value="لیپولیتیک"></div>
@@ -198,7 +212,7 @@
             <div class="note-item"><div><b>{{ note.get_note_type_display }} · {{ note.author.get_full_name|default:"سیستم" }}</b> <small>{{ note.created_at|jdate }}</small></div><p>{{ note.body }}</p></div>
             {% empty %}<div class="history-empty">یادداشتی برای این بیمار ثبت نشده است.</div>{% endfor %}
           </div>
-          <form method="post" class="clinical-form">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}"><input type="hidden" name="action" value="clinical_note"><input name="body" placeholder="یادداشت کوتاه پزشک…"><button type="submit">ثبت</button></form>
+          <form method="post" class="clinical-form">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}">{% if doctor_branch %}<input type="hidden" name="branch_id" value="{{ doctor_branch.id }}">{% endif %}<input type="hidden" name="action" value="clinical_note"><input name="body" placeholder="یادداشت کوتاه پزشک…"><button type="submit">ثبت</button></form>
         </section>
         <section class="doctor-card">
           <div class="doctor-card-head"><h3>چت با پرسنل</h3><a class="chat-open" href="{% url 'internal_messages' %}">باز کردن کارتابل پیام‌ها ←</a></div>
