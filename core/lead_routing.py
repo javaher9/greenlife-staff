@@ -23,11 +23,42 @@ OPEN_ROUTING_STATUSES = ('new', 'contacted', 'appointment')
 # as soon as the on-duty operator is present.
 PENDING_MORNING_RELEASE_HOUR = 11
 
+# Website leads are high-value inbound requests. Keep them away from the two
+# newer operators until management changes this policy. Match both real staff
+# identities and the flower aliases used in call-center screens.
+WEBSITE_EXCLUDED_OPERATOR_IDENTITIES = (
+    'پریسا کلکلی', 'کلکلی', 'kolkoli', 'kalakali', 'کاملیا',
+    'شیما عباسی', 'عباسی', 'abbasi', 'لاله',
+)
+
 
 def _normalize(value):
     return ' '.join(
         str(value or '').strip().lower().replace('ي', 'ی').replace('ك', 'ک').split()
     )
+
+
+def _operator_identity(operator):
+    user=getattr(operator,'user',None)
+    return _normalize(' '.join(
+        part for part in (
+            getattr(user,'first_name',''),
+            getattr(user,'last_name',''),
+            getattr(user,'username',''),
+        ) if part
+    ))
+
+
+def _website_operator_allowed(operator):
+    identity=_operator_identity(operator)
+    return not any(_normalize(name) in identity for name in WEBSITE_EXCLUDED_OPERATOR_IDENTITIES)
+
+
+def _operators_for_channel(operators, channel):
+    operators=list(operators)
+    if channel=='website':
+        return [operator for operator in operators if _website_operator_allowed(operator)]
+    return operators
 
 
 def operator_weight(operator):
@@ -165,10 +196,10 @@ def _rotation_order(operators, day):
     return operators[start:]+operators[:start]
 
 
-def _locked_round_robin_operator(now=None):
+def _locked_round_robin_operator(now=None, channel=None):
     local_now=timezone.localtime(now or timezone.now())
     day=local_now.date()
-    operators=_locked_present_operators(day)
+    operators=_operators_for_channel(_locked_present_operators(day),channel)
     order=_rotation_order(operators,day)
     return order[0] if order else None
 
@@ -183,6 +214,23 @@ def _group_for(operator, name, *, is_default=False):
         group.is_default = True
         group.save(update_fields=['is_default'])
     return group
+
+
+def _pending_channel(lead):
+    """Recover the routing channel for an unassigned lead."""
+    notes=_normalize(getattr(lead,'notes',''))
+    source_url=_normalize(getattr(lead,'source_url',''))
+    if '[channel:website]' in notes or 'greenlifeclinics.com' in source_url:
+        return 'website'
+    if '[channel:instagram]' in notes or '[instagram_page:' in notes or '/instagram/' in source_url:
+        return 'instagram'
+    if '[channel:crm]' in notes or 'crm' in source_url:
+        return 'crm'
+    if '[channel:whatsapp]' in notes or 'whatsapp' in source_url or 'wa.me' in source_url:
+        return 'whatsapp'
+    if '[channel:campaign]' in notes or 'utm_campaign=' in source_url:
+        return 'campaign'
+    return None
 
 
 def _pending_destination(lead):
@@ -273,10 +321,24 @@ def release_pending_leads_if_ready(*, force=False, now=None):
         return 0
 
     rotation=_rotation_order(operators,day)
+    website_operators=_operators_for_channel(operators,'website')
+    website_rotation=_rotation_order(website_operators,day)
+    generic_index=0
+    website_index=0
 
     assigned = 0
-    for index,lead in enumerate(pending):
-        operator=rotation[index % len(rotation)]
+    for lead in pending:
+        channel=_pending_channel(lead)
+        if channel=='website':
+            # Never fall back to Kamelya/Laleh for website leads. If no
+            # approved website operator is present, keep the lead pending.
+            if not website_rotation:
+                continue
+            operator=website_rotation[website_index % len(website_rotation)]
+            website_index+=1
+        else:
+            operator=rotation[generic_index % len(rotation)]
+            generic_index+=1
         group_name, title = _pending_destination(lead)
         _assign_to_operator(
             lead,
@@ -304,7 +366,7 @@ def assign_external_lead(lead, channel):
     if lead.assigned_to_id:
         return lead.assigned_to
 
-    operator = _locked_round_robin_operator()
+    operator = _locked_round_robin_operator(channel=channel)
     if not operator:
         return None
 
