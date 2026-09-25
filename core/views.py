@@ -258,14 +258,20 @@ def treatment_catalog_settings(request):
     items=TreatmentCatalogItem.objects.select_related('branch','created_by')
     if category:
         items=items.filter(category=category)
+
+    category_map=dict(TreatmentCatalogItem.CATEGORY)
+    category_order=('diet','recommendation','print_template','device','lipolytic')
+    ordered_categories=[
+        (key,category_map[key]) for key in category_order if key in category_map
+    ]
     grouped=[]
-    for key,label in TreatmentCatalogItem.CATEGORY:
+    for key,label in ordered_categories:
         group=list(items.filter(category=key))
         grouped.append({'key':key,'label':label,'items':group,'count':len(group)})
 
     return render(request,'core/treatment_catalog_settings.html',{
         'groups':grouped,
-        'categories':TreatmentCatalogItem.CATEGORY,
+        'categories':ordered_categories,
         'branches':Branch.objects.filter(is_active=True).order_by('name'),
         'selected_category':category,
         'total_items':TreatmentCatalogItem.objects.count(),
