@@ -189,3 +189,133 @@ def internal_message_updates(request):
     response['Cache-Control']='no-store, private'
     return response
 
+
+
+@_staff_messaging_required
+def internal_message_live_widget(request):
+    """Compact live-chat API used on every staff page.
+
+    GET returns contacts, unread counts and an optional direct thread.
+    POST sends a direct message without leaving the current page.
+    """
+    contacts=list(_staff_users().exclude(pk=request.user.pk))
+    contact_map={u.pk:u for u in contacts}
+
+    if request.method=='POST':
+        target=(request.POST.get('recipient') or '').strip()
+        body=(request.POST.get('body') or '').strip()
+        if not target.isdigit() or int(target) not in contact_map:
+            return JsonResponse({'ok':False,'error':'گیرنده معتبر نیست.'},status=400)
+        if not body:
+            return JsonResponse({'ok':False,'error':'متن پیام خالی است.'},status=400)
+        if len(body)>2000:
+            return JsonResponse({'ok':False,'error':'پیام حداکثر ۲۰۰۰ کاراکتر می‌تواند باشد.'},status=400)
+
+        recipient=contact_map[int(target)]
+        item=InternalMessage.objects.create(
+            sender=request.user,
+            recipient=recipient,
+            body=body,
+        )
+        StaffNotification.objects.create(
+            user=recipient,
+            title='پیام داخلی جدید',
+            message=f'{request.user.get_full_name() or request.user.username}: {body[:140]}',
+            notification_type='internal_message',
+        )
+        return JsonResponse({
+            'ok':True,
+            'message':{
+                'id':item.pk,
+                'sender_id':request.user.pk,
+                'sender':request.user.get_full_name() or request.user.username,
+                'body':item.body,
+                'mine':True,
+                'time':timezone.localtime(item.created_at).strftime('%H:%M'),
+            },
+        })
+
+    selected_id=(request.GET.get('with') or '').strip()
+    selected=contact_map.get(int(selected_id)) if selected_id.isdigit() else None
+
+    unread_by_sender={}
+    for sender_id in InternalMessage.objects.filter(
+        recipient=request.user,
+        read_at__isnull=True,
+    ).values_list('sender_id',flat=True):
+        unread_by_sender[sender_id]=unread_by_sender.get(sender_id,0)+1
+
+    recent_direct=list(
+        InternalMessage.objects.filter(
+            Q(sender=request.user,recipient__isnull=False) |
+            Q(recipient=request.user)
+        )
+        .select_related('sender','recipient','sender__profile','recipient__profile')
+        .order_by('-created_at')[:500]
+    )
+    last_by_contact={}
+    for item in recent_direct:
+        other_id=item.recipient_id if item.sender_id==request.user.pk else item.sender_id
+        if other_id and other_id not in last_by_contact:
+            last_by_contact[other_id]=item
+
+    rows=[]
+    for user in contacts:
+        last=last_by_contact.get(user.pk)
+        rows.append({
+            'id':user.pk,
+            'name':user.get_full_name() or user.username,
+            'role':getattr(user.profile,'job_title','') or user.profile.get_role_display(),
+            'branch':str(user.profile.branch or ''),
+            'unread':unread_by_sender.get(user.pk,0),
+            'last_body':(last.body[:90] if last else ''),
+            'last_time':(timezone.localtime(last.created_at).strftime('%H:%M') if last else ''),
+            'last_ts':(last.created_at.timestamp() if last else 0),
+            'avatar':(user.profile.avatar.url if getattr(user.profile,'avatar',None) else ''),
+        })
+    rows.sort(key=lambda row:(1 if row['unread'] else 0,row['last_ts']),reverse=True)
+
+    thread=[]
+    if selected:
+        qs=(
+            InternalMessage.objects
+            .filter(
+                Q(sender=request.user,recipient=selected) |
+                Q(sender=selected,recipient=request.user)
+            )
+            .select_related('sender','recipient')
+            .order_by('-created_at')[:60]
+        )
+        thread=list(reversed(list(qs)))
+        InternalMessage.objects.filter(
+            sender=selected,
+            recipient=request.user,
+            read_at__isnull=True,
+        ).update(read_at=timezone.now())
+        unread_by_sender[selected.pk]=0
+
+    payload=[]
+    for item in thread:
+        payload.append({
+            'id':item.pk,
+            'sender_id':item.sender_id,
+            'sender':item.sender.get_full_name() or item.sender.username,
+            'body':item.body,
+            'mine':item.sender_id==request.user.pk,
+            'time':timezone.localtime(item.created_at).strftime('%H:%M'),
+        })
+
+    latest_incoming=InternalMessage.objects.filter(
+        recipient=request.user
+    ).order_by('-pk').values_list('pk',flat=True).first() or 0
+
+    response=JsonResponse({
+        'ok':True,
+        'contacts':rows[:40],
+        'thread':payload,
+        'selected':selected.pk if selected else None,
+        'unread_total':sum(unread_by_sender.values()),
+        'latest_incoming_id':latest_incoming,
+    })
+    response['Cache-Control']='no-store, private'
+    return response
