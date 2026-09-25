@@ -2,6 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
@@ -20,6 +21,7 @@ from .models import (
     PatientProfile,
     ReferralLead,
     VisitAppointment,
+    Branch,
     normalize_lead_phone,
 )
 
@@ -57,11 +59,18 @@ BODY_AREAS = (
 )
 
 
+def _is_executive_doctor(user):
+    return bool(
+        getattr(user,'is_superuser',False)
+        or (getattr(user,'username','') or '').lower() in settings.EXECUTIVE_USERNAMES
+    )
+
+
 def _doctor_required(view):
     @login_required
     def wrapper(request, *args, **kwargs):
         profile=getattr(request.user,'profile',None)
-        if not profile or profile.role!='doctor':
+        if not profile or (profile.role!='doctor' and not _is_executive_doctor(request.user)):
             raise PermissionDenied('این بخش فقط برای پزشک فعال است.')
         return view(request,*args,**kwargs)
     return wrapper
@@ -174,11 +183,14 @@ def _selected_appointment(request, appointments):
     return arrived or waiting or (appointments[0] if appointments else None)
 
 
-def _redirect_to_appointment(appointment_id):
+def _redirect_to_appointment(appointment_id, branch_id=None):
     url=reverse('doctor_dashboard')
+    parts=[]
+    if branch_id:
+        parts.append(f'branch={branch_id}')
     if appointment_id:
-        return redirect(f'{url}?appointment={appointment_id}')
-    return redirect(url)
+        parts.append(f'appointment={appointment_id}')
+    return redirect(url+('?'+'&'.join(parts) if parts else ''))
 
 
 @_doctor_required
@@ -186,7 +198,14 @@ def doctor_dashboard(request):
     profile=request.user.profile
     today=timezone.localdate()
     now=timezone.localtime()
-    branch=profile.branch
+    executive_doctor=_is_executive_doctor(request.user)
+    branch_choices=Branch.objects.filter(is_active=True).order_by('name') if executive_doctor else Branch.objects.filter(pk=profile.branch_id)
+    requested_branch=(request.POST.get('branch_id') if request.method=='POST' else request.GET.get('branch')) or ''
+    branch=None
+    if executive_doctor and str(requested_branch).isdigit():
+        branch=branch_choices.filter(pk=int(requested_branch)).first()
+    if branch is None:
+        branch=profile.branch if profile.branch_id else branch_choices.first()
 
     appointment_qs=VisitAppointment.objects.none()
     if branch:
@@ -203,7 +222,7 @@ def doctor_dashboard(request):
     if request.method=='POST':
         if not selected or not patient:
             messages.error(request,'ابتدا یکی از بیماران امروز را انتخاب کنید.')
-            return _redirect_to_appointment(None)
+            return _redirect_to_appointment(None,branch.pk if branch else None)
 
         action=(request.POST.get('action') or '').strip()
         if action=='diet':
@@ -220,7 +239,7 @@ def doctor_dashboard(request):
                     prescribed_by=request.user,
                 )
                 messages.success(request,'برنامه غذایی و توصیه‌ها در پرونده ثبت شد.')
-            return _redirect_to_appointment(selected.pk)
+            return _redirect_to_appointment(selected.pk,branch.pk if branch else None)
 
         if action=='device':
             device=(request.POST.get('device_name') or '').strip()
@@ -320,6 +339,8 @@ def doctor_dashboard(request):
     return render(request,'core/doctor/dashboard.html',{
         'doctor_profile':profile,
         'doctor_branch':branch,
+        'doctor_branch_choices':branch_choices,
+        'executive_doctor_mode':executive_doctor,
         'today':today,
         'appointment_rows':rows,
         'appointment_stats':stats,
