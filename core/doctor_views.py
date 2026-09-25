@@ -22,6 +22,7 @@ from .models import (
     PatientProfile,
     ReferralLead,
     StaffNotification,
+    TreatmentCatalogItem,
     VisitAppointment,
     Branch,
     normalize_lead_phone,
@@ -59,6 +60,36 @@ BODY_AREAS = (
     'سوتین لاین',
     'غبغب',
 )
+
+
+def _catalog_options(category, branch, fallback):
+    qs=TreatmentCatalogItem.objects.filter(category=category,is_active=True)
+    if branch:
+        qs=qs.filter(Q(branch__isnull=True)|Q(branch=branch))
+    else:
+        qs=qs.filter(branch__isnull=True)
+    items=list(qs.select_related('branch'))
+    items.sort(key=lambda item:(
+        0 if branch and item.branch_id==branch.id else 1,
+        item.sort_order,
+        item.name,
+    ))
+    seen=set()
+    result=[]
+    for item in items:
+        key=item.name.strip().casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        price=''
+        if item.price_toman is not None:
+            price=f'{int(item.price_toman):,} تومان'
+            if item.unit_label:
+                price+=f' / {item.unit_label}'
+        result.append({'name':item.name,'price':price})
+    if result:
+        return result
+    return [{'name':name,'price':''} for name in fallback]
 
 
 def _is_executive_doctor(user):
@@ -426,10 +457,11 @@ def doctor_dashboard(request):
         'lipolytic_history':lipolytic_history,
         'care_notes':care_notes,
         'direct_messages':direct_messages,
-        'diet_options':DIET_OPTIONS,
-        'recommendation_options':RECOMMENDATION_OPTIONS,
-        'print_template_options':PRINT_TEMPLATE_OPTIONS,
-        'device_options':DEVICE_OPTIONS,
+        'diet_options':_catalog_options('diet',branch,DIET_OPTIONS),
+        'recommendation_options':_catalog_options('recommendation',branch,RECOMMENDATION_OPTIONS),
+        'print_template_options':_catalog_options('print_template',branch,PRINT_TEMPLATE_OPTIONS),
+        'device_options':_catalog_options('device',branch,DEVICE_OPTIONS),
+        'lipolytic_options':_catalog_options('lipolytic',branch,('لیپولیتیک',)),
         'body_areas':BODY_AREAS,
         'current_visit_diet_count':selected.diet_programs.count() if selected else 0,
         'current_visit_device_count':selected.device_programs.count() if selected else 0,

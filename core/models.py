@@ -500,6 +500,43 @@ class PatientCareNote(models.Model):
     class Meta:
         ordering=['-created_at','-id']
 
+class TreatmentCatalogItem(models.Model):
+    CATEGORY=[
+        ('diet','رژیم'),
+        ('recommendation','توصیه'),
+        ('device','دستگاه'),
+        ('lipolytic','لیپولیتیک'),
+        ('print_template','قالب نسخه'),
+    ]
+    category=models.CharField(max_length=30,choices=CATEGORY,db_index=True)
+    name=models.CharField(max_length=180)
+    branch=models.ForeignKey(
+        Branch,on_delete=models.CASCADE,null=True,blank=True,related_name='treatment_catalog_items'
+    )
+    price_toman=models.DecimalField(max_digits=18,decimal_places=0,null=True,blank=True)
+    unit_label=models.CharField(max_length=80,blank=True)
+    notes=models.CharField(max_length=500,blank=True)
+    is_active=models.BooleanField(default=True,db_index=True)
+    sort_order=models.PositiveSmallIntegerField(default=100)
+    created_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='created_treatment_catalog_items'
+    )
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering=['category','sort_order','name','id']
+        constraints=[
+            models.UniqueConstraint(
+                fields=['category','name','branch'],
+                name='uniq_treatment_catalog_category_name_branch',
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.get_category_display()} - {self.name}'
+
+
 class ApiServerSettings(models.Model):
     """Singleton configuration shared by the Greenlife SMS and CRM clients."""
     DEFAULT_BASE_URL='http://192.168.40.33:81/gl-api'

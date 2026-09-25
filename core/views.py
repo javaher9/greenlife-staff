@@ -14,7 +14,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, BlackboardMessageForm, EmployeeCreateForm, EmployeeEditForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm, ConsultantFinanceEntryForm, StaffLoginForm, StaffCredentialUpdateForm
-from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, Branch, BranchWorkSchedule, EmployeeWorkSchedule, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction, MeetingActionUpdate, StaffCredential, VisitAppointment
+from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, Branch, BranchWorkSchedule, EmployeeWorkSchedule, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction, MeetingActionUpdate, StaffCredential, VisitAppointment, TreatmentCatalogItem
 from .ai import analyze_finance_receipt, process_report
 from .jalali import format_jalali, gregorian_to_jalali, jalali_to_gregorian, parse_jalali
 from .reporting import day_summary, leaderboard, answer_query
@@ -196,6 +196,82 @@ def login_view(request):
         'mobile_login':mobile_login,
         'next':request.POST.get('next') or request.GET.get('next') or '',
     })
+
+@credential_admin_required
+def treatment_catalog_settings(request):
+    category=(request.GET.get('category') or '').strip()
+    if request.method=='POST':
+        action=(request.POST.get('action') or 'save').strip()
+        item_id=(request.POST.get('item_id') or '').strip()
+        item=None
+        if item_id.isdigit():
+            item=get_object_or_404(TreatmentCatalogItem,pk=int(item_id))
+
+        if action=='delete' and item:
+            item.delete()
+            messages.success(request,'آیتم حذف شد.')
+            return redirect('treatment_catalog_settings')
+
+        if action=='toggle' and item:
+            item.is_active=not item.is_active
+            item.save(update_fields=['is_active','updated_at'])
+            messages.success(request,'وضعیت آیتم تغییر کرد.')
+            return redirect('treatment_catalog_settings')
+
+        raw_category=(request.POST.get('category') or '').strip()
+        name=(request.POST.get('name') or '').strip()
+        branch_id=(request.POST.get('branch') or '').strip()
+        price_raw=''.join(ch for ch in (request.POST.get('price_toman') or '') if ch.isdigit())
+        unit_label=(request.POST.get('unit_label') or '').strip()
+        notes=(request.POST.get('notes') or '').strip()
+        sort_raw=(request.POST.get('sort_order') or '100').strip()
+
+        allowed={key for key,_label in TreatmentCatalogItem.CATEGORY}
+        if raw_category not in allowed or not name:
+            messages.error(request,'نوع و عنوان آیتم الزامی است.')
+            return redirect('treatment_catalog_settings')
+
+        branch_obj=Branch.objects.filter(pk=int(branch_id)).first() if branch_id.isdigit() else None
+        try:
+            sort_order=max(0,min(9999,int(sort_raw or 100)))
+        except ValueError:
+            sort_order=100
+        price_toman=int(price_raw) if price_raw else None
+
+        if item is None:
+            item=TreatmentCatalogItem(created_by=request.user)
+        item.category=raw_category
+        item.name=name[:180]
+        item.branch=branch_obj
+        item.price_toman=price_toman
+        item.unit_label=unit_label[:80]
+        item.notes=notes[:500]
+        item.sort_order=sort_order
+        item.is_active=request.POST.get('is_active')=='1'
+        try:
+            item.save()
+            messages.success(request,'تنظیمات خدمات ذخیره شد.')
+        except IntegrityError:
+            messages.error(request,'این عنوان برای همین دسته و شعبه قبلاً ثبت شده است.')
+        return redirect('treatment_catalog_settings')
+
+    items=TreatmentCatalogItem.objects.select_related('branch','created_by')
+    if category:
+        items=items.filter(category=category)
+    grouped=[]
+    for key,label in TreatmentCatalogItem.CATEGORY:
+        group=list(items.filter(category=key))
+        grouped.append({'key':key,'label':label,'items':group,'count':len(group)})
+
+    return render(request,'core/treatment_catalog_settings.html',{
+        'groups':grouped,
+        'categories':TreatmentCatalogItem.CATEGORY,
+        'branches':Branch.objects.filter(is_active=True).order_by('name'),
+        'selected_category':category,
+        'total_items':TreatmentCatalogItem.objects.count(),
+        'active_items':TreatmentCatalogItem.objects.filter(is_active=True).count(),
+    })
+
 
 @credential_admin_required
 def credential_settings(request):
