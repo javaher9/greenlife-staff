@@ -47,3 +47,6 @@ class TreatmentCatalogSettingsTests(TestCase):
         self.assertIn('تنظیمات خدمات و درمان‌ها',body)
         self.assertIn('Double Define',body)
         self.assertIn('دستگاه',body)
+
+        self.assertLess(body.index('توصیه'),body.index('قالب نسخه'))
+        self.assertLess(body.index('قالب نسخه'),body.index('دستگاه'))
