@@ -1,0 +1,179 @@
+{% if user.is_authenticated and user.profile.role != 'referrer' %}
+<style>
+.gl-live-chat{position:fixed;left:18px;bottom:18px;z-index:420;font-family:"Noto Sans Arabic",Tahoma,Arial,sans-serif;direction:rtl;color:#eef3f8}
+.gl-live-chat *{box-sizing:border-box}
+.gl-live-chat-launcher{width:54px;height:54px;border:1px solid rgba(127,111,255,.55);border-radius:18px;background:linear-gradient(145deg,#211b4c,#121d2b);color:#d9d4ff;display:grid;place-items:center;cursor:pointer;box-shadow:0 12px 30px rgba(0,0,0,.34),0 0 20px rgba(119,98,255,.14);position:relative;font-size:21px}
+.gl-live-chat-launcher:hover{transform:translateY(-1px);box-shadow:0 14px 34px rgba(0,0,0,.38),0 0 24px rgba(119,98,255,.2)}
+.gl-live-chat-badge{position:absolute;right:-6px;top:-7px;min-width:21px;height:21px;padding:0 5px;border-radius:999px;background:#ff5f87;color:#fff;border:2px solid #09111a;font-size:9px;font-weight:900;display:grid;place-items:center}
+.gl-live-chat-badge[hidden]{display:none}
+.gl-live-chat-toast{position:absolute;left:0;bottom:66px;width:280px;padding:11px 12px;border-radius:14px;background:linear-gradient(155deg,#172333,#111b28);border:1px solid #33455b;box-shadow:0 16px 38px rgba(0,0,0,.36);cursor:pointer;animation:glChatIn .18s ease-out}
+.gl-live-chat-toast[hidden]{display:none}.gl-live-chat-toast b{display:block;color:#fff;font-size:10px;margin-bottom:4px}.gl-live-chat-toast p{margin:0;color:#b9c5d4;font-size:9px;line-height:1.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gl-live-chat-drawer{position:absolute;left:0;bottom:66px;width:min(390px,calc(100vw - 30px));height:min(620px,calc(100vh - 105px));display:grid;grid-template-rows:auto 1fr;background:linear-gradient(180deg,#101a27,#0b141e);border:1px solid #2b3b50;border-radius:20px;box-shadow:0 22px 54px rgba(0,0,0,.46);overflow:hidden}
+.gl-live-chat-drawer[hidden]{display:none}
+.gl-live-chat-head{min-height:58px;padding:11px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid #223246;background:rgba(17,27,40,.98)}
+.gl-live-chat-title{display:flex;align-items:center;gap:9px}.gl-live-chat-icon{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:#211b4c;color:#a99fff;border:1px solid rgba(119,98,255,.35);box-shadow:0 0 17px rgba(119,98,255,.1)}
+.gl-live-chat-title strong{display:block;font-size:11px;color:#f6f8fb}.gl-live-chat-title small{display:block;font-size:8px;color:#8f9caf;margin-top:2px}
+.gl-live-chat-close{width:31px;height:31px;border-radius:10px;border:1px solid #2a3a4f;background:#0d1621;color:#aeb9c8;cursor:pointer}
+.gl-live-chat-body{min-height:0;display:grid;grid-template-columns:132px minmax(0,1fr);direction:ltr}
+.gl-live-chat-contacts{min-height:0;overflow:auto;padding:8px;border-right:1px solid #223246;background:#0d1722;direction:rtl}
+.gl-live-chat-contact{width:100%;margin:0 0 6px;padding:8px 7px;border:1px solid transparent;border-radius:10px;background:transparent;color:#c4cfdb;text-align:right;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px;align-items:center}
+.gl-live-chat-contact:hover{background:#121f2d;border-color:#293b50}.gl-live-chat-contact.active{background:linear-gradient(135deg,rgba(119,98,255,.18),rgba(119,98,255,.07));border-color:rgba(119,98,255,.38);color:#eeeaff}
+.gl-live-chat-contact b{display:block;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:8.5px}.gl-live-chat-contact small{display:block;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#78889c;font-size:6.8px;margin-top:2px}.gl-live-chat-count{min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:#ff5f87;color:#fff;font-size:7px;font-weight:900;display:grid;place-items:center}
+.gl-live-chat-thread{min-height:0;display:grid;grid-template-rows:auto 1fr auto;direction:rtl;background:#0b141e}
+.gl-live-chat-person{padding:9px 11px;border-bottom:1px solid #223246}.gl-live-chat-person strong{display:block;font-size:10px}.gl-live-chat-person small{display:block;font-size:7.5px;color:#7f8fa3;margin-top:2px}
+.gl-live-chat-stream{min-height:0;overflow:auto;padding:11px;display:flex;flex-direction:column;gap:7px}
+.gl-live-chat-empty{margin:auto;text-align:center;color:#7f8da0;font-size:9px;line-height:1.9}
+.gl-live-chat-bubble{max-width:82%;padding:8px 9px;border-radius:12px;background:#14202d;border:1px solid #25384b;color:#eef4f8;align-self:flex-start}.gl-live-chat-bubble.mine{align-self:flex-end;background:#251f4d;border-color:#463b76}.gl-live-chat-bubble b{display:block;font-size:7.5px;color:#aab6c6;margin-bottom:3px}.gl-live-chat-bubble p{margin:0;font-size:9px;line-height:1.8;white-space:pre-wrap;word-break:break-word}.gl-live-chat-bubble small{display:block;margin-top:4px;font-size:6.7px;color:#77889c;direction:ltr;text-align:left}
+.gl-live-chat-compose{padding:8px;border-top:1px solid #223246;display:grid;grid-template-columns:minmax(0,1fr) 48px;gap:6px}.gl-live-chat-compose textarea{min-height:42px;max-height:86px;resize:none;border:1px solid #2a3b50;border-radius:10px;background:#0e1823;color:#f1f5f8;padding:8px 9px;font-size:9px;outline:none}.gl-live-chat-compose textarea:focus{border-color:#7466ef;box-shadow:0 0 0 2px rgba(119,98,255,.1)}.gl-live-chat-compose button{border:1px solid rgba(119,98,255,.5);border-radius:10px;background:linear-gradient(135deg,#352c79,#221d50);color:#fff;font-size:9px;font-weight:900;cursor:pointer}.gl-live-chat-compose button:disabled{opacity:.45;cursor:not-allowed}
+@keyframes glChatIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@media(max-width:700px){.gl-live-chat{left:10px;bottom:76px}.gl-live-chat-launcher{width:50px;height:50px;border-radius:16px}.gl-live-chat-drawer{width:calc(100vw - 20px);height:min(66vh,590px);bottom:60px}.gl-live-chat-toast{width:min(280px,calc(100vw - 20px));bottom:60px}.gl-live-chat-body{grid-template-columns:112px minmax(0,1fr)}}
+</style>
+
+<div class="gl-live-chat" id="glLiveChat">
+  <button class="gl-live-chat-launcher" type="button" id="glLiveChatLauncher" aria-label="چت زنده پرسنل">
+    ✉
+    <span class="gl-live-chat-badge" id="glLiveChatBadge" hidden>0</span>
+  </button>
+  <div class="gl-live-chat-toast" id="glLiveChatToast" hidden>
+    <b id="glLiveChatToastSender">پیام جدید</b>
+    <p id="glLiveChatToastBody"></p>
+  </div>
+  <section class="gl-live-chat-drawer" id="glLiveChatDrawer" hidden>
+    <header class="gl-live-chat-head">
+      <div class="gl-live-chat-title"><span class="gl-live-chat-icon">✉</span><div><strong>چت زنده پرسنل</strong><small>پیام‌ها خودکار تازه می‌شوند</small></div></div>
+      <button class="gl-live-chat-close" type="button" id="glLiveChatClose">×</button>
+    </header>
+    <div class="gl-live-chat-body">
+      <aside class="gl-live-chat-contacts" id="glLiveChatContacts"></aside>
+      <section class="gl-live-chat-thread">
+        <div class="gl-live-chat-person" id="glLiveChatPerson"><strong>یک همکار را انتخاب کنید</strong><small>پیام مستقیم و فوری</small></div>
+        <div class="gl-live-chat-stream" id="glLiveChatStream"><div class="gl-live-chat-empty">برای شروع گفتگو یک نفر را انتخاب کنید.</div></div>
+        <form class="gl-live-chat-compose" id="glLiveChatForm">{% csrf_token %}
+          <textarea id="glLiveChatInput" maxlength="2000" placeholder="پیام..." disabled></textarea>
+          <button id="glLiveChatSend" type="submit" disabled>ارسال</button>
+        </form>
+      </section>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  const root=document.getElementById('glLiveChat');
+  if(!root)return;
+  const endpoint='{% url "internal_message_live_widget" %}';
+  const launcher=document.getElementById('glLiveChatLauncher');
+  const badge=document.getElementById('glLiveChatBadge');
+  const drawer=document.getElementById('glLiveChatDrawer');
+  const closeBtn=document.getElementById('glLiveChatClose');
+  const contactsEl=document.getElementById('glLiveChatContacts');
+  const personEl=document.getElementById('glLiveChatPerson');
+  const stream=document.getElementById('glLiveChatStream');
+  const form=document.getElementById('glLiveChatForm');
+  const input=document.getElementById('glLiveChatInput');
+  const send=document.getElementById('glLiveChatSend');
+  const toast=document.getElementById('glLiveChatToast');
+  const toastSender=document.getElementById('glLiveChatToastSender');
+  const toastBody=document.getElementById('glLiveChatToastBody');
+  const csrf=form.querySelector('input[name="csrfmiddlewaretoken"]').value;
+  let selected=null;
+  let contacts=[];
+  let lastIncoming=null;
+  let firstPoll=true;
+  let toastTimer=null;
+  let busy=false;
+
+  const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  function setBadge(count){
+    count=Number(count||0);
+    badge.hidden=count<1;
+    badge.textContent=count>99?'99+':String(count);
+  }
+  function currentContact(){return contacts.find(x=>String(x.id)===String(selected));}
+  function renderContacts(){
+    if(!contacts.length){contactsEl.innerHTML='<div class="gl-live-chat-empty">همکاری برای نمایش نیست.</div>';return;}
+    contactsEl.innerHTML=contacts.map(c=>'<button type="button" class="gl-live-chat-contact '+(String(c.id)===String(selected)?'active':'')+'" data-chat-id="'+c.id+'"><span><b>'+esc(c.name)+'</b><small>'+esc(c.role)+(c.branch?' · '+esc(c.branch):'')+'</small></span>'+(c.unread?'<span class="gl-live-chat-count">'+c.unread+'</span>':'')+'</button>').join('');
+  }
+  function renderThread(data){
+    const contact=currentContact();
+    personEl.innerHTML=contact?'<strong>'+esc(contact.name)+'</strong><small>'+esc(contact.role)+(contact.branch?' · '+esc(contact.branch):'')+'</small>':'<strong>یک همکار را انتخاب کنید</strong><small>پیام مستقیم و فوری</small>';
+    input.disabled=!contact;send.disabled=!contact;
+    if(!contact){stream.innerHTML='<div class="gl-live-chat-empty">برای شروع گفتگو یک نفر را انتخاب کنید.</div>';return;}
+    if(!data.length){stream.innerHTML='<div class="gl-live-chat-empty">هنوز پیامی بین شما ثبت نشده است.</div>';return;}
+    stream.innerHTML=data.map(m=>'<article class="gl-live-chat-bubble '+(m.mine?'mine':'')+'"><b>'+esc(m.sender)+'</b><p>'+esc(m.body).replace(/\n/g,'<br>')+'</p><small>'+esc(m.time)+'</small></article>').join('');
+    stream.scrollTop=stream.scrollHeight;
+  }
+  function showToast(preview){
+    if(!preview||drawer.hidden===false)return;
+    toastSender.textContent=preview.sender||'پیام جدید';
+    toastBody.textContent=preview.body||'';
+    toast.dataset.senderId=preview.sender_id||'';
+    toast.hidden=false;
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(()=>toast.hidden=true,6500);
+  }
+  async function refresh(){
+    if(busy)return;
+    busy=true;
+    try{
+      const url=endpoint+(selected?'?with='+encodeURIComponent(selected):'');
+      const response=await fetch(url,{credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}});
+      const data=await response.json();
+      if(!response.ok||!data.ok)return;
+      contacts=data.contacts||[];
+      setBadge(data.unread_total);
+      if(firstPoll){
+        lastIncoming=Number(data.latest_incoming_id||0);
+        firstPoll=false;
+      }else{
+        const incoming=Number(data.latest_incoming_id||0);
+        if(incoming>Number(lastIncoming||0)){
+          lastIncoming=incoming;
+          showToast(data.incoming_preview);
+        }
+      }
+      renderContacts();
+      if(selected)renderThread(data.thread||[]);
+    }catch(e){}finally{busy=false}
+  }
+  async function openChat(userId){
+    drawer.hidden=false;toast.hidden=true;
+    if(userId)selected=String(userId);
+    await refresh();
+    if(!selected&&contacts.length){
+      const preferred=contacts.find(item=>Number(item.unread||0)>0)||contacts[0];
+      selected=String(preferred.id);
+      await refresh();
+    }
+  }
+  launcher.addEventListener('click',()=>drawer.hidden?openChat(selected):drawer.hidden=true);
+  closeBtn.addEventListener('click',()=>drawer.hidden=true);
+  toast.addEventListener('click',()=>openChat(toast.dataset.senderId));
+  contactsEl.addEventListener('click',e=>{
+    const btn=e.target.closest('[data-chat-id]');if(!btn)return;
+    selected=btn.dataset.chatId;refresh();
+  });
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    if(!selected||!input.value.trim())return;
+    send.disabled=true;
+    try{
+      const body=new URLSearchParams({recipient:selected,body:input.value.trim()});
+      const response=await fetch(endpoint,{method:'POST',credentials:'same-origin',headers:{'X-CSRFToken':csrf,'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:body.toString()});
+      const data=await response.json();
+      if(response.ok&&data.ok){input.value='';await refresh();}
+    }catch(e){}finally{send.disabled=false}
+  });
+  document.addEventListener('click',e=>{
+    const opener=e.target.closest('[data-open-live-chat]');
+    if(opener){e.preventDefault();openChat(opener.dataset.chatUser||selected);}
+  });
+  document.querySelectorAll('a[href="/messages/"]').forEach(link=>{
+    link.addEventListener('click',e=>{e.preventDefault();openChat(selected);});
+  });
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!drawer.hidden)drawer.hidden=true;});
+  refresh();
+  window.setInterval(refresh,3000);
+})();
+</script>
+{% endif %}
