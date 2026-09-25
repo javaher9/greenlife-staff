@@ -4,6 +4,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.shortcuts import redirect, render
@@ -20,6 +21,7 @@ from .models import (
     PatientLipolyticProgram,
     PatientProfile,
     ReferralLead,
+    StaffNotification,
     VisitAppointment,
     Branch,
     normalize_lead_phone,
@@ -109,8 +111,12 @@ def _ensure_patient(appointment, doctor):
 def _appointment_row(item, now):
     if item.status=='cancelled':
         label='لغو شده'; tone='cancelled'
-    elif item.status=='completed':
-        label='انجام شد'; tone='done'
+    elif item.care_stage=='consultant':
+        label='ارسال به مشاور'; tone='consultant'
+    elif item.care_stage=='payment':
+        label='در انتظار پرداخت'; tone='payment'
+    elif item.care_stage=='closed' or item.status=='completed':
+        label='تکمیل شده'; tone='done'
     elif item.status=='arrived':
         label='در کلینیک'; tone='arrived'
     else:
@@ -234,6 +240,54 @@ def doctor_dashboard(request):
             return _redirect_to_appointment(None,branch.pk if branch else None)
 
         action=(request.POST.get('action') or '').strip()
+        if action=='send_to_consultant':
+            if selected.status=='cancelled':
+                messages.error(request,'نوبت لغوشده قابل ارسال به مشاور نیست.')
+                return _redirect_to_appointment(selected.pk,branch.pk if branch else None)
+
+            selected.care_stage='consultant'
+            selected.doctor_completed_at=timezone.now()
+            selected.doctor_completed_by=request.user
+            if selected.status=='booked':
+                selected.status='arrived'
+            selected.save(update_fields=[
+                'care_stage','doctor_completed_at','doctor_completed_by','status','updated_at'
+            ])
+
+            consultants=User.objects.filter(
+                is_active=True,
+                profile__is_active=True,
+                profile__role='consultant',
+                profile__branch=selected.branch,
+            )
+            doctor_name=request.user.get_full_name() or request.user.username
+            plan_bits=[]
+            diet_count=selected.diet_programs.count()
+            device_count=selected.device_programs.count()
+            lipo_count=selected.lipolytic_programs.count()
+            if diet_count:
+                plan_bits.append(f'{diet_count} برنامه غذایی')
+            if device_count:
+                plan_bits.append(f'{device_count} برنامه دستگاه')
+            if lipo_count:
+                plan_bits.append(f'{lipo_count} برنامه لیپولیتیک')
+            plan_summary='، '.join(plan_bits) or 'پیشنهاد درمان ثبت‌شده'
+
+            for consultant in consultants:
+                StaffNotification.objects.create(
+                    user=consultant,
+                    title='بیمار جدید در انتظار مشاوره',
+                    message=f'{selected.full_name} از طرف {doctor_name} ارسال شد · {plan_summary}',
+                    notification_type='doctor_handoff',
+                    related_date=timezone.localdate(),
+                )
+
+            messages.success(
+                request,
+                f'ویزیت {selected.full_name} پایان یافت و پرونده برای مشاور ارسال شد.'
+            )
+            return _redirect_to_appointment(selected.pk,branch.pk if branch else None)
+
         if action=='diet':
             diet=(request.POST.get('diet_name') or '').strip()
             if not diet:
@@ -241,6 +295,7 @@ def doctor_dashboard(request):
             else:
                 PatientDietProgram.objects.create(
                     patient=patient,
+                    appointment=selected,
                     diet_name=diet[:160],
                     recommendation_pack=(request.POST.get('recommendation_pack') or '').strip()[:160],
                     print_template=(request.POST.get('print_template') or '').strip()[:160],
@@ -261,6 +316,7 @@ def doctor_dashboard(request):
             else:
                 PatientDeviceProgram.objects.create(
                     patient=patient,
+                    appointment=selected,
                     device_name=device[:160],
                     area=(request.POST.get('area') or '').strip()[:120],
                     sessions_prescribed=sessions,
@@ -278,6 +334,7 @@ def doctor_dashboard(request):
                 sessions=1
             PatientLipolyticProgram.objects.create(
                 patient=patient,
+                appointment=selected,
                 protocol_name=protocol[:160] or 'لیپولیتیک',
                 area=(request.POST.get('area') or '').strip()[:120],
                 sessions_prescribed=sessions,
@@ -291,7 +348,7 @@ def doctor_dashboard(request):
             body=(request.POST.get('body') or '').strip()
             if body:
                 PatientCareNote.objects.create(
-                    patient=patient,author=request.user,note_type='clinical',body=body[:3000]
+                    patient=patient,appointment=selected,author=request.user,note_type='clinical',body=body[:3000]
                 )
                 messages.success(request,'یادداشت پزشک ثبت شد.')
             return _redirect_to_appointment(selected.pk,branch.pk if branch else None)
@@ -368,4 +425,8 @@ def doctor_dashboard(request):
         'print_template_options':PRINT_TEMPLATE_OPTIONS,
         'device_options':DEVICE_OPTIONS,
         'body_areas':BODY_AREAS,
+        'current_visit_diet_count':selected.diet_programs.count() if selected else 0,
+        'current_visit_device_count':selected.device_programs.count() if selected else 0,
+        'current_visit_lipolytic_count':selected.lipolytic_programs.count() if selected else 0,
+        'current_visit_note_count':selected.care_notes.count() if selected else 0,
     })
