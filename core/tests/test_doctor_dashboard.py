@@ -13,6 +13,7 @@ from core.models import (
     PatientProfile,
     ReferralLead,
     ReferralProfile,
+    StaffNotification,
     VisitAppointment,
 )
 
@@ -45,6 +46,18 @@ class DoctorDashboardTests(TestCase):
         self.operator.branch=self.branch
         self.operator.is_active=True
         self.operator.save(update_fields=['role','branch','is_active'])
+
+        self.consultant_user=User.objects.create_user(
+            username='consultant-doctor-test',
+            first_name='مشاور',
+            last_name='تست',
+            password='StrongPass123',
+        )
+        self.consultant=self.consultant_user.profile
+        self.consultant.role='consultant'
+        self.consultant.branch=self.branch
+        self.consultant.is_active=True
+        self.consultant.save(update_fields=['role','branch','is_active'])
 
         source_user=User.objects.create_user(username='doctor-source',password='StrongPass123')
         self.source=ReferralProfile.objects.create(
@@ -140,3 +153,38 @@ class DoctorDashboardTests(TestCase):
         self.assertEqual(item.device_name,'Double Define')
         self.assertEqual(item.sessions_prescribed,4)
         self.assertEqual(item.prescribed_by,self.doctor_user)
+        self.assertEqual(item.appointment,self.appointment)
+
+    def test_end_visit_sends_patient_to_consultant_queue(self):
+        self.client.get(reverse('doctor_dashboard'))
+        self.client.post(reverse('doctor_dashboard'),{
+            'appointment_id':self.appointment.pk,
+            'action':'device',
+            'device_name':'Double Define',
+            'area':'شکم و پهلو',
+            'sessions':'4',
+        })
+        response=self.client.post(reverse('doctor_dashboard'),{
+            'appointment_id':self.appointment.pk,
+            'action':'send_to_consultant',
+        },follow=True)
+        self.assertEqual(response.status_code,200)
+
+        self.appointment.refresh_from_db()
+        self.assertEqual(self.appointment.care_stage,'consultant')
+        self.assertEqual(self.appointment.doctor_completed_by,self.doctor_user)
+        self.assertIsNotNone(self.appointment.doctor_completed_at)
+        self.assertTrue(
+            StaffNotification.objects.filter(
+                user=self.consultant_user,
+                notification_type='doctor_handoff',
+            ).exists()
+        )
+
+        self.client.logout()
+        self.client.login(username='consultant-doctor-test',password='StrongPass123')
+        dashboard=self.client.get(reverse('dashboard'))
+        body=dashboard.content.decode('utf-8')
+        self.assertIn('بیماران منتظر مشاوره',body)
+        self.assertIn('مریم حسینی',body)
+        self.assertIn('1 دستگاه',body)
