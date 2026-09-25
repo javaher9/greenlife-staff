@@ -205,7 +205,16 @@ def doctor_dashboard(request):
     if executive_doctor and str(requested_branch).isdigit():
         branch=branch_choices.filter(pk=int(requested_branch)).first()
     if branch is None:
-        branch=profile.branch if profile.branch_id else branch_choices.first()
+        if profile.branch_id:
+            branch=profile.branch
+        elif executive_doctor:
+            branch=(
+                branch_choices.filter(name__icontains='نیاوران').first()
+                or branch_choices.filter(name__icontains='نياوران').first()
+                or branch_choices.first()
+            )
+        else:
+            branch=branch_choices.first()
 
     appointment_qs=VisitAppointment.objects.none()
     if branch:
