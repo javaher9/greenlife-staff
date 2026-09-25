@@ -83,7 +83,7 @@ html.gl-call-center-html{background:#f5f7fb!important;background-image:none!impo
 @media(max-width:820px){.cc-desktop-dock{display:none!important}}
 </style>
 </head>
-<body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'receptionist' %}gl-role-employee{% endif %} {% if user.profile.role == 'call_center' %}gl-role-call-center{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
+<body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'doctor' or user.profile.role == 'receptionist' %}gl-role-employee{% endif %} {% if user.profile.role == 'call_center' %}gl-role-call-center{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
 {% if request.session.impersonator_user_id %}
 <div class="impersonation-banner"><span>در حال مشاهده به‌عنوان {{ user.get_full_name|default:user.username }}</span><form method="post" action="{% url 'impersonate_return' %}">{% csrf_token %}<button type="submit">بازگشت به ادمین</button></form></div>
 {% endif %}
@@ -102,10 +102,17 @@ html.gl-call-center-html{background:#f5f7fb!important;background-image:none!impo
     <a href="{% url 'api_server_settings' %}" class="{% if request.resolver_match.url_name == 'api_server_settings' %}is-active{% endif %}"><span class="nav-ico">⌁</span><span>اتصال API Server</span></a>
     <a href="{% url 'website_lead_settings' %}" class="{% if request.resolver_match.url_name == 'website_lead_settings' %}is-active{% endif %}"><span class="nav-ico">◎</span><span>اتصال لید وب‌سایت</span></a>
     {% endif %}
-    {% if user.profile.role != 'referrer' %}
+    {% if user.profile.role != 'referrer' and user.profile.role != 'doctor' %}
     <a href="{% url 'internal_messages' %}" class="{% if request.resolver_match.url_name == 'internal_messages' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>پیام داخلی</span></a>
     {% endif %}
-    {% if user.profile.role == 'consultant' %}
+    {% if user.profile.role == 'doctor' %}
+    <a href="{% url 'doctor_dashboard' %}" class="nav-main {% if request.resolver_match.url_name == 'doctor_dashboard' %}is-active{% endif %}"><span class="nav-ico">✚</span><span>داشبورد پزشک</span></a>
+    <a href="{% url 'doctor_dashboard' %}" class="{% if request.resolver_match.url_name == 'doctor_dashboard' %}is-active{% endif %}"><span class="nav-ico">▣</span><span>نوبت‌های امروز</span></a>
+    <a href="{% url 'internal_messages' %}" class="{% if request.resolver_match.url_name == 'internal_messages' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>چت و پیام‌ها</span></a>
+    <a href="/attendance/" class="attendance-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور و غیاب</span></a>
+    <a href="/profile/"><span class="nav-ico">◉</span><span>پروفایل</span></a>
+    <a href="/logout/"><span class="nav-ico">↪</span><span>خروج</span></a>
+    {% elif user.profile.role == 'consultant' %}
     <a href="/" class="nav-main {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico">⌂</span><span>داشبورد من</span></a>
     <a href="/finance/entry/" class="consultant-finance-nav {% if request.path|slice:':15' == '/finance/entry/' %}is-active{% endif %}"><span class="nav-ico">▧</span><span>ثبت مالی</span></a>
     <a href="/attendance/" class="attendance-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور و غیاب</span></a>
