@@ -1,4 +1,4 @@
-from datetime import time, timedelta
+from datetime import datetime, time, timedelta
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.models import Branch, BranchWorkSchedule, EmployeeProfile, EmployeeWorkSchedule, ShiftAssignment
-from core.operations import report_required, shift_rule
+from core.operations import attendance_status_for, report_required, shift_rule
 
 
 class ShiftTodayBulkTests(TestCase):
@@ -103,10 +103,13 @@ class ShiftTodayBulkTests(TestCase):
         rule=shift_rule(self.employee,friday)
         self.assertTrue(rule['is_off'])
         self.assertFalse(report_required(self.employee,friday))
-        historical=shift_rule(self.employee,today-timedelta(days=7))
+        historical_day=today-timedelta(days=7)
+        if historical_day.weekday()==4:
+            historical_day-=timedelta(days=1)
+        historical=shift_rule(self.employee,historical_day)
         self.assertEqual(historical['source'],'branch')
 
-    def test_employee_weekly_rule_overrides_branch_day_off(self):
+    def test_company_friday_off_overrides_employee_weekly_rule(self):
         today=timezone.localdate()
         BranchWorkSchedule.objects.create(
             branch=self.branch,weekday=4,is_working=False,effective_from=today,
@@ -121,9 +124,23 @@ class ShiftTodayBulkTests(TestCase):
         self.assertEqual(EmployeeWorkSchedule.objects.filter(user=self.employee).count(),7)
         friday=today+timedelta(days=(4-today.weekday())%7)
         rule=shift_rule(self.employee,friday)
-        self.assertEqual(rule['source'],'employee_weekly')
-        self.assertEqual(rule['start'],time(10))
-        self.assertFalse(rule['is_off'])
+        self.assertEqual(rule['source'],'friday_company_off')
+        self.assertIsNone(rule['start'])
+        self.assertTrue(rule['is_off'])
+        self.assertFalse(report_required(self.employee,friday))
+
+    def test_friday_is_off_for_every_role_and_voluntary_checkin_is_present(self):
+        call_center=self.make_user('friday-call-center','call_center',self.branch)
+        today=timezone.localdate()
+        friday=today+timedelta(days=(4-today.weekday())%7)
+        for user in (self.internal,self.admin,self.employee,self.other_employee,call_center):
+            rule=shift_rule(user,friday)
+            self.assertEqual(rule['source'],'friday_company_off')
+            self.assertTrue(rule['is_off'])
+            self.assertFalse(rule['is_working'])
+            self.assertFalse(rule['report_required'])
+        check_in=timezone.make_aware(datetime.combine(friday,time(11,0)))
+        self.assertEqual(attendance_status_for(call_center,friday,check_in),'present')
 
     def test_regular_employee_is_denied(self):
         self.client.force_login(self.employee)
