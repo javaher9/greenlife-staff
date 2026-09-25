@@ -163,6 +163,10 @@
     const opener=e.target.closest('[data-open-live-chat]');
     if(opener){e.preventDefault();openChat(opener.dataset.chatUser||selected);}
   });
+  document.querySelectorAll('a[href="/messages/"]').forEach(link=>{
+    link.addEventListener('click',e=>{e.preventDefault();openChat(selected);});
+  });
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!drawer.hidden)drawer.hidden=true;});
   refresh();
   window.setInterval(refresh,3000);
 })();
