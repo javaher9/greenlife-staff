@@ -40,7 +40,7 @@
         <label class="field"><span>نام / آیدی اینستاگرام</span>{{ form.full_name }}{% for error in form.full_name.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <label class="field"><span>{{ form.phone.label }}</span>{{ form.phone }}{% for error in form.phone.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <label class="field"><span>{{ form.instagram_page.label }}</span>{{ form.instagram_page }}{% for error in form.instagram_page.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
-        <label class="field"><span>{{ form.interested_service.label }}</span>{{ form.interested_service }}{% for error in form.interested_service.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
+        <label class="field"><span>توضیحات</span>{{ form.interested_service }}{% for error in form.interested_service.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <button class="btn" id="manualSubmitBtn" type="submit">ثبت در App</button>
       </form>
       <div class="hint">نام ثبت‌کننده نیز به‌صورت خودکار در سابقه لید ذخیره می‌شود.</div>
