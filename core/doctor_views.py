@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
@@ -106,7 +106,7 @@ def _appointment_row(item, now):
         label='در کلینیک'; tone='arrived'
     else:
         local_target=timezone.make_aware(
-            timezone.datetime.combine(item.appointment_date,item.appointment_time),
+            datetime.combine(item.appointment_date,item.appointment_time),
             timezone.get_current_timezone(),
         )
         if local_target < now:
