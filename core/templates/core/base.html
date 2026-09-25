@@ -102,7 +102,7 @@ html.gl-call-center-html{background:#f5f7fb!important;background-image:none!impo
     <a href="{% url 'api_server_settings' %}" class="{% if request.resolver_match.url_name == 'api_server_settings' %}is-active{% endif %}"><span class="nav-ico">⌁</span><span>اتصال API Server</span></a>
     <a href="{% url 'website_lead_settings' %}" class="{% if request.resolver_match.url_name == 'website_lead_settings' %}is-active{% endif %}"><span class="nav-ico">◎</span><span>اتصال لید وب‌سایت</span></a>
     {% endif %}
-    {% if user.profile.role != 'referrer' %}
+    {% if user.profile.role != 'referrer' and user.profile.role != 'doctor' %}
     <a href="{% url 'internal_messages' %}" class="{% if request.resolver_match.url_name == 'internal_messages' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>پیام داخلی</span></a>
     {% endif %}
     {% if user.profile.role == 'doctor' %}
