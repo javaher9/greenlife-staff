@@ -1,0 +1,341 @@
+from datetime import date
+from decimal import Decimal, InvalidOperation
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.db.models import Q
+from django.shortcuts import redirect, render
+from django.urls import reverse
+from django.utils import timezone
+
+from .call_center_identity import call_center_display_name
+from .models import (
+    BodyAnalysisRecord,
+    InternalMessage,
+    PatientCareNote,
+    PatientDeviceProgram,
+    PatientDietProgram,
+    PatientLipolyticProgram,
+    PatientProfile,
+    ReferralLead,
+    VisitAppointment,
+    normalize_lead_phone,
+)
+
+
+DIET_OPTIONS = (
+    'رژیم کاهش وزن استاندارد',
+    'رژیم کم‌کربوهیدرات',
+    'رژیم مدیترانه‌ای',
+)
+RECOMMENDATION_OPTIONS = (
+    'مراجعه اول',
+    'یبوست',
+    'مصرف آب و فیبر',
+    'فعالیت بدنی و سبک زندگی',
+)
+PRINT_TEMPLATE_OPTIONS = (
+    'نسخه استاندارد',
+    'نسخه همراه توصیه‌ها',
+    'نسخه پیگیری',
+)
+DEVICE_OPTIONS = (
+    'CoolTech Define',
+    'Double Define',
+    'EM',
+    'Super Lift',
+)
+BODY_AREAS = (
+    'شکم و پهلو',
+    'ران',
+    'ساق',
+    'باسن',
+    'بازو',
+    'سوتین لاین',
+    'غبغب',
+)
+
+
+def _doctor_required(view):
+    @login_required
+    def wrapper(request, *args, **kwargs):
+        profile=getattr(request.user,'profile',None)
+        if not profile or profile.role!='doctor':
+            raise PermissionDenied('این بخش فقط برای پزشک فعال است.')
+        return view(request,*args,**kwargs)
+    return wrapper
+
+
+def _age_on(birth_date):
+    if not birth_date:
+        return None
+    today=timezone.localdate()
+    return today.year-birth_date.year-((today.month,today.day)<(birth_date.month,birth_date.day))
+
+
+def _ensure_patient(appointment, doctor):
+    phone=normalize_lead_phone(appointment.phone)
+    if not phone:
+        return None
+    defaults={
+        'full_name':appointment.full_name,
+        'home_branch':appointment.branch,
+        'created_by':doctor,
+    }
+    patient,created=PatientProfile.objects.get_or_create(phone=phone,defaults=defaults)
+    changed=[]
+    if appointment.full_name and patient.full_name!=appointment.full_name:
+        patient.full_name=appointment.full_name
+        changed.append('full_name')
+    if not patient.home_branch_id and appointment.branch_id:
+        patient.home_branch=appointment.branch
+        changed.append('home_branch')
+    if changed:
+        changed.append('updated_at')
+        patient.save(update_fields=changed)
+    return patient
+
+
+def _appointment_row(item, now):
+    if item.status=='cancelled':
+        label='لغو شده'; tone='cancelled'
+    elif item.status=='completed':
+        label='انجام شد'; tone='done'
+    elif item.status=='arrived':
+        label='در کلینیک'; tone='arrived'
+    else:
+        local_target=timezone.make_aware(
+            timezone.datetime.combine(item.appointment_date,item.appointment_time),
+            timezone.get_current_timezone(),
+        )
+        if local_target < now:
+            label='زمان گذشته'; tone='late'
+        else:
+            label='در انتظار'; tone='waiting'
+    owner=''
+    if item.lead_id:
+        if item.lead.first_appointment_by_id:
+            owner=call_center_display_name(item.lead.first_appointment_by)
+        elif item.lead.assigned_to_id:
+            owner=call_center_display_name(item.lead.assigned_to)
+    return {
+        'item':item,
+        'status_label':label,
+        'status_tone':tone,
+        'owner':owner,
+    }
+
+
+def _sparkline(values, width=180, height=52):
+    values=[float(v) for v in values if v is not None]
+    if not values:
+        return ''
+    if len(values)==1:
+        return f'4,{height/2:.1f} {width-4},{height/2:.1f}'
+    low=min(values); high=max(values)
+    span=high-low or 1
+    points=[]
+    for index,value in enumerate(values):
+        x=4+(width-8)*(index/(len(values)-1))
+        y=4+(height-8)*(1-((value-low)/span))
+        points.append(f'{x:.1f},{y:.1f}')
+    return ' '.join(points)
+
+
+def _metric_card(analyses, field, label, unit, tone):
+    values=[getattr(item,field) for item in analyses if getattr(item,field) is not None]
+    latest=values[-1] if values else None
+    delta=None
+    if len(values)>=2:
+        try:
+            delta=Decimal(latest)-Decimal(values[0])
+        except (InvalidOperation,TypeError):
+            delta=None
+    return {
+        'field':field,
+        'label':label,
+        'unit':unit,
+        'tone':tone,
+        'latest':latest,
+        'delta':delta,
+        'points':_sparkline(values),
+    }
+
+
+def _selected_appointment(request, appointments):
+    raw=(request.POST.get('appointment_id') if request.method=='POST' else request.GET.get('appointment')) or ''
+    if str(raw).isdigit():
+        for item in appointments:
+            if item.pk==int(raw):
+                return item
+    arrived=next((item for item in appointments if item.status=='arrived'),None)
+    waiting=next((item for item in appointments if item.status=='booked'),None)
+    return arrived or waiting or (appointments[0] if appointments else None)
+
+
+def _redirect_to_appointment(appointment_id):
+    url=reverse('doctor_dashboard')
+    if appointment_id:
+        return redirect(f'{url}?appointment={appointment_id}')
+    return redirect(url)
+
+
+@_doctor_required
+def doctor_dashboard(request):
+    profile=request.user.profile
+    today=timezone.localdate()
+    now=timezone.localtime()
+    branch=profile.branch
+
+    appointment_qs=VisitAppointment.objects.none()
+    if branch:
+        appointment_qs=(
+            VisitAppointment.objects
+            .filter(branch=branch,appointment_date=today)
+            .select_related('lead','lead__assigned_to__user','lead__first_appointment_by','branch')
+            .order_by('appointment_time','id')
+        )
+    appointments=list(appointment_qs)
+    selected=_selected_appointment(request,appointments)
+    patient=_ensure_patient(selected,request.user) if selected else None
+
+    if request.method=='POST':
+        if not selected or not patient:
+            messages.error(request,'ابتدا یکی از بیماران امروز را انتخاب کنید.')
+            return _redirect_to_appointment(None)
+
+        action=(request.POST.get('action') or '').strip()
+        if action=='diet':
+            diet=(request.POST.get('diet_name') or '').strip()
+            if not diet:
+                messages.error(request,'برنامه غذایی را انتخاب کنید.')
+            else:
+                PatientDietProgram.objects.create(
+                    patient=patient,
+                    diet_name=diet[:160],
+                    recommendation_pack=(request.POST.get('recommendation_pack') or '').strip()[:160],
+                    print_template=(request.POST.get('print_template') or '').strip()[:160],
+                    note=(request.POST.get('note') or '').strip()[:2000],
+                    prescribed_by=request.user,
+                )
+                messages.success(request,'برنامه غذایی و توصیه‌ها در پرونده ثبت شد.')
+            return _redirect_to_appointment(selected.pk)
+
+        if action=='device':
+            device=(request.POST.get('device_name') or '').strip()
+            try:
+                sessions=max(1,min(30,int(request.POST.get('sessions') or 1)))
+            except (TypeError,ValueError):
+                sessions=1
+            if not device:
+                messages.error(request,'دستگاه را انتخاب کنید.')
+            else:
+                PatientDeviceProgram.objects.create(
+                    patient=patient,
+                    device_name=device[:160],
+                    area=(request.POST.get('area') or '').strip()[:120],
+                    sessions_prescribed=sessions,
+                    note=(request.POST.get('note') or '').strip()[:2000],
+                    prescribed_by=request.user,
+                )
+                messages.success(request,'پیشنهاد دستگاه در پرونده ثبت شد.')
+            return _redirect_to_appointment(selected.pk)
+
+        if action=='lipolytic':
+            protocol=(request.POST.get('protocol_name') or 'لیپولیتیک').strip()
+            try:
+                sessions=max(1,min(20,int(request.POST.get('sessions') or 1)))
+            except (TypeError,ValueError):
+                sessions=1
+            PatientLipolyticProgram.objects.create(
+                patient=patient,
+                protocol_name=protocol[:160] or 'لیپولیتیک',
+                area=(request.POST.get('area') or '').strip()[:120],
+                sessions_prescribed=sessions,
+                note=(request.POST.get('note') or '').strip()[:2000],
+                prescribed_by=request.user,
+            )
+            messages.success(request,'برنامه لیپولیتیک در پرونده ثبت شد.')
+            return _redirect_to_appointment(selected.pk)
+
+        if action=='clinical_note':
+            body=(request.POST.get('body') or '').strip()
+            if body:
+                PatientCareNote.objects.create(
+                    patient=patient,author=request.user,note_type='clinical',body=body[:3000]
+                )
+                messages.success(request,'یادداشت پزشک ثبت شد.')
+            return _redirect_to_appointment(selected.pk)
+
+    rows=[_appointment_row(item,now) for item in appointments]
+    stats={
+        'total':len(appointments),
+        'arrived':sum(1 for item in appointments if item.status in ('arrived','completed')),
+        'late':sum(1 for row in rows if row['status_tone']=='late'),
+        'cancelled':sum(1 for item in appointments if item.status=='cancelled'),
+    }
+
+    analyses=[]
+    metric_cards=[]
+    diet_history=[]
+    device_history=[]
+    lipolytic_history=[]
+    care_notes=[]
+    if patient:
+        analyses=list(patient.body_analyses.order_by('recorded_at','id')[:36])
+        metric_cards=[
+            _metric_card(analyses,'weight_kg','وزن','kg','violet'),
+            _metric_card(analyses,'visceral_fat','چربی احشایی','','rose'),
+            _metric_card(analyses,'inbody_score','امتیاز آنالیز','','indigo'),
+            _metric_card(analyses,'skeletal_muscle_kg','عضله','kg','green'),
+            _metric_card(analyses,'body_fat_percent','درصد چربی','%','amber'),
+        ]
+        diet_history=list(patient.diet_programs.all()[:6])
+        device_history=list(patient.device_programs.all()[:6])
+        lipolytic_history=list(patient.lipolytic_programs.all()[:6])
+        care_notes=list(patient.care_notes.select_related('author')[:5])
+
+    direct_messages=list(
+        InternalMessage.objects.filter(
+            Q(sender=request.user,recipient__isnull=False) |
+            Q(recipient=request.user)
+        )
+        .select_related('sender','recipient')
+        .order_by('-created_at')[:5]
+    )
+
+    patient_summary=None
+    if patient:
+        patient_summary={
+            'name':patient.full_name,
+            'age':_age_on(patient.birth_date),
+            'height':patient.height_cm,
+            'neighborhood':patient.neighborhood,
+            'medical_history':patient.medical_history,
+            'is_vip':patient.is_vip,
+            'photo':patient.photo,
+        }
+
+    return render(request,'core/doctor/dashboard.html',{
+        'doctor_profile':profile,
+        'doctor_branch':branch,
+        'today':today,
+        'appointment_rows':rows,
+        'appointment_stats':stats,
+        'selected_appointment':selected,
+        'patient':patient,
+        'patient_summary':patient_summary,
+        'metric_cards':metric_cards,
+        'analysis_count':len(analyses),
+        'diet_history':diet_history,
+        'device_history':device_history,
+        'lipolytic_history':lipolytic_history,
+        'care_notes':care_notes,
+        'direct_messages':direct_messages,
+        'diet_options':DIET_OPTIONS,
+        'recommendation_options':RECOMMENDATION_OPTIONS,
+        'print_template_options':PRINT_TEMPLATE_OPTIONS,
+        'device_options':DEVICE_OPTIONS,
+        'body_areas':BODY_AREAS,
+    })
