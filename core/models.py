@@ -35,6 +35,7 @@ class EmployeeProfile(models.Model):
         ('referral_supervisor','ناظر شبکه فروش'),
         ('call_center','کال‌سنتر'),
         ('consultant','مشاور'),
+        ('doctor','پزشک'),
         ('receptionist','منشی'),
         ('employee','کارمند'),
         ('referrer','معرف مشتری'),
@@ -354,6 +355,127 @@ class VisitAppointment(models.Model):
     def __str__(self):
         return f'{self.appointment_date} {self.appointment_time:%H:%M} - {self.full_name}'
 
+
+
+
+class PatientProfile(models.Model):
+    """Longitudinal clinic patient record shared across appointments and care modules."""
+    SEX=[('female','زن'),('male','مرد'),('other','سایر')]
+    full_name=models.CharField(max_length=140)
+    phone=models.CharField(max_length=30,unique=True,db_index=True)
+    home_branch=models.ForeignKey(
+        Branch,on_delete=models.SET_NULL,null=True,blank=True,related_name='patients'
+    )
+    photo=models.ImageField(upload_to='patients/photos/%Y/%m/',null=True,blank=True)
+    birth_date=models.DateField(null=True,blank=True)
+    sex=models.CharField(max_length=10,choices=SEX,blank=True)
+    height_cm=models.DecimalField(max_digits=5,decimal_places=1,null=True,blank=True)
+    neighborhood=models.CharField(max_length=120,blank=True)
+    address_summary=models.CharField(max_length=220,blank=True)
+    medical_history=models.TextField(blank=True)
+    is_vip=models.BooleanField(default=False,db_index=True)
+    crm_id=models.CharField(max_length=120,blank=True,null=True,db_index=True)
+    created_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='created_patient_profiles'
+    )
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering=['full_name','id']
+
+    def __str__(self):
+        return self.full_name
+
+
+class BodyAnalysisRecord(models.Model):
+    patient=models.ForeignKey(PatientProfile,on_delete=models.CASCADE,related_name='body_analyses')
+    recorded_at=models.DateTimeField(default=timezone.now,db_index=True)
+    weight_kg=models.DecimalField(max_digits=6,decimal_places=2,null=True,blank=True)
+    visceral_fat=models.DecimalField(max_digits=5,decimal_places=1,null=True,blank=True)
+    inbody_score=models.DecimalField(max_digits=5,decimal_places=1,null=True,blank=True)
+    skeletal_muscle_kg=models.DecimalField(max_digits=6,decimal_places=2,null=True,blank=True)
+    body_fat_percent=models.DecimalField(max_digits=5,decimal_places=2,null=True,blank=True)
+    bmi=models.DecimalField(max_digits=5,decimal_places=2,null=True,blank=True)
+    measurements=models.JSONField(default=dict,blank=True)
+    recorded_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='recorded_body_analyses'
+    )
+    created_at=models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering=['recorded_at','id']
+
+    def __str__(self):
+        return f'{self.patient} - {self.recorded_at:%Y-%m-%d}'
+
+
+class PatientDietProgram(models.Model):
+    STATUS=[('active','در حال اجرا'),('completed','تکمیل شده'),('paused','متوقف شده')]
+    patient=models.ForeignKey(PatientProfile,on_delete=models.CASCADE,related_name='diet_programs')
+    diet_name=models.CharField(max_length=160)
+    recommendation_pack=models.CharField(max_length=160,blank=True)
+    print_template=models.CharField(max_length=160,blank=True)
+    note=models.TextField(blank=True)
+    status=models.CharField(max_length=20,choices=STATUS,default='active',db_index=True)
+    prescribed_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='prescribed_diet_programs'
+    )
+    prescribed_at=models.DateTimeField(default=timezone.now)
+    completed_at=models.DateTimeField(null=True,blank=True)
+
+    class Meta:
+        ordering=['-prescribed_at','-id']
+
+
+class PatientDeviceProgram(models.Model):
+    STATUS=[('planned','پیشنهاد شده'),('active','در حال انجام'),('completed','تکمیل شده'),('cancelled','لغو شده')]
+    patient=models.ForeignKey(PatientProfile,on_delete=models.CASCADE,related_name='device_programs')
+    device_name=models.CharField(max_length=160)
+    area=models.CharField(max_length=120,blank=True)
+    sessions_prescribed=models.PositiveSmallIntegerField(default=1)
+    sessions_completed=models.PositiveSmallIntegerField(default=0)
+    note=models.TextField(blank=True)
+    status=models.CharField(max_length=20,choices=STATUS,default='planned',db_index=True)
+    prescribed_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='prescribed_device_programs'
+    )
+    prescribed_at=models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering=['-prescribed_at','-id']
+
+
+class PatientLipolyticProgram(models.Model):
+    STATUS=[('planned','پیشنهاد شده'),('active','در حال انجام'),('completed','تکمیل شده'),('cancelled','لغو شده')]
+    patient=models.ForeignKey(PatientProfile,on_delete=models.CASCADE,related_name='lipolytic_programs')
+    protocol_name=models.CharField(max_length=160,default='لیپولیتیک')
+    area=models.CharField(max_length=120,blank=True)
+    sessions_prescribed=models.PositiveSmallIntegerField(default=1)
+    sessions_completed=models.PositiveSmallIntegerField(default=0)
+    note=models.TextField(blank=True)
+    status=models.CharField(max_length=20,choices=STATUS,default='planned',db_index=True)
+    prescribed_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='prescribed_lipolytic_programs'
+    )
+    prescribed_at=models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering=['-prescribed_at','-id']
+
+
+class PatientCareNote(models.Model):
+    NOTE_TYPES=[('cem','CEM'),('clinical','پزشکی'),('staff','یادداشت تیم')]
+    patient=models.ForeignKey(PatientProfile,on_delete=models.CASCADE,related_name='care_notes')
+    author=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='patient_care_notes'
+    )
+    note_type=models.CharField(max_length=20,choices=NOTE_TYPES,default='staff',db_index=True)
+    body=models.TextField(max_length=3000)
+    created_at=models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering=['-created_at','-id']
 
 class ApiServerSettings(models.Model):
     """Singleton configuration shared by the Greenlife SMS and CRM clients."""
