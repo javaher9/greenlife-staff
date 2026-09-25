@@ -75,6 +75,116 @@
   @media(max-width:1100px){.doctor-side{width:172px}.doctor-canvas{margin-right:172px}.doctor-grid{grid-template-columns:260px minmax(0,1fr)}.doctor-shellbar{grid-template-columns:1fr auto}.doctor-shell-actions{grid-column:1/-1;justify-content:flex-start}.metric-grid{grid-template-columns:repeat(3,1fr)}}
   @media(max-width:900px){.handoff-grid{grid-template-columns:1fr}.handoff-actions{min-width:0}.visit-handoff{padding:15px!important}}
   @media(max-width:820px){body.gl-page-doctor_dashboard>.app-main{padding-bottom:0!important}.doctor-side{display:none!important}.doctor-canvas{margin-right:0;padding:10px}.doctor-shellbar{grid-template-columns:1fr}.doctor-branch-form{justify-content:stretch}.doctor-branch-form select{flex:1}.doctor-shell-actions{justify-content:stretch}.doctor-shell-actions a{flex:1}.doctor-grid{grid-template-columns:1fr}.appt-rail{position:static!important}.appt-list{max-height:340px}.patient-hero{grid-template-columns:76px 1fr}.patient-photo{width:76px;height:76px}.metric-grid{grid-template-columns:1fr 1fr}.lower-grid,.doctor-empty-grid{grid-template-columns:1fr}.form-grid,.form-grid.two{grid-template-columns:1fr}.doctor-workspace{margin:0}}
+
+/* Premium brighter doctor theme — aligned with executive approvals UI */
+html,body{background:#0a1520!important}
+.doctor-workspace{
+  --d-bg:#0b1722;--d-card:#142535;--d-card2:#193044;--d-line:#35526a;--d-text:#ffffff;--d-muted:#c1cedb;
+  background:
+    radial-gradient(circle at 80% 2%,rgba(89,74,210,.22),transparent 26%),
+    radial-gradient(circle at 16% 8%,rgba(38,179,161,.13),transparent 30%),
+    linear-gradient(180deg,#0e1d29 0%,#0b1722 76%)!important;
+}
+.doctor-side{
+  background:linear-gradient(180deg,#102431 0%,#0d1b26 60%,#0b1721 100%)!important;
+  border-left:1px solid #345068!important;
+  box-shadow:-14px 0 34px rgba(0,0,0,.18)!important
+}
+.doctor-side a{color:#d4dee8!important}.doctor-side a:hover{background:#173044!important;border-color:#3a5870!important}
+.doctor-side a.active{
+  background:linear-gradient(135deg,rgba(111,83,220,.38),rgba(54,136,187,.18))!important;
+  border-color:rgba(157,132,255,.60)!important;color:#fff!important;
+  box-shadow:0 0 22px rgba(111,83,220,.16)!important
+}
+.doctor-side-ico{background:#173043!important;color:#b7a8ff!important}
+.doctor-side-foot a{background:#112431!important;border-color:#365269!important}
+
+.doctor-shellbar{
+  background:
+    radial-gradient(circle at 10% 25%,rgba(58,202,164,.15),transparent 28%),
+    radial-gradient(circle at 86% 0,rgba(108,77,220,.30),transparent 36%),
+    linear-gradient(140deg,#1d3550 0%,#163143 54%,#163c36 100%)!important;
+  border-color:#45617a!important;
+  box-shadow:0 18px 40px rgba(0,0,0,.20),0 0 28px rgba(95,76,210,.10)!important
+}
+.doctor-shell-title strong{font-size:18px!important}.doctor-shell-title small{color:#d6e0e9!important}
+.doctor-shell-actions a{background:#183043!important;border-color:#45627a!important;color:#eef4f9!important}
+.doctor-shell-actions a.neon{
+  background:linear-gradient(135deg,rgba(111,83,220,.36),rgba(31,77,109,.74))!important;
+  border-color:#8f7df0!important;color:#fff!important;
+  box-shadow:0 0 22px rgba(111,83,220,.20)!important
+}
+.doctor-branch-form label{color:#d4dee8!important}.doctor-branch-form select{background:#142838!important;border-color:#49647b!important}
+
+.doctor-card{
+  background:
+    radial-gradient(circle at 92% 0,rgba(77,111,174,.12),transparent 35%),
+    linear-gradient(155deg,#183044 0%,#132737 58%,#10212f 100%)!important;
+  border-color:#38546a!important;
+  box-shadow:0 14px 34px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.025)!important
+}
+.doctor-card-head{border-bottom-color:rgba(255,255,255,.085)!important}
+.doctor-card-head h2,.doctor-card-head h3{color:#fff!important;font-weight:900!important}
+.doctor-card-head small{color:#c5d0dc!important}
+
+.appt-link{background:linear-gradient(145deg,#172b3b,#132532)!important;border-color:#314d63!important}
+.appt-link:hover{background:linear-gradient(145deg,#1b3447,#162b3a)!important;border-color:#6072d6!important}
+.appt-link.active{
+  background:linear-gradient(135deg,rgba(103,77,219,.28),rgba(27,57,76,.95) 64%)!important;
+  border-color:#8876ef!important;box-shadow:0 0 0 1px rgba(136,118,239,.20),0 0 25px rgba(105,78,220,.18)!important
+}
+.appt-name{color:#fff!important}.appt-meta{color:#c1cedb!important}.appt-flower{background:linear-gradient(135deg,rgba(125,96,236,.30),rgba(53,185,255,.13))!important;border-color:rgba(149,126,255,.48)!important;color:#ebe7ff!important}
+
+.sum-box{background:linear-gradient(145deg,#193247,#14293a)!important;border-color:#35526a!important}
+.sum-box small{color:#c2ceda!important}
+
+.patient-hero{
+  background:
+    radial-gradient(circle at 88% 15%,rgba(53,185,255,.18),transparent 30%),
+    radial-gradient(circle at 12% 100%,rgba(119,98,255,.22),transparent 35%),
+    linear-gradient(145deg,#21415a 0%,#19364b 52%,#183345 100%)!important;
+  border-color:#4a6880!important;
+  box-shadow:0 18px 44px rgba(0,0,0,.20),0 0 28px rgba(70,113,170,.08)!important
+}
+.patient-photo{background:linear-gradient(145deg,#2b4a60,#1a3143)!important;border-color:#5e7b91!important}
+.patient-name-row h1{color:#fff!important}.patient-facts{color:#e0e7ee!important}.patient-history{color:#bac8d6!important}
+.patient-flower{background:linear-gradient(135deg,rgba(126,94,232,.35),rgba(47,142,196,.17))!important;border-color:rgba(160,139,255,.58)!important;color:#fff!important}
+.hero-btn{background:#183247!important;border-color:#426078!important;color:#eef4f9!important}.hero-btn.neon{background:linear-gradient(135deg,rgba(111,83,220,.35),rgba(29,70,103,.80))!important;border-color:#8a78ee!important;color:#fff!important}
+
+.analysis-card{background:linear-gradient(155deg,#173348,#132a3a)!important}
+.analysis-top h2{color:#fff!important}.analysis-top span{color:#c7d2dc!important}
+.metric{background:linear-gradient(180deg,color-mix(in srgb,var(--tone) 15%,#1b3548),#142b3b)!important;border-color:color-mix(in srgb,var(--tone) 48%,#38546a)!important;box-shadow:0 10px 24px rgba(0,0,0,.10),0 0 20px color-mix(in srgb,var(--tone) 10%,transparent)!important}
+.metric-title{color:#e3eaf1!important}.metric-value strong{color:#fff!important}.metric-value small{color:#c2ceda!important}.spark .base{stroke:#3b5568!important}
+
+.care-panel{background:linear-gradient(155deg,#183248,#132a3b)!important;border-color:color-mix(in srgb,var(--accent) 42%,#3a566b)!important;box-shadow:0 14px 32px rgba(0,0,0,.14),0 0 28px color-mix(in srgb,var(--accent) 8%,transparent)!important}
+.care-head{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 15%,#1c384b),rgba(24,50,72,.88) 60%,#162d3f)!important;border-bottom-color:rgba(255,255,255,.08)!important}
+.care-head h3{font-size:16px!important;color:#fff!important;text-shadow:0 0 12px color-mix(in srgb,var(--accent) 28%,transparent)}.care-head span{color:#d0d9e3!important}
+.history-box,.new-box{background:linear-gradient(145deg,#193347,#142a3b)!important;border-color:#38566c!important}
+.box-title{color:#fff!important}.box-title small{color:#bdcad7!important}
+.history-row{background:#183043!important;border-color:#324e63!important}.history-row strong{color:#fff!important}.history-row small{color:#b8c6d4!important}.history-empty{color:#aebdcc!important;border-color:#3b566a!important}
+.doctor-field label{color:#dce5ed!important}.doctor-field select,.doctor-field input,.doctor-field textarea{background:#112737!important;border-color:#3b5870!important;color:#fff!important}
+
+.visit-handoff{
+  background:
+    radial-gradient(circle at 10% 30%,rgba(37,216,138,.17),transparent 28%),
+    radial-gradient(circle at 88% 20%,rgba(119,98,255,.28),transparent 34%),
+    linear-gradient(145deg,#21415a,#183449)!important;
+  border-color:rgba(145,126,245,.56)!important;
+  box-shadow:0 18px 42px rgba(0,0,0,.18),0 0 30px rgba(119,98,255,.12)!important
+}
+.visit-handoff.sent{background:radial-gradient(circle at 88% 20%,rgba(37,216,138,.22),transparent 35%),linear-gradient(145deg,#1c443e,#17332f)!important;border-color:rgba(75,225,159,.48)!important}
+.handoff-copy p{color:#c8d4df!important}.handoff-chip{background:#173044!important;border-color:#3b566e!important;color:#d7e0e9!important}
+.handoff-done{background:rgba(37,216,138,.15)!important;color:#a0ffd2!important}
+
+.note-item,.chat-item{background:#173044!important;border-color:#36536a!important}.note-item p,.chat-item p{color:#d0dae4!important}.note-item small,.chat-item small{color:#a8b7c7!important}
+.clinical-form input{background:#112737!important;border-color:#3b5870!important;color:#fff!important}
+
+.doctor-empty-primary{background:
+  radial-gradient(circle at 50% 15%,rgba(119,98,255,.20),transparent 34%),
+  linear-gradient(155deg,#1d3b52,#163145)!important}
+.doctor-empty-primary p{color:#c2cfdb!important}
+.doctor-recent-row{background:#173044!important;border-color:#36536a!important}.doctor-recent-row p{color:#c2cfdb!important}
+
 </style>
 </head>
 <body>
