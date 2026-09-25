@@ -81,6 +81,16 @@ html.gl-call-center-html{background:#f5f7fb!important;background-image:none!impo
   body.gl-role-call-center .cc-desktop-dock a{min-width:68px;height:44px}
 }
 @media(max-width:820px){.cc-desktop-dock{display:none!important}}
+.gl-settings-menu{margin:2px 0 6px;border:0}
+.gl-settings-menu>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:11px;color:#b8c4d1;font-size:10px;font-weight:850;background:transparent;border:1px solid transparent;user-select:none}
+.gl-settings-menu>summary::-webkit-details-marker{display:none}
+.gl-settings-menu>summary:hover,.gl-settings-menu[open]>summary{background:#10202a;border-color:#284052;color:#fff}
+.gl-settings-menu>summary .nav-ico{flex:0 0 auto}
+.gl-settings-menu>summary .settings-caret{margin-right:auto;color:#7f90a4;font-size:10px;transition:transform .16s ease}
+.gl-settings-menu[open]>summary .settings-caret{transform:rotate(180deg)}
+.gl-settings-submenu{display:grid;gap:4px;margin:5px 9px 7px;padding:7px 8px;border-right:1px solid #254152;background:rgba(7,18,26,.38);border-radius:10px}
+.gl-settings-submenu a{padding:8px 9px!important;font-size:9px!important;border-radius:9px!important}
+.gl-settings-submenu a .nav-ico{width:22px;height:22px;font-size:11px}
 </style>
 </head>
 <body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'doctor' or user.profile.role == 'receptionist' %}gl-role-employee{% endif %} {% if user.profile.role == 'call_center' %}gl-role-call-center{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
@@ -99,11 +109,17 @@ html.gl-call-center-html{background:#f5f7fb!important;background-image:none!impo
     <a href="{% url 'doctor_dashboard' %}" class="gl-executive-nav {% if request.resolver_match.url_name == 'doctor_dashboard' %}is-active{% endif %}"><span class="nav-ico">✚</span><span>حالت پزشک</span></a>
     {% endif %}
     {% if executive_access or user.is_superuser %}
-    <a href="{% url 'credential_settings' %}#panel-preview" class="gl-view-as-nav"><span class="nav-ico">◫</span><span>مشاهده به‌عنوان</span></a>
-    <a href="{% url 'treatment_catalog_settings' %}" class="{% if request.resolver_match.url_name == 'treatment_catalog_settings' %}is-active{% endif %}"><span class="nav-ico">◈</span><span>تنظیمات خدمات و درمان‌ها</span></a>
-    <a href="{% url 'credential_settings' %}" class="{% if request.resolver_match.url_name == 'credential_settings' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>تنظیمات دسترسی</span></a>
-    <a href="{% url 'api_server_settings' %}" class="{% if request.resolver_match.url_name == 'api_server_settings' %}is-active{% endif %}"><span class="nav-ico">⌁</span><span>اتصال API Server</span></a>
-    <a href="{% url 'website_lead_settings' %}" class="{% if request.resolver_match.url_name == 'website_lead_settings' %}is-active{% endif %}"><span class="nav-ico">◎</span><span>اتصال لید وب‌سایت</span></a>
+    <details class="gl-settings-menu" {% if request.resolver_match.url_name == 'treatment_catalog_settings' or request.resolver_match.url_name == 'credential_settings' or request.resolver_match.url_name == 'api_server_settings' or request.resolver_match.url_name == 'website_lead_settings' or request.resolver_match.url_name == 'shift_today_bulk' or request.path|slice:':12' == '/guidelines/' %}open{% endif %}>
+      <summary><span class="nav-ico">⚙</span><span>تنظیمات</span><span class="settings-caret">⌄</span></summary>
+      <div class="gl-settings-submenu">
+        <a href="{% url 'treatment_catalog_settings' %}" class="{% if request.resolver_match.url_name == 'treatment_catalog_settings' %}is-active{% endif %}"><span class="nav-ico">◈</span><span>خدمات و درمان‌ها</span></a>
+        <a href="{% url 'credential_settings' %}" class="{% if request.resolver_match.url_name == 'credential_settings' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>دسترسی‌ها</span></a>
+        <a href="{% url 'api_server_settings' %}" class="{% if request.resolver_match.url_name == 'api_server_settings' %}is-active{% endif %}"><span class="nav-ico">⌁</span><span>اتصال API Server</span></a>
+        <a href="{% url 'website_lead_settings' %}" class="{% if request.resolver_match.url_name == 'website_lead_settings' %}is-active{% endif %}"><span class="nav-ico">◎</span><span>اتصال لید وب‌سایت</span></a>
+        <a href="{% url 'shift_today_bulk' %}" class="{% if request.resolver_match.url_name == 'shift_today_bulk' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>تنظیم ساعت کاری</span></a>
+        <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>شرح وظایف و دستورالعمل‌ها</span></a>
+      </div>
+    </details>
     {% endif %}
     {% if user.profile.role != 'referrer' and user.profile.role != 'doctor' %}
     <a href="{% url 'internal_messages' %}" class="{% if request.resolver_match.url_name == 'internal_messages' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>پیام داخلی</span></a>
@@ -183,12 +199,12 @@ html.gl-call-center-html{background:#f5f7fb!important;background-image:none!impo
     {% if user.profile.role != 'employee' %}<a href="/blackboard/" class="{% if '/blackboard/' in request.path %}is-active{% endif %}"><span class="nav-ico">▰</span><span>تخته‌سیاه پرسنل</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌های پرسنل</span></a>{% endif %}
     <a href="/employees/"><span class="nav-ico">♙</span><span>پرسنل</span></a>
-    {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' %}<a href="{% url 'shift_today_bulk' %}" class="{% if request.resolver_match.url_name == 'shift_today_bulk' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>تنظیم ساعت کاری</span></a>{% endif %}
+    {% if user.profile.role == 'internal_manager' %}<a href="{% url 'shift_today_bulk' %}" class="{% if request.resolver_match.url_name == 'shift_today_bulk' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>تنظیم ساعت کاری</span></a>{% endif %}
     <a href="/referrals/" class="{% if '/referrals/' in request.path %}is-active{% endif %}"><span class="nav-ico">✦</span><span>{% if user.profile.role == 'employee' %}شبکه فروش من{% else %}مدیریت شبکه فروش{% endif %}</span></a>
     {% if user.profile.role == 'employee' %}<a href="/attendance/" class="attendance-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2h2V2Zm12 7H5v10h14V9Zm-8 2h2v4h3v2h-5v-6Z"/></svg></span><span class="nav-label nav-label-desktop">حضور و غیاب</span><span class="nav-label nav-label-mobile">حضور</span></a>{% elif user.profile.role == 'manager' or user.profile.role == 'internal_manager' %}<a href="/attendance/team/" class="{% if request.path|slice:':17' == '/attendance/team/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور تیم</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/kpi/"><span class="nav-ico">◎</span><span>عملکرد و KPI</span></a>{% endif %}
     <a href="/sop/" class="{% if request.path|slice:':5' == '/sop/' %}is-active{% endif %}"><span class="nav-ico">◇</span><span>آموزش</span></a>
-    <a href="/guidelines/" class="{% if user.profile.role == 'employee' %}employee-guidelines-nav employee-bottom-nav {% endif %}{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>{% if user.profile.role == 'employee' %}شرح وظایف{% else %}شرح وظایف و دستورالعمل‌ها{% endif %}</span></a>
+    {% if user.profile.role != 'admin' %}<a href="/guidelines/" class="{% if user.profile.role == 'employee' %}employee-guidelines-nav employee-bottom-nav {% endif %}{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>{% if user.profile.role == 'employee' %}شرح وظایف{% else %}شرح وظایف و دستورالعمل‌ها{% endif %}</span></a>{% endif %}
     <a href="/service-requests/"><span class="nav-ico">✓</span><span>درخواست‌ها</span></a>
     {% if user.profile.role == 'employee' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌ها</span></a>{% endif %}
     {% if user.profile.role == 'admin' or user.profile.role == 'manager' %}<a href="/finance/"><span class="nav-ico">▧</span><span>مالی و درآمد</span></a>{% endif %}
