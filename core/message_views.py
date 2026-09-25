@@ -283,7 +283,7 @@ def internal_message_live_widget(request):
                 Q(sender=request.user,recipient=selected) |
                 Q(sender=selected,recipient=request.user)
             )
-            .select_related('sender','recipient')
+            .select_related('sender','recipient','sender__profile','recipient__profile')
             .order_by('-created_at')[:60]
         )
         thread=list(reversed(list(qs)))
@@ -307,12 +307,17 @@ def internal_message_live_widget(request):
             'body':item.body,
             'mine':item.sender_id==request.user.pk,
             'time':timezone.localtime(item.created_at).strftime('%H:%M'),
+            'avatar':(
+                item.sender.profile.avatar.url
+                if getattr(getattr(item.sender,'profile',None),'avatar',None)
+                else ''
+            ),
         })
 
     latest_incoming_item=(
         InternalMessage.objects
         .filter(recipient=request.user)
-        .select_related('sender')
+        .select_related('sender','sender__profile')
         .order_by('-pk')
         .first()
     )
@@ -325,6 +330,11 @@ def internal_message_live_widget(request):
             'sender':latest_incoming_item.sender.get_full_name() or latest_incoming_item.sender.username,
             'body':latest_incoming_item.body[:180],
             'time':timezone.localtime(latest_incoming_item.created_at).strftime('%H:%M'),
+            'avatar':(
+                latest_incoming_item.sender.profile.avatar.url
+                if getattr(getattr(latest_incoming_item.sender,'profile',None),'avatar',None)
+                else ''
+            ),
         }
 
     response=JsonResponse({
