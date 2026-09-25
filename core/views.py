@@ -31,7 +31,7 @@ def role_of(user): return getattr(getattr(user,'profile',None),'role','employee'
 
 MANAGEMENT_ROLES=('admin','internal_manager','manager')
 FINANCE_ROLES=('admin','manager')
-PERSONNEL_ROLES=('employee','call_center','consultant','receptionist')
+PERSONNEL_ROLES=('employee','call_center','consultant','doctor','receptionist')
 
 
 def _is_mobile_request(request):
@@ -334,6 +334,8 @@ def dashboard(request):
         return redirect('executive_workspace')
     if role=='referral_supervisor':
         return redirect('referral_supervisor_dashboard')
+    if role=='doctor':
+        return redirect('doctor_dashboard')
     if role=='receptionist' and not _is_mobile_request(request):
         profile=getattr(request.user,'profile',None)
         today_local=timezone.localdate()
