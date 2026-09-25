@@ -293,6 +293,10 @@ def internal_message_live_widget(request):
             read_at__isnull=True,
         ).update(read_at=timezone.now())
         unread_by_sender[selected.pk]=0
+        for row in rows:
+            if row['id']==selected.pk:
+                row['unread']=0
+                break
 
     payload=[]
     for item in thread:
@@ -305,9 +309,23 @@ def internal_message_live_widget(request):
             'time':timezone.localtime(item.created_at).strftime('%H:%M'),
         })
 
-    latest_incoming=InternalMessage.objects.filter(
-        recipient=request.user
-    ).order_by('-pk').values_list('pk',flat=True).first() or 0
+    latest_incoming_item=(
+        InternalMessage.objects
+        .filter(recipient=request.user)
+        .select_related('sender')
+        .order_by('-pk')
+        .first()
+    )
+    latest_incoming=latest_incoming_item.pk if latest_incoming_item else 0
+    incoming_preview=None
+    if latest_incoming_item:
+        incoming_preview={
+            'id':latest_incoming_item.pk,
+            'sender_id':latest_incoming_item.sender_id,
+            'sender':latest_incoming_item.sender.get_full_name() or latest_incoming_item.sender.username,
+            'body':latest_incoming_item.body[:180],
+            'time':timezone.localtime(latest_incoming_item.created_at).strftime('%H:%M'),
+        }
 
     response=JsonResponse({
         'ok':True,
@@ -316,6 +334,7 @@ def internal_message_live_widget(request):
         'selected':selected.pk if selected else None,
         'unread_total':sum(unread_by_sender.values()),
         'latest_incoming_id':latest_incoming,
+        'incoming_preview':incoming_preview,
     })
     response['Cache-Control']='no-store, private'
     return response
