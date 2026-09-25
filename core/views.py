@@ -1450,6 +1450,10 @@ def shift_today_bulk(request):
         plan=[]; errors=[]
         for weekday,label in weekday_order:
             is_working=request.POST.get(f'{prefix}_working_{weekday}')=='1'
+            # Friday is a company-wide day off and cannot be turned into a
+            # scheduled workday from branch or employee weekly settings.
+            if weekday==4:
+                is_working=False
             start_time=end_time=None
             if is_working:
                 start_raw=(request.POST.get(f'{prefix}_start_{weekday}') or '').strip()
@@ -1525,6 +1529,9 @@ def shift_today_bulk(request):
                     messages.success(request,'برنامه هفتگی اختصاصی پرسنل از امروز ذخیره شد.')
                     return redirect(f'/shifts/today/?mode=weekly&branch={selected_branch.pk}&employee={employee.pk}')
         else:
+            if day.weekday()==4:
+                messages.info(request,'جمعه تعطیل سراسری است؛ حضور داوطلبانه نیاز به تعریف شیفت ندارد.')
+                return redirect(f'/shifts/today/?branch={selected_branch.pk}')
             selected_ids=[]
             for raw_id in request.POST.getlist('selected'):
                 try: selected_ids.append(int(raw_id))
@@ -1571,7 +1578,7 @@ def shift_today_bulk(request):
 
     assignments={item.user_id:item for item in ShiftAssignment.objects.select_related('shift').filter(date=day,user_id__in=scoped_users)}
     rows=[]
-    source_labels={'personal':'اختصاصی امروز','employee_weekly':'هفتگی شخصی','branch_weekly':'هفتگی شعبه','group':'گروه شیفت','branch':'ساعت شعبه','default':'تعیین نشده'}
+    source_labels={'friday_company_off':'جمعه تعطیل','personal':'اختصاصی امروز','employee_weekly':'هفتگی شخصی','branch_weekly':'هفتگی شعبه','group':'گروه شیفت','branch':'ساعت شعبه','default':'تعیین نشده'}
     for user in scoped_users.values():
         rule=shift_rule(user,day)
         rows.append({'user':user,'start':rule.get('start'),'end':rule.get('end'),'source':source_labels.get(rule.get('source'),'برنامه پایه'),'is_personal':user.pk in assignments,'is_off':rule.get('is_off',False)})
@@ -1591,7 +1598,15 @@ def shift_today_bulk(request):
     branch_days=[]
     for weekday,label in weekday_order:
         rule=branch_rules.get(weekday)
-        branch_days.append({'weekday':weekday,'label':label,'is_working':rule.is_working if rule else True,'start':rule.start_time if rule else getattr(selected_branch,'work_start',None),'end':rule.end_time if rule else getattr(selected_branch,'work_end',None),'configured':bool(rule)})
+        branch_days.append({
+            'weekday':weekday,
+            'label':label,
+            'is_working':False if weekday==4 else (rule.is_working if rule else True),
+            'start':None if weekday==4 else (rule.start_time if rule else getattr(selected_branch,'work_start',None)),
+            'end':None if weekday==4 else (rule.end_time if rule else getattr(selected_branch,'work_end',None)),
+            'configured':bool(rule),
+            'locked_off':weekday==4,
+        })
 
     employee_id=request.POST.get('employee') or request.GET.get('employee')
     try: employee_id=int(employee_id) if employee_id else None
@@ -1615,21 +1630,31 @@ def shift_today_bulk(request):
             weekly_days.append({
                 'weekday':weekday,
                 'label':label,
-                'is_working':personal.is_working if personal else inherited['is_working'],
-                'start':personal.start_time if personal else inherited['start'],
-                'end':personal.end_time if personal else inherited['end'],
-                'personal':bool(personal),
+                'is_working':False if weekday==4 else (personal.is_working if personal else inherited['is_working']),
+                'start':None if weekday==4 else (personal.start_time if personal else inherited['start']),
+                'end':None if weekday==4 else (personal.end_time if personal else inherited['end']),
+                'personal':bool(personal) and weekday!=4,
+                'locked_off':weekday==4,
             })
         row['weekly_days']=weekly_days
     employee_days=[]
     for weekday,label in weekday_order:
         personal=employee_rules.get(weekday); inherited=branch_day_map[weekday]
-        employee_days.append({'weekday':weekday,'label':label,'is_working':personal.is_working if personal else inherited['is_working'],'start':personal.start_time if personal else inherited['start'],'end':personal.end_time if personal else inherited['end'],'personal':bool(personal)})
+        employee_days.append({
+            'weekday':weekday,
+            'label':label,
+            'is_working':False if weekday==4 else (personal.is_working if personal else inherited['is_working']),
+            'start':None if weekday==4 else (personal.start_time if personal else inherited['start']),
+            'end':None if weekday==4 else (personal.end_time if personal else inherited['end']),
+            'personal':bool(personal) and weekday!=4,
+            'locked_off':weekday==4,
+        })
 
     return render(request,'core/shift_today_bulk.html',{
         'rows':rows,'today':day,'branches':branches,'selected_branch':selected_branch,
         'weekday_order':weekday_order,'branch_days':branch_days,'employee_days':employee_days,
         'selected_employee':selected_employee,'mode':request.GET.get('mode','today'),
+        'is_friday':day.weekday()==4,
     })
 
 @login_required
