@@ -18,6 +18,10 @@
   .gl-employee-install-hint button{min-height:30px!important;padding:6px 11px!important;border-radius:9px!important;background:linear-gradient(135deg,#55b94f,#32843d)!important;color:#fff!important;border:0!important;font-size:11px!important;white-space:nowrap}
 }
 @media(min-width:701px){.gl-employee-install-hint{display:none!important}}
+.gl-consult-queue{margin:12px 0;padding:14px;border:1px solid rgba(143,111,255,.26);border-radius:18px;background:radial-gradient(circle at 85% 0,rgba(119,98,255,.12),transparent 34%),linear-gradient(150deg,rgba(16,28,40,.96),rgba(10,20,29,.98));box-shadow:0 12px 28px rgba(0,0,0,.16)}
+.gl-consult-queue-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.gl-consult-queue-head h2{margin:0;color:#fff;font-size:14px}.gl-consult-queue-head p{margin:3px 0 0;color:#9dacb9;font-size:9px}.gl-consult-count{min-width:32px;height:32px;padding:0 8px;border-radius:10px;display:grid;place-items:center;background:rgba(119,98,255,.17);border:1px solid rgba(143,126,255,.34);color:#c9c1ff;font-size:12px;font-weight:900}
+.gl-consult-list{display:grid;gap:7px}.gl-consult-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 11px;border:1px solid #263849;border-radius:12px;background:#0d1822}.gl-consult-row strong{display:block;color:#f2f5f8;font-size:10px}.gl-consult-row small{display:block;color:#8292a4;font-size:8px;margin-top:3px}.gl-consult-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.gl-consult-tags span{padding:3px 6px;border-radius:999px;background:#142432;border:1px solid #293f51;color:#9fb2c4;font-size:7px;font-weight:800}.gl-consult-time{text-align:left;color:#af9fff;font-size:8px;font-weight:900;white-space:nowrap}.gl-consult-empty{padding:14px;text-align:center;border:1px dashed #2b3c4c;border-radius:12px;color:#7f90a1;font-size:9px}
+@media(max-width:700px){.gl-consult-queue{margin:10px 0}.gl-consult-row{grid-template-columns:1fr}.gl-consult-time{text-align:right}}
 </style>
 <div class="gl-employee-dashboard">
 
@@ -33,6 +37,34 @@
   <section class="gl-blackboard" aria-label="پیام امروز مجموعه"><span class="gl-blackboard-pin pin-a"></span><span class="gl-blackboard-pin pin-b"></span><div class="gl-blackboard-copy"><small>تخته‌سیاه</small><strong>{{ blackboard.message|default:'امروز می‌ترکونیم! شبکه فروشت یادت نره.'|linebreaksbr }}</strong></div><span class="gl-blackboard-chalk" aria-hidden="true"></span></section>
 
   {% if user.profile.role == 'consultant' %}<section class="gl-finance-launch" aria-label="ثبت مالی مشاور"><a href="/finance/entry/" class="gl-finance-launch-main"><span class="gl-finance-launch-icon">＋</span><div><small>ثبت مالی مشاور</small><h2>ثبت مالی جدید</h2><p>مبلغ، مقصد و عکس تراکنش را ثبت کنید.</p></div><b>شروع ثبت ←</b></a><div class="gl-finance-launch-stats"><a href="/finance/entry/"><span>ثبت امروز</span><strong>{{ finance_stats.today|default:0 }}</strong></a><a href="/finance/entry/"><span>در انتظار تأیید</span><strong>{{ finance_stats.pending|default:0 }}</strong></a><a href="/finance/entry/" class="{% if finance_stats.correction %}needs-attention{% endif %}"><span>نیازمند اصلاح</span><strong>{{ finance_stats.correction|default:0 }}</strong></a></div></section>{% endif %}
+
+  {% if user.profile.role == 'consultant' %}
+  <section class="gl-consult-queue" aria-label="بیماران منتظر مشاوره">
+    <div class="gl-consult-queue-head">
+      <div><h2>بیماران منتظر مشاوره</h2><p>پرونده‌هایی که پزشک ویزیت را تمام کرده و برای شما فرستاده است.</p></div>
+      <span class="gl-consult-count">{{ consultant_queue|length }}</span>
+    </div>
+    <div class="gl-consult-list">
+      {% for row in consultant_queue %}
+      <article class="gl-consult-row">
+        <div>
+          <strong>{{ row.appointment.full_name }}</strong>
+          <small>ارسال از {{ row.doctor_name }} · {{ row.appointment.branch }}</small>
+          <div class="gl-consult-tags">
+            {% if row.diet_count %}<span>{{ row.diet_count }} برنامه غذایی</span>{% endif %}
+            {% if row.device_count %}<span>{{ row.device_count }} دستگاه</span>{% endif %}
+            {% if row.lipolytic_count %}<span>{{ row.lipolytic_count }} لیپولیتیک</span>{% endif %}
+            {% if not row.diet_count and not row.device_count and not row.lipolytic_count %}<span>پیشنهاد درمان ثبت شده</span>{% endif %}
+          </div>
+        </div>
+        <div class="gl-consult-time">{% if row.appointment.doctor_completed_at %}{{ row.appointment.doctor_completed_at|date:"H:i" }}{% else %}—{% endif %}</div>
+      </article>
+      {% empty %}
+      <div class="gl-consult-empty">فعلاً بیماری در صف مشاوره نیست.</div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 
   <section class="gl-quick-actions">
     <a href="/attendance/" class="gl-quick-card gl-quick-attendance"><svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2h2V2Zm12 8H5v9h14v-9Zm-7 1a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7Zm0 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"/></svg><span>حضور و غیاب</span></a>
