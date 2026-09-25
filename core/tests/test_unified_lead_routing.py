@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
 
-from core.lead_routing import assign_referral_lead, release_pending_leads_if_ready
+from core.lead_routing import assign_external_lead, assign_referral_lead, release_pending_leads_if_ready
 from core.models import Attendance, EmployeeProfile, ReferralLead, ReferralProfile
 
 
@@ -132,6 +132,67 @@ class UnifiedLeadRoutingTests(TestCase):
         for lead in leads:
             lead.refresh_from_db()
             self.assertIsNotNone(lead.assigned_at)
+
+    def test_website_leads_never_go_to_kamelya_or_laleh(self):
+        self._check_in(*range(6))
+        assigned=[]
+        for index in range(20, 32):
+            lead=ReferralLead.objects.create(
+                referrer=self.source,
+                full_name=f'وب‌سایت {index}',
+                phone=f'0913000{index:04d}',
+                status='new',
+                source='link',
+                source_url='https://greenlifeclinics.com/start/',
+                notes='[channel:website]',
+            )
+            operator=assign_external_lead(lead,'website')
+            self.assertIsNotNone(operator)
+            assigned.append(operator.id)
+
+        blocked={self.operators[3].id,self.operators[5].id}
+        self.assertTrue(blocked.isdisjoint(set(assigned)))
+        allowed={self.operators[i].id for i in (0,1,2,4)}
+        self.assertTrue(set(assigned).issubset(allowed))
+
+    def test_website_lead_waits_if_only_kamelya_and_laleh_are_present(self):
+        self._keep_only(3,5)
+        self._check_in(3,5)
+        lead=ReferralLead.objects.create(
+            referrer=self.source,
+            full_name='وب‌سایت مهم',
+            phone='09139999991',
+            status='new',
+            source='link',
+            source_url='https://greenlifeclinics.com/',
+            notes='[channel:website]',
+        )
+
+        self.assertIsNone(assign_external_lead(lead,'website'))
+        lead.refresh_from_db()
+        self.assertIsNone(lead.assigned_to_id)
+
+    def test_pending_website_leads_also_skip_kamelya_and_laleh(self):
+        self._check_in(*range(6))
+        leads=[]
+        for index in range(40,46):
+            leads.append(ReferralLead.objects.create(
+                referrer=self.source,
+                full_name=f'وب‌سایت صف {index}',
+                phone=f'0914000{index:04d}',
+                status='new',
+                source='link',
+                source_url='https://greenlifeclinics.com/landing/',
+                notes='[channel:website]',
+            ))
+
+        released=release_pending_leads_if_ready(force=True)
+        self.assertEqual(released,6)
+        blocked={self.operators[3].id,self.operators[5].id}
+        for lead in leads:
+            lead.refresh_from_db()
+            self.assertIsNotNone(lead.assigned_to_id)
+            self.assertNotIn(lead.assigned_to_id,blocked)
 
     def test_inactive_operator_is_never_selected(self):
         self.operators[3].is_active = False
