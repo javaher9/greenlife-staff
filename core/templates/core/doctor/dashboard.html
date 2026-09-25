@@ -212,9 +212,9 @@
           <form method="post" class="new-box">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}">{% if doctor_branch %}<input type="hidden" name="branch_id" value="{{ doctor_branch.id }}">{% endif %}<input type="hidden" name="action" value="diet">
             <div class="box-title"><span>انتخاب برنامه جدید</span><small>قابل اتصال به منوی CRM/API</small></div>
             <div class="form-grid">
-              <div class="doctor-field"><label>برنامه غذایی</label><select name="diet_name" required><option value="">انتخاب کنید…</option>{% for x in diet_options %}<option>{{ x }}</option>{% endfor %}</select></div>
-              <div class="doctor-field"><label>پک توصیه‌ها</label><select name="recommendation_pack"><option value="">بدون توصیه</option>{% for x in recommendation_options %}<option>{{ x }}</option>{% endfor %}</select></div>
-              <div class="doctor-field"><label>قالب نسخه چاپی</label><select name="print_template"><option value="">انتخاب قالب</option>{% for x in print_template_options %}<option>{{ x }}</option>{% endfor %}</select></div>
+              <div class="doctor-field"><label>برنامه غذایی</label><select name="diet_name" required><option value="">انتخاب کنید…</option>{% for x in diet_options %}<option value="{{ x.name }}">{{ x.name }}{% if x.price %} — {{ x.price }}{% endif %}</option>{% endfor %}</select></div>
+              <div class="doctor-field"><label>پک توصیه‌ها</label><select name="recommendation_pack"><option value="">بدون توصیه</option>{% for x in recommendation_options %}<option value="{{ x.name }}">{{ x.name }}{% if x.price %} — {{ x.price }}{% endif %}</option>{% endfor %}</select></div>
+              <div class="doctor-field"><label>قالب نسخه چاپی</label><select name="print_template"><option value="">انتخاب قالب</option>{% for x in print_template_options %}<option value="{{ x.name }}">{{ x.name }}{% if x.price %} — {{ x.price }}{% endif %}</option>{% endfor %}</select></div>
             </div>
             <button class="care-submit" type="submit">+ ثبت برنامه غذایی و توصیه‌ها</button>
           </form>
@@ -235,7 +235,7 @@
           <form method="post" class="new-box">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}">{% if doctor_branch %}<input type="hidden" name="branch_id" value="{{ doctor_branch.id }}">{% endif %}<input type="hidden" name="action" value="device">
             <div class="box-title"><span>افزودن دستگاه جدید</span><small>پیشنهاد پزشک</small></div>
             <div class="form-grid two">
-              <div class="doctor-field"><label>دستگاه</label><select name="device_name" required><option value="">انتخاب دستگاه…</option>{% for x in device_options %}<option>{{ x }}</option>{% endfor %}</select></div>
+              <div class="doctor-field"><label>دستگاه</label><select name="device_name" required><option value="">انتخاب دستگاه…</option>{% for x in device_options %}<option value="{{ x.name }}">{{ x.name }}{% if x.price %} — {{ x.price }}{% endif %}</option>{% endfor %}</select></div>
               <div class="doctor-field"><label>ناحیه</label><select name="area"><option value="">انتخاب ناحیه</option>{% for x in body_areas %}<option>{{ x }}</option>{% endfor %}</select></div>
               <div class="doctor-field"><label>تعداد جلسات</label><input type="number" min="1" max="30" name="sessions" value="1"></div>
             </div>
@@ -258,7 +258,7 @@
           <form method="post" class="new-box">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}">{% if doctor_branch %}<input type="hidden" name="branch_id" value="{{ doctor_branch.id }}">{% endif %}<input type="hidden" name="action" value="lipolytic">
             <div class="box-title"><span>افزودن برنامه جدید</span><small>پیشنهاد پزشک</small></div>
             <div class="form-grid two">
-              <div class="doctor-field"><label>پروتکل</label><input name="protocol_name" value="لیپولیتیک"></div>
+              <div class="doctor-field"><label>نوع لیپولیتیک</label><select name="protocol_name" required><option value="">انتخاب کنید…</option>{% for x in lipolytic_options %}<option value="{{ x.name }}">{{ x.name }}{% if x.price %} — {{ x.price }}{% endif %}</option>{% endfor %}</select></div>
               <div class="doctor-field"><label>ناحیه</label><select name="area"><option value="">انتخاب ناحیه</option>{% for x in body_areas %}<option>{{ x }}</option>{% endfor %}</select></div>
               <div class="doctor-field"><label>تعداد جلسات</label><input type="number" min="1" max="20" name="sessions" value="1"></div>
             </div>
