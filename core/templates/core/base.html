@@ -386,6 +386,10 @@ html.gl-call-center-html{background:#f5f7fb!important;background-image:none!impo
 })();
 </script>
 
+{% if request.resolver_match.url_name != 'internal_messages' %}
+{% include "core/_live_chat_widget.html" %}
+{% endif %}
+
 <div class="gl-version-footer">
   GreenLife Staff <strong>v42.0 API Server Integration</strong>
 </div>
