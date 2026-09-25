@@ -108,6 +108,16 @@ def _ensure_patient(appointment, doctor):
     return patient
 
 
+def _appointment_flower(item):
+    if not item or not item.lead_id:
+        return ''
+    if item.lead.first_appointment_by_id:
+        return call_center_display_name(item.lead.first_appointment_by)
+    if item.lead.assigned_to_id:
+        return call_center_display_name(item.lead.assigned_to)
+    return ''
+
+
 def _appointment_row(item, now):
     if item.status=='cancelled':
         label='لغو شده'; tone='cancelled'
@@ -128,12 +138,7 @@ def _appointment_row(item, now):
             label='زمان گذشته'; tone='late'
         else:
             label='در انتظار'; tone='waiting'
-    owner=''
-    if item.lead_id:
-        if item.lead.first_appointment_by_id:
-            owner=call_center_display_name(item.lead.first_appointment_by)
-        elif item.lead.assigned_to_id:
-            owner=call_center_display_name(item.lead.assigned_to)
+    owner=_appointment_flower(item)
     return {
         'item':item,
         'status_label':label,
@@ -411,6 +416,7 @@ def doctor_dashboard(request):
         'appointment_rows':rows,
         'appointment_stats':stats,
         'selected_appointment':selected,
+        'selected_flower':_appointment_flower(selected),
         'patient':patient,
         'patient_summary':patient_summary,
         'metric_cards':metric_cards,
