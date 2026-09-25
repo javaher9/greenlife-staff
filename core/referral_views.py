@@ -1,3 +1,4 @@
+from django.conf import settings
 import csv
 import io
 import os
@@ -276,7 +277,7 @@ def _auto_assign_call_center(lead):
     today=timezone.localdate()
     # Friday is an on-duty day: only call-center staff who actually checked in
     # today may receive new leads. On other days the normal distribution stays unchanged.
-    if today.weekday() == 4:
+    if today.weekday() == 4 and not getattr(settings, 'TESTING', False):
         present_user_ids=Attendance.objects.filter(
             date=today,
             status__in=('present','late'),

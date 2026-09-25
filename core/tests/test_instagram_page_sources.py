@@ -98,3 +98,20 @@ class InstagramPageSourceTests(TestCase):
         self.assertContains(hub, 'Greenlife.cafe')
         self.assertContains(hub, 'Greenlife.cafe')
         self.assertContains(hub, '<th>گروه</th><th>منبع</th><th>وضعیت</th>')
+
+
+# Numbered campaign links are intentionally covered separately from page sources.
+class InstagramStoryCampaignSourceTests(InstagramPageSourceTests):
+    def test_numbered_story_campaign_sources_are_preserved(self):
+        for number in range(1, 7):
+            slug = f'story_campaign_{number}'
+            response = self.client.post(f'/instagram/?source={slug}', {
+                'full_name': f'کمپین {number}',
+                'phone': f'0912000000{number}',
+                'interested_service': 'لاغری',
+                'consent': 'on',
+            })
+            self.assertEqual(response.status_code, 200)
+            lead = ReferralLead.objects.filter(full_name=f'کمپین {number}').latest('id')
+            self.assertIn(f'[instagram_page:{slug}]', lead.notes)
+            self.assertIn(f'پیج: Story Campaign {number}', lead.notes)
