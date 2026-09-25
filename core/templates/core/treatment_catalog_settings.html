@@ -1,0 +1,73 @@
+{% extends "core/base.html" %}
+{% block content %}
+<style>
+.catalog-shell{max-width:1380px;margin:0 auto;padding:6px 0 36px}
+.catalog-hero{position:relative;overflow:hidden;padding:22px 24px;border:1px solid rgba(119,98,255,.26);border-radius:22px;background:radial-gradient(circle at 88% 0,rgba(119,98,255,.18),transparent 32%),radial-gradient(circle at 12% 100%,rgba(37,216,138,.10),transparent 30%),linear-gradient(145deg,#111c28,#0b141e);box-shadow:0 18px 44px rgba(0,0,0,.18)}
+.catalog-hero h1{margin:0;color:#fff;font-size:24px}.catalog-hero p{margin:7px 0 0;color:#aab7c7;font-size:11px;line-height:1.9}.catalog-stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.catalog-stat{min-width:110px;padding:10px 12px;border:1px solid #2b3b50;border-radius:12px;background:#0d1721}.catalog-stat b{display:block;color:#fff;font-size:20px}.catalog-stat small{color:#8d9caf;font-size:8px}
+.catalog-layout{display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;margin-top:16px;align-items:start}
+.catalog-form,.catalog-group{border:1px solid #253548;border-radius:18px;background:linear-gradient(155deg,#111c28,#0b151f);box-shadow:0 14px 34px rgba(0,0,0,.14)}
+.catalog-form{position:sticky;top:16px;padding:16px}.catalog-form h2{margin:0 0 4px;color:#fff;font-size:15px}.catalog-form>p{margin:0 0 13px;color:#8797aa;font-size:9px;line-height:1.8}
+.cf{display:grid;gap:5px;margin-bottom:9px}.cf label{color:#a5b2c3;font-size:8px;font-weight:800}.cf input,.cf select,.cf textarea{width:100%;border:1px solid #2b3c51;border-radius:10px;background:#0b151f;color:#eef3f8;padding:9px 10px;font:inherit;font-size:9px;outline:none}.cf textarea{min-height:70px;resize:vertical}.cf input:focus,.cf select:focus,.cf textarea:focus{border-color:#7667ff;box-shadow:0 0 0 2px rgba(119,98,255,.1)}
+.cf-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.catalog-save{width:100%;min-height:42px;border:1px solid rgba(119,98,255,.52);border-radius:12px;background:linear-gradient(135deg,#6f5dff,#4331a3);color:#fff;font:inherit;font-size:10px;font-weight:900;cursor:pointer;box-shadow:0 10px 24px rgba(79,61,183,.22)}
+.catalog-groups{display:grid;gap:12px}.catalog-group-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 15px;border-bottom:1px solid rgba(255,255,255,.05)}.catalog-group-head h3{margin:0;color:#fff;font-size:14px}.catalog-count{min-width:26px;height:26px;padding:0 7px;border-radius:9px;display:grid;place-items:center;background:rgba(119,98,255,.14);border:1px solid rgba(119,98,255,.28);color:#c9c1ff;font-size:9px;font-weight:900}
+.catalog-list{padding:10px;display:grid;gap:7px}.catalog-row{display:grid;grid-template-columns:minmax(0,1.2fr) .8fr .6fr auto;gap:8px;align-items:center;padding:10px;border:1px solid #223246;border-radius:12px;background:#0d1722}.catalog-row.inactive{opacity:.55}.catalog-name b{display:block;color:#f1f5f8;font-size:10px}.catalog-name small{display:block;color:#7e8ea2;font-size:7.5px;margin-top:3px}.catalog-price{color:#70e4ab;font-size:9px;font-weight:900}.catalog-branch{color:#a4b0bf;font-size:8px}.catalog-actions{display:flex;gap:5px}.catalog-actions button{border:1px solid #314359;border-radius:9px;background:#121e2a;color:#b9c6d5;padding:6px 8px;font:inherit;font-size:7.5px;cursor:pointer}.catalog-actions .danger{color:#ff879e;border-color:rgba(255,95,135,.35)}.catalog-empty{padding:18px;text-align:center;color:#7f8ea0;font-size:9px;border:1px dashed #2a3b4c;border-radius:12px}
+.catalog-filter{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.catalog-filter a{padding:6px 9px;border:1px solid #2b3b50;border-radius:999px;color:#aebccc;text-decoration:none;font-size:8px;background:#0f1924}.catalog-filter a.active{border-color:#7567ff;color:#d5cfff;background:rgba(119,98,255,.13)}
+@media(max-width:920px){.catalog-layout{grid-template-columns:1fr}.catalog-form{position:static}.catalog-row{grid-template-columns:1fr 1fr}.catalog-actions{grid-column:1/-1}}
+</style>
+<div class="catalog-shell">
+  <section class="catalog-hero">
+    <h1>تنظیمات خدمات و درمان‌ها</h1>
+    <p>مرجع مرکزی گرین‌لایف برای تعریف رژیم‌ها، توصیه‌ها، دستگاه‌ها، انواع لیپولیتیک، قالب نسخه و قیمت‌ها. این اطلاعات مستقیماً می‌تواند در پنل پزشک و مراحل بعدی فروش استفاده شود.</p>
+    <div class="catalog-stats">
+      <div class="catalog-stat"><b>{{ total_items }}</b><small>کل آیتم‌ها</small></div>
+      <div class="catalog-stat"><b>{{ active_items }}</b><small>فعال</small></div>
+    </div>
+    <div class="catalog-filter">
+      <a href="{% url 'treatment_catalog_settings' %}" class="{% if not selected_category %}active{% endif %}">همه</a>
+      {% for key,label in categories %}<a href="?category={{ key }}" class="{% if selected_category == key %}active{% endif %}">{{ label }}</a>{% endfor %}
+    </div>
+  </section>
+
+  <div class="catalog-layout">
+    <form method="post" class="catalog-form">{% csrf_token %}
+      <h2>افزودن آیتم جدید</h2>
+      <p>اگر «شعبه» خالی باشد، آیتم برای همه شعب فعال است.</p>
+      <input type="hidden" name="action" value="save">
+      <div class="cf"><label>دسته</label><select name="category" required>{% for key,label in categories %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></div>
+      <div class="cf"><label>عنوان</label><input name="name" placeholder="مثلاً لیپولیتیک گرید ۳" required></div>
+      <div class="cf-row">
+        <div class="cf"><label>قیمت (تومان)</label><input name="price_toman" inputmode="numeric" placeholder="اختیاری"></div>
+        <div class="cf"><label>واحد</label><input name="unit_label" placeholder="جلسه / ناحیه / نسخه"></div>
+      </div>
+      <div class="cf"><label>شعبه</label><select name="branch"><option value="">همه شعب</option>{% for branch in branches %}<option value="{{ branch.id }}">{{ branch.name }}</option>{% endfor %}</select></div>
+      <div class="cf-row">
+        <div class="cf"><label>ترتیب نمایش</label><input type="number" min="0" max="9999" name="sort_order" value="100"></div>
+        <div class="cf"><label>وضعیت</label><select name="is_active"><option value="1">فعال</option><option value="0">غیرفعال</option></select></div>
+      </div>
+      <div class="cf"><label>توضیح کوتاه</label><textarea name="notes" placeholder="جزئیات داخلی، نحوه استفاده یا توضیح قیمت"></textarea></div>
+      <button class="catalog-save" type="submit">＋ ذخیره در کاتالوگ</button>
+    </form>
+
+    <div class="catalog-groups">
+      {% for group in groups %}
+      <section class="catalog-group">
+        <div class="catalog-group-head"><h3>{{ group.label }}</h3><span class="catalog-count">{{ group.count }}</span></div>
+        <div class="catalog-list">
+          {% for item in group.items %}
+          <article class="catalog-row {% if not item.is_active %}inactive{% endif %}">
+            <div class="catalog-name"><b>{{ item.name }}</b><small>{% if item.notes %}{{ item.notes|truncatechars:90 }}{% else %}بدون توضیح{% endif %}</small></div>
+            <div class="catalog-price">{% if item.price_toman %}{{ item.price_toman|floatformat:0 }} تومان{% if item.unit_label %} / {{ item.unit_label }}{% endif %}{% else %}بدون قیمت{% endif %}</div>
+            <div class="catalog-branch">{{ item.branch|default:"همه شعب" }}</div>
+            <div class="catalog-actions">
+              <form method="post">{% csrf_token %}<input type="hidden" name="action" value="toggle"><input type="hidden" name="item_id" value="{{ item.id }}"><button type="submit">{% if item.is_active %}غیرفعال{% else %}فعال{% endif %}</button></form>
+              <form method="post" onsubmit="return confirm('این آیتم حذف شود؟')">{% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="item_id" value="{{ item.id }}"><button class="danger" type="submit">حذف</button></form>
+            </div>
+          </article>
+          {% empty %}<div class="catalog-empty">هنوز آیتمی در این بخش ثبت نشده است.</div>{% endfor %}
+        </div>
+      </section>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
