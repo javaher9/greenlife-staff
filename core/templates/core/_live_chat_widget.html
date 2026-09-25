@@ -140,6 +140,11 @@
     drawer.hidden=false;toast.hidden=true;
     if(userId)selected=String(userId);
     await refresh();
+    if(!selected&&contacts.length){
+      const preferred=contacts.find(item=>Number(item.unread||0)>0)||contacts[0];
+      selected=String(preferred.id);
+      await refresh();
+    }
   }
   launcher.addEventListener('click',()=>drawer.hidden?openChat(selected):drawer.hidden=true);
   closeBtn.addEventListener('click',()=>drawer.hidden=true);
