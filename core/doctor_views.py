@@ -259,7 +259,7 @@ def doctor_dashboard(request):
                     prescribed_by=request.user,
                 )
                 messages.success(request,'پیشنهاد دستگاه در پرونده ثبت شد.')
-            return _redirect_to_appointment(selected.pk)
+            return _redirect_to_appointment(selected.pk,branch.pk if branch else None)
 
         if action=='lipolytic':
             protocol=(request.POST.get('protocol_name') or 'لیپولیتیک').strip()
@@ -276,7 +276,7 @@ def doctor_dashboard(request):
                 prescribed_by=request.user,
             )
             messages.success(request,'برنامه لیپولیتیک در پرونده ثبت شد.')
-            return _redirect_to_appointment(selected.pk)
+            return _redirect_to_appointment(selected.pk,branch.pk if branch else None)
 
         if action=='clinical_note':
             body=(request.POST.get('body') or '').strip()
@@ -285,7 +285,7 @@ def doctor_dashboard(request):
                     patient=patient,author=request.user,note_type='clinical',body=body[:3000]
                 )
                 messages.success(request,'یادداشت پزشک ثبت شد.')
-            return _redirect_to_appointment(selected.pk)
+            return _redirect_to_appointment(selected.pk,branch.pk if branch else None)
 
     rows=[_appointment_row(item,now) for item in appointments]
     stats={
