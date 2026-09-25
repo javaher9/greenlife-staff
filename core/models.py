@@ -288,6 +288,12 @@ class VisitAppointment(models.Model):
         ('completed','انجام شد'),
         ('cancelled','لغو شده'),
     ]
+    CARE_STAGE=[
+        ('doctor','در انتظار پزشک'),
+        ('consultant','در انتظار مشاور'),
+        ('payment','در انتظار پرداخت'),
+        ('closed','تکمیل چرخه'),
+    ]
     SOURCE=[
         ('call_center','کال‌سنتر'),
         ('receptionist','منشی'),
@@ -305,6 +311,11 @@ class VisitAppointment(models.Model):
     appointment_date=models.DateField(db_index=True)
     appointment_time=models.TimeField()
     status=models.CharField(max_length=20,choices=STATUS,default='booked',db_index=True)
+    care_stage=models.CharField(max_length=20,choices=CARE_STAGE,default='doctor',db_index=True)
+    doctor_completed_at=models.DateTimeField(null=True,blank=True,db_index=True)
+    doctor_completed_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='doctor_completed_appointments'
+    )
     notes=models.TextField(blank=True)
     source=models.CharField(max_length=20,choices=SOURCE,default='call_center')
     created_by=models.ForeignKey(
@@ -411,6 +422,9 @@ class BodyAnalysisRecord(models.Model):
 
 
 class PatientDietProgram(models.Model):
+    appointment=models.ForeignKey(
+        VisitAppointment,on_delete=models.SET_NULL,null=True,blank=True,related_name='diet_programs'
+    )
     STATUS=[('active','در حال اجرا'),('completed','تکمیل شده'),('paused','متوقف شده')]
     patient=models.ForeignKey(PatientProfile,on_delete=models.CASCADE,related_name='diet_programs')
     diet_name=models.CharField(max_length=160)
@@ -429,6 +443,9 @@ class PatientDietProgram(models.Model):
 
 
 class PatientDeviceProgram(models.Model):
+    appointment=models.ForeignKey(
+        VisitAppointment,on_delete=models.SET_NULL,null=True,blank=True,related_name='device_programs'
+    )
     STATUS=[('planned','پیشنهاد شده'),('active','در حال انجام'),('completed','تکمیل شده'),('cancelled','لغو شده')]
     patient=models.ForeignKey(PatientProfile,on_delete=models.CASCADE,related_name='device_programs')
     device_name=models.CharField(max_length=160)
@@ -447,6 +464,9 @@ class PatientDeviceProgram(models.Model):
 
 
 class PatientLipolyticProgram(models.Model):
+    appointment=models.ForeignKey(
+        VisitAppointment,on_delete=models.SET_NULL,null=True,blank=True,related_name='lipolytic_programs'
+    )
     STATUS=[('planned','پیشنهاد شده'),('active','در حال انجام'),('completed','تکمیل شده'),('cancelled','لغو شده')]
     patient=models.ForeignKey(PatientProfile,on_delete=models.CASCADE,related_name='lipolytic_programs')
     protocol_name=models.CharField(max_length=160,default='لیپولیتیک')
@@ -465,6 +485,9 @@ class PatientLipolyticProgram(models.Model):
 
 
 class PatientCareNote(models.Model):
+    appointment=models.ForeignKey(
+        VisitAppointment,on_delete=models.SET_NULL,null=True,blank=True,related_name='care_notes'
+    )
     NOTE_TYPES=[('cem','CEM'),('clinical','پزشکی'),('staff','یادداشت تیم')]
     patient=models.ForeignKey(PatientProfile,on_delete=models.CASCADE,related_name='care_notes')
     author=models.ForeignKey(
