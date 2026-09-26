@@ -209,6 +209,82 @@ body.gl-authenticated.gl-page-payroll_dashboard .history-list b{color:#fff!impor
   body.gl-authenticated.gl-page-payroll_dashboard .pay-current{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
 
+/* Payroll table fit — keep every salary column visible without horizontal scroll. */
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table-wrap{
+  overflow-x:hidden!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table{
+  width:100%!important;
+  min-width:0!important;
+  table-layout:fixed!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table th,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td{
+  padding:8px 4px!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table th{
+  white-space:normal!important;
+  line-height:1.45!important;
+  font-size:8.4px!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td{
+  white-space:normal!important;
+  line-height:1.5!important;
+  font-size:9.2px!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table th:nth-child(1),
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td:nth-child(1){width:13%!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table th:nth-child(2),
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td:nth-child(2){width:6%!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table th:nth-child(3),
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td:nth-child(3){width:6%!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table th:nth-child(4),
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td:nth-child(4){width:6.5%!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table th:nth-child(5),
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td:nth-child(5){width:7%!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table th:nth-child(6),
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td:nth-child(6){width:7%!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table th:nth-child(7),
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td:nth-child(7){width:5.5%!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table th:nth-child(8),
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td:nth-child(8){width:7%!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table th:nth-child(n+9):nth-child(-n+14),
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td:nth-child(n+9):nth-child(-n+14){width:5.5%!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table th:nth-child(15),
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td:nth-child(15){width:9%!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-person{
+  min-width:0!important;
+  gap:6px!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-avatar{
+  width:30px!important;height:30px!important;border-radius:9px!important;flex:0 0 30px!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-person>span:last-child{
+  min-width:0!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-person strong{
+  font-size:9.7px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-person small{
+  font-size:7.3px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-sub{
+  font-size:7.1px!important;
+  white-space:nowrap!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td.net{
+  font-size:10.5px!important;
+}
+
 </style>
 
 <div class="pay">
