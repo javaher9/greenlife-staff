@@ -985,6 +985,97 @@ class FinancialTransaction(models.Model):
         ]
     def __str__(self): return f'{self.branch or "—"} - {self.amount}'
 
+
+class PayrollRule(models.Model):
+    COMMISSION_SOURCE=[
+        ('auto','خودکار بر اساس نقش'),
+        ('call_center','فروش منتسب کال‌سنتر'),
+        ('recorded_sale','فروش ثبت‌شده توسط فرد'),
+        ('none','بدون پورسانت'),
+    ]
+    profile=models.OneToOneField(
+        EmployeeProfile,on_delete=models.CASCADE,related_name='payroll_rule'
+    )
+    base_salary_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    commission_percent=models.DecimalField(max_digits=7,decimal_places=3,default=0)
+    commission_source=models.CharField(max_length=20,choices=COMMISSION_SOURCE,default='auto')
+    note=models.CharField(max_length=500,blank=True)
+    updated_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='updated_payroll_rules'
+    )
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering=['profile__branch__name','profile__user__last_name','profile__user__first_name']
+
+    def __str__(self):
+        return f'حقوق - {self.profile}'
+
+
+class PayrollMonthlyAdjustment(models.Model):
+    profile=models.ForeignKey(
+        EmployeeProfile,on_delete=models.CASCADE,related_name='payroll_adjustments'
+    )
+    month_start=models.DateField(db_index=True,help_text='روز اول ماه شمسی، ذخیره‌شده به تاریخ میلادی')
+    mission_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    returned_sales_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    absence_deduction_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    late_deduction_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    bonus_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    salary_deduction_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    advance_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    insurance_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    note=models.TextField(blank=True)
+    updated_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='updated_payroll_adjustments'
+    )
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering=['-month_start','profile__user__last_name']
+        constraints=[
+            models.UniqueConstraint(fields=['profile','month_start'],name='uniq_payroll_adjustment_profile_month'),
+        ]
+
+    def __str__(self):
+        return f'{self.profile} - {self.month_start}'
+
+
+class PayrollSnapshot(models.Model):
+    profile=models.ForeignKey(
+        EmployeeProfile,on_delete=models.CASCADE,related_name='payroll_snapshots'
+    )
+    month_start=models.DateField(db_index=True)
+    base_salary_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    sales_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    returned_sales_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    commission_percent=models.DecimalField(max_digits=7,decimal_places=3,default=0)
+    commission_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    mission_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    bonus_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    absence_count=models.PositiveIntegerField(default=0)
+    late_count=models.PositiveIntegerField(default=0)
+    absence_deduction_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    late_deduction_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    salary_deduction_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    advance_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    insurance_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    net_salary_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    closed_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='closed_payroll_snapshots'
+    )
+    closed_at=models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering=['-month_start','profile__user__last_name']
+        constraints=[
+            models.UniqueConstraint(fields=['profile','month_start'],name='uniq_payroll_snapshot_profile_month'),
+        ]
+
+    def __str__(self):
+        return f'بسته حقوق {self.profile} - {self.month_start}'
+
+
 class IntegrationSyncLog(models.Model):
     STATUS=[('ok','موفق'),('error','خطا')]
     provider=models.CharField(max_length=30,default='crm')
