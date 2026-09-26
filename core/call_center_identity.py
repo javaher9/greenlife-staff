@@ -210,6 +210,8 @@ class FlowerLeadProxy:
         if self._is_instagram_lead():
             return self.instagram_page_display or 'Greenlifeclinics'
         source_url=str(getattr(self._flower_lead,'source_url','') or '').lower()
+        if '/beytoote/' in source_url or 'beytoote' in source_url or 'bitoteh' in source_url:
+            return 'بیتوته'
         if 'greenlifeclinics.com' in source_url:
             return 'Greenlifeclinics'
         try:
