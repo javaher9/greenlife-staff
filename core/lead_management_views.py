@@ -439,44 +439,45 @@ def lead_reassign_operator(request, pk):
     if not operator:
         return respond_error('گل انتخاب‌شده فعال نیست.',404)
 
-    with transaction.atomic():
-        lead=(
-            ReferralLead.objects.select_for_update()
-            .select_related('assigned_to__user')
-            .filter(pk=pk)
-            .first()
-        )
-        if not lead:
-            return respond_error('لید پیدا نشد.',404)
-        if (
-            lead.status!='new'
-            or bool(lead.contact_result)
-            or bool(lead.first_appointment_by_id)
-            or lead.appointments.exists()
-        ):
-            return respond_error('این لید وارد چرخه تماس/نوبت شده و برای حفظ سابقه دیگر قابل جابه‌جایی نیست.',409)
+    try:
+      with transaction.atomic():
+          lead=(
+              ReferralLead.objects.select_for_update()
+              .select_related('assigned_to__user')
+              .filter(pk=pk)
+              .first()
+          )
+          if not lead:
+              return respond_error('لید پیدا نشد.',404)
+          if (
+              lead.status!='new'
+              or bool(lead.contact_result)
+              or bool(lead.first_appointment_by_id)
+              or lead.appointments.exists()
+          ):
+              return respond_error('این لید وارد چرخه تماس/نوبت شده و برای حفظ سابقه دیگر قابل جابه‌جایی نیست.',409)
 
-        old_operator=lead.assigned_to
-        old_name=call_center_display_name(old_operator) if old_operator else 'بدون مسئول'
-        if old_operator and old_operator.pk==operator.pk:
-            message='این لید از قبل برای همین گل است.'
-            if is_ajax:
-                return JsonResponse({
-                    'ok':True,'lead_id':lead.pk,'operator_id':operator.pk,
-                    'operator':call_center_display_name(operator),'unchanged':True,'message':message,
-                })
-            messages.info(request,message)
-            return redirect('lead_management_dashboard')
+          old_operator=lead.assigned_to
+          old_name=call_center_display_name(old_operator) if old_operator else 'بدون مسئول'
+          if old_operator and old_operator.pk==operator.pk:
+              message='این لید از قبل برای همین گل است.'
+              if is_ajax:
+                  return JsonResponse({
+                      'ok':True,'lead_id':lead.pk,'operator_id':operator.pk,
+                      'operator':call_center_display_name(operator),'unchanged':True,'message':message,
+                  })
+              messages.info(request,message)
+              return redirect('lead_management_dashboard')
 
-        # Ownership is the critical operation. Commit it independently from
-        # group creation, notifications and audit logging so those side effects
-        # can never roll the reassignment back.
-        ReferralLead.objects.filter(pk=lead.pk).update(
-            assigned_to=operator,
-            assigned_at=timezone.now(),
-            group=None,
-            updated_at=timezone.now(),
-        )
+          # Ownership is the critical operation. Commit it independently from
+          # group creation, notifications and audit logging so those side effects
+          # can never roll the reassignment back.
+          ReferralLead.objects.filter(pk=lead.pk).update(
+              assigned_to_id=operator.pk,
+              assigned_at=timezone.now(),
+          )
+    except Exception as exc:
+        return respond_error(f'خطای تغییر گل: {exc.__class__.__name__}',500)
 
     # Everything below is best-effort and must never undo ownership.
     try:
