@@ -19,7 +19,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .forms import (
-    PublicReferralLeadForm, ReferralLeadForm, ReferralLeadManageForm,
+    PublicReferralLeadForm, BeytootePublicLeadForm, ReferralLeadForm, ReferralLeadManageForm,
     ReferralMemberForm, ReferralSaleForm, CallCenterLeadForm, CallCenterLeadCreateForm,
 )
 from .models import Attendance, CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification, VisitAppointment, InternalMessage
@@ -525,6 +525,34 @@ def public_admin_qr_lead(request):
         'headline':'مشاوره لاغری رایگان',
         'intro':'اطلاعاتتان را ثبت کنید تا کارشناسان گرین‌لایف برای مشاوره رایگان با شما تماس بگیرند.',
         'submit_label':'ثبت درخواست مشاوره رایگان',
+    })
+
+
+def public_beytoote_lead(request):
+    """Simplified public landing form dedicated to Beytoote campaign traffic."""
+    referrer=_greenlife_qr_source()
+    form=BeytootePublicLeadForm(request.POST or None)
+    completed=False
+    if request.method=='POST' and form.is_valid():
+        lead=form.save(commit=False)
+        lead.referrer=referrer
+        lead.source='link'
+        lead.source_url=request.build_absolute_uri()[:500]
+        lead.assigned_to=None
+        lead.group=None
+        lead.created_by=None
+        lead.save()
+        completed=True
+        form=BeytootePublicLeadForm()
+    return render(request,'core/referrals/public_lead.html',{
+        'form':form,'referrer':referrer,'completed':completed,'photo':'',
+        'show_referrer':False,
+        'page_title':'مشاوره لاغری رایگان | Green Life',
+        'headline':'مشاوره رایگان لاغری',
+        'intro':'نام و شماره موبایل خود را ثبت کنید و اگر دوست دارید، ناحیه یا دغدغه اصلی‌تان را هم کوتاه توضیح دهید.',
+        'submit_label':'ثبت درخواست مشاوره رایگان',
+        'body_class':'rf-beytoote',
+        'footer_text':'اطلاعات شما فقط برای پیگیری درخواست مشاوره استفاده می‌شود.',
     })
 
 
