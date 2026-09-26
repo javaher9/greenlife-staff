@@ -209,6 +209,7 @@ html.gl-call-center-html{background:#f5f7fb!important;background-image:none!impo
     <a href="/service-requests/"><span class="nav-ico">✓</span><span>درخواست‌ها</span></a>
     {% if user.profile.role == 'employee' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌ها</span></a>{% endif %}
     {% if user.profile.role == 'admin' or user.profile.role == 'manager' %}<a href="/finance/"><span class="nav-ico">▧</span><span>مالی و درآمد</span></a>{% endif %}
+    {% if user.profile.role == 'admin' %}<a href="{% url 'payroll_dashboard' %}" class="{% if request.resolver_match.url_name == 'payroll_dashboard' %}is-active{% endif %}"><span class="nav-ico">¤</span><span>حقوق‌ها</span></a>{% endif %}
     <a href="/notifications/" class="notifications-nav employee-bottom-nav {% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 6.2-3 7-3 9h18c0-2-3-2.8-3-9Zm-8 11h4a2 2 0 0 1-4 0Z"/></svg></span><span>اعلان‌ها</span></a>
 
     <a href="/device-issues/mine/" class="{% if request.path|slice:':15' == '/device-issues/' %}is-active{% endif %}"><span class="nav-ico">🛠</span><span>خرابی دستگاه</span></a>
