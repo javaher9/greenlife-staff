@@ -1,0 +1,163 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<style>
+body.gl-page-payroll_dashboard{background:#e9efed!important;color:#26364a!important;color-scheme:light}
+body.gl-page-payroll_dashboard .app-main{background:linear-gradient(145deg,#edf2f0,#f2f0f5 48%,#eef4f1)!important;color:#26364a!important}
+body.gl-page-payroll_dashboard .app-main:before,body.gl-page-payroll_dashboard .app-main::before{display:none!important}
+body.gl-page-payroll_dashboard .topbar{background:#f4f7f5!important;border-bottom:1px solid #dce5e0!important;color:#2c3c4f!important;box-shadow:0 4px 16px rgba(40,62,52,.05)!important}
+body.gl-page-payroll_dashboard .topbar-search{background:#eaf0ed!important;border-color:#d8e1dc!important}
+body.gl-page-payroll_dashboard .topbar-search input{color:#344458!important}
+body.gl-page-payroll_dashboard .topbar-date,body.gl-page-payroll_dashboard .header-person strong{color:#344458!important}
+body.gl-page-payroll_dashboard .header-person span{color:#7e8c98!important}
+
+.pay{--ink:#25364a;--muted:#7b8995;--line:#dbe4df;--green:#397c61;--green2:#e5f1eb;--violet:#6e6389;--violet2:#eeeaf4;--blue:#4d718c;--blue2:#e7eef4;--sand:#8a7149;--sand2:#f3ede2;display:grid;gap:14px;padding:3px 0 28px;color:var(--ink)}
+.pay *{box-sizing:border-box}.pay a{text-decoration:none}.pay button,.pay input,.pay select,.pay textarea{font-family:inherit}
+.pay-hero{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:22px 24px;border:1px solid #d9e4de;border-radius:22px;background:linear-gradient(135deg,#e8f2ed 0%,#f2eef5 52%,#edf2f5 100%);box-shadow:0 12px 32px rgba(48,71,60,.07)}
+.pay-hero h1{margin:0 0 6px;font-size:27px;font-weight:950;color:#26384c}.pay-hero p{margin:0;color:#6f7f8c;font-size:11px;font-weight:700;line-height:1.9}.pay-hero-badge{display:inline-flex;align-items:center;gap:7px;margin-bottom:8px;padding:6px 10px;border-radius:999px;background:#dcebe3;color:#376b55;font-size:9px;font-weight:950}
+.pay-hero-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.pay-btn{height:39px;padding:0 14px;border:1px solid #cddbd4;border-radius:11px;background:#edf4f0;color:#385e4d;font-size:10px;font-weight:900;cursor:pointer}.pay-btn.is-danger{background:#f4e9eb;border-color:#e7cfd5;color:#8a4555}.pay-btn.is-primary{background:#477861;border-color:#477861;color:#fff}
+.pay-filters{display:flex;align-items:end;gap:9px;flex-wrap:wrap;padding:12px 14px;border:1px solid #dbe4df;border-radius:16px;background:#f3f6f4}.pay-field{display:grid;gap:5px;min-width:155px}.pay-field label{font-size:9px;color:#74828f;font-weight:900}.pay-field select,.pay-field input,.pay-field textarea{width:100%;border:1px solid #d6e0db;border-radius:10px;background:#edf2ef;color:#2e4053;outline:none}.pay-field select,.pay-field input{height:38px;padding:0 10px}.pay-field textarea{padding:9px 10px;min-height:72px;resize:vertical}.pay-field select:focus,.pay-field input:focus,.pay-field textarea:focus{background:#f7faf8;border-color:#9ab7a9;box-shadow:0 0 0 3px rgba(64,120,91,.07)}
+.pay-month-nav{display:flex;gap:6px;margin-right:auto}.pay-month-nav a{height:38px;min-width:38px;padding:0 11px;display:grid;place-items:center;border:1px solid #d3ddd8;border-radius:10px;background:#e8eeeb;color:#526474;font-size:10px;font-weight:900}
+.pay-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.pay-kpi{min-height:112px;padding:14px;border-radius:17px;border:1px solid transparent;box-shadow:0 8px 22px rgba(58,73,68,.055)}.pay-kpi span{display:block;font-size:9px;font-weight:900;color:#627383}.pay-kpi strong{display:block;margin:12px 0 4px;font-size:21px;line-height:1;font-weight:950;color:#24364a;direction:ltr;text-align:right}.pay-kpi small{font-size:9px;color:#80909c;font-weight:700}.k-green{background:#e6f1eb;border-color:#d2e4da}.k-violet{background:#eeeaf4;border-color:#ded6e8}.k-blue{background:#e6eef3;border-color:#d2e0e9}.k-sand{background:#f2ece2;border-color:#e7dccb}.k-rose{background:#f4e9ec;border-color:#e8d7dc}.k-slate{background:#e9eef0;border-color:#d9e2e5}
+
+.pay-panel{border:1px solid #dbe4df;border-radius:18px;background:#f7f9f8;box-shadow:0 9px 26px rgba(45,65,56,.055);overflow:hidden}.pay-panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px 17px;background:#edf3f0;border-bottom:1px solid #dbe4df}.pay-panel-head h2{margin:0;font-size:16px;font-weight:950;color:#2c3d50}.pay-panel-head p{margin:4px 0 0;font-size:9px;color:#80909c;font-weight:700}.pay-status{padding:6px 9px;border-radius:999px;background:#dcebe3;color:#347057;font-size:9px;font-weight:900}.pay-status.closed{background:#e8e2ef;color:#675c7e}
+.pay-table-wrap{overflow:auto;max-height:60vh}.pay-table{width:100%;min-width:1740px;border-collapse:separate;border-spacing:0}.pay-table th{position:sticky;top:0;z-index:3;padding:10px 8px;background:#e7eeeb;color:#536574;border-bottom:1px solid #d4dfd9;font-size:9px;font-weight:950;white-space:nowrap;text-align:center}.pay-table td{padding:10px 8px;border-bottom:1px solid #e0e7e3;font-size:10px;color:#3c4d5d;text-align:center;white-space:nowrap}.pay-table tbody tr{background:#f7faf8;cursor:pointer;transition:.12s ease}.pay-table tbody tr:nth-child(even){background:#f1f5f3}.pay-table tbody tr:hover{background:#eaf2ee}.pay-table td.money{font-weight:900;direction:ltr}.pay-table td.net{font-size:12px;font-weight:950;color:#27684d}.pay-table td.deduct{color:#8e4d5b}.pay-table td.add{color:#3d745c}.pay-person{display:flex;align-items:center;gap:8px;min-width:175px;text-align:right}.pay-avatar{width:34px;height:34px;border-radius:11px;object-fit:cover;border:1px solid #cfdcd5;background:#e4ece8;display:grid;place-items:center;color:#526b60;font-weight:950}.pay-person strong{display:block;font-size:11px;color:#2d3d50}.pay-person small{display:block;margin-top:2px;color:#82909d;font-size:8px}.pay-sub{display:block;margin-top:3px;color:#8996a0;font-size:8px}.pay-empty{padding:28px;text-align:center;color:#7d8b96}
+
+.pay-detail{display:grid;grid-template-columns:300px 1fr;gap:12px}.person-card,.pay-form-card,.history-card{border:1px solid #dbe4df;border-radius:18px;background:#f4f7f5;padding:16px}.person-head{display:flex;align-items:center;gap:12px}.person-avatar{width:64px;height:64px;border-radius:19px;object-fit:cover;border:1px solid #c8d8d0;background:#e2ebe6;display:grid;place-items:center;font-size:22px;font-weight:950;color:#527060}.person-head h3{margin:0;font-size:17px;color:#293b4e}.person-head p{margin:4px 0 0;font-size:9px;color:#7b8995}.person-meta{display:grid;gap:7px;margin-top:14px}.person-meta div{display:flex;justify-content:space-between;gap:10px;padding:8px 9px;border-radius:10px;background:#eaf0ed;font-size:9px}.person-meta span{color:#7b8995}.person-meta b{color:#354759}
+.cum-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.cum-grid div{padding:9px;border-radius:10px;background:#eeeaf3}.cum-grid span{display:block;font-size:8px;color:#7d718c}.cum-grid b{display:block;margin-top:4px;font-size:11px;color:#514866}
+.pay-detail-main{display:grid;gap:12px}.pay-current{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.pay-current div{padding:12px;border-radius:13px;background:#e9f1ed;border:1px solid #d9e5df}.pay-current span{display:block;font-size:8px;color:#75848f}.pay-current b{display:block;margin-top:6px;font-size:14px;color:#2c604a;direction:ltr;text-align:right}
+.pay-forms{display:grid;grid-template-columns:1fr 1fr;gap:12px}.pay-form-card h3,.history-card h3{margin:0 0 12px;font-size:14px;color:#2d3f51}.pay-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.pay-form-card .wide{grid-column:1/-1}.pay-form-card button{margin-top:10px}
+.history-list{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}.history-list a{padding:10px;border:1px solid #d8e2dd;border-radius:11px;background:#edf2ef;color:#425568}.history-list span{display:block;font-size:8px;color:#7e8c97}.history-list b{display:block;margin-top:5px;font-size:11px;direction:ltr;text-align:right}.history-list small{display:block;margin-top:4px;font-size:7px;color:#8c98a1}.history-list a.is-current{background:#e1eee7;border-color:#bdd5c8}
+.pay-note{padding:10px 12px;border-radius:12px;background:#eeeaf4;color:#625a73;font-size:9px;line-height:1.9}
+@media(max-width:1200px){.pay-kpis{grid-template-columns:repeat(3,1fr)}.pay-detail{grid-template-columns:1fr}.pay-forms{grid-template-columns:1fr}.history-list{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:760px){.pay-hero{align-items:flex-start;flex-direction:column}.pay-kpis{grid-template-columns:repeat(2,1fr)}.pay-current{grid-template-columns:repeat(2,1fr)}.pay-form-grid{grid-template-columns:1fr}.pay-form-card .wide{grid-column:auto}.history-list{grid-template-columns:repeat(2,1fr)}.pay-table-wrap{max-height:none}}
+</style>
+
+<div class="pay">
+  <section class="pay-hero">
+    <div>
+      <span class="pay-hero-badge">حقوق زنده · فقط مدیریت</span>
+      <h1>حقوق‌ها</h1>
+      <p>محاسبه حقوق ثابت، پورسانت فروش، مأموریت، تشویقی و کسورات با امکان مقایسه ماه‌های قبل.</p>
+    </div>
+    <div class="pay-hero-actions">
+      {% if is_closed %}
+      <span class="pay-status closed">ماه بسته شده</span>
+      <form method="post" onsubmit="return confirm('ماه باز شود و محاسبات دوباره زنده شوند؟')">{% csrf_token %}<input type="hidden" name="action" value="reopen_month"><input type="hidden" name="jy" value="{{ jy }}"><input type="hidden" name="jm" value="{{ jm }}"><input type="hidden" name="branch" value="{{ selected_branch }}"><button class="pay-btn is-danger" type="submit">بازگشایی ماه</button></form>
+      {% else %}
+      <span class="pay-status">محاسبه زنده</span>
+      <form method="post" onsubmit="return confirm('حقوق این ماه برای همه پرسنل بسته و ثابت شود؟')">{% csrf_token %}<input type="hidden" name="action" value="close_month"><input type="hidden" name="jy" value="{{ jy }}"><input type="hidden" name="jm" value="{{ jm }}"><input type="hidden" name="branch" value="{{ selected_branch }}"><button class="pay-btn is-primary" type="submit">بستن حقوق ماه</button></form>
+      {% endif %}
+    </div>
+  </section>
+
+  <form class="pay-filters" method="get" id="payFilter">
+    <div class="pay-field"><label>ماه</label><select id="monthPicker">{% for m in month_options %}<option value="{{m.jy}}-{{m.jm}}" {% if m.jy == jy and m.jm == jm %}selected{% endif %}>{{m.label}}</option>{% endfor %}</select><input type="hidden" name="jy" id="jyInput" value="{{jy}}"><input type="hidden" name="jm" id="jmInput" value="{{jm}}"></div>
+    <div class="pay-field"><label>مرکز</label><select name="branch" onchange="this.form.submit()"><option value="">همه مراکز</option>{% for b in branches %}<option value="{{b.pk}}" {% if selected_branch == b.pk|stringformat:'s' %}selected{% endif %}>{{b.name}}</option>{% endfor %}</select></div>
+    <div class="pay-month-nav"><a href="?jy={{prev_jy}}&jm={{prev_jm}}{% if selected_branch %}&branch={{selected_branch}}{% endif %}">ماه قبل</a><a href="?jy={{next_jy}}&jm={{next_jm}}{% if selected_branch %}&branch={{selected_branch}}{% endif %}">ماه بعد</a></div>
+  </form>
+
+  <section class="pay-kpis">
+    <article class="pay-kpi k-green"><span>حقوق پیشنهادی {{month_name}}</span><strong>{{summary.net}}</strong><small>تومان · {{summary.count}} نفر</small></article>
+    <article class="pay-kpi k-violet"><span>حقوق ثابت</span><strong>{{summary.base}}</strong><small>جمع پایه ثبت‌شده</small></article>
+    <article class="pay-kpi k-blue"><span>پورسانت</span><strong>{{summary.commission}}</strong><small>بر اساس فروش منتسب</small></article>
+    <article class="pay-kpi k-sand"><span>مأموریت + تشویقی</span><strong>{{summary.extras}}</strong><small>افزایشی‌های این ماه</small></article>
+    <article class="pay-kpi k-rose"><span>کل کسورات</span><strong>{{summary.deductions}}</strong><small>عودتی، غیبت، تأخیر، مساعده و بیمه</small></article>
+    <article class="pay-kpi k-slate"><span>فروش مبنای پورسانت</span><strong>{{summary.sales}}</strong><small>تومان</small></article>
+  </section>
+
+  <section class="pay-panel">
+    <div class="pay-panel-head"><div><h2>حقوق همه پرسنل · {{month_name}} {{jy}}</h2><p>برای دیدن جزئیات و تنظیمات هر فرد، روی ردیف او بزنید.</p></div><span class="pay-status {% if is_closed %}closed{% endif %}">{% if is_closed %}ثبت نهایی{% else %}به‌روز{% endif %}</span></div>
+    <div class="pay-table-wrap">
+      <table class="pay-table">
+        <thead><tr><th>پرسنل</th><th>مرکز</th><th>سمت</th><th>حقوق ثابت</th><th>فروش</th><th>پورسانت</th><th>مأموریت</th><th>کسر عودتی</th><th>غیبت</th><th>تأخیر</th><th>تشویقی</th><th>کسر حقوق</th><th>مساعده</th><th>بیمه</th><th>حقوق پیشنهادی</th></tr></thead>
+        <tbody>
+        {% for row in rows %}
+          <tr data-href="?jy={{jy}}&jm={{jm}}{% if selected_branch %}&branch={{selected_branch}}{% endif %}&employee={{row.profile.pk}}#person-detail">
+            <td><div class="pay-person">{% if row.profile.avatar %}<img class="pay-avatar" src="{{row.profile.avatar.url}}" alt="">{% else %}<span class="pay-avatar">{{row.profile.user.first_name|first|default:row.profile.user.username|first}}</span>{% endif %}<span><strong>{{row.profile.user.get_full_name|default:row.profile.user.username}}</strong><small>{% if row.closed %}ثبت نهایی{% elif row.rule %}فرمول فعال{% else %}نیازمند تنظیم حقوق{% endif %}</small></span></div></td>
+            <td>{{row.profile.branch|default:'—'}}</td>
+            <td>{{row.profile.job_title|default:row.profile.get_role_display}}</td>
+            <td class="money">{{row.base_display}}</td>
+            <td class="money">{{row.sales_display}}</td>
+            <td class="money add">{{row.commission_display}}<span class="pay-sub">{{row.percent_display}}٪</span></td>
+            <td class="money add">{{row.mission_display}}</td>
+            <td class="money deduct">-{{row.return_deduction_display}}<span class="pay-sub">عودتی {{row.returned_sales_display}}</span></td>
+            <td class="deduct">{{row.absence_count}} روز<span class="pay-sub">-{{row.absence_deduction_display}}</span></td>
+            <td class="deduct">{{row.late_count}} مورد<span class="pay-sub">-{{row.late_deduction_display}}</span></td>
+            <td class="money add">+{{row.bonus_display}}</td>
+            <td class="money deduct">-{{row.salary_deduction_display}}</td>
+            <td class="money deduct">-{{row.advance_display}}</td>
+            <td class="money deduct">-{{row.insurance_display}}</td>
+            <td class="money net">{{row.net_display}}</td>
+          </tr>
+        {% empty %}<tr><td colspan="15" class="pay-empty">پرسنلی برای این فیلتر پیدا نشد.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {% if selected and selected_row %}
+  <section id="person-detail" class="pay-detail">
+    <aside class="person-card">
+      <div class="person-head">{% if selected.avatar %}<img class="person-avatar" src="{{selected.avatar.url}}" alt="">{% else %}<span class="person-avatar">{{selected.user.first_name|first|default:selected.user.username|first}}</span>{% endif %}<div><h3>{{selected.user.get_full_name|default:selected.user.username}}</h3><p>{{selected.job_title|default:selected.get_role_display}} · {{selected.branch|default:'بدون مرکز'}}</p></div></div>
+      <div class="person-meta">
+        <div><span>تاریخ استخدام</span><b>{% if selected.start_date %}{{selected.start_date|jdate}}{% else %}ثبت نشده{% endif %}</b></div>
+        <div><span>بیمه</span><b>{% if selected.is_insured == True %}دارد{% elif selected.is_insured == False %}ندارد{% else %}نامشخص{% endif %}</b></div>
+        <div><span>حقوق این ماه</span><b>{{selected_row.net_display}} تومان</b></div>
+      </div>
+      <div class="cum-grid">
+        <div><span>تشویقی تا امروز</span><b>{{cumulative.bonus}}</b></div><div><span>کسر حقوق تا امروز</span><b>{{cumulative.deduction}}</b></div>
+        <div><span>کل غیبت</span><b>{{cumulative.absence}} روز</b></div><div><span>کل تأخیر</span><b>{{cumulative.late}} مورد</b></div>
+        <div><span>مساعده ثبت‌شده</span><b>{{cumulative.advance}}</b></div><div><span>بیمه کسرشده</span><b>{{cumulative.insurance}}</b></div>
+      </div>
+    </aside>
+
+    <div class="pay-detail-main">
+      <div class="pay-current">
+        <div><span>حقوق ثابت</span><b>{{selected_row.base_display}}</b></div><div><span>پورسانت</span><b>{{selected_row.commission_display}}</b></div><div><span>کل کسورات</span><b>{{selected_row.deductions_display}}</b></div><div><span>حقوق پیشنهادی</span><b>{{selected_row.net_display}}</b></div>
+      </div>
+
+      {% if selected_row.closed %}<div class="pay-note">این ماه بسته شده و اعداد بالا Snapshot نهایی همان ماه هستند. برای تغییر، ابتدا ماه را بازگشایی کنید.</div>{% endif %}
+
+      <div class="pay-forms">
+        <form class="pay-form-card" method="post">{% csrf_token %}<input type="hidden" name="action" value="save_rule"><input type="hidden" name="profile_id" value="{{selected.pk}}"><input type="hidden" name="jy" value="{{jy}}"><input type="hidden" name="jm" value="{{jm}}"><input type="hidden" name="branch" value="{{selected_branch}}">
+          <h3>تنظیمات پایه حقوق</h3>
+          <div class="pay-form-grid">
+            <div class="pay-field"><label>حقوق ثابت ماهانه (تومان)</label><input type="number" min="0" step="1" name="base_salary_toman" value="{% if selected_row.rule %}{{selected_row.rule.base_salary_toman|floatformat:0}}{% else %}0{% endif %}"></div>
+            <div class="pay-field"><label>درصد پورسانت</label><input type="number" min="0" max="100" step="0.001" name="commission_percent" value="{% if selected_row.rule %}{{selected_row.rule.commission_percent}}{% else %}0{% endif %}"></div>
+            <div class="pay-field"><label>مبنای فروش پورسانت</label><select name="commission_source">{% for value,label in commission_sources %}<option value="{{value}}" {% if selected_row.rule and selected_row.rule.commission_source == value %}selected{% elif not selected_row.rule and value == 'auto' %}selected{% endif %}>{{label}}</option>{% endfor %}</select></div>
+            <div class="pay-field"><label>وضعیت بیمه</label><select name="insured"><option value="" {% if selected.is_insured == None %}selected{% endif %}>نامشخص</option><option value="yes" {% if selected.is_insured == True %}selected{% endif %}>بیمه است</option><option value="no" {% if selected.is_insured == False %}selected{% endif %}>بیمه نیست</option></select></div>
+            <div class="pay-field wide"><label>توضیح فرمول</label><input name="rule_note" value="{% if selected_row.rule %}{{selected_row.rule.note}}{% endif %}" placeholder="مثلاً پورسانت فروش شخصی"></div>
+          </div>
+          <button class="pay-btn is-primary" type="submit" {% if selected_row.closed %}disabled{% endif %}>ذخیره تنظیمات حقوق</button>
+        </form>
+
+        <form class="pay-form-card" method="post">{% csrf_token %}<input type="hidden" name="action" value="save_adjustment"><input type="hidden" name="profile_id" value="{{selected.pk}}"><input type="hidden" name="jy" value="{{jy}}"><input type="hidden" name="jm" value="{{jm}}"><input type="hidden" name="branch" value="{{selected_branch}}">
+          <h3>اقلام متغیر {{month_name}}</h3>
+          <div class="pay-form-grid">
+            <div class="pay-field"><label>مأموریت</label><input type="number" min="0" name="mission_toman" value="{{selected_row.mission|floatformat:0}}"></div>
+            <div class="pay-field"><label>فروش عودتی</label><input type="number" min="0" name="returned_sales_toman" value="{{selected_row.returned_sales|floatformat:0}}"></div>
+            <div class="pay-field"><label>کسر غیبت</label><input type="number" min="0" name="absence_deduction_toman" value="{{selected_row.absence_deduction|floatformat:0}}"></div>
+            <div class="pay-field"><label>کسر تأخیر</label><input type="number" min="0" name="late_deduction_toman" value="{{selected_row.late_deduction|floatformat:0}}"></div>
+            <div class="pay-field"><label>تشویقی</label><input type="number" min="0" name="bonus_toman" value="{{selected_row.bonus|floatformat:0}}"></div>
+            <div class="pay-field"><label>کسر حقوق</label><input type="number" min="0" name="salary_deduction_toman" value="{{selected_row.salary_deduction|floatformat:0}}"></div>
+            <div class="pay-field"><label>مساعده</label><input type="number" min="0" name="advance_toman" value="{{selected_row.advance|floatformat:0}}"></div>
+            <div class="pay-field"><label>بیمه کسرشده</label><input type="number" min="0" name="insurance_toman" value="{{selected_row.insurance|floatformat:0}}"></div>
+            <div class="pay-field wide"><label>توضیحات حقوق این ماه</label><textarea name="adjustment_note">{% if selected_row.adjustment %}{{selected_row.adjustment.note}}{% endif %}</textarea></div>
+          </div>
+          <button class="pay-btn is-primary" type="submit" {% if selected_row.closed %}disabled{% endif %}>ذخیره اقلام این ماه</button>
+        </form>
+      </div>
+
+      <article class="history-card"><h3>مقایسه ۶ ماه اخیر</h3><div class="history-list">{% for h in history %}<a href="?jy={{h.jy}}&jm={{h.jm}}{% if selected_branch %}&branch={{selected_branch}}{% endif %}&employee={{selected.pk}}#person-detail" class="{% if h.jy == jy and h.jm == jm %}is-current{% endif %}"><span>{{h.label}}</span><b>{{h.net_display}}</b><small>پورسانت {{h.commission_display}} · {% if h.closed %}بسته{% else %}زنده{% endif %}</small></a>{% endfor %}</div></article>
+    </div>
+  </section>
+  {% endif %}
+</div>
+
+<script>
+(function(){
+  var picker=document.getElementById('monthPicker'),form=document.getElementById('payFilter');
+  if(picker&&form){picker.addEventListener('change',function(){var p=this.value.split('-');document.getElementById('jyInput').value=p[0];document.getElementById('jmInput').value=p[1];form.submit();});}
+  document.querySelectorAll('.pay-table tbody tr[data-href]').forEach(function(row){row.addEventListener('click',function(e){if(e.target.closest('a,button,input,select,textarea'))return;window.location.href=this.dataset.href;});});
+})();
+</script>
+{% endblock %}
