@@ -29,6 +29,186 @@ body.gl-page-payroll_dashboard .header-person span{color:#7e8c98!important}
 .pay-note{padding:10px 12px;border-radius:12px;background:#eeeaf4;color:#625a73;font-size:9px;line-height:1.9}
 @media(max-width:1200px){.pay-kpis{grid-template-columns:repeat(3,1fr)}.pay-detail{grid-template-columns:1fr}.pay-forms{grid-template-columns:1fr}.history-list{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:760px){.pay-hero{align-items:flex-start;flex-direction:column}.pay-kpis{grid-template-columns:repeat(2,1fr)}.pay-current{grid-template-columns:repeat(2,1fr)}.pay-form-grid{grid-template-columns:1fr}.pay-form-card .wide{grid-column:auto}.history-list{grid-template-columns:repeat(2,1fr)}.pay-table-wrap{max-height:none}}
+
+/* Payroll visual pass v2 — medium-dark premium, no white bands, tablet-safe. */
+body.gl-authenticated.gl-page-payroll_dashboard{
+  background:#122028!important;color:#f4f7f6!important;color-scheme:dark!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .app-main{
+  min-width:0!important;overflow-x:hidden!important;
+  background:
+    radial-gradient(circle at 8% 4%,rgba(111,83,157,.16),transparent 26%),
+    radial-gradient(circle at 88% 12%,rgba(46,139,104,.15),transparent 24%),
+    linear-gradient(145deg,#162830 0%,#102027 55%,#13242b 100%)!important;
+  color:#f3f7f5!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .topbar{
+  background:#172a32!important;border-bottom:1px solid #30434a!important;
+  color:#eef5f2!important;box-shadow:0 7px 22px rgba(3,13,17,.17)!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .topbar-search{
+  background:#20343b!important;border-color:#3b5057!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .topbar-search input,
+body.gl-authenticated.gl-page-payroll_dashboard .topbar-date,
+body.gl-authenticated.gl-page-payroll_dashboard .header-person strong{color:#eef5f2!important}
+body.gl-authenticated.gl-page-payroll_dashboard .header-person span{color:#a9bbb4!important}
+
+body.gl-authenticated.gl-page-payroll_dashboard .pay{
+  width:100%!important;max-width:none!important;min-width:0!important;overflow:hidden!important;
+  color:#eef5f2!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-hero{
+  background:
+    radial-gradient(circle at 8% 20%,rgba(120,89,171,.26),transparent 31%),
+    radial-gradient(circle at 88% 88%,rgba(51,163,116,.18),transparent 28%),
+    linear-gradient(135deg,#29434a,#263844 52%,#302f49)!important;
+  border-color:#49616a!important;box-shadow:0 14px 34px rgba(5,17,22,.18)!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-hero h1{color:#fff!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-hero p{color:#d1ddd9!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-hero-badge{
+  background:#315948!important;color:#c8f0dc!important;border:1px solid #47725f!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-btn{
+  background:#29453c!important;border-color:#49685d!important;color:#eaf5f0!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-btn.is-primary{
+  background:linear-gradient(135deg,#3b8b68,#2e6f57)!important;border-color:#5aa182!important;color:#fff!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-btn.is-danger{
+  background:#5b3441!important;border-color:#80505f!important;color:#ffdce5!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-filters{
+  background:linear-gradient(145deg,#1c3036,#172a31)!important;border-color:#3b5056!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-field label{color:#bfd0ca!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-field select,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-field input,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-field textarea{
+  background:#102129!important;border-color:#38505a!important;color:#f4f7f6!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-field select:focus,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-field input:focus,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-field textarea:focus{
+  background:#142a31!important;border-color:#5d927c!important;box-shadow:0 0 0 3px rgba(78,153,119,.12)!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-month-nav a{
+  background:#243940!important;border-color:#41575e!important;color:#dbe7e3!important;
+}
+
+body.gl-authenticated.gl-page-payroll_dashboard .pay-kpi{
+  border-width:1px!important;box-shadow:0 10px 25px rgba(2,12,16,.15)!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-kpi span,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-kpi small{color:#d6e0dd!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-kpi strong{color:#fff!important}
+body.gl-authenticated.gl-page-payroll_dashboard .k-green{background:linear-gradient(145deg,#315d4c,#284a40)!important;border-color:#527866!important}
+body.gl-authenticated.gl-page-payroll_dashboard .k-violet{background:linear-gradient(145deg,#52456a,#413854)!important;border-color:#716386!important}
+body.gl-authenticated.gl-page-payroll_dashboard .k-blue{background:linear-gradient(145deg,#35566d,#294657)!important;border-color:#54758b!important}
+body.gl-authenticated.gl-page-payroll_dashboard .k-sand{background:linear-gradient(145deg,#625136,#4d412e)!important;border-color:#7d6848!important}
+body.gl-authenticated.gl-page-payroll_dashboard .k-rose{background:linear-gradient(145deg,#65404d,#503641)!important;border-color:#815563!important}
+body.gl-authenticated.gl-page-payroll_dashboard .k-slate{background:linear-gradient(145deg,#3d535d,#31454e)!important;border-color:#5c717a!important}
+
+body.gl-authenticated.gl-page-payroll_dashboard .pay-panel{
+  background:#17292f!important;border-color:#3a4f56!important;box-shadow:0 11px 28px rgba(3,13,17,.14)!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-panel-head{
+  background:linear-gradient(135deg,#21383b,#1b3036)!important;border-color:#3b5157!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-panel-head h2{color:#fff!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-panel-head p{color:#b8c9c3!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-status{
+  background:#315744!important;color:#c9f0dd!important;border:1px solid #486c5a!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-status.closed{
+  background:#493d5c!important;color:#e6dcf4!important;border-color:#665779!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table-wrap{
+  width:100%!important;max-width:100%!important;overflow:auto!important;
+  overscroll-behavior-x:contain!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table th{
+  background:#233a40!important;color:#d9e5e1!important;border-color:#40555b!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td{
+  color:#e8efec!important;border-color:#33484f!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr{background:#182b31!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr:nth-child(even){background:#1d3136!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr:hover{background:#26413e!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td.net{color:#8fe0b6!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td.deduct{color:#f3a8b7!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td.add{color:#8fd9b4!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-person strong{color:#fff!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-person small,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-sub{color:#9fb2ab!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-avatar{
+  background:#29463c!important;border-color:#537365!important;color:#d8eee4!important;
+}
+
+body.gl-authenticated.gl-page-payroll_dashboard .pay-detail{
+  width:100%!important;max-width:100%!important;min-width:0!important;
+  grid-template-columns:minmax(240px,280px) minmax(0,1fr)!important;
+  align-items:start!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-detail-main,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-forms,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-form-card,
+body.gl-authenticated.gl-page-payroll_dashboard .history-card{min-width:0!important}
+body.gl-authenticated.gl-page-payroll_dashboard .person-card,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-form-card,
+body.gl-authenticated.gl-page-payroll_dashboard .history-card{
+  background:linear-gradient(145deg,#1c3036,#17292f)!important;border-color:#3a5057!important;
+  box-shadow:0 10px 25px rgba(3,13,17,.13)!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .person-head h3,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-form-card h3,
+body.gl-authenticated.gl-page-payroll_dashboard .history-card h3{color:#fff!important}
+body.gl-authenticated.gl-page-payroll_dashboard .person-head p{color:#aebfb9!important}
+body.gl-authenticated.gl-page-payroll_dashboard .person-avatar{
+  background:#2b493e!important;border-color:#537365!important;color:#e1f1ea!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .person-meta div{
+  background:#22383d!important;color:#e9f0ed!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .person-meta span{color:#a9b9b3!important}
+body.gl-authenticated.gl-page-payroll_dashboard .person-meta b{color:#fff!important}
+body.gl-authenticated.gl-page-payroll_dashboard .cum-grid div{
+  background:linear-gradient(145deg,#403b55,#343247)!important;border:1px solid #57516d!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .cum-grid span{color:#c6bed5!important}
+body.gl-authenticated.gl-page-payroll_dashboard .cum-grid b{color:#fff!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-current div{
+  background:linear-gradient(145deg,#24433a,#203832)!important;border-color:#3e6655!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-current span{color:#b6c9c1!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-current b{color:#a5e2c2!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-note{
+  background:#39354d!important;border:1px solid #554d6d!important;color:#ddd5e9!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .history-list a{
+  background:#22353b!important;border-color:#3d535a!important;color:#eaf0ee!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .history-list a.is-current{
+  background:#2b5042!important;border-color:#4c8068!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .history-list span,
+body.gl-authenticated.gl-page-payroll_dashboard .history-list small{color:#aebdb8!important}
+body.gl-authenticated.gl-page-payroll_dashboard .history-list b{color:#fff!important}
+
+@media (any-pointer:coarse) and (min-width:1101px) and (max-width:1800px){
+  body.gl-authenticated.gl-page-payroll_dashboard .pay{padding-left:2px!important;padding-right:2px!important}
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-detail{grid-template-columns:250px minmax(0,1fr)!important}
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-forms{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media (max-width:1250px){
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-detail{grid-template-columns:1fr!important}
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-forms{grid-template-columns:1fr!important}
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-current{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+
 </style>
 
 <div class="pay">
