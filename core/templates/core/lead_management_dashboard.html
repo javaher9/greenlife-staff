@@ -90,8 +90,10 @@ body.gl-premium-dark .app-main .lead-page .badge.ig{border-color:#7a355c!importa
       if(!window.confirm('«'+leadName+'» به '+nextLabel+' منتقل شود؟\nاز صف گل قبلی حذف و وارد صف گل جدید می‌شود.')){
         this.value=previous;return;
       }
-      this.disabled=true;
       this.classList.add('is-saving');
+      /* Keep the select enabled while submitting; disabled controls are omitted
+         from form POSTs, which previously made the reassignment look successful
+         without actually sending operator_id. */
       this.form.submit();
     });
   });
