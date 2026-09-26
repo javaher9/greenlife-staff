@@ -32,7 +32,8 @@ def _payroll_admin(view):
     def wrapper(request,*args,**kwargs):
         profile=getattr(request.user,'profile',None)
         is_exec=(getattr(request.user,'username','') or '').lower() in settings.EXECUTIVE_USERNAMES
-        if not (request.user.is_superuser or is_exec or (profile and profile.role=='admin')):
+        allowed_roles={'admin','manager','internal_manager'}
+        if not (request.user.is_superuser or is_exec or (profile and profile.role in allowed_roles)):
             raise PermissionDenied('Payroll access denied.')
         return view(request,*args,**kwargs)
     return wrapper
