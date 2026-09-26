@@ -13,9 +13,11 @@ from . import task_management_views
 from . import lead_command_views
 from . import lead_management_views
 from . import doctor_views
+from . import payroll_views
 from .mcp import mcp_endpoint
 urlpatterns=[path('lead-management/attention/assign/',lead_management_views.lead_attention_bulk_action,name='lead_attention_bulk_action'),path('lead-management/api/trend/',lead_management_views.lead_management_trend_data,name='lead_management_trend_data'),path('lead-command/',lead_command_views.lead_command_center,name='lead_command_center'),path('lead-command/api/live/',lead_command_views.lead_command_center_live,name='lead_command_center_live'),path('service-worker.js',views.service_worker,name='service_worker'),path('camp/',camp_views.camp_dashboard,name='camp_dashboard'),
 path('doctor/',doctor_views.doctor_dashboard,name='doctor_dashboard'),
+path('payroll/',payroll_views.payroll_dashboard,name='payroll_dashboard'),
 path('call-center/',referral_views.call_center_dashboard,name='call_center_dashboard'),
 path('call-center/groups/new/',referral_views.call_center_group_create,name='call_center_group_create'),path('call-center/quick-message/',referral_views.call_center_quick_message,name='call_center_quick_message'),
 path('call-center/leads/new/',referral_views.call_center_lead_create,name='call_center_lead_create'),
