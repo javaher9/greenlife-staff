@@ -68,7 +68,117 @@ body.gl-premium-dark .app-main .lead-page .badge.ig{border-color:#7a355c!importa
 <div class="sales-row"><div class="sales-box"><small>کل فروش منتسب به لیدها</small><strong>{{ lead_kpis.sales_amount|floatformat:0 }}</strong><span> تومان</span></div><div class="sales-box"><small>فروش منتسب به اینستاگرام</small><strong>{{ lead_kpis.instagram_sales_amount|floatformat:0 }}</strong><span> تومان</span></div><div class="sales-box"><small>فروش منتسب به وب‌سایت</small><strong>{{ lead_kpis.website_sales_amount|floatformat:0 }}</strong><span> تومان</span></div></div>
 <div class="lead-grid three"><section class="lead-card"><h3>صف‌های لید</h3><div class="lead-card-sub">گروه‌بندی عملیاتی کال‌سنتر</div><div class="group-cloud">{% for row in group_rows %}<div class="group-pill">{{ row.group__name }} <b>{{ row.count }}</b></div>{% empty %}<div class="empty">هنوز گروهی ثبت نشده است.</div>{% endfor %}</div></section><section class="lead-card"><h3>هشدارهای مدیریتی</h3><div class="alert-list"><div class="alert-item"><div><b>لید بدون مسئول</b><small>ورودی جدید بدون owner</small></div><span class="alert-count">{{ lead_kpis.unassigned }}</span></div><div class="alert-item"><div><b>Follow-up عقب‌افتاده</b><small>زمان پیگیری گذشته است</small></div><span class="alert-count">{{ lead_kpis.overdue }}</span></div><div class="alert-item"><div><b>لید جدید بدون تماس</b><small>بیش از دو ساعت از ورود</small></div><span class="alert-count">{{ lead_kpis.untouched }}</span></div></div></section><section class="lead-card"><h3>قواعد Lead Hub</h3><div class="alert-list"><div class="alert-item"><div><b>Lead ID واحد</b><small>جلوگیری از Duplicate چندکاناله</small></div><span class="badge">Rule</span></div><div class="alert-item"><div><b>مالکیت اولین پاسخ</b><small>مالک لید در چرخه حفظ شود</small></div><span class="badge">Owner</span></div><div class="alert-item"><div><b>Customer بعد از Conversion</b><small>لید خام مشتری محسوب نشود</small></div><span class="badge">CEM</span></div></div></section></div>
 <section class="lead-card" style="margin-bottom:12px"><h3>عملکرد اپراتورهای کال‌سنتر</h3><div class="scroll-x"><table class="operator-table"><thead><tr><th>اپراتور</th><th>کل لید</th><th>جدید</th><th>تماس گرفته شد</th><th>باز</th><th>عقب‌افتاده</th><th>نوبت</th><th>فروش</th><th>نرخ تماس</th><th>تبدیل</th></tr></thead><tbody>{% for row in operator_rows %}<tr><td>{{ row.name }}</td><td>{{ row.total }}</td><td>{{ row.new }}</td><td>{{ row.contacted }}</td><td>{{ row.open }}</td><td>{{ row.overdue }}</td><td>{{ row.appointments }}</td><td>{{ row.won }}</td><td>{{ row.contact_rate }}%</td><td>{{ row.conversion }}%</td></tr>{% empty %}<tr><td colspan="10" class="empty">اپراتور فعالی پیدا نشد.</td></tr>{% endfor %}</tbody></table></div></section>
-<section class="lead-card" style="margin-bottom:12px"><h3>نیازمند اقدام فوری <span id="attention-count" class="badge warn">{{ attention_leads|length }}</span></h3><div class="lead-card-sub">اگر لید از قبل مسئول دارد، «ارجاع» همان لحظه دوباره به همان گل کال‌سنتر فرستاده می‌شود و از این لیست خارج می‌شود؛ نیازی به انتخاب دوباره اپراتور نیست.</div><form id="attention-reassign-form" method="post" action="{% url 'lead_attention_bulk_action' %}">{% csrf_token %}<div class="scroll-x"><table class="lead-table lead-urgent-table"><thead><tr><th class="lead-col-time">زمان</th><th class="lead-col-name">نام</th><th class="lead-col-mobile">موبایل</th><th class="lead-col-desc">علت اقدام</th><th class="lead-col-status">وضعیت</th><th>مسئول</th><th>پیگیری</th><th class="lead-urgent-actions-head">عملیات</th></tr></thead><tbody id="attention-tbody">{% for lead in attention_leads %}<tr data-attention-row="{{ lead.id }}"><td dir="ltr" class="lead-created-at"><span class="lead-created-date">{{ lead.created_at|jdate_en }}</span><span class="lead-created-time">{{ lead.created_at|date:"H:i" }}</span></td><td class="lead-col-name">{{ lead.full_name }}</td><td dir="ltr" class="latin-phone">{{ lead.phone|latin_digits }}</td><td class="lead-col-desc lead-attention-reason">{{ lead.attention_reason }}</td><td><span class="badge {% if lead.status == 'contacted' %}contacted{% else %}warn{% endif %}">{{ lead.get_status_display }}</span></td><td>{% if lead.assigned_to %}<span class="badge">{{ lead.assigned_to.user.get_full_name|default:lead.assigned_to.user.username }}</span>{% else %}<span class="badge warn">بدون مسئول</span>{% endif %}</td><td dir="ltr">{% if lead.next_follow_up %}{{ lead.next_follow_up|jdate_en }}{% else %}—{% endif %}</td><td class="lead-urgent-actions-cell"><div class="lead-urgent-actions"><a class="lead-action-call" href="{{ lead.call_url }}">☎ تماس</a>{% if lead.assigned_to %}<button type="submit" class="lead-action-reassign" name="same_owner_lead_id" value="{{ lead.id }}" title="ارجاع مجدد به {{ lead.assigned_to.user.get_full_name|default:lead.assigned_to.user.username }}">↻ ارجاع</button><a class="lead-action-manage" href="{{ lead.manage_url }}">باز کردن</a>{% else %}<a class="lead-action-manage" href="{{ lead.manage_url }}">تخصیص مسئول</a>{% endif %}</div></td></tr>{% empty %}<tr class="attention-empty-row"><td colspan="8" class="empty">مورد فوری وجود ندارد.</td></tr>{% endfor %}</tbody></table></div></form><script id="attention-one-click-reassign">(function(){var form=document.getElementById('attention-reassign-form');if(!form)return;form.addEventListener('submit',function(event){var button=event.submitter;if(!button||!button.classList.contains('lead-action-reassign'))return;event.preventDefault();if(button.disabled)return;var original=button.textContent;button.disabled=true;button.textContent='در حال ارجاع...';var data=new FormData(),csrf=form.querySelector('input[name="csrfmiddlewaretoken"]');if(csrf)data.append('csrfmiddlewaretoken',csrf.value);data.append('same_owner_lead_id',button.value);fetch(form.action,{method:'POST',body:data,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(response){return response.json().then(function(payload){if(!response.ok||!payload.ok)throw new Error(payload.message||'خطا در ارجاع');return payload})}).then(function(payload){var row=button.closest('[data-attention-row]');if(row){row.style.transition='opacity .18s ease,transform .18s ease';row.style.opacity='0';row.style.transform='translateX(-10px)';setTimeout(function(){row.remove();var count=document.getElementById('attention-count'),rows=document.querySelectorAll('#attention-tbody [data-attention-row]');if(count)count.textContent=rows.length;if(!rows.length){var tbody=document.getElementById('attention-tbody');if(tbody)tbody.innerHTML='<tr class="attention-empty-row"><td colspan="8" class="empty">مورد فوری وجود ندارد.</td></tr>'}},190)}}).catch(function(error){button.disabled=false;button.textContent='دوباره ارجاع';button.title=error.message||'خطا در ارجاع';setTimeout(function(){if(!button.disabled)button.textContent=original},2500)})})})();</script></section>
+<section class="lead-action-inbox" style="margin-bottom:14px">
+  <div class="action-inbox-head">
+    <div>
+      <span class="action-eyebrow">ACTION INBOX</span>
+      <h3>صندوق اقدام <b id="attention-count">{{ attention_total_count }}</b></h3>
+      <p>فقط موارد جاری اینجا دیده می‌شوند؛ لیدهای قدیمی پایین صفحه جمع شده‌اند تا صفحه شلوغ نشود.</p>
+    </div>
+    <div class="action-inbox-stats">
+      <span><b>{{ attention_current|length }}</b> جاری</span>
+      <span><b>{{ lead_kpis.unassigned }}</b> بدون مسئول</span>
+      <span><b>{{ attention_backlog_count }}</b> قدیمی</span>
+    </div>
+  </div>
+
+  <form id="attention-reassign-form" method="post" action="{% url 'lead_attention_bulk_action' %}">
+    {% csrf_token %}
+    <div class="action-stream" id="attention-current">
+      {% for lead in attention_current %}
+      <article class="action-item tone-{{ lead.attention_kind }}" data-attention-row="{{ lead.id }}">
+        <div class="action-item-main">
+          <div class="action-person">
+            <strong>{{ lead.full_name }}</strong>
+            <a href="{{ lead.call_url }}" class="action-phone" dir="ltr">{{ lead.phone|latin_digits }}</a>
+          </div>
+          <span class="action-reason">{{ lead.attention_short_reason }}</span>
+        </div>
+        <div class="action-item-meta">
+          <span>مسئول: <b>{% if lead.assigned_to %}{{ lead.assigned_to.user.get_full_name|default:lead.assigned_to.user.username }}{% else %}تعیین نشده{% endif %}</b></span>
+          <span>از آخرین ارجاع: <b>{{ lead.attention_age_label }}</b></span>
+          {% if lead.next_follow_up %}<span>پیگیری: <b dir="ltr">{{ lead.next_follow_up|jdate_en }}</b></span>{% endif %}
+        </div>
+        <div class="action-item-controls">
+          <a class="action-primary" href="{{ lead.manage_url }}">{{ lead.manage_label }}</a>
+          <a class="action-icon" href="{{ lead.call_url }}" title="تماس">☎</a>
+          {% if lead.assigned_to %}
+          <button type="submit" class="action-icon lead-action-reassign" name="same_owner_lead_id" value="{{ lead.id }}" title="ارجاع مجدد به همان مسئول">↻</button>
+          {% endif %}
+        </div>
+      </article>
+      {% empty %}
+      <div class="action-empty">مورد جاری برای اقدام ندارید.</div>
+      {% endfor %}
+    </div>
+
+    {% if attention_backlog_count %}
+    <details class="action-backlog">
+      <summary>
+        <span><b>انباشت قدیمی</b><small>لیدهایی که بیش از ۷ روز از آخرین فعالیتشان گذشته است</small></span>
+        <span class="backlog-count">{{ attention_backlog_count }}</span>
+      </summary>
+      <div class="backlog-list">
+        {% for lead in attention_backlog %}
+        <article class="backlog-item" data-attention-row="{{ lead.id }}">
+          <div>
+            <strong>{{ lead.full_name }}</strong>
+            <small>{{ lead.attention_short_reason }} · {% if lead.assigned_to %}{{ lead.assigned_to.user.get_full_name|default:lead.assigned_to.user.username }}{% else %}بدون مسئول{% endif %} · {{ lead.attention_age_label }}</small>
+          </div>
+          <div class="backlog-actions">
+            <a href="{{ lead.manage_url }}">باز کردن</a>
+            {% if lead.assigned_to %}<button type="submit" class="lead-action-reassign" name="same_owner_lead_id" value="{{ lead.id }}">↻ ارجاع</button>{% endif %}
+          </div>
+        </article>
+        {% endfor %}
+        {% if attention_backlog_count > 15 %}
+        <div class="backlog-note">۱۵ مورد آخر نمایش داده شده؛ بقیه همچنان در سیستم محفوظ‌اند.</div>
+        {% endif %}
+      </div>
+    </details>
+    {% endif %}
+  </form>
+</section>
+
+<style id="lead-action-inbox-style">
+.lead-action-inbox{background:linear-gradient(145deg,#111b24,#0c141d);border:1px solid #2c3d4b;border-radius:18px;padding:15px;box-shadow:0 10px 28px rgba(0,0,0,.16)}
+.action-inbox-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:12px}
+.action-eyebrow{display:block;color:#79caa8;font-size:8px;font-weight:900;letter-spacing:1.5px;margin-bottom:4px}
+.action-inbox-head h3{margin:0;color:#fff;font-size:17px}.action-inbox-head h3 b{display:inline-grid;place-items:center;min-width:26px;height:26px;margin-right:5px;padding:0 7px;border-radius:9px;background:#1d3b32;color:#9be3bd;font-size:11px}
+.action-inbox-head p{margin:5px 0 0;color:#93a4b1;font-size:9px;line-height:1.8}
+.action-inbox-stats{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.action-inbox-stats span{padding:7px 9px;border:1px solid #2d414f;border-radius:10px;background:#0f1b24;color:#9fb0bd;font-size:8px;font-weight:800;white-space:nowrap}.action-inbox-stats b{color:#eef7f3;font-size:10px}
+.action-stream{display:grid;gap:7px}.action-item{display:grid;grid-template-columns:minmax(220px,1.4fr) minmax(260px,1.5fr) auto;gap:10px;align-items:center;padding:10px 11px;border:1px solid #273a47;border-radius:13px;background:#0e1821}
+.action-item:hover{border-color:#3c5362;background:#111d27}.action-item.tone-unassigned{border-right:3px solid #e0a63a}.action-item.tone-overdue{border-right:3px solid #a970d8}.action-item.tone-untouched{border-right:3px solid #3e9f7a}.action-item-main{display:flex;align-items:center;gap:9px;min-width:0}.action-person{min-width:0}.action-person strong{display:block;color:#f5f9fb;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.action-phone{display:inline-block;margin-top:2px;color:#8fa3b2;font-size:8.5px;text-decoration:none}.action-reason{padding:4px 7px;border:1px solid #334b5a;border-radius:999px;color:#c6d2da;background:#15232d;font-size:7.5px;font-weight:900;white-space:nowrap}
+.action-item-meta{display:flex;gap:12px;flex-wrap:wrap;color:#8498a6;font-size:8px}.action-item-meta b{color:#c8d5dd;font-weight:850}
+.action-item-controls{display:flex;gap:5px;align-items:center;justify-content:flex-end}.action-primary{min-width:96px;height:34px;display:grid;place-items:center;padding:0 11px;border-radius:9px;background:linear-gradient(135deg,#205e49,#174334);border:1px solid #337a60;color:#fff;text-decoration:none;font-size:8px;font-weight:900}.action-icon{width:34px;height:34px;display:grid;place-items:center;border:1px solid #354b59;border-radius:9px;background:#14222c;color:#d6e0e6;text-decoration:none;font:900 13px/1 inherit;cursor:pointer}.action-icon:hover,.action-primary:hover{filter:brightness(1.12)}
+.action-empty{padding:22px;text-align:center;border:1px dashed #2f414e;border-radius:12px;color:#82939f;font-size:9px}
+.action-backlog{margin-top:10px;border-top:1px solid #243540;padding-top:10px}.action-backlog>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 11px;border-radius:11px;background:#0b151d;border:1px solid #253640;color:#c2cdd4}.action-backlog>summary::-webkit-details-marker{display:none}.action-backlog>summary span:first-child{display:grid;gap:2px}.action-backlog>summary b{font-size:10px;color:#dbe5ea}.action-backlog>summary small{font-size:7.5px;color:#758995}.backlog-count{min-width:31px;height:26px;display:grid;place-items:center;border-radius:8px;background:#2a2638;color:#c4a8e4;font-size:9px;font-weight:900}
+.backlog-list{display:grid;gap:5px;margin-top:7px}.backlog-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:#0d171f;border:1px solid #21323d}.backlog-item strong{display:block;color:#dce4e9;font-size:9px}.backlog-item small{display:block;margin-top:2px;color:#758994;font-size:7.5px}.backlog-actions{display:flex;gap:5px}.backlog-actions a,.backlog-actions button{height:29px;padding:0 9px;border-radius:8px;border:1px solid #344a59;background:#13222c;color:#cfd9df;text-decoration:none;font:800 7.5px/1 inherit;cursor:pointer}.backlog-note{text-align:center;padding:7px;color:#738794;font-size:7.5px}
+@media(max-width:900px){.action-item{grid-template-columns:1fr auto}.action-item-meta{grid-column:1/-1}.action-inbox-head{flex-direction:column}.action-inbox-stats{justify-content:flex-start}}
+@media(max-width:620px){.action-item{grid-template-columns:1fr}.action-item-controls{justify-content:flex-start}.action-item-meta{grid-column:auto}.action-inbox-stats{display:grid;grid-template-columns:repeat(3,1fr);width:100%}.action-inbox-stats span{text-align:center}.backlog-item{align-items:flex-start;flex-direction:column}}
+</style>
+
+<script id="attention-one-click-reassign">
+(function(){
+  var form=document.getElementById('attention-reassign-form');if(!form)return;
+  form.addEventListener('submit',function(event){
+    var button=event.submitter;
+    if(!button||!button.classList.contains('lead-action-reassign'))return;
+    event.preventDefault();if(button.disabled)return;
+    var original=button.textContent;button.disabled=true;button.textContent='…';
+    var data=new FormData(),csrf=form.querySelector('input[name="csrfmiddlewaretoken"]');
+    if(csrf)data.append('csrfmiddlewaretoken',csrf.value);
+    data.append('same_owner_lead_id',button.value);
+    fetch(form.action,{method:'POST',body:data,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}})
+      .then(function(response){return response.json().then(function(payload){if(!response.ok||!payload.ok)throw new Error(payload.message||'خطا در ارجاع');return payload})})
+      .then(function(){
+        var row=button.closest('[data-attention-row]');
+        if(row){row.style.transition='opacity .18s ease,transform .18s ease';row.style.opacity='0';row.style.transform='translateX(-8px)';setTimeout(function(){row.remove()},180)}
+      })
+      .catch(function(error){button.disabled=false;button.textContent=original;button.title=error.message||'خطا در ارجاع'})
+  });
+})();
+</script>
 <section class="lead-card lead-all-card"><h3>همه لیدها</h3><div class="lead-card-sub">تا ۱۵۰ ورودی آخر بر اساس فیلتر انتخابی · لید جدید را قبل از اولین تماس می‌توان بین گل‌های کال‌سنتر جابه‌جا کرد.</div><div class="lead-status-tabs"><a class="lead-status-tab {% if not status_filter %}active{% endif %}" href="?source={{ source_filter|urlencode }}&operator={{ operator_filter|urlencode }}">همه</a>{% for row in status_rows %}<a class="lead-status-tab {% if row.key == 'contacted' %}contacted{% endif %} {% if status_filter == row.key %}active{% endif %}" href="?source={{ source_filter|urlencode }}&operator={{ operator_filter|urlencode }}&status={{ row.key }}">{{ row.label }}</a>{% endfor %}</div><div class="scroll-x"><table class="lead-table"><thead><tr><th>زمان</th><th>نام</th><th>موبایل</th><th>خدمت</th><th>گل کال‌سنتر</th><th>گروه</th><th>منبع</th><th>وضعیت</th><th>نتیجه تماس</th></tr></thead><tbody>{% for lead in recent_leads %}<tr data-lead-row="{{ lead.id }}"><td dir="ltr" class="lead-created-at"><span class="lead-created-date">{{ lead.created_at|jdate_en }}</span><span class="lead-created-time">{{ lead.created_at|date:"H:i" }}</span></td><td>{{ lead.full_name }}</td><td dir="ltr" class="latin-phone">{{ lead.phone|latin_digits }}</td><td>{{ lead.interested_service|default:'—' }}</td><td class="lead-owner-cell">{% if lead.status == 'new' and not lead.contact_result and not lead.first_appointment_by_id %}<form method="post" action="{% url 'lead_reassign_operator' lead.id %}" class="lead-owner-inline">{% csrf_token %}<select class="lead-owner-switch" name="operator_id" data-current="{{ lead.assigned_to_id|default:'' }}" data-lead-name="{{ lead.full_name|escape }}"><option value="">بدون مسئول</option>{% for op in operators %}<option value="{{ op.id }}" {% if lead.assigned_to_id == op.id %}selected{% endif %}>{{ op.user.get_full_name|default:op.user.username }}</option>{% endfor %}</select></form>{% else %}<span class="lead-owner-locked">{% if lead.assigned_to %}{{ lead.assigned_to.user.get_full_name|default:lead.assigned_to.user.username }}{% else %}—{% endif %}</span>{% endif %}</td><td>{{ lead.lead_group_display }}</td><td>{{ lead.source_page_display }}</td><td><span class="badge {% if lead.status == 'new' and not lead.contact_result %}new{% else %}contacted{% endif %}">{% if lead.status == 'new' and not lead.contact_result %}جدید{% else %}تماس گرفته شد{% endif %}</span></td><td>{% if lead.contact_result %}<span class="badge lead-result lead-result-{{ lead.contact_result }}">{{ lead.get_contact_result_display }}</span>{% else %}—{% endif %}</td></tr>{% empty %}<tr><td colspan="9" class="empty">هنوز لیدی ثبت نشده است.</td></tr>{% endfor %}</tbody></table></div></section>
 <style>
 .lead-owner-cell{min-width:118px}.lead-owner-inline{margin:0}

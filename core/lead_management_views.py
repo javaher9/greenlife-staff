@@ -105,7 +105,43 @@ class AttentionLeadProxy(FlowerLeadProxy):
 
     @property
     def manage_label(self):
-        return 'تخصیص مسئول' if not self._flower_lead.assigned_to_id else 'باز کردن و پیگیری'
+        return 'تخصیص مسئول' if not self._flower_lead.assigned_to_id else 'باز کردن پرونده'
+
+    @property
+    def attention_kind(self):
+        lead=self._flower_lead
+        if not lead.assigned_to_id:
+            return 'unassigned'
+        if lead.next_follow_up and lead.next_follow_up < self._attention_today:
+            return 'overdue'
+        if lead.status == 'new':
+            return 'untouched'
+        return 'review'
+
+    @property
+    def attention_short_reason(self):
+        labels={
+            'unassigned':'بدون مسئول',
+            'overdue':'پیگیری عقب‌افتاده',
+            'untouched':'تماس نشده',
+            'review':'نیاز به بررسی',
+        }
+        return labels[self.attention_kind]
+
+    @property
+    def attention_age_label(self):
+        lead=self._flower_lead
+        point=lead.assigned_at or lead.created_at
+        if not point:
+            return '—'
+        delta=max(timedelta(0),self._attention_now-point)
+        minutes=int(delta.total_seconds()//60)
+        if minutes < 60:
+            return f'{max(1,minutes)} دقیقه'
+        hours=minutes//60
+        if hours < 24:
+            return f'{hours} ساعت'
+        return f'{hours//24} روز'
 
 
 def _channel_q(channel):
@@ -509,7 +545,27 @@ def lead_management_dashboard(request):
 
     sales=ReferralSale.objects.filter(status__in=('approved','paid')); sales_amount=sales.aggregate(v=Sum('amount'))['v'] or 0
     instagram_sales_amount=sales.filter(lead__in=leads.filter(_channel_q('instagram'))).aggregate(v=Sum('amount'))['v'] or 0; website_sales_amount=sales.filter(lead__in=leads.filter(_channel_q('website'))).aggregate(v=Sum('amount'))['v'] or 0
-    recent=list(filtered.order_by('-created_at')[:150]); attention=list(leads.filter(Q(assigned_to__isnull=True,status__in=OPEN_STATUSES)|stale_new_q|overdue_attention_q).distinct().order_by('created_at')[:20])
+    recent=list(filtered.order_by('-created_at')[:150])
+    urgent_q=Q(assigned_to__isnull=True,status__in=OPEN_STATUSES)|stale_new_q|overdue_attention_q
+    backlog_cutoff=now-timedelta(days=7)
+    recent_followup_cutoff=today-timedelta(days=2)
+    active_attention_q=urgent_q & (
+        Q(created_at__gte=backlog_cutoff) |
+        Q(assigned_at__gte=backlog_cutoff) |
+        Q(next_follow_up__gte=recent_followup_cutoff)
+    )
+    backlog_attention_q=urgent_q & ~(
+        Q(created_at__gte=backlog_cutoff) |
+        Q(assigned_at__gte=backlog_cutoff) |
+        Q(next_follow_up__gte=recent_followup_cutoff)
+    )
+    attention_current=list(
+        leads.filter(active_attention_q).distinct()
+        .order_by('-assigned_at','-created_at')[:10]
+    )
+    attention_backlog_qs=leads.filter(backlog_attention_q).distinct()
+    attention_backlog_count=attention_backlog_qs.count()
+    attention_backlog=list(attention_backlog_qs.order_by('-created_at')[:15])
     for lead in recent: _enrich_referral_group_label(lead)
     integration_rows=[{'name':'Instagram Form','state':'connected','detail':'فرم فعلی مستقیماً وارد ReferralLead می‌شود.'},{'name':'Website','state':'ready','detail':'برای اتصال فرم سایت به ورودی یکپارچه آماده است.'},{'name':'CRM','state':'ready','detail':'وب‌هوک/API ورودی برای اتصال CRM طراحی شده است.'},{'name':'WhatsApp / Campaigns','state':'ready','detail':'قابل اتصال با source و UTM مستقل.'}]
-    return render(request,'core/lead_management_dashboard.html',{'lead_kpis':{'total':total,'today':today_count,'week':week_count,'month':month_count,'contacted':contacted_count,'appointments':appointment_count,'won':won_count,'conversion':conversion,'contact_rate':contact_rate,'unassigned':unassigned_count,'overdue':overdue_count,'untouched':untouched_count,'duplicates':duplicate_phones,'sales_amount':sales_amount,'instagram_sales_amount':instagram_sales_amount,'website_sales_amount':website_sales_amount},'status_rows':status_rows,'source_rows':source_rows,'instagram_page_rows':instagram_page_rows,'group_rows':group_rows,'operator_rows':operator_rows,'recent_leads':[FlowerLeadProxy(lead) for lead in recent],'attention_leads':[AttentionLeadProxy(lead, now, today) for lead in attention],'integration_rows':integration_rows,'operators':[FlowerProfileProxy(op) for op in operators],'source_filter':source_filter,'status_filter':status_filter,'operator_filter':operator_filter,'status_choices':STATUS_FILTER_CHOICES})
+    return render(request,'core/lead_management_dashboard.html',{'lead_kpis':{'total':total,'today':today_count,'week':week_count,'month':month_count,'contacted':contacted_count,'appointments':appointment_count,'won':won_count,'conversion':conversion,'contact_rate':contact_rate,'unassigned':unassigned_count,'overdue':overdue_count,'untouched':untouched_count,'duplicates':duplicate_phones,'sales_amount':sales_amount,'instagram_sales_amount':instagram_sales_amount,'website_sales_amount':website_sales_amount},'status_rows':status_rows,'source_rows':source_rows,'instagram_page_rows':instagram_page_rows,'group_rows':group_rows,'operator_rows':operator_rows,'recent_leads':[FlowerLeadProxy(lead) for lead in recent],'attention_current':[AttentionLeadProxy(lead, now, today) for lead in attention_current],'attention_backlog':[AttentionLeadProxy(lead, now, today) for lead in attention_backlog],'attention_backlog_count':attention_backlog_count,'attention_total_count':len(attention_current)+attention_backlog_count,'integration_rows':integration_rows,'operators':[FlowerProfileProxy(op) for op in operators],'source_filter':source_filter,'status_filter':status_filter,'operator_filter':operator_filter,'status_choices':STATUS_FILTER_CHOICES})
