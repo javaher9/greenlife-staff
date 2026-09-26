@@ -110,6 +110,14 @@ background:linear-gradient(145deg,#1d2d3a,#15232f)!important;border-color:#40566
 .cred-page .cred-avatar img{width:100%!important;height:100%!important;object-fit:cover!important;border-radius:10px!important}
 @media(max-width:760px){.cred-page .cred-avatar{width:54px!important;height:54px!important;min-width:54px!important}}
 </style>
+<style id="settings-controls-tune-v2">
+.cred-page input[type="password"],.cred-page input[readonly]{
+background:#1a2c38!important;border-color:#486174!important;color:#fff!important}
+.cred-page input::placeholder{color:#a8b8c5!important}
+.cred-page .eye-btn{width:42px!important;min-width:42px!important;height:40px!important;background:#304a5b!important;border-color:#5d788c!important;color:#fff!important;font-size:16px!important}
+.cred-page .eye-btn:hover:not(:disabled){background:#3e5e71!important}
+.cred-page .eye-btn:disabled{opacity:.45!important}
+</style>
 </head>
 <body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'doctor' or user.profile.role == 'receptionist' %}gl-role-employee{% endif %} {% if user.profile.role == 'call_center' %}gl-role-call-center{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
 {% if request.session.impersonator_user_id %}
