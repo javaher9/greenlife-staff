@@ -189,6 +189,9 @@ class FlowerLeadProxy:
         raw=str(getattr(group,'name','') or '')
         if self._is_instagram_lead():
             return f'اینستاگرام - {self.instagram_entry_display}'
+        source_url=str(getattr(lead,'source_url','') or '').lower()
+        if '/beytoote/' in source_url or 'beytoote' in source_url or 'bitoteh' in source_url:
+            return 'بنر - سلامت'
         return raw or '—'
 
     @property
