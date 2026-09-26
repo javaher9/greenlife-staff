@@ -1,0 +1,43 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<style>
+.staff-security{max-width:760px;margin:20px auto 70px;display:grid;gap:14px}
+.ss-head,.ss-card{border:1px solid #314653;border-radius:20px;background:linear-gradient(145deg,#142631,#0c1922);box-shadow:0 14px 34px rgba(0,0,0,.18)}
+.ss-head{padding:20px 22px}.ss-head h1{margin:0 0 6px;color:#fff;font-size:23px}.ss-head p{margin:0;color:#b7c5cf;font-size:12px;line-height:1.9}
+.ss-card{padding:18px 20px}.ss-card h2{margin:0 0 5px;color:#fff;font-size:16px}.ss-card>p{margin:0 0 14px;color:#aebdca;font-size:11px}
+.ss-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.ss-field{display:grid;gap:6px}.ss-field.full{grid-column:1/-1}
+.ss-field label{font-size:11px;font-weight:800;color:#dce6ed}.ss-field input{width:100%;height:44px;border:1px solid #3c5363;border-radius:11px;background:#10212c;color:#fff;padding:0 12px;outline:none}
+.ss-field input:focus{border-color:#3e9b75;box-shadow:0 0 0 3px rgba(43,160,116,.10)}
+.ss-note{padding:10px 12px;border-radius:11px;background:#102b22;border:1px solid #285a48;color:#bde0d0;font-size:10px;line-height:1.9}
+.ss-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:15px}.ss-save{border:0;border-radius:11px;padding:11px 18px;background:linear-gradient(135deg,#2b956c,#1d674e);color:#fff;font-weight:900;cursor:pointer}.ss-back{color:#b9c7d0;text-decoration:none;font-size:11px}
+@media(max-width:700px){.staff-security{margin:12px 10px 110px}.ss-grid{grid-template-columns:1fr}.ss-field.full{grid-column:auto}.ss-actions{align-items:stretch;flex-direction:column}.ss-save{width:100%}}
+</style>
+<div class="staff-security">
+  <section class="ss-head">
+    <h1>تغییر رمز ورود</h1>
+    <p>می‌توانید رمز دسکتاپ و PIN شش‌رقمی موبایل را خودتان تغییر دهید. برای امنیت، ابتدا رمز فعلی یا PIN فعلی را وارد کنید.</p>
+  </section>
+  <form method="post" class="ss-card" autocomplete="off">
+    {% csrf_token %}
+    <h2>تأیید هویت</h2>
+    <p>یکی از اطلاعات فعلی شما کافی است.</p>
+    <div class="ss-grid">
+      <div class="ss-field full"><label>رمز فعلی یا PIN فعلی</label><input type="password" name="current_secret" required autocomplete="current-password"></div>
+    </div>
+    <h2 style="margin-top:20px">رمز دسکتاپ</h2>
+    <p>اختیاری؛ اگر نمی‌خواهید عوض شود، خالی بگذارید.</p>
+    <div class="ss-grid">
+      <div class="ss-field"><label>رمز دسکتاپ جدید</label><input type="password" name="new_password" autocomplete="new-password" placeholder="حداقل ۱۰ کاراکتر، شامل حرف و عدد"></div>
+      <div class="ss-field"><label>تکرار رمز دسکتاپ</label><input type="password" name="confirm_password" autocomplete="new-password"></div>
+    </div>
+    <h2 style="margin-top:20px">PIN موبایل</h2>
+    <p>{% if mobile_pin_set %}PIN موبایل شما فعال است.{% else %}هنوز PIN اختصاصی برای موبایل ثبت نشده است.{% endif %}</p>
+    <div class="ss-grid">
+      <div class="ss-field"><label>PIN جدید</label><input type="password" name="new_pin" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" placeholder="۶ رقم"></div>
+      <div class="ss-field"><label>تکرار PIN</label><input type="password" name="confirm_pin" maxlength="6" inputmode="numeric" pattern="[0-9]{6}"></div>
+    </div>
+    <div class="ss-note">PINهای خیلی ساده مثل 123456 یا 111111 پذیرفته نمی‌شوند. تغییر رمز دسکتاپ، شما را از همین جلسه خارج نمی‌کند.</div>
+    <div class="ss-actions"><button class="ss-save" type="submit">ذخیره تغییرات</button><a class="ss-back" href="/profile/">بازگشت به پروفایل</a></div>
+  </form>
+</div>
+{% endblock %}

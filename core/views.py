@@ -6,7 +6,8 @@ from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from functools import wraps
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from django.contrib.auth.hashers import check_password
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect, render
@@ -405,6 +406,97 @@ def impersonate_return(request):
     request.session.pop('impersonator_started_at',None)
     request.session['login_device']='desktop'
     return redirect('credential_settings')
+
+
+
+@login_required
+def staff_security(request):
+    profile=getattr(request.user,'profile',None)
+    if not profile or profile.role not in PERSONNEL_ROLES:
+        messages.error(request,'این بخش برای حساب پرسنلی فعال است.')
+        return redirect('dashboard')
+
+    credential=StaffCredential.objects.filter(user=request.user).first()
+    if request.method=='POST':
+        current=(request.POST.get('current_secret') or '').strip()
+        new_password=request.POST.get('new_password') or ''
+        confirm_password=request.POST.get('confirm_password') or ''
+        new_pin=(request.POST.get('new_pin') or '').strip()
+        confirm_pin=(request.POST.get('confirm_pin') or '').strip()
+
+        if not current:
+            messages.error(request,'رمز فعلی یا PIN فعلی را وارد کنید.')
+            return redirect('staff_security')
+
+        desktop_verified=request.user.check_password(current)
+        pin_verified=bool(
+            credential and credential.mobile_pin_hash
+            and check_password(current,credential.mobile_pin_hash)
+        )
+        if not (desktop_verified or pin_verified):
+            messages.error(request,'رمز فعلی یا PIN فعلی صحیح نیست.')
+            return redirect('staff_security')
+
+        if not new_password and not new_pin:
+            messages.error(request,'رمز دسکتاپ یا PIN موبایل جدید را وارد کنید.')
+            return redirect('staff_security')
+
+        if new_password:
+            if new_password!=confirm_password:
+                messages.error(request,'تکرار رمز دسکتاپ با رمز جدید یکسان نیست.')
+                return redirect('staff_security')
+            if len(new_password)<10 or not any(ch.isalpha() for ch in new_password) or not any(ch.isdigit() for ch in new_password):
+                messages.error(request,'رمز دسکتاپ باید حداقل ۱۰ کاراکتر و شامل حرف و عدد باشد.')
+                return redirect('staff_security')
+            if request.user.check_password(new_password):
+                messages.error(request,'رمز دسکتاپ جدید نباید همان رمز فعلی باشد.')
+                return redirect('staff_security')
+
+        if new_pin:
+            if new_pin!=confirm_pin:
+                messages.error(request,'تکرار PIN با PIN جدید یکسان نیست.')
+                return redirect('staff_security')
+            if len(new_pin)!=6 or not new_pin.isdigit():
+                messages.error(request,'PIN موبایل باید دقیقاً ۶ رقم باشد.')
+                return redirect('staff_security')
+            weak_pins={'000000','111111','222222','333333','444444','555555','666666','777777','888888','999999','123456','654321'}
+            if new_pin in weak_pins:
+                messages.error(request,'برای PIN یک عدد ۶ رقمی غیرقابل‌حدس‌تر انتخاب کنید.')
+                return redirect('staff_security')
+            if credential and credential.mobile_pin_hash and check_password(new_pin,credential.mobile_pin_hash):
+                messages.error(request,'PIN جدید نباید همان PIN فعلی باشد.')
+                return redirect('staff_security')
+
+        desktop_changed=False
+        pin_changed=False
+        with transaction.atomic():
+            if new_password:
+                change_desktop_password(request.user,new_password,actor=request.user)
+                update_session_auth_hash(request,request.user)
+                desktop_changed=True
+            if new_pin:
+                change_mobile_pin(request.user,new_pin,actor=request.user)
+                pin_changed=True
+            AuditLog.objects.create(
+                actor=request.user,action='self_credential_update',path=request.path,method='POST',
+                object_type='User',object_id=str(request.user.pk),
+                summary='Staff changed own login credential',
+                metadata={'desktop_changed':desktop_changed,'mobile_pin_changed':pin_changed},
+                ip_address=_request_ip(request),
+            )
+
+        changed=[]
+        if desktop_changed:
+            changed.append('رمز دسکتاپ')
+        if pin_changed:
+            changed.append('PIN موبایل')
+        messages.success(request,' و '.join(changed)+' با موفقیت تغییر کرد.')
+        return redirect('staff_security')
+
+    return render(request,'core/staff_security.html',{
+        'profile':profile,
+        'mobile_pin_set':bool(credential and credential.mobile_pin_hash),
+    })
 
 
 def logout_view(request): logout(request); return redirect('login')
