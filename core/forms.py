@@ -267,6 +267,39 @@ class PublicReferralLeadForm(ReferralLeadForm):
     consent=forms.BooleanField(label='اجازه می‌دهم کارشناسان گرین‌لایف برای راهنمایی با من تماس بگیرند.')
 
 
+class BeytootePublicLeadForm(forms.ModelForm):
+    class Meta:
+        model=ReferralLead
+        fields=['full_name','phone','notes']
+        labels={
+            'full_name':'نام و نام خانوادگی',
+            'phone':'شماره موبایل',
+            'notes':'توضیحات',
+        }
+        widgets={
+            'full_name':forms.TextInput(attrs={
+                'placeholder':'نام و نام خانوادگی',
+                'autocomplete':'name',
+            }),
+            'phone':forms.TextInput(attrs={
+                'placeholder':'مثلاً 09121234567',
+                'inputmode':'tel',
+                'autocomplete':'tel',
+                'dir':'ltr',
+            }),
+            'notes':forms.Textarea(attrs={
+                'rows':5,
+                'placeholder':'مثلاً چربی موضعی شما بیشتر در کدام ناحیه است؟ شکم و پهلو، ران، بازو، غبغب یا ناحیه دیگری؟ اگر هدف یا دغدغه خاصی دارید اینجا بنویسید.',
+            }),
+        }
+
+    def clean_phone(self):
+        value=''.join(ch for ch in self.cleaned_data['phone'] if ch.isdigit() or ch=='+')
+        if len(value)<10:
+            raise forms.ValidationError('شماره موبایل معتبر وارد کنید.')
+        return value
+
+
 class ReferralLeadManageForm(forms.ModelForm):
     next_follow_up=JalaliDateField(label='پیگیری بعدی',required=False)
     class Meta:
