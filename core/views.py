@@ -450,6 +450,16 @@ def dashboard(request):
         receptionist_payment_count=FinancialTransaction.objects.filter(
             source='manual',recorded_by=request.user,created_at__date=today_local,
         ).exclude(review_status='cancelled').count()
+        if receptionist_branch:
+            receptionist_payment_queue=(
+                VisitAppointment.objects
+                .filter(branch=receptionist_branch,care_stage='payment')
+                .exclude(status='cancelled')
+                .select_related('doctor_completed_by','consultation_plan','consultation_plan__consultant')
+                .order_by('consultation_plan__sent_to_reception_at','appointment_time','id')[:30]
+            )
+        else:
+            receptionist_payment_queue=VisitAppointment.objects.none()
         return render(request,'core/receptionist_dashboard.html',{
             'role':role,
             'profile':profile,
@@ -468,6 +478,8 @@ def dashboard(request):
             'receptionist_appointment_count':receptionist_appointment_count,
             'receptionist_arrived_count':receptionist_arrived_count,
             'receptionist_payment_count':receptionist_payment_count,
+            'receptionist_payment_queue':receptionist_payment_queue,
+            'receptionist_payment_waiting_count':receptionist_payment_queue.count(),
         })
     if role=='call_center' and not _is_mobile_request(request):
         return redirect('call_center_dashboard')
@@ -1247,6 +1259,28 @@ def finance_entry(request):
     if requested_appointment.isdigit():
         initial['appointment']=requested_appointment
         initial['sale_origin']='afsariyeh'
+        preset_appointment=VisitAppointment.objects.filter(
+            pk=int(requested_appointment),branch=profile.branch
+        ).select_related('consultation_plan').first()
+        if preset_appointment:
+            initial['person_name']=preset_appointment.full_name
+            plan=getattr(preset_appointment,'consultation_plan',None)
+            if plan and plan.status in ('finalized','payment_pending'):
+                initial['amount']=(plan.final_amount_toman or 0)*10
+                included=list(plan.items.filter(included=True).order_by('sort_order','id'))
+                initial['service']=' | '.join(
+                    f"{x.title}{(' - '+x.area) if x.area else ''} × {x.quantity}" for x in included
+                )[:160]
+                kinds={x.kind for x in included}
+                if 'device' in kinds:
+                    initial['sale_reason']='device_package'
+                elif 'lipolytic' in kinds:
+                    initial['sale_reason']='lipolytic'
+                else:
+                    initial['sale_reason']='daya_package'
+                initial['description']=(
+                    f"پکیج نهایی مشاور · مبلغ {int(plan.final_amount_toman or 0):,} تومان"
+                )
 
     raw_submission_token=(request.POST.get('submission_token') or '').strip()
     try:
@@ -1315,9 +1349,22 @@ def finance_entry(request):
             with transaction.atomic():
                 obj.save()
                 if appointment:
+                    appointment_changed=[]
                     if appointment.status!='completed':
                         appointment.status='completed'
-                        appointment.save(update_fields=['status','updated_at'])
+                        appointment_changed.append('status')
+                    if appointment.care_stage!='closed':
+                        appointment.care_stage='closed'
+                        appointment_changed.append('care_stage')
+                    if appointment_changed:
+                        appointment_changed.append('updated_at')
+                        appointment.save(update_fields=appointment_changed)
+                    plan=getattr(appointment,'consultation_plan',None)
+                    if plan:
+                        plan.status='paid'
+                        plan.paid_at=timezone.now()
+                        plan.paid_by=request.user
+                        plan.save(update_fields=['status','paid_at','paid_by','updated_at'])
                     if appointment.lead_id and appointment.lead.status!='won':
                         appointment.lead.status='won'
                         appointment.lead.save(update_fields=['status','updated_at'])

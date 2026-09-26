@@ -58,6 +58,7 @@
     .actions{display:flex;align-items:center;justify-content:space-between;margin-top:16px}.primary-action{border:0;border-radius:15px;background:linear-gradient(135deg,#7a5df0,#6448dc);color:#fff;padding:12px 20px;font-weight:800;font-size:12px;box-shadow:0 12px 24px rgba(110,80,226,.23);opacity:.65;cursor:not-allowed}
     .attendance-pill{padding:8px 11px;border-radius:12px;background:var(--green-soft);color:#168456;font-size:10px;font-weight:700}.attendance-pill.off{background:var(--amber-soft);color:#9e7119}
     .footnote{font-size:9px;color:#a1a8b5}
+    .payment-queue{margin:0 0 14px}.payment-list{padding:8px 14px 14px;display:grid;gap:7px}.payment-row{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:11px 12px;border:1px solid #e4e8ef;border-radius:13px;background:#fbfcfe}.payment-row strong{display:block;font-size:11px}.payment-row small{display:block;margin-top:3px;color:var(--muted);font-size:9px}.payment-amount{font-size:12px;font-weight:900;color:#247153;direction:ltr}.payment-go{padding:8px 11px;border-radius:10px;background:#6750d9;color:#fff;font-size:9px;font-weight:900}.payment-badge{display:inline-flex;margin-right:5px;padding:3px 6px;border-radius:999px;background:#fff0d9;color:#9a6415;font-size:8px;font-weight:900}
     @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.bottom-grid{grid-template-columns:1fr}.grid-main{grid-template-columns:1fr}.side{width:210px}.shell{grid-template-columns:minmax(0,1fr) 210px}}
   </style>
 </head>
@@ -108,6 +109,21 @@
       <article class="kpi"><div class="kpi-copy"><small>پرداخت‌های امروز</small><strong>{{ receptionist_payment_count|default:0 }}</strong><p>ثبت‌شده توسط شما</p></div><div class="kpi-icon">▤</div></article>
       <article class="kpi"><div class="kpi-copy"><small>پیگیری‌های باز</small><strong>{{ receptionist_task_count|default:0 }}</strong><p>بر اساس وظایف واقعی شما</p></div><div class="kpi-icon">✓</div></article>
     </section>
+
+    {% if receptionist_payment_queue %}
+    <section class="card payment-queue">
+      <div class="card-head"><h2>در انتظار پرداخت از مشاور <span class="payment-badge">{{ receptionist_payment_waiting_count }}</span></h2><span>پکیج نهایی شده و آماده دریافت وجه</span></div>
+      <div class="payment-list">
+        {% for item in receptionist_payment_queue %}
+        <div class="payment-row">
+          <div><strong>{{ item.full_name }}</strong><small>{{ item.phone }} · مشاور: {{ item.consultation_plan.consultant.get_full_name|default:item.consultation_plan.consultant.username|default:"—" }}</small></div>
+          <div class="payment-amount">{{ item.consultation_plan.final_amount_toman|floatformat:0 }} تومان</div>
+          <a class="payment-go" href="{% url 'finance_entry' %}?appointment={{ item.pk }}">ثبت پرداخت</a>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
 
     <section class="grid-main">
       <article class="card appointments">

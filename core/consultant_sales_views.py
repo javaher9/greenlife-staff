@@ -3,41 +3,127 @@ from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
-from .models import ReferralLead, ReferralSale, StaffNotification, Task, VisitAppointment
-
-SUCCESS_TYPES = {
-    'device': 'پکیج دستگاه',
-    'lipolytic': 'لیپولیتیک',
-    'daya': 'پکیج دایا',
-    'skin_hair': 'پوست و مو',
-}
-FAILURE_REASONS = {
-    'financial': 'مشکل مالی',
-    'side_effects': 'عوارض احتمالی',
-    'more_review': 'بررسی بیشتر',
-    'other': 'سایر',
-}
+from .call_center_identity import call_center_display_name
+from .models import (
+    ConsultationPlan, ConsultationPlanItem, EmployeeProfile, FinancialTransaction,
+    PatientProfile, ReferralLead, StaffNotification, Task, TreatmentCatalogItem,
+    VisitAppointment, normalize_lead_phone,
+)
 
 
 def _consultant(request):
-    profile = getattr(request.user, 'profile', None)
-    return profile if profile and profile.role == 'consultant' and profile.branch_id else None
+    profile=getattr(request.user,'profile',None)
+    return profile if profile and profile.role=='consultant' and profile.branch_id else None
 
 
-def _appointments(profile):
-    return VisitAppointment.objects.filter(
-        branch_id=profile.branch_id,
-        lead__isnull=False,
-        source='call_center',
-        status__in=('arrived', 'completed'),
-    ).select_related('lead', 'lead__assigned_to', 'lead__first_appointment_by', 'branch').order_by('-appointment_date', '-appointment_time')
+def _queue(profile):
+    return (
+        VisitAppointment.objects
+        .filter(branch_id=profile.branch_id,care_stage='consultant')
+        .exclude(status='cancelled')
+        .select_related('lead','doctor_completed_by','branch')
+        .prefetch_related('diet_programs','device_programs','lipolytic_programs','care_notes')
+        .order_by('doctor_completed_at','appointment_time','id')
+    )
+
+
+def _catalog_price(branch,kind,name):
+    qs=TreatmentCatalogItem.objects.filter(category=kind,name__iexact=(name or '').strip(),is_active=True)
+    if branch:
+        local=qs.filter(branch=branch).order_by('sort_order','id').first()
+        if local and local.price_toman is not None:
+            return local.price_toman
+    global_item=qs.filter(branch__isnull=True).order_by('sort_order','id').first()
+    return global_item.price_toman if global_item and global_item.price_toman is not None else Decimal('0')
+
+
+def _doctor_name(program):
+    user=getattr(program,'prescribed_by',None)
+    if not user:
+        return ''
+    return user.get_full_name() or user.username
+
+
+def _ensure_plan(appointment,consultant):
+    plan,created=ConsultationPlan.objects.get_or_create(
+        appointment=appointment,
+        defaults={'consultant':consultant},
+    )
+    if not plan.consultant_id:
+        plan.consultant=consultant
+        plan.save(update_fields=['consultant','updated_at'])
+    if not created or plan.items.exists():
+        return plan
+
+    rows=[]
+    order=10
+    for item in appointment.diet_programs.all():
+        rows.append(ConsultationPlanItem(
+            plan=plan,kind='diet',source='doctor',source_pk=item.pk,
+            title=item.diet_name,area='',quantity=1,
+            unit_price_toman=_catalog_price(appointment.branch,'diet',item.diet_name),
+            note=item.note or '',sort_order=order,
+            doctor_snapshot={
+                'title':item.diet_name,'area':'','quantity':1,
+                'recommendation_pack':item.recommendation_pack,
+                'print_template':item.print_template,'note':item.note,
+                'doctor':_doctor_name(item),
+            },
+        )); order+=10
+    for item in appointment.device_programs.all():
+        qty=max(1,item.sessions_prescribed or 1)
+        rows.append(ConsultationPlanItem(
+            plan=plan,kind='device',source='doctor',source_pk=item.pk,
+            title=item.device_name,area=item.area or '',quantity=qty,
+            unit_price_toman=_catalog_price(appointment.branch,'device',item.device_name),
+            note=item.note or '',sort_order=order,
+            doctor_snapshot={
+                'title':item.device_name,'area':item.area,'quantity':qty,
+                'note':item.note,'doctor':_doctor_name(item),
+            },
+        )); order+=10
+    for item in appointment.lipolytic_programs.all():
+        qty=max(1,item.sessions_prescribed or 1)
+        rows.append(ConsultationPlanItem(
+            plan=plan,kind='lipolytic',source='doctor',source_pk=item.pk,
+            title=item.protocol_name,area=item.area or '',quantity=qty,
+            unit_price_toman=_catalog_price(appointment.branch,'lipolytic',item.protocol_name),
+            note=item.note or '',sort_order=order,
+            doctor_snapshot={
+                'title':item.protocol_name,'area':item.area,'quantity':qty,
+                'note':item.note,'doctor':_doctor_name(item),
+            },
+        )); order+=10
+    if rows:
+        ConsultationPlanItem.objects.bulk_create(rows)
+    _recalculate(plan)
+    return plan
+
+
+def _recalculate(plan,discount=None):
+    subtotal=Decimal('0')
+    for item in plan.items.filter(included=True):
+        subtotal += (item.unit_price_toman or 0) * (item.quantity or 0)
+    if discount is None:
+        discount=plan.discount_toman or Decimal('0')
+    discount=max(Decimal('0'),min(Decimal(discount),subtotal))
+    plan.subtotal_toman=subtotal
+    plan.discount_toman=discount
+    plan.final_amount_toman=max(Decimal('0'),subtotal-discount)
+    plan.save(update_fields=['subtotal_toman','discount_toman','final_amount_toman','updated_at'])
+    return plan
 
 
 def _operator_user(lead):
+    if not lead:
+        return None
     if lead.first_appointment_by_id:
         return lead.first_appointment_by
     if lead.assigned_to_id:
@@ -45,154 +131,190 @@ def _operator_user(lead):
     return None
 
 
+def _service_summary(plan):
+    parts=[]
+    for item in plan.items.filter(included=True).order_by('sort_order','id'):
+        text=f'{item.title}'
+        if item.area:
+            text+=f' - {item.area}'
+        if item.quantity:
+            text+=f' × {item.quantity}'
+        parts.append(text)
+    return ' | '.join(parts)[:1500]
+
+
 @login_required
 def consultant_sales_outcomes(request):
-    profile = _consultant(request)
+    profile=_consultant(request)
     if not profile:
-        messages.error(request, 'این بخش فقط برای مشاور فعال است.')
+        messages.error(request,'این بخش فقط برای مشاور فعال است.')
         return redirect('dashboard')
 
-    appointments = _appointments(profile)
-    if request.method == 'POST':
-        appointment = get_object_or_404(appointments, pk=request.POST.get('appointment_id'))
-        lead = appointment.lead
-        result = (request.POST.get('result') or '').strip()
-        note = (request.POST.get('note') or '').strip()
+    appointments=_queue(profile)
+    selected_id=(request.POST.get('appointment_id') if request.method=='POST' else request.GET.get('appointment')) or ''
+    selected=appointments.filter(pk=int(selected_id)).first() if str(selected_id).isdigit() else appointments.first()
+    plan=_ensure_plan(selected,request.user) if selected else None
 
-        if result == 'success':
-            sale_type = (request.POST.get('sale_type') or '').strip()
-            if sale_type not in SUCCESS_TYPES:
-                messages.error(request, 'نوع فروش موفق را انتخاب کنید.')
-                return redirect('consultant_sales_outcomes')
+    if request.method=='POST':
+        if not selected or not plan:
+            messages.error(request,'پرونده انتخاب‌شده در صف مشاوره شما نیست.')
+            return redirect('consultant_sales_outcomes')
+        action=(request.POST.get('action') or '').strip()
+
+        if action=='update_item':
+            item=get_object_or_404(plan.items,pk=request.POST.get('item_id'))
+            item.title=(request.POST.get('title') or item.title).strip()[:180]
+            item.area=(request.POST.get('area') or '').strip()[:140]
             try:
-                amount = Decimal((request.POST.get('amount_toman') or '').replace(',', '').strip())
-            except (InvalidOperation, AttributeError):
-                amount = Decimal('0')
-            if amount <= 0:
-                messages.error(request, 'مبلغ فروش را به تومان و بیشتر از صفر وارد کنید.')
-                return redirect('consultant_sales_outcomes')
+                item.quantity=max(1,min(99,int(request.POST.get('quantity') or 1)))
+            except (TypeError,ValueError):
+                item.quantity=1
+            raw_price=(request.POST.get('unit_price_toman') or '').replace(',','').strip()
+            try:
+                item.unit_price_toman=max(Decimal('0'),Decimal(raw_price or '0'))
+            except InvalidOperation:
+                item.unit_price_toman=Decimal('0')
+            item.included=request.POST.get('included')=='1'
+            item.note=(request.POST.get('item_note') or '').strip()[:2000]
+            item.save()
+            _recalculate(plan)
+            messages.success(request,'پکیج نهایی به‌روزرسانی شد؛ نسخه پزشک دست‌نخورده باقی ماند.')
+            return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
 
-            payment_method=(request.POST.get('payment_method') or '').strip()
-            valid_methods=dict(ReferralSale.PAYMENT_METHODS)
-            if payment_method not in valid_methods:
-                messages.error(request, 'روش پرداخت را انتخاب کنید.')
-                return redirect('consultant_sales_outcomes')
-            cash_currency=''
-            cash_amount=None
-            cash_exchange_rate=None
-            if payment_method=='Cash':
-                cash_currency=(request.POST.get('cash_currency') or '').strip()
-                valid_currencies=dict(ReferralSale.CASH_CURRENCY)
-                if cash_currency not in valid_currencies:
-                    messages.error(request, 'نوع ارز نقدی را انتخاب کنید.')
-                    return redirect('consultant_sales_outcomes')
-                raw_cash=(request.POST.get('cash_amount') or '').replace(',','').strip()
-                try:
-                    cash_amount=Decimal(raw_cash) if raw_cash else None
-                except (InvalidOperation,AttributeError):
-                    cash_amount=None
-                if cash_currency=='IRT' and cash_amount is None:
-                    cash_amount=amount
-                elif cash_currency=='IRR' and cash_amount is None:
-                    cash_amount=amount*Decimal('10')
-                elif cash_currency not in ('IRT','IRR') and (cash_amount is None or cash_amount<=0):
-                    messages.error(request, 'برای وجه نقد ارزی، مبلغ ارز را وارد کنید.')
-                    return redirect('consultant_sales_outcomes')
-                raw_rate=(request.POST.get('cash_exchange_rate') or '').replace(',','').strip()
-                if raw_rate:
-                    try:
-                        cash_exchange_rate=Decimal(raw_rate)
-                    except (InvalidOperation,AttributeError):
-                        cash_exchange_rate=None
-                    if cash_exchange_rate is None or cash_exchange_rate<=0:
-                        messages.error(request, 'نرخ تبدیل ارز باید عددی و بیشتر از صفر باشد.')
-                        return redirect('consultant_sales_outcomes')
+        if action=='add_item':
+            kind=(request.POST.get('kind') or 'other').strip()
+            if kind not in dict(ConsultationPlanItem.KIND):
+                kind='other'
+            title=(request.POST.get('title') or '').strip()
+            if not title:
+                messages.error(request,'نام خدمت جدید را وارد کنید.')
+                return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
+            try:
+                qty=max(1,min(99,int(request.POST.get('quantity') or 1)))
+            except (TypeError,ValueError):
+                qty=1
+            raw_price=(request.POST.get('unit_price_toman') or '').replace(',','').strip()
+            try:
+                price=max(Decimal('0'),Decimal(raw_price or '0'))
+            except InvalidOperation:
+                price=Decimal('0')
+            ConsultationPlanItem.objects.create(
+                plan=plan,kind=kind,source='consultant',title=title[:180],
+                area=(request.POST.get('area') or '').strip()[:140],
+                quantity=qty,unit_price_toman=price,
+                note=(request.POST.get('item_note') or '').strip()[:2000],
+                sort_order=(plan.items.order_by('-sort_order').values_list('sort_order',flat=True).first() or 0)+10,
+            )
+            _recalculate(plan)
+            messages.success(request,'خدمت جدید به پکیج مشاور اضافه شد.')
+            return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
 
-            outcome_note = f"نوع فروش: {SUCCESS_TYPES[sale_type]} | روش پرداخت: {valid_methods[payment_method]}"
-            if payment_method=='Cash':
-                outcome_note += f" | ارز نقدی: {dict(ReferralSale.CASH_CURRENCY)[cash_currency]} | مبلغ نقدی: {cash_amount}"
-                if cash_exchange_rate:
-                    outcome_note += f" | نرخ تبدیل: {cash_exchange_rate}"
-            if note:
-                outcome_note += f" | توضیح مشاور: {note}"
+        if action=='finalize':
+            raw_discount=(request.POST.get('discount_toman') or '').replace(',','').strip()
+            try:
+                discount=max(Decimal('0'),Decimal(raw_discount or '0'))
+            except InvalidOperation:
+                discount=Decimal('0')
+            plan.note=(request.POST.get('plan_note') or '').strip()[:3000]
+            _recalculate(plan,discount)
+            if not plan.items.filter(included=True).exists():
+                messages.error(request,'حداقل یک خدمت باید در پکیج نهایی باقی بماند.')
+                return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
+            plan.status='finalized'
+            plan.finalized_at=timezone.now()
+            plan.consultant=request.user
+            plan.save(update_fields=['status','finalized_at','consultant','note','updated_at'])
+            messages.success(request,'پکیج نهایی شد. حالا پرداخت را خودتان ثبت کنید یا برای منشی بفرستید.')
+            return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
+
+        if action=='send_to_reception':
+            if plan.status not in ('finalized','payment_pending'):
+                messages.error(request,'ابتدا پکیج را نهایی کنید.')
+                return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
             with transaction.atomic():
-                sale, created = ReferralSale.objects.get_or_create(
-                    lead=lead,
-                    defaults={
-                        'sale_date': timezone.localdate(), 'amount': amount,
-                        'status': 'approved', 'recorded_by': request.user,
-                        'payment_method':payment_method,'cash_currency':cash_currency,
-                        'cash_amount':cash_amount,'cash_exchange_rate':cash_exchange_rate,
-                        'note': outcome_note,
-                    },
+                plan.status='payment_pending'
+                plan.sent_to_reception_at=timezone.now()
+                plan.save(update_fields=['status','sent_to_reception_at','updated_at'])
+                selected.care_stage='payment'
+                selected.save(update_fields=['care_stage','updated_at'])
+                receptionists=User.objects.filter(
+                    is_active=True,profile__is_active=True,profile__role='receptionist',
+                    profile__branch=selected.branch,
                 )
-                if not created:
-                    sale.sale_date = timezone.localdate()
-                    sale.amount = amount
-                    sale.status = 'approved'
-                    sale.recorded_by = request.user
-                    sale.payment_method=payment_method
-                    sale.cash_currency=cash_currency
-                    sale.cash_amount=cash_amount
-                    sale.cash_exchange_rate=cash_exchange_rate
-                    sale.note = outcome_note
-                    sale.save(update_fields=['sale_date','amount','status','recorded_by','payment_method','cash_currency','cash_amount','cash_exchange_rate','note','updated_at'])
-                lead.status = 'won'
-                lead.next_follow_up = None
-                lead.save(update_fields=['status', 'next_follow_up', 'updated_at'])
-                appointment.status = 'completed'
-                appointment.save(update_fields=['status', 'updated_at'])
-            messages.success(request, 'فروش موفق ثبت شد؛ لید به فروش تبدیل و به مخزن Happy Call اضافه شد.')
+                amount=f'{int(plan.final_amount_toman):,}'
+                for user in receptionists:
+                    StaffNotification.objects.create(
+                        user=user,title='پرداخت جدید از مشاور',
+                        message=f'{selected.full_name} · مبلغ نهایی {amount} تومان · آماده دریافت',
+                        notification_type='consultant_payment',related_date=timezone.localdate(),
+                    )
+            messages.success(request,'پرونده برای منشی ارسال شد و در صف «در انتظار پرداخت» قرار گرفت.')
             return redirect('consultant_sales_outcomes')
 
-        if result == 'failed':
-            reason = (request.POST.get('failure_reason') or '').strip()
-            if reason not in FAILURE_REASONS:
-                messages.error(request, 'علت فروش ناموفق را انتخاب کنید.')
-                return redirect('consultant_sales_outcomes')
-            if reason == 'other' and not note:
-                messages.error(request, 'برای گزینه «سایر» توضیح الزامی است.')
-                return redirect('consultant_sales_outcomes')
-
-            tomorrow = timezone.localdate() + timedelta(days=1)
-            reason_label = FAILURE_REASONS[reason]
-            detail = f"فروش ناموفق مشاور - {reason_label}"
+        if action=='no_sale':
+            reason=(request.POST.get('failure_reason') or 'more_review').strip()
+            reason_labels={
+                'financial':'مشکل مالی','side_effects':'نگرانی از عوارض',
+                'more_review':'نیاز به بررسی بیشتر','other':'سایر',
+            }
+            if reason not in reason_labels:
+                reason='other'
+            note=(request.POST.get('failure_note') or '').strip()
+            detail=f"فعلاً خرید نکرد - {reason_labels[reason]}"
             if note:
-                detail += f" | {note}"
-            operator = _operator_user(lead)
+                detail+=f' | {note}'
+            operator=_operator_user(selected.lead)
+            tomorrow=timezone.localdate()+timedelta(days=1)
             with transaction.atomic():
-                lead.status = 'contacted'
-                lead.next_follow_up = tomorrow
-                lead.notes = ((lead.notes or '') + f"\n[{timezone.localdate()}] {detail}").strip()
-                lead.save(update_fields=['status', 'next_follow_up', 'notes', 'updated_at'])
+                plan.status='no_sale'
+                plan.note=((plan.note or '')+'\n'+detail).strip()
+                plan.save(update_fields=['status','note','updated_at'])
+                selected.care_stage='closed'
+                selected.status='completed'
+                selected.save(update_fields=['care_stage','status','updated_at'])
+                if selected.lead_id:
+                    selected.lead.status='contacted'
+                    selected.lead.next_follow_up=tomorrow
+                    selected.lead.notes=((selected.lead.notes or '')+f'\n[{timezone.localdate()}] {detail}').strip()
+                    selected.lead.save(update_fields=['status','next_follow_up','notes','updated_at'])
                 if operator:
                     Task.objects.create(
-                        title=f'پیگیری فروش ناموفق: {lead.full_name}',
-                        description=f'{detail}\nتلفن: {lead.phone}\nپیگیری مجدد پس از مراجعه شعبه.',
-                        assigned_to=operator, created_by=request.user,
-                        due_date=tomorrow, priority='high', status='todo',
+                        title=f'پیگیری پس از مشاوره: {selected.full_name}',
+                        description=f'{detail}\nتلفن: {selected.phone}',
+                        assigned_to=operator,created_by=request.user,due_date=tomorrow,
+                        priority='high',status='todo',
                     )
                     StaffNotification.objects.create(
-                        user=operator,
-                        title='پیگیری فروش ناموفق برای فردا',
-                        message=f'{lead.full_name} - {reason_label} - {lead.phone}',
-                        notification_type='lead_follow_up', related_date=tomorrow,
+                        user=operator,title='پیگیری بیمار پس از مشاوره',
+                        message=f'{selected.full_name} · {reason_labels[reason]} · {selected.phone}',
+                        notification_type='lead_follow_up',related_date=tomorrow,
                     )
-            messages.success(request, 'فروش ناموفق ثبت شد و پیگیری فردا به کال‌سنتر ارجاع شد.')
+            messages.success(request,'نتیجه ثبت شد و پیگیری بعدی به کال‌سنتر برگشت.')
             return redirect('consultant_sales_outcomes')
 
-        messages.error(request, 'نتیجه مراجعه را مشخص کنید.')
-        return redirect('consultant_sales_outcomes')
+        messages.error(request,'اقدام انتخاب‌شده معتبر نیست.')
+        return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
 
-    pending = appointments.exclude(lead__status='won')[:60]
-    happy_calls = ReferralSale.objects.filter(
-        recorded_by=request.user, status__in=('approved', 'paid')
-    ).select_related('lead').order_by('-sale_date', '-created_at')[:100]
-    return render(request, 'core/consultant_sales_outcomes.html', {
-        'pending': pending,
-        'happy_calls': happy_calls,
-        'success_types': SUCCESS_TYPES,
-        'failure_reasons': FAILURE_REASONS,
-        'payment_methods': ReferralSale.PAYMENT_METHODS,
-        'cash_currencies': ReferralSale.CASH_CURRENCY,
+    pending=list(appointments[:80])
+    recent_paid=FinancialTransaction.objects.filter(
+        source='manual',recorded_by=request.user,entry_type='inc'
+    ).exclude(review_status='cancelled').select_related('appointment').order_by('-created_at')[:12]
+
+    doctor_notes=[]
+    if selected:
+        doctor_notes=list(selected.care_notes.filter(note_type='clinical')[:8])
+
+    return render(request,'core/consultant_sales_outcomes.html',{
+        'pending':pending,'selected':selected,'plan':plan,
+        'plan_items':list(plan.items.all()) if plan else [],
+        'doctor_notes':doctor_notes,'recent_paid':recent_paid,
+        'item_kinds':ConsultationPlanItem.KIND,
+        'failure_reasons':[
+            ('financial','مشکل مالی'),('side_effects','نگرانی از عوارض'),
+            ('more_review','نیاز به بررسی بیشتر'),('other','سایر'),
+        ],
+        'payment_url':(
+            f"{reverse('finance_entry')}?appointment={selected.pk}"
+            if selected and plan and plan.status in ('finalized','payment_pending') else ''
+        ),
     })

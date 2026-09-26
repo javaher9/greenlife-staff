@@ -46,7 +46,7 @@
     </div>
     <div class="gl-consult-list">
       {% for row in consultant_queue %}
-      <article class="gl-consult-row">
+      <a class="gl-consult-row" href="{% url 'consultant_sales_outcomes' %}?appointment={{ row.appointment.pk }}">
         <div>
           <strong>{{ row.appointment.full_name }}</strong>
           <small>ارسال از {{ row.doctor_name }} · {{ row.appointment.branch }}</small>
@@ -58,7 +58,7 @@
           </div>
         </div>
         <div class="gl-consult-time">{% if row.appointment.doctor_completed_at %}{{ row.appointment.doctor_completed_at|date:"H:i" }}{% else %}—{% endif %}</div>
-      </article>
+      </a>
       {% empty %}
       <div class="gl-consult-empty">فعلاً بیماری در صف مشاوره نیست.</div>
       {% endfor %}

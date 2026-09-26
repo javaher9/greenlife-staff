@@ -630,7 +630,6 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
         if consultant_profile and consultant_profile.branch_id:
             self.fields['appointment'].queryset=VisitAppointment.objects.filter(
                 branch_id=consultant_profile.branch_id,
-                source='call_center',
             ).exclude(
                 status='cancelled',
             ).exclude(

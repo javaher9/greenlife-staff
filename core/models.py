@@ -500,6 +500,77 @@ class PatientCareNote(models.Model):
     class Meta:
         ordering=['-created_at','-id']
 
+class ConsultationPlan(models.Model):
+    STATUS=[
+        ('draft','در حال تنظیم'),
+        ('finalized','نهایی شده'),
+        ('payment_pending','در انتظار پرداخت منشی'),
+        ('paid','پرداخت شده'),
+        ('no_sale','فعلاً خرید نکرد'),
+    ]
+    appointment=models.OneToOneField(
+        VisitAppointment,on_delete=models.CASCADE,related_name='consultation_plan'
+    )
+    consultant=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='consultation_plans'
+    )
+    status=models.CharField(max_length=24,choices=STATUS,default='draft',db_index=True)
+    subtotal_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    discount_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    final_amount_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    note=models.TextField(blank=True)
+    finalized_at=models.DateTimeField(null=True,blank=True)
+    sent_to_reception_at=models.DateTimeField(null=True,blank=True)
+    paid_at=models.DateTimeField(null=True,blank=True)
+    paid_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='paid_consultation_plans'
+    )
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering=['-updated_at','-id']
+
+    def __str__(self):
+        return f'پکیج مشاوره {self.appointment.full_name}'
+
+    @property
+    def included_items(self):
+        return self.items.filter(included=True)
+
+
+class ConsultationPlanItem(models.Model):
+    KIND=[
+        ('diet','رژیم'),
+        ('device','دستگاه'),
+        ('lipolytic','لیپولیتیک'),
+        ('other','سایر'),
+    ]
+    SOURCE=[('doctor','پیشنهاد پزشک'),('consultant','افزوده مشاور')]
+    plan=models.ForeignKey(ConsultationPlan,on_delete=models.CASCADE,related_name='items')
+    kind=models.CharField(max_length=20,choices=KIND,default='other')
+    source=models.CharField(max_length=20,choices=SOURCE,default='consultant')
+    source_pk=models.PositiveBigIntegerField(null=True,blank=True)
+    title=models.CharField(max_length=180)
+    area=models.CharField(max_length=140,blank=True)
+    quantity=models.PositiveSmallIntegerField(default=1)
+    unit_price_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    included=models.BooleanField(default=True)
+    note=models.TextField(blank=True)
+    doctor_snapshot=models.JSONField(default=dict,blank=True)
+    sort_order=models.PositiveSmallIntegerField(default=100)
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering=['sort_order','id']
+
+    @property
+    def line_total_toman(self):
+        if not self.included:
+            return 0
+        return (self.unit_price_toman or 0) * (self.quantity or 0)
+
 class TreatmentCatalogItem(models.Model):
     CATEGORY=[
         ('diet','رژیم'),

@@ -1,42 +1,60 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
 <style>
-.cso{display:grid;gap:14px}.cso-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.cso-card{padding:14px;border:1px solid rgba(120,145,165,.2);border-radius:15px;background:rgba(255,255,255,.035);margin-bottom:10px}.cso-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.cso-name{font-size:16px;font-weight:950}.cso-meta{color:#93a7b8;font-size:12px;line-height:1.8}.cso-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.cso-btn{border:0;border-radius:11px;padding:11px;font-weight:950;cursor:pointer}.cso-success{background:#1f9d70;color:#fff}.cso-fail{background:#6c3440;color:#fff}.cso-form{display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(120,145,165,.16)}.cso-form.open{display:block}.cso-options{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.cso-options label{padding:9px;border:1px solid rgba(130,155,175,.22);border-radius:10px}.cso-form input[type=number],.cso-form textarea{width:100%;box-sizing:border-box;margin-top:7px}.cso-submit{margin-top:8px;width:100%}.happy-row{padding:11px 0;border-bottom:1px solid rgba(120,145,165,.13)}.happy-row:last-child{border:0}.happy-money{font-weight:950;direction:ltr}.cso-note{font-size:11px;color:#8fa2b2}.cso-cash{display:none;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px;padding:10px;border:1px solid rgba(52,211,153,.25);border-radius:11px;background:rgba(16,185,129,.06)}.cso-cash.open{display:grid}.cso-cash label{margin:0}.cso-empty{padding:22px;text-align:center;color:#8ea2b4}@media(max-width:850px){.cso-grid{grid-template-columns:1fr}.cso-options{grid-template-columns:1fr}.cso-actions{grid-template-columns:1fr 1fr}.cso-cash.open{grid-template-columns:1fr}}
+.care{display:grid;gap:14px}.care-hero{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:18px 20px;border:1px solid #31465a;border-radius:20px;background:linear-gradient(145deg,#182838,#111d2a);box-shadow:0 14px 34px rgba(0,0,0,.16)}.care-hero h1{margin:2px 0 5px;font-size:22px;color:#fff}.care-hero p{margin:0;color:#a9bac9;font-size:11px}.care-count{min-width:70px;text-align:center;padding:12px;border-radius:15px;background:#20374a;border:1px solid #3b5870}.care-count strong{display:block;font-size:24px;color:#fff}.care-count span{font-size:9px;color:#a7b8c7}
+.care-grid{display:grid;grid-template-columns:minmax(280px,.72fr) minmax(0,1.7fr);gap:14px}.queue,.workspace{border:1px solid #2e4254;border-radius:18px;background:#111d29;overflow:hidden}.care-head{padding:13px 15px;border-bottom:1px solid #263949;display:flex;justify-content:space-between;align-items:center}.care-head h2{margin:0;font-size:14px;color:#fff}.care-head small{color:#8fa4b7;font-size:9px}.queue-list{padding:8px;display:grid;gap:6px;max-height:72vh;overflow:auto}.queue-row{display:grid;grid-template-columns:1fr auto;gap:10px;padding:11px;border:1px solid #263a4b;border-radius:12px;background:#152431;text-decoration:none;color:#eaf2f8}.queue-row:hover,.queue-row.active{border-color:#526e85;background:#1a2c3a}.queue-row strong{display:block;font-size:11px}.queue-row small{display:block;margin-top:3px;color:#91a5b5;font-size:8px}.queue-row time{font-size:8px;color:#bdaeff}.empty{padding:26px;text-align:center;color:#879caf;font-size:10px}
+.patient-bar{padding:15px;display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid #263949;background:linear-gradient(135deg,#172b38,#132331)}.patient-bar h2{margin:0 0 5px;color:#fff;font-size:18px}.patient-bar p{margin:0;color:#a9bac7;font-size:9px}.stage{height:max-content;padding:6px 9px;border-radius:999px;background:#294c3f;color:#b9f5d8;border:1px solid #3c705d;font-size:8px;font-weight:900}
+.doctor-box{margin:12px 14px;padding:12px;border:1px solid #39435e;border-radius:14px;background:#181d31}.doctor-box h3{margin:0 0 8px;color:#ded7ff;font-size:11px}.doctor-chips{display:flex;flex-wrap:wrap;gap:6px}.doctor-chips span{padding:5px 8px;border-radius:9px;background:#232844;color:#d8d1ff;font-size:8px}.doctor-note{margin-top:7px;padding-top:7px;border-top:1px solid #343955;color:#aeb8ca;font-size:9px;line-height:1.8}
+.plan{padding:0 14px 14px}.plan-title{display:flex;justify-content:space-between;align-items:end;margin:12px 0 8px}.plan-title h3{margin:0;color:#fff;font-size:13px}.plan-title small{color:#8ea2b5;font-size:8px}.item{display:grid;grid-template-columns:minmax(150px,1.3fr) minmax(90px,.75fr) 70px 120px 82px;gap:7px;align-items:end;padding:9px;margin-bottom:7px;border:1px solid #2b4051;border-radius:12px;background:#152532}.item.doctor{border-right:3px solid #7d6bdb}.item.consultant{border-right:3px solid #2aa879}.item label{display:grid;gap:4px;color:#91a6b8;font-size:8px}.item input,.item select,.add-row input,.add-row select,.final-box input,.final-box textarea,.nosale textarea,.nosale select{width:100%;height:35px;border:1px solid #3b5365;border-radius:9px;background:#10202c;color:#f3f8fc;padding:0 8px;font:inherit;font-size:9px}.item textarea{height:35px}.item-actions{display:flex;gap:5px}.save{height:35px;border:0;border-radius:9px;padding:0 9px;background:#286a54;color:#fff;font-size:8px;font-weight:900;cursor:pointer}.toggle{display:flex!important;align-items:center;gap:5px;color:#c7d3dc!important;white-space:nowrap}.original{grid-column:1/-1;color:#887fae;font-size:7px;margin-top:-1px}.add-row{display:grid;grid-template-columns:110px 1fr 1fr 70px 120px auto;gap:7px;padding:10px;border:1px dashed #365064;border-radius:12px;background:#101d28}.add-row button{height:35px}
+.final-box{margin-top:10px;padding:12px;border:1px solid #345264;border-radius:14px;background:#122330}.totals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:9px}.total-card{padding:9px;border-radius:11px;background:#192d3b;border:1px solid #2f485a}.total-card span{display:block;color:#8fa4b6;font-size:8px}.total-card strong{display:block;margin-top:4px;color:#fff;font-size:15px;direction:ltr;text-align:right}.final-form{display:grid;grid-template-columns:170px 1fr auto;gap:8px;align-items:end}.final-form label{color:#9dafbd;font-size:8px}.final-form textarea{height:54px;padding:7px}.primary{height:38px;border:0;border-radius:10px;background:#2b8061;color:#fff;font-weight:900;font-size:9px;padding:0 14px;cursor:pointer}
+.next-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.pay-self,.send-rec{display:flex;align-items:center;justify-content:center;height:44px;border-radius:11px;text-decoration:none;font-size:10px;font-weight:950}.pay-self{background:#216f54;color:#fff}.send-rec{border:0;background:#51458b;color:#fff;cursor:pointer}.status-note{margin-top:8px;color:#9fb1bf;font-size:8px}
+.nosale{margin-top:10px;padding-top:10px;border-top:1px solid #2b4051}.nosale form{display:grid;grid-template-columns:160px 1fr auto;gap:7px}.nosale textarea{height:36px;padding:7px}.danger{height:36px;border:0;border-radius:9px;background:#6f3341;color:#fff;font-size:8px;font-weight:900;cursor:pointer}
+.recent{margin-top:14px;border:1px solid #2e4254;border-radius:16px;background:#111d29;padding:12px}.recent h3{margin:0 0 8px;color:#fff;font-size:12px}.recent-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:8px 0;border-top:1px solid #243746;font-size:9px}.recent-row:first-of-type{border-top:0}.recent-row span{color:#9eb0bf}.recent-row b{color:#c7f5df;direction:ltr}
+@media(max-width:1050px){.care-grid{grid-template-columns:1fr}.queue-list{max-height:none;grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.care-hero{align-items:flex-start}.queue-list{grid-template-columns:1fr}.item{grid-template-columns:1fr 1fr}.original{grid-column:1/-1}.add-row,.final-form,.nosale form{grid-template-columns:1fr}.totals{grid-template-columns:1fr 1fr 1fr}.next-actions{grid-template-columns:1fr}}
 </style>
-<div class="cso">
-<section class="hero"><div><span class="eyebrow">پنل مشاور</span><h1>نتیجه مراجعه و فروش</h1><p>مراجعه‌های ورودی از لید Staff را تعیین تکلیف کنید. فروش ناموفق برای پیگیری فردا به کال‌سنتر برمی‌گردد و فروش موفق در Happy Call باقی می‌ماند.</p></div></section>
-<div class="cso-grid">
-<section class="panel"><div class="sectionhead"><div><h2>مراجعه‌های نیازمند نتیجه</h2><small>فقط لیدهای دارای نوبت کال‌سنتر شعبه شما</small></div></div>
-{% for x in pending %}<article class="cso-card">
- <div class="cso-head"><div><div class="cso-name">{{ x.full_name }}</div><div class="cso-meta">{{ x.phone }} · {{ x.appointment_date|jdate }} · {{ x.service|default:'بدون خدمت ثبت‌شده' }}</div></div><span class="badge">{{ x.lead.get_status_display }}</span></div>
- <div class="cso-actions"><button type="button" class="cso-btn cso-success" onclick="toggleOutcome('s{{x.pk}}')">فروش موفق</button><button type="button" class="cso-btn cso-fail" onclick="toggleOutcome('f{{x.pk}}')">فروش ناموفق</button></div>
- <form method="post" class="cso-form" id="s{{x.pk}}">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{x.pk}}"><input type="hidden" name="result" value="success">
-  <div class="cso-options">{% for key,label in success_types.items %}<label><input type="radio" name="sale_type" value="{{key}}" required> {{label}}</label>{% endfor %}</div>
-  <label>مبلغ فروش / معادل کل (تومان)<input type="number" name="amount_toman" min="1" step="1" inputmode="numeric" required></label>
-  <label>روش پرداخت
-    <select name="payment_method" required onchange="toggleSaleCash(this)">
-      <option value="">انتخاب روش پرداخت</option>
-      {% for key,label in payment_methods %}<option value="{{key}}">{{label}}</option>{% endfor %}
-    </select>
-  </label>
-  <div class="cso-cash">
-    <label>ارز نقدی<select name="cash_currency"><option value="">انتخاب ارز</option>{% for key,label in cash_currencies %}<option value="{{key}}">{{label}}</option>{% endfor %}</select></label>
-    <label>مبلغ نقدی به ارز انتخابی<input type="number" name="cash_amount" min="0.01" step="0.01" inputmode="decimal"></label>
-    <label>نرخ تبدیل به تومان<input type="number" name="cash_exchange_rate" min="0.01" step="0.01" inputmode="decimal" placeholder="اختیاری"></label>
+<div class="care">
+  <section class="care-hero"><div><small style="color:#7fd5b2;font-weight:900">پنل مشاور · چرخه درمان</small><h1>پزشک ← مشاور ← پرداخت</h1><p>پیشنهاد پزشک محفوظ می‌ماند؛ شما پکیج نهایی تجاری را ویرایش و نهایی می‌کنید.</p></div><div class="care-count"><strong>{{ pending|length }}</strong><span>منتظر مشاوره</span></div></section>
+  <div class="care-grid">
+    <aside class="queue"><div class="care-head"><h2>صف مشاوره</h2><small>شعبه شما</small></div><div class="queue-list">
+      {% for a in pending %}<a class="queue-row {% if selected and a.pk == selected.pk %}active{% endif %}" href="?appointment={{ a.pk }}"><div><strong>{{ a.full_name }}</strong><small>{{ a.phone }} · {{ a.branch }}</small></div><time>{% if a.doctor_completed_at %}{{ a.doctor_completed_at|date:"H:i" }}{% else %}—{% endif %}</time></a>{% empty %}<div class="empty">فعلاً پرونده‌ای در انتظار مشاوره نیست.</div>{% endfor %}
+    </div></aside>
+    <section class="workspace">
+      {% if selected and plan %}
+      <div class="patient-bar"><div><h2>{{ selected.full_name }}</h2><p>{{ selected.phone }} · پزشک: {{ selected.doctor_completed_by.get_full_name|default:selected.doctor_completed_by.username|default:"—" }} · {{ selected.appointment_date|jdate }}</p></div><span class="stage">{{ plan.get_status_display }}</span></div>
+      <div class="doctor-box"><h3>نسخه / پیشنهاد اصلی پزشک — فقط خواندنی</h3><div class="doctor-chips">
+        {% for x in selected.diet_programs.all %}<span>رژیم: {{ x.diet_name }}</span>{% endfor %}
+        {% for x in selected.device_programs.all %}<span>{{ x.device_name }} · {{ x.area|default:"—" }} · {{ x.sessions_prescribed }} جلسه</span>{% endfor %}
+        {% for x in selected.lipolytic_programs.all %}<span>{{ x.protocol_name }} · {{ x.area|default:"—" }} · {{ x.sessions_prescribed }} جلسه</span>{% endfor %}
+      </div>{% for n in doctor_notes %}<div class="doctor-note">{{ n.body }}</div>{% endfor %}</div>
+      <div class="plan">
+        <div class="plan-title"><h3>پکیج نهایی مشاور</h3><small>آیتم‌ها را کم/زیاد، حذف از پکیج یا قیمت‌گذاری کنید.</small></div>
+        {% for item in plan_items %}
+        <form method="post" class="item {{ item.source }}">{% csrf_token %}<input type="hidden" name="action" value="update_item"><input type="hidden" name="appointment_id" value="{{ selected.pk }}"><input type="hidden" name="item_id" value="{{ item.pk }}">
+          <label>خدمت<input name="title" value="{{ item.title }}"></label>
+          <label>ناحیه<input name="area" value="{{ item.area }}"></label>
+          <label>تعداد<input name="quantity" type="number" min="1" max="99" value="{{ item.quantity }}"></label>
+          <label>قیمت واحد / تومان<input name="unit_price_toman" type="number" min="0" step="1" value="{{ item.unit_price_toman|floatformat:0 }}"></label>
+          <div class="item-actions"><label class="toggle"><input type="checkbox" name="included" value="1" {% if item.included %}checked{% endif %}> داخل پکیج</label><button class="save" type="submit">ذخیره</button></div>
+          {% if item.source == 'doctor' %}<div class="original">اصل پزشک: {{ item.doctor_snapshot.title }}{% if item.doctor_snapshot.area %} · {{ item.doctor_snapshot.area }}{% endif %} · {{ item.doctor_snapshot.quantity }} مورد/جلسه</div>{% endif %}
+        </form>
+        {% empty %}<div class="empty">پزشک آیتم درمانی ثبت نکرده؛ مشاور می‌تواند مورد جدید اضافه کند.</div>{% endfor %}
+        <form method="post" class="add-row">{% csrf_token %}<input type="hidden" name="action" value="add_item"><input type="hidden" name="appointment_id" value="{{ selected.pk }}">
+          <select name="kind">{% for key,label in item_kinds %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select>
+          <input name="title" placeholder="خدمت جدید" required><input name="area" placeholder="ناحیه / توضیح کوتاه">
+          <input name="quantity" type="number" min="1" value="1"><input name="unit_price_toman" type="number" min="0" step="1" placeholder="قیمت واحد تومان"><button class="save" type="submit">＋ افزودن</button>
+        </form>
+        <div class="final-box"><div class="totals"><div class="total-card"><span>جمع پکیج</span><strong>{{ plan.subtotal_toman|floatformat:0 }} تومان</strong></div><div class="total-card"><span>تخفیف</span><strong>{{ plan.discount_toman|floatformat:0 }} تومان</strong></div><div class="total-card"><span>مبلغ نهایی</span><strong>{{ plan.final_amount_toman|floatformat:0 }} تومان</strong></div></div>
+          <form method="post" class="final-form">{% csrf_token %}<input type="hidden" name="action" value="finalize"><input type="hidden" name="appointment_id" value="{{ selected.pk }}"><label>تخفیف / تومان<input name="discount_toman" type="number" min="0" step="1" value="{{ plan.discount_toman|floatformat:0 }}"></label><label>توضیح نهایی<textarea name="plan_note">{{ plan.note }}</textarea></label><button class="primary" type="submit">نهایی کردن پکیج</button></form>
+          {% if plan.status == 'finalized' or plan.status == 'payment_pending' %}
+          <div class="next-actions"><a class="pay-self" href="{{ payment_url }}">پرداخت توسط خود مشاور</a><form method="post" style="margin:0">{% csrf_token %}<input type="hidden" name="action" value="send_to_reception"><input type="hidden" name="appointment_id" value="{{ selected.pk }}"><button class="send-rec" type="submit" style="width:100%">ارسال برای پرداخت منشی</button></form></div>
+          <div class="status-note">{% if plan.status == 'payment_pending' %}این پرونده هم‌اکنون در صف پرداخت منشی است؛ تا قبل از ثبت پرداخت می‌توانید از همینجا پرداخت را انجام دهید.{% else %}پکیج نهایی شده و آماده دریافت وجه است.{% endif %}</div>
+          {% endif %}
+          <div class="nosale"><form method="post">{% csrf_token %}<input type="hidden" name="action" value="no_sale"><input type="hidden" name="appointment_id" value="{{ selected.pk }}"><select name="failure_reason">{% for key,label in failure_reasons %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select><textarea name="failure_note" placeholder="توضیح اختیاری"></textarea><button class="danger" type="submit">فعلاً خرید نکرد / برگشت به پیگیری</button></form></div>
+        </div>
+      </div>
+      {% else %}<div class="empty" style="min-height:360px;display:grid;place-items:center">پرونده‌ای برای مشاوره انتخاب نشده است.</div>{% endif %}
+    </section>
   </div>
-  <label>توضیحات اختیاری<textarea name="note" rows="2"></textarea></label><button class="primary cso-submit" type="submit">ثبت فروش موفق</button>
- </form>
- <form method="post" class="cso-form" id="f{{x.pk}}">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{x.pk}}"><input type="hidden" name="result" value="failed">
-  <div class="cso-options">{% for key,label in failure_reasons.items %}<label><input type="radio" name="failure_reason" value="{{key}}" required onchange="failureReason(this)"> {{label}}</label>{% endfor %}</div>
-  <label>توضیحات <span class="cso-note">اختیاری؛ برای «سایر» اجباری</span><textarea name="note" rows="2"></textarea></label><button class="primary cso-submit" type="submit">ثبت و ارجاع برای پیگیری فردا</button>
- </form>
-</article>{% empty %}<div class="cso-empty">مراجعه‌ای برای تعیین نتیجه باقی نمانده است.</div>{% endfor %}
-</section>
-<section class="panel"><div class="sectionhead"><div><h2>مخزن Happy Call</h2><small>فروش‌های موفق ثبت‌شده توسط شما</small></div></div>
-{% for s in happy_calls %}<div class="happy-row"><div class="cso-head"><strong>{{s.lead.full_name}}</strong><span class="happy-money">{{s.amount|floatformat:0}} تومان</span></div><div class="cso-meta">{{s.sale_date|jdate}} · {{s.lead.phone}}</div><div class="cso-note">پرداخت: {{ s.get_payment_method_display|default:s.payment_method|default:'—' }}{% if s.payment_method == 'Cash' %} · {{ s.get_cash_currency_display|default:'—' }}{% if s.cash_amount %} · {{ s.cash_amount|floatformat:2 }}{% endif %}{% endif %}</div>{% if s.note %}<div class="cso-note">{{s.note}}</div>{% endif %}</div>{% empty %}<div class="cso-empty">هنوز فروش موفقی برای Happy Call ثبت نشده است.</div>{% endfor %}
-</section></div></div>
-<script>
-function toggleOutcome(id){document.querySelectorAll('.cso-form').forEach(function(x){if(x.id!==id)x.classList.remove('open')});document.getElementById(id).classList.toggle('open')}
-function toggleSaleCash(select){var form=select.closest('form'),box=form.querySelector('.cso-cash'),currency=box&&box.querySelector('select[name=cash_currency]');var on=select.value==='Cash';if(box)box.classList.toggle('open',on);if(currency&&on&&!currency.value)currency.value='IRT'}
-function failureReason(r){var f=r.closest('form'),t=f.querySelector('textarea[name=note]');t.required=(r.value==='other');t.placeholder=t.required?'توضیح برای «سایر» الزامی است':'توضیحات اختیاری'}
-</script>
+  <section class="recent"><h3>آخرین دریافت‌های ثبت‌شده توسط شما</h3>{% for tx in recent_paid %}<div class="recent-row"><strong>{{ tx.person_name|default:"—" }}</strong><span>{{ tx.created_at|date:"Y/m/d H:i" }}</span><b>{{ tx.amount|floatformat:0 }} ریال</b></div>{% empty %}<div class="empty">هنوز پرداختی ثبت نشده است.</div>{% endfor %}</section>
+</div>
 {% endblock %}
