@@ -117,17 +117,38 @@ def _channel_q(channel):
     if channel == 'bale':
         return Q(group__name='بله - لینک') | Q(notes__icontains='[channel:bale]') | Q(notes__icontains='ورودی مستقیم فرم بله') | Q(source_url__icontains='/bale/')
     if channel == 'beytoote':
-        return Q(notes__icontains='[channel:beytoote]') | Q(source_url__icontains='/beytoote/') | Q(source_url__icontains='bitoteh')
+        return (
+            Q(notes__icontains='[channel:beytoote]')
+            | Q(source_url__icontains='/beytoote/')
+            | Q(source_url__icontains='bitoteh')
+            | Q(source_url__icontains='utm_source=beytoote')
+            | Q(notes__icontains='"utm_source":"beytoote"')
+        )
     if channel == 'aparat':
         return Q(notes__icontains='[channel:aparat]') | Q(source_url__icontains='/aparat/')
     if channel == 'website':
-        return Q(notes__icontains=marker) | (Q(source_url__icontains='greenlifeclinics.com') & ~Q(source_url__icontains='/instagram/') & ~Q(source_url__icontains='/telegram/') & ~Q(source_url__icontains='/bale/') & ~Q(source_url__icontains='/beytoote/') & ~Q(source_url__icontains='/aparat/'))
+        website_q=Q(notes__icontains=marker) | Q(source_url__icontains='greenlifeclinics.com')
+        return (
+            website_q
+            & ~Q(source_url__icontains='/instagram/')
+            & ~Q(source_url__icontains='/telegram/')
+            & ~Q(source_url__icontains='/bale/')
+            & ~Q(source_url__icontains='/beytoote/')
+            & ~Q(source_url__icontains='/aparat/')
+            & ~Q(source_url__icontains='utm_source=beytoote')
+            & ~Q(notes__icontains='"utm_source":"beytoote"')
+        )
     if channel == 'crm':
         return Q(notes__icontains=marker) | Q(source_url__icontains='crm')
     if channel == 'whatsapp':
         return Q(notes__icontains=marker) | Q(source_url__icontains='whatsapp') | Q(source_url__icontains='wa.me')
     if channel == 'campaign':
-        return Q(notes__icontains=marker) | Q(source_url__icontains='utm_campaign=')
+        campaign_q=Q(notes__icontains=marker) | Q(source_url__icontains='utm_campaign=')
+        return (
+            campaign_q
+            & ~Q(source_url__icontains='utm_source=beytoote')
+            & ~Q(notes__icontains='"utm_source":"beytoote"')
+        )
     return Q()
 
 

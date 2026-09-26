@@ -182,6 +182,29 @@ class FlowerLeadProxy:
             return ''
         return 'لینک' if getattr(self._flower_lead,'source','') in ('link','qr') else 'دستی'
 
+    def _is_beytoote_lead(self):
+        lead=self._flower_lead
+        source_url=str(getattr(lead,'source_url','') or '').lower()
+        notes=str(getattr(lead,'notes','') or '').lower()
+        return (
+            '/beytoote/' in source_url
+            or 'beytoote' in source_url
+            or 'bitoteh' in source_url
+            or 'utm_source=beytoote' in source_url
+            or '"utm_source":"beytoote"' in notes
+        )
+
+    def _is_beytoote_reportage_start(self):
+        if not self._is_beytoote_lead():
+            return False
+        lead=self._flower_lead
+        source_url=str(getattr(lead,'source_url','') or '').lower()
+        notes=str(getattr(lead,'notes','') or '').lower()
+        return (
+            'utm_medium=reportage' in source_url
+            or '"utm_medium":"reportage"' in notes
+        )
+
     @property
     def lead_group_display(self):
         lead=self._flower_lead
@@ -189,8 +212,9 @@ class FlowerLeadProxy:
         raw=str(getattr(group,'name','') or '')
         if self._is_instagram_lead():
             return f'اینستاگرام - {self.instagram_entry_display}'
-        source_url=str(getattr(lead,'source_url','') or '').lower()
-        if '/beytoote/' in source_url or 'beytoote' in source_url or 'bitoteh' in source_url:
+        if self._is_beytoote_reportage_start():
+            return 'رپورتاژ - استارت'
+        if self._is_beytoote_lead():
             return 'بنر - سلامت'
         return raw or '—'
 
@@ -213,7 +237,7 @@ class FlowerLeadProxy:
         if self._is_instagram_lead():
             return self.instagram_page_display or 'Greenlifeclinics'
         source_url=str(getattr(self._flower_lead,'source_url','') or '').lower()
-        if '/beytoote/' in source_url or 'beytoote' in source_url or 'bitoteh' in source_url:
+        if self._is_beytoote_lead():
             return 'بیتوته'
         if '/aparat/' in source_url or 'aparat' in source_url:
             return 'آپارات'

@@ -216,6 +216,20 @@ def _group_for(operator, name, *, is_default=False):
     return group
 
 
+def _is_beytoote_reportage_start(lead):
+    source_url=_normalize(getattr(lead,'source_url',''))
+    notes=_normalize(getattr(lead,'notes',''))
+    is_beytoote=(
+        'utm_source=beytoote' in source_url
+        or '"utm_source":"beytoote"' in notes
+    )
+    is_reportage=(
+        'utm_medium=reportage' in source_url
+        or '"utm_medium":"reportage"' in notes
+    )
+    return is_beytoote and is_reportage
+
+
 def _pending_channel(lead):
     """Recover the routing channel for an unassigned lead."""
     notes=_normalize(getattr(lead,'notes',''))
@@ -238,6 +252,8 @@ def _pending_destination(lead):
     notes = _normalize(getattr(lead, 'notes', ''))
     source_url = _normalize(getattr(lead, 'source_url', ''))
 
+    if _is_beytoote_reportage_start(lead):
+        return 'رپورتاژ - استارت', 'لید جدید بیتوته - رپورتاژ'
     if 'اینستاگرام - دستی' in notes:
         return 'اینستاگرام - دستی', 'لید جدید اینستاگرام - دستی'
     if 'تلگرام' in notes or '/telegram/' in source_url:
@@ -371,12 +387,17 @@ def assign_external_lead(lead, channel):
         return None
 
     label = CHANNEL_LABELS.get(channel, channel)
-    group_name = 'اینستاگرام جدید' if channel == 'instagram' else f'ورودی {label}'
+    if _is_beytoote_reportage_start(lead):
+        group_name='رپورتاژ - استارت'
+        notification_title='لید جدید بیتوته - رپورتاژ'
+    else:
+        group_name = 'اینستاگرام جدید' if channel == 'instagram' else f'ورودی {label}'
+        notification_title=f'لید جدید {label}'
     return _assign_to_operator(
         lead,
         operator,
         group_name,
-        f'لید جدید {label}',
+        notification_title,
     )
 
 
