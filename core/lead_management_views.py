@@ -417,7 +417,7 @@ def lead_attention_bulk_action(request):
 @require_POST
 @login_required
 def lead_reassign_operator(request, pk):
-    """Move a brand-new lead from one flower queue to another before first contact."""
+    """Move a brand-new lead to another call-center flower without letting side effects block ownership."""
     is_ajax=request.headers.get('x-requested-with')=='XMLHttpRequest'
 
     def respond_error(message,status=400):
@@ -439,7 +439,6 @@ def lead_reassign_operator(request, pk):
     if not operator:
         return respond_error('گل انتخاب‌شده فعال نیست.',404)
 
-    from .referral_views import _default_call_center_group, _notify_call_center_assignment
     with transaction.atomic():
         lead=(
             ReferralLead.objects.select_for_update()
@@ -449,7 +448,6 @@ def lead_reassign_operator(request, pk):
         )
         if not lead:
             return respond_error('لید پیدا نشد.',404)
-
         if (
             lead.status!='new'
             or bool(lead.contact_result)
@@ -463,16 +461,39 @@ def lead_reassign_operator(request, pk):
         if old_operator and old_operator.pk==operator.pk:
             message='این لید از قبل برای همین گل است.'
             if is_ajax:
-                return JsonResponse({'ok':True,'lead_id':lead.pk,'operator_id':operator.pk,'operator':call_center_display_name(operator),'unchanged':True,'message':message})
+                return JsonResponse({
+                    'ok':True,'lead_id':lead.pk,'operator_id':operator.pk,
+                    'operator':call_center_display_name(operator),'unchanged':True,'message':message,
+                })
             messages.info(request,message)
             return redirect('lead_management_dashboard')
 
-        lead.assigned_to=operator
-        lead.group=_default_call_center_group(operator)
-        lead.assigned_at=timezone.now()
-        lead.save(update_fields=['assigned_to','group','assigned_at','updated_at'])
-        _notify_call_center_assignment(lead)
+        # Ownership is the critical operation. Commit it independently from
+        # group creation, notifications and audit logging so those side effects
+        # can never roll the reassignment back.
+        ReferralLead.objects.filter(pk=lead.pk).update(
+            assigned_to=operator,
+            assigned_at=timezone.now(),
+            group=None,
+            updated_at=timezone.now(),
+        )
 
+    # Everything below is best-effort and must never undo ownership.
+    try:
+        from .referral_views import _default_call_center_group
+        group=_default_call_center_group(operator)
+        ReferralLead.objects.filter(pk=pk).update(group=group,updated_at=timezone.now())
+    except Exception:
+        pass
+
+    try:
+        from .referral_views import _notify_call_center_assignment
+        refreshed=ReferralLead.objects.select_related('assigned_to__user').get(pk=pk)
+        _notify_call_center_assignment(refreshed)
+    except Exception:
+        pass
+
+    try:
         if old_operator and old_operator.user_id:
             StaffNotification.objects.create(
                 user=old_operator.user,
@@ -481,20 +502,23 @@ def lead_reassign_operator(request, pk):
                 notification_type='lead_reassigned',
                 related_date=timezone.localdate(),
             )
-        try:
-            AuditLog.objects.create(
-                actor=request.user,action='lead_reassign',path=request.path,method='POST',
-                object_type='ReferralLead',object_id=str(lead.pk),
-                summary=f'Lead reassigned: {old_name} -> {call_center_display_name(operator)}',
-                metadata={'from_operator':getattr(old_operator,'pk',None),'to_operator':operator.pk},
-            )
-        except Exception:
-            pass
+    except Exception:
+        pass
+
+    try:
+        AuditLog.objects.create(
+            actor=request.user,action='lead_reassign',path=request.path,method='POST',
+            object_type='ReferralLead',object_id=str(pk),
+            summary=f'Lead reassigned: {old_name} -> {call_center_display_name(operator)}',
+            metadata={'from_operator':getattr(old_operator,'pk',None),'to_operator':operator.pk},
+        )
+    except Exception:
+        pass
 
     message=f'لید از {old_name} به {call_center_display_name(operator)} منتقل شد.'
     if is_ajax:
         return JsonResponse({
-            'ok':True,'lead_id':lead.pk,'operator_id':operator.pk,
+            'ok':True,'lead_id':pk,'operator_id':operator.pk,
             'operator':call_center_display_name(operator),'previous_operator':old_name,
             'message':message,
         })

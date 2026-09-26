@@ -195,7 +195,7 @@ body.gl-premium-dark .app-main .lead-page .badge.ig{border-color:#7a355c!importa
 <script id="lead-owner-reassign">
 (function(){
   document.querySelectorAll('.lead-owner-switch').forEach(function(select){
-    select.addEventListener('change',function(){
+    select.addEventListener('change',async function(){
       var previous=this.dataset.current||'', next=this.value||'';
       if(!next){this.value=previous;return;}
       var nextLabel=this.options[this.selectedIndex]?this.options[this.selectedIndex].text:'گل جدید';
@@ -203,11 +203,29 @@ body.gl-premium-dark .app-main .lead-page .badge.ig{border-color:#7a355c!importa
       if(!window.confirm('«'+leadName+'» به '+nextLabel+' منتقل شود؟\nاز صف گل قبلی حذف و وارد صف گل جدید می‌شود.')){
         this.value=previous;return;
       }
-      this.classList.add('is-saving');
-      /* Keep the select enabled while submitting; disabled controls are omitted
-         from form POSTs, which previously made the reassignment look successful
-         without actually sending operator_id. */
-      this.form.submit();
+      var form=this.form, self=this;
+      self.classList.add('is-saving'); self.disabled=true;
+      try{
+        var data=new FormData(form);
+        data.set('operator_id',next);
+        var res=await fetch(form.action,{
+          method:'POST',body:data,credentials:'same-origin',
+          headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'}
+        });
+        var payload={};
+        try{payload=await res.json()}catch(e){}
+        if(!res.ok||!payload.ok) throw new Error(payload.message||'خطا در تغییر گل');
+        self.dataset.current=next;
+        self.classList.remove('is-saving');
+        self.classList.add('is-saved');
+        setTimeout(function(){self.classList.remove('is-saved')},1500);
+      }catch(err){
+        self.value=previous;
+        self.classList.remove('is-saving');
+        alert(err.message||'تغییر گل انجام نشد.');
+      }finally{
+        self.disabled=false;
+      }
     });
   });
 })();
