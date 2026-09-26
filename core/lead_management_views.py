@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate
 from django.http import JsonResponse
@@ -14,7 +15,7 @@ from django.views.decorators.http import require_POST
 from .call_center_identity import (
     FlowerLeadProxy, FlowerProfileProxy, call_center_display_name,
 )
-from .models import EmployeeProfile, ReferralLead, ReferralSale
+from .models import AuditLog, EmployeeProfile, ReferralLead, ReferralSale, StaffNotification
 from .instagram_views import INSTAGRAM_PAGE_SOURCES
 from .jalali import gregorian_to_jalali
 
@@ -350,6 +351,92 @@ def lead_attention_bulk_action(request):
         changed += 1
     messages.success(request, f'{changed} لید به {call_center_display_name(operator)} ارجاع شد.')
     return redirect('lead_management_dashboard')
+
+
+@require_POST
+@login_required
+def lead_reassign_operator(request, pk):
+    """Manager-only reassignment before the first real call/appointment.
+
+    Changing assigned_to is enough to remove the lead from the previous flower's
+    queue and make it appear in the new flower's queue. We also move the lead to
+    the new flower's default group and reset assigned_at so SLA timing restarts.
+    """
+    profile=getattr(request.user,'profile',None)
+    if not profile or profile.role not in ALLOWED_ROLES:
+        return JsonResponse({'ok':False,'error':'forbidden','message':'دسترسی مجاز نیست.'},status=403)
+
+    operator_id=(request.POST.get('operator_id') or '').strip()
+    if not operator_id.isdigit():
+        return JsonResponse({'ok':False,'error':'operator_required','message':'گل جدید را انتخاب کنید.'},status=400)
+    operator=EmployeeProfile.objects.filter(
+        pk=int(operator_id),role='call_center',is_active=True,user__is_active=True,
+    ).select_related('user').first()
+    if not operator:
+        return JsonResponse({'ok':False,'error':'operator_not_found','message':'گل انتخاب‌شده فعال نیست.'},status=404)
+
+    from .referral_views import _default_call_center_group, _notify_call_center_assignment
+    with transaction.atomic():
+        lead=(
+            ReferralLead.objects.select_for_update()
+            .select_related('assigned_to__user')
+            .filter(pk=pk)
+            .first()
+        )
+        if not lead:
+            return JsonResponse({'ok':False,'error':'lead_not_found','message':'لید پیدا نشد.'},status=404)
+
+        # Ownership may be changed only before the lead has entered the contact
+        # or appointment workflow. This protects attribution/KPI history.
+        if (
+            lead.status!='new'
+            or bool(lead.contact_result)
+            or bool(lead.first_appointment_by_id)
+            or lead.appointments.exists()
+        ):
+            return JsonResponse({
+                'ok':False,'error':'lead_locked',
+                'message':'این لید وارد چرخه تماس/نوبت شده و برای حفظ سابقه دیگر قابل جابه‌جایی نیست.',
+            },status=409)
+
+        old_operator=lead.assigned_to
+        if old_operator and old_operator.pk==operator.pk:
+            return JsonResponse({
+                'ok':True,'lead_id':lead.pk,'operator_id':operator.pk,
+                'operator':call_center_display_name(operator),'unchanged':True,
+                'message':'این لید از قبل برای همین گل است.',
+            })
+
+        old_name=call_center_display_name(old_operator) if old_operator else 'بدون مسئول'
+        lead.assigned_to=operator
+        lead.group=_default_call_center_group(operator)
+        lead.assigned_at=timezone.now()
+        lead.save(update_fields=['assigned_to','group','assigned_at','updated_at'])
+
+        _notify_call_center_assignment(lead)
+        if old_operator and old_operator.user_id:
+            StaffNotification.objects.create(
+                user=old_operator.user,
+                title='انتقال لید توسط مدیریت',
+                message=f'لید {lead.full_name} از صف شما به {call_center_display_name(operator)} منتقل شد.',
+                notification_type='lead_reassigned',
+                related_date=timezone.localdate(),
+            )
+        try:
+            AuditLog.objects.create(
+                actor=request.user,action='lead_reassign',path=request.path,method='POST',
+                object_type='ReferralLead',object_id=str(lead.pk),
+                summary=f'Lead reassigned: {old_name} -> {call_center_display_name(operator)}',
+                metadata={'from_operator':getattr(old_operator,'pk',None),'to_operator':operator.pk},
+            )
+        except Exception:
+            pass
+
+    return JsonResponse({
+        'ok':True,'lead_id':lead.pk,'operator_id':operator.pk,
+        'operator':call_center_display_name(operator),'previous_operator':old_name,
+        'message':f'لید از {old_name} به {call_center_display_name(operator)} منتقل شد.',
+    })
 
 
 @login_required
