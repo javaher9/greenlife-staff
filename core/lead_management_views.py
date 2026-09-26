@@ -356,24 +356,27 @@ def lead_attention_bulk_action(request):
 @require_POST
 @login_required
 def lead_reassign_operator(request, pk):
-    """Manager-only reassignment before the first real call/appointment.
+    """Move a brand-new lead from one flower queue to another before first contact."""
+    is_ajax=request.headers.get('x-requested-with')=='XMLHttpRequest'
 
-    Changing assigned_to is enough to remove the lead from the previous flower's
-    queue and make it appear in the new flower's queue. We also move the lead to
-    the new flower's default group and reset assigned_at so SLA timing restarts.
-    """
+    def respond_error(message,status=400):
+        if is_ajax:
+            return JsonResponse({'ok':False,'message':message},status=status)
+        messages.error(request,message)
+        return redirect('lead_management_dashboard')
+
     profile=getattr(request.user,'profile',None)
     if not profile or profile.role not in ALLOWED_ROLES:
-        return JsonResponse({'ok':False,'error':'forbidden','message':'دسترسی مجاز نیست.'},status=403)
+        return respond_error('دسترسی مجاز نیست.',403)
 
     operator_id=(request.POST.get('operator_id') or '').strip()
     if not operator_id.isdigit():
-        return JsonResponse({'ok':False,'error':'operator_required','message':'گل جدید را انتخاب کنید.'},status=400)
+        return respond_error('گل جدید را انتخاب کنید.')
     operator=EmployeeProfile.objects.filter(
         pk=int(operator_id),role='call_center',is_active=True,user__is_active=True,
     ).select_related('user').first()
     if not operator:
-        return JsonResponse({'ok':False,'error':'operator_not_found','message':'گل انتخاب‌شده فعال نیست.'},status=404)
+        return respond_error('گل انتخاب‌شده فعال نیست.',404)
 
     from .referral_views import _default_call_center_group, _notify_call_center_assignment
     with transaction.atomic():
@@ -384,36 +387,31 @@ def lead_reassign_operator(request, pk):
             .first()
         )
         if not lead:
-            return JsonResponse({'ok':False,'error':'lead_not_found','message':'لید پیدا نشد.'},status=404)
+            return respond_error('لید پیدا نشد.',404)
 
-        # Ownership may be changed only before the lead has entered the contact
-        # or appointment workflow. This protects attribution/KPI history.
         if (
             lead.status!='new'
             or bool(lead.contact_result)
             or bool(lead.first_appointment_by_id)
             or lead.appointments.exists()
         ):
-            return JsonResponse({
-                'ok':False,'error':'lead_locked',
-                'message':'این لید وارد چرخه تماس/نوبت شده و برای حفظ سابقه دیگر قابل جابه‌جایی نیست.',
-            },status=409)
+            return respond_error('این لید وارد چرخه تماس/نوبت شده و برای حفظ سابقه دیگر قابل جابه‌جایی نیست.',409)
 
         old_operator=lead.assigned_to
-        if old_operator and old_operator.pk==operator.pk:
-            return JsonResponse({
-                'ok':True,'lead_id':lead.pk,'operator_id':operator.pk,
-                'operator':call_center_display_name(operator),'unchanged':True,
-                'message':'این لید از قبل برای همین گل است.',
-            })
-
         old_name=call_center_display_name(old_operator) if old_operator else 'بدون مسئول'
+        if old_operator and old_operator.pk==operator.pk:
+            message='این لید از قبل برای همین گل است.'
+            if is_ajax:
+                return JsonResponse({'ok':True,'lead_id':lead.pk,'operator_id':operator.pk,'operator':call_center_display_name(operator),'unchanged':True,'message':message})
+            messages.info(request,message)
+            return redirect('lead_management_dashboard')
+
         lead.assigned_to=operator
         lead.group=_default_call_center_group(operator)
         lead.assigned_at=timezone.now()
         lead.save(update_fields=['assigned_to','group','assigned_at','updated_at'])
-
         _notify_call_center_assignment(lead)
+
         if old_operator and old_operator.user_id:
             StaffNotification.objects.create(
                 user=old_operator.user,
@@ -432,12 +430,15 @@ def lead_reassign_operator(request, pk):
         except Exception:
             pass
 
-    return JsonResponse({
-        'ok':True,'lead_id':lead.pk,'operator_id':operator.pk,
-        'operator':call_center_display_name(operator),'previous_operator':old_name,
-        'message':f'لید از {old_name} به {call_center_display_name(operator)} منتقل شد.',
-    })
-
+    message=f'لید از {old_name} به {call_center_display_name(operator)} منتقل شد.'
+    if is_ajax:
+        return JsonResponse({
+            'ok':True,'lead_id':lead.pk,'operator_id':operator.pk,
+            'operator':call_center_display_name(operator),'previous_operator':old_name,
+            'message':message,
+        })
+    messages.success(request,message)
+    return redirect('lead_management_dashboard')
 
 @login_required
 def lead_management_dashboard(request):
