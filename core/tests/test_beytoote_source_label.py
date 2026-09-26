@@ -18,3 +18,4 @@ class BeytooteSourceLabelTests(SimpleTestCase):
         )
         proxy=FlowerLeadProxy(lead)
         self.assertEqual(proxy.source_page_display,'بیتوته')
+        self.assertEqual(proxy.lead_group_display,'بنر - سلامت')
