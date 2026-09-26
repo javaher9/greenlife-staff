@@ -212,6 +212,9 @@ def payroll_dashboard(request):
 
     if request.method=='POST':
         action=(request.POST.get('action') or '').strip()
+        if action in ('save_rule','save_adjustment') and PayrollSnapshot.objects.filter(month_start=start).exists():
+            messages.error(request,'این ماه بسته شده است. برای تغییر حقوق، ابتدا ماه را بازگشایی کنید.')
+            return _redirect_period(jy,jm,employee_id or None,branch_id,'#person-detail')
         if action=='save_rule':
             profile=get_object_or_404(EmployeeProfile,pk=request.POST.get('profile_id'),is_active=True)
             rule,_=PayrollRule.objects.get_or_create(profile=profile)
