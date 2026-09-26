@@ -212,6 +212,8 @@ class FlowerLeadProxy:
         source_url=str(getattr(self._flower_lead,'source_url','') or '').lower()
         if '/beytoote/' in source_url or 'beytoote' in source_url or 'bitoteh' in source_url:
             return 'بیتوته'
+        if '/aparat/' in source_url or 'aparat' in source_url:
+            return 'آپارات'
         if 'greenlifeclinics.com' in source_url:
             return 'Greenlifeclinics'
         try:

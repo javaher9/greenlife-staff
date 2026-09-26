@@ -556,6 +556,34 @@ def public_beytoote_lead(request):
     })
 
 
+def public_aparat_lead(request):
+    """Simplified public landing form dedicated to Aparat campaign traffic."""
+    referrer=_greenlife_qr_source()
+    form=BeytootePublicLeadForm(request.POST or None)
+    completed=False
+    if request.method=='POST' and form.is_valid():
+        lead=form.save(commit=False)
+        lead.referrer=referrer
+        lead.source='link'
+        lead.source_url=request.build_absolute_uri()[:500]
+        lead.assigned_to=None
+        lead.group=None
+        lead.created_by=None
+        lead.save()
+        completed=True
+        form=BeytootePublicLeadForm()
+    return render(request,'core/referrals/public_lead.html',{
+        'form':form,'referrer':referrer,'completed':completed,'photo':'',
+        'show_referrer':False,
+        'page_title':'مشاوره لاغری رایگان | Green Life',
+        'headline':'مشاوره رایگان لاغری',
+        'intro':'نام و شماره موبایل خود را ثبت کنید و اگر دوست دارید، ناحیه یا دغدغه اصلی‌تان را هم کوتاه توضیح دهید.',
+        'submit_label':'ثبت درخواست مشاوره رایگان',
+        'body_class':'rf-beytoote',
+        'footer_text':'اطلاعات شما فقط برای پیگیری درخواست مشاوره استفاده می‌شود.',
+    })
+
+
 def public_referral_lead(request,code):
     referrer=get_object_or_404(ReferralProfile.objects.select_related('user'),referral_code=code,is_active=True)
     form=PublicReferralLeadForm(request.POST or None)
