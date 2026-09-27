@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from django import template
 from django.db.models import Count, Sum
+from django.db.models.functions import TruncDate
 from django.utils import timezone
 
 from core.jalali import gregorian_to_jalali
@@ -65,13 +66,34 @@ def management_dashboard_metrics(selected_branch=None):
     finance_month = finance.filter(occurred_at__date__range=(month_start, today))
     finance_year = finance.filter(occurred_at__date__range=(year_start, today))
 
-    # Compare today's sales with the seven completed days before today.
+    # One grouped query per source replaces dozens of per-day queries.
+    # This is the hot path for /live/ and materially reduces initial page latency.
+    start_30 = today - timedelta(days=29)
+    sales_by_day = {
+        row['day']: Decimal(row['value'] or 0) / MILLION_TOMAN
+        for row in (
+            finance.filter(occurred_at__date__range=(start_30, today))
+            .annotate(day=TruncDate('occurred_at'))
+            .values('day')
+            .annotate(value=Sum('amount'))
+        )
+    }
+    leads_by_day = {
+        row['day']: row['value']
+        for row in (
+            leads.filter(created_at__date__range=(start_30, today))
+            .annotate(day=TruncDate('created_at'))
+            .values('day')
+            .annotate(value=Count('id'))
+        )
+    }
+
     previous_7_sales = [
-        _money_million_toman(finance.filter(occurred_at__date=today - timedelta(days=offset)))
+        sales_by_day.get(today - timedelta(days=offset), Decimal('0'))
         for offset in range(1, 8)
     ]
     sales_prev7_avg_m = sum(previous_7_sales, Decimal('0')) / Decimal('7')
-    sales_today_m = _money_million_toman(finance_today)
+    sales_today_m = sales_by_day.get(today, Decimal('0'))
     sales_vs_7d_pct = None
     if sales_prev7_avg_m > 0:
         sales_vs_7d_pct = round(
@@ -85,8 +107,8 @@ def management_dashboard_metrics(selected_branch=None):
     leads_30d = []
     for offset in range(29, -1, -1):
         day = today - timedelta(days=offset)
-        day_sales = float(_money_million_toman(finance.filter(occurred_at__date=day)))
-        day_leads = leads.filter(created_at__date=day).count()
+        day_sales = float(sales_by_day.get(day, Decimal('0')))
+        day_leads = leads_by_day.get(day, 0)
         jy, jm, jd = gregorian_to_jalali(day.year, day.month, day.day)
         label = f'{jm:02d}/{jd:02d}'
         sales_30d.append({'label': label, 'value': day_sales})
