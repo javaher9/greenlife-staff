@@ -137,6 +137,69 @@ body.gl-page-finance_dashboard .msg.warning{
   <span class="fin-compat-a" hidden></span><span class="fin-compat-b" hidden></span><div hidden aria-hidden="true"><span class="fin-page"></span><span class="stats fin-kpis"></span><table class="fin-table"></table><div class="fin-actions"></div><button class="fin-btn approve"></button><button class="fin-btn correction"></button><button class="fin-btn cancel"></button><button class="fin-btn analyze"></button><span>عملکرد گل‌های کال‌سنتر</span><span>عملکرد شعب</span><span>دستگاه و خدمات</span><span>فروش بر اساس منشأ لید</span><span>مراجعه مستقیم شعبه</span><span>تحلیل هوشمند مالی</span></div>
 </div>
 
+
+<style id="finance-readability-patch-v45">
+/* Readability patch for service revenue + funnel footer */
+.fin44-services{gap:13px!important;padding-top:10px!important}
+.fin44-service{
+  grid-template-columns:118px minmax(0,1fr) 118px!important;
+  gap:12px!important;
+  min-height:30px!important
+}
+.fin44-service>span{
+  font-size:12px!important;
+  color:#f4f8fb!important;
+  font-weight:900!important;
+  line-height:1.5!important
+}
+.fin44-service>strong{
+  font-size:11px!important;
+  color:#f7fbff!important;
+  font-weight:950!important;
+  direction:ltr!important;
+  text-align:left!important;
+  letter-spacing:.1px!important
+}
+.fin44-track{
+  height:16px!important;
+  border-radius:8px!important;
+  background:#173044!important;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.28)!important
+}
+.fin44-track i{
+  border-radius:8px!important;
+  box-shadow:0 0 14px color-mix(in srgb,var(--service-color,#3b9dff) 42%,transparent)!important
+}
+.fin44-funnel-foot{
+  margin-top:14px!important;
+  padding:12px 14px!important;
+  border-radius:11px!important;
+  background:#0d2232!important;
+  border:1px solid rgba(116,161,192,.26)!important;
+  color:#d6e3ec!important;
+  font-size:12px!important;
+  font-weight:850!important;
+  line-height:1.65!important
+}
+.fin44-funnel-foot span{
+  color:#d6e3ec!important;
+  font-size:12px!important;
+  opacity:1!important
+}
+.fin44-funnel-foot strong{
+  color:#ffffff!important;
+  font-size:13px!important;
+  font-weight:950!important
+}
+@media(min-width:700px) and (max-width:1180px){
+  .fin44-service{grid-template-columns:108px minmax(0,1fr) 110px!important}
+  .fin44-service>span{font-size:11px!important}
+  .fin44-service>strong{font-size:10.5px!important}
+  .fin44-funnel-foot,.fin44-funnel-foot span{font-size:11.5px!important}
+  .fin44-funnel-foot strong{font-size:12.5px!important}
+}
+</style>
+
 <script>
 (function(){
   const key='greenlife_finance_scroll_restore';
