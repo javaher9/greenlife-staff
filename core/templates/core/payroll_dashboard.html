@@ -285,6 +285,53 @@ body.gl-authenticated.gl-page-payroll_dashboard .pay-table td.net{
   font-size:10.5px!important;
 }
 
+/* v3 tablet/fold payroll detail layout — prevent the employee editor from collapsing
+   into the narrow right edge next to the sidebar. */
+@media (any-pointer:coarse) and (min-width:761px) and (max-width:1800px){
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-detail{
+    display:block!important;
+    width:100%!important;
+    max-width:100%!important;
+  }
+  body.gl-authenticated.gl-page-payroll_dashboard .person-card{
+    width:100%!important;
+    max-width:none!important;
+    margin:0 0 12px!important;
+  }
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-detail-main{
+    display:grid!important;
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+  }
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-current{
+    width:100%!important;
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  }
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-forms{
+    width:100%!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    align-items:start!important;
+  }
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-form-card,
+  body.gl-authenticated.gl-page-payroll_dashboard .history-card{
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+  }
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-form-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+@media (any-pointer:coarse) and (min-width:761px) and (max-width:1100px){
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-current{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-forms{
+    grid-template-columns:1fr!important;
+  }
+}
+
 </style>
 
 <div class="pay">
