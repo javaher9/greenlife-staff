@@ -751,6 +751,26 @@ body.gl-authenticated.gl-page-payroll_dashboard .person-avatar{
   flex:0 0 104px!important;
 }
 
+/* v5.3 — keep payroll table row dark when tapped/selected */
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr td{
+  -webkit-tap-highlight-color:transparent!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr:active,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr:active td,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr:focus,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr:focus td,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr:focus-within,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr:focus-within td{
+  background:#102a39!important;
+  color:#eef6fb!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr.is-selected,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr.is-selected td{
+  background:#102a39!important;
+  color:#fff!important;
+}
+
 </style>
 
 <div class="pay">
