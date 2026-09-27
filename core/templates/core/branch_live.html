@@ -21,6 +21,13 @@
   .cmd-kpi-value{position:relative;z-index:2;display:flex;align-items:baseline;gap:7px}.cmd-kpi-value strong{font-size:39px;line-height:1;color:#fff;font-weight:950;letter-spacing:-1px;text-shadow:0 0 20px color-mix(in srgb,var(--accent) 24%,transparent)}.cmd-kpi-value span{font-size:9px;color:#9eaabd;font-weight:800}
   .cmd-spark{height:52px;display:flex;align-items:flex-end;gap:4px;position:relative;z-index:2;padding:6px 2px 2px;border-bottom:1px solid rgba(255,255,255,.07)}
   .cmd-spark i{display:block;flex:1;min-width:3px;height:var(--h);border-radius:5px 5px 2px 2px;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 95%,white),color-mix(in srgb,var(--accent) 35%,transparent));box-shadow:0 0 10px color-mix(in srgb,var(--accent) 28%,transparent);opacity:.92}
+  .cmd-catbars{height:65px;display:flex;align-items:flex-end;gap:6px;position:relative;z-index:2;padding:5px 1px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+  .cmd-catbar{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:stretch;gap:2px;text-align:center}
+  .cmd-catbar b{color:#eef8ff;font-size:8px;line-height:1;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cmd-catbar i{display:block;width:72%;min-width:8px;max-width:28px;height:var(--h);min-height:3px;margin:0 auto;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,color-mix(in srgb,var(--bar) 88%,white),var(--bar));box-shadow:0 0 11px color-mix(in srgb,var(--bar) 35%,transparent)}
+  .cmd-catbar small{display:block;color:#c9d8e3;font-size:7px;line-height:1.25;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cmd-kpi-subline{position:relative;z-index:2;margin-top:auto;padding:5px 7px;border-radius:8px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.07);color:#dbe7ee;font-size:8.5px;font-weight:800}
+  .cmd-kpi-subline b{color:#fff;font-size:10px;font-weight:950}
   .cmd-kpi-foot{position:relative;z-index:2;display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
   .cmd-mini{display:inline-flex;align-items:center;gap:5px;min-height:27px;padding:4px 8px;border:1px solid rgba(255,255,255,.075);border-radius:9px;background:rgba(255,255,255,.035);font-size:9px;color:#cbd5e1;font-weight:750}.cmd-mini b{color:#fff;font-size:10px;font-weight:950}.cmd-mini .dot{width:6px;height:6px;border-radius:50%;background:var(--dot,var(--accent));box-shadow:0 0 8px var(--dot,var(--accent))}
   .cmd-ring{width:55px;height:55px;border-radius:50%;background:conic-gradient(var(--accent) calc(var(--p)*1%),rgba(255,255,255,.07) 0);position:absolute;left:17px;top:51px;display:grid;place-items:center;box-shadow:0 0 22px color-mix(in srgb,var(--accent) 18%,transparent)}
@@ -369,8 +376,8 @@ body.gl-page-branch_live_dashboard .cmd-attn i{
     <a class="cmd-kpi sales" href="/finance/">
       <div class="cmd-kpi-head"><span class="cmd-kpi-title">فروش امروز</span><span class="cmd-kpi-unit">میلیون تومان</span></div>
       <div class="cmd-kpi-value"><strong>{{ metrics.sales_today_m|floatformat:0 }}</strong><span>امروز</span></div>
-      <div class="cmd-spark" aria-label="روند فروش هفت روز">{% for x in metrics.sales_7d %}<i style="--h:{{ x.height }}%"></i>{% endfor %}</div>
-      <div class="cmd-kpi-foot"><span class="cmd-mini">دیروز <b>{{ metrics.sales_yesterday_m|floatformat:0 }}</b></span><span class="cmd-mini">ماه <b>{{ metrics.sales_month_m|floatformat:0 }}</b></span><span class="cmd-mini">سال <b>{{ metrics.sales_year_m|floatformat:0 }}</b></span>{% for x in metrics.branch_sales|slice:':3' %}<span class="cmd-mini"><i class="dot" style="--dot:{{ x.color }}"></i>{{ x.name }} <b>{{ x.amount_m|floatformat:0 }}</b></span>{% endfor %}</div>
+      <div class="cmd-catbars" aria-label="فروش امروز بر اساس مرکز">{% for x in metrics.sales_branch_today %}<span class="cmd-catbar" title="{{ x.name }}: {{ x.value_m|floatformat:1 }} میلیون تومان"><b>{{ x.value_m|floatformat:0 }}</b><i style="--h:{{ x.height }}%;--bar:{{ x.color }}"></i><small>{{ x.name }}</small></span>{% empty %}<span class="cmd-catbar"><b>0</b><i style="--h:4%;--bar:#2ee6a6"></i><small>بدون داده</small></span>{% endfor %}</div>
+      <div class="cmd-kpi-foot"><span class="cmd-mini">دیروز <b>{{ metrics.sales_yesterday_m|floatformat:0 }}</b></span><span class="cmd-mini">ماه <b>{{ metrics.sales_month_m|floatformat:0 }}</b></span><span class="cmd-mini">سال <b>{{ metrics.sales_year_m|floatformat:0 }}</b></span></div>
     </a>
     {% else %}
     <a class="cmd-kpi sales" href="/action-center/"><div class="cmd-kpi-head"><span class="cmd-kpi-title">نیازمند اقدام</span><span class="cmd-kpi-unit">امروز</span></div><div class="cmd-kpi-value"><strong>{{ data.action_required_count }}</strong><span>مورد</span></div><div class="cmd-spark">{% for x in data.trend %}<i style="--h:{% if x.late %}70{% else %}18{% endif %}%"></i>{% endfor %}</div><div class="cmd-kpi-foot"><span class="cmd-mini">عقب‌افتاده <b>{{ data.overdue_tasks }}</b></span><span class="cmd-mini">خرابی <b>{{ data.device_open }}</b></span></div></a>
@@ -379,15 +386,15 @@ body.gl-page-branch_live_dashboard .cmd-attn i{
     <a class="cmd-kpi leads" href="/lead-management/">
       <div class="cmd-kpi-head"><span class="cmd-kpi-title">لیدهای امروز</span><span class="cmd-kpi-unit">ورودی امروز</span></div>
       <div class="cmd-kpi-value"><strong>{{ metrics.leads_today }}</strong><span>امروز</span></div>
-      <div class="cmd-spark" aria-label="روند لید هفت روز">{% for x in metrics.leads_7d %}<i style="--h:{{ x.height }}%"></i>{% endfor %}</div>
-      <div class="cmd-kpi-foot"><span class="cmd-mini">ماه <b>{{ metrics.leads_month }}</b></span><span class="cmd-mini">سال <b>{{ metrics.leads_year }}</b></span><span class="cmd-mini">باز <b>{{ metrics.leads_open }}</b></span>{% for x in metrics.lead_sources|slice:':2' %}<span class="cmd-mini"><i class="dot" style="--dot:{{ x.color }}"></i>{{ x.name }} <b>{{ x.value }}</b></span>{% endfor %}</div>
+      <div class="cmd-catbars" aria-label="لیدهای امروز بر اساس منبع">{% for x in metrics.lead_sources_today %}<span class="cmd-catbar" title="{{ x.name }}: {{ x.value }}"><b>{{ x.value }}</b><i style="--h:{{ x.height }}%;--bar:{{ x.color }}"></i><small>{{ x.name }}</small></span>{% empty %}<span class="cmd-catbar"><b>0</b><i style="--h:4%;--bar:#35bfff"></i><small>بدون داده</small></span>{% endfor %}</div>
+      <div class="cmd-kpi-foot"><span class="cmd-mini">ماه <b>{{ metrics.leads_month }}</b></span><span class="cmd-mini">باز <b>{{ metrics.leads_open }}</b></span>{% if metrics.lead_sources_today %}<span class="cmd-mini">بیشترین <b>{{ metrics.lead_sources_today.0.name }}</b></span>{% endif %}</div>
     </a>
 
     <a class="cmd-kpi appts" href="/appointments/schedule/">
       <div class="cmd-kpi-head"><span class="cmd-kpi-title">نوبت‌های امروز</span><span class="cmd-kpi-unit">مراجعه</span></div>
       <div class="cmd-kpi-value"><strong>{{ metrics.appointments_today }}</strong><span>نوبت</span></div>
-      <div class="cmd-segments">{% for x in metrics.appointment_mix %}<i style="--n:{{ x.value }};--c:{{ x.color }}"></i>{% empty %}<i style="--n:1;--c:#342a52"></i>{% endfor %}</div>
-      <div class="cmd-kpi-foot"><span class="cmd-mini">مراجعه امروز <b>{{ metrics.arrived_today }}</b></span><span class="cmd-mini">ماه <b>{{ metrics.appointments_month }}</b></span><span class="cmd-mini">سال <b>{{ metrics.appointments_year }}</b></span>{% for x in metrics.appointment_mix|slice:':2' %}<span class="cmd-mini"><i class="dot" style="--dot:{{ x.color }}"></i>{{ x.name }} <b>{{ x.value }}</b></span>{% endfor %}</div>
+      <div class="cmd-catbars" aria-label="نوبت‌های امروز بر اساس مرکز">{% for x in metrics.appointment_branches_today %}<span class="cmd-catbar" title="{{ x.name }}: {{ x.value }} نوبت"><b>{{ x.value }}</b><i style="--h:{{ x.height }}%;--bar:{{ x.color }}"></i><small>{{ x.name }}</small></span>{% empty %}<span class="cmd-catbar"><b>0</b><i style="--h:4%;--bar:#aa7cff"></i><small>بدون داده</small></span>{% endfor %}</div>
+      <div class="cmd-kpi-subline">نوبت آینده ثبت‌شده امروز توسط کال‌سنتر: <b>{{ metrics.future_appointments_created_today }}</b></div>
     </a>
 
     <a class="cmd-kpi team" href="/kpi/" style="--p:{{ data.average_kpi }}">

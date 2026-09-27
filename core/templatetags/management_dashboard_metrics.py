@@ -2,12 +2,13 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django import template
-from django.db.models import Count, Sum
+from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
 from core.jalali import gregorian_to_jalali
 from core.models import (
+    Branch,
     FinancialTransaction,
     MeetingMinute,
     ReferralLead,
@@ -32,6 +33,76 @@ def _bar_rows(values):
         {'value': value, 'height': max(8, round(float(value) * 100 / float(peak)))}
         for value in values
     ]
+
+
+def _channel_q(channel):
+    """Same channel grouping used by Lead Hub; manual/link Instagram stay together."""
+    marker=f'[channel:{channel}]'
+    if channel=='instagram':
+        return (
+            Q(notes__icontains='اینستاگرام')
+            | Q(notes__icontains='[instagram_page:')
+            | Q(source_url__icontains='/instagram/')
+        )
+    if channel=='beytoote':
+        return (
+            Q(notes__icontains='[channel:beytoote]')
+            | Q(source_url__icontains='/beytoote/')
+            | Q(source_url__icontains='bitoteh')
+            | Q(source_url__icontains='utm_source=beytoote')
+            | Q(notes__icontains='"utm_source":"beytoote"')
+        )
+    if channel=='aparat':
+        return Q(notes__icontains='[channel:aparat]') | Q(source_url__icontains='/aparat/')
+    if channel=='telegram':
+        return Q(notes__icontains='تلگرام') | Q(source_url__icontains='/telegram/')
+    if channel=='bale':
+        return Q(notes__icontains='[channel:bale]') | Q(source_url__icontains='/bale/')
+    if channel=='website':
+        website_q=Q(notes__icontains=marker) | Q(source_url__icontains='greenlifeclinics.com')
+        return (
+            website_q
+            & ~_channel_q('instagram')
+            & ~_channel_q('telegram')
+            & ~_channel_q('bale')
+            & ~_channel_q('beytoote')
+            & ~_channel_q('aparat')
+        )
+    if channel=='crm':
+        return Q(notes__icontains=marker) | Q(source_url__icontains='crm')
+    if channel=='whatsapp':
+        return Q(notes__icontains=marker) | Q(source_url__icontains='whatsapp') | Q(source_url__icontains='wa.me')
+    if channel=='campaign':
+        return (
+            (Q(notes__icontains=marker) | Q(source_url__icontains='utm_campaign='))
+            & ~_channel_q('beytoote')
+        )
+    return Q(pk__in=[])
+
+
+def _height_rows(rows, value_key='value'):
+    peak=max([float(row.get(value_key) or 0) for row in rows] or [0]) or 1
+    for row in rows:
+        value=float(row.get(value_key) or 0)
+        row['height']=max(7,round(value*100/peak)) if value else 4
+    return rows
+
+
+def _dashboard_branches(selected_branch=None, *, include_afsariyeh=True):
+    if selected_branch:
+        return [selected_branch]
+    active=list(Branch.objects.filter(is_active=True).order_by('id'))
+    wanted=('نیاوران','پونک','اصفهان','ارومیه','افسریه')
+    ordered=[]
+    used=set()
+    for token in wanted:
+        if token=='افسریه' and not include_afsariyeh:
+            continue
+        for branch in active:
+            if branch.pk not in used and token in branch.name:
+                ordered.append(branch); used.add(branch.pk); break
+    # Do not let auxiliary branches make the executive plaque unreadable.
+    return ordered[:5]
 
 
 @register.simple_tag
@@ -176,6 +247,64 @@ def management_dashboard_metrics(selected_branch=None):
         for index, row in enumerate(appointment_rows)
     ]
 
+    # Real executive breakdowns used by the three live top plaques.
+    sales_branch_rows=[]
+    for index, branch in enumerate(_dashboard_branches(selected_branch, include_afsariyeh=True)):
+        amount=finance_today.filter(branch=branch).aggregate(v=Sum('amount'))['v'] or 0
+        sales_branch_rows.append({
+            'name':branch.name,'value_m':Decimal(amount)/MILLION_TOMAN,
+            'color':COLORS[index % len(COLORS)],
+        })
+    _height_rows(sales_branch_rows,'value_m')
+
+    appointment_branch_rows=[]
+    for index, branch in enumerate(_dashboard_branches(selected_branch, include_afsariyeh=False)):
+        count=today_appointments.filter(branch=branch).exclude(status='cancelled').count()
+        appointment_branch_rows.append({
+            'name':branch.name,'value':count,'color':COLORS[index % len(COLORS)],
+        })
+    _height_rows(appointment_branch_rows)
+
+    future_appointments_created_today=(
+        appointments.filter(
+            created_at__date=today,
+            appointment_date__gt=today,
+            source='call_center',
+        )
+        .exclude(status='cancelled')
+        .count()
+    )
+
+    today_channels=[
+        ('instagram','اینستاگرام','#ec4899'),
+        ('website','وب‌سایت','#3b82f6'),
+        ('beytoote','بیتوته','#f59e0b'),
+        ('aparat','آپارات','#06b6d4'),
+        ('whatsapp','واتس‌اپ','#22c55e'),
+        ('crm','CRM','#8b5cf6'),
+        ('telegram','تلگرام','#38bdf8'),
+        ('bale','بله','#10b981'),
+        ('campaign','کمپین','#f97316'),
+    ]
+    channel_rows=[]
+    claimed=Q(pk__in=[])
+    for key,label,color in today_channels:
+        q=_channel_q(key)
+        count=today_leads_qs.filter(q).count()
+        if count:
+            channel_rows.append({'key':key,'name':label,'value':count,'color':color})
+        claimed |= q
+    other_count=today_leads_qs.exclude(claimed).count()
+    if other_count:
+        channel_rows.append({'key':'other','name':'سایر','value':other_count,'color':'#94a3b8'})
+    channel_rows.sort(key=lambda row:row['value'],reverse=True)
+    if len(channel_rows)>5:
+        visible=channel_rows[:4]
+        rest=sum(row['value'] for row in channel_rows[4:])
+        visible.append({'key':'other','name':'سایر','value':rest,'color':'#94a3b8'})
+        channel_rows=visible
+    _height_rows(channel_rows)
+
     meetings = MeetingMinute.objects.filter(meeting_date__gte=today - timedelta(days=30))
 
     return {
@@ -188,12 +317,14 @@ def management_dashboard_metrics(selected_branch=None):
         'sales_7d': _bar_rows(sales_7d_values),
         'sales_30d': sales_30d,
         'branch_sales': branch_sales,
+        'sales_branch_today': sales_branch_rows,
         'leads_total': leads.count(),
         'leads_today': today_lead_count,
         'leads_month': leads.filter(created_at__date__range=(month_start, today)).count(),
         'leads_year': leads.filter(created_at__date__range=(year_start, today)).count(),
         'leads_open': leads.filter(status__in=('new', 'contacted', 'appointment', 'visited')).count(),
         'lead_sources': lead_sources,
+        'lead_sources_today': channel_rows,
         'leads_7d': _bar_rows(leads_7d_values),
         'leads_30d': leads_30d,
         'today_leads_with_appointment': today_leads_with_appointment,
@@ -202,6 +333,8 @@ def management_dashboard_metrics(selected_branch=None):
         'appointments_month': month_appointments.count(),
         'appointments_year': year_appointments.count(),
         'appointment_mix': appointment_mix,
+        'appointment_branches_today': appointment_branch_rows,
+        'future_appointments_created_today': future_appointments_created_today,
         'arrived_today': today_appointments.filter(status__in=('arrived', 'completed')).count(),
         'won_month': sales.filter(sale_date__gte=month_start, sale_date__lte=today).values('lead_id').distinct().count(),
         'open_tasks': open_tasks.count(),
