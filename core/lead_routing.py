@@ -252,9 +252,7 @@ def _locked_round_robin_operator(now=None, channel=None):
         operators,
         key=lambda op: (
             (stats.get(op.id,{}).get('count',0)+1) / operator_weight(op, now=local_now),
-            stats.get(op.id,{}).get('last_at') or timezone.make_aware(
-                timezone.datetime.min.replace(year=2000)
-            ),
+            stats.get(op.id,{}).get('last_at') or (local_now - timedelta(days=3650)),
             op.id,
         ),
     )
