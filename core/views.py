@@ -2014,7 +2014,12 @@ def _branch_live_payload(branch=None, day=None):
         if leave:
             status='leave'; label=leave.get_request_type_display()
         elif rec and rec.check_in:
-            status=attendance_status_for(u,day,rec.check_in)
+            if shift.get('is_off') or not shift.get('start'):
+                status='present'
+            else:
+                local_in=timezone.localtime(rec.check_in).replace(tzinfo=None)
+                threshold=datetime.combine(day,shift['start'])+timedelta(minutes=shift.get('grace',0))
+                status='late' if local_in>threshold else 'present'
             label='با تأخیر' if status=='late' else 'حاضر'
         elif shift.get('is_off'):
             status='off'; label='روز غیرکاری'
@@ -2022,7 +2027,9 @@ def _branch_live_payload(branch=None, day=None):
             status='missing'; label='ورود ثبت نشده'
         counters[status] = counters.get(status,0)+1
         overdue = overdue_by_user.get(u.id,0)
-        missing_reports = len(missing_report_days(u,days=7,end=day-timedelta(days=1)))
+        # This 7-day value is not rendered on the live dashboard. Computing it
+        # used to trigger dozens of schedule/report queries per employee.
+        missing_reports = 0
         expected_start=shift.get('start')
         late_minutes=0
         if rec and rec.check_in and expected_start:
