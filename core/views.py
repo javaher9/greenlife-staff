@@ -13,6 +13,7 @@ from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect, render
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Q, Sum
+from django.db.models.functions import TruncDate
 from django.utils import timezone
 from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, BlackboardMessageForm, EmployeeCreateForm, EmployeeEditForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm, ConsultantFinanceEntryForm, StaffLoginForm, StaffCredentialUpdateForm
 from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, Branch, BranchWorkSchedule, EmployeeWorkSchedule, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction, MeetingActionUpdate, StaffCredential, VisitAppointment, TreatmentCatalogItem
