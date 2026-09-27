@@ -1974,14 +1974,41 @@ def _branch_scope_for_manager(request):
 def _branch_live_payload(branch=None, day=None):
     from .models import Branch, FinancialTransaction
     day = day or timezone.localdate()
-    users = User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
+    users_qs = User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
     if branch:
-        users = users.filter(profile__branch=branch)
+        users_qs = users_qs.filter(profile__branch=branch)
+    users=list(users_qs.order_by('profile__branch__name','last_name','first_name','username'))
+    user_ids=[u.id for u in users]
+
+    # Bulk-load the per-person facts used by the command center. The previous
+    # implementation queried leave, attendance, tasks and report status once
+    # per employee, which made /live/ noticeably slower than the KPI dashboard.
+    leaves_by_user={}
+    for leave in LeaveRequest.objects.filter(
+        user_id__in=user_ids,status='approved',start_date__lte=day,end_date__gte=day
+    ).select_related('user').order_by('user_id','-created_at'):
+        leaves_by_user.setdefault(leave.user_id,leave)
+    attendance_by_user={
+        rec.user_id:rec for rec in Attendance.objects.filter(
+            user_id__in=user_ids,date=day
+        ).select_related('user')
+    }
+    overdue_by_user={
+        row['assigned_to_id']:row['n'] for row in Task.objects.filter(
+            assigned_to_id__in=user_ids,status__in=('todo','doing'),due_date__lt=day
+        ).values('assigned_to_id').annotate(n=Count('id'))
+    }
+    report_today_ids=set(
+        DailyReport.objects.filter(
+            user_id__in=user_ids,created_at__date=day
+        ).values_list('user_id',flat=True).distinct()
+    )
+
     rows=[]
     counters={'present':0,'late':0,'missing':0,'leave':0}
-    for u in users.order_by('profile__branch__name','last_name','first_name','username'):
-        leave = LeaveRequest.objects.filter(user=u,status='approved',start_date__lte=day,end_date__gte=day).first()
-        rec = Attendance.objects.filter(user=u,date=day).first()
+    for u in users:
+        leave=leaves_by_user.get(u.id)
+        rec=attendance_by_user.get(u.id)
         shift=shift_rule(u,day)
         if leave:
             status='leave'; label=leave.get_request_type_display()
@@ -1993,14 +2020,14 @@ def _branch_live_payload(branch=None, day=None):
         else:
             status='missing'; label='ورود ثبت نشده'
         counters[status] = counters.get(status,0)+1
-        overdue = Task.objects.filter(assigned_to=u,status__in=('todo','doing'),due_date__lt=day).count()
+        overdue = overdue_by_user.get(u.id,0)
         missing_reports = len(missing_report_days(u,days=7,end=day-timedelta(days=1)))
         expected_start=shift.get('start')
         late_minutes=0
         if rec and rec.check_in and expected_start:
             expected_dt=timezone.make_aware(datetime.combine(day,expected_start),timezone.get_current_timezone())
             late_minutes=max(0,int((rec.check_in-expected_dt).total_seconds()//60))
-        report_today=DailyReport.objects.filter(user=u,created_at__date=day).exists()
+        report_today=u.id in report_today_ids
         rows.append({
             'id':u.id,
             'name':u.get_full_name() or u.username,
@@ -2081,24 +2108,41 @@ def _branch_live_payload(branch=None, day=None):
             'time': timezone.localtime(item.updated_at).strftime('%H:%M'),
         })
 
-    # Lightweight 7-day management trend data.
+    # Lightweight 7-day management trend data, grouped in three queries
+    # instead of querying each metric separately for every day.
     trend=[]
     request_trend=[]
+    trend_start=day-timedelta(days=6)
+    attendance_daily={
+        row['date']:row for row in Attendance.objects.filter(
+            date__range=(trend_start,day),user_id__in=user_ids
+        ).values('date').annotate(
+            present=Count('user_id',filter=Q(check_in__isnull=False),distinct=True),
+            late=Count('user_id',filter=Q(status='late'),distinct=True),
+        )
+    }
+    report_daily={
+        row['day']:row['n'] for row in DailyReport.objects.filter(
+            created_at__date__range=(trend_start,day),user_id__in=user_ids
+        ).annotate(day=TruncDate('created_at')).values('day').annotate(
+            n=Count('user_id',distinct=True)
+        )
+    }
+    request_daily={
+        row['day']:row['n'] for row in internal_requests_qs.filter(
+            created_at__date__range=(trend_start,day)
+        ).annotate(day=TruncDate('created_at')).values('day').annotate(n=Count('id'))
+    }
     for offset in range(6,-1,-1):
         d=day-timedelta(days=offset)
-        active_users=users
-        daily_records=Attendance.objects.filter(date=d,user__in=active_users)
-        present_count=daily_records.filter(check_in__isnull=False).values('user').distinct().count()
-        late_count=daily_records.filter(status='late').values('user').distinct().count()
-        report_count=DailyReport.objects.filter(created_at__date=d,user__in=active_users).values('user').distinct().count()
+        a=attendance_daily.get(d,{})
         trend.append({
             'label':format_jalali(d)[5:],
-            'present':present_count,
-            'late':late_count,
-            'reports':report_count,
+            'present':a.get('present',0),
+            'late':a.get('late',0),
+            'reports':report_daily.get(d,0),
         })
-        daily_request_count = internal_requests_qs.filter(created_at__date=d).count()
-        request_trend.append({'label': format_jalali(d)[5:], 'count': daily_request_count})
+        request_trend.append({'label':format_jalali(d)[5:],'count':request_daily.get(d,0)})
 
     device_issues = DeviceIssue.objects.filter(reporter__in=users).select_related('reporter','branch').order_by('-created_at')
     if branch:
@@ -2131,7 +2175,7 @@ def _branch_live_payload(branch=None, day=None):
         'branch':branch.name if branch else 'همه شعب',
         'counts':counters,
         'revenue_today':str(revenue),
-        'overdue_tasks':overdue_tasks.count(),
+        'overdue_tasks':sum(overdue_by_user.values()),
         'reports_today':reports_today.values('user').distinct().count(),
         'missing_reports_today':missing_reports_today,
         'unverified_locations':sum(1 for p in rows if p['check_in'] and p['location_status'] not in ('verified','manual')),
@@ -2149,7 +2193,7 @@ def _branch_live_payload(branch=None, day=None):
         'present_people':present_people,
         'action_required_count':(
             counters.get('late',0) + missing_reports_today
-            + overdue_tasks.count() + device_open_count
+            + sum(overdue_by_user.values()) + device_open_count
         ),
         'request_total':request_total,
         'request_open':request_open,
