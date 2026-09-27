@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db import transaction
 from django.db.models import Count, Max, Q
 from django.utils import timezone
@@ -31,6 +33,16 @@ WEBSITE_EXCLUDED_OPERATOR_IDENTITIES = (
     'شیما عباسی', 'عباسی', 'abbasi', 'لاله',
 )
 
+# Temporary management hold: do not route any new leads to Khorشیدی / Mohammad Salehi.
+# Existing leads remain owned by him; this only affects new automatic assignments.
+TEMP_DISABLED_OPERATOR_IDENTITIES = (
+    'محمد صالحی', 'صالحی', 'salehi', 'خورشیدی',
+)
+
+CONTACT_RATE_WINDOW_DAYS = 7
+CONTACT_RATE_MIN_AGE_HOURS = 2
+CONTACTED_STATUSES = ('contacted', 'appointment', 'visited', 'won', 'lost')
+
 
 def _normalize(value):
     return ' '.join(
@@ -54,20 +66,51 @@ def _website_operator_allowed(operator):
     return not any(_normalize(name) in identity for name in WEBSITE_EXCLUDED_OPERATOR_IDENTITIES)
 
 
+def _operator_temporarily_enabled(operator):
+    identity=_operator_identity(operator)
+    return not any(_normalize(name) in identity for name in TEMP_DISABLED_OPERATOR_IDENTITIES)
+
+
 def _operators_for_channel(operators, channel):
-    operators=list(operators)
+    operators=[operator for operator in operators if _operator_temporarily_enabled(operator)]
     if channel=='website':
         return [operator for operator in operators if _website_operator_allowed(operator)]
     return operators
 
 
-def operator_weight(operator):
-    """Current phase: all present call-center operators have equal weight.
+def _recent_contact_rate(operator, now=None):
+    """Smoothed 7-day contact rate used only for new-lead routing.
 
-    A KPI/performance multiplier can be added here later without changing the
-    pending-queue and attendance-aware routing flow.
+    Leads assigned less than two hours ago are excluded so a fresh lead does not
+    immediately hurt an operator's score. A small prior keeps low-volume staff
+    from jumping between extremes after only one or two leads.
     """
-    return 1
+    now=now or timezone.now()
+    cutoff=now-timedelta(days=CONTACT_RATE_WINDOW_DAYS)
+    mature_before=now-timedelta(hours=CONTACT_RATE_MIN_AGE_HOURS)
+    qs=ReferralLead.objects.filter(
+        assigned_to=operator,
+    ).filter(
+        Q(assigned_at__gte=cutoff, assigned_at__lte=mature_before)
+        | Q(assigned_at__isnull=True, created_at__gte=cutoff, created_at__lte=mature_before)
+    )
+    total=qs.count()
+    if not total:
+        return 0.70
+    contacted=qs.filter(status__in=CONTACTED_STATUSES).count()
+    # Bayesian smoothing around a 70% neutral prior with five virtual leads.
+    return (contacted + 3.5) / (total + 5)
+
+
+def operator_weight(operator, now=None):
+    """Performance-aware routing weight.
+
+    Higher contact rate receives a larger share of new leads; lower contact
+    rate still receives some leads, but fewer. Weight range is intentionally
+    bounded to avoid starving an operator from a short-term dip.
+    """
+    rate=_recent_contact_rate(operator, now=now)
+    return max(0.35, min(1.50, 0.25 + (1.50 * rate)))
 
 
 def expected_operator_user_ids(day=None):
@@ -200,8 +243,21 @@ def _locked_round_robin_operator(now=None, channel=None):
     local_now=timezone.localtime(now or timezone.now())
     day=local_now.date()
     operators=_operators_for_channel(_locked_present_operators(day),channel)
-    order=_rotation_order(operators,day)
-    return order[0] if order else None
+    if not operators:
+        return None
+    stats=_assignment_stats(operators,day)
+    # Weighted fair routing: the operator with the lowest assigned/weight score
+    # receives the next lead. Better contact rate => higher weight => more share.
+    return min(
+        operators,
+        key=lambda op: (
+            (stats.get(op.id,{}).get('count',0)+1) / operator_weight(op, now=local_now),
+            stats.get(op.id,{}).get('last_at') or timezone.make_aware(
+                timezone.datetime.min.replace(year=2000)
+            ),
+            op.id,
+        ),
+    )
 
 
 def _group_for(operator, name, *, is_default=False):
@@ -336,25 +392,36 @@ def release_pending_leads_if_ready(*, force=False, now=None):
     if not pending:
         return 0
 
-    rotation=_rotation_order(operators,day)
+    operators=_operators_for_channel(operators,None)
     website_operators=_operators_for_channel(operators,'website')
-    website_rotation=_rotation_order(website_operators,day)
-    generic_index=0
-    website_index=0
+    if not operators:
+        return 0
+
+    generic_counts={
+        op.id:_assignment_stats(operators,day).get(op.id,{}).get('count',0)
+        for op in operators
+    }
+    website_counts={
+        op.id:_assignment_stats(website_operators,day).get(op.id,{}).get('count',0)
+        for op in website_operators
+    } if website_operators else {}
 
     assigned = 0
     for lead in pending:
         channel=_pending_channel(lead)
-        if channel=='website':
-            # Never fall back to Kamelya/Laleh for website leads. If no
-            # approved website operator is present, keep the lead pending.
-            if not website_rotation:
-                continue
-            operator=website_rotation[website_index % len(website_rotation)]
-            website_index+=1
-        else:
-            operator=rotation[generic_index % len(rotation)]
-            generic_index+=1
+        pool=website_operators if channel=='website' else operators
+        counts=website_counts if channel=='website' else generic_counts
+        if not pool:
+            # Never fall back to disallowed operators for a restricted channel.
+            continue
+        operator=min(
+            pool,
+            key=lambda op: (
+                (counts.get(op.id,0)+1) / operator_weight(op, now=local_now),
+                op.id,
+            ),
+        )
+        counts[operator.id]=counts.get(operator.id,0)+1
         group_name, title = _pending_destination(lead)
         _assign_to_operator(
             lead,
