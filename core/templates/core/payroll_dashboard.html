@@ -552,6 +552,197 @@ body.gl-authenticated.gl-page-payroll_dashboard .history-list a.is-current{
   }
 }
 
+/* v5 — visual reference locked to KPI Personnel dashboard.
+   From here on payroll follows KPI palette/glass treatment; layout stays stable. */
+body.gl-authenticated.gl-page-payroll_dashboard{
+  background:#07131d!important;
+  color:#f8fbff!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .app-main{
+  background:
+    radial-gradient(circle at 12% 0,rgba(32,114,104,.08),transparent 28%),
+    linear-gradient(180deg,#07131d 0%,#081722 100%)!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .topbar{
+  background:#081722!important;
+  border-bottom-color:#1d3444!important;
+  box-shadow:none!important;
+}
+
+/* main hero/filter surfaces */
+body.gl-authenticated.gl-page-payroll_dashboard .pay-hero,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-filters,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-panel,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-detail{
+  background:linear-gradient(145deg,#0f2534,#0a1924)!important;
+  border-color:#2b4a5d!important;
+  box-shadow:0 14px 30px rgba(0,0,0,.14)!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-hero{
+  background:
+    radial-gradient(circle at 10% 110%,rgba(255,255,255,.08),transparent 38%),
+    linear-gradient(145deg,#10283a,#0a1b28)!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-hero-badge,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-status{
+  background:#103c2c!important;
+  color:#70efb0!important;
+  border-color:#1d9b70!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-hero h1,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-panel-head h2,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-detail-title h2{
+  color:#fff!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-hero p,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-panel-head p,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-detail-title small{
+  color:#c4d3de!important;
+}
+
+/* inputs same as KPI filters */
+body.gl-authenticated.gl-page-payroll_dashboard .pay-field select,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-field input,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-field textarea{
+  background:#0b1b27!important;
+  border-color:#2d4a5c!important;
+  color:#f5fbff!important;
+  box-shadow:none!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-field input::placeholder,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-field textarea::placeholder{
+  color:#9cb0bf!important;
+  opacity:1!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-field label{color:#c2d0da!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-month-nav a{
+  background:#102331!important;
+  border-color:#2b4557!important;
+  color:#fff!important;
+}
+
+/* KPI-style salary cards */
+body.gl-authenticated.gl-page-payroll_dashboard .pay-kpi{
+  position:relative!important;
+  overflow:hidden!important;
+  border-radius:20px!important;
+  border-width:1px!important;
+  box-shadow:0 18px 38px rgba(0,0,0,.20)!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-kpi:before{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  background:radial-gradient(circle at 10% 110%,rgba(255,255,255,.12),transparent 38%)!important;
+  pointer-events:none!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .k-green{
+  background:linear-gradient(140deg,#0b442f,#0b2c22 56%,#092018)!important;
+  border-color:#1d9b70!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .k-violet{
+  background:linear-gradient(140deg,#3b2467,#281a47 55%,#171128)!important;
+  border-color:#865ed0!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .k-blue{
+  background:linear-gradient(140deg,#0c426d,#0b2b49 55%,#091d30)!important;
+  border-color:#2c91d7!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .k-sand{
+  background:linear-gradient(140deg,#514617,#352d12 55%,#211d0f)!important;
+  border-color:#a58b2f!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .k-rose{
+  background:linear-gradient(140deg,#542536,#391923 56%,#241016)!important;
+  border-color:#9c4965!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .k-slate{
+  background:linear-gradient(140deg,#173b49,#102a35 56%,#0b1d25)!important;
+  border-color:#3f7184!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-kpi span{
+  color:#f1f7fb!important;font-weight:950!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-kpi strong{
+  color:#fff!important;font-size:22px!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-kpi small{
+  color:#c7d5de!important;
+}
+
+/* table: use exact KPI table family */
+body.gl-authenticated.gl-page-payroll_dashboard .pay-panel-head{
+  background:#0d2130!important;
+  border-bottom-color:#274557!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table-wrap{
+  background:#0a1823!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table th{
+  background:linear-gradient(180deg,#163347,#10293a)!important;
+  color:#f1f7fb!important;
+  border-bottom-color:#36566b!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr:nth-child(even){
+  background:#0a1823!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr:hover{
+  background:#102a39!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td{
+  color:#eef6fb!important;
+  border-bottom-color:#1d3342!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr.is-selected{
+  background:#102a39!important;
+  box-shadow:inset 4px 0 #23d790!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr.is-selected td{
+  background:#102a39!important;
+}
+
+/* personnel detail: keep layout, only align visual language with KPI */
+body.gl-authenticated.gl-page-payroll_dashboard .person-card,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-form-card,
+body.gl-authenticated.gl-page-payroll_dashboard .history-card{
+  background:linear-gradient(145deg,#0f2534,#0a1924)!important;
+  border-color:#2b4a5d!important;
+  box-shadow:0 14px 30px rgba(0,0,0,.14)!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .person-meta div{
+  background:#0b1a25!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .cum-grid div{
+  background:linear-gradient(145deg,#2f214d,#211833)!important;
+  border-color:#5a3f87!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-current div{
+  background:linear-gradient(140deg,#0b442f,#0b2c22 56%,#092018)!important;
+  border-color:#1d9b70!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-current b{
+  color:#70efb0!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .history-list a{
+  background:#0b1a25!important;
+  border-color:#203746!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .history-list a.is-current{
+  background:#103c2c!important;
+  border-color:#1d9b70!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-btn{
+  background:#102331!important;
+  border-color:#2b4557!important;
+  color:#fff!important;
+  box-shadow:0 8px 18px rgba(0,0,0,.14)!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-btn.is-primary{
+  background:linear-gradient(135deg,#0e8f60,#25c883)!important;
+  border-color:#36d89a!important;
+}
+
 </style>
 
 <div class="pay">
