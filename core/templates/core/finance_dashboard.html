@@ -39,6 +39,47 @@ body.gl-page-finance_dashboard .app-main>.stats{background:#081723!important;bac
 @media(max-width:760px){.fin44-filter{grid-template-columns:repeat(2,1fr)}.fin44 h1{font-size:27px!important}.fin44-donut-wrap{justify-content:flex-start}.fin44-branch-legend{gap:8px}.fin44-chart-wrap{height:205px}.fin44-table{min-width:1400px}}
 @media(max-width:620px){.fin44-kpis{grid-template-columns:1fr 1fr}.fin44-filter{grid-template-columns:1fr}.fin44-kpi{min-height:128px}.fin44-kpi b{font-size:25px}.fin44-periods .apply{margin-right:0}.fin44-head{align-items:flex-start;flex-direction:column}.fin44-real-bars{grid-template-columns:1fr 1fr}.fin44-service{grid-template-columns:72px 1fr 72px}.fin44-donut-wrap{flex-direction:column;align-items:center}.fin44-chart-head{align-items:flex-start;flex-direction:column}.fin44-funnel-row:nth-child(n){width:100%}.fin44-funnel-row span{font-size:9px}.fin44-funnel-row b{font-size:15px}}
 @media(max-width:410px){.fin44-kpis{grid-template-columns:1fr}.fin44-real-bars{grid-template-columns:1fr}}
+
+/* v48 — finance actions: stable scroll + dark in-theme feedback toast */
+body.gl-page-finance_dashboard .msg{
+  position:fixed!important;
+  top:74px!important;
+  left:24px!important;
+  right:auto!important;
+  z-index:9999!important;
+  width:min(420px,calc(100vw - 48px))!important;
+  margin:0!important;
+  padding:11px 14px!important;
+  border-radius:12px!important;
+  background:linear-gradient(145deg,#0f2b24,#0a201b)!important;
+  border:1px solid #27694f!important;
+  color:#dcfff0!important;
+  box-shadow:0 14px 34px rgba(0,0,0,.30)!important;
+  font-size:10px!important;
+  font-weight:900!important;
+  line-height:1.8!important;
+}
+body.gl-page-finance_dashboard .msg.success{
+  background:linear-gradient(145deg,#103c2c,#0a281f)!important;
+  border-color:#2d8c69!important;
+  color:#aef5cf!important;
+}
+body.gl-page-finance_dashboard .msg.error{
+  background:linear-gradient(145deg,#4f1f2a,#32151c)!important;
+  border-color:#773444!important;
+  color:#ffc8d2!important;
+}
+body.gl-page-finance_dashboard .msg.warning{
+  background:linear-gradient(145deg,#4b3712,#30250d)!important;
+  border-color:#735821!important;
+  color:#ffe29a!important;
+}
+@media(max-width:760px){
+  body.gl-page-finance_dashboard .msg{
+    top:64px!important;left:12px!important;
+    width:calc(100vw - 24px)!important;
+  }
+}
 </style>
 
 <div class="fin44 fin-page">
@@ -94,6 +135,30 @@ body.gl-page-finance_dashboard .app-main>.stats{background:#081723!important;bac
 
   <span class="fin-compat-a" hidden></span><span class="fin-compat-b" hidden></span><div hidden aria-hidden="true"><span class="fin-page"></span><span class="stats fin-kpis"></span><table class="fin-table"></table><div class="fin-actions"></div><button class="fin-btn approve"></button><button class="fin-btn correction"></button><button class="fin-btn cancel"></button><button class="fin-btn analyze"></button><span>عملکرد گل‌های کال‌سنتر</span><span>عملکرد شعب</span><span>دستگاه و خدمات</span><span>فروش بر اساس منشأ لید</span><span>مراجعه مستقیم شعبه</span><span>تحلیل هوشمند مالی</span></div>
 </div>
+
+<script>
+(function(){
+  const key='greenlife_finance_scroll_restore';
+  const saved=sessionStorage.getItem(key);
+  if(saved!==null){
+    sessionStorage.removeItem(key);
+    const y=parseInt(saved,10);
+    if(Number.isFinite(y)){
+      const restore=()=>window.scrollTo({top:y,left:0,behavior:'auto'});
+      requestAnimationFrame(()=>requestAnimationFrame(restore));
+      window.addEventListener('load',restore,{once:true});
+    }
+  }
+
+  document.querySelectorAll(
+    '.fin44-actions form, .fin-actions form, form[action*="/finance/"][action*="/review/"], form[action*="/finance/"][action*="/analyze/"]'
+  ).forEach(function(form){
+    form.addEventListener('submit',function(){
+      sessionStorage.setItem(key,String(window.scrollY||document.documentElement.scrollTop||0));
+    });
+  });
+})();
+</script>
 
 {% if intel.external_revenue.available %}<script>
 (function(){
