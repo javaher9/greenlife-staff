@@ -15,6 +15,72 @@ register = template.Library()
 
 ZERO = Decimal('0')
 
+BRANCH_PALETTE = {
+    'نیاوران': '#8b5cf6',
+    'پونک': '#3b82f6',
+    'اصفهان': '#16d888',
+    'ارومیه': '#f59e0b',
+    'افسریه': '#ec4899',
+    'بدون شعبه': '#94a3b8',
+}
+FALLBACK_CHART_COLORS = ('#22d3ee', '#a3e635', '#f97316', '#c084fc', '#f43f5e')
+SOURCE_COLORS = {
+    'link': '#10d39a',
+    'panel': '#2f8cff',
+    'import': '#8b5cf6',
+    'api': '#f59e0b',
+    'direct': '#ec4899',
+}
+SERVICE_COLORS = {
+    'device_package': '#3b82f6',
+    'daya_package': '#a855f7',
+    'lipolytic': '#22d3ee',
+    'skin': '#ec4899',
+    'other': '#94a3b8',
+}
+
+
+def _conic_gradient(rows, total, fallback='#173044'):
+    """Return a real multi-segment conic gradient matching legend row colors."""
+    total_value=float(total or 0)
+    if total_value <= 0:
+        return f'conic-gradient({fallback} 0 100%)'
+    cursor=0.0
+    parts=[]
+    for row in rows:
+        value=float(row.get('total') or 0)
+        if value <= 0:
+            continue
+        end=min(100.0, cursor + (value * 100.0 / total_value))
+        parts.append(f"{row.get('color') or fallback} {cursor:.2f}% {end:.2f}%")
+        cursor=end
+    if cursor < 100:
+        parts.append(f'{fallback} {cursor:.2f}% 100%')
+    return 'conic-gradient(' + ','.join(parts) + ')'
+
+
+def _effective_service_q(code):
+    """Analytics-only fallback for legacy rows with blank sale_reason.
+
+    We never rewrite historical finance data here. Explicit sale_reason wins;
+    only rows whose category is blank are inferred from an explicit service/
+    description mention of Daya.
+    """
+    if code != 'daya_package':
+        return Q(sale_reason=code)
+    return (
+        Q(sale_reason='daya_package')
+        | (
+            Q(sale_reason='')
+            & (
+                Q(service__icontains='دایا')
+                | Q(service__icontains='daya')
+                | Q(description__icontains='دایا')
+                | Q(description__icontains='daya')
+            )
+        )
+    )
+
 
 def _aware_start(day):
     return timezone.make_aware(datetime.combine(day, time.min))
@@ -112,14 +178,8 @@ def _app_revenue_snapshot(day, branch=None):
     if not totals:
         return empty
 
-    palette = {
-        'نیاوران': '#8b5cf6',
-        'پونک': '#3b82f6',
-        'اصفهان': '#16d888',
-        'ارومیه': '#f59e0b',
-        'افسریه': '#ec4899',
-    }
-    fallback_colors = ['#22d3ee', '#a3e635', '#f97316', '#c084fc']
+    palette = BRANCH_PALETTE
+    fallback_colors = FALLBACK_CHART_COLORS
     grand_total = sum(totals.values(), ZERO)
     max_branch_total = max(totals.values()) or Decimal('1')
     branches = []
@@ -261,20 +321,19 @@ def finance_intelligence(context):
     for row in trend:
         row['height'] = max(3, _pct(row['amount'], trend_den)) if row['amount'] else 2
 
-    # Branch distribution.
+    # Branch distribution: fixed branch colors everywhere, independent of ranking.
     branch_rows = list(income.values('branch__name').annotate(total=Sum('amount'), count=Count('id')).order_by('-total'))
-    branch_colors = ['#16d888', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#22d3ee']
     for idx, row in enumerate(branch_rows):
         row['total'] = _money(row['total'])
         row['pct'] = _pct(row['total'], total)
-        row['color'] = branch_colors[idx % len(branch_colors)]
         row['label'] = row['branch__name'] or 'بدون شعبه'
+        row['color'] = BRANCH_PALETTE.get(row['label'], FALLBACK_CHART_COLORS[idx % len(FALLBACK_CHART_COLORS)])
     branch_donut = branch_rows[0]['pct'] if branch_rows else 0
+    branch_gradient = _conic_gradient(branch_rows, total)
 
     # Lead source distribution for approved income.
     source_rows = []
     source_defs = list(ReferralLead.SOURCE) + [('direct', 'مراجعه مستقیم')]
-    source_colors = ['#10d39a', '#2f8cff', '#8b5cf6', '#f59e0b', '#ec4899', '#94a3b8']
     for idx, (code, label) in enumerate(source_defs):
         sq = income
         if code == 'direct':
@@ -283,18 +342,30 @@ def finance_intelligence(context):
             sq = sq.filter(appointment__lead__source=code)
         amount = _money(sq.aggregate(v=Sum('amount'))['v'])
         if amount or (source == code):
-            source_rows.append({'code': code, 'label': label, 'total': amount, 'pct': _pct(amount, total), 'color': source_colors[idx % len(source_colors)]})
+            source_rows.append({
+                'code': code, 'label': label, 'total': amount,
+                'pct': _pct(amount, total),
+                'color': SOURCE_COLORS.get(code, FALLBACK_CHART_COLORS[idx % len(FALLBACK_CHART_COLORS)]),
+            })
     source_rows.sort(key=lambda x: x['total'], reverse=True)
     source_donut = source_rows[0]['pct'] if source_rows else 0
+    source_gradient = _conic_gradient(source_rows, total)
 
-    # Service distribution.
+    # Service distribution. Keep all configured categories visible so a zero
+    # clearly means "not recorded" rather than "missing from the system".
     service_rows = []
     for code, label in FinancialTransaction.SALE_REASON:
-        sq = income.filter(sale_reason=code)
+        sq = income.filter(_effective_service_q(code))
         amount = _money(sq.aggregate(v=Sum('amount'))['v'])
-        if amount or service == code:
-            service_rows.append({'code': code, 'label': label, 'total': amount, 'pct': _pct(amount, total)})
-    service_rows.sort(key=lambda x: x['total'], reverse=True)
+        service_rows.append({
+            'code': code, 'label': label, 'total': amount, 'pct': _pct(amount, total),
+            'color': SERVICE_COLORS.get(code, '#94a3b8'),
+        })
+    service_rows.sort(key=lambda x: (x['total'], x['code'] == 'daya_package'), reverse=True)
+    uncategorized_count = income.filter(sale_reason='').exclude(
+        Q(service__icontains='دایا') | Q(service__icontains='daya')
+        | Q(description__icontains='دایا') | Q(description__icontains='daya')
+    ).count()
 
     # Matrix: flower x branch, using the selected period and remaining filters.
     matrix_base = FinancialTransaction.objects.filter(
@@ -372,7 +443,9 @@ def finance_intelligence(context):
         'lead_count': lead_count, 'appointment_count': appointment_count, 'visit_count': visit_count,
         'conversion': conversion, 'revenue_per_lead': revenue_per_lead,
         'trend': trend, 'branch_rows': branch_rows, 'branch_donut': branch_donut,
-        'source_rows': source_rows, 'source_donut': source_donut, 'service_rows': service_rows,
+        'branch_gradient': branch_gradient,
+        'source_rows': source_rows, 'source_donut': source_donut, 'source_gradient': source_gradient,
+        'service_rows': service_rows, 'uncategorized_count': uncategorized_count,
         'matrix_branches': branches, 'matrix_rows': matrix_rows,
         'alerts': alerts, 'entries': entries.order_by('-occurred_at', '-id')[:60],
         'external_revenue': external_revenue,
