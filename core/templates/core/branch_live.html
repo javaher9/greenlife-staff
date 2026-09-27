@@ -34,6 +34,22 @@
   .cmd-ring:after{content:"";width:41px;height:41px;border-radius:50%;background:#0d1523;border:1px solid rgba(255,255,255,.05)}
   .cmd-segments{height:13px;display:flex;overflow:hidden;border-radius:8px;background:rgba(255,255,255,.05);position:relative;z-index:2;margin:12px 0 27px}.cmd-segments i{height:100%;flex:var(--n);background:var(--c);box-shadow:0 0 12px var(--c)}
 
+
+  .cmd-kpis-v4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .cmd-card-v4{--accent:var(--cyan);min-height:322px;padding:18px;border-radius:24px;border:1px solid color-mix(in srgb,var(--accent) 46%,rgba(255,255,255,.10));background:radial-gradient(circle at 92% 10%,color-mix(in srgb,var(--accent) 15%,transparent),transparent 31%),linear-gradient(145deg,rgba(17,34,51,.82),rgba(7,17,29,.88));box-shadow:0 18px 38px rgba(0,0,0,.20),0 0 28px color-mix(in srgb,var(--accent) 8%,transparent);backdrop-filter:blur(15px);position:relative;overflow:hidden}
+  .cmd-card-v4.sales{--accent:var(--mint)}.cmd-card-v4.leads{--accent:var(--cyan)}.cmd-card-v4.appts{--accent:var(--violet)}.cmd-card-v4.future{--accent:#4b8fff}
+  .cmd-card-head-v4{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.cmd-card-title-v4{display:flex;align-items:center;gap:10px}.cmd-card-title-v4 h3{margin:0;color:#fff;font-size:22px;font-weight:950}.cmd-card-icon-v4{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 24%,rgba(255,255,255,.06));color:#fff;font-size:20px}
+  .cmd-card-main-v4{display:flex;align-items:flex-end;gap:10px;margin-top:8px}.cmd-card-main-v4 b{font-size:48px;line-height:1;color:#fff;font-weight:950}.cmd-card-main-v4 span{color:#d8e5ee;font-size:10px;font-weight:850;padding-bottom:5px}
+  .cmd-range-v4{height:36px;border-radius:10px;border:1px solid color-mix(in srgb,var(--accent) 42%,rgba(255,255,255,.18));background:#0c1d2c;color:#fff;padding:0 10px;font:850 10px Tahoma;outline:none}
+  .cmd-card-top-v4{display:grid;grid-template-columns:minmax(145px,.36fr) minmax(0,.64fr);gap:12px;align-items:end}
+  .cmd-trend-v4{min-width:0}.cmd-trend-caption-v4{display:flex;justify-content:space-between;color:#d7e3ec;font-size:9px;font-weight:800;margin-bottom:3px}.cmd-trend-v4 svg{width:100%;height:105px;overflow:visible}.cmd-grid-v4{stroke:rgba(255,255,255,.07);stroke-width:1}.cmd-line-v4{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 5px color-mix(in srgb,var(--accent) 45%,transparent))}.cmd-dot-v4{fill:#fff;stroke:var(--accent);stroke-width:2}
+  .cmd-card-detail-v4{margin-top:11px;padding:11px;border-radius:15px;border:1px solid rgba(255,255,255,.075);background:rgba(3,13,24,.24)}.cmd-detail-title-v4{color:#eef7fb;font-size:10px;font-weight:900;margin-bottom:7px}
+  .cmd-bars-v4{height:95px;display:flex;align-items:flex-end;gap:8px}.cmd-bar-v4{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-end;text-align:center}.cmd-bar-v4 b{font-size:9px;color:#fff}.cmd-bar-v4 i{display:block;width:72%;max-width:38px;min-width:8px;height:var(--h);min-height:3px;margin:3px auto;border-radius:7px 7px 2px 2px;background:linear-gradient(180deg,color-mix(in srgb,var(--bar) 80%,white),var(--bar));box-shadow:0 0 11px color-mix(in srgb,var(--bar) 32%,transparent)}.cmd-bar-v4 small{font-size:7.5px;color:#cbd9e2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cmd-dual-v4{display:grid;grid-template-columns:.8fr 1.2fr;gap:10px}.cmd-ops-v4{display:grid;gap:5px;max-height:102px;overflow:auto;padding-left:3px}.cmd-op-v4{display:grid;grid-template-columns:82px minmax(0,1fr) 24px;gap:6px;align-items:center}.cmd-op-v4 span{font-size:8px;color:#e6eff5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cmd-op-v4 i{height:7px;border-radius:6px;background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 24%,transparent))}.cmd-op-v4 b{font-size:8px;color:#fff;text-align:center}
+  .cmd-legend-v4{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}.cmd-legend-v4 span{display:inline-flex;align-items:center;gap:4px;color:#d7e3ec;font-size:7.5px}.cmd-legend-v4 i{width:6px;height:6px;border-radius:50%;background:var(--c)}
+  .cmd-stack-v4{height:105px;display:flex;align-items:flex-end;gap:8px;overflow-x:auto}.cmd-stack-col-v4{min-width:58px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}.cmd-stack-col-v4>b{font-size:9px;color:#fff;margin-bottom:3px}.cmd-stack-v4bar{width:34px;min-height:4px;display:flex;flex-direction:column-reverse;border-radius:7px 7px 2px 2px;overflow:hidden;background:rgba(255,255,255,.04)}.cmd-stack-v4bar i{display:block;flex:var(--n);min-height:2px;background:var(--c)}.cmd-stack-col-v4 small{max-width:62px;margin-top:4px;font-size:7.5px;color:#d5e2eb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  @media(max-width:900px){.cmd-kpis-v4{grid-template-columns:1fr}.cmd-card-v4{min-height:305px}.cmd-card-top-v4{grid-template-columns:150px minmax(0,1fr)}}@media(max-width:560px){.cmd-card-top-v4{grid-template-columns:1fr}.cmd-trend-v4 svg{height:90px}.cmd-dual-v4{grid-template-columns:1fr}}
+
   .cmd-section{display:grid;gap:11px}.cmd-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.cmd-section-head h2{margin:0;font-size:19px;color:#fff;font-weight:950}.cmd-section-head a{color:#d8c9ff;font-size:11px;font-weight:850}.cmd-section-head>span{color:#8fa0b5;font-size:10px;font-weight:700}
   .cmd-attention{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
   .cmd-attn{display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:17px;border:1px solid rgba(255,255,255,.085);background:linear-gradient(145deg,rgba(21,28,45,.98),rgba(9,14,25,.98));box-shadow:0 9px 22px rgba(0,0,0,.09)}
@@ -371,64 +387,40 @@ body.gl-page-branch_live_dashboard .cmd-attn i{
     </div>
   </section>
 
-  <section class="cmd-kpis" aria-label="شاخص‌های مدیریتی">
+  
+  <section class="cmd-kpis-v4" aria-label="شاخص‌های مدیریتی">
     {% if user.profile.role != 'internal_manager' %}
-    <a class="cmd-kpi sales" href="/finance/">
-      <div class="cmd-kpi-head"><span class="cmd-kpi-title">فروش امروز</span><span class="cmd-kpi-unit">میلیون تومان</span></div>
-      <div class="cmd-kpi-value"><strong>{{ metrics.sales_today_m|floatformat:0 }}</strong><span>امروز</span></div>
-      <div class="cmd-catbars" aria-label="فروش امروز بر اساس مرکز">{% for x in metrics.sales_branch_today %}<span class="cmd-catbar" title="{{ x.name }}: {{ x.value_m|floatformat:1 }} میلیون تومان"><b>{{ x.value_m|floatformat:0 }}</b><i style="--h:{{ x.height }}%;--bar:{{ x.color }}"></i><small>{{ x.name }}</small></span>{% empty %}<span class="cmd-catbar"><b>0</b><i style="--h:4%;--bar:#2ee6a6"></i><small>بدون داده</small></span>{% endfor %}</div>
-      <div class="cmd-kpi-foot"><span class="cmd-mini">دیروز <b>{{ metrics.sales_yesterday_m|floatformat:0 }}</b></span><span class="cmd-mini">ماه <b>{{ metrics.sales_month_m|floatformat:0 }}</b></span><span class="cmd-mini">سال <b>{{ metrics.sales_year_m|floatformat:0 }}</b></span></div>
-    </a>
+    <article class="cmd-card-v4 sales" data-exec-card="sales">
+      <div class="cmd-card-head-v4"><div class="cmd-card-title-v4"><span class="cmd-card-icon-v4">▤</span><h3>فروش امروز</h3></div><select class="cmd-range-v4" data-range-card="sales"><option value="week">هفته اخیر</option><option value="month">ماه اخیر</option><option value="year">سال اخیر</option></select></div>
+      <div class="cmd-card-top-v4"><div class="cmd-card-main-v4"><b>{{ metrics.sales_today_m|floatformat:0 }}</b><span>میلیون تومان</span></div><div class="cmd-trend-v4"><div class="cmd-trend-caption-v4"><span>روند فروش</span><span data-range-label>هفته اخیر</span></div><svg viewBox="0 0 420 105" preserveAspectRatio="none"><line class="cmd-grid-v4" x1="0" y1="26" x2="420" y2="26"/><line class="cmd-grid-v4" x1="0" y1="52" x2="420" y2="52"/><line class="cmd-grid-v4" x1="0" y1="78" x2="420" y2="78"/><polyline class="cmd-line-v4" points=""></polyline><g class="cmd-dots-v4"></g></svg></div></div>
+      <div class="cmd-card-detail-v4"><div class="cmd-detail-title-v4">فروش بر اساس شعبه</div><div class="cmd-bars-v4" data-breakdown="branches"></div></div>
+    </article>
+
+    <article class="cmd-card-v4 leads" data-exec-card="leads">
+      <div class="cmd-card-head-v4"><div class="cmd-card-title-v4"><span class="cmd-card-icon-v4">◉</span><h3>لیدهای امروز</h3></div><select class="cmd-range-v4" data-range-card="leads"><option value="week">هفته اخیر</option><option value="month">ماه اخیر</option><option value="year">سال اخیر</option></select></div>
+      <div class="cmd-card-top-v4"><div class="cmd-card-main-v4"><b>{{ metrics.leads_today }}</b><span>لید</span></div><div class="cmd-trend-v4"><div class="cmd-trend-caption-v4"><span>روند لیدها</span><span data-range-label>هفته اخیر</span></div><svg viewBox="0 0 420 105" preserveAspectRatio="none"><line class="cmd-grid-v4" x1="0" y1="26" x2="420" y2="26"/><line class="cmd-grid-v4" x1="0" y1="52" x2="420" y2="52"/><line class="cmd-grid-v4" x1="0" y1="78" x2="420" y2="78"/><polyline class="cmd-line-v4" points=""></polyline><g class="cmd-dots-v4"></g></svg></div></div>
+      <div class="cmd-card-detail-v4"><div class="cmd-detail-title-v4">لیدها بر اساس منبع</div><div class="cmd-bars-v4" data-breakdown="sources"></div></div>
+    </article>
+
+    <article class="cmd-card-v4 appts" data-exec-card="appointments">
+      <div class="cmd-card-head-v4"><div class="cmd-card-title-v4"><span class="cmd-card-icon-v4">◫</span><h3>نوبت‌های امروز</h3></div><select class="cmd-range-v4" data-range-card="appointments"><option value="week">هفته اخیر</option><option value="month">ماه اخیر</option><option value="year">سال اخیر</option></select></div>
+      <div class="cmd-card-top-v4"><div class="cmd-card-main-v4"><b>{{ metrics.appointments_today }}</b><span>نوبت</span></div><div class="cmd-trend-v4"><div class="cmd-trend-caption-v4"><span>روند نوبت‌ها</span><span data-range-label>هفته اخیر</span></div><svg viewBox="0 0 420 105" preserveAspectRatio="none"><line class="cmd-grid-v4" x1="0" y1="26" x2="420" y2="26"/><line class="cmd-grid-v4" x1="0" y1="52" x2="420" y2="52"/><line class="cmd-grid-v4" x1="0" y1="78" x2="420" y2="78"/><polyline class="cmd-line-v4" points=""></polyline><g class="cmd-dots-v4"></g></svg></div></div>
+      <div class="cmd-card-detail-v4 cmd-dual-v4"><div><div class="cmd-detail-title-v4">نوبت‌ها بر اساس شعبه</div><div class="cmd-bars-v4" data-breakdown="branches"></div></div><div><div class="cmd-detail-title-v4">نوبت‌ها بر اساس گل‌ها</div><div class="cmd-ops-v4" data-breakdown="operators"></div></div></div>
+    </article>
+
+    <article class="cmd-card-v4 future" data-exec-card="future">
+      <div class="cmd-card-head-v4"><div class="cmd-card-title-v4"><span class="cmd-card-icon-v4">◷</span><h3>نوبت‌های آینده</h3></div><select class="cmd-range-v4" data-range-card="future"><option value="week">هفته اخیر</option><option value="month">ماه اخیر</option><option value="year">سال اخیر</option></select></div>
+      <div class="cmd-card-top-v4"><div class="cmd-card-main-v4"><b>{{ metrics.future_appointments_created_today }}</b><span>امروز برای آینده</span></div><div class="cmd-trend-v4"><div class="cmd-trend-caption-v4"><span>روند ثبت نوبت آینده</span><span data-range-label>هفته اخیر</span></div><svg viewBox="0 0 420 105" preserveAspectRatio="none"><line class="cmd-grid-v4" x1="0" y1="26" x2="420" y2="26"/><line class="cmd-grid-v4" x1="0" y1="52" x2="420" y2="52"/><line class="cmd-grid-v4" x1="0" y1="78" x2="420" y2="78"/><polyline class="cmd-line-v4" points=""></polyline><g class="cmd-dots-v4"></g></svg></div></div>
+      <div class="cmd-card-detail-v4"><div class="cmd-detail-title-v4">ثبت نوبت آینده بر اساس گل و مرکز</div><div class="cmd-legend-v4" data-breakdown="legend"></div><div class="cmd-stack-v4" data-breakdown="matrix"></div></div>
+    </article>
     {% else %}
-    <a class="cmd-kpi sales" href="/action-center/"><div class="cmd-kpi-head"><span class="cmd-kpi-title">نیازمند اقدام</span><span class="cmd-kpi-unit">امروز</span></div><div class="cmd-kpi-value"><strong>{{ data.action_required_count }}</strong><span>مورد</span></div><div class="cmd-spark">{% for x in data.trend %}<i style="--h:{% if x.late %}70{% else %}18{% endif %}%"></i>{% endfor %}</div><div class="cmd-kpi-foot"><span class="cmd-mini">عقب‌افتاده <b>{{ data.overdue_tasks }}</b></span><span class="cmd-mini">خرابی <b>{{ data.device_open }}</b></span></div></a>
+    <a class="cmd-kpi sales" href="/action-center/"><div class="cmd-kpi-head"><span class="cmd-kpi-title">نیازمند اقدام</span><span class="cmd-kpi-unit">امروز</span></div><div class="cmd-kpi-value"><strong>{{ data.action_required_count }}</strong><span>مورد</span></div></a>
     {% endif %}
-
-    <a class="cmd-kpi leads" href="/lead-management/">
-      <div class="cmd-kpi-head"><span class="cmd-kpi-title">لیدهای امروز</span><span class="cmd-kpi-unit">ورودی امروز</span></div>
-      <div class="cmd-kpi-value"><strong>{{ metrics.leads_today }}</strong><span>امروز</span></div>
-      <div class="cmd-catbars" aria-label="لیدهای امروز بر اساس منبع">{% for x in metrics.lead_sources_today %}<span class="cmd-catbar" title="{{ x.name }}: {{ x.value }}"><b>{{ x.value }}</b><i style="--h:{{ x.height }}%;--bar:{{ x.color }}"></i><small>{{ x.name }}</small></span>{% empty %}<span class="cmd-catbar"><b>0</b><i style="--h:4%;--bar:#35bfff"></i><small>بدون داده</small></span>{% endfor %}</div>
-      <div class="cmd-kpi-foot"><span class="cmd-mini">ماه <b>{{ metrics.leads_month }}</b></span><span class="cmd-mini">باز <b>{{ metrics.leads_open }}</b></span>{% if metrics.lead_sources_today %}<span class="cmd-mini">بیشترین <b>{{ metrics.lead_sources_today.0.name }}</b></span>{% endif %}</div>
-    </a>
-
-    <a class="cmd-kpi appts" href="/appointments/schedule/">
-      <div class="cmd-kpi-head"><span class="cmd-kpi-title">نوبت‌های امروز</span><span class="cmd-kpi-unit">مراجعه</span></div>
-      <div class="cmd-kpi-value"><strong>{{ metrics.appointments_today }}</strong><span>نوبت</span></div>
-      <div class="cmd-catbars" aria-label="نوبت‌های امروز بر اساس مرکز">{% for x in metrics.appointment_branches_today %}<span class="cmd-catbar" title="{{ x.name }}: {{ x.value }} نوبت"><b>{{ x.value }}</b><i style="--h:{{ x.height }}%;--bar:{{ x.color }}"></i><small>{{ x.name }}</small></span>{% empty %}<span class="cmd-catbar"><b>0</b><i style="--h:4%;--bar:#aa7cff"></i><small>بدون داده</small></span>{% endfor %}</div>
-      <div class="cmd-kpi-subline">نوبت آینده ثبت‌شده امروز توسط کال‌سنتر: <b>{{ metrics.future_appointments_created_today }}</b></div>
-    </a>
-
-    <a class="cmd-kpi team" href="/kpi/" style="--p:{{ data.average_kpi }}">
-      <div class="cmd-kpi-head"><span class="cmd-kpi-title">عملکرد تیم</span><span class="cmd-kpi-unit">KPI</span></div>
-      <div class="cmd-kpi-value"><strong>{{ data.average_kpi }}٪</strong><span>میانگین</span></div><div class="cmd-ring" aria-hidden="true"></div>
-      <div style="height:57px"></div>
-      <div class="cmd-kpi-foot"><span class="cmd-mini">حاضر <b>{{ data.present_people }}</b></span><span class="cmd-mini">تأخیر <b>{{ data.counts.late }}</b></span><span class="cmd-mini">گزارش <b>{{ data.reports_today }}</b></span><span class="cmd-mini">تکمیل کار <b>{{ data.task_completion_rate }}٪</b></span></div>
-    </a>
   </section>
+  {{ metrics.executive_cards|json_script:"cmdExecutiveCardsData" }}
 
-  <section class="cmd-section">
-    <div class="cmd-section-head"><h2>نبض امروز و ۳۰ روز</h2><span>امروز در متن روند دیده می‌شود</span></div>
-    <div class="cmd-pulse">
-      <article class="cmd-pulse-card sales">
-        <small>فروش امروز نسبت به میانگین ۷ روز قبل</small>
-        <strong>{{ metrics.sales_today_m|floatformat:0 }} <small style="display:inline;color:#8fa1b5">م.ت</small></strong>
-        <span>میانگین ۷ روز: <b>{{ metrics.sales_prev7_avg_m|floatformat:0 }}</b> م.ت</span>
-        {% if metrics.sales_vs_7d_pct != None %}<span class="cmd-delta {% if metrics.sales_vs_7d_pct >= 0 %}up{% else %}down{% endif %}">{% if metrics.sales_vs_7d_pct >= 0 %}▲{% else %}▼{% endif %} {{ metrics.sales_vs_7d_pct|floatformat:1 }}٪ نسبت به میانگین</span>{% else %}<span>برای مقایسه، داده ۷ روزه کافی نیست.</span>{% endif %}
-      </article>
-      <article class="cmd-pulse-card convert">
-        <small>تبدیل لیدهای امروز به نوبت</small>
-        <strong>{{ metrics.lead_to_appointment_today_pct }}٪</strong>
-        <span><b>{{ metrics.today_leads_with_appointment }}</b> لید از <b>{{ metrics.leads_today }}</b> لید امروز نوبت گرفته‌اند.</span>
-        <span>این شاخص فقط Cohort لیدهای ثبت‌شده امروز را می‌سنجد.</span>
-      </article>
-      <article class="cmd-trend30">
-        <div class="cmd-trend30-head"><strong id="cmdTrend30Title">روند فروش ۳۰ روز اخیر</strong><div class="cmd-trend30-tabs"><button type="button" class="active" data-series="sales">فروش</button><button type="button" data-series="leads">لید</button></div></div>
-        <div class="cmd-trend30-chart"><svg id="cmdTrend30Svg" viewBox="0 0 600 140" preserveAspectRatio="none" aria-label="نمودار ۳۰ روزه"><line class="cmd-trend30-grid" x1="0" y1="35" x2="600" y2="35"></line><line class="cmd-trend30-grid" x1="0" y1="70" x2="600" y2="70"></line><line class="cmd-trend30-grid" x1="0" y1="105" x2="600" y2="105"></line><polyline id="cmdTrend30Line" class="cmd-trend30-line" points=""></polyline><g id="cmdTrend30Dots"></g></svg></div>
-        <div class="cmd-trend30-labels"><span id="cmdTrend30Start">—</span><span>۳۰ روز</span><span id="cmdTrend30End">امروز</span></div>
-      </article>
-    </div>
-    {{ metrics.sales_30d|json_script:"cmdSales30dData" }}
-    {{ metrics.leads_30d|json_script:"cmdLeads30dData" }}
-  </section>
+
+  
 
   <section class="cmd-section">
     <div class="cmd-section-head"><h2>نیاز به توجه</h2><a href="/action-center/">مرکز اقدام ←</a></div>
@@ -465,23 +457,57 @@ body.gl-page-branch_live_dashboard .cmd-attn i{
   </section>
 </div>
 <script>
+
+
 (function(){
-  const salesEl=document.getElementById('cmdSales30dData'),leadsEl=document.getElementById('cmdLeads30dData');
-  const svg=document.getElementById('cmdTrend30Svg'),line=document.getElementById('cmdTrend30Line'),dots=document.getElementById('cmdTrend30Dots');
-  if(!salesEl||!leadsEl||!svg||!line||!dots)return;
-  const series={sales:JSON.parse(salesEl.textContent||'[]'),leads:JSON.parse(leadsEl.textContent||'[]')};
-  const title=document.getElementById('cmdTrend30Title'),start=document.getElementById('cmdTrend30Start'),end=document.getElementById('cmdTrend30End');
-  function draw(key){
-    const data=series[key]||[],max=Math.max(1,...data.map(x=>Number(x.value)||0));
-    const points=data.map((x,i)=>{const px=data.length>1?i*600/(data.length-1):300;const py=126-((Number(x.value)||0)/max)*112;return {x:px,y:py,row:x}}); 
-    line.setAttribute('points',points.map(p=>p.x.toFixed(1)+','+p.y.toFixed(1)).join(' '));
-    dots.innerHTML=points.filter((p,i)=>i===points.length-1||i%5===0).map(p=>'<circle class="cmd-trend30-dot" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3"><title>'+p.row.label+' · '+p.row.value+'</title></circle>').join('');
-    if(title)title.textContent=key==='sales'?'روند فروش ۳۰ روز اخیر':'روند لید ۳۰ روز اخیر';
-    if(start)start.textContent=data[0]?data[0].label:'—'; if(end)end.textContent=data[data.length-1]?data[data.length-1].label:'امروز';
+  const dataEl=document.getElementById('cmdExecutiveCardsData');
+  if(!dataEl)return;
+  const all=JSON.parse(dataEl.textContent||'{}');
+  const labels={week:'هفته اخیر',month:'ماه اخیر',year:'سال اخیر'};
+  function drawLine(card,rows){
+    const line=card.querySelector('.cmd-line-v4'),dots=card.querySelector('.cmd-dots-v4');
+    if(!line||!dots)return;
+    const data=rows||[], max=Math.max(1,...data.map(r=>Number(r.value)||0));
+    const pts=data.map((r,i)=>({x:data.length>1?i*420/(data.length-1):210,y:96-(Number(r.value)||0)*84/max,row:r}));
+    line.setAttribute('points',pts.map(p=>p.x.toFixed(1)+','+p.y.toFixed(1)).join(' '));
+    const step=Math.max(1,Math.ceil(pts.length/8));
+    dots.innerHTML=pts.filter((p,i)=>i===pts.length-1||i%step===0).map(p=>'<circle class="cmd-dot-v4" cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="2.7"><title>'+p.row.label+' · '+p.row.value+'</title></circle>').join('');
   }
-  document.querySelectorAll('.cmd-trend30-tabs button').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.cmd-trend30-tabs button').forEach(x=>x.classList.remove('active'));btn.classList.add('active');draw(btn.dataset.series)}));
-  draw('sales');
+  function bars(el,rows){
+    if(!el)return; const items=rows||[]; const max=Math.max(1,...items.map(x=>Number(x.value)||0));
+    el.innerHTML=items.length?items.map(x=>'<span class="cmd-bar-v4"><b>'+Number(x.value).toLocaleString()+'</b><i style="--h:'+Math.max(4,Math.round((Number(x.value)||0)*100/max))+'%;--bar:'+(x.color||'#35bfff')+'"></i><small title="'+x.name+'">'+x.name+'</small></span>').join(''):'<span class="cmd-bar-v4"><b>0</b><i style="--h:4%;--bar:#64748b"></i><small>بدون داده</small></span>';
+  }
+  function operators(el,rows){
+    if(!el)return; const items=rows||[]; const max=Math.max(1,...items.map(x=>Number(x.value)||0));
+    el.innerHTML=items.length?items.map(x=>'<div class="cmd-op-v4"><span title="'+x.name+'">'+x.name+'</span><i style="width:'+Math.max(5,Math.round((Number(x.value)||0)*100/max))+'%"></i><b>'+x.value+'</b></div>').join(''):'<div class="cmd-op-v4"><span>بدون داده</span><i style="width:5%"></i><b>0</b></div>';
+  }
+  function future(card,payload){
+    const legend=card.querySelector('[data-breakdown="legend"]'),matrix=card.querySelector('[data-breakdown="matrix"]');
+    if(legend)legend.innerHTML=(payload.branches||[]).map(x=>'<span><i style="--c:'+x.color+'"></i>'+x.name+'</span>').join('');
+    if(!matrix)return;
+    const rows=payload.matrix||[],max=Math.max(1,...rows.map(x=>Number(x.total)||0));
+    matrix.innerHTML=rows.length?rows.map(row=>{
+      const height=Math.max(7,Math.round((Number(row.total)||0)*100/max));
+      const seg=(row.segments||[]).filter(x=>x.value).map(x=>'<i style="--n:'+x.value+';--c:'+x.color+'" title="'+x.name+': '+x.value+'"></i>').join('');
+      return '<span class="cmd-stack-col-v4"><b>'+row.total+'</b><span class="cmd-stack-v4bar" style="height:'+height+'%">'+seg+'</span><small title="'+row.name+'">'+row.name+'</small></span>';
+    }).join(''):'<span class="cmd-stack-col-v4"><b>0</b><span class="cmd-stack-v4bar" style="height:7%"></span><small>بدون داده</small></span>';
+  }
+  function render(cardKey,range){
+    const card=document.querySelector('[data-exec-card="'+cardKey+'"]'); if(!card)return;
+    const payload=(all[range]||{})[cardKey]||{};
+    drawLine(card,payload.trend||[]);
+    const label=card.querySelector('[data-range-label]'); if(label)label.textContent=labels[range]||range;
+    if(cardKey==='sales')bars(card.querySelector('[data-breakdown="branches"]'),payload.branches);
+    if(cardKey==='leads')bars(card.querySelector('[data-breakdown="sources"]'),payload.sources);
+    if(cardKey==='appointments'){bars(card.querySelector('[data-breakdown="branches"]'),payload.branches);operators(card.querySelector('[data-breakdown="operators"]'),payload.operators);}
+    if(cardKey==='future')future(card,payload);
+  }
+  document.querySelectorAll('.cmd-range-v4').forEach(sel=>{
+    sel.addEventListener('change',()=>render(sel.dataset.rangeCard,sel.value));
+    render(sel.dataset.rangeCard,sel.value||'week');
+  });
 })();
+
 (function(){const note=document.getElementById('ownerQuickNoteV35'),state=document.getElementById('ownerNoteStateV35');if(!note)return;const key='greenlife_owner_quick_note_v35';note.value=localStorage.getItem(key)||'';let timer;note.addEventListener('input',()=>{clearTimeout(timer);if(state)state.textContent='در حال ذخیره...';timer=setTimeout(()=>{localStorage.setItem(key,note.value);if(state)state.textContent='ذخیره شد ✓';},300);});})();
 </script>
 {% endblock %}

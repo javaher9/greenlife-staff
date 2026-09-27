@@ -1,12 +1,15 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django import template
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, F, Q, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
-from core.jalali import gregorian_to_jalali
+from core.jalali import gregorian_to_jalali, jalali_to_gregorian
+from core.call_center_identity import call_center_display_name
+from django.contrib.auth.models import User
+
 from core.models import (
     Branch,
     FinancialTransaction,
@@ -105,6 +108,75 @@ def _dashboard_branches(selected_branch=None, *, include_afsariyeh=True):
     return ordered[:5]
 
 
+
+def _jalali_label(day):
+    jy,jm,jd=gregorian_to_jalali(day.year,day.month,day.day)
+    return f'{jm:02d}/{jd:02d}'
+
+
+def _period_trend(queryset, date_field, start, end, *, sum_field=None, divisor=1):
+    rows=(
+        queryset.filter(**{f'{date_field}__range':(start,end)})
+        .values(date_field)
+        .annotate(v=Sum(sum_field) if sum_field else Count('id'))
+        .order_by(date_field)
+    )
+    values={row[date_field]:row['v'] or 0 for row in rows}
+    out=[]
+    day=start
+    while day<=end:
+        raw=values.get(day,0)
+        value=float(Decimal(raw)/Decimal(str(divisor))) if sum_field else int(raw)
+        out.append({'label':_jalali_label(day),'value':value})
+        day+=timedelta(days=1)
+    return out
+
+
+def _branch_breakdown(queryset, branches, *, sum_field=None, divisor=1):
+    rows=[]
+    for index,branch in enumerate(branches):
+        branch_qs=queryset.filter(branch=branch)
+        raw=(branch_qs.aggregate(v=Sum(sum_field))['v'] or 0) if sum_field else branch_qs.count()
+        value=float(Decimal(raw)/Decimal(str(divisor))) if sum_field else int(raw)
+        rows.append({'name':branch.name,'value':value,'color':COLORS[index%len(COLORS)]})
+    _height_rows(rows)
+    return rows
+
+
+def _operator_breakdown(queryset):
+    grouped=list(
+        queryset.filter(created_by__isnull=False)
+        .values('created_by_id').annotate(value=Count('id')).order_by('-value')
+    )
+    users={u.pk:u for u in User.objects.filter(pk__in=[r['created_by_id'] for r in grouped])}
+    return [
+        {'name':call_center_display_name(users.get(row['created_by_id'])) or 'نامشخص','value':row['value']}
+        for row in grouped
+    ]
+
+
+def _future_matrix(queryset, branches):
+    grouped=list(
+        queryset.filter(created_by__isnull=False)
+        .values('created_by_id','branch_id').annotate(value=Count('id'))
+    )
+    users={u.pk:u for u in User.objects.filter(pk__in={r['created_by_id'] for r in grouped})}
+    by_user={}
+    for row in grouped:
+        by_user.setdefault(row['created_by_id'],{})[row['branch_id']]=row['value']
+    result=[]
+    for user_id,counts in by_user.items():
+        segments=[]
+        total=0
+        for index,branch in enumerate(branches):
+            value=int(counts.get(branch.pk,0))
+            total+=value
+            segments.append({'name':branch.name,'value':value,'color':COLORS[index%len(COLORS)]})
+        result.append({'name':call_center_display_name(users.get(user_id)) or 'نامشخص','total':total,'segments':segments})
+    result.sort(key=lambda r:(-r['total'],r['name']))
+    return result
+
+
 @register.simple_tag
 def management_dashboard_metrics(selected_branch=None):
     """Compact real-data metrics for the manager /live/ command center.
@@ -113,8 +185,9 @@ def management_dashboard_metrics(selected_branch=None):
     executive cards never show a different scope from the rest of the page.
     """
     today = timezone.localdate()
-    month_start = today.replace(day=1)
-    year_start = today.replace(month=1, day=1)
+    jy, jm, _ = gregorian_to_jalali(today.year, today.month, today.day)
+    month_start = date(*jalali_to_gregorian(jy, jm, 1))
+    year_start = date(*jalali_to_gregorian(jy, 1, 1))
     yesterday = today - timedelta(days=1)
 
     finance = FinancialTransaction.objects.filter(
@@ -305,7 +378,95 @@ def management_dashboard_metrics(selected_branch=None):
         channel_rows=visible
     _height_rows(channel_rows)
 
-    meetings = MeetingMinute.objects.filter(meeting_date__gte=today - timedelta(days=30))
+
+    # Rich executive cards. "ماه اخیر" means current Jalali month and
+    # "سال اخیر" means current Jalali year; never a rolling 30/365-day shortcut.
+    period_ranges={
+        'week':(today-timedelta(days=6),today),
+        'month':(month_start,today),
+        'year':(year_start,today),
+    }
+    sales_branches=_dashboard_branches(selected_branch,include_afsariyeh=True)
+    appt_branches=_dashboard_branches(selected_branch,include_afsariyeh=False)
+    executive_cards={}
+
+    future_base=appointments.filter(source='call_center').exclude(status='cancelled').annotate(
+        created_day=TruncDate('created_at')
+    ).filter(appointment_date__gt=F('created_day'))
+
+    for period_key,(period_start,period_end) in period_ranges.items():
+        finance_period=finance.filter(occurred_at__date__range=(period_start,period_end))
+        leads_period=leads.filter(created_at__date__range=(period_start,period_end))
+        appts_period=appointments.filter(
+            appointment_date__range=(period_start,period_end)
+        ).exclude(status='cancelled')
+        future_period=future_base.filter(created_at__date__range=(period_start,period_end))
+
+        # Sales trend is grouped on the actual transaction day.
+        sales_rows=(
+            finance_period.annotate(day=TruncDate('occurred_at'))
+            .values('day').annotate(v=Sum('amount')).order_by('day')
+        )
+        sales_map={r['day']:float(Decimal(r['v'] or 0)/MILLION_TOMAN) for r in sales_rows}
+
+        lead_rows=(
+            leads_period.annotate(day=TruncDate('created_at'))
+            .values('day').annotate(v=Count('id')).order_by('day')
+        )
+        lead_map={r['day']:int(r['v'] or 0) for r in lead_rows}
+
+        appt_rows=(
+            appts_period.values('appointment_date').annotate(v=Count('id')).order_by('appointment_date')
+        )
+        appt_map={r['appointment_date']:int(r['v'] or 0) for r in appt_rows}
+
+        future_rows=(
+            future_period.values('created_day').annotate(v=Count('id')).order_by('created_day')
+        )
+        future_map={r['created_day']:int(r['v'] or 0) for r in future_rows}
+
+        def build_series(value_map):
+            series=[]; day=period_start
+            while day<=period_end:
+                series.append({'label':_jalali_label(day),'value':value_map.get(day,0)})
+                day+=timedelta(days=1)
+            return series
+
+        channels=[]
+        claimed=Q(pk__in=[])
+        for key,label,color in today_channels:
+            q=_channel_q(key); value=leads_period.filter(q).count()
+            if value:
+                channels.append({'name':label,'value':value,'color':color})
+            claimed|=q
+        other=leads_period.exclude(claimed).count()
+        if other:
+            channels.append({'name':'سایر','value':other,'color':'#94a3b8'})
+        channels.sort(key=lambda r:r['value'],reverse=True)
+        if len(channels)>7:
+            rest=sum(r['value'] for r in channels[6:])
+            channels=channels[:6]+[{'name':'سایر','value':rest,'color':'#94a3b8'}]
+        _height_rows(channels)
+
+        executive_cards[period_key]={
+            'sales':{
+                'trend':build_series(sales_map),
+                'branches':_branch_breakdown(finance_period,sales_branches,sum_field='amount',divisor=MILLION_TOMAN),
+            },
+            'leads':{'trend':build_series(lead_map),'sources':channels},
+            'appointments':{
+                'trend':build_series(appt_map),
+                'branches':_branch_breakdown(appts_period,appt_branches),
+                'operators':_operator_breakdown(appts_period.filter(source='call_center')),
+            },
+            'future':{
+                'trend':build_series(future_map),
+                'matrix':_future_matrix(future_period,appt_branches),
+                'branches':[{'name':b.name,'color':COLORS[i%len(COLORS)]} for i,b in enumerate(appt_branches)],
+            },
+        }
+
+        meetings = MeetingMinute.objects.filter(meeting_date__gte=today - timedelta(days=30))
 
     return {
         'sales_today_m': sales_today_m,
@@ -335,6 +496,7 @@ def management_dashboard_metrics(selected_branch=None):
         'appointment_mix': appointment_mix,
         'appointment_branches_today': appointment_branch_rows,
         'future_appointments_created_today': future_appointments_created_today,
+        'executive_cards': executive_cards,
         'arrived_today': today_appointments.filter(status__in=('arrived', 'completed')).count(),
         'won_month': sales.filter(sale_date__gte=month_start, sale_date__lte=today).values('lead_id').distinct().count(),
         'open_tasks': open_tasks.count(),
