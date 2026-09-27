@@ -332,6 +332,226 @@ body.gl-authenticated.gl-page-payroll_dashboard .pay-table td.net{
   }
 }
 
+/* Payroll polish v4 — brighter summary, readable table, compact personnel editor */
+body.gl-authenticated.gl-page-payroll_dashboard .pay-hero{
+  background:
+    radial-gradient(circle at 12% 12%,rgba(132,105,190,.30),transparent 32%),
+    radial-gradient(circle at 88% 85%,rgba(58,177,126,.22),transparent 30%),
+    linear-gradient(135deg,#35515c 0%,#334653 48%,#403b59 100%)!important;
+  border-color:#60757e!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-filters{
+  background:linear-gradient(145deg,#243c43,#1d333a)!important;
+  border-color:#4a6068!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-field select,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-field input,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-field textarea{
+  background:#182b32!important;
+  border-color:#526a73!important;
+  color:#f7fbf9!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-field select{
+  color-scheme:dark!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-month-nav a{
+  background:#2d464d!important;border-color:#567078!important;color:#f0f7f4!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-kpi{
+  min-height:118px!important;
+  border-color:rgba(255,255,255,.14)!important;
+  box-shadow:0 12px 28px rgba(2,12,16,.20),inset 0 1px rgba(255,255,255,.05)!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .k-green{background:linear-gradient(145deg,#3b755e,#315c4e)!important}
+body.gl-authenticated.gl-page-payroll_dashboard .k-violet{background:linear-gradient(145deg,#68577f,#504563)!important}
+body.gl-authenticated.gl-page-payroll_dashboard .k-blue{background:linear-gradient(145deg,#426b85,#34566d)!important}
+body.gl-authenticated.gl-page-payroll_dashboard .k-sand{background:linear-gradient(145deg,#7a633d,#604f34)!important}
+body.gl-authenticated.gl-page-payroll_dashboard .k-rose{background:linear-gradient(145deg,#7a4a59,#603c49)!important}
+body.gl-authenticated.gl-page-payroll_dashboard .k-slate{background:linear-gradient(145deg,#4b6772,#3b535d)!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-kpi span{color:#eef5f2!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-kpi strong{font-size:23px!important;color:#fff!important;text-shadow:0 1px 10px rgba(0,0,0,.18)}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-kpi small{color:#d3dfdb!important}
+
+body.gl-authenticated.gl-page-payroll_dashboard .pay-panel-head{
+  background:linear-gradient(135deg,#29464b,#213b42)!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table th{
+  background:#29434a!important;color:#f0f6f4!important;
+  font-size:8.8px!important;border-bottom-color:#51656b!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table td{
+  color:#edf4f1!important;font-size:9.5px!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr{
+  background:#1d3238!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr:nth-child(even){
+  background:#22383e!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr:hover{
+  background:#2c4745!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr.is-selected{
+  background:linear-gradient(90deg,rgba(57,142,104,.28),rgba(62,81,93,.94))!important;
+  box-shadow:inset 4px 0 #62c494,inset 0 0 0 1px rgba(98,196,148,.20)!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-table tbody tr.is-selected td{
+  color:#fff!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-person small,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-sub{color:#b8c9c3!important}
+
+/* personnel editor */
+body.gl-authenticated.gl-page-payroll_dashboard .pay-detail{
+  display:grid!important;
+  grid-template-columns:280px minmax(0,1fr)!important;
+  gap:14px!important;
+  align-items:start!important;
+  padding:14px!important;
+  border:1px solid #40575f!important;
+  border-radius:20px!important;
+  background:linear-gradient(145deg,#182c32,#14262d)!important;
+  box-shadow:0 14px 35px rgba(2,12,16,.16)!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-detail-title{
+  grid-column:1/-1!important;
+  display:flex!important;
+  align-items:end!important;
+  justify-content:space-between!important;
+  gap:16px!important;
+  padding:4px 4px 12px!important;
+  border-bottom:1px solid #3a5057!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-detail-title span{
+  display:block!important;color:#83d8ae!important;font-size:9px!important;font-weight:900!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-detail-title h2{
+  margin:4px 0 0!important;color:#fff!important;font-size:20px!important;line-height:1.3!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-detail-title small{
+  color:#adbfba!important;font-size:9px!important;font-weight:800!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .person-card,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-form-card,
+body.gl-authenticated.gl-page-payroll_dashboard .history-card{
+  background:linear-gradient(145deg,#223941,#1b3037)!important;
+  border-color:#486068!important;
+  padding:15px!important;
+  border-radius:16px!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .person-card{position:sticky!important;top:76px!important}
+body.gl-authenticated.gl-page-payroll_dashboard .person-meta{gap:6px!important;margin-top:12px!important}
+body.gl-authenticated.gl-page-payroll_dashboard .person-meta div{
+  background:#294149!important;padding:8px 10px!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .cum-grid{gap:6px!important}
+body.gl-authenticated.gl-page-payroll_dashboard .cum-grid div{
+  min-height:58px!important;
+  background:linear-gradient(145deg,#49445e,#3b3850)!important;
+  display:flex!important;flex-direction:column!important;justify-content:center!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-detail-main{
+  display:grid!important;gap:10px!important;min-width:0!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-current{
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:7px!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-current div{
+  min-height:72px!important;
+  display:flex!important;flex-direction:column!important;justify-content:center!important;
+  background:linear-gradient(145deg,#2a4c42,#233e38)!important;
+  border-color:#4e7564!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-current span{font-size:8.5px!important;color:#c8d8d2!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-current b{font-size:15px!important;color:#b6efcf!important}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-forms{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:10px!important;
+  align-items:start!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-form-card{
+  min-height:0!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-form-card h3{
+  margin-bottom:10px!important;
+  padding-bottom:9px!important;
+  border-bottom:1px solid #40565e!important;
+  font-size:13px!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-form-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:7px!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-form-card .pay-field{
+  min-width:0!important;gap:4px!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-form-card .pay-field label{
+  font-size:8.5px!important;color:#d2dfda!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-form-card .pay-field input,
+body.gl-authenticated.gl-page-payroll_dashboard .pay-form-card .pay-field select{
+  height:36px!important;
+  background:#13262d!important;border-color:#465e66!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-form-card .pay-field textarea{
+  min-height:72px!important;
+  background:#13262d!important;border-color:#465e66!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .pay-form-card .pay-btn{
+  width:100%!important;margin-top:9px!important;height:38px!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .history-card{
+  margin-top:0!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .history-list{
+  gap:6px!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .history-list a{
+  background:#293d44!important;border-color:#485d64!important;
+}
+body.gl-authenticated.gl-page-payroll_dashboard .history-list a.is-current{
+  background:#35604f!important;border-color:#579174!important;
+}
+
+/* Tablet landscape: use one clean vertical flow, no collapsed purple half-cards. */
+@media (any-pointer:coarse) and (min-width:761px) and (max-width:1800px){
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-detail{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+  }
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-detail-title{grid-column:1!important}
+  body.gl-authenticated.gl-page-payroll_dashboard .person-card{
+    position:static!important;
+    display:grid!important;
+    grid-template-columns:minmax(220px,.9fr) minmax(0,1.5fr)!important;
+    gap:12px!important;
+    align-items:start!important;
+  }
+  body.gl-authenticated.gl-page-payroll_dashboard .person-head{grid-row:1/3!important}
+  body.gl-authenticated.gl-page-payroll_dashboard .person-meta{margin-top:0!important}
+  body.gl-authenticated.gl-page-payroll_dashboard .cum-grid{margin-top:0!important}
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-current{
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  }
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-forms{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+@media (any-pointer:coarse) and (min-width:761px) and (max-width:1050px){
+  body.gl-authenticated.gl-page-payroll_dashboard .person-card{
+    grid-template-columns:1fr!important;
+  }
+  body.gl-authenticated.gl-page-payroll_dashboard .person-head{grid-row:auto!important}
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-current{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+  body.gl-authenticated.gl-page-payroll_dashboard .pay-forms{
+    grid-template-columns:1fr!important;
+  }
+}
+
 </style>
 
 <div class="pay">
@@ -374,7 +594,7 @@ body.gl-authenticated.gl-page-payroll_dashboard .pay-table td.net{
         <thead><tr><th>پرسنل</th><th>مرکز</th><th>سمت</th><th>حقوق ثابت</th><th>فروش</th><th>پورسانت</th><th>مأموریت</th><th>کسر عودتی</th><th>غیبت</th><th>تأخیر</th><th>تشویقی</th><th>کسر حقوق</th><th>مساعده</th><th>بیمه</th><th>حقوق پیشنهادی</th></tr></thead>
         <tbody>
         {% for row in rows %}
-          <tr data-href="?jy={{jy}}&jm={{jm}}{% if selected_branch %}&branch={{selected_branch}}{% endif %}&employee={{row.profile.pk}}#person-detail">
+          <tr class="{% if selected and selected.pk == row.profile.pk %}is-selected{% endif %}" data-href="?jy={{jy}}&jm={{jm}}{% if selected_branch %}&branch={{selected_branch}}{% endif %}&employee={{row.profile.pk}}#person-detail">
             <td><div class="pay-person">{% if row.profile.avatar %}<img class="pay-avatar" src="{{row.profile.avatar.url}}" alt="">{% else %}<span class="pay-avatar">{{row.profile.user.first_name|first|default:row.profile.user.username|first}}</span>{% endif %}<span><strong>{{row.profile.user.get_full_name|default:row.profile.user.username}}</strong><small>{% if row.closed %}ثبت نهایی{% elif row.rule %}فرمول فعال{% else %}نیازمند تنظیم حقوق{% endif %}</small></span></div></td>
             <td>{{row.profile.branch|default:'—'}}</td>
             <td>{{row.profile.job_title|default:row.profile.get_role_display}}</td>
@@ -399,6 +619,10 @@ body.gl-authenticated.gl-page-payroll_dashboard .pay-table td.net{
 
   {% if selected and selected_row %}
   <section id="person-detail" class="pay-detail">
+    <div class="pay-detail-title">
+      <div><span>تنظیم حقوق پرسنل</span><h2>{{selected.user.get_full_name|default:selected.user.username}}</h2></div>
+      <small>{{month_name}} {{jy}} · {{selected.branch|default:'بدون مرکز'}}</small>
+    </div>
     <aside class="person-card">
       <div class="person-head">{% if selected.avatar %}<img class="person-avatar" src="{{selected.avatar.url}}" alt="">{% else %}<span class="person-avatar">{{selected.user.first_name|first|default:selected.user.username|first}}</span>{% endif %}<div><h3>{{selected.user.get_full_name|default:selected.user.username}}</h3><p>{{selected.job_title|default:selected.get_role_display}} · {{selected.branch|default:'بدون مرکز'}}</p></div></div>
       <div class="person-meta">
