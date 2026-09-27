@@ -259,5 +259,77 @@ body.gl-premium-dark .app-main .lead-page .badge.ig{border-color:#7a355c!importa
   refresh(); const timer=setInterval(refresh,10000); window.addEventListener('pagehide',()=>clearInterval(timer),{once:true});
 })();
 </script>
+<style id="lead-kpi-kpi-style-v2">
+/* Match Lead Hub summary cards to the premium KPI dashboard visual language. */
+.lead-page .lead-kpis{gap:12px!important}
+.lead-page .lead-kpi{
+  min-height:122px!important;
+  border-radius:20px!important;
+  padding:17px 16px!important;
+  border:1px solid!important;
+  box-shadow:0 16px 34px rgba(0,0,0,.22)!important;
+  background:#10202a!important;
+  overflow:hidden!important;
+  position:relative!important;
+  transition:.18s transform,.18s filter!important
+}
+.lead-page .lead-kpi:hover{transform:translateY(-2px)!important;filter:brightness(1.07)!important}
+.lead-page .lead-kpi:before{
+  content:""!important;position:absolute!important;inset:0!important;
+  background:radial-gradient(circle at 10% 112%,rgba(255,255,255,.13),transparent 39%)!important;
+  pointer-events:none!important
+}
+.lead-page .lead-kpi:after{
+  content:""!important;position:absolute!important;left:-24px!important;bottom:-42px!important;
+  width:116px!important;height:116px!important;border-radius:50%!important;
+  background:radial-gradient(circle,var(--kpi-glow,rgba(255,255,255,.18)),transparent 70%)!important;
+  opacity:.95!important;pointer-events:none!important
+}
+.lead-page .lead-kpi small{position:relative;z-index:2;color:#f3f7fb!important;font-size:11px!important;font-weight:950!important}
+.lead-page .lead-kpi strong{position:relative;z-index:2;margin-top:10px!important;font-size:30px!important;font-weight:950!important;filter:none!important;text-shadow:none!important}
+.lead-page .lead-kpi em{position:relative;z-index:2;margin-top:7px!important;color:#e1e9ef!important;font-size:9px!important;font-weight:750!important}
+
+.lead-page .lead-kpi.c-blue{
+  --kpi-glow:rgba(47,157,244,.36)!important;
+  background:linear-gradient(140deg,#0c426d,#0b2b49 56%,#091d30)!important;
+  border-color:#2c91d7!important
+}
+.lead-page .lead-kpi.c-blue strong{color:#7bcaff!important;-webkit-text-fill-color:#7bcaff!important}
+
+.lead-page .lead-kpi.c-purple{
+  --kpi-glow:rgba(149,92,230,.36)!important;
+  background:linear-gradient(140deg,#3b2467,#281a47 56%,#171128)!important;
+  border-color:#865ed0!important
+}
+.lead-page .lead-kpi.c-purple strong{color:#c9a7ff!important;-webkit-text-fill-color:#c9a7ff!important}
+
+.lead-page .lead-kpi.c-green{
+  --kpi-glow:rgba(35,215,144,.34)!important;
+  background:linear-gradient(140deg,#0b442f,#0b2c22 56%,#092018)!important;
+  border-color:#1d9b70!important
+}
+.lead-page .lead-kpi.c-green strong{color:#64efb0!important;-webkit-text-fill-color:#64efb0!important}
+
+.lead-page .lead-kpi.c-orange{
+  --kpi-glow:rgba(247,200,65,.34)!important;
+  background:linear-gradient(140deg,#514617,#352d12 56%,#211d0f)!important;
+  border-color:#a58b2f!important
+}
+.lead-page .lead-kpi.c-orange strong{color:#ffe170!important;-webkit-text-fill-color:#ffe170!important}
+
+.lead-page .lead-kpi.c-red{
+  --kpi-glow:rgba(255,117,117,.32)!important;
+  background:linear-gradient(140deg,#5a2027,#35171c 56%,#211014)!important;
+  border-color:#9d4853!important
+}
+.lead-page .lead-kpi.c-red strong{color:#ff9696!important;-webkit-text-fill-color:#ff9696!important}
+
+.lead-page .lead-kpi.c-pink{
+  --kpi-glow:rgba(236,72,153,.32)!important;
+  background:linear-gradient(140deg,#56213f,#35162a 56%,#21101b)!important;
+  border-color:#9a4773!important
+}
+.lead-page .lead-kpi.c-pink strong{color:#ff9ace!important;-webkit-text-fill-color:#ff9ace!important}
+</style>
 </div>
 {% endblock %}
