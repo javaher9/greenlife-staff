@@ -264,7 +264,18 @@ class ReferralLeadForm(forms.ModelForm):
 
 
 class PublicReferralLeadForm(ReferralLeadForm):
-    consent=forms.BooleanField(label='اجازه می‌دهم کارشناسان گرین‌لایف برای راهنمایی با من تماس بگیرند.')
+    class Meta(ReferralLeadForm.Meta):
+        fields=['full_name','phone','notes']
+        labels={
+            'full_name':'نام و نام خانوادگی',
+            'phone':'شماره موبایل',
+            'notes':'توضیحات',
+        }
+        widgets={
+            'full_name':forms.TextInput(attrs={'autocomplete':'name'}),
+            'phone':forms.TextInput(attrs={'inputmode':'tel','autocomplete':'tel','dir':'ltr'}),
+            'notes':forms.Textarea(attrs={'rows':5,'placeholder':'نیاز شما یا بهترین زمان تماس را بنویسید.'}),
+        }
 
 
 class BeytootePublicLeadForm(forms.ModelForm):
