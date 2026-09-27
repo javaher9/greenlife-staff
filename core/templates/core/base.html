@@ -245,7 +245,7 @@ background:#1a2c38!important;border-color:#486174!important;color:#fff!important
     {% elif user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}
     <a href="/lead-management/" class="{% if request.resolver_match.url_name == 'lead_management_dashboard' %}is-active{% endif %}"><span class="nav-ico">◉</span><span>لیدها</span></a>
     {% endif %}
-    {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}<a href="/my-tasks/" class="{% if request.path|slice:':10' == '/my-tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>وظایف من</span></a>{% endif %}
+    {% if user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}<a href="/my-tasks/" class="{% if request.path|slice:':10' == '/my-tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>وظایف من</span></a>{% endif %}
     {% if user.profile.role != 'employee' and user.profile.role != 'admin' %}<a href="/blackboard/" class="{% if '/blackboard/' in request.path %}is-active{% endif %}"><span class="nav-ico">▰</span><span>تخته‌سیاه پرسنل</span></a>{% endif %}
     {% if user.profile.role != 'employee' and user.profile.role != 'admin' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌های پرسنل</span></a>{% endif %}
     {% if user.profile.role == 'admin' %}
