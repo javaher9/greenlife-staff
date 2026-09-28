@@ -175,7 +175,8 @@ background:#1a2c38!important;border-color:#486174!important;color:#fff!important
     <a href="/profile/"><span class="nav-ico">◉</span><span>پروفایل</span></a>
     <a href="/logout/"><span class="nav-ico">↪</span><span>خروج</span></a>
     {% elif user.profile.role == 'consultant' %}
-    <a href="/" class="nav-main {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico">⌂</span><span>داشبورد من</span></a>
+    <a href="{% url 'consultant_sales_outcomes' %}" class="nav-main {% if request.resolver_match.url_name == 'consultant_sales_outcomes' %}is-active{% endif %}"><span class="nav-ico">◈</span><span>پنل مشاور و پکیج درمان</span></a>
+    <a href="/" class="{% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico">⌂</span><span>خانه پرسنلی</span></a>
     <a href="/finance/entry/" class="consultant-finance-nav {% if request.path|slice:':15' == '/finance/entry/' %}is-active{% endif %}"><span class="nav-ico">▧</span><span>ثبت مالی</span></a>
     <a href="/attendance/" class="attendance-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور و غیاب</span></a>
     <a href="/tasks/" class="{% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>وظایف من</span></a>

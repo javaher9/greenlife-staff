@@ -523,6 +523,10 @@ def dashboard(request):
         return redirect('referral_supervisor_dashboard')
     if role=='doctor':
         return redirect('doctor_dashboard')
+    # Consultants have a dedicated desktop treatment/sales workspace. Their
+    # mobile home remains the existing personnel dashboard.
+    if role=='consultant' and not _is_mobile_request(request):
+        return redirect('consultant_sales_outcomes')
     if role=='receptionist' and not _is_mobile_request(request):
         profile=getattr(request.user,'profile',None)
         today_local=timezone.localdate()
