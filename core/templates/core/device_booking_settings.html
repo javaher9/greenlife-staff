@@ -1,0 +1,54 @@
+{% extends 'core/base.html' %}{% block content %}
+<style>
+.ds{max-width:1320px;margin:auto;display:grid;gap:14px;color:#e9f3fa}
+.ds h1{color:#fff!important;font-size:22px!important;margin:0}
+.ds h2{color:#fff!important;font-size:15px!important;margin:0 0 12px}
+.ds-section{background:linear-gradient(145deg,#142a39,#101c28);border:1px solid #355365;border-radius:17px;padding:16px}
+.ds input,.ds select{min-height:36px;max-width:210px;background:#0b1a29;border:1px solid #345266;color:#fff;border-radius:9px;padding:7px;font-size:11px}
+.ds label{font-size:10px;color:#d4e4ee;display:grid;gap:4px}
+.ds form{display:flex;gap:9px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px}
+.ds button,.ds a{padding:9px 12px;border:0;border-radius:9px;background:#178b70;color:#fff!important;font-size:11px;cursor:pointer;text-decoration:none}
+.ds-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid #29465a;font-size:11px}
+.ds-row b{min-width:100px;color:#fff}.ds small{color:#a3bdcb}
+</style>
+<div class="ds">
+<section class="ds-section"><h1>تنظیمات کابین و دستگاه‌ها</h1><p style="font-size:11px">تغییر مدت درمان، آماده‌سازی یا کابین پیش‌فرض فقط روی نوبت‌های جدید اثر می‌گذارد.</p>
+  <a href="{% url 'device_booking_schedule' %}?branch={{ branch.pk }}">بازگشت به نوبت‌دهی</a>
+  {% if is_admin %}<form method="get"><label>شعبه<select name="branch" onchange="this.form.submit()">{% for b in branches %}<option value="{{ b.pk }}" {% if b.pk == branch.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></label></form>{% endif %}
+</section>
+{% if is_admin %}
+<section class="ds-section"><h2>مدت درمان و آماده‌سازی بر اساس نوع دستگاه</h2>
+{% for k in kinds %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="kind"><input type="hidden" name="branch" value="{{ branch.pk }}"><input type="hidden" name="kind_id" value="{{ k.pk }}">
+  <label>{{ k.code }} · درمان<input type="number" name="treatment_minutes" min="1" max="360" value="{{ k.treatment_minutes }}" required></label>
+  <label>آماده‌سازی<input type="number" name="preparation_minutes" min="0" max="180" value="{{ k.preparation_minutes }}" required></label>
+  <label>شروع<input type="time" name="work_start" value="{{ k.work_start|time:'H:i' }}" required></label>
+  <label>آخرین شروع<input type="time" name="last_start" value="{{ k.last_start|time:'H:i' }}" required></label>
+  <button>ذخیره {{ k.code }}</button>
+</form>{% endfor %}
+</section>{% endif %}
+<section class="ds-section"><h2>کابین‌های {{ branch.name }}</h2>
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="cabin"><input type="hidden" name="branch" value="{{ branch.pk }}"><label>نام کابین<input name="cabin_name" placeholder="مثلاً کابین دیفاین ۱" required maxlength="110"></label><button>افزودن کابین</button></form>
+  <div class="ds-row">{% for c in cabins %}<span>{{ c.name }}{% if not c.is_active %} (غیرفعال){% endif %} · </span>{% empty %}<small>هنوز کابینی ثبت نشده است.</small>{% endfor %}</div>
+</section>
+<section class="ds-section"><h2>دستگاه‌های فیزیکی {{ branch.name }}</h2>
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="unit"><input type="hidden" name="branch" value="{{ branch.pk }}">
+    <label>نام دستگاه<input name="unit_name" placeholder="DIF70 شماره ۱" required maxlength="110"></label>
+    <label>نوع دستگاه<select name="kind_id" required>{% for k in kinds %}<option value="{{ k.pk }}">{{ k.code }}</option>{% endfor %}</select></label>
+    <label>کابین پیش‌فرض<select name="home_cabin"><option value="">بدون کابین ثابت</option>{% for c in cabins %}<option value="{{ c.pk }}">{{ c.name }}</option>{% endfor %}</select></label>
+    <button>افزودن دستگاه</button>
+  </form>
+  {% for u in units %}<form method="post" class="ds-row">{% csrf_token %}<input type="hidden" name="action" value="move"><input type="hidden" name="branch" value="{{ branch.pk }}"><input type="hidden" name="unit_id" value="{{ u.pk }}">
+    <b>{{ u.name }}</b><small>{{ u.kind.code }}</small><label>کابین پیش‌فرض<select name="home_cabin"><option value="">بدون کابین</option>{% for c in cabins %}<option value="{{ c.pk }}" {% if u.home_cabin_id == c.pk %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></label><button>تغییر کابین</button>
+  </form>
+    <form method="post" class="ds-row">{% csrf_token %}<input type="hidden" name="action" value="unit_schedule"><input type="hidden" name="branch" value="{{ branch.pk }}"><input type="hidden" name="unit_id" value="{{ u.pk }}">
+      <small>زمان‌بندی اختصاصی {{ u.name }} (خالی = تعرفه زمانی نوع دستگاه)</small>
+      <label>درمان<input type="number" min="1" max="360" name="treatment_override_min" value="{{ u.treatment_override_min|default_if_none:'' }}" placeholder="پیش‌فرض"></label>
+      <label>آماده‌سازی<input type="number" min="0" max="180" name="preparation_override_min" value="{{ u.preparation_override_min|default_if_none:'' }}" placeholder="پیش‌فرض"></label>
+      <label>شروع<input type="time" name="work_start_override" value="{{ u.work_start_override|time:'H:i' }}"></label>
+      <label>آخرین شروع<input type="time" name="last_start_override" value="{{ u.last_start_override|time:'H:i' }}"></label>
+      <button>ذخیره زمان اختصاصی</button>
+    </form>
+  {% empty %}<small>هنوز دستگاه فیزیکی ثبت نشده است.</small>{% endfor %}
+</section>
+</div>
+{% endblock %}

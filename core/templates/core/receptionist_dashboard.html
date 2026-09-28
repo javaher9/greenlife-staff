@@ -79,6 +79,7 @@
       <a href="/" class="active"><span class="ico">⌂</span>داشبورد</a>
       <span class="disabled" title="پس از اتصال CRM فعال می‌شود"><span class="ico">♙</span>مراجعین</span>
       <a href="{% url 'appointment_schedule' %}"><span class="ico">▣</span>نوبت‌دهی</a>
+      <a href="{% url 'device_booking_schedule' %}"><span class="ico">◷</span>نوبت دستگاه‌ها</a>
       <span class="disabled" title="پس از اتصال CRM فعال می‌شود"><span class="ico">◎</span>پذیرش</span>
       <a href="{% url 'finance_entry' %}"><span class="ico">▤</span>پرداخت</a>
       <a href="/tasks/"><span class="ico">✓</span>پیگیری</a>
@@ -116,8 +117,15 @@
       <div class="payment-list">
         {% for item in receptionist_payment_queue %}
         <div class="payment-row">
-          <div><strong>{{ item.full_name }}</strong><small>{{ item.phone }} · مشاور: {{ item.consultation_plan.consultant.get_full_name|default:item.consultation_plan.consultant.username|default:"—" }}</small></div>
-          <div class="payment-amount">{{ item.consultation_plan.final_amount_toman|floatformat:0 }} تومان</div>
+          <div><strong>{{ item.full_name }}</strong><small>{{ item.phone }} · مشاور: {{ item.consultation_plan.consultant.get_full_name|default:item.consultation_plan.consultant.username|default:"—" }}</small>
+            <small style="margin-top:5px;color:#33445e">{% for part in item.consultation_plan.items.all %}{% if part.included %}{{ part.title }}{% if part.area %} ({{ part.area }}){% endif %} × {{ part.quantity }} · {{ part.unit_price_toman|floatformat:0 }} تومان{% if not forloop.last %} | {% endif %}{% endif %}{% endfor %}</small>
+            {% if item.consultation_plan.status == 'partial_paid' %}<small style="color:#a16909">بیعانه ثبت شده؛ مانده در فرم دریافت محاسبه می‌شود.</small>{% endif %}
+          </div>
+          <div class="payment-amount">
+            <small style="display:block;color:#526577">کل پکیج: {{ item.consultation_plan.final_amount_toman|floatformat:0 }}</small>
+            <small style="display:block;color:#56727b">دریافتی: {{ item.payment_received_toman|floatformat:0 }}</small>
+            <strong style="font-size:12px;color:#147756">مانده: {{ item.payment_remaining_toman|floatformat:0 }} تومان</strong>
+          </div>
           <a class="payment-go" href="{% url 'finance_entry' %}?appointment={{ item.pk }}">ثبت پرداخت</a>
         </div>
         {% endfor %}

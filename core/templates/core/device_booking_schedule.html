@@ -1,0 +1,70 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<style>
+.dv{max-width:1480px;margin:auto;color:#edf8ff;display:grid;gap:15px}
+.dv-head{padding:18px 20px;border-radius:19px;border:1px solid #32586b;background:linear-gradient(120deg,#183747,#10212e);display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
+.dv h1{font-size:21px!important;color:#fff!important;margin:0}.dv h2{font-size:14px!important;color:#fff!important;margin:0 0 11px}
+.dv p,.dv small{color:#b7c9d6;font-size:10px}
+.dv-card{padding:16px;border:1px solid #2e4758;border-radius:16px;background:linear-gradient(145deg,#122937,#0d1b27)}
+.dv-grid{display:grid;grid-template-columns:minmax(270px,.8fr) minmax(0,1.5fr);gap:13px}
+.dv-form{display:grid;gap:10px}.dv-form label{display:grid;gap:5px;font-size:10px;font-weight:800;color:#cddfe9}
+.dv input,.dv select{width:100%;background:#0b1b29;color:#fff;border:1px solid #3b5668;border-radius:9px;padding:10px;font:inherit;font-size:11px}
+.dv button,.dv-action{border:0;border-radius:10px;background:#138a6b;color:#fff!important;padding:10px 13px;font:900 11px Tahoma;cursor:pointer;text-decoration:none}
+.dv-action{display:inline-block;background:#34596a}.dv-unit{display:flex!important;align-items:center;gap:7px!important;font-weight:700!important;border:1px solid #2f4759;padding:7px;border-radius:8px}
+.dv-unit input{width:auto!important}.dv-units{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:210px;overflow:auto}
+.dv-slots{display:grid;gap:8px}.dv-slot{padding:12px;border:1px solid #345366;border-radius:12px;background:#112331;display:grid;grid-template-columns:90px minmax(0,1fr) auto;gap:8px;align-items:center}
+.dv-slot strong{font-size:13px;color:#fff}.dv-slot small{display:block;margin-top:4px}.dv-slot-actions{display:flex;gap:5px}.dv-slot-actions button{font-size:9px;padding:8px;background:#37566c}.dv-slot-actions button.cancel{background:#7a3344}
+.dv-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.dv-bar a{color:#90f7ce}
+@media(max-width:1050px){.dv-grid{grid-template-columns:1fr}.dv-slot{grid-template-columns:1fr}.dv-units{grid-template-columns:1fr 1fr}}
+</style>
+<div class="dv">
+  <header class="dv-head"><div><h1>تقویم نوبت‌دهی دستگاه‌ها</h1><p>{{ branch.name }} · {{ day_label }} · رزرو تک‌جلسه‌ای با کنترل کابین و دستگاه</p></div>
+    <div class="dv-bar">{% if is_manager %}<a class="dv-action" href="{% url 'device_booking_settings' %}?branch={{ branch.pk }}">مدیریت دستگاه‌ها و کابین‌ها</a>{% endif %}<a class="dv-action" href="/">داشبورد</a></div>
+  </header>
+  {% if is_admin %}<form method="get" class="dv-card dv-bar"><label>شعبه <select name="branch" onchange="this.form.submit()">{% for b in branches %}<option value="{{ b.pk }}" {% if b.pk == branch.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></label><input type="hidden" name="day" value="{{ day|date:'Y-m-d' }}"></form>{% endif %}
+  <div class="dv-grid">
+    <section class="dv-card"><h2>ثبت نوبت جدید</h2>
+      <p>ثبت نوبت فقط پس از بیعانه یا تسویه مجاز است. از هر خدمت پکیج، فقط یک نوبت باز ثبت می‌شود.</p>
+      <form method="post" class="dv-form" id="deviceBookForm">{% csrf_token %}<input type="hidden" name="action" value="book"><input type="hidden" name="branch" value="{{ branch.pk }}">
+        <label>پرونده بیمار<select name="appointment_id" id="dvPatient" required><option value="">انتخاب بیمار</option>{% for a in eligible %}<option value="{{ a.pk }}" {% if selected_visit.pk == a.pk %}selected{% endif %}>{{ a.full_name }} · {{ a.consultation_plan.get_status_display }}</option>{% endfor %}</select></label>
+        <label>خدمت خریداری‌شده<select name="plan_item_id" id="dvItem" required><option value="">انتخاب خدمت</option>{% for a in eligible %}{% for item in a.consultation_plan.items.all %}{% if item.kind == 'device' and item.included %}<option value="{{ item.pk }}" data-visit="{{ a.pk }}" {% if selected_visit.pk != a.pk %}hidden{% endif %}>{{ item.title }} · {{ item.area }} · {{ item.quantity }} جلسه/واحد</option>{% endif %}{% endfor %}{% endfor %}</select></label>
+        <label>نوع دستگاه<select name="kind_id" id="dvKind" required><option value="">انتخاب نوع دستگاه</option>{% for k in kinds %}<option value="{{ k.pk }}">{{ k.code }} · {{ k.treatment_minutes }} دقیقه درمان + {{ k.preparation_minutes }} آماده‌سازی</option>{% endfor %}</select></label>
+        <label>کابین<select name="cabin_id" required><option value="">انتخاب کابین</option>{% for c in cabins %}<option value="{{ c.pk }}">{{ c.name }}</option>{% endfor %}</select></label>
+        <label>دستگاه فیزیکی (برای Double Define دو دستگاه DIF70)<div class="dv-units" id="dvUnits">{% for u in units %}<label class="dv-unit" data-kind="{{ u.kind_id }}"><input type="checkbox" name="unit_ids" value="{{ u.pk }}"> {{ u.name }}{% if u.home_cabin %} · {{ u.home_cabin.name }}{% endif %}</label>{% endfor %}</div></label>
+        <label>تاریخ<input type="date" name="day" required value="{{ day|date:'Y-m-d' }}"></label>
+        <label>ساعت شروع<input type="time" name="start_time" min="08:30" max="17:30" step="300" required></label>
+        <button type="submit">ثبت تک‌جلسه و ارسال پیامک</button>
+      </form>
+    </section>
+    <section class="dv-card"><h2>برنامه {{ day_label }}</h2>
+      <form method="get" class="dv-bar" style="margin-bottom:11px">{% if is_admin %}<input type="hidden" name="branch" value="{{ branch.pk }}">{% endif %}
+        <input type="date" name="day" value="{{ day|date:'Y-m-d' }}" style="max-width:210px"><button type="submit">نمایش</button>
+      </form>
+      <div class="dv-slots">{% for b in bookings %}
+        <article class="dv-slot"><strong>{{ b.local_start|date:'H:i' }} – {{ b.local_end|date:'H:i' }}</strong>
+          <div><strong>{{ b.appointment.full_name }} · {{ b.kind.label }}</strong><small>{{ b.cabin.name }} · {% for u in b.units.all %}{{ u.name }}{% if not forloop.last %} + {% endif %}{% endfor %}</small><small>درمان {{ b.treatment_minutes_snapshot }} دقیقه + آماده‌سازی {{ b.preparation_minutes_snapshot }} دقیقه · {{ b.get_status_display }}</small></div>
+          {% if b.status == 'booked' %}<div class="dv-slot-actions">
+            <form method="post">{% csrf_token %}<input type="hidden" name="branch" value="{{ branch.pk }}"><input type="hidden" name="day" value="{{ day|date:'Y-m-d' }}"><input type="hidden" name="booking_id" value="{{ b.pk }}"><input type="hidden" name="action" value="complete"><button>انجام شد</button></form>
+            <form method="post">{% csrf_token %}<input type="hidden" name="branch" value="{{ branch.pk }}"><input type="hidden" name="day" value="{{ day|date:'Y-m-d' }}"><input type="hidden" name="booking_id" value="{{ b.pk }}"><input type="hidden" name="action" value="cancel"><button class="cancel">لغو</button></form>
+          </div>{% endif %}
+        </article>
+      {% empty %}<p>در این تاریخ هنوز نوبت دستگاهی ثبت نشده است.</p>{% endfor %}</div>
+    </section>
+  </div>
+</div>
+<script>
+(function(){
+ const patient=document.getElementById('dvPatient'),item=document.getElementById('dvItem'),kind=document.getElementById('dvKind');
+ function syncItems(){
+   Array.from(item.options).forEach(o=>{if(o.value)o.hidden=o.dataset.visit!==patient.value});
+   if(item.selectedOptions[0]&&item.selectedOptions[0].hidden)item.value='';
+ }
+ function syncUnits(){
+   document.querySelectorAll('#dvUnits [data-kind]').forEach(row=>{
+     row.hidden=row.dataset.kind!==kind.value;
+     if(row.hidden)row.querySelector('input').checked=false;
+   });
+ }
+ patient.addEventListener('change',syncItems);kind.addEventListener('change',syncUnits);syncItems();syncUnits();
+})();
+</script>
+{% endblock %}

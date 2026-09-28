@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 
 from django.db import connection, models, transaction
 from django.contrib.auth.models import User
@@ -451,6 +452,7 @@ class PatientDeviceProgram(models.Model):
     device_name=models.CharField(max_length=160)
     area=models.CharField(max_length=120,blank=True)
     sessions_prescribed=models.PositiveSmallIntegerField(default=1)
+    units_per_session=models.PositiveSmallIntegerField(default=1)
     sessions_completed=models.PositiveSmallIntegerField(default=0)
     note=models.TextField(blank=True)
     status=models.CharField(max_length=20,choices=STATUS,default='planned',db_index=True)
@@ -505,7 +507,8 @@ class ConsultationPlan(models.Model):
         ('draft','در حال تنظیم'),
         ('finalized','نهایی شده'),
         ('payment_pending','در انتظار پرداخت منشی'),
-        ('paid','پرداخت شده'),
+        ('partial_paid','بیعانه دریافت شده'),
+        ('paid','تسویه شده'),
         ('no_sale','فعلاً خرید نکرد'),
     ]
     appointment=models.OneToOneField(
@@ -570,6 +573,20 @@ class ConsultationPlanItem(models.Model):
         if not self.included:
             return 0
         return (self.unit_price_toman or 0) * (self.quantity or 0)
+
+class DeviceBaseTariff(models.Model):
+    """Shared per-unit device tariff; a catalog price overrides this for exceptions."""
+    price_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    updated_at=models.DateTimeField(auto_now=True)
+    updated_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='device_tariff_updates'
+    )
+
+    @classmethod
+    def current(cls):
+        value=cls.objects.filter(pk=1).values_list('price_toman',flat=True).first()
+        return value if value is not None else Decimal('0')
+
 
 class TreatmentCatalogItem(models.Model):
     CATEGORY=[
@@ -1052,7 +1069,6 @@ class FinancialTransaction(models.Model):
         ordering=['-occurred_at']
         constraints=[
             models.UniqueConstraint(fields=['source','external_id'],name='uniq_finance_source_external',condition=models.Q(external_id__isnull=False)),
-            models.UniqueConstraint(fields=['appointment'],name='uniq_finance_appointment',condition=models.Q(appointment__isnull=False)),
         ]
     def __str__(self): return f'{self.branch or "—"} - {self.amount}'
 
@@ -1686,3 +1702,88 @@ class WebsiteLeadIntegrationSettings(models.Model):
 
     def __str__(self):
         return 'اتصال لید وب‌سایت گرین لایف'
+
+
+class DeviceKind(models.Model):
+    """Mutable defaults for future bookings only; bookings snapshot timing."""
+    code=models.CharField(max_length=24,unique=True)
+    label=models.CharField(max_length=100)
+    treatment_minutes=models.PositiveSmallIntegerField(default=70)
+    preparation_minutes=models.PositiveSmallIntegerField(default=20)
+    work_start=models.TimeField(default='08:30')
+    last_start=models.TimeField(default='17:30')
+    is_active=models.BooleanField(default=True)
+    def __str__(self):
+        return f'{self.label} ({self.code})'
+
+
+class DeviceCabin(models.Model):
+    branch=models.ForeignKey(Branch,on_delete=models.PROTECT,related_name='device_cabins')
+    name=models.CharField(max_length=110)
+    is_active=models.BooleanField(default=True)
+    class Meta:
+        ordering=['branch_id','name','id']
+        constraints=[models.UniqueConstraint(fields=['branch','name'],name='uniq_device_cabin_branch_name')]
+    def __str__(self):
+        return f'{self.branch} / {self.name}'
+
+
+class DeviceUnit(models.Model):
+    """Physical machine, which may move between cabins."""
+    branch=models.ForeignKey(Branch,on_delete=models.PROTECT,related_name='device_units')
+    kind=models.ForeignKey(DeviceKind,on_delete=models.PROTECT,related_name='physical_units')
+    name=models.CharField(max_length=110)
+    home_cabin=models.ForeignKey(
+        DeviceCabin,on_delete=models.SET_NULL,null=True,blank=True,related_name='home_devices'
+    )
+    treatment_override_min=models.PositiveSmallIntegerField(null=True,blank=True)
+    preparation_override_min=models.PositiveSmallIntegerField(null=True,blank=True)
+    work_start_override=models.TimeField(null=True,blank=True)
+    last_start_override=models.TimeField(null=True,blank=True)
+    is_active=models.BooleanField(default=True)
+    class Meta:
+        ordering=['branch_id','kind_id','name','id']
+        constraints=[models.UniqueConstraint(fields=['branch','name'],name='uniq_device_unit_branch_name')]
+    def __str__(self):
+        return f'{self.branch} / {self.name}'
+
+
+class DeviceBooking(models.Model):
+    """One treatment session; Double Define reserves two units in one cabin."""
+    STATUS=[('booked','رزرو شده'),('completed','انجام شد'),('cancelled','لغو شده')]
+    appointment=models.ForeignKey(
+        VisitAppointment,on_delete=models.PROTECT,related_name='device_bookings'
+    )
+    plan_item=models.ForeignKey(
+        ConsultationPlanItem,on_delete=models.PROTECT,related_name='device_bookings'
+    )
+    branch=models.ForeignKey(Branch,on_delete=models.PROTECT,related_name='device_bookings')
+    kind=models.ForeignKey(DeviceKind,on_delete=models.PROTECT,related_name='bookings')
+    cabin=models.ForeignKey(DeviceCabin,on_delete=models.PROTECT,related_name='bookings')
+    day=models.DateField(db_index=True)
+    starts_at=models.DateTimeField(db_index=True)
+    ends_at=models.DateTimeField(db_index=True)
+    treatment_minutes_snapshot=models.PositiveSmallIntegerField()
+    preparation_minutes_snapshot=models.PositiveSmallIntegerField()
+    status=models.CharField(max_length=16,choices=STATUS,default='booked',db_index=True)
+    units=models.ManyToManyField(DeviceUnit,through='DeviceBookingUnit',related_name='device_bookings')
+    confirmation_sent_at=models.DateTimeField(null=True,blank=True)
+    reminder_sent_at=models.DateTimeField(null=True,blank=True)
+    created_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='created_device_bookings'
+    )
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+    class Meta:
+        ordering=['starts_at','id']
+        indexes=[models.Index(fields=['branch','day','status'],name='devicebook_branch_day_idx')]
+    def __str__(self):
+        return f'{self.appointment.full_name} / {self.kind.code} / {self.starts_at}'
+
+
+class DeviceBookingUnit(models.Model):
+    booking=models.ForeignKey(DeviceBooking,on_delete=models.CASCADE,related_name='reserved_units')
+    unit=models.ForeignKey(DeviceUnit,on_delete=models.PROTECT,related_name='reservations')
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['booking','unit'],name='uniq_device_booking_unit')]
+

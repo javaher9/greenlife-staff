@@ -676,8 +676,6 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
                 branch_id=consultant_profile.branch_id,
             ).exclude(
                 status='cancelled',
-            ).exclude(
-                financial_transactions__isnull=False,
             ).select_related('lead','lead__first_appointment_by','created_by','branch').order_by('-appointment_date','-appointment_time')
 
     def clean(self):
@@ -686,8 +684,6 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
         if appointment:
             if not self.consultant_profile or appointment.branch_id!=self.consultant_profile.branch_id:
                 self.add_error('appointment','این نوبت متعلق به شعبه شما نیست.')
-            if FinancialTransaction.objects.filter(appointment=appointment).exists():
-                self.add_error('appointment','فروش این نوبت قبلاً ثبت شده است.')
             data['sale_origin']='afsariyeh'
             data['person_name']=appointment.full_name
         elif data.get('sale_origin')=='afsariyeh':

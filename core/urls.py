@@ -13,6 +13,7 @@ from . import task_management_views
 from . import lead_command_views
 from . import lead_management_views
 from . import doctor_views
+from . import device_booking_views
 from . import payroll_views
 from .mcp import mcp_endpoint
 urlpatterns=[path('lead-management/attention/assign/',lead_management_views.lead_attention_bulk_action,name='lead_attention_bulk_action'),path('lead-management/<int:pk>/reassign/',lead_management_views.lead_reassign_operator,name='lead_reassign_operator'),path('lead-management/api/trend/',lead_management_views.lead_management_trend_data,name='lead_management_trend_data'),path('lead-command/',lead_command_views.lead_command_center,name='lead_command_center'),path('lead-command/api/live/',lead_command_views.lead_command_center_live,name='lead_command_center_live'),path('service-worker.js',views.service_worker,name='service_worker'),path('camp/',camp_views.camp_dashboard,name='camp_dashboard'),
@@ -23,6 +24,8 @@ path('call-center/groups/new/',referral_views.call_center_group_create,name='cal
 path('call-center/leads/new/',referral_views.call_center_lead_create,name='call_center_lead_create'),
 path('call-center/leads/<int:pk>/',referral_views.call_center_lead,name='call_center_lead'),
 path('call-center/leads/<int:pk>/appointment/',appointment_views.call_center_appointment_create,name='call_center_appointment_create'),
+path('device-sessions/',device_booking_views.device_booking_schedule,name='device_booking_schedule'),
+path('device-sessions/settings/',device_booking_views.device_booking_settings,name='device_booking_settings'),
 path('appointments/',appointment_views.appointment_schedule,name='appointment_schedule'),
 path('appointments/availability/',appointment_views.appointment_availability,name='appointment_availability'),
 path('appointments/new/',appointment_views.receptionist_appointment_create,name='receptionist_appointment_create'),
