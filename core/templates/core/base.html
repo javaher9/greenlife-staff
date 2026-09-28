@@ -142,13 +142,14 @@ background:#1a2c38!important;border-color:#486174!important;color:#fff!important
     <a href="{% url 'doctor_dashboard' %}" class="gl-executive-nav {% if request.resolver_match.url_name == 'doctor_dashboard' %}is-active{% endif %}"><span class="nav-ico">✚</span><span>حالت پزشک</span></a>
     {% endif %}
     {% if executive_access or user.is_superuser %}
-    <details class="gl-settings-menu" {% if request.resolver_match.url_name == 'treatment_catalog_settings' or request.resolver_match.url_name == 'credential_settings' or request.resolver_match.url_name == 'api_server_settings' or request.resolver_match.url_name == 'website_lead_settings' or request.resolver_match.url_name == 'shift_today_bulk' or request.path|slice:':12' == '/guidelines/' %}open{% endif %}>
+    <details class="gl-settings-menu" {% if request.resolver_match.url_name == 'treatment_catalog_settings' or request.resolver_match.url_name == 'credential_settings' or request.resolver_match.url_name == 'api_server_settings' or request.resolver_match.url_name == 'sms_management' or request.resolver_match.url_name == 'website_lead_settings' or request.resolver_match.url_name == 'shift_today_bulk' or request.path|slice:':12' == '/guidelines/' %}open{% endif %}>
       <summary><span class="nav-ico">⚙</span><span>تنظیمات</span><span class="settings-caret">⌄</span></summary>
       <div class="gl-settings-submenu">
         <a href="{% url 'treatment_catalog_settings' %}" class="{% if request.resolver_match.url_name == 'treatment_catalog_settings' %}is-active{% endif %}"><span class="nav-ico">◈</span><span>خدمات و درمان‌ها</span></a>
         <a href="{% url 'credential_settings' %}" class="{% if request.resolver_match.url_name == 'credential_settings' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>مدیریت رمزها</span></a>
         <a href="{% url 'credential_settings' %}#panel-preview" class="{% if request.resolver_match.url_name == 'credential_settings' %}is-active{% endif %}"><span class="nav-ico">◫</span><span>نمای صفحات پرسنل</span></a>
         <a href="{% url 'api_server_settings' %}" class="{% if request.resolver_match.url_name == 'api_server_settings' %}is-active{% endif %}"><span class="nav-ico">⌁</span><span>اتصال API Server</span></a>
+        <a href="{% url 'sms_management' %}" class="{% if request.resolver_match.url_name == 'sms_management' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>مدیریت پیامک</span></a>
         <a href="{% url 'website_lead_settings' %}" class="{% if request.resolver_match.url_name == 'website_lead_settings' %}is-active{% endif %}"><span class="nav-ico">◎</span><span>اتصال لید وب‌سایت</span></a>
         <a href="{% url 'shift_today_bulk' %}" class="{% if request.resolver_match.url_name == 'shift_today_bulk' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>تنظیم ساعت کاری</span></a>
         <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>شرح وظایف و دستورالعمل‌ها</span></a>
