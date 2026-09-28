@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -11,11 +11,42 @@ from django.utils import timezone
 
 from .forms import AppointmentFromLeadForm, ReceptionistAppointmentForm, visit_appointment_time_choices
 from .jalali import parse_jalali
-from .models import Branch, EmployeeProfile, ReferralLead, StaffNotification, VisitAppointment
+from .models import Branch, EmployeeProfile, ReferralLead, StaffNotification, VisitAppointment, SmsAutomationRule, SmsScheduledMessage
+from .sms_automation import schedule_sms_event
+from .jalali import format_jalali
 from .sms import send_appointment_confirmation
 
 
 ALLOWED_APPOINTMENT_ROLES={'admin','internal_manager','manager','call_center','receptionist'}
+
+def _queue_appointment_messages(appointment_id):
+    """Honor configurable SMS rules without changing legacy booking delivery."""
+    appointment=VisitAppointment.objects.select_related('branch').get(pk=appointment_id)
+    event_at=timezone.make_aware(
+        datetime.combine(appointment.appointment_date,appointment.appointment_time),
+        timezone.get_current_timezone(),
+    )
+    context={
+        'name':appointment.full_name,
+        'phone':appointment.phone,
+        'branch':appointment.branch.name,
+        'service':appointment.service,
+        'date':format_jalali(appointment.appointment_date),
+        'time':appointment.appointment_time.strftime('%H:%M'),
+        'event':'نوبت',
+    }
+    if SmsAutomationRule.objects.filter(event='appointment_booked').exists():
+        schedule_sms_event(
+            'appointment_booked',appointment.pk,event_at=event_at,
+            patient_number=appointment.phone,context=context,
+        )
+    else:
+        send_appointment_confirmation(appointment_id)
+    schedule_sms_event(
+        'appointment_reminder',appointment.pk,event_at=event_at,
+        patient_number=appointment.phone,context=context,
+    )
+
 
 
 def _role(user):
@@ -170,7 +201,7 @@ def call_center_appointment_create(request,pk):
                     lead.save(update_fields=['status','contact_result','next_follow_up','updated_at'])
                 _notify_branch_receptionists(appointment)
                 transaction.on_commit(
-                    lambda appointment_id=appointment.pk: send_appointment_confirmation(appointment_id)
+                    lambda appointment_id=appointment.pk: _queue_appointment_messages(appointment_id)
                 )
         except (IntegrityError,ValidationError):
             form.add_error('appointment_time','این ساعت همین الان رزرو شده است؛ یک ساعت دیگر انتخاب کنید.')
@@ -213,7 +244,7 @@ def receptionist_appointment_create(request):
             with transaction.atomic():
                 item.save()
                 transaction.on_commit(
-                    lambda appointment_id=item.pk: send_appointment_confirmation(appointment_id)
+                    lambda appointment_id=item.pk: _queue_appointment_messages(appointment_id)
                 )
         except (IntegrityError,ValidationError):
             form.add_error('appointment_time','این ساعت همین الان رزرو شده است؛ یک ساعت دیگر انتخاب کنید.')
@@ -247,6 +278,21 @@ def receptionist_appointment_status(request,pk,status):
     with transaction.atomic():
         item.status=status
         item.save(update_fields=['status','updated_at'])
+        if status=='cancelled':
+            SmsScheduledMessage.objects.filter(
+                event_key__in=[
+                    f'appointment_booked:{item.pk}:patient',
+                    f'appointment_reminder:{item.pk}:patient',
+                    f'appointment_booked:{item.pk}:executive',
+                    f'appointment_reminder:{item.pk}:executive',
+                    f'appointment_booked:{item.pk}:internal_manager',
+                    f'appointment_reminder:{item.pk}:internal_manager',
+                    f'appointment_booked:{item.pk}:staff',
+                    f'appointment_reminder:{item.pk}:staff',
+                    f'appointment_booked:{item.pk}:custom',
+                    f'appointment_reminder:{item.pk}:custom',
+                ],status='pending',
+            ).update(status='cancelled')
         # Close the operational loop back to call center. Arrival/completion means
         # the lead has actually visited, but never downgrade a won/lost lead.
         if item.lead_id and status in ('arrived','completed'):
