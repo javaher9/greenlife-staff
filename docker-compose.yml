@@ -24,6 +24,20 @@ services:
     expose:
       - "8005"
 
+
+  # Dedicated scheduler for reminders and delayed messages.
+  # Reuses the approved production web image and shares its database.
+  sms_worker:
+    image: greenlife-staff-runtime-web:latest
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - db
+      - web
+    entrypoint: ["python", "manage.py", "process_sms_queue", "--loop", "--interval", "30"]
+    volumes:
+      - media_data:/app/media
+
   nginx:
     image: nginx:1.31.3-alpine
     restart: unless-stopped
