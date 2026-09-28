@@ -111,11 +111,13 @@ SMS_EVENT_GROUPS=(
     ('مالی و پرداخت',('payment_approved','payment_due')),
     ('جلسات دستگاه و درمان',('device_session_booked','device_session_reminder','device_session_started','device_session_finished','treatment_followup')),
     ('کال‌سنتر',('lead_new','lead_overdue')),
+    ('نتیجه تماس کال‌سنتر',('call_no_answer','call_not_interested','call_follow_up','call_appointment')),
     ('پرسنل و مدیریت',('staff_late','staff_task_due','internal_approval')),
 )
-# Only the appointment-booked event is connected to an existing event source.
-# Enabling other rules saves configuration, but it cannot imply a live trigger.
-SMS_CONNECTED_EVENTS={'appointment_booked','appointment_reminder','payment_approved'}
+# Only events with an actual backend trigger may be enabled.
+# Enabling other rules saves configuration but cannot imply a live trigger.
+SMS_CONNECTED_EVENTS={'appointment_booked','appointment_reminder','payment_approved',
+                      'call_no_answer','call_not_interested','call_follow_up','call_appointment'}
 
 
 @_api_admin_required
