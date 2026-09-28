@@ -17,8 +17,8 @@ class ConsultationInstallmentTests(TestCase):
     def setUp(self):
         self.branch=Branch.objects.create(name='پرداخت اقساطی تست')
         self.receptionist=User.objects.create_user('reception-deposit',password='pass')
-        EmployeeProfile.objects.create(
-            user=self.receptionist,branch=self.branch,role='receptionist',
+        EmployeeProfile.objects.update_or_create(
+            user=self.receptionist,defaults={'branch':self.branch,'role':'receptionist'},
         )
         self.visit=VisitAppointment.objects.create(
             branch=self.branch,full_name='بیمار اقساطی',phone='09121112233',

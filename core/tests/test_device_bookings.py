@@ -19,7 +19,7 @@ class DeviceBookingTests(TestCase):
     def setUp(self):
         self.branch=Branch.objects.create(name='تست دستگاه و کابین')
         self.user=User.objects.create_user('device-consultant',password='test-pass')
-        EmployeeProfile.objects.create(user=self.user,role='consultant',branch=self.branch)
+        EmployeeProfile.objects.update_or_create(user=self.user,defaults={'role':'consultant','branch':self.branch})
         self.cabin=DeviceCabin.objects.create(branch=self.branch,name='کابین کرایو ۱')
         self.cryo=DeviceKind.objects.get(code='Cryo70')
         self.cryo.treatment_minutes=70
@@ -153,7 +153,7 @@ class DeviceBookingTests(TestCase):
             self.client.get(reverse('device_booking_settings')).status_code,403,
         )
         admin=User.objects.create_user('device-admin',password='test-pass')
-        EmployeeProfile.objects.create(user=admin,role='admin',branch=self.branch)
+        EmployeeProfile.objects.update_or_create(user=admin,defaults={'role':'admin','branch':self.branch})
         self.client.force_login(admin)
         self.assertEqual(
             self.client.get(reverse('device_booking_settings')).status_code,200,
