@@ -1,4 +1,7 @@
 from django.contrib import messages
+from django.core.validators import RegexValidator
+from django.utils import timezone
+from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
@@ -7,7 +10,8 @@ from .credential_security import encrypt_secret
 from .forms import ApiServerSettingsForm, SmsTestForm
 from .finance import fetch_crm_finance_payload
 from .integration_api import ApiServerError
-from .models import ApiServerSettings, AuditLog, SmsMessageLog
+from .models import ApiServerSettings, AuditLog, SmsMessageLog, SmsAutomationRule, SmsScheduledMessage
+from .sms_automation import OFFSET_LIMIT, validate_template
 from .sms import SmsGatewayError, send_sms
 from .views import _is_executive_user
 
@@ -99,4 +103,95 @@ def api_server_settings(request):
     })
     response['Cache-Control']='no-store, private'
     response['Pragma']='no-cache'
+    return response
+
+
+SMS_EVENT_GROUPS=(
+    ('نوبت و مراجعه',('appointment_booked','appointment_reminder','appointment_changed','appointment_cancelled','patient_arrived')),
+    ('مالی و پرداخت',('payment_approved','payment_due')),
+    ('جلسات دستگاه و درمان',('device_session_booked','device_session_reminder','device_session_started','device_session_finished','treatment_followup')),
+    ('کال‌سنتر',('lead_new','lead_overdue')),
+    ('پرسنل و مدیریت',('staff_late','staff_task_due','internal_approval')),
+)
+# Only the appointment-booked event is connected to an existing event source.
+# Enabling other rules saves configuration, but it cannot imply a live trigger.
+SMS_CONNECTED_EVENTS={'appointment_booked'}
+
+
+@_api_admin_required
+@require_http_methods(['GET','POST'])
+def sms_management(request):
+    if request.method=='POST':
+        event=(request.POST.get('event') or '').strip()
+        if event not in dict(SmsAutomationRule.EVENT_CHOICES):
+            messages.error(request,'رویداد پیامک معتبر نیست.')
+            return redirect('sms_management')
+        rule,_=SmsAutomationRule.objects.get_or_create(event=event)
+        recipient=request.POST.get('recipient','patient')
+        timing=request.POST.get('timing','immediate')
+        offset_unit=request.POST.get('offset_unit','minutes')
+        custom_number=(request.POST.get('custom_number') or '').strip()
+        template=(request.POST.get('message_template') or '').strip()
+        try:
+            offset=int(request.POST.get('offset') or '0')
+            if recipient not in dict(SmsAutomationRule.RECIPIENT_CHOICES):
+                raise ValueError('گیرنده انتخاب‌شده معتبر نیست.')
+            if timing not in dict(SmsAutomationRule.TIMING_CHOICES):
+                raise ValueError('زمان‌بندی انتخاب‌شده معتبر نیست.')
+            if offset_unit not in dict(SmsAutomationRule.UNIT_CHOICES):
+                raise ValueError('واحد زمان معتبر نیست.')
+            if offset<0 or offset*{'minutes':1,'hours':60,'days':1440}[offset_unit]>OFFSET_LIMIT:
+                raise ValueError('فاصله ارسال نباید بیشتر از ۳۰ روز باشد.')
+            if custom_number and (len(custom_number)!=11 or not custom_number.startswith('09') or not custom_number.isdigit()):
+                raise ValueError('شماره اختصاصی باید ۱۱ رقم و با 09 شروع شود.')
+            if recipient=='custom' and not custom_number:
+                raise ValueError('برای گیرنده اختصاصی باید شماره موبایل وارد شود.')
+            if not template and request.POST.get('is_enabled')=='on':
+                raise ValueError('برای فعال‌سازی ابتدا متن پیامک را مشخص کنید.')
+            validate_template(template)
+        except ValueError as exc:
+            messages.error(request,str(exc))
+            return redirect('sms_management')
+        rule.recipient=recipient
+        rule.custom_number=custom_number
+        rule.timing=timing
+        rule.offset=offset
+        rule.offset_unit=offset_unit
+        rule.message_template=template
+        # Disconnected events may be configured, but cannot be enabled or sent.
+        requested_enabled=request.POST.get('is_enabled')=='on'
+        rule.is_enabled=requested_enabled and event in SMS_CONNECTED_EVENTS
+        rule.updated_by=request.user
+        rule.save()
+        AuditLog.objects.create(
+            actor=request.user,action='sms_automation_rule_update',path=request.path,method='POST',
+            object_type='SmsAutomationRule',object_id=str(rule.pk),
+            summary=f'تنظیم رویداد پیامک: {rule.get_event_display()}',
+            metadata={'event':event,'enabled':rule.is_enabled,'recipient':recipient,
+                      'timing':timing,'offset':offset,'offset_unit':offset_unit},
+            ip_address=request.META.get('REMOTE_ADDR') or None,
+        )
+        if requested_enabled and event not in SMS_CONNECTED_EVENTS:
+            messages.warning(request,'تنظیمات ذخیره شد؛ این رویداد هنوز به اپ متصل نیست و ارسال آن غیرفعال می‌ماند.')
+        else:
+            messages.success(request,'تنظیمات پیامک ذخیره شد.')
+        return redirect('sms_management')
+
+    existing={rule.event:rule for rule in SmsAutomationRule.objects.all()}
+    labels=dict(SmsAutomationRule.EVENT_CHOICES)
+    groups=[{
+        'title':title,
+        'rules':[{
+            'key':key,'title':labels[key],'rule':existing.get(key),
+            'connected':key in SMS_CONNECTED_EVENTS,
+        } for key in keys],
+    } for title,keys in SMS_EVENT_GROUPS]
+    latest=SmsScheduledMessage.objects.select_related('rule').order_by('-created_at')[:15]
+    response=render(request,'core/sms_management.html',{
+        'groups':groups,'recipient_choices':SmsAutomationRule.RECIPIENT_CHOICES,
+        'timing_choices':SmsAutomationRule.TIMING_CHOICES,'unit_choices':SmsAutomationRule.UNIT_CHOICES,
+        'pending_count':SmsScheduledMessage.objects.filter(status='pending').count(),
+        'recent_queue':latest,'api_config':ApiServerSettings.load(),
+    })
+    response['Cache-Control']='no-store, private'
     return response
