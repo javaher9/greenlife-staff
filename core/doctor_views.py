@@ -24,7 +24,7 @@ from .models import (
     StaffNotification,
     TreatmentCatalogItem,
     VisitAppointment,
-    Branch,
+    Branch, DeviceBaseTariff,
     normalize_lead_phone,
 )
 
@@ -82,6 +82,8 @@ def _catalog_options(category, branch, fallback):
             continue
         seen.add(key)
         price=''
+        if item.category=='device' and item.price_toman is None:
+            item.price_toman=DeviceBaseTariff.current()
         if item.price_toman is not None:
             price=f'{int(item.price_toman):,} تومان'
             if item.unit_label:
@@ -89,6 +91,10 @@ def _catalog_options(category, branch, fallback):
         result.append({'name':item.name,'price':price})
     if result:
         return result
+    if category=='device':
+        base=DeviceBaseTariff.current()
+        text=f'{int(base):,} تومان / واحد' if base else 'تعرفه دستگاه هنوز تنظیم نشده'
+        return [{'name':name,'price':text} for name in fallback]
     return [{'name':name,'price':''} for name in fallback]
 
 
@@ -347,6 +353,10 @@ def doctor_dashboard(request):
                 sessions=max(1,min(30,int(request.POST.get('sessions') or 1)))
             except (TypeError,ValueError):
                 sessions=1
+            try:
+                units_per_session=max(1,min(8,int(request.POST.get('units_per_session') or 1)))
+            except (TypeError,ValueError):
+                units_per_session=1
             if not device:
                 messages.error(request,'دستگاه را انتخاب کنید.')
             else:
@@ -356,6 +366,7 @@ def doctor_dashboard(request):
                     device_name=device[:160],
                     area=(request.POST.get('area') or '').strip()[:120],
                     sessions_prescribed=sessions,
+                    units_per_session=units_per_session,
                     note=(request.POST.get('note') or '').strip()[:2000],
                     prescribed_by=request.user,
                 )

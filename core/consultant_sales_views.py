@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from .call_center_identity import call_center_display_name
 from .models import (
-    ConsultationPlan, ConsultationPlanItem, EmployeeProfile, FinancialTransaction,
+    ConsultationPlan, ConsultationPlanItem, DeviceBaseTariff, EmployeeProfile, FinancialTransaction,
     PatientProfile, ReferralLead, StaffNotification, Task, TreatmentCatalogItem,
     VisitAppointment, normalize_lead_phone,
 )
@@ -26,7 +26,7 @@ def _consultant(request):
 def _queue(profile):
     return (
         VisitAppointment.objects
-        .filter(branch_id=profile.branch_id,care_stage='consultant')
+        .filter(branch_id=profile.branch_id,care_stage__in=('consultant','payment'))
         .exclude(status='cancelled')
         .select_related('lead','doctor_completed_by','branch')
         .prefetch_related('diet_programs','device_programs','lipolytic_programs','care_notes')
@@ -41,7 +41,9 @@ def _catalog_price(branch,kind,name):
         if local and local.price_toman is not None:
             return local.price_toman
     global_item=qs.filter(branch__isnull=True).order_by('sort_order','id').first()
-    return global_item.price_toman if global_item and global_item.price_toman is not None else Decimal('0')
+    if global_item and global_item.price_toman is not None:
+        return global_item.price_toman
+    return DeviceBaseTariff.current() if kind=='device' else Decimal('0')
 
 
 def _doctor_name(program):
@@ -82,10 +84,11 @@ def _ensure_plan(appointment,consultant):
         rows.append(ConsultationPlanItem(
             plan=plan,kind='device',source='doctor',source_pk=item.pk,
             title=item.device_name,area=item.area or '',quantity=qty,
-            unit_price_toman=_catalog_price(appointment.branch,'device',item.device_name),
+            unit_price_toman=_catalog_price(appointment.branch,'device',item.device_name) * (item.units_per_session or 1),
             note=item.note or '',sort_order=order,
             doctor_snapshot={
                 'title':item.device_name,'area':item.area,'quantity':qty,
+                'units_per_session':item.units_per_session or 1,
                 'note':item.note,'doctor':_doctor_name(item),
             },
         )); order+=10
@@ -161,6 +164,16 @@ def consultant_sales_outcomes(request):
             return redirect('consultant_sales_outcomes')
         action=(request.POST.get('action') or '').strip()
 
+        if action in ('update_item','add_item','finalize','no_sale') and (
+            plan.status in ('partial_paid','paid')
+            or FinancialTransaction.objects.filter(
+                appointment=selected,source='manual',entry_type='inc',
+                review_status__in=('pending','approved'),
+            ).exists()
+        ):
+            messages.error(request,'پس از دریافت وجه، پکیج قفل است؛ برای اصلاح مالی از مدیریت اقدام کنید.')
+            return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
+
         if action=='update_item':
             item=get_object_or_404(plan.items,pk=request.POST.get('item_id'))
             item.title=(request.POST.get('title') or item.title).strip()[:180]
@@ -228,11 +241,12 @@ def consultant_sales_outcomes(request):
             return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
 
         if action=='send_to_reception':
-            if plan.status not in ('finalized','payment_pending'):
+            if plan.status not in ('finalized','payment_pending','partial_paid'):
                 messages.error(request,'ابتدا پکیج را نهایی کنید.')
                 return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
             with transaction.atomic():
-                plan.status='payment_pending'
+                if plan.status!='partial_paid':
+                    plan.status='payment_pending'
                 plan.sent_to_reception_at=timezone.now()
                 plan.save(update_fields=['status','sent_to_reception_at','updated_at'])
                 selected.care_stage='payment'
@@ -315,6 +329,6 @@ def consultant_sales_outcomes(request):
         ],
         'payment_url':(
             f"{reverse('finance_entry')}?appointment={selected.pk}"
-            if selected and plan and plan.status in ('finalized','payment_pending') else ''
+            if selected and plan and plan.status in ('finalized','payment_pending','partial_paid') else ''
         ),
     })

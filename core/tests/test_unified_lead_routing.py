@@ -84,32 +84,33 @@ class UnifiedLeadRoutingTests(TestCase):
             assigned.append(assign_referral_lead(lead).id)
 
         counts = Counter(assigned)
-        self.assertEqual(
-            [counts[operator.id] for operator in self.operators],
-            [2, 2, 2, 2, 2, 2],
-        )
+        # Mohammad Salehi is temporarily excluded from all new lead assignments.
+        self.assertEqual(counts[self.operators[1].id],0)
+        eligible_counts=[counts[op.id] for i,op in enumerate(self.operators) if i!=1]
+        self.assertEqual(sum(eligible_counts),12)
+        self.assertLessEqual(max(eligible_counts)-min(eligible_counts),1)
 
     def test_late_operator_catches_up_instead_of_first_arrival_keeping_all_leads(self):
-        self._keep_only(0, 1)
+        self._keep_only(0, 2)
         self._check_in(0)
 
         for index in range(1, 5):
             lead = self._new_lead(index)
             self.assertEqual(assign_referral_lead(lead).id, self.operators[0].id)
 
-        self._check_in(1)
+        self._check_in(2)
         for index in range(5, 9):
             lead = self._new_lead(index)
-            self.assertEqual(assign_referral_lead(lead).id, self.operators[1].id)
+            self.assertEqual(assign_referral_lead(lead).id, self.operators[2].id)
 
         counts = Counter(
             ReferralLead.objects.values_list('assigned_to_id', flat=True)
         )
         self.assertEqual(counts[self.operators[0].id], 4)
-        self.assertEqual(counts[self.operators[1].id], 4)
+        self.assertEqual(counts[self.operators[2].id], 4)
 
     def test_overnight_backlog_waits_for_more_staff_before_11(self):
-        self._keep_only(0, 1)
+        self._keep_only(0, 2)
         leads = [self._new_lead(index) for index in range(1, 7)]
         self._check_in(0)
 
@@ -120,7 +121,7 @@ class UnifiedLeadRoutingTests(TestCase):
             6,
         )
 
-        self._check_in(1)
+        self._check_in(2)
         released = release_pending_leads_if_ready(now=self._at(10, 0))
         self.assertEqual(released, 6)
 
@@ -128,7 +129,7 @@ class UnifiedLeadRoutingTests(TestCase):
             ReferralLead.objects.values_list('assigned_to_id', flat=True)
         )
         self.assertEqual(counts[self.operators[0].id], 3)
-        self.assertEqual(counts[self.operators[1].id], 3)
+        self.assertEqual(counts[self.operators[2].id], 3)
         for lead in leads:
             lead.refresh_from_db()
             self.assertIsNotNone(lead.assigned_at)
