@@ -1,0 +1,68 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<style>
+.sms-center{direction:rtl;color:#ecf7fb;max-width:1480px;margin:0 auto;padding:10px 6px 56px;display:grid;gap:16px;font-family:Tahoma,Arial,sans-serif}
+.sms-center *{box-sizing:border-box}.sms-center h1,.sms-center h2,.sms-center h3{color:#fff!important;margin:0}
+.sms-hero,.sms-section,.sms-config,.sms-info{background:linear-gradient(145deg,#0f2534,#0a1924)!important;border:1px solid #2b4a5d;border-radius:20px;box-shadow:0 14px 30px rgba(0,0,0,.18)}
+.sms-hero{display:flex;justify-content:space-between;gap:20px;align-items:center;padding:23px 25px;background:radial-gradient(circle at 8% 110%,rgba(73,194,139,.15),transparent 36%),linear-gradient(145deg,#10283a,#0a1924)!important}
+.sms-hero h1{font-size:25px!important;font-weight:950}.sms-hero p{color:#b6c8d5!important;font-size:11px;line-height:1.9;margin:8px 0 0}
+.sms-badges{display:flex;flex-wrap:wrap;gap:9px}.sms-badge{display:inline-flex;align-items:center;border-radius:999px;padding:7px 11px;border:1px solid #325467;background:#102b3c;color:#bddcec;font-size:10px;font-weight:850;white-space:nowrap}.sms-badge.ok{background:#103c2c;border-color:#1d9b70;color:#85edbb}.sms-badge.warn{background:#463419;border-color:#80612b;color:#ffde95}
+.sms-info{padding:14px 18px;color:#c4d3df;font-size:11px;line-height:2}
+.sms-info strong{color:#f7fbff}.sms-info a{color:#88d6ff}
+.sms-section{padding:16px}.sms-section h2{font-size:17px!important;margin:0 0 5px}.sms-section>p{font-size:10px;color:#a9bfce!important;margin:0 0 15px}
+.sms-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sms-config{overflow:hidden;border-radius:15px;box-shadow:none}
+.sms-config summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;padding:13px 15px;min-height:66px;user-select:none}
+.sms-config summary::-webkit-details-marker{display:none}.sms-config[open]{border-color:#357a70}
+.sms-title{font-size:12px;color:#f4fbff;font-weight:950}.sms-kind{display:block;margin-top:5px;font-size:9px;color:#a0b7c7;font-weight:750}
+.sms-config summary .sms-badge{margin-right:auto}.sms-chevron{color:#a6bbcd;font-size:17px}.sms-config[open] .sms-chevron{transform:rotate(180deg)}
+.sms-config form{padding:2px 15px 15px;border-top:1px solid #243d4d}
+.sms-fieldset{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:13px}
+.sms-field{min-width:0}.sms-field label{display:block;font-size:10px;font-weight:850;color:#dae7f0;margin-bottom:6px}
+.sms-field input,.sms-field select,.sms-field textarea{display:block;width:100%;min-height:40px;background:#0b1b27!important;border:1px solid #335365!important;border-radius:10px!important;color:#f7fbff!important;padding:9px 10px!important;font-family:inherit;font-size:11px!important;outline:none}
+.sms-field input:focus,.sms-field select:focus,.sms-field textarea:focus{border-color:#38bc93!important;box-shadow:0 0 0 2px rgba(38,183,133,.13)!important}
+.sms-field textarea{min-height:92px;resize:vertical;line-height:1.9}.sms-field select{color-scheme:dark}
+.sms-field small{display:block;color:#93aebb;font-size:9px;margin-top:5px;line-height:1.7}
+.sms-inline{display:grid;grid-template-columns:1fr 90px 100px;gap:8px;align-items:end}
+.sms-switch{display:flex;align-items:center;gap:9px;font-size:11px;font-weight:900;color:#e7f2f9;margin:14px 0;padding:10px 12px;background:#122a37;border:1px solid #2a4c5d;border-radius:11px}.sms-switch input{width:17px;height:17px;accent-color:#24c789}
+.sms-save{border:1px solid #36d89a;background:linear-gradient(135deg,#0e8f60,#25c883);color:white;font-size:11px;font-weight:950;border-radius:10px;padding:11px 17px;cursor:pointer}
+.sms-saved{font-size:9px;color:#96aebb;margin-right:9px}
+.sms-table-wrap{overflow:auto}.sms-table{width:100%;min-width:680px;border-collapse:collapse}.sms-table th,.sms-table td{text-align:right;padding:11px;font-size:10px;border-bottom:1px solid #263c4b;color:#dce9f2}.sms-table th{background:#102b3b;color:#d9f3ff}.sms-table td{background:#0a1b28}.sms-muted{color:#b0c7d5;font-size:10px}.sms-config .unwired{background:#4a3516;color:#ffda98;border-color:#83612d}
+@media(max-width:1080px){.sms-grid{grid-template-columns:1fr}}@media(max-width:620px){.sms-hero{align-items:flex-start;flex-direction:column;padding:17px}.sms-fieldset{grid-template-columns:1fr}.sms-inline{grid-template-columns:1fr 75px 90px}.sms-center{padding:6px 3px 68px}.sms-section{padding:10px}}
+</style>
+<section class="sms-center">
+  <header class="sms-hero">
+    <div><h1>✉ مدیریت پیامک</h1><p>تنظیم رویداد، گیرنده، متن و ارسال قبل یا بعد از هر اتفاق · GreenLife SMS Center</p></div>
+    <div class="sms-badges"><span class="sms-badge {% if api_config.is_enabled and api_config.is_configured %}ok{% else %}warn{% endif %}">درگاه: {% if api_config.is_enabled and api_config.is_configured %}فعال{% else %}نیازمند بررسی{% endif %}</span><span class="sms-badge">صف انتظار: {{ pending_count }}</span></div>
+  </header>
+  <div class="sms-info"><strong>راهنما:</strong> هر کارت را باز کن و گزینه‌هایش را انتخاب کن. فقط رویدادهای دارای نشان «متصل» امکان ارسال دارند؛ بقیه فعلاً برای آماده‌سازی تنظیمات هستند و با ذخیره‌کردن پیامکی ارسال نمی‌کنند. تنظیمات جدید به‌صورت پیش‌فرض خاموش است. شماره گیرنده «مدیریت» و «مدیر داخلی» از پروفایل پرسنل خوانده می‌شود؛ در صورت نیاز شماره جایگزین همان کارت را وارد کن. <a href="{% url 'api_server_settings' %}">تنظیمات اتصال و تست درگاه ↗</a></div>
+  {% for group in groups %}
+  <section class="sms-section">
+    <h2>{{ group.title }}</h2><p>برای مشاهده گزینه‌های هر پیامک، روی کارت آن بزنید.</p>
+    <div class="sms-grid">
+      {% for item in group.rules %}
+      <details class="sms-config" {% if request.GET.event == item.key %}open{% endif %}>
+        <summary><div><span class="sms-title">{{ item.title }}</span><span class="sms-kind">{% if item.rule and item.rule.is_enabled %}ارسال فعال{% else %}ارسال غیرفعال{% endif %}</span></div><span class="sms-badge {% if item.connected %}ok{% else %}unwired{% endif %}">{% if item.connected %}متصل{% else %}در انتظار اتصال{% endif %}</span><span class="sms-chevron">⌄</span></summary>
+        <form method="post">{% csrf_token %}<input type="hidden" name="event" value="{{ item.key }}">
+          <div class="sms-fieldset">
+            <div class="sms-field"><label>پیامک برای چه کسی برود؟</label><select name="recipient">
+              {% for key,label in recipient_choices %}<option value="{{ key }}" {% if item.rule and item.rule.recipient == key or not item.rule and key == 'patient' %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select></div>
+            <div class="sms-field"><label>شماره اختصاصی / شماره جایگزین</label><input type="tel" name="custom_number" dir="ltr" inputmode="numeric" value="{{ item.rule.custom_number|default:'' }}" placeholder="09xxxxxxxxx"><small>برای «شماره مشخص» الزامی است؛ برای مدیریت می‌تواند جایگزین شماره پروفایل باشد.</small></div>
+            <div class="sms-field"><label>زمان ارسال</label><select name="timing">
+              {% for key,label in timing_choices %}<option value="{{ key }}" {% if item.rule and item.rule.timing == key or not item.rule and key == 'immediate' %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select></div>
+            <div class="sms-field"><label>فاصله زمانی</label><div class="sms-inline"><span class="sms-muted">نسبت به زمان رویداد</span><input type="number" name="offset" min="0" max="43200" value="{{ item.rule.offset|default:0 }}"><select name="offset_unit">{% for key,label in unit_choices %}<option value="{{ key }}" {% if item.rule and item.rule.offset_unit == key or not item.rule and key == 'minutes' %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div></div>
+          </div>
+          <div class="sms-field" style="margin-top:12px"><label>متن پیامک</label><textarea name="message_template" maxlength="1600" placeholder="گرین لایف&#10;{name} عزیز، ...">{{ item.rule.message_template|default:'' }}</textarea><small>متغیرها: {name}، {branch}، {date}، {time}، {amount}، {service}، {staff}، {phone}، {notes}، {event}</small></div>
+          <label class="sms-switch"><input type="checkbox" name="is_enabled" {% if item.rule and item.rule.is_enabled %}checked{% endif %} {% if not item.connected %}disabled{% endif %}> فعال‌سازی ارسال خودکار {% if not item.connected %}(پس از اتصال رویداد قابل انتخاب است){% endif %}</label>
+          <button class="sms-save" type="submit">ذخیره تنظیمات</button>{% if item.rule %}<span class="sms-saved">آخرین ویرایش: {{ item.rule.updated_at|date:'Y/m/d H:i' }}</span>{% endif %}
+        </form>
+      </details>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+  <section class="sms-section"><h2>سوابق صف پیامک‌های زمان‌دار</h2><p>«پذیرفته‌شده» یعنی درگاه پیامک درخواست را پذیرفته است، نه تأیید تحویل به موبایل.</p><div class="sms-table-wrap"><table class="sms-table"><thead><tr><th>رویداد</th><th>گیرنده</th><th>زمان برنامه‌ریزی‌شده</th><th>وضعیت</th></tr></thead><tbody>{% for entry in recent_queue %}<tr><td>{{ entry.rule.get_event_display }}</td><td>{{ entry.number|slice:':4' }}***{{ entry.number|slice:'-4:' }}</td><td>{{ entry.due_at|date:'Y/m/d H:i' }}</td><td>{{ entry.get_status_display }}</td></tr>{% empty %}<tr><td colspan="4">هنوز پیامک زمان‌داری ثبت نشده است.</td></tr>{% endfor %}</tbody></table></div></section>
+</section>
+{% endblock %}
