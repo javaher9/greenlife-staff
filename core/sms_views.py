@@ -142,6 +142,8 @@ def sms_management(request):
                 raise ValueError('گیرنده انتخاب‌شده معتبر نیست.')
             if timing not in dict(SmsAutomationRule.TIMING_CHOICES):
                 raise ValueError('زمان‌بندی انتخاب‌شده معتبر نیست.')
+            if event.startswith('call_') and timing=='before':
+                raise ValueError('پیامک نتیجه تماس فقط هم‌زمان یا پس از ثبت نتیجه ارسال می‌شود.')
             if offset_unit not in dict(SmsAutomationRule.UNIT_CHOICES):
                 raise ValueError('واحد زمان معتبر نیست.')
             if offset<0 or offset*{'minutes':1,'hours':60,'days':1440}[offset_unit]>OFFSET_LIMIT:
