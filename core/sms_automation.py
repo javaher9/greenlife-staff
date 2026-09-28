@@ -76,6 +76,73 @@ def schedule_sms_event(event, event_id, *, event_at=None, patient_number='', sta
     return record
 
 
+
+# Map the app's actual persisted call outcomes to independently configurable rules.
+CALL_RESULT_SMS_EVENTS={
+    'no_answer':'call_no_answer',
+    'not_interested':'call_not_interested',
+    'follow_up':'call_follow_up',
+    'appointment':'call_appointment',
+}
+CALL_EVENT_RESULTS={event:result for result,event in CALL_RESULT_SMS_EVENTS.items()}
+CALL_EVENT_STATUSES={
+    'no_answer':'contacted',
+    'not_interested':'lost',
+    'follow_up':'contacted',
+    'appointment':'appointment',
+}
+
+
+def queue_call_result_sms(lead_id):
+    """Replace stale pending messages after a saved call outcome; never send on dial."""
+    from .models import ReferralLead
+    lead=ReferralLead.objects.select_related('assigned_to__user','assigned_to__branch').filter(pk=lead_id).first()
+    if not lead:
+        return None
+    # A subsequent result supersedes all older pending messages for this lead.
+    SmsScheduledMessage.objects.filter(
+        rule__event__in=tuple(CALL_EVENT_RESULTS),
+        event_key__contains=f':{lead.pk}-',
+        status='pending',
+    ).update(status='cancelled')
+    event=CALL_RESULT_SMS_EVENTS.get(lead.contact_result)
+    if not event or lead.status!=CALL_EVENT_STATUSES[lead.contact_result]:
+        return None
+    assigned=lead.assigned_to
+    user=assigned.user if assigned else None
+    stamp=lead.updated_at.strftime('%Y%m%d%H%M%S%f')
+    return schedule_sms_event(
+        event,f'{lead.pk}-{stamp}',patient_number=lead.phone,
+        staff_number=getattr(assigned,'phone','') if assigned else '',
+        context={
+            'name':lead.full_name,'phone':lead.phone,
+            'service':lead.interested_service,
+            'staff':(user.get_full_name() or user.username) if user else '',
+            'branch':assigned.branch.name if assigned and assigned.branch else '',
+            'notes':lead.notes,'event':lead.get_contact_result_display(),
+        },
+    )
+
+
+def _current_call_outcome(item):
+    """Prevent a delayed call SMS from dispatching after the lead has changed."""
+    from .models import ReferralLead
+    expected=CALL_EVENT_RESULTS.get(item.rule.event)
+    if not expected:
+        return True
+    prefix=f'{item.rule.event}:'
+    if not item.event_key.startswith(prefix):
+        return False
+    lead_token=item.event_key[len(prefix):].split(':',1)[0]
+    lead_id=lead_token.split('-',1)[0]
+    if not lead_id.isdigit():
+        return False
+    return ReferralLead.objects.filter(
+        pk=int(lead_id),contact_result=expected,
+        status=CALL_EVENT_STATUSES[expected],
+    ).exists()
+
+
 def process_due_sms(batch_size=25):
     """Claim and process due messages; caller must run periodically."""
     from .sms import SmsGatewayError,send_sms
@@ -88,6 +155,10 @@ def process_due_sms(batch_size=25):
                   .order_by('due_at','id').first())
             if not item:
                 break
+            if not _current_call_outcome(item):
+                item.status='cancelled'
+                item.save(update_fields=['status','updated_at'])
+                continue
             item.status='sending'
             item.attempt_count+=1
             item.save(update_fields=['status','attempt_count','updated_at'])

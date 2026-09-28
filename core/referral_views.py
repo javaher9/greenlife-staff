@@ -894,7 +894,14 @@ def call_center_lead(request,pk):
     )
     form=CallCenterLeadForm(request.POST or None,instance=lead,operator=request.user.profile)
     if request.method=='POST' and form.is_valid():
+        # ModelForm validation mutates its in-memory instance; compare with DB.
+        previous_result,previous_status=ReferralLead.objects.filter(pk=lead.pk).values_list(
+            'contact_result','status'
+        ).get()
         updated=form.save()
+        from .sms_automation import queue_call_result_sms
+        if (previous_result,previous_status)!=(updated.contact_result,updated.status):
+            transaction.on_commit(lambda lead_id=updated.pk: queue_call_result_sms(lead_id))
         group_name=updated.group.name if updated.group_id else 'بدون گروه'
         messages.success(
             request,

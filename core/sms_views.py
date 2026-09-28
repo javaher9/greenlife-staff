@@ -111,11 +111,13 @@ SMS_EVENT_GROUPS=(
     ('مالی و پرداخت',('payment_approved','payment_due')),
     ('جلسات دستگاه و درمان',('device_session_booked','device_session_reminder','device_session_started','device_session_finished','treatment_followup')),
     ('کال‌سنتر',('lead_new','lead_overdue')),
+    ('نتیجه تماس کال‌سنتر',('call_no_answer','call_not_interested','call_follow_up','call_appointment')),
     ('پرسنل و مدیریت',('staff_late','staff_task_due','internal_approval')),
 )
-# Only the appointment-booked event is connected to an existing event source.
-# Enabling other rules saves configuration, but it cannot imply a live trigger.
-SMS_CONNECTED_EVENTS={'appointment_booked','appointment_reminder','payment_approved'}
+# Only events with an actual backend trigger may be enabled.
+# Enabling other rules saves configuration but cannot imply a live trigger.
+SMS_CONNECTED_EVENTS={'appointment_booked','appointment_reminder','payment_approved',
+                      'call_no_answer','call_not_interested','call_follow_up','call_appointment'}
 
 
 @_api_admin_required
@@ -140,6 +142,8 @@ def sms_management(request):
                 raise ValueError('گیرنده انتخاب‌شده معتبر نیست.')
             if timing not in dict(SmsAutomationRule.TIMING_CHOICES):
                 raise ValueError('زمان‌بندی انتخاب‌شده معتبر نیست.')
+            if event.startswith('call_') and timing=='before':
+                raise ValueError('پیامک نتیجه تماس فقط هم‌زمان یا پس از ثبت نتیجه ارسال می‌شود.')
             if offset_unit not in dict(SmsAutomationRule.UNIT_CHOICES):
                 raise ValueError('واحد زمان معتبر نیست.')
             if offset<0 or offset*{'minutes':1,'hours':60,'days':1440}[offset_unit]>OFFSET_LIMIT:
