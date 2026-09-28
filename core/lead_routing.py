@@ -33,15 +33,13 @@ WEBSITE_EXCLUDED_OPERATOR_IDENTITIES = (
     'شیما عباسی', 'عباسی', 'abbasi', 'لاله',
 )
 
-# Temporary management hold: do not route any new leads to Khorشیدی / Mohammad Salehi.
-# Existing leads remain owned by him; this only affects new automatic assignments.
-TEMP_DISABLED_OPERATOR_IDENTITIES = (
-    'محمد صالحی', 'صالحی', 'salehi', 'خورشیدی',
-)
-
+# All active call-center operators, including Khorشیدی / Mohammad Salehi,
+# are eligible again. Attendance and channel-specific restrictions still apply.
 CONTACT_RATE_WINDOW_DAYS = 7
 CONTACT_RATE_MIN_AGE_HOURS = 2
-CONTACTED_STATUSES = ('contacted', 'appointment', 'visited', 'won', 'lost')
+CONTACT_OUTCOME_VALUES = ('follow_up', 'appointment', 'no_answer', 'won', 'sale_lost', 'not_interested')
+ENGAGED_OUTCOME_VALUES = ('follow_up', 'appointment', 'won')
+ATTENDANCE_WINDOW_DAYS = 14
 
 
 def _normalize(value):
@@ -66,51 +64,64 @@ def _website_operator_allowed(operator):
     return not any(_normalize(name) in identity for name in WEBSITE_EXCLUDED_OPERATOR_IDENTITIES)
 
 
-def _operator_temporarily_enabled(operator):
-    identity=_operator_identity(operator)
-    return not any(_normalize(name) in identity for name in TEMP_DISABLED_OPERATOR_IDENTITIES)
-
-
 def _operators_for_channel(operators, channel):
-    operators=[operator for operator in operators if _operator_temporarily_enabled(operator)]
+    operators=list(operators)
     if channel=='website':
         return [operator for operator in operators if _website_operator_allowed(operator)]
     return operators
 
 
-def _recent_contact_rate(operator, now=None):
-    """Smoothed 7-day contact rate used only for new-lead routing.
+def _recent_operator_metrics(operator, now=None):
+    """Measured activity, engagement and punctuality, not inferred phone clicks.
 
-    Leads assigned less than two hours ago are excluded so a fresh lead does not
-    immediately hurt an operator's score. A small prior keeps low-volume staff
-    from jumping between extremes after only one or two leads.
+    A recorded 'no_answer' counts as a call attempt but not as engagement.
+    Pending/new leads are excluded until they have had two hours to be called.
+    Only recorded attendance days are used; approved leave is not penalized.
     """
     now=now or timezone.now()
     cutoff=now-timedelta(days=CONTACT_RATE_WINDOW_DAYS)
     mature_before=now-timedelta(hours=CONTACT_RATE_MIN_AGE_HOURS)
-    qs=ReferralLead.objects.filter(
-        assigned_to=operator,
-    ).filter(
-        Q(assigned_at__gte=cutoff, assigned_at__lte=mature_before)
-        | Q(assigned_at__isnull=True, created_at__gte=cutoff, created_at__lte=mature_before)
+    recent=ReferralLead.objects.filter(assigned_to=operator).filter(
+        Q(assigned_at__gte=cutoff,assigned_at__lte=mature_before)
+        | Q(assigned_at__isnull=True,created_at__gte=cutoff,created_at__lte=mature_before)
     )
-    total=qs.count()
-    if not total:
-        return 0.70
-    contacted=qs.filter(status__in=CONTACTED_STATUSES).count()
-    # Bayesian smoothing around a 70% neutral prior with five virtual leads.
-    return (contacted + 3.5) / (total + 5)
+    assigned=recent.count()
+    # Real outcomes distinguish a logged call from a lead merely moved to
+    # 'contacted'. Legacy appointments/sales still count as a completed action.
+    calls=recent.filter(
+        Q(contact_result__in=CONTACT_OUTCOME_VALUES)
+        | Q(status__in=('appointment','visited','won'))
+    ).count()
+    engaged=recent.filter(
+        Q(contact_result__in=ENGAGED_OUTCOME_VALUES)
+        | Q(status__in=('appointment','visited','won'))
+    ).count()
+
+    attendance=Attendance.objects.filter(
+        user=operator.user,
+        date__gte=timezone.localtime(now).date()-timedelta(days=ATTENDANCE_WINDOW_DAYS),
+        date__lte=timezone.localtime(now).date(),
+    ).exclude(status='leave')
+    attendance_total=attendance.count()
+    punctual=attendance.filter(status='present',check_in__isnull=False).count()
+    # Neutral prior for low volume; the number of calls contributes separately.
+    contact_rate=(calls+3.5)/(assigned+5)
+    engagement_rate=(engaged+2)/(calls+5) if calls else 0.4
+    volume=min(calls/20,1) if assigned else 0.5
+    punctuality=(punctual+2)/(attendance_total+2.5) if attendance_total else 0.8
+    return contact_rate,engagement_rate,volume,punctuality
 
 
 def operator_weight(operator, now=None):
-    """Performance-aware routing weight.
+    """Modest (0.8–1.2) lead-allocation adjustment based on recorded activity.
 
-    Higher contact rate receives a larger share of new leads; lower contact
-    rate still receives some leads, but fewer. Weight range is intentionally
-    bounded to avoid starving an operator from a short-term dip.
+    Completed call outcomes 45%, meaningful engagement 25%, call volume 20%,
+    punctual recorded attendance 10%. Daily workload balancing is applied
+    separately, and only staff currently checked in can receive new leads.
     """
-    rate=_recent_contact_rate(operator, now=now)
-    return max(0.35, min(1.50, 0.25 + (1.50 * rate)))
+    contact,engagement,volume,punctuality=_recent_operator_metrics(operator,now=now)
+    score=0.45*contact+0.25*engagement+0.20*volume+0.10*punctuality
+    return max(0.8,min(1.2,0.8+0.4*score))
 
 
 def expected_operator_user_ids(day=None):
