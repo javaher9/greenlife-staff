@@ -1,5 +1,15 @@
 {% extends "core/base.html" %}
 {% block content %}
+<section style="margin:12px 0 18px;padding:15px;border:1px solid rgba(46,196,143,.45);border-radius:15px;background:rgba(17,61,53,.36);color:#f1fff9">
+  <h3 style="margin:0 0 8px;color:#fff">تعرفه پایه مشترک دستگاه‌ها</h3>
+  <p style="font-size:12px">برای خدمات دستگاهی که قیمت اختصاصی ندارند اعمال می‌شود؛ قیمت استثنا در فهرست خدمات اولویت دارد. قیمت بسته‌های نهایی قبلی تغییر نمی‌کند.</p>
+  <form method="post" style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">{% csrf_token %}
+    <input type="hidden" name="action" value="base_device_tariff">
+    <label>قیمت هر واحد (تومان) <input type="number" name="base_price_toman" min="0" step="1" required value="{{ base_device_tariff|floatformat:0 }}" style="padding:9px;border-radius:8px"></label>
+    <button type="submit" style="border:0;border-radius:9px;padding:10px 16px;background:#13835e;color:#fff;cursor:pointer">ذخیره تعرفه پایه</button>
+  </form>
+  <p><a href="{% url 'device_capacity_settings' %}" style="display:inline-block;color:#b0ffe3;font-weight:900;text-decoration:underline">تنظیم کابین‌ها، تعداد دستگاه‌ها و زمان نوبت‌دهی ←</a></p>
+</section>
 <style>
 .catalog-shell{max-width:1380px;margin:0 auto;padding:6px 0 36px}
 .catalog-hero{position:relative;overflow:hidden;padding:22px 24px;border:1px solid rgba(119,98,255,.26);border-radius:22px;background:radial-gradient(circle at 88% 0,rgba(119,98,255,.18),transparent 32%),radial-gradient(circle at 12% 100%,rgba(37,216,138,.10),transparent 30%),linear-gradient(145deg,#111c28,#0b141e);box-shadow:0 18px 44px rgba(0,0,0,.18)}

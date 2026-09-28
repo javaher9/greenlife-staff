@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from .call_center_identity import call_center_display_name
 from .models import (
-    ConsultationPlan, ConsultationPlanItem, EmployeeProfile, FinancialTransaction,
+    ConsultationPlan, ConsultationPlanItem, DeviceBaseTariff, EmployeeProfile, FinancialTransaction,
     PatientProfile, ReferralLead, StaffNotification, Task, TreatmentCatalogItem,
     VisitAppointment, normalize_lead_phone,
 )
@@ -26,7 +26,8 @@ def _consultant(request):
 def _queue(profile):
     return (
         VisitAppointment.objects
-        .filter(branch_id=profile.branch_id,care_stage='consultant')
+        .filter(branch_id=profile.branch_id)
+        .filter(Q(care_stage__in=('consultant','payment')) | Q(consultation_plan__status='paid'))
         .exclude(status='cancelled')
         .select_related('lead','doctor_completed_by','branch')
         .prefetch_related('diet_programs','device_programs','lipolytic_programs','care_notes')
@@ -41,7 +42,9 @@ def _catalog_price(branch,kind,name):
         if local and local.price_toman is not None:
             return local.price_toman
     global_item=qs.filter(branch__isnull=True).order_by('sort_order','id').first()
-    return global_item.price_toman if global_item and global_item.price_toman is not None else Decimal('0')
+    if global_item and global_item.price_toman is not None:
+        return global_item.price_toman
+    return DeviceBaseTariff.current() if kind=='device' else Decimal('0')
 
 
 def _doctor_name(program):
@@ -110,7 +113,7 @@ def _ensure_plan(appointment,consultant):
 def _recalculate(plan,discount=None):
     subtotal=Decimal('0')
     for item in plan.items.filter(included=True):
-        subtotal += (item.unit_price_toman or 0) * (item.quantity or 0)
+        subtotal += (item.unit_price_toman or 0) * (item.quantity or 0) * (item.units_per_session or 1)
     if discount is None:
         discount=plan.discount_toman or Decimal('0')
     discount=max(Decimal('0'),min(Decimal(discount),subtotal))
@@ -174,6 +177,10 @@ def consultant_sales_outcomes(request):
                 item.unit_price_toman=max(Decimal('0'),Decimal(raw_price or '0'))
             except InvalidOperation:
                 item.unit_price_toman=Decimal('0')
+            try:
+                item.units_per_session=max(1,min(12,int(request.POST.get('units_per_session') or 1)))
+            except (TypeError,ValueError):
+                item.units_per_session=1
             item.included=request.POST.get('included')=='1'
             item.note=(request.POST.get('item_note') or '').strip()[:2000]
             item.save()
@@ -201,7 +208,7 @@ def consultant_sales_outcomes(request):
             ConsultationPlanItem.objects.create(
                 plan=plan,kind=kind,source='consultant',title=title[:180],
                 area=(request.POST.get('area') or '').strip()[:140],
-                quantity=qty,unit_price_toman=price,
+                quantity=qty,units_per_session=max(1,min(12,int(request.POST.get('units_per_session') or 1))) if str(request.POST.get('units_per_session') or '1').isdigit() else 1,unit_price_toman=price,
                 note=(request.POST.get('item_note') or '').strip()[:2000],
                 sort_order=(plan.items.order_by('-sort_order').values_list('sort_order',flat=True).first() or 0)+10,
             )
@@ -228,11 +235,12 @@ def consultant_sales_outcomes(request):
             return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
 
         if action=='send_to_reception':
-            if plan.status not in ('finalized','payment_pending'):
+            if plan.status not in ('finalized','payment_pending','partial_paid'):
                 messages.error(request,'ابتدا پکیج را نهایی کنید.')
                 return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
             with transaction.atomic():
-                plan.status='payment_pending'
+                if plan.status!='partial_paid':
+                    plan.status='payment_pending'
                 plan.sent_to_reception_at=timezone.now()
                 plan.save(update_fields=['status','sent_to_reception_at','updated_at'])
                 selected.care_stage='payment'
@@ -252,6 +260,9 @@ def consultant_sales_outcomes(request):
             return redirect('consultant_sales_outcomes')
 
         if action=='no_sale':
+            if plan.status in ('partial_paid','paid'):
+                messages.error(request,'پس از دریافت وجه، وضعیت خرید نکرد ثبت نمی‌شود؛ اصلاح مالی را پیگیری کنید.')
+                return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
             reason=(request.POST.get('failure_reason') or 'more_review').strip()
             reason_labels={
                 'financial':'مشکل مالی','side_effects':'نگرانی از عوارض',
@@ -315,6 +326,6 @@ def consultant_sales_outcomes(request):
         ],
         'payment_url':(
             f"{reverse('finance_entry')}?appointment={selected.pk}"
-            if selected and plan and plan.status in ('finalized','payment_pending') else ''
+            if selected and plan and plan.status in ('finalized','payment_pending','partial_paid') else ''
         ),
     })

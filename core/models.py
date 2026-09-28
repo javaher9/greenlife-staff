@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 
 from django.db import connection, models, transaction
 from django.contrib.auth.models import User
@@ -505,7 +506,8 @@ class ConsultationPlan(models.Model):
         ('draft','در حال تنظیم'),
         ('finalized','نهایی شده'),
         ('payment_pending','در انتظار پرداخت منشی'),
-        ('paid','پرداخت شده'),
+        ('partial_paid','بیعانه دریافت شده'),
+        ('paid','تسویه شده'),
         ('no_sale','فعلاً خرید نکرد'),
     ]
     appointment=models.OneToOneField(
@@ -554,6 +556,7 @@ class ConsultationPlanItem(models.Model):
     title=models.CharField(max_length=180)
     area=models.CharField(max_length=140,blank=True)
     quantity=models.PositiveSmallIntegerField(default=1)
+    units_per_session=models.PositiveSmallIntegerField(default=1)
     unit_price_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
     included=models.BooleanField(default=True)
     note=models.TextField(blank=True)
@@ -569,7 +572,21 @@ class ConsultationPlanItem(models.Model):
     def line_total_toman(self):
         if not self.included:
             return 0
-        return (self.unit_price_toman or 0) * (self.quantity or 0)
+        return (self.unit_price_toman or 0) * (self.quantity or 0) * (self.units_per_session or 1)
+
+class DeviceBaseTariff(models.Model):
+    """Shared per-unit device tariff; a catalog price overrides this for exceptions."""
+    price_toman=models.DecimalField(max_digits=18,decimal_places=0,default=0)
+    updated_at=models.DateTimeField(auto_now=True)
+    updated_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,related_name='device_tariff_updates'
+    )
+
+    @classmethod
+    def current(cls):
+        value=cls.objects.filter(pk=1).values_list('price_toman',flat=True).first()
+        return value if value is not None else Decimal('0')
+
 
 class TreatmentCatalogItem(models.Model):
     CATEGORY=[
@@ -1123,7 +1140,6 @@ class FinancialTransaction(models.Model):
         ordering=['-occurred_at']
         constraints=[
             models.UniqueConstraint(fields=['source','external_id'],name='uniq_finance_source_external',condition=models.Q(external_id__isnull=False)),
-            models.UniqueConstraint(fields=['appointment'],name='uniq_finance_appointment',condition=models.Q(appointment__isnull=False)),
         ]
     def __str__(self): return f'{self.branch or "—"} - {self.amount}'
 
@@ -1757,3 +1773,6 @@ class WebsiteLeadIntegrationSettings(models.Model):
 
     def __str__(self):
         return 'اتصال لید وب‌سایت گرین لایف'
+
+
+from .device_booking_models import DeviceTypeSchedule, DeviceCabin, PhysicalDevice, DeviceSessionBooking

@@ -1,6 +1,7 @@
 import math
 import uuid
 from datetime import date, datetime, timedelta
+from django.urls import reverse
 from django.http import JsonResponse
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
@@ -16,7 +17,7 @@ from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, BlackboardMessageForm, EmployeeCreateForm, EmployeeEditForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm, ConsultantFinanceEntryForm, StaffLoginForm, StaffCredentialUpdateForm
-from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, Branch, BranchWorkSchedule, EmployeeWorkSchedule, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction, MeetingActionUpdate, StaffCredential, VisitAppointment, TreatmentCatalogItem
+from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, Branch, BranchWorkSchedule, EmployeeWorkSchedule, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction, MeetingActionUpdate, StaffCredential, VisitAppointment, TreatmentCatalogItem, DeviceBaseTariff
 from .ai import analyze_finance_receipt, process_report
 from .jalali import format_jalali, gregorian_to_jalali, jalali_to_gregorian, parse_jalali
 from .reporting import day_summary, leaderboard, answer_query
@@ -202,6 +203,16 @@ def login_view(request):
 @credential_admin_required
 def treatment_catalog_settings(request):
     category=(request.GET.get('category') or '').strip()
+    if request.method=='POST' and request.POST.get('action')=='base_device_tariff':
+        raw=''.join(ch for ch in (request.POST.get('base_price_toman') or '') if ch.isdigit())
+        if not raw:
+            messages.error(request,'تعرفه پایه را به تومان وارد کنید.')
+        else:
+            DeviceBaseTariff.objects.update_or_create(
+                pk=1,defaults={'price_toman':int(raw),'updated_by':request.user},
+            )
+            messages.success(request,'تعرفه پایه دستگاه‌ها ذخیره شد؛ قیمت‌های استثنا تغییر نکردند.')
+        return redirect('treatment_catalog_settings')
     if request.method=='POST':
         action=(request.POST.get('action') or 'save').strip()
         item_id=(request.POST.get('item_id') or '').strip()
@@ -273,6 +284,7 @@ def treatment_catalog_settings(request):
 
     return render(request,'core/treatment_catalog_settings.html',{
         'groups':grouped,
+        'base_device_tariff':DeviceBaseTariff.current(),
         'categories':ordered_categories,
         'branches':Branch.objects.filter(is_active=True).order_by('name'),
         'selected_category':category,
@@ -1358,8 +1370,13 @@ def finance_entry(request):
         if preset_appointment:
             initial['person_name']=preset_appointment.full_name
             plan=getattr(preset_appointment,'consultation_plan',None)
-            if plan and plan.status in ('finalized','payment_pending'):
-                initial['amount']=(plan.final_amount_toman or 0)*10
+            if plan and plan.status in ('finalized','payment_pending','partial_paid'):
+                received=FinancialTransaction.objects.filter(
+                    appointment=preset_appointment,source='manual',entry_type='inc',
+                    review_status__in=('pending','approved'),
+                ).aggregate(total=Sum('amount'))['total'] or 0
+                remaining=max(0,(plan.final_amount_toman or 0)*10-received)
+                initial['amount']=remaining if remaining>0 else None
                 included=list(plan.items.filter(included=True).order_by('sort_order','id'))
                 initial['service']=' | '.join(
                     f"{x.title}{(' - '+x.area) if x.area else ''} × {x.quantity}" for x in included
@@ -1440,24 +1457,44 @@ def finance_entry(request):
         }
         try:
             with transaction.atomic():
+                if appointment:
+                    # Serialise every deposit/settlement for the same patient visit.
+                    appointment=VisitAppointment.objects.select_for_update().get(pk=appointment.pk)
+                    plan=getattr(appointment,'consultation_plan',None)
+                    if plan:
+                        previous=FinancialTransaction.objects.filter(
+                            appointment=appointment,source='manual',entry_type='inc',
+                            review_status__in=('pending','approved'),
+                        ).aggregate(total=Sum('amount'))['total'] or 0
+                        remaining=max(0,plan.final_amount_toman*10-previous)
+                        if obj.amount>remaining or remaining<=0:
+                            messages.error(request,'مبلغ دریافتی از مانده پکیج بیشتر است؛ صفحه را تازه‌سازی کنید.')
+                            return redirect(f"{reverse('finance_entry')}?appointment={appointment.pk}")
                 obj.save()
                 if appointment:
                     appointment_changed=[]
                     if appointment.status!='completed':
                         appointment.status='completed'
                         appointment_changed.append('status')
-                    if appointment.care_stage!='closed':
+                    if plan:
+                        paid_total=previous+obj.amount
+                        full=paid_total>=plan.final_amount_toman*10
+                        if full and appointment.care_stage!='closed':
+                            appointment.care_stage='closed'
+                            appointment_changed.append('care_stage')
+                        elif not full and appointment.care_stage!='payment':
+                            appointment.care_stage='payment'
+                            appointment_changed.append('care_stage')
+                        plan.status='paid' if full else 'partial_paid'
+                        plan.paid_at=timezone.now() if full else None
+                        plan.paid_by=request.user if full else None
+                        plan.save(update_fields=['status','paid_at','paid_by','updated_at'])
+                    elif appointment.care_stage!='closed':
                         appointment.care_stage='closed'
                         appointment_changed.append('care_stage')
                     if appointment_changed:
                         appointment_changed.append('updated_at')
                         appointment.save(update_fields=appointment_changed)
-                    plan=getattr(appointment,'consultation_plan',None)
-                    if plan:
-                        plan.status='paid'
-                        plan.paid_at=timezone.now()
-                        plan.paid_by=request.user
-                        plan.save(update_fields=['status','paid_at','paid_by','updated_at'])
                     if appointment.lead_id and appointment.lead.status!='won':
                         appointment.lead.status='won'
                         appointment.lead.save(update_fields=['status','updated_at'])
@@ -1484,9 +1521,6 @@ def finance_entry(request):
             ).first()
             if duplicate:
                 messages.info(request,'این دریافت قبلاً ثبت شده است؛ ثبت دوباره انجام نشد.')
-                return redirect('finance_entry')
-            if appointment and FinancialTransaction.objects.filter(appointment=appointment).exists():
-                messages.info(request,'برای این نوبت قبلاً ثبت مالی انجام شده است.')
                 return redirect('finance_entry')
             raise
         messages.success(request,'تراکنش ثبت شد و برای بررسی مالی ارسال شد.')
@@ -1532,24 +1566,32 @@ def finance_entry_review(request,pk,action):
     entry.reviewed_at=timezone.now()
     entry.review_note=(request.POST.get('review_note') or '').strip()[:300]
     entry.save(update_fields=['review_status','reviewed_by','reviewed_at','review_note'])
-    if action=='approve' and before!='approved' and entry.entry_type=='inc':
-        # Optional, idempotent SMS; the event remains silent until configured.
-        from .sms_automation import schedule_sms_event
-        appointment=entry.appointment
-        patient_number=appointment.phone if appointment else ''
-        staff_number=getattr(getattr(entry.recorded_by,'profile',None),'phone','')
-        schedule_sms_event(
-            'payment_approved',entry.pk,event_at=entry.reviewed_at,
-            patient_number=patient_number,staff_number=staff_number,
-            context={
-                'name':entry.person_name or (appointment.full_name if appointment else ''),
-                'branch':entry.branch.name if entry.branch_id else '',
-                'amount':f'{int(entry.amount / 10):,}',
-                'service':entry.service,
-                'date':format_jalali(timezone.localdate()),
-                'event':'تأیید پرداخت',
-            },
-        )
+    if entry.appointment_id:
+        appointment=VisitAppointment.objects.filter(pk=entry.appointment_id).select_related('consultation_plan').first()
+        if appointment:
+            plan=getattr(appointment,'consultation_plan',None)
+            if plan and plan.status in ('partial_paid','paid','payment_pending','finalized'):
+                accepted=FinancialTransaction.objects.filter(
+                    appointment=appointment,source='manual',entry_type='inc',
+                    review_status__in=('pending','approved'),
+                ).aggregate(total=Sum('amount'))['total'] or 0
+                total=plan.final_amount_toman*10
+                if accepted>=total and total>0:
+                    plan.status='paid'
+                    appointment.care_stage='closed'
+                    plan.paid_at=plan.paid_at or timezone.now()
+                elif accepted>0:
+                    plan.status='partial_paid'
+                    appointment.care_stage='payment'
+                    plan.paid_at=None
+                    plan.paid_by=None
+                else:
+                    plan.status='payment_pending'
+                    appointment.care_stage='payment'
+                    plan.paid_at=None
+                    plan.paid_by=None
+                plan.save(update_fields=['status','paid_at','paid_by','updated_at'])
+                appointment.save(update_fields=['care_stage','updated_at'])
     AuditLog.objects.create(
         actor=request.user,action='finance_review',path=request.path,method='POST',
         object_type='FinancialTransaction',object_id=str(entry.pk),

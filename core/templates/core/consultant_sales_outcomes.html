@@ -33,6 +33,7 @@
           <label>خدمت<input name="title" value="{{ item.title }}"></label>
           <label>ناحیه<input name="area" value="{{ item.area }}"></label>
           <label>تعداد<input name="quantity" type="number" min="1" max="99" value="{{ item.quantity }}"></label>
+          <label>واحد / کاپ در هر جلسه<input name="units_per_session" type="number" min="1" max="12" value="{{ item.units_per_session }}"></label>
           <label>قیمت واحد / تومان<input name="unit_price_toman" type="number" min="0" step="1" value="{{ item.unit_price_toman|floatformat:0 }}"></label>
           <div class="item-actions"><label class="toggle"><input type="checkbox" name="included" value="1" {% if item.included %}checked{% endif %}> داخل پکیج</label><button class="save" type="submit">ذخیره</button></div>
           {% if item.source == 'doctor' %}<div class="original">اصل پزشک: {{ item.doctor_snapshot.title }}{% if item.doctor_snapshot.area %} · {{ item.doctor_snapshot.area }}{% endif %} · {{ item.doctor_snapshot.quantity }} مورد/جلسه</div>{% endif %}
@@ -41,15 +42,19 @@
         <form method="post" class="add-row">{% csrf_token %}<input type="hidden" name="action" value="add_item"><input type="hidden" name="appointment_id" value="{{ selected.pk }}">
           <select name="kind">{% for key,label in item_kinds %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select>
           <input name="title" placeholder="خدمت جدید" required><input name="area" placeholder="ناحیه / توضیح کوتاه">
-          <input name="quantity" type="number" min="1" value="1"><input name="unit_price_toman" type="number" min="0" step="1" placeholder="قیمت واحد تومان"><button class="save" type="submit">＋ افزودن</button>
+          <input name="quantity" type="number" min="1" value="1"><input name="units_per_session" type="number" min="1" max="12" value="1" title="واحد یا کاپ هر جلسه"><input name="unit_price_toman" type="number" min="0" step="1" placeholder="قیمت واحد تومان"><button class="save" type="submit">＋ افزودن</button>
         </form>
         <div class="final-box"><div class="totals"><div class="total-card"><span>جمع پکیج</span><strong>{{ plan.subtotal_toman|floatformat:0 }} تومان</strong></div><div class="total-card"><span>تخفیف</span><strong>{{ plan.discount_toman|floatformat:0 }} تومان</strong></div><div class="total-card"><span>مبلغ نهایی</span><strong>{{ plan.final_amount_toman|floatformat:0 }} تومان</strong></div></div>
           <form method="post" class="final-form">{% csrf_token %}<input type="hidden" name="action" value="finalize"><input type="hidden" name="appointment_id" value="{{ selected.pk }}"><label>تخفیف / تومان<input name="discount_toman" type="number" min="0" step="1" value="{{ plan.discount_toman|floatformat:0 }}"></label><label>توضیح نهایی<textarea name="plan_note">{{ plan.note }}</textarea></label><button class="primary" type="submit">نهایی کردن پکیج</button></form>
-          {% if plan.status == 'finalized' or plan.status == 'payment_pending' %}
+          {% if plan.status == 'finalized' or plan.status == 'payment_pending' or plan.status == 'partial_paid' %}
           <div class="next-actions"><a class="pay-self" href="{{ payment_url }}">پرداخت توسط خود مشاور</a><form method="post" style="margin:0">{% csrf_token %}<input type="hidden" name="action" value="send_to_reception"><input type="hidden" name="appointment_id" value="{{ selected.pk }}"><button class="send-rec" type="submit" style="width:100%">ارسال برای پرداخت منشی</button></form></div>
           <div class="status-note">{% if plan.status == 'payment_pending' %}این پرونده هم‌اکنون در صف پرداخت منشی است؛ تا قبل از ثبت پرداخت می‌توانید از همینجا پرداخت را انجام دهید.{% else %}پکیج نهایی شده و آماده دریافت وجه است.{% endif %}</div>
           {% endif %}
-          <div class="nosale"><form method="post">{% csrf_token %}<input type="hidden" name="action" value="no_sale"><input type="hidden" name="appointment_id" value="{{ selected.pk }}"><select name="failure_reason">{% for key,label in failure_reasons %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select><textarea name="failure_note" placeholder="توضیح اختیاری"></textarea><button class="danger" type="submit">فعلاً خرید نکرد / برگشت به پیگیری</button></form></div>
+<div style="margin-top:12px;padding:11px;border:1px solid #396b67;border-radius:12px;background:#102e32">
+  <a href="{% url 'device_booking_schedule' %}?appointment={{ selected.pk }}" style="display:inline-flex;padding:9px 13px;border-radius:9px;background:#176d5b;color:#fff;font-weight:900;font-size:11px;text-decoration:none">تقویم و رزرو تک‌جلسه‌ای دستگاه‌ها</a>
+  <small style="display:block;color:#c9e5e4;margin-top:6px">با بیعانه یا تسویه ثبت‌شده، هر بار فقط یک جلسه از هر خدمت رزرو می‌شود.</small>
+</div>
+          {% if plan.status != 'partial_paid' and plan.status != 'paid' %}<div class="nosale"><form method="post">{% csrf_token %}<input type="hidden" name="action" value="no_sale"><input type="hidden" name="appointment_id" value="{{ selected.pk }}"><select name="failure_reason">{% for key,label in failure_reasons %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select><textarea name="failure_note" placeholder="توضیح اختیاری"></textarea><button class="danger" type="submit">فعلاً خرید نکرد / برگشت به پیگیری</button></form></div>{% endif %}
         </div>
       </div>
       {% else %}<div class="empty" style="min-height:360px;display:grid;place-items:center">پرونده‌ای برای مشاوره انتخاب نشده است.</div>{% endif %}

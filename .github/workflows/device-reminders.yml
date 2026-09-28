@@ -1,0 +1,21 @@
+name: Device appointment reminders
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: greenlife-device-reminders
+  cancel-in-progress: false
+
+jobs:
+  remind:
+    runs-on: [self-hosted, linux, greenlife-prod]
+    timeout-minutes: 10
+    steps:
+      - name: Send due device reminders
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker exec greenlife-staff-runtime-web-1 python manage.py send_device_reminders

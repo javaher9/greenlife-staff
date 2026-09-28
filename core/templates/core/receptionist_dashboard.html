@@ -116,8 +116,11 @@
       <div class="payment-list">
         {% for item in receptionist_payment_queue %}
         <div class="payment-row">
-          <div><strong>{{ item.full_name }}</strong><small>{{ item.phone }} · مشاور: {{ item.consultation_plan.consultant.get_full_name|default:item.consultation_plan.consultant.username|default:"—" }}</small></div>
-          <div class="payment-amount">{{ item.consultation_plan.final_amount_toman|floatformat:0 }} تومان</div>
+          <div><strong>{{ item.full_name }}</strong><small>{{ item.phone }} · مشاور: {{ item.consultation_plan.consultant.get_full_name|default:item.consultation_plan.consultant.username|default:"—" }}</small>
+            <small style="margin-top:5px;color:#33445e">{% for part in item.consultation_plan.items.all %}{% if part.included %}{{ part.title }}{% if part.area %} ({{ part.area }}){% endif %} × {{ part.quantity }} جلسه × {{ part.units_per_session }} واحد · {{ part.unit_price_toman|floatformat:0 }} تومان/واحد{% if not forloop.last %} | {% endif %}{% endif %}{% endfor %}</small>
+            {% if item.consultation_plan.status == 'partial_paid' %}<small style="color:#a16909">بیعانه ثبت شده؛ مانده در فرم دریافت محاسبه می‌شود.</small>{% endif %}
+          </div>
+          <div class="payment-amount">{{ item.consultation_plan.final_amount_toman|floatformat:0 }} تومان <small style="display:block;text-align:left">مبلغ کل پکیج</small></div>
           <a class="payment-go" href="{% url 'finance_entry' %}?appointment={{ item.pk }}">ثبت پرداخت</a>
         </div>
         {% endfor %}

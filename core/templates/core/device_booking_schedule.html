@@ -1,0 +1,73 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<style>
+.db-shell{max-width:1400px;margin:0 auto;display:grid;gap:14px;color:#eaf5f4}
+.db-hero,.db-panel{padding:18px;border-radius:18px;border:1px solid #30535a;background:linear-gradient(145deg,#132c36,#101e2d)}
+.db-hero h1{font-size:23px;color:#fff;margin:0 0 7px}
+.db-muted{color:#b9cbd0;font-size:11px;line-height:1.8}
+.db-grid{display:grid;grid-template-columns:minmax(310px,.85fr) minmax(0,1.6fr);gap:14px}
+.db-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.db-form label{display:grid;gap:6px;font-size:11px;font-weight:850}
+.db-form select,.db-form input{width:100%;min-width:0;padding:10px;border:1px solid #46616e;border-radius:9px;background:#0c1c27;color:#fff;font:inherit}
+.db-form button,.db-action{border:0;border-radius:10px;background:#168568;color:white;padding:10px 15px;font-weight:900;cursor:pointer;text-decoration:none}
+.db-form button{grid-column:1/-1}
+.db-list{display:grid;gap:7px;margin-top:11px}
+.db-row{display:grid;grid-template-columns:70px 1fr 85px auto;gap:8px;align-items:center;padding:10px;border:1px solid #37535c;border-radius:12px;background:#0b202a}
+.db-row strong{color:#fff;font-size:12px}.db-row small{display:block;color:#aabfc6;font-size:10px;margin-top:4px}
+.db-row b{color:#8de5c9}.db-row button{background:#743747;border:0;border-radius:8px;color:#fff;padding:7px;cursor:pointer}
+.db-tags{display:flex;flex-wrap:wrap;gap:7px}.db-tags span{padding:6px 9px;border:1px solid #3a5b60;border-radius:9px;font-size:10px}
+@media(max-width:1050px){.db-grid{grid-template-columns:1fr}}
+@media(max-width:650px){.db-form{grid-template-columns:1fr}.db-row{grid-template-columns:60px 1fr}.db-row b{grid-column:1}.db-row form{grid-column:2}}
+</style>
+<div class="db-shell">
+<section class="db-hero"><h1>تقویم دستگاه‌ها · {{ branch.name }}</h1>
+{% if is_admin %}<form method="get" style="display:flex;gap:8px;align-items:center;margin:8px 0"><select name="branch" style="padding:8px;border-radius:9px;background:#0a1f2a;color:#fff">{% for b in branches %}<option value="{{ b.pk }}" {% if branch.pk == b.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select><button style="padding:8px;border:0;border-radius:8px;background:#138568;color:#fff">انتخاب شعبه</button></form>{% endif %}
+<div class="db-muted">هر نوبت فقط یک جلسه از پکیج است. زمان درمان و آماده‌سازی در همان نوبت ذخیره می‌شود؛ تغییر تنظیمات، رزروهای قبلی را تغییر نمی‌دهد.</div>
+{% if can_manage %}<p><a class="db-action" href="{% url 'device_capacity_settings' %}">تنظیم کابین‌ها، دستگاه‌ها و زمان‌ها</a></p>{% endif %}
+</section>
+<div class="db-grid">
+<section class="db-panel">
+<h2 style="font-size:15px;color:white">ثبت جلسه درمان</h2>
+{% if can_book %}
+<form method="get" class="db-form" style="margin-bottom:13px"><input type="hidden" name="branch" value="{{ branch.pk }}">
+<label>پرونده بیمار<select name="appointment" onchange="this.form.submit()"><option value="">انتخاب بیمار</option>
+{% for p in plans %}<option value="{{ p.appointment_id }}" {% if appointment.pk == p.appointment_id %}selected{% endif %}>{{ p.appointment.full_name }} · {{ p.get_status_display }}</option>{% endfor %}
+</select></label><label>تاریخ شمسی<input name="day" value="{{ day_jalali }}" placeholder="۱۴۰۵/۰۷/۰۶"></label>
+<button type="submit">نمایش پرونده</button>
+</form>
+{% if plan %}
+<div class="db-tags"><span>بیمار: {{ appointment.full_name }}</span><span>وضعیت: {{ plan.get_status_display }}</span></div>
+<form method="post" class="db-form" style="margin-top:12px">{% csrf_token %}<input type="hidden" name="branch" value="{{ branch.pk }}">
+<input type="hidden" name="appointment" value="{{ appointment.pk }}">
+<label>خدمت پکیج<select name="plan_item" required>
+{% for item in items %}<option value="{{ item.pk }}">{{ item.title }} · {{ item.quantity }} جلسه</option>{% empty %}<option value="">خدمت دستگاهی در پکیج نیست</option>{% endfor %}
+</select></label>
+<label>تاریخ شمسی<input name="day" value="{{ day_jalali }}" required></label>
+<label>کابین<select name="cabin" required>
+{% for cabin in cabins %}<option value="{{ cabin.pk }}">{{ cabin.name }}</option>{% endfor %}
+</select></label>
+<label>دستگاه اول<select name="device" required>
+{% for device in devices %}<option value="{{ device.pk }}">{{ device.name }} · {{ device.device_type.code }} · {{ device.cabin.name }}</option>{% endfor %}
+</select></label>
+<label>دستگاه دوم (فقط دابل دیفاین)<select name="secondary_device"><option value="">ندارد</option>
+{% for device in devices %}{% if device.device_type.code == 'DIF70' %}<option value="{{ device.pk }}">{{ device.name }} · {{ device.cabin.name }}</option>{% endif %}{% endfor %}
+</select></label>
+<label>ساعت شروع<input name="start_time" type="time" min="08:30" max="17:30" step="600" value="08:30" required></label>
+<label style="display:flex;align-items:center;gap:7px;grid-column:1/-1"><input style="width:auto" type="checkbox" name="double_define" value="1">Double Define · رزرو هم‌زمان دو دستگاه</label>
+<button type="submit" {% if not items or not devices or not cabins %}disabled{% endif %}>ثبت قطعی یک جلسه + ارسال پیامک</button>
+</form>
+{% else %}<p class="db-muted">یک بیمار دارای پکیج نهایی را انتخاب کنید.</p>{% endif %}
+{% else %}<p class="db-muted">نمایش تقویم برای شما فعال است؛ ثبت نوبت با مشاور یا مدیریت است.</p>{% endif %}
+</section>
+<section class="db-panel"><h2 style="font-size:15px;color:white">رزروها · {{ day_jalali }}</h2>
+<div class="db-tags">{% for cabin in cabins %}<span>{{ cabin.name }}</span>{% endfor %}</div>
+<div class="db-list">
+{% for booking in bookings %}<div class="db-row">
+<b>{{ booking.starts_at|date:'H:i' }}</b>
+<div><strong>{{ booking.appointment.full_name }}</strong>
+<small>{{ booking.cabin.name }} · {{ booking.device.name }}{% if booking.secondary_device %} + {{ booking.secondary_device.name }}{% endif %} · {{ booking.plan_item.title }}</small>
+<small>درمان {{ booking.treatment_minutes_snapshot }} دقیقه · آماده‌سازی {{ booking.preparation_minutes_snapshot }} دقیقه · آزاد از {{ booking.blocked_until|date:'H:i' }}</small></div>
+<b>{{ booking.get_status_display }}</b>
+{% if can_book and booking.status == 'booked' %}<form method="post" action="{% url 'device_booking_cancel' booking.pk %}">{% csrf_token %}<button type="submit">لغو</button></form>{% endif %}
+</div>{% empty %}<p class="db-muted">در این تاریخ نوبت دستگاه ثبت نشده است.</p>{% endfor %}
+</div></section></div></div>
+{% endblock %}

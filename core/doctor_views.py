@@ -24,7 +24,7 @@ from .models import (
     StaffNotification,
     TreatmentCatalogItem,
     VisitAppointment,
-    Branch,
+    Branch, DeviceBaseTariff,
     normalize_lead_phone,
 )
 
@@ -82,6 +82,8 @@ def _catalog_options(category, branch, fallback):
             continue
         seen.add(key)
         price=''
+        if item.category=='device' and item.price_toman is None:
+            item.price_toman=DeviceBaseTariff.current()
         if item.price_toman is not None:
             price=f'{int(item.price_toman):,} تومان'
             if item.unit_label:

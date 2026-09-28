@@ -1,0 +1,46 @@
+{% extends 'core/base.html' %}{% block content %}
+<style>
+.cap{max-width:1300px;margin:auto;display:grid;gap:15px;color:#eef8f5}
+.cap-panel{padding:18px;border:1px solid #31565c;border-radius:17px;background:linear-gradient(145deg,#142b36,#0b1926)}
+.cap h1,.cap h2{color:#fff;margin:0 0 9px}.cap h1{font-size:24px}.cap h2{font-size:16px}
+.cap-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.cap form{display:flex;flex-wrap:wrap;align-items:end;gap:8px;margin:8px 0}
+.cap label{display:grid;gap:4px;font-size:10px;color:#d9e8eb}
+.cap input,.cap select{min-width:110px;padding:9px;border:1px solid #49636c;border-radius:9px;background:#091a26;color:#fff}
+.cap button,.cap-link{border:0;border-radius:9px;background:#168362;color:#fff;padding:10px 13px;cursor:pointer;text-decoration:none;font-weight:900}
+.cap-row{padding:10px 0;border-top:1px solid #31505a}.cap-row strong{color:#fff}
+.cap-note{font-size:11px;color:#b6d0ce}
+@media(max-width:900px){.cap-grid{grid-template-columns:1fr}}
+</style>
+<div class="cap">
+<section class="cap-panel"><h1>تنظیمات ظرفیت و زمان دستگاه‌ها</h1>
+<p class="cap-note">شعبه: {{ branch.name }} · هر نوبت هنگام ثبت، نسخه مستقل مدت درمان و آماده‌سازی خود را ذخیره می‌کند.</p>
+{% if is_admin %}<form method="get"><label>شعبه<select name="branch">{% for b in branches %}<option value="{{ b.pk }}" {% if b.pk == branch.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></label><button>نمایش</button></form>{% endif %}
+<a class="cap-link" href="{% url 'device_booking_schedule' %}">تقویم و رزرو دستگاه‌ها</a></section>
+<div class="cap-grid">
+<section class="cap-panel"><h2>مدت درمان و آماده‌سازی</h2>
+{% for t in types %}<div class="cap-row"><strong>{{ t.name }} · {{ t.code }}</strong>
+<form method="post">{% csrf_token %}<input type="hidden" name="branch" value="{{ branch.pk }}">
+<input type="hidden" name="action" value="type"><input type="hidden" name="type_id" value="{{ t.pk }}">
+<label>درمان (دقیقه)<input type="number" min="10" max="240" name="treatment_minutes" value="{{ t.treatment_minutes }}"></label>
+<label>آماده‌سازی (دقیقه)<input type="number" min="0" max="240" name="preparation_minutes" value="{{ t.preparation_minutes }}"></label>
+<button>ذخیره</button></form></div>{% endfor %}
+</section>
+<section class="cap-panel"><h2>کابین‌ها و دستگاه‌های فیزیکی</h2>
+<form method="post">{% csrf_token %}<input type="hidden" name="action" value="cabin">
+<input type="hidden" name="branch" value="{{ branch.pk }}"><label>نام کابین<input name="name" placeholder="کابین دیفاین ۱" required></label><button>افزودن کابین</button></form>
+<form method="post">{% csrf_token %}<input type="hidden" name="action" value="device">
+<input type="hidden" name="branch" value="{{ branch.pk }}">
+<label>نام دستگاه فیزیکی<input name="name" placeholder="DIF-A" required></label>
+<label>نوع دستگاه<select name="type_id">{% for t in types %}<option value="{{ t.pk }}">{{ t.code }}</option>{% endfor %}</select></label>
+<label>کابین<select name="cabin_id">{% for cabin in cabins %}<option value="{{ cabin.pk }}">{{ cabin.name }}</option>{% endfor %}</select></label>
+<button>افزودن دستگاه</button></form>
+{% for device in devices %}<div class="cap-row"><strong>{{ device.name }} · {{ device.device_type.code }}</strong>
+<form method="post">{% csrf_token %}<input type="hidden" name="action" value="move">
+<input type="hidden" name="branch" value="{{ branch.pk }}"><input type="hidden" name="device_id" value="{{ device.pk }}">
+<label>کابین<select name="cabin_id">{% for cabin in cabins %}<option value="{{ cabin.pk }}" {% if device.cabin_id == cabin.pk %}selected{% endif %}>{{ cabin.name }}</option>{% endfor %}</select></label>
+<label>شروع کار<input name="work_start" type="time" value="{{ device.work_start|time:'H:i' }}"></label>
+<label>آخرین شروع<input name="last_start" type="time" value="{{ device.last_start|time:'H:i' }}"></label>
+<button>ذخیره</button></form></div>{% empty %}<p class="cap-note">ابتدا کابین و سپس دستگاه فیزیکی اضافه کنید.</p>{% endfor %}
+</section></div></div>
+{% endblock %}
