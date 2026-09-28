@@ -89,3 +89,39 @@ class SmsManagementTests(TestCase):
         self.assertEqual(process_due_sms(),0)
         self.assertEqual(mocked_send.call_count,1)
         self.assertEqual(SmsScheduledMessage.objects.get().status,'accepted')
+
+
+    def test_call_outcome_rules_are_separate_and_off_by_default(self):
+        response=self.client.get(reverse('sms_management'))
+        for label in ('پاسخ نداد','تمایل ندارد','نیاز به پیگیری','نوبت داده شد'):
+            self.assertContains(response,label)
+        self.assertFalse(SmsAutomationRule.objects.filter(event__startswith='call_').exists())
+
+    def test_no_answer_rule_can_be_configured_independently(self):
+        response=self.client.post(reverse('sms_management'),{
+            'event':'call_no_answer','is_enabled':'on',
+            'recipient':'patient','timing':'after','offset':'5',
+            'offset_unit':'minutes',
+            'message_template':'{name} عزیز، با شما تماس گرفتیم. گرین لایف 02134247',
+        })
+        self.assertEqual(response.status_code,302)
+        rule=SmsAutomationRule.objects.get(event='call_no_answer')
+        self.assertTrue(rule.is_enabled)
+        self.assertEqual(rule.offset,5)
+        self.assertFalse(SmsAutomationRule.objects.filter(event='call_not_interested').exists())
+
+    @patch('core.sms.send_sms')
+    def test_worker_cancels_call_sms_when_lead_no_longer_exists(self,mocked_send):
+        rule=SmsAutomationRule.objects.create(
+            event='call_no_answer',is_enabled=True,recipient='patient',
+            message_template='سلام',
+        )
+        item=SmsScheduledMessage.objects.create(
+            rule=rule,event_key='call_no_answer:999999-20260928150000000000:patient',
+            number='09123456789',body='سلام',
+            due_at=timezone.now()-timedelta(minutes=1),
+        )
+        self.assertEqual(process_due_sms(),0)
+        item.refresh_from_db()
+        self.assertEqual(item.status,'cancelled')
+        mocked_send.assert_not_called()
