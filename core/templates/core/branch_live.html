@@ -230,6 +230,36 @@ body.gl-page-branch_live_dashboard .cmd-stack-col-v4 small{
 }
 </style>
 
+<style id="cmd-exec-3x2-v6">
+body.gl-page-branch_live_dashboard .cmd-kpis-v4{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:9px!important}
+body.gl-page-branch_live_dashboard .cmd-card-v4{min-height:205px!important;padding:10px 10px 8px!important;border-radius:16px!important}
+body.gl-page-branch_live_dashboard .cmd-card-title-v4 h3{font-size:14px!important}
+body.gl-page-branch_live_dashboard .cmd-card-icon-v4{width:29px!important;height:29px!important;font-size:13px!important}
+body.gl-page-branch_live_dashboard .cmd-range-v4{height:28px!important;min-width:92px!important;font-size:8px!important}
+body.gl-page-branch_live_dashboard .cmd-card-top-v4{grid-template-columns:88px minmax(0,1fr)!important;gap:6px!important}
+body.gl-page-branch_live_dashboard .cmd-card-main-v4 b{font-size:27px!important}
+body.gl-page-branch_live_dashboard .cmd-card-main-v4 span{font-size:7px!important}
+body.gl-page-branch_live_dashboard .cmd-trend-v4 svg{height:50px!important}
+body.gl-page-branch_live_dashboard .cmd-trend-caption-v4{font-size:6.9px!important}
+body.gl-page-branch_live_dashboard .cmd-card-detail-v4{margin-top:4px!important;padding:6px!important}
+body.gl-page-branch_live_dashboard .cmd-detail-title-v4{font-size:7.4px!important;margin-bottom:2px!important}
+body.gl-page-branch_live_dashboard .cmd-bars-v4{height:44px!important;gap:4px!important}
+body.gl-page-branch_live_dashboard .cmd-bar-v4 b{font-size:6.5px!important}
+body.gl-page-branch_live_dashboard .cmd-bar-v4 small{font-size:5.8px!important}
+body.gl-page-branch_live_dashboard .cmd-ops-v4{max-height:47px!important;gap:2px!important}
+body.gl-page-branch_live_dashboard .cmd-op-v4{grid-template-columns:48px minmax(0,1fr) 16px!important;gap:3px!important}
+body.gl-page-branch_live_dashboard .cmd-op-v4 span,body.gl-page-branch_live_dashboard .cmd-op-v4 b{font-size:5.9px!important}
+body.gl-page-branch_live_dashboard .cmd-op-v4 i{height:4px!important}
+body.gl-page-branch_live_dashboard .cmd-legend-v4{gap:5px!important;margin-bottom:2px!important}
+body.gl-page-branch_live_dashboard .cmd-legend-v4 span{font-size:5.7px!important}
+body.gl-page-branch_live_dashboard .cmd-stack-v4{height:47px!important;gap:4px!important}
+body.gl-page-branch_live_dashboard .cmd-stack-col-v4{min-width:32px!important}
+body.gl-page-branch_live_dashboard .cmd-stack-col-v4 small{font-size:5.6px!important;max-width:36px!important}
+body.gl-page-branch_live_dashboard .cmd-card-v4.network{--accent:#30d19a}
+body.gl-page-branch_live_dashboard .cmd-card-v4.devices{--accent:#ff6d9a}
+@media(max-width:1100px){body.gl-page-branch_live_dashboard .cmd-kpis-v4{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:650px){body.gl-page-branch_live_dashboard .cmd-kpis-v4{grid-template-columns:1fr!important}}
+</style>
 <style id="cmd-glass-kpi-v2">
 /* KPI-style glass treatment for "امروز چه خبر" */
 body.gl-page-branch_live_dashboard{
@@ -511,23 +541,30 @@ body.gl-page-branch_live_dashboard .cmd-attn i{
       <div class="cmd-card-top-v4"><div class="cmd-card-main-v4"><b>{{ metrics.sales_today_m|floatformat:0 }}</b><span>میلیون تومان</span></div><div class="cmd-trend-v4"><div class="cmd-trend-caption-v4"><span>روند فروش</span><span data-range-label>هفته اخیر</span></div><svg viewBox="0 0 420 105" preserveAspectRatio="none"><line class="cmd-grid-v4" x1="0" y1="26" x2="420" y2="26"/><line class="cmd-grid-v4" x1="0" y1="52" x2="420" y2="52"/><line class="cmd-grid-v4" x1="0" y1="78" x2="420" y2="78"/><polyline class="cmd-line-v4" points=""></polyline><g class="cmd-dots-v4"></g></svg></div></div>
       <div class="cmd-card-detail-v4"><div class="cmd-detail-title-v4">فروش بر اساس شعبه</div><div class="cmd-bars-v4" data-breakdown="branches"></div></div>
     </article>
-
-    <article class="cmd-card-v4 leads" data-exec-card="leads">
-      <div class="cmd-card-head-v4"><div class="cmd-card-title-v4"><span class="cmd-card-icon-v4">◉</span><h3>لیدهای امروز</h3></div><select class="cmd-range-v4" data-range-card="leads"><option value="week">هفته اخیر</option><option value="month">ماه اخیر</option><option value="year">سال اخیر</option></select></div>
-      <div class="cmd-card-top-v4"><div class="cmd-card-main-v4"><b>{{ metrics.leads_today }}</b><span>لید</span></div><div class="cmd-trend-v4"><div class="cmd-trend-caption-v4"><span>روند لیدها</span><span data-range-label>هفته اخیر</span></div><svg viewBox="0 0 420 105" preserveAspectRatio="none"><line class="cmd-grid-v4" x1="0" y1="26" x2="420" y2="26"/><line class="cmd-grid-v4" x1="0" y1="52" x2="420" y2="52"/><line class="cmd-grid-v4" x1="0" y1="78" x2="420" y2="78"/><polyline class="cmd-line-v4" points=""></polyline><g class="cmd-dots-v4"></g></svg></div></div>
-      <div class="cmd-card-detail-v4"><div class="cmd-detail-title-v4">لیدها بر اساس منبع</div><div class="cmd-bars-v4" data-breakdown="sources"></div></div>
-    </article>
-
     <article class="cmd-card-v4 appts" data-exec-card="appointments">
       <div class="cmd-card-head-v4"><div class="cmd-card-title-v4"><span class="cmd-card-icon-v4">◫</span><h3>نوبت‌های امروز</h3></div><select class="cmd-range-v4" data-range-card="appointments"><option value="week">هفته اخیر</option><option value="month">ماه اخیر</option><option value="year">سال اخیر</option></select></div>
       <div class="cmd-card-top-v4"><div class="cmd-card-main-v4"><b>{{ metrics.appointments_today }}</b><span>نوبت</span></div><div class="cmd-trend-v4"><div class="cmd-trend-caption-v4"><span>روند نوبت‌ها</span><span data-range-label>هفته اخیر</span></div><svg viewBox="0 0 420 105" preserveAspectRatio="none"><line class="cmd-grid-v4" x1="0" y1="26" x2="420" y2="26"/><line class="cmd-grid-v4" x1="0" y1="52" x2="420" y2="52"/><line class="cmd-grid-v4" x1="0" y1="78" x2="420" y2="78"/><polyline class="cmd-line-v4" points=""></polyline><g class="cmd-dots-v4"></g></svg></div></div>
       <div class="cmd-card-detail-v4 cmd-dual-v4"><div><div class="cmd-detail-title-v4">نوبت‌ها بر اساس شعبه</div><div class="cmd-bars-v4" data-breakdown="branches"></div></div><div><div class="cmd-detail-title-v4">نوبت‌ها بر اساس گل‌ها</div><div class="cmd-ops-v4" data-breakdown="operators"></div></div></div>
     </article>
-
     <article class="cmd-card-v4 future" data-exec-card="future">
       <div class="cmd-card-head-v4"><div class="cmd-card-title-v4"><span class="cmd-card-icon-v4">◷</span><h3>نوبت‌های آینده</h3></div><select class="cmd-range-v4" data-range-card="future"><option value="week">هفته اخیر</option><option value="month">ماه اخیر</option><option value="year">سال اخیر</option></select></div>
       <div class="cmd-card-top-v4"><div class="cmd-card-main-v4"><b>{{ metrics.future_appointments_created_today }}</b><span>امروز برای آینده</span></div><div class="cmd-trend-v4"><div class="cmd-trend-caption-v4"><span>روند ثبت نوبت آینده</span><span data-range-label>هفته اخیر</span></div><svg viewBox="0 0 420 105" preserveAspectRatio="none"><line class="cmd-grid-v4" x1="0" y1="26" x2="420" y2="26"/><line class="cmd-grid-v4" x1="0" y1="52" x2="420" y2="52"/><line class="cmd-grid-v4" x1="0" y1="78" x2="420" y2="78"/><polyline class="cmd-line-v4" points=""></polyline><g class="cmd-dots-v4"></g></svg></div></div>
       <div class="cmd-card-detail-v4"><div class="cmd-detail-title-v4">ثبت نوبت آینده بر اساس گل و مرکز</div><div class="cmd-legend-v4" data-breakdown="legend"></div><div class="cmd-stack-v4" data-breakdown="matrix"></div></div>
+    </article>
+    <article class="cmd-card-v4 leads" data-exec-card="leads">
+      <div class="cmd-card-head-v4"><div class="cmd-card-title-v4"><span class="cmd-card-icon-v4">◉</span><h3>لیدهای امروز</h3></div><select class="cmd-range-v4" data-range-card="leads"><option value="week">هفته اخیر</option><option value="month">ماه اخیر</option><option value="year">سال اخیر</option></select></div>
+      <div class="cmd-card-top-v4"><div class="cmd-card-main-v4"><b>{{ metrics.leads_today }}</b><span>لید</span></div><div class="cmd-trend-v4"><div class="cmd-trend-caption-v4"><span>روند لیدها</span><span data-range-label>هفته اخیر</span></div><svg viewBox="0 0 420 105" preserveAspectRatio="none"><line class="cmd-grid-v4" x1="0" y1="26" x2="420" y2="26"/><line class="cmd-grid-v4" x1="0" y1="52" x2="420" y2="52"/><line class="cmd-grid-v4" x1="0" y1="78" x2="420" y2="78"/><polyline class="cmd-line-v4" points=""></polyline><g class="cmd-dots-v4"></g></svg></div></div>
+      <div class="cmd-card-detail-v4"><div class="cmd-detail-title-v4">لیدها بر اساس منبع</div><div class="cmd-bars-v4" data-breakdown="sources"></div></div>
+    </article>
+    <article class="cmd-card-v4 network" data-exec-card="network">
+      <div class="cmd-card-head-v4"><div class="cmd-card-title-v4"><span class="cmd-card-icon-v4">✦</span><h3>شبکه فروش</h3></div><select class="cmd-range-v4" data-range-card="network"><option value="week">هفته اخیر</option><option value="month">ماه اخیر</option><option value="year">سال اخیر</option></select></div>
+      <div class="cmd-card-top-v4"><div class="cmd-card-main-v4"><b>{{ metrics.network_sales_today }}</b><span>فروش موفق امروز</span></div><div class="cmd-trend-v4"><div class="cmd-trend-caption-v4"><span>روند فروش شبکه</span><span data-range-label>هفته اخیر</span></div><svg viewBox="0 0 420 105" preserveAspectRatio="none"><line class="cmd-grid-v4" x1="0" y1="26" x2="420" y2="26"/><line class="cmd-grid-v4" x1="0" y1="52" x2="420" y2="52"/><line class="cmd-grid-v4" x1="0" y1="78" x2="420" y2="78"/><polyline class="cmd-line-v4" points=""></polyline><g class="cmd-dots-v4"></g></svg></div></div>
+      <div class="cmd-card-detail-v4"><div class="cmd-detail-title-v4">برترین‌های شبکه</div><div class="cmd-ops-v4" data-breakdown="people"></div></div>
+    </article>
+    <article class="cmd-card-v4 devices" data-exec-card="devices">
+      <div class="cmd-card-head-v4"><div class="cmd-card-title-v4"><span class="cmd-card-icon-v4">⚒</span><h3>دستگاه‌ها</h3></div><select class="cmd-range-v4" data-range-card="devices"><option value="week">هفته اخیر</option><option value="month">ماه اخیر</option><option value="year">سال اخیر</option></select></div>
+      <div class="cmd-card-top-v4"><div class="cmd-card-main-v4"><b>{{ metrics.device_open_now }}</b><span>خرابی باز</span></div><div class="cmd-trend-v4"><div class="cmd-trend-caption-v4"><span>روند ثبت خرابی</span><span data-range-label>هفته اخیر</span></div><svg viewBox="0 0 420 105" preserveAspectRatio="none"><line class="cmd-grid-v4" x1="0" y1="26" x2="420" y2="26"/><line class="cmd-grid-v4" x1="0" y1="52" x2="420" y2="52"/><line class="cmd-grid-v4" x1="0" y1="78" x2="420" y2="78"/><polyline class="cmd-line-v4" points=""></polyline><g class="cmd-dots-v4"></g></svg></div></div>
+      <div class="cmd-card-detail-v4"><div class="cmd-detail-title-v4">خرابی‌ها بر اساس شعبه</div><div class="cmd-bars-v4" data-breakdown="branches"></div></div>
     </article>
     {% else %}
     <a class="cmd-kpi sales" href="/action-center/"><div class="cmd-kpi-head"><span class="cmd-kpi-title">نیازمند اقدام</span><span class="cmd-kpi-unit">امروز</span></div><div class="cmd-kpi-value"><strong>{{ data.action_required_count }}</strong><span>مورد</span></div></a>
@@ -617,6 +654,8 @@ body.gl-page-branch_live_dashboard .cmd-attn i{
     if(cardKey==='leads')bars(card.querySelector('[data-breakdown="sources"]'),payload.sources);
     if(cardKey==='appointments'){bars(card.querySelector('[data-breakdown="branches"]'),payload.branches);operators(card.querySelector('[data-breakdown="operators"]'),payload.operators);}
     if(cardKey==='future')future(card,payload);
+    if(cardKey==='network')operators(card.querySelector('[data-breakdown="people"]'),payload.people);
+    if(cardKey==='devices')bars(card.querySelector('[data-breakdown="branches"]'),payload.branches);
   }
   document.querySelectorAll('.cmd-range-v4').forEach(sel=>{
     sel.addEventListener('change',()=>render(sel.dataset.rangeCard,sel.value));

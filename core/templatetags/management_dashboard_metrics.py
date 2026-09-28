@@ -12,6 +12,7 @@ from django.contrib.auth.models import User
 
 from core.models import (
     Branch,
+    DeviceIssue,
     FinancialTransaction,
     MeetingMinute,
     ReferralLead,
@@ -448,12 +449,49 @@ def management_dashboard_metrics(selected_branch=None):
             channels=channels[:6]+[{'name':'سایر','value':rest,'color':'#94a3b8'}]
         _height_rows(channels)
 
+        referral_sales_period=ReferralSale.objects.filter(
+            status__in=('approved','paid'),
+            sale_date__range=(period_start,period_end),
+        ).select_related('lead__referrer__user')
+        network_rows=list(
+            referral_sales_period.values('sale_date').annotate(v=Count('id')).order_by('sale_date')
+        )
+        network_map={r['sale_date']:int(r['v'] or 0) for r in network_rows}
+        top_referrers=list(
+            referral_sales_period.values(
+                'lead__referrer__user__first_name',
+                'lead__referrer__user__last_name',
+                'lead__referrer__user__username',
+            ).annotate(value=Count('id')).order_by('-value')[:6]
+        )
+        network_people=[]
+        for row in top_referrers:
+            name=' '.join(x for x in (
+                row['lead__referrer__user__first_name'],
+                row['lead__referrer__user__last_name'],
+            ) if x).strip() or row['lead__referrer__user__username'] or 'بدون نام'
+            network_people.append({'name':name,'value':row['value']})
+
+        device_period=DeviceIssue.objects.filter(created_at__date__range=(period_start,period_end))
+        device_rows=list(
+            device_period.annotate(day=TruncDate('created_at'))
+            .values('day').annotate(v=Count('id')).order_by('day')
+        )
+        device_map={r['day']:int(r['v'] or 0) for r in device_rows}
+        device_branch_rows=list(
+            device_period.values('branch__name').annotate(value=Count('id')).order_by('-value')[:6]
+        )
+        device_branches=[
+            {'name':r['branch__name'] or 'بدون شعبه','value':r['value'],'color':COLORS[i%len(COLORS)]}
+            for i,r in enumerate(device_branch_rows)
+        ]
+        _height_rows(device_branches)
+
         executive_cards[period_key]={
             'sales':{
                 'trend':build_series(sales_map),
                 'branches':_branch_breakdown(finance_period,sales_branches,sum_field='amount',divisor=MILLION_TOMAN),
             },
-            'leads':{'trend':build_series(lead_map),'sources':channels},
             'appointments':{
                 'trend':build_series(appt_map),
                 'branches':_branch_breakdown(appts_period,appt_branches),
@@ -463,6 +501,15 @@ def management_dashboard_metrics(selected_branch=None):
                 'trend':build_series(future_map),
                 'matrix':_future_matrix(future_period,appt_branches),
                 'branches':[{'name':b.name,'color':COLORS[i%len(COLORS)]} for i,b in enumerate(appt_branches)],
+            },
+            'leads':{'trend':build_series(lead_map),'sources':channels},
+            'network':{'trend':build_series(network_map),'people':network_people},
+            'devices':{
+                'trend':build_series(device_map),
+                'branches':device_branches,
+                'new':device_period.filter(status='new').count(),
+                'reviewing':device_period.filter(status='reviewing').count(),
+                'resolved':device_period.filter(status='resolved').count(),
             },
         }
 
@@ -497,6 +544,8 @@ def management_dashboard_metrics(selected_branch=None):
         'appointment_branches_today': appointment_branch_rows,
         'future_appointments_created_today': future_appointments_created_today,
         'executive_cards': executive_cards,
+        'network_sales_today': ReferralSale.objects.filter(status__in=('approved','paid'), sale_date=today).count(),
+        'device_open_now': DeviceIssue.objects.exclude(status='resolved').count(),
         'arrived_today': today_appointments.filter(status__in=('arrived', 'completed')).count(),
         'won_month': sales.filter(sale_date__gte=month_start, sale_date__lte=today).values('lead_id').distinct().count(),
         'open_tasks': open_tasks.count(),
