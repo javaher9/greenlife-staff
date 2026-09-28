@@ -1,0 +1,11 @@
+# Source-managed overlay: production docker-compose.yml is server-owned
+# and excluded from GitHub Actions rsync. Keep the SMS worker here.
+services:
+  sms_worker:
+    image: greenlife-staff-runtime-web:latest
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - db
+      - web
+    entrypoint: ["python", "manage.py", "process_sms_queue", "--loop", "--interval", "30"]
