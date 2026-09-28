@@ -1532,6 +1532,24 @@ def finance_entry_review(request,pk,action):
     entry.reviewed_at=timezone.now()
     entry.review_note=(request.POST.get('review_note') or '').strip()[:300]
     entry.save(update_fields=['review_status','reviewed_by','reviewed_at','review_note'])
+    if action=='approve' and before!='approved' and entry.entry_type=='inc':
+        # Optional, idempotent SMS; the event remains silent until configured.
+        from .sms_automation import schedule_sms_event
+        appointment=entry.appointment
+        patient_number=appointment.phone if appointment else ''
+        staff_number=getattr(getattr(entry.recorded_by,'profile',None),'phone','')
+        schedule_sms_event(
+            'payment_approved',entry.pk,event_at=entry.reviewed_at,
+            patient_number=patient_number,staff_number=staff_number,
+            context={
+                'name':entry.person_name or (appointment.full_name if appointment else ''),
+                'branch':entry.branch.name if entry.branch_id else '',
+                'amount':f'{int(entry.amount / 10):,}',
+                'service':entry.service,
+                'date':format_jalali(timezone.localdate()),
+                'event':'تأیید پرداخت',
+            },
+        )
     AuditLog.objects.create(
         actor=request.user,action='finance_review',path=request.path,method='POST',
         object_type='FinancialTransaction',object_id=str(entry.pk),
