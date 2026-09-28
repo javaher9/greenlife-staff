@@ -35,7 +35,9 @@ def _queue_appointment_messages(appointment_id):
         'time':appointment.appointment_time.strftime('%H:%M'),
         'event':'نوبت',
     }
-    if SmsAutomationRule.objects.filter(event='appointment_booked').exists():
+    # Preserve existing appointment confirmation while the new rule is only
+    # being configured. The custom rule takes over only when explicitly enabled.
+    if SmsAutomationRule.objects.filter(event='appointment_booked',is_enabled=True).exists():
         schedule_sms_event(
             'appointment_booked',appointment.pk,event_at=event_at,
             patient_number=appointment.phone,context=context,
