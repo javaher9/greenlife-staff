@@ -6,7 +6,8 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from core.models import SmsAutomationRule, SmsScheduledMessage
+from core.models import (SmsAutomationRule, SmsScheduledMessage, ReferralProfile,
+                         ReferralLead, EmployeeProfile)
 from core.sms_automation import process_due_sms, schedule_sms_event
 
 
@@ -125,3 +126,45 @@ class SmsManagementTests(TestCase):
         item.refresh_from_db()
         self.assertEqual(item.status,'cancelled')
         mocked_send.assert_not_called()
+
+
+    def test_real_call_result_queues_and_new_result_cancels_old_pending_sms(self):
+        referrer=User.objects.create_user('sms-referrer')
+        ref_profile=ReferralProfile.objects.create(
+            user=referrer,referral_code='SMSREF0001',
+        )
+        operator=User.objects.create_user('sms-operator',password='SafePass123')
+        operator_profile=EmployeeProfile.objects.create(
+            user=operator,role='call_center',phone='09121111111',
+        )
+        lead=ReferralLead.objects.create(
+            referrer=ref_profile,full_name='مراجع آزمایشی',
+            phone='09123456789',assigned_to=operator_profile,
+        )
+        SmsAutomationRule.objects.create(
+            event='call_no_answer',is_enabled=True,recipient='patient',
+            timing='after',offset=5,offset_unit='minutes',
+            message_template='{name} عزیز، تماس گرفتیم.',
+        )
+        SmsAutomationRule.objects.create(
+            event='call_not_interested',is_enabled=True,recipient='patient',
+            timing='after',offset=5,offset_unit='minutes',
+            message_template='درخواست شما ثبت شد.',
+        )
+        self.client.force_login(operator)
+        url=reverse('call_center_save_call_result',args=[lead.pk])
+        with self.captureOnCommitCallbacks(execute=True):
+            first=self.client.post(url,{'result':'no_answer'})
+        self.assertEqual(first.status_code,200)
+        old=SmsScheduledMessage.objects.get(rule__event='call_no_answer')
+        self.assertEqual(old.status,'pending')
+        with self.captureOnCommitCallbacks(execute=True):
+            second=self.client.post(url,{'result':'not_interested'})
+        self.assertEqual(second.status_code,200)
+        old.refresh_from_db()
+        self.assertEqual(old.status,'cancelled')
+        self.assertEqual(
+            SmsScheduledMessage.objects.filter(
+                rule__event='call_not_interested',status='pending',
+            ).count(),1,
+        )
