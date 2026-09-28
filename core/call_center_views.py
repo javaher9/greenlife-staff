@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -146,6 +147,8 @@ def save_call_result(request, pk):
     lead.status='contacted' if result=='no_answer' else 'lost'
     lead.next_follow_up=None
     lead.save(update_fields=['contact_result','status','next_follow_up','updated_at'])
+    from .sms_automation import queue_call_result_sms
+    transaction.on_commit(lambda lead_id=lead.pk: queue_call_result_sms(lead_id))
     return JsonResponse({
         'ok':True,
         'result':result,
