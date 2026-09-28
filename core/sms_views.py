@@ -126,7 +126,9 @@ def sms_management(request):
         if event not in dict(SmsAutomationRule.EVENT_CHOICES):
             messages.error(request,'رویداد پیامک معتبر نیست.')
             return redirect('sms_management')
-        rule,_=SmsAutomationRule.objects.get_or_create(event=event)
+        rule,created=SmsAutomationRule.objects.get_or_create(event=event)
+        previous=(rule.is_enabled,rule.recipient,rule.custom_number,rule.timing,
+                  rule.offset,rule.offset_unit,rule.message_template)
         recipient=request.POST.get('recipient','patient')
         timing=request.POST.get('timing','immediate')
         offset_unit=request.POST.get('offset_unit','minutes')
@@ -163,6 +165,11 @@ def sms_management(request):
         rule.is_enabled=requested_enabled and event in SMS_CONNECTED_EVENTS
         rule.updated_by=request.user
         rule.save()
+        current=(rule.is_enabled,rule.recipient,rule.custom_number,rule.timing,
+                 rule.offset,rule.offset_unit,rule.message_template)
+        if not created and previous!=current:
+            # A disabled or edited rule must never leave old queued content alive.
+            SmsScheduledMessage.objects.filter(rule=rule,status='pending').update(status='cancelled')
         AuditLog.objects.create(
             actor=request.user,action='sms_automation_rule_update',path=request.path,method='POST',
             object_type='SmsAutomationRule',object_id=str(rule.pk),
