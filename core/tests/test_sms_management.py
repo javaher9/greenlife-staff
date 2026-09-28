@@ -37,12 +37,12 @@ class SmsManagementTests(TestCase):
 
     def test_unconnected_rule_cannot_enable_live_sending(self):
         self.client.post(reverse('sms_management'),{
-            'event':'payment_approved','is_enabled':'on',
+            'event':'device_session_finished','is_enabled':'on',
             'recipient':'custom','custom_number':'09123456789',
             'timing':'immediate','offset':'0','offset_unit':'minutes',
             'message_template':'مبلغ {amount}',
         })
-        self.assertFalse(SmsAutomationRule.objects.get(event='payment_approved').is_enabled)
+        self.assertFalse(SmsAutomationRule.objects.get(event='device_session_finished').is_enabled)
 
     def test_bad_custom_number_is_rejected(self):
         self.client.post(reverse('sms_management'),{
