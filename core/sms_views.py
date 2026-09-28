@@ -115,7 +115,7 @@ SMS_EVENT_GROUPS=(
 )
 # Only the appointment-booked event is connected to an existing event source.
 # Enabling other rules saves configuration, but it cannot imply a live trigger.
-SMS_CONNECTED_EVENTS={'appointment_booked'}
+SMS_CONNECTED_EVENTS={'appointment_booked','appointment_reminder'}
 
 
 @_api_admin_required
