@@ -1,0 +1,91 @@
+from datetime import datetime, timedelta
+from unittest.mock import patch
+
+from django.contrib.auth.models import User
+from django.test import TestCase, override_settings
+from django.urls import reverse
+from django.utils import timezone
+
+from core.models import SmsAutomationRule, SmsScheduledMessage
+from core.sms_automation import process_due_sms, schedule_sms_event
+
+
+@override_settings(ROOT_URLCONF='greenlife.urls', EXECUTIVE_USERNAMES=('sms-exec',))
+class SmsManagementTests(TestCase):
+    def setUp(self):
+        self.admin=User.objects.create_superuser('sms-exec','sms@example.com','SafePass123')
+        self.client.force_login(self.admin)
+
+    def test_manager_has_selectable_event_catalog(self):
+        response=self.client.get(reverse('sms_management'))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'مدیریت پیامک')
+        self.assertContains(response,'یادآوری جلسه دستگاه')
+        self.assertContains(response,'تأیید پرداخت')
+
+    def test_connected_rule_can_be_enabled(self):
+        response=self.client.post(reverse('sms_management'),{
+            'event':'appointment_reminder','is_enabled':'on',
+            'recipient':'patient','timing':'before','offset':'2',
+            'offset_unit':'hours',
+            'message_template':'{name} عزیز؛ نوبت شما ساعت {time} است.',
+        })
+        self.assertEqual(response.status_code,302)
+        rule=SmsAutomationRule.objects.get(event='appointment_reminder')
+        self.assertTrue(rule.is_enabled)
+        self.assertEqual(rule.offset,2)
+
+    def test_unconnected_rule_cannot_enable_live_sending(self):
+        self.client.post(reverse('sms_management'),{
+            'event':'payment_approved','is_enabled':'on',
+            'recipient':'custom','custom_number':'09123456789',
+            'timing':'immediate','offset':'0','offset_unit':'minutes',
+            'message_template':'مبلغ {amount}',
+        })
+        self.assertFalse(SmsAutomationRule.objects.get(event='payment_approved').is_enabled)
+
+    def test_bad_custom_number_is_rejected(self):
+        self.client.post(reverse('sms_management'),{
+            'event':'appointment_reminder','is_enabled':'on',
+            'recipient':'custom','custom_number':'1234',
+            'timing':'immediate','offset':'0','offset_unit':'minutes',
+            'message_template':'سلام',
+        })
+        self.assertFalse(SmsAutomationRule.objects.filter(event='appointment_reminder').exists()
+                         and SmsAutomationRule.objects.get(event='appointment_reminder').is_enabled)
+
+    def test_disabled_rule_never_queues(self):
+        SmsAutomationRule.objects.create(event='appointment_reminder',message_template='سلام')
+        self.assertIsNone(schedule_sms_event('appointment_reminder',99,patient_number='09123456789'))
+        self.assertFalse(SmsScheduledMessage.objects.exists())
+
+    def test_delayed_event_is_idempotent(self):
+        SmsAutomationRule.objects.create(
+            event='appointment_reminder',is_enabled=True,recipient='patient',
+            timing='before',offset=2,offset_unit='hours',
+            message_template='{name} عزیز، ساعت {time}',
+        )
+        event_at=timezone.now()+timedelta(days=1)
+        kwargs={'event_at':event_at,'patient_number':'09123456789',
+                'context':{'name':'مراجع','time':'10:30'}}
+        first=schedule_sms_event('appointment_reminder',77,**kwargs)
+        second=schedule_sms_event('appointment_reminder',77,**kwargs)
+        self.assertEqual(first.pk,second.pk)
+        self.assertEqual(SmsScheduledMessage.objects.count(),1)
+        self.assertEqual(first.due_at,event_at-timedelta(hours=2))
+
+    @patch('core.sms.send_sms')
+    def test_worker_dispatches_due_message_once(self,mocked_send):
+        rule=SmsAutomationRule.objects.create(
+            event='appointment_reminder',is_enabled=True,recipient='patient',
+            message_template='سلام',
+        )
+        SmsScheduledMessage.objects.create(
+            rule=rule,event_key='reminder:5:patient',
+            number='09123456789',body='سلام',
+            due_at=timezone.now()-timedelta(minutes=1),
+        )
+        self.assertEqual(process_due_sms(),1)
+        self.assertEqual(process_due_sms(),0)
+        self.assertEqual(mocked_send.call_count,1)
+        self.assertEqual(SmsScheduledMessage.objects.get().status,'accepted')
