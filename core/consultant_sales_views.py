@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from .call_center_identity import call_center_display_name
 from .models import (
-    ConsultationPlan, ConsultationPlanItem, DeviceBaseTariff, EmployeeProfile, FinancialTransaction,
+    ConsultationPlan, ConsultationPlanItem, DeviceBaseTariff, DeviceSessionBooking, EmployeeProfile, FinancialTransaction,
     PatientProfile, ReferralLead, StaffNotification, Task, TreatmentCatalogItem,
     VisitAppointment, normalize_lead_phone,
 )
@@ -311,6 +311,28 @@ def consultant_sales_outcomes(request):
         source='manual',recorded_by=request.user,entry_type='inc'
     ).exclude(review_status='cancelled').select_related('appointment').order_by('-created_at')[:12]
 
+    today=timezone.localdate()
+    kpis={
+        'appointments_today':appointments.filter(appointment_date=today).count(),
+        'awaiting_consultation':appointments.filter(care_stage='consultant').count(),
+        'awaiting_payment':appointments.filter(care_stage='payment').count(),
+        'finalized_today':appointments.filter(
+            consultation_plan__status='paid',
+            consultation_plan__updated_at__date=today,
+        ).count(),
+        'device_bookings_today':DeviceSessionBooking.objects.filter(
+            branch_id=profile.branch_id,
+            starts_at__date=today,
+            status__in=('booked','completed'),
+        ).count(),
+        'expenses_pending':FinancialTransaction.objects.filter(
+            source='manual',
+            entry_type='exp',
+            recorded_by=request.user,
+            review_status='pending',
+        ).count(),
+    }
+
     doctor_notes=[]
     if selected:
         doctor_notes=list(selected.care_notes.filter(note_type='clinical')[:8])
@@ -318,7 +340,7 @@ def consultant_sales_outcomes(request):
     return render(request,'core/consultant_sales_outcomes.html',{
         'pending':pending,'selected':selected,'plan':plan,
         'plan_items':list(plan.items.all()) if plan else [],
-        'doctor_notes':doctor_notes,'recent_paid':recent_paid,
+        'doctor_notes':doctor_notes,'recent_paid':recent_paid,'kpis':kpis,
         'item_kinds':ConsultationPlanItem.KIND,
         'failure_reasons':[
             ('financial','مشکل مالی'),('side_effects','نگرانی از عوارض'),
