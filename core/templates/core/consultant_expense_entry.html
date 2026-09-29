@@ -1,0 +1,40 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<style>
+.cons-expense{max-width:1180px;margin:12px auto 32px;color:#eef5fb;font-family:"Noto Sans Arabic",Tahoma,sans-serif}
+.cons-expense *{box-sizing:border-box}
+.cons-expense .exp-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;padding:22px 24px;border:1px solid #456478;border-radius:22px;background:linear-gradient(125deg,#1a3642,#162431)}
+.cons-expense h1{color:#fff;font-size:24px;margin:0 0 6px}.cons-expense p{color:#c1d2df;margin:0;font-size:12px}
+.cons-expense .exp-return{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;background:#dff4e9;color:#175e42;padding:12px 17px;border-radius:12px;font-size:12px;font-weight:900;white-space:nowrap}
+.cons-expense .exp-layout{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,.85fr);gap:16px}
+.cons-expense .exp-card{border:1px solid #405768;border-radius:18px;background:#192b38;padding:22px;box-shadow:0 14px 35px rgba(0,0,0,.1)}
+.cons-expense h2{font-size:17px;color:#fff;margin:0 0 17px}
+.cons-expense .exp-fields{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.cons-expense .exp-field{display:grid;gap:7px;min-width:0}
+.cons-expense .exp-field.wide{grid-column:1/-1}
+.cons-expense label{font-size:12px;font-weight:800;color:#d6e6ef}
+.cons-expense input,.cons-expense select,.cons-expense textarea{width:100%;max-width:100%;padding:11px 13px;border-radius:11px;background:#0d1e29;color:#f6fbff;border:1px solid #516b7c;font:700 13px "Noto Sans Arabic",Tahoma,sans-serif}
+.cons-expense input[type=file]{height:auto}.cons-expense input:focus,.cons-expense select:focus,.cons-expense textarea:focus{border-color:#65cda1;outline:2px solid rgba(87,210,152,.15)}
+.cons-expense .exp-help{font-size:11px;line-height:1.8;color:#b1c8d5}
+.cons-expense .exp-error{color:#ffd6dd;font-size:11px}
+.cons-expense .exp-save{background:linear-gradient(120deg,#2c9a70,#14694f);border:1px solid #56b78e;color:#fff;border-radius:12px;padding:13px 19px;font:900 13px "Noto Sans Arabic",Tahoma;cursor:pointer;margin-top:18px}
+.cons-expense .exp-row{padding:13px 0;border-top:1px solid #334957;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.cons-expense .exp-row strong{display:block;color:#fff;font-size:12px}.cons-expense .exp-row small{color:#b0c6d4;font-size:10px}
+.cons-expense .exp-row b{white-space:nowrap;color:#8af1c1;font-size:12px}.cons-expense .exp-status{display:block;color:#edd4a2;font-size:10px;margin-top:4px}
+@media(min-width:900px){.cons-expense .exp-card{background:#fff;border-color:#dce7e6}.cons-expense h2,.cons-expense .exp-row strong{color:#203c43}.cons-expense .exp-card label{color:#344a58}.cons-expense .exp-card input,.cons-expense .exp-card select,.cons-expense .exp-card textarea{background:#f8fbfc;color:#1e3948;border-color:#cbdcd9}.cons-expense .exp-help,.cons-expense .exp-row small{color:#607987}.cons-expense .exp-row{border-color:#e3ecee}.cons-expense .exp-row b{color:#16684a}.cons-expense .exp-status{color:#8c6225}.cons-expense .exp-error{color:#ae3f59}}
+@media(max-width:820px){.cons-expense .exp-layout{grid-template-columns:1fr}.cons-expense .exp-top{flex-wrap:wrap}.cons-expense .exp-fields{grid-template-columns:1fr}}
+</style>
+<div class="cons-expense">
+<header class="exp-top"><div><h1>ثبت هزینه مشاور</h1><p>هزینه شعبه را با رسید ثبت کنید؛ بررسی و تأیید نهایی با واحد مالی است.</p></div><a class="exp-return" href="{% url 'consultant_sales_outcomes' %}">← بازگشت به پنل مشاور</a></header>
+<div class="exp-layout">
+<section class="exp-card"><h2>هزینه جدید · {{ branch.name }}</h2>
+<form method="post" enctype="multipart/form-data">{% csrf_token %}
+<div class="exp-fields">
+<div class="exp-field"><label for="{{ form.amount_toman.id_for_label }}">{{ form.amount_toman.label }}</label>{{ form.amount_toman }}{% for error in form.amount_toman.errors %}<span class="exp-error">{{ error }}</span>{% endfor %}</div>
+<div class="exp-field"><label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>{{ form.category }}{% for error in form.category.errors %}<span class="exp-error">{{ error }}</span>{% endfor %}</div>
+<div class="exp-field wide"><label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>{{ form.description }}{% for error in form.description.errors %}<span class="exp-error">{{ error }}</span>{% endfor %}</div>
+<div class="exp-field wide"><label for="{{ form.receipt_image.id_for_label }}">{{ form.receipt_image.label }}</label>{{ form.receipt_image }}{% for error in form.receipt_image.errors %}<span class="exp-error">{{ error }}</span>{% endfor %}<span class="exp-help">تصویر رسید الزامی است؛ JPG، PNG یا WebP تا ۱۰ مگابایت.</span></div>
+</div><button class="exp-save" type="submit">ثبت هزینه و ارسال برای تأیید</button></form></section>
+<aside class="exp-card"><h2>آخرین هزینه‌های شما</h2>
+{% for entry in recent_expenses %}<div class="exp-row"><div><strong>{{ entry.account_heading }}</strong><small>{{ entry.created_at|date:"Y/m/d H:i" }} · {{ entry.description|truncatechars:55 }}</small><span class="exp-status">{{ entry.get_review_status_display }}</span></div><b>{{ entry.amount_toman_display }} تومان</b></div>{% empty %}<p class="exp-help">هنوز هزینه‌ای ثبت نشده است.</p>{% endfor %}
+</aside></div></div>
+{% endblock %}
