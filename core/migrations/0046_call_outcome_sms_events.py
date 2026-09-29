@@ -2,7 +2,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies=[('core','0045_website_lead_integration_settings')]
+    dependencies=[('core','0056_device_booking')]
 
     operations=[
         migrations.AlterField(
