@@ -197,6 +197,7 @@ jobs:
           fi
 
       - name: Rebase source-only app changes from local runtime image
+        if: ${{ false }}
         shell: bash
         env:
           DEPLOY_PATH: /home/ubuntu/greenlife-staff-runtime
