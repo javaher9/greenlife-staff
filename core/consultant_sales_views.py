@@ -1,6 +1,8 @@
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
+# Consultant workspace deployment marker: force a clean application image build.
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
