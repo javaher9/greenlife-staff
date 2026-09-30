@@ -281,6 +281,51 @@ def device_booking_schedule(request):
         .select_related('appointment','device','secondary_device','cabin','plan_item')
         .order_by('starts_at','cabin__name')
     )
+    booking_list=list(bookings)
+    device_lines=list(
+        PhysicalDevice.objects.filter(branch=branch,is_active=True)
+        .select_related('device_type','cabin')
+        .order_by('name','id')
+    )
+    schedule_rows=[]
+    if device_lines:
+        slot_minutes=30
+        first_clock=min(d.work_start for d in device_lines)
+        last_clock=max(d.last_start for d in device_lines)
+        cursor=timezone.make_aware(datetime.combine(day,first_clock))
+        schedule_end=timezone.make_aware(datetime.combine(day,last_clock))+timedelta(minutes=slot_minutes)
+        now=timezone.now()
+        while cursor<schedule_end:
+            slot_end=cursor+timedelta(minutes=slot_minutes)
+            cells=[]
+            for device_line in device_lines:
+                hit=next((
+                    b for b in booking_list
+                    if (b.device_id==device_line.pk or b.secondary_device_id==device_line.pk)
+                    and b.starts_at<slot_end and b.blocked_until>cursor
+                ),None)
+                work_start=timezone.make_aware(datetime.combine(day,device_line.work_start))
+                last_start=timezone.make_aware(datetime.combine(day,device_line.last_start))
+                if hit:
+                    state='busy'
+                elif cursor<work_start or cursor>last_start or (day==timezone.localdate() and slot_end<=now):
+                    state='off'
+                else:
+                    state='free'
+                cells.append({
+                    'device':device_line,
+                    'state':state,
+                    'booking':hit,
+                    'start_value':cursor.strftime('%H:%M'),
+                })
+            schedule_rows.append({
+                'label':cursor.strftime('%H:%M'),
+                'cells':cells,
+            })
+            cursor=slot_end
+    else:
+        slot_minutes=30
+
     plans=(
         ConsultationPlan.objects.filter(appointment__branch=branch,
             status__in=('finalized','payment_pending','partial_paid','paid'))
@@ -290,10 +335,10 @@ def device_booking_schedule(request):
         'branch':branch,'day':day,'day_jalali':format_jalali(day),
         'appointment':appointment,'plan':plan,
         'items':plan.items.filter(kind='device',included=True) if plan else [],
-        'plans':plans,'bookings':bookings,
+        'plans':plans,'bookings':booking_list,
         'cabins':DeviceCabin.objects.filter(branch=branch,is_active=True),
-        'devices':PhysicalDevice.objects.filter(branch=branch,is_active=True)
-          .select_related('device_type','cabin'),
+        'devices':device_lines,'device_lines':device_lines,
+        'schedule_rows':schedule_rows,'slot_minutes':slot_minutes,
         'can_book':profile.role in ('consultant','admin','manager'),
         'can_manage':profile.role in ('admin','manager','internal_manager'),
         'is_admin':profile.role=='admin',
