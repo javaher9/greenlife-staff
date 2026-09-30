@@ -97,6 +97,75 @@
 
 /* Consultant desktop v4 — approved bright center workspace */
 @media (min-width:900px){
+  html{background:#f4f8f7!important;background-image:none!important;color-scheme:light!important}
+  body.gl-page-consultant_sales_outcomes{
+    background:#f4f8f7!important;
+    background-image:none!important;
+    color:#244943!important;
+    color-scheme:light!important;
+  }
+  body.gl-page-consultant_sales_outcomes:before,
+  body.gl-page-consultant_sales_outcomes::before,
+  body.gl-page-consultant_sales_outcomes .app-main:before,
+  body.gl-page-consultant_sales_outcomes .app-main::before{
+    display:none!important;
+    content:none!important;
+    opacity:0!important;
+    background:none!important;
+  }
+  body.gl-page-consultant_sales_outcomes .app-main{
+    background:#f4f8f7!important;
+    background-image:none!important;
+    min-height:100vh!important;
+  }
+  body.gl-page-consultant_sales_outcomes .topbar{
+    background:rgba(255,255,255,.97)!important;
+    background-image:none!important;
+    color:#26453e!important;
+    border-bottom:1px solid #e0ebe7!important;
+    box-shadow:0 5px 18px rgba(40,81,69,.055)!important;
+    backdrop-filter:blur(14px)!important;
+  }
+  body.gl-page-consultant_sales_outcomes .topbar-search{
+    background:#f6faf8!important;
+    border-color:#dbe8e3!important;
+  }
+  body.gl-page-consultant_sales_outcomes .topbar-search input{
+    background:transparent!important;
+    color:#294a43!important;
+  }
+  body.gl-page-consultant_sales_outcomes .topbar-date,
+  body.gl-page-consultant_sales_outcomes .header-person strong{color:#294a43!important}
+  body.gl-page-consultant_sales_outcomes .header-person span{color:#7b8f8a!important}
+
+  /* app.css has a global fixed aside rule; reset only the two consultant-workspace asides */
+  body.gl-page-consultant_sales_outcomes .care-grid > aside.queue,
+  body.gl-page-consultant_sales_outcomes .care-grid > aside.care-rail{
+    position:static!important;
+    inset:auto!important;
+    top:auto!important;
+    right:auto!important;
+    bottom:auto!important;
+    left:auto!important;
+    width:auto!important;
+    max-width:none!important;
+    height:auto!important;
+    min-height:500px!important;
+    margin:0!important;
+    z-index:auto!important;
+    backdrop-filter:none!important;
+  }
+  body.gl-page-consultant_sales_outcomes .care-grid > aside.queue{
+    padding:0!important;
+    overflow:hidden!important;
+    border-left:1px solid #e0ebe7!important;
+  }
+  body.gl-page-consultant_sales_outcomes .care-grid > aside.care-rail{
+    padding:15px!important;
+    overflow:visible!important;
+    border-left:1px solid #e0ebe7!important;
+  }
+
   body.gl-page-consultant_sales_outcomes .app-main{
     background:#f4f8f7!important;
     background-image:
