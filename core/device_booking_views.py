@@ -308,7 +308,7 @@ def device_booking_schedule(request):
                 last_start=timezone.make_aware(datetime.combine(day,device_line.last_start))
                 if hit:
                     state='busy'
-                elif cursor<work_start or cursor>last_start or (day==timezone.localdate() and slot_end<=now):
+                elif not device_line.cabin_id or cursor<work_start or cursor>last_start or (day==timezone.localdate() and slot_end<=now):
                     state='off'
                 else:
                     state='free'
