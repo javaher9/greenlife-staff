@@ -1,73 +1,177 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
 <style>
-.db-shell{max-width:1400px;margin:0 auto;display:grid;gap:14px;color:#eaf5f4}
-.db-hero,.db-panel{padding:18px;border-radius:18px;border:1px solid #30535a;background:linear-gradient(145deg,#132c36,#101e2d)}
-.db-hero h1{font-size:23px;color:#fff;margin:0 0 7px}
-.db-muted{color:#b9cbd0;font-size:11px;line-height:1.8}
-.db-grid{display:grid;grid-template-columns:minmax(310px,.85fr) minmax(0,1.6fr);gap:14px}
-.db-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-.db-form label{display:grid;gap:6px;font-size:11px;font-weight:850}
-.db-form select,.db-form input{width:100%;min-width:0;padding:10px;border:1px solid #46616e;border-radius:9px;background:#0c1c27;color:#fff;font:inherit}
-.db-form button,.db-action{border:0;border-radius:10px;background:#168568;color:white;padding:10px 15px;font-weight:900;cursor:pointer;text-decoration:none}
+.db-shell{max-width:1720px;margin:12px auto 36px;display:grid;gap:14px;color:#233f46;font-family:"Noto Sans Arabic",Tahoma,sans-serif}
+.db-shell *{box-sizing:border-box}
+.db-hero,.db-panel{padding:18px;border:1px solid #dbe8e3;border-radius:20px;background:#fff;box-shadow:0 12px 28px rgba(35,76,66,.05)}
+.db-hero{background:linear-gradient(110deg,#edf8f2,#fff 67%,#fff8ed)}
+.db-hero h1{font-size:23px;color:#173f35;margin:0 0 7px}
+.db-muted{color:#617983;font-size:11px;line-height:1.9}
+.db-grid{display:grid;grid-template-columns:minmax(300px,.75fr) minmax(0,2.1fr);gap:14px;align-items:start}
+.db-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.db-form label{display:grid;gap:6px;font-size:11px;font-weight:850;color:#405b63}
+.db-form select,.db-form input{width:100%;min-width:0;padding:10px;border:1px solid #cadcd6;border-radius:10px;background:#fff;color:#203b43;font:inherit}
+.db-form button,.db-action{border:0;border-radius:11px;background:#168568;color:#fff;padding:10px 15px;font-weight:900;cursor:pointer;text-decoration:none}
 .db-form button{grid-column:1/-1}
+.db-tags{display:flex;flex-wrap:wrap;gap:7px}.db-tags span{padding:7px 10px;border:1px solid #d8e7e2;border-radius:10px;background:#f7fbf9;font-size:10px;color:#42615d}
+.db-device-note{margin-top:5px;padding:7px 9px;border-radius:9px;background:#eef8f3;color:#2a6f57;font-size:10px;font-weight:800}
+.db-calendar{overflow:auto;border:1px solid #dbe7e4;border-radius:16px;background:#fbfdfc;max-height:72vh}
+.db-table{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed}
+.db-table th,.db-table td{border-left:1px solid #e3ece9;border-bottom:1px solid #e3ece9;padding:0;text-align:center;vertical-align:middle}
+.db-table thead th{position:sticky;top:0;z-index:4;background:#f1f8f5;min-width:150px;height:74px;padding:9px}
+.db-table thead th strong{display:block;color:#173f35;font-size:12px}.db-table thead th small{display:block;color:#6a817d;font-size:9px;margin-top:4px}
+.db-time{position:sticky;right:0;z-index:3;min-width:72px!important;width:72px;background:#f7faf9!important;color:#264b44;font-weight:950;font-size:11px}
+.db-table thead .db-time{z-index:6;background:#eaf5f0!important}
+.db-cell{min-width:150px;height:54px;padding:4px!important}
+.db-free{width:100%;height:44px;border:1px dashed #a8d9c5;border-radius:10px;background:#effaf4;color:#167154;font-weight:900;cursor:pointer;font-size:10px}
+.db-free:hover{background:#dff4e9;border-style:solid}
+.db-busy{height:44px;border:1px solid #f0c8a8;border-radius:10px;background:#fff3e8;padding:5px 7px;overflow:hidden}
+.db-busy strong{display:block;color:#754a25;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.db-busy small{display:block;color:#8f6948;font-size:8px;margin-top:3px;white-space:nowrap}
+.db-off{height:44px;border-radius:9px;background:repeating-linear-gradient(135deg,#f2f4f3,#f2f4f3 7px,#e9edeb 7px,#e9edeb 14px);color:#9aa7a3;display:grid;place-items:center;font-size:9px}
+.db-legend{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 0;font-size:10px;color:#5a716f}.db-legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-left:4px;vertical-align:-2px}.lg-free{background:#dff4e9}.lg-busy{background:#ffe8d3}.lg-off{background:#e9edeb}
+.db-selected{outline:2px solid #258b68!important;box-shadow:0 0 0 3px rgba(37,139,104,.12)}
 .db-list{display:grid;gap:7px;margin-top:11px}
-.db-row{display:grid;grid-template-columns:70px 1fr 85px auto;gap:8px;align-items:center;padding:10px;border:1px solid #37535c;border-radius:12px;background:#0b202a}
-.db-row strong{color:#fff;font-size:12px}.db-row small{display:block;color:#aabfc6;font-size:10px;margin-top:4px}
-.db-row b{color:#8de5c9}.db-row button{background:#743747;border:0;border-radius:8px;color:#fff;padding:7px;cursor:pointer}
-.db-tags{display:flex;flex-wrap:wrap;gap:7px}.db-tags span{padding:6px 9px;border:1px solid #3a5b60;border-radius:9px;font-size:10px}
-@media(max-width:1050px){.db-grid{grid-template-columns:1fr}}
+.db-row{display:grid;grid-template-columns:70px 1fr 85px auto;gap:8px;align-items:center;padding:10px;border:1px solid #dce8e4;border-radius:12px;background:#fbfdfc}
+.db-row strong{color:#25443f;font-size:12px}.db-row small{display:block;color:#6a7f82;font-size:10px;margin-top:4px}.db-row b{color:#25775d}.db-row button{background:#8f4650;border:0;border-radius:8px;color:#fff;padding:7px;cursor:pointer}
+@media(max-width:1180px){.db-grid{grid-template-columns:1fr}.db-calendar{max-height:62vh}}
 @media(max-width:650px){.db-form{grid-template-columns:1fr}.db-row{grid-template-columns:60px 1fr}.db-row b{grid-column:1}.db-row form{grid-column:2}}
 </style>
+
 <div class="db-shell">
-<section class="db-hero"><h1>تقویم دستگاه‌ها · {{ branch.name }}</h1>
-{% if is_admin %}<form method="get" style="display:flex;gap:8px;align-items:center;margin:8px 0"><select name="branch" style="padding:8px;border-radius:9px;background:#0a1f2a;color:#fff">{% for b in branches %}<option value="{{ b.pk }}" {% if branch.pk == b.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select><button style="padding:8px;border:0;border-radius:8px;background:#138568;color:#fff">انتخاب شعبه</button></form>{% endif %}
-<div class="db-muted">هر نوبت فقط یک جلسه از پکیج است. زمان درمان و آماده‌سازی در همان نوبت ذخیره می‌شود؛ تغییر تنظیمات، رزروهای قبلی را تغییر نمی‌دهد.</div>
-{% if can_manage %}<p><a class="db-action" href="{% url 'device_capacity_settings' %}">تنظیم کابین‌ها، دستگاه‌ها و زمان‌ها</a></p>{% endif %}
+<section class="db-hero">
+  <h1>تقویم دستگاه‌ها · {{ branch.name }}</h1>
+  {% if is_admin %}<form method="get" style="display:flex;gap:8px;align-items:center;margin:8px 0"><select name="branch" style="padding:8px;border:1px solid #cadcd6;border-radius:9px;background:#fff;color:#25443f">{% for b in branches %}<option value="{{ b.pk }}" {% if branch.pk == b.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select><button style="padding:8px;border:0;border-radius:8px;background:#138568;color:#fff">انتخاب شعبه</button></form>{% endif %}
+  <div class="db-muted">هر ستون یک دستگاه واقعی است و کابین فعلی همان دستگاه زیر نامش دیده می‌شود. اگر دستگاه بین کابین‌ها جابه‌جا شود، فقط عنوان کابین آن ستون تغییر می‌کند.</div>
+  {% if can_manage %}<p><a class="db-action" href="{% url 'device_capacity_settings' %}">تنظیم دستگاه‌ها، کابین‌ها و ساعت کاری</a></p>{% endif %}
 </section>
+
 <div class="db-grid">
 <section class="db-panel">
-<h2 style="font-size:15px;color:white">ثبت جلسه درمان</h2>
+<h2 style="font-size:15px;color:#24443f;margin-top:0">ثبت جلسه درمان</h2>
 {% if can_book %}
-<form method="get" class="db-form" style="margin-bottom:13px"><input type="hidden" name="branch" value="{{ branch.pk }}">
-<label>پرونده بیمار<select name="appointment" onchange="this.form.submit()"><option value="">انتخاب بیمار</option>
-{% for p in plans %}<option value="{{ p.appointment_id }}" {% if appointment.pk == p.appointment_id %}selected{% endif %}>{{ p.appointment.full_name }} · {{ p.get_status_display }}</option>{% endfor %}
-</select></label><label>تاریخ شمسی<input name="day" value="{{ day_jalali }}" placeholder="۱۴۰۵/۰۷/۰۶"></label>
-<button type="submit">نمایش پرونده</button>
+<form method="get" class="db-form" style="margin-bottom:13px">
+  <input type="hidden" name="branch" value="{{ branch.pk }}">
+  <label>پرونده بیمار
+    <select name="appointment" id="dbAppointment" onchange="this.form.submit()">
+      <option value="">انتخاب بیمار</option>
+      {% for p in plans %}<option value="{{ p.appointment_id }}" {% if appointment.pk == p.appointment_id %}selected{% endif %}>{{ p.appointment.full_name }} · {{ p.get_status_display }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>تاریخ شمسی<input name="day" value="{{ day_jalali }}" placeholder="۱۴۰۵/۰۷/۰۶"></label>
+  <button type="submit">نمایش پرونده</button>
 </form>
+
 {% if plan %}
 <div class="db-tags"><span>بیمار: {{ appointment.full_name }}</span><span>وضعیت: {{ plan.get_status_display }}</span></div>
-<form method="post" class="db-form" style="margin-top:12px">{% csrf_token %}<input type="hidden" name="branch" value="{{ branch.pk }}">
-<input type="hidden" name="appointment" value="{{ appointment.pk }}">
-<label>خدمت پکیج<select name="plan_item" required>
-{% for item in items %}<option value="{{ item.pk }}">{{ item.title }} · {{ item.quantity }} جلسه</option>{% empty %}<option value="">خدمت دستگاهی در پکیج نیست</option>{% endfor %}
-</select></label>
-<label>تاریخ شمسی<input name="day" value="{{ day_jalali }}" required></label>
-<label>کابین<select name="cabin" required>
-{% for cabin in cabins %}<option value="{{ cabin.pk }}">{{ cabin.name }}</option>{% endfor %}
-</select></label>
-<label>دستگاه اول<select name="device" required>
-{% for device in devices %}<option value="{{ device.pk }}">{{ device.name }} · {{ device.device_type.code }} · {{ device.cabin.name }}</option>{% endfor %}
-</select></label>
-<label>دستگاه دوم (فقط دابل دیفاین)<select name="secondary_device"><option value="">ندارد</option>
-{% for device in devices %}{% if device.device_type.code == 'DIF70' %}<option value="{{ device.pk }}">{{ device.name }} · {{ device.cabin.name }}</option>{% endif %}{% endfor %}
-</select></label>
-<label>ساعت شروع<input name="start_time" type="time" min="08:30" max="17:30" step="600" value="08:30" required></label>
-<label style="display:flex;align-items:center;gap:7px;grid-column:1/-1"><input style="width:auto" type="checkbox" name="double_define" value="1">Double Define · رزرو هم‌زمان دو دستگاه</label>
-<button type="submit" {% if not items or not devices or not cabins %}disabled{% endif %}>ثبت قطعی یک جلسه + ارسال پیامک</button>
+<form method="post" class="db-form" id="dbBookingForm" style="margin-top:12px">{% csrf_token %}
+  <input type="hidden" name="branch" value="{{ branch.pk }}">
+  <input type="hidden" name="appointment" value="{{ appointment.pk }}">
+  <input type="hidden" name="cabin" id="dbCabin" value="">
+  <label>خدمت پکیج
+    <select name="plan_item" required>{% for item in items %}<option value="{{ item.pk }}">{{ item.title }} · {{ item.quantity }} جلسه</option>{% empty %}<option value="">خدمت دستگاهی در پکیج نیست</option>{% endfor %}</select>
+  </label>
+  <label>تاریخ شمسی<input name="day" value="{{ day_jalali }}" required></label>
+  <label style="grid-column:1/-1">دستگاه
+    <select name="device" id="dbDevice" required>
+      <option value="">انتخاب دستگاه</option>
+      {% for device in devices %}<option value="{{ device.pk }}" data-cabin="{{ device.cabin_id|default:'' }}" data-cabin-name="{{ device.cabin.name|default:'بدون کابین' }}" data-type="{{ device.device_type.code }}">{{ device.name }} · {{ device.cabin.name|default:"بدون کابین" }}</option>{% endfor %}
+    </select>
+    <span class="db-device-note" id="dbCabinLabel">با انتخاب دستگاه، کابین فعلی آن خودکار انتخاب می‌شود.</span>
+  </label>
+  <label>دستگاه دوم (فقط Double Define)
+    <select name="secondary_device" id="dbSecond"><option value="">ندارد</option>
+      {% for device in devices %}{% if device.device_type.code == 'DIF70' %}<option value="{{ device.pk }}" data-cabin="{{ device.cabin_id|default:'' }}">{{ device.name }} · {{ device.cabin.name|default:"بدون کابین" }}</option>{% endif %}{% endfor %}
+    </select>
+  </label>
+  <label>ساعت شروع<input name="start_time" id="dbStartTime" type="time" step="600" value="08:30" required></label>
+  <label style="display:flex;align-items:center;gap:7px;grid-column:1/-1"><input style="width:auto" type="checkbox" id="dbDouble" name="double_define" value="1">Double Define · رزرو هم‌زمان دو دستگاه</label>
+  <button type="submit" {% if not items or not devices %}disabled{% endif %}>ثبت قطعی یک جلسه + ارسال پیامک</button>
 </form>
-{% else %}<p class="db-muted">یک بیمار دارای پکیج نهایی را انتخاب کنید.</p>{% endif %}
+{% else %}<p class="db-muted">یک بیمار دارای پکیج نهایی را انتخاب کنید؛ بعد می‌توانید از خانه‌های «آزاد» جدول، زمان و دستگاه را با یک کلیک انتخاب کنید.</p>{% endif %}
 {% else %}<p class="db-muted">نمایش تقویم برای شما فعال است؛ ثبت نوبت با مشاور یا مدیریت است.</p>{% endif %}
 </section>
-<section class="db-panel"><h2 style="font-size:15px;color:white">رزروها · {{ day_jalali }}</h2>
-<div class="db-tags">{% for cabin in cabins %}<span>{{ cabin.name }}</span>{% endfor %}</div>
-<div class="db-list">
-{% for booking in bookings %}<div class="db-row">
-<b>{{ booking.starts_at|date:'H:i' }}</b>
-<div><strong>{{ booking.appointment.full_name }}</strong>
-<small>{{ booking.cabin.name }} · {{ booking.device.name }}{% if booking.secondary_device %} + {{ booking.secondary_device.name }}{% endif %} · {{ booking.plan_item.title }}</small>
-<small>درمان {{ booking.treatment_minutes_snapshot }} دقیقه · آماده‌سازی {{ booking.preparation_minutes_snapshot }} دقیقه · آزاد از {{ booking.blocked_until|date:'H:i' }}</small></div>
-<b>{{ booking.get_status_display }}</b>
-{% if can_book and booking.status == 'booked' %}<form method="post" action="{% url 'device_booking_cancel' booking.pk %}">{% csrf_token %}<button type="submit">لغو</button></form>{% endif %}
-</div>{% empty %}<p class="db-muted">در این تاریخ نوبت دستگاه ثبت نشده است.</p>{% endfor %}
-</div></section></div></div>
+
+<section class="db-panel">
+  <div style="display:flex;justify-content:space-between;gap:12px;align-items:end;flex-wrap:wrap">
+    <div><h2 style="font-size:15px;color:#24443f;margin:0">ظرفیت دستگاه‌ها · {{ day_jalali }}</h2><div class="db-muted">ردیف‌ها هر {{ slot_minutes }} دقیقه؛ ستون‌ها دستگاه‌ها هستند.</div></div>
+    <form method="get" style="display:flex;gap:6px;align-items:center"><input type="hidden" name="branch" value="{{ branch.pk }}">{% if appointment %}<input type="hidden" name="appointment" value="{{ appointment.pk }}">{% endif %}<input name="day" value="{{ day_jalali }}" style="padding:8px;border:1px solid #cadcd6;border-radius:9px;width:125px"><button class="db-action" type="submit">رفتن به تاریخ</button></form>
+  </div>
+  <div class="db-legend"><span><i class="lg-free"></i>آزاد</span><span><i class="lg-busy"></i>پر / رزرو شده</span><span><i class="lg-off"></i>خارج از ساعت یا گذشته</span></div>
+
+  <div class="db-calendar" style="margin-top:11px">
+    <table class="db-table">
+      <thead><tr><th class="db-time">ساعت</th>{% for device in device_lines %}<th><strong>{{ device.name }}</strong><small>{{ device.cabin.name|default:"بدون کابین" }}</small></th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for row in schedule_rows %}
+        <tr><td class="db-time">{{ row.label }}</td>
+        {% for cell in row.cells %}
+          <td class="db-cell">
+          {% if cell.state == 'busy' %}
+            <div class="db-busy" title="{{ cell.booking.appointment.full_name }} · {{ cell.booking.plan_item.title }}">
+              <strong>{{ cell.booking.appointment.full_name }}</strong>
+              <small>{{ cell.booking.starts_at|date:'H:i' }} تا {{ cell.booking.blocked_until|date:'H:i' }}</small>
+            </div>
+          {% elif cell.state == 'free' %}
+            <button type="button" class="db-free" data-device="{{ cell.device.pk }}" data-cabin="{{ cell.device.cabin_id|default:'' }}" data-time="{{ cell.start_value }}" onclick="pickDeviceSlot(this)">آزاد</button>
+          {% else %}
+            <div class="db-off">—</div>
+          {% endif %}
+          </td>
+        {% endfor %}
+        </tr>
+      {% empty %}<tr><td colspan="99" style="padding:30px;color:#748984">دستگاه فعالی برای این شعبه تعریف نشده است.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="db-list">
+  {% for booking in bookings %}<div class="db-row">
+    <b>{{ booking.starts_at|date:'H:i' }}</b>
+    <div><strong>{{ booking.appointment.full_name }}</strong>
+      <small>{{ booking.device.name }}{% if booking.secondary_device %} + {{ booking.secondary_device.name }}{% endif %} · {{ booking.cabin.name }} · {{ booking.plan_item.title }}</small>
+      <small>درمان {{ booking.treatment_minutes_snapshot }} دقیقه · آماده‌سازی {{ booking.preparation_minutes_snapshot }} دقیقه · آزاد از {{ booking.blocked_until|date:'H:i' }}</small>
+    </div>
+    <b>{{ booking.get_status_display }}</b>
+    {% if can_book and booking.status == 'booked' %}<form method="post" action="{% url 'device_booking_cancel' booking.pk %}">{% csrf_token %}<button type="submit">لغو</button></form>{% endif %}
+  </div>{% empty %}<p class="db-muted">در این تاریخ نوبت دستگاه ثبت نشده است.</p>{% endfor %}
+  </div>
+</section>
+</div>
+</div>
+
+<script>
+(function(){
+  var device=document.getElementById('dbDevice'), cabin=document.getElementById('dbCabin'), label=document.getElementById('dbCabinLabel'), second=document.getElementById('dbSecond');
+  function syncDevice(){
+    if(!device||!cabin)return;
+    var opt=device.options[device.selectedIndex];
+    var cabinId=opt ? (opt.dataset.cabin||'') : '';
+    cabin.value=cabinId;
+    if(label)label.textContent=opt&&opt.value ? ('کابین فعلی: '+(opt.dataset.cabinName||'—')) : 'با انتخاب دستگاه، کابین فعلی آن خودکار انتخاب می‌شود.';
+    if(second){
+      Array.from(second.options).forEach(function(o){
+        if(!o.value){o.hidden=false;return;}
+        o.hidden=Boolean(cabinId && o.dataset.cabin!==cabinId);
+      });
+      if(second.selectedOptions[0]&&second.selectedOptions[0].hidden)second.value='';
+    }
+  }
+  if(device){device.addEventListener('change',syncDevice);syncDevice();}
+  window.pickDeviceSlot=function(btn){
+    var form=document.getElementById('dbBookingForm');
+    if(!form||!device){
+      var patient=document.getElementById('dbAppointment');
+      if(patient){patient.focus();patient.scrollIntoView({behavior:'smooth',block:'center'});}
+      return;
+    }
+    device.value=btn.dataset.device;
+    syncDevice();
+    var time=document.getElementById('dbStartTime');
+    if(time)time.value=btn.dataset.time;
+    document.querySelectorAll('.db-free.db-selected').forEach(function(x){x.classList.remove('db-selected')});
+    btn.classList.add('db-selected');
+    form.scrollIntoView({behavior:'smooth',block:'center'});
+  };
+})();
+</script>
 {% endblock %}
