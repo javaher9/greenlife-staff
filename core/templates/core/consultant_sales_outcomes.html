@@ -94,19 +94,288 @@
 @media(max-width:1100px){.care-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:899px){.care-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.care-shortcuts{width:100%}.care .care-grid{grid-template-columns:1fr!important}.care-rail{grid-template-columns:1fr}.care-metric{background:#1a3040;border-color:#3e5b69}.care-metric small,.care-metric em{color:#bdcbd7}.care-metric strong{color:#f4fcf8}}
 @media(max-width:580px){.care-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.care-hero{flex-wrap:wrap}.care-shortcuts a{flex:1 1 43%;font-size:10px}.care-rail{grid-template-columns:1fr}}
+
+/* Consultant desktop v4 — approved bright center workspace */
+@media (min-width:900px){
+  body.gl-page-consultant_sales_outcomes .app-main{
+    background:#f4f8f7!important;
+    background-image:
+      radial-gradient(circle at 12% 2%,rgba(38,167,112,.055),transparent 23%),
+      radial-gradient(circle at 86% 12%,rgba(57,132,216,.045),transparent 25%)!important;
+    color:#153d35!important;
+  }
+  body.gl-page-consultant_sales_outcomes .content-wrap,
+  body.gl-page-consultant_sales_outcomes main{background:transparent!important}
+  .care{
+    max-width:1740px!important;
+    margin:10px auto 34px!important;
+    padding:10px!important;
+    gap:13px!important;
+    color:#244943!important;
+    direction:rtl;
+  }
+
+  .care-hero{
+    position:relative!important;
+    overflow:hidden!important;
+    min-height:142px;
+    padding:25px 30px!important;
+    border:1px solid #d6e9e2!important;
+    border-radius:25px!important;
+    background:
+      radial-gradient(circle at 14% 22%,rgba(255,255,255,.88),transparent 24%),
+      linear-gradient(120deg,#e6f7ef 0%,#f9fffc 48%,#edf6ff 100%)!important;
+    box-shadow:0 16px 38px rgba(39,91,75,.075)!important;
+    isolation:isolate;
+  }
+  .care-hero-copy{position:relative;z-index:3;max-width:720px}
+  .care-kicker{display:flex;align-items:center;gap:7px;color:#3f776a;font-size:10px;font-weight:900;letter-spacing:.15px}
+  .care-kicker:before{content:"";width:8px;height:8px;border-radius:50%;background:#2a9b72;box-shadow:0 0 0 5px rgba(42,155,114,.09)}
+  .care .care-hero h1{margin:7px 0 6px!important;color:#113f34!important;font-size:28px!important;line-height:1.45!important;letter-spacing:-.5px}
+  .care .care-hero p{margin:0!important;color:#5c7772!important;font-size:11.5px!important;line-height:2!important}
+  .care-shortcuts{position:relative;z-index:3;align-self:flex-end;gap:9px!important}
+  .care-shortcuts a{
+    min-width:118px;
+    min-height:44px;
+    border:0!important;
+    border-radius:14px!important;
+    padding:10px 14px!important;
+    box-shadow:0 8px 20px rgba(40,77,69,.075)!important;
+    transition:transform .18s ease,box-shadow .18s ease;
+  }
+  .care-shortcuts a:hover{transform:translateY(-2px);box-shadow:0 11px 24px rgba(40,77,69,.11)!important}
+  .care-shortcuts a:nth-child(1){background:#e3f6ed!important;color:#136a4d!important}
+  .care-shortcuts a:nth-child(2){background:#e8f2ff!important;color:#28649d!important}
+  .care-shortcuts a:nth-child(3){background:#fff0e7!important;color:#9a5739!important}
+  .care-shortcuts a:nth-child(4){background:#fff4db!important;color:#94631d!important}
+
+  .hero-botanical{position:absolute;inset:0 auto 0 0;width:43%;z-index:1;pointer-events:none;opacity:.92}
+  .hero-botanical .stem{position:absolute;left:75px;bottom:6px;width:2px;height:105px;background:linear-gradient(#7dcaa8,#ccebdc);transform:rotate(65deg);transform-origin:bottom}
+  .hero-botanical .leaf{position:absolute;width:58px;height:25px;border-radius:90% 8% 90% 8%;background:linear-gradient(135deg,#47ad7a,#b9e7d2);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+  .hero-botanical .l1{left:30px;bottom:27px;transform:rotate(18deg)}
+  .hero-botanical .l2{left:88px;bottom:62px;transform:rotate(-28deg) scale(.82)}
+  .hero-botanical .l3{left:145px;bottom:35px;transform:rotate(28deg) scale(.68)}
+  .hero-botanical .l4{left:205px;bottom:72px;transform:rotate(-18deg) scale(.54)}
+  .hero-botanical:after{content:"";position:absolute;left:0;bottom:-55px;width:310px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(72,178,128,.12),transparent 66%)}
+
+  .care-metrics{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px!important}
+  .care-metric{
+    min-height:118px!important;
+    padding:16px 17px!important;
+    border:1px solid rgba(69,111,99,.08)!important;
+    border-radius:20px!important;
+    background:#fff!important;
+    box-shadow:0 11px 25px rgba(39,82,71,.055)!important;
+    display:grid;
+    grid-template-columns:1fr auto;
+    grid-template-rows:auto auto auto;
+    column-gap:10px;
+    align-items:center;
+  }
+  .care-metric .metric-ico{
+    grid-column:2;
+    grid-row:1/4;
+    width:50px;height:50px;border-radius:16px;
+    display:grid;place-items:center;
+    font-size:21px;font-weight:950;
+  }
+  .care-metric small{grid-column:1;color:#4f6d67!important;font-size:11px!important;font-weight:900!important}
+  .care-metric strong{grid-column:1;margin:3px 0 0!important;color:#123f35!important;font-size:32px!important;line-height:1.1!important}
+  .care-metric em{grid-column:1;color:#768d88!important;font-size:9.5px!important}
+  .care-metric:nth-child(1){background:linear-gradient(135deg,#effaf5,#fff)!important}.care-metric:nth-child(1) .metric-ico{background:#ddf5e9;color:#168258}
+  .care-metric:nth-child(2){background:linear-gradient(135deg,#f0faf7,#fff)!important}.care-metric:nth-child(2) .metric-ico{background:#dff6ec;color:#19805b}
+  .care-metric:nth-child(3){background:linear-gradient(135deg,#eef5ff,#fff)!important}.care-metric:nth-child(3) .metric-ico{background:#dfeeff;color:#2e6ca9}
+  .care-metric:nth-child(4){background:linear-gradient(135deg,#eef7ff,#fff)!important}.care-metric:nth-child(4) .metric-ico{background:#dcecff;color:#2d6fb2}
+  .care-metric:nth-child(5){background:linear-gradient(135deg,#fff8ed,#fff)!important}.care-metric:nth-child(5) .metric-ico{background:#fff0d5;color:#a86b14}
+
+  .care-grid{
+    display:grid!important;
+    grid-template-columns:minmax(245px,.78fr) minmax(510px,1.75fr) minmax(245px,.78fr)!important;
+    grid-template-areas:"queue workspace rail";
+    gap:13px!important;
+    align-items:stretch!important;
+    direction:ltr;
+  }
+  .queue{grid-area:queue;direction:rtl}
+  .workspace{grid-area:workspace;direction:rtl}
+  .care-rail{grid-area:rail;direction:rtl}
+  .care-grid>.queue,.care-grid>.workspace,.care-grid>.care-rail{display:block!important;visibility:visible!important;opacity:1!important;min-width:0}
+
+  .queue,.workspace{
+    min-height:500px!important;
+    border:1px solid #e0ebe7!important;
+    border-radius:22px!important;
+    background:#fff!important;
+    box-shadow:0 13px 30px rgba(39,82,71,.055)!important;
+    overflow:hidden!important;
+  }
+  .care-head{
+    min-height:58px;
+    padding:15px 16px!important;
+    background:linear-gradient(135deg,#f1faf6,#fcfefd)!important;
+    border-color:#e6efec!important;
+  }
+  .care-head h2{color:#173f36!important;font-size:15px!important}
+  .care-head small{color:#6d847f!important;font-size:9px!important}
+  .care-filter{
+    height:42px!important;
+    border-color:#dce8e4!important;
+    border-radius:12px!important;
+    background:#f8fbfa!important;
+    color:#234a42!important;
+    font-size:10.5px!important;
+    outline:none;
+  }
+  .care-filter:focus{border-color:#8bcdb2!important;box-shadow:0 0 0 3px rgba(64,170,125,.10)}
+  .queue-list{padding:10px!important;gap:8px!important;max-height:590px!important}
+  .queue-row{
+    min-height:68px!important;
+    padding:11px 12px!important;
+    border:1px solid #e4ece9!important;
+    border-radius:14px!important;
+    background:#fbfdfc!important;
+    color:#244942!important;
+  }
+  .queue-row:hover,.queue-row.active{background:#eaf7f1!important;border-color:#95d0b7!important;box-shadow:0 7px 17px rgba(40,123,91,.08)}
+  .queue-row strong{color:#173f36!important;font-size:11px!important}
+  .queue-row small{color:#728884!important;font-size:8.5px!important}
+  .queue-row time{color:#3b75a4!important;font-size:9px!important}
+
+  .queue-empty{
+    min-height:300px;
+    margin:8px;
+    padding:26px 16px;
+    border:1px solid #edf2f0;
+    border-radius:17px;
+    background:linear-gradient(180deg,#fff,#fbfdfc);
+    text-align:center;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+  }
+  .queue-empty-art{position:relative;width:105px;height:78px;margin-bottom:13px}
+  .queue-empty-art:before,.queue-empty-art:after{content:"";position:absolute;width:55px;height:68px;border-radius:9px;background:#edf5f2;border:1px solid #dbe9e4}
+  .queue-empty-art:before{left:18px;top:2px;transform:rotate(-7deg)}
+  .queue-empty-art:after{left:38px;top:8px;transform:rotate(6deg);background:#fff}
+  .queue-empty-art span{position:absolute;right:4px;bottom:0;width:38px;height:38px;border:6px solid #258b68;border-radius:50%;z-index:3}
+  .queue-empty-art span:after{content:"";position:absolute;width:20px;height:6px;background:#258b68;border-radius:8px;right:-15px;bottom:-8px;transform:rotate(46deg)}
+  .queue-empty h4{margin:0;color:#24483f;font-size:13px}.queue-empty p{margin:7px 0 0;color:#738a85;font-size:9.5px;line-height:1.9}
+
+  .workspace{position:relative}
+  .care-empty-state{
+    min-height:500px!important;
+    padding:38px 28px!important;
+    background:
+      radial-gradient(circle at 50% 33%,rgba(46,165,113,.055),transparent 28%),
+      linear-gradient(180deg,#fff,#fbfdfc)!important;
+    gap:9px!important;
+  }
+  .patient-empty-art{position:relative;width:230px;height:150px;margin-bottom:7px}
+  .patient-empty-art .folder-back{position:absolute;left:48px;bottom:20px;width:132px;height:88px;border-radius:16px;background:#f7dfb8;box-shadow:0 12px 24px rgba(146,105,47,.11);transform:rotate(-2deg)}
+  .patient-empty-art .folder-back:before{content:"";position:absolute;right:15px;top:-18px;width:55px;height:24px;border-radius:10px 10px 0 0;background:#f4d8a9}
+  .patient-empty-art .avatar-dot{position:absolute;left:96px;bottom:45px;width:46px;height:46px;border-radius:50%;background:#dff3ea;border:6px solid #eef9f4;z-index:3}
+  .patient-empty-art .avatar-dot:before{content:"";position:absolute;left:13px;top:8px;width:12px;height:12px;border-radius:50%;background:#19815e}
+  .patient-empty-art .avatar-dot:after{content:"";position:absolute;left:8px;bottom:6px;width:22px;height:13px;border-radius:12px 12px 8px 8px;background:#19815e}
+  .patient-empty-art .info-card{position:absolute;width:76px;height:48px;border-radius:10px;background:#fff;border:1px solid #deebe6;box-shadow:0 9px 20px rgba(40,81,70,.07)}
+  .patient-empty-art .c1{right:5px;top:23px}.patient-empty-art .c2{left:8px;top:49px}
+  .patient-empty-art .info-card:before{content:"";position:absolute;right:10px;top:10px;width:16px;height:16px;border-radius:50%;background:#cfe7df}
+  .patient-empty-art .info-card:after{content:"";position:absolute;left:10px;right:33px;top:13px;height:4px;border-radius:4px;background:#d5e4df;box-shadow:0 10px 0 #e4edeb}
+  .patient-empty-art .leaf-mini{position:absolute;width:38px;height:18px;border-radius:90% 8% 90% 8%;background:linear-gradient(135deg,#4aad7a,#b7e3cf)}
+  .patient-empty-art .lm1{left:38px;bottom:16px;transform:rotate(28deg)}.patient-empty-art .lm2{right:43px;bottom:17px;transform:rotate(-25deg) scale(.8)}
+  .care-empty-state h3{font-size:19px!important;color:#173f36!important}.care-empty-state p{max-width:510px;color:#718782!important;font-size:10.5px!important;line-height:2!important}
+  .care-empty-state a{min-height:42px;align-items:center;background:linear-gradient(135deg,#177e5b,#2a9d75)!important;color:#fff!important;border-radius:12px!important;box-shadow:0 9px 19px rgba(28,123,91,.15);padding:10px 18px!important}
+
+  .care-rail{
+    min-height:500px;
+    padding:15px;
+    border:1px solid #e0ebe7;
+    border-radius:22px;
+    background:#fff;
+    box-shadow:0 13px 30px rgba(39,82,71,.055);
+  }
+  .quick-tools-title{display:flex;align-items:center;justify-content:space-between;margin:1px 1px 12px;color:#173f36;font-size:15px;font-weight:950}
+  .quick-tools-title span{width:32px;height:32px;border-radius:11px;background:#e4f6ed;color:#118057;display:grid;place-items:center;font-size:17px}
+  .quick-actions{display:grid;gap:9px}
+  .quick-action{
+    width:100%;
+    min-height:70px;
+    padding:11px 12px;
+    border:0;
+    border-radius:15px;
+    text-decoration:none;
+    display:grid;
+    grid-template-columns:44px 1fr 18px;
+    gap:10px;
+    align-items:center;
+    text-align:right;
+    cursor:pointer;
+    font:inherit;
+    box-shadow:inset 0 0 0 1px rgba(71,107,97,.07);
+  }
+  .quick-action .qa-icon{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:18px;font-weight:950}
+  .quick-action strong{display:block;font-size:11px;margin-bottom:3px}.quick-action small{display:block;font-size:8.8px;opacity:.72;line-height:1.5}.quick-action .qa-arrow{font-size:18px;opacity:.7}
+  .qa-device{background:#edf9f4;color:#17694e}.qa-device .qa-icon{background:#d9f2e6}
+  .qa-chat{background:#eff6ff;color:#2c6197}.qa-chat .qa-icon{background:#ddeeff}
+  .qa-expense{background:#fff4ee;color:#96563b}.qa-expense .qa-icon{background:#ffe7dc}
+  .qa-finance{background:#fff8e9;color:#92621f}.qa-finance .qa-icon{background:#ffedc9}
+  .quick-summary{margin-top:12px;padding-top:12px;border-top:1px solid #edf1f0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .quick-summary div{padding:10px;border-radius:12px;background:#f8fbfa}.quick-summary span{display:block;color:#78908a;font-size:8.5px}.quick-summary b{display:block;margin-top:4px;color:#1e5f4d;font-size:15px}
+
+  .patient-bar{padding:15px 17px!important;background:linear-gradient(135deg,#edf8f3,#fbfefd)!important;border-color:#e3ece9!important}
+  .patient-bar h2{color:#173f36!important;font-size:20px!important}.patient-bar p{color:#718783!important;font-size:9.5px!important}
+  .stage{background:#e4f5ec!important;color:#176746!important;border-color:#bfe2d0!important}
+  .doctor-box{background:#f2f7fd!important;border-color:#dee9f5!important;border-radius:15px!important}
+  .doctor-box h3{color:#355f86!important}.doctor-chips span{background:#e5eef9!important;color:#42698c!important}.doctor-note{color:#587080!important;border-color:#dfe7ef!important}
+  .plan-title h3{color:#173f36!important}.plan-title small{color:#788b87!important}
+  .item{background:#fbfdfc!important;border-color:#e2ebe8!important;border-radius:13px!important}
+  .item.doctor{border-right:4px solid #5d91c8!important}.item.consultant{border-right:4px solid #2a9b72!important}
+  .item label,.final-form label{color:#586f6a!important}.item input,.item select,.add-row input,.add-row select,.final-box input,.final-box textarea,.nosale textarea,.nosale select{background:#fff!important;color:#244942!important;border-color:#d5e3df!important}
+  .add-row{background:#f8fbfa!important;border-color:#cbded7!important}
+  .final-box{background:#f3faf6!important;border-color:#d7e9e1!important;border-radius:16px!important}
+  .total-card{background:#fff!important;border-color:#e2ece8!important}.total-card span{color:#708782!important}.total-card strong{color:#174d3f!important}
+  .primary,.pay-self{background:#1d865f!important}.send-rec{background:#3f77a8!important}
+  .status-note{color:#6b817c!important}
+  .device-booking-callout{margin-top:12px;padding:11px;border:1px solid #d2e7de;border-radius:14px;background:#edf8f3}
+  .device-booking-callout a{display:inline-flex;padding:9px 13px;border-radius:10px;background:#1d865f;color:#fff;font-weight:900;font-size:10px;text-decoration:none}.device-booking-callout small{display:block;color:#648078;margin-top:6px}
+
+  .recent{
+    margin-top:0!important;
+    padding:15px 17px!important;
+    border:1px solid #e0ebe7!important;
+    border-radius:22px!important;
+    background:#fff!important;
+    box-shadow:0 13px 30px rgba(39,82,71,.05)!important;
+  }
+  .recent-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px}.recent-header h3{margin:0!important;color:#173f36!important;font-size:14px!important}.recent-header span{padding:7px 10px;border-radius:10px;background:#edf8f3;color:#28705a;font-size:9px;font-weight:850}
+  .recent-cols,.recent-row{display:grid!important;grid-template-columns:minmax(160px,1.2fr) 150px 150px!important;gap:10px!important;align-items:center}
+  .recent-cols{padding:7px 9px;color:#81928e;font-size:8.5px;background:#f4f8f7;border-radius:10px}
+  .recent-row{min-height:44px;padding:9px!important;border-top:1px solid #edf1f0!important;font-size:10px!important}
+  .recent-row:nth-of-type(odd){background:#fbfdfc}
+  .recent-row strong{color:#244942!important}.recent-row span{color:#718681!important}.recent-row b{justify-self:start;min-width:112px;padding:6px 9px;border-radius:9px;background:#e5f5ed;color:#1a7655!important;text-align:center}
+
+  .empty{color:#728883!important}
+}
+@media (min-width:900px) and (max-width:1199px){
+  .care-grid{grid-template-columns:minmax(220px,.75fr) minmax(0,1.8fr)!important;grid-template-areas:"queue workspace" "rail rail"!important}
+  .care-rail{display:grid!important;grid-template-columns:170px 1fr;gap:12px;min-height:auto}
+  .quick-actions{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.quick-action{grid-template-columns:36px 1fr;min-height:66px}.quick-action .qa-arrow{display:none}.quick-action .qa-icon{width:36px;height:36px}.quick-summary{display:none}
+}
+
 </style>
 <div class="care">
-  <section class="care-hero"><div><small style="color:#26835e;font-weight:900">GREENLIFE · میز کار مشاور</small><h1>پنل مشاوره و چرخه درمان</h1><p>صف بیماران، پکیج درمان، نوبت دستگاه و عملیات مالی، در یک فضای کاری.</p></div><div class="care-shortcuts"><a href="{% url 'device_booking_schedule' %}">◷ نوبت دستگاه‌ها</a><a href="{% url 'internal_messages' %}">✉ چت پرسنل</a><a href="{% url 'consultant_expense_entry' %}">＋ ثبت هزینه</a><a href="{% url 'finance_entry' %}">◈ ثبت دریافت</a></div></section>
+  <section class="care-hero">
+    <div class="hero-botanical" aria-hidden="true"><span class="stem"></span><span class="leaf l1"></span><span class="leaf l2"></span><span class="leaf l3"></span><span class="leaf l4"></span></div>
+    <div class="care-hero-copy"><div class="care-kicker">GREENLIFE · میز کار مشاور</div><h1>پنل مشاوره و چرخه درمان</h1><p>صف بیماران، پکیج درمان، نوبت دستگاه و عملیات مالی در یک فضای کاری روشن، یکپارچه و سریع.</p></div>
+    <div class="care-shortcuts"><a href="{% url 'device_booking_schedule' %}">▣ نوبت دستگاه‌ها</a><a href="{% url 'internal_messages' %}">◌ چت پرسنل</a><a href="{% url 'consultant_expense_entry' %}">＋ ثبت هزینه</a><a href="{% url 'finance_entry' %}">▤ ثبت دریافت</a></div>
+  </section>
   <section class="care-metrics" aria-label="وضعیت کاری مشاور">
-    <div class="care-metric"><small>نوبت‌های امروز</small><strong>{{ kpis.appointments_today }}</strong><em>پرونده‌های امروز شعبه</em></div>
-    <div class="care-metric"><small>در انتظار مشاوره</small><strong>{{ kpis.awaiting_consultation }}</strong><em>آماده بررسی پکیج</em></div>
-    <div class="care-metric"><small>در انتظار پرداخت</small><strong>{{ kpis.awaiting_payment }}</strong><em>ارجاع‌شده به دریافت</em></div>
-    <div class="care-metric"><small>نوبت دستگاه امروز</small><strong>{{ kpis.device_bookings_today }}</strong><em>رزرو فعال شعبه</em></div>
-    <div class="care-metric"><small>هزینه در انتظار تأیید</small><strong>{{ kpis.expenses_pending }}</strong><em>ثبت‌شده توسط شما</em></div>
+    <div class="care-metric"><small>نوبت‌های امروز</small><strong>{{ kpis.appointments_today }}</strong><em>پرونده‌های امروز شعبه</em><span class="metric-ico">✓</span></div>
+    <div class="care-metric"><small>در انتظار مشاوره</small><strong>{{ kpis.awaiting_consultation }}</strong><em>آماده بررسی پکیج</em><span class="metric-ico">●</span></div>
+    <div class="care-metric"><small>در انتظار پرداخت</small><strong>{{ kpis.awaiting_payment }}</strong><em>ارجاع‌شده به دریافت</em><span class="metric-ico">▰</span></div>
+    <div class="care-metric"><small>نوبت دستگاه امروز</small><strong>{{ kpis.device_bookings_today }}</strong><em>رزرو فعال شعبه</em><span class="metric-ico">▣</span></div>
+    <div class="care-metric"><small>هزینه در انتظار تأیید</small><strong>{{ kpis.expenses_pending }}</strong><em>ثبت‌شده توسط شما</em><span class="metric-ico">▤</span></div>
   </section>
   <div class="care-grid">
     <aside class="queue"><div class="care-head"><h2>صف پرونده‌ها</h2><small>شعبه شما · {{ pending|length }} مورد</small></div><div style="padding:10px 10px 0"><input class="care-filter" type="search" id="careQueueSearch" placeholder="جستجوی نام یا شماره بیمار…" aria-label="جستجوی پرونده"></div><div class="queue-list" id="careQueueList">
-      {% for a in pending %}<a class="queue-row {% if selected and a.pk == selected.pk %}active{% endif %}" href="?appointment={{ a.pk }}"><div><strong>{{ a.full_name }}</strong><small>{{ a.phone }} · {{ a.branch }}</small></div><time>{% if a.doctor_completed_at %}{{ a.doctor_completed_at|date:"H:i" }}{% else %}—{% endif %}</time></a>{% empty %}<div class="empty">فعلاً پرونده‌ای در انتظار مشاوره نیست.</div>{% endfor %}
+      {% for a in pending %}<a class="queue-row {% if selected and a.pk == selected.pk %}active{% endif %}" href="?appointment={{ a.pk }}"><div><strong>{{ a.full_name }}</strong><small>{{ a.phone }} · {{ a.branch }}</small></div><time>{% if a.doctor_completed_at %}{{ a.doctor_completed_at|date:"H:i" }}{% else %}—{% endif %}</time></a>{% empty %}<div class="queue-empty"><div class="queue-empty-art" aria-hidden="true"><span></span></div><h4>در حال حاضر پرونده‌ای در صف وجود ندارد</h4><p>با دریافت نوبت جدید، پرونده‌ها در این بخش نمایش داده می‌شوند.</p></div>{% endfor %}
     </div></aside>
     <section class="workspace">
       {% if selected and plan %}
@@ -140,29 +409,24 @@
           <div class="next-actions"><a class="pay-self" href="{{ payment_url }}">پرداخت توسط خود مشاور</a><form method="post" style="margin:0">{% csrf_token %}<input type="hidden" name="action" value="send_to_reception"><input type="hidden" name="appointment_id" value="{{ selected.pk }}"><button class="send-rec" type="submit" style="width:100%">ارسال برای پرداخت منشی</button></form></div>
           <div class="status-note">{% if plan.status == 'payment_pending' %}این پرونده هم‌اکنون در صف پرداخت منشی است؛ تا قبل از ثبت پرداخت می‌توانید از همینجا پرداخت را انجام دهید.{% else %}پکیج نهایی شده و آماده دریافت وجه است.{% endif %}</div>
           {% endif %}
-<div style="margin-top:12px;padding:11px;border:1px solid #396b67;border-radius:12px;background:#102e32">
-  <a href="{% url 'device_booking_schedule' %}?appointment={{ selected.pk }}" style="display:inline-flex;padding:9px 13px;border-radius:9px;background:#176d5b;color:#fff;font-weight:900;font-size:11px;text-decoration:none">تقویم و رزرو تک‌جلسه‌ای دستگاه‌ها</a>
-  <small style="display:block;color:#c9e5e4;margin-top:6px">با بیعانه یا تسویه ثبت‌شده، هر بار فقط یک جلسه از هر خدمت رزرو می‌شود.</small>
-</div>
+<div class="device-booking-callout"><a href="{% url 'device_booking_schedule' %}?appointment={{ selected.pk }}">تقویم و رزرو تک‌جلسه‌ای دستگاه‌ها</a><small>با بیعانه یا تسویه ثبت‌شده، هر بار فقط یک جلسه از هر خدمت رزرو می‌شود.</small></div>
           {% if plan.status != 'partial_paid' and plan.status != 'paid' %}<div class="nosale"><form method="post">{% csrf_token %}<input type="hidden" name="action" value="no_sale"><input type="hidden" name="appointment_id" value="{{ selected.pk }}"><select name="failure_reason">{% for key,label in failure_reasons %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select><textarea name="failure_note" placeholder="توضیح اختیاری"></textarea><button class="danger" type="submit">فعلاً خرید نکرد / برگشت به پیگیری</button></form></div>{% endif %}
         </div>
       </div>
-      {% else %}<div class="care-empty-state"><span class="care-empty-symbol">✚</span><h3>پرونده‌ای انتخاب نشده است</h3><p>از صف پرونده‌ها یک بیمار را انتخاب کنید تا نسخه پزشک و پکیج مشاوره نمایش داده شود.</p>{% if pending %}<a href="?appointment={{ pending.0.pk }}">باز کردن اولین پرونده</a>{% else %}<a href="{% url 'device_booking_schedule' %}">مشاهده نوبت‌های دستگاه</a>{% endif %}</div>{% endif %}
+      {% else %}<div class="care-empty-state"><div class="patient-empty-art" aria-hidden="true"><span class="folder-back"></span><span class="avatar-dot"></span><span class="info-card c1"></span><span class="info-card c2"></span><span class="leaf-mini lm1"></span><span class="leaf-mini lm2"></span></div><h3>پرونده‌ای انتخاب نشده است</h3><p>از صف پرونده‌ها یک بیمار را انتخاب کنید تا اطلاعات بیمار، نسخه پزشک، پکیج درمان و عملیات مرتبط در همین بخش نمایش داده شود.</p>{% if pending %}<a href="?appointment={{ pending.0.pk }}">انتخاب پرونده از لیست</a>{% else %}<a href="{% url 'device_booking_schedule' %}">مشاهده نوبت‌های دستگاه</a>{% endif %}</div>{% endif %}
     </section>
     <aside class="care-rail" aria-label="ابزارهای مشاور">
-      <section class="care-rail-card"><h3>◷ نوبت‌های دستگاه</h3><p>تقویم شعبه، دستگاه‌ها و ظرفیت کابین‌ها. رزرو هر جلسه از پرونده بیمار انجام می‌شود.</p>
-      <div class="care-rail-detail"><span>نوبت‌های امروز</span><b>{{ kpis.device_bookings_today }}</b></div>
-      <a class="care-rail-link" href="{% url 'device_booking_schedule' %}{% if selected %}?appointment={{ selected.pk }}{% endif %}">باز کردن تقویم دستگاه‌ها</a></section>
-      <section class="care-rail-card"><h3>✉ گفت‌وگوی داخلی</h3><p>برای هماهنگی فوری با پزشک، منشی و سایر پرسنل از چت زنده یا پیام‌های داخلی استفاده کنید.</p>
-      <a class="care-rail-link secondary" href="{% url 'internal_messages' %}">ورود به پیام‌های داخلی</a>
-      <button class="care-rail-link purple" type="button" style="width:100%;cursor:pointer" onclick="var x=document.getElementById('glLiveChatLauncher');if(x)x.click();else window.location.href='{% url 'internal_messages' %}'">باز کردن چت زنده</button></section>
-      <section class="care-rail-card"><h3>◈ عملیات مالی</h3><p>دریافت بیمار از هزینه‌های روزمره جداست؛ هزینه همراه رسید برای واحد مالی ارسال می‌شود.</p>
-      <div class="care-rail-detail"><span>هزینه منتظر تأیید</span><b>{{ kpis.expenses_pending }}</b></div>
-      <a class="care-rail-link amber" href="{% url 'consultant_expense_entry' %}">＋ ثبت هزینه با رسید</a>
-      <a class="care-rail-link" href="{% url 'finance_entry' %}{% if selected %}?appointment={{ selected.pk }}{% endif %}">ثبت دریافت بیمار</a></section>
+      <div class="quick-tools-title">ابزارهای سریع <span>ϟ</span></div>
+      <div class="quick-actions">
+        <a class="quick-action qa-device" href="{% url 'device_booking_schedule' %}{% if selected %}?appointment={{ selected.pk }}{% endif %}"><span class="qa-icon">▣</span><span><strong>ثبت نوبت دستگاه</strong><small>رزرو و مدیریت نوبت‌های دستگاه</small></span><span class="qa-arrow">‹</span></a>
+        <button class="quick-action qa-chat" type="button" onclick="var x=document.getElementById('glLiveChatLauncher');if(x)x.click();else window.location.href='{% url 'internal_messages' %}'"><span class="qa-icon">◌</span><span><strong>چت داخلی</strong><small>ارتباط با تیم درمان و پذیرش</small></span><span class="qa-arrow">‹</span></button>
+        <a class="quick-action qa-expense" href="{% url 'consultant_expense_entry' %}"><span class="qa-icon">＋</span><span><strong>ثبت هزینه</strong><small>ثبت هزینه همراه رسید</small></span><span class="qa-arrow">‹</span></a>
+        <a class="quick-action qa-finance" href="{% url 'finance_entry' %}{% if selected %}?appointment={{ selected.pk }}{% endif %}"><span class="qa-icon">▤</span><span><strong>ثبت دریافت</strong><small>ثبت پرداخت و دریافت بیمار</small></span><span class="qa-arrow">‹</span></a>
+      </div>
+      <div class="quick-summary"><div><span>نوبت دستگاه امروز</span><b>{{ kpis.device_bookings_today }}</b></div><div><span>هزینه منتظر تأیید</span><b>{{ kpis.expenses_pending }}</b></div></div>
     </aside>
   </div>
-  <section class="recent"><h3>آخرین دریافت‌های ثبت‌شده توسط شما</h3>{% for tx in recent_paid %}<div class="recent-row"><strong>{{ tx.person_name|default:"—" }}</strong><span>{{ tx.created_at|date:"Y/m/d H:i" }}</span><b>{{ tx.amount|floatformat:0 }} ریال</b></div>{% empty %}<div class="empty">هنوز پرداختی ثبت نشده است.</div>{% endfor %}</section>
+  <section class="recent"><div class="recent-header"><h3>آخرین دریافت‌های ثبت‌شده توسط شما</h3><span>آخرین موارد</span></div><div class="recent-cols"><span>نام بیمار</span><span>تاریخ و ساعت</span><span>مبلغ</span></div>{% for tx in recent_paid %}<div class="recent-row"><strong>{{ tx.person_name|default:"—" }}</strong><span>{{ tx.created_at|date:"Y/m/d H:i" }}</span><b>{{ tx.amount|floatformat:0 }} ریال</b></div>{% empty %}<div class="empty">هنوز پرداختی ثبت نشده است.</div>{% endfor %}</section>
 </div>
 <script>
 (function(){
