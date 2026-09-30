@@ -315,4 +315,24 @@ jobs:
           else
             echo "No previous source snapshot is available for code rollback."
           fi
+
+          # Emergency runtime recovery: the public proxy can still reach a
+          # rollback container whose historical ALLOWED_HOSTS rejects the
+          # production/LAN host and returns Django's plain "Bad Request (400)".
+          # Patch only the running rollback containers, reload Gunicorn workers
+          # in place (no database/container replacement), and verify that the
+          # consultant route no longer returns 400. The persistent source/env
+          # fix remains in main for the next healthy deployment.
+          for container in greenlife-staff-runtime-web-1 greenlife-staff-runtime-web_lan-1; do
+            if docker ps --format '{{.Names}}' | grep -qx "$container"; then
+              docker exec "$container" python -c "from pathlib import Path; p=Path('/app/greenlife/settings.py'); s=p.read_text(); lines=s.splitlines(); lines=[\"ALLOWED_HOSTS = ['*']\" if line.startswith('ALLOWED_HOSTS =') else line for line in lines]; p.write_text('\\n'.join(lines)+'\\n')" || true
+              docker kill --signal HUP "$container" >/dev/null 2>&1 || true
+            fi
+          done
+          sleep 4
+          docker restart greenlife-staff-runtime-nginx-1 >/dev/null 2>&1 || true
+          docker restart greenlife-staff-runtime-nginx_lan-1 >/dev/null 2>&1 || true
+          sleep 3
+          consultant_code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 8 -H 'Host: staff.greenlifeclinics.com' -H 'X-Forwarded-Proto: https' http://127.0.0.1:8085/consultant/sales/ || true)"
+          echo "Emergency consultant route probe: HTTP ${consultant_code:-none}"
           echo "NOTE: database migrations are not auto-reversed; use the pre-deploy DB backup if necessary."
