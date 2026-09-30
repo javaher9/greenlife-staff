@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
-# Runtime diagnostic refresh marker.
+# Runtime diagnostic refresh marker. Emergency production recovery trigger 2026-09-30.
 
 DEPLOY_PATH="${DEPLOY_PATH:-/home/ubuntu/greenlife-staff-runtime}"
 cd "$DEPLOY_PATH"
