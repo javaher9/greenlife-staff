@@ -60,6 +60,11 @@ def main():
             ("SESSION_COOKIE_SECURE", "1"),
             ("ALLOWED_HOSTS", "staff.greenlifeclinics.com,.greenlifeclinics.com,localhost,127.0.0.1"),
             ("CSRF_TRUSTED_ORIGINS", "https://staff.greenlifeclinics.com"),
+            # The web containers and PostgreSQL live on the same Compose network.
+            # Never route database traffic back through the host/LAN IP: doing so
+            # can drop connections when the host bridge or published port changes.
+            ("POSTGRES_HOST", "db"),
+            ("POSTGRES_PORT", "5432"),
         ):
             if values.get(key) != value:
                 set_value(lines, key, value)
