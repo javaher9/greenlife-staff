@@ -15,6 +15,12 @@ _WEAK_SECRET_KEYS = {
 if not DEBUG and SECRET_KEY in _WEAK_SECRET_KEYS:
     raise RuntimeError('A strong SECRET_KEY is required when DEBUG=0')
 ALLOWED_HOSTS = [x.strip() for x in os.getenv('ALLOWED_HOSTS','localhost,127.0.0.1').split(',') if x.strip()]
+# Requests can reach Django through the public reverse proxy or directly from the
+# production/LAN proxy during health checks. Keep these infrastructure hosts
+# accepted even if an older server-owned .env is restored during rollback.
+for _host in ('staff.greenlifeclinics.com','.greenlifeclinics.com','localhost','127.0.0.1','192.168.40.96'):
+    if _host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_host)
 CSRF_TRUSTED_ORIGINS = [x.strip() for x in os.getenv('CSRF_TRUSTED_ORIGINS','').split(',') if x.strip()]
 INSTALLED_APPS = ['django.contrib.admin','django.contrib.auth','django.contrib.contenttypes','django.contrib.sessions','django.contrib.messages','django.contrib.staticfiles','core','public_network']
 MIDDLEWARE = ['django.middleware.security.SecurityMiddleware','whitenoise.middleware.WhiteNoiseMiddleware','django.contrib.sessions.middleware.SessionMiddleware','django.middleware.common.CommonMiddleware','django.middleware.csrf.CsrfViewMiddleware','django.contrib.auth.middleware.AuthenticationMiddleware',
