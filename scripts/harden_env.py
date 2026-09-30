@@ -58,7 +58,7 @@ def main():
             ("DISABLE_CSRF", "0"),
             ("CSRF_COOKIE_SECURE", "1"),
             ("SESSION_COOKIE_SECURE", "1"),
-            ("ALLOWED_HOSTS", "staff.greenlifeclinics.com,.greenlifeclinics.com,localhost,127.0.0.1"),
+            ("ALLOWED_HOSTS", "staff.greenlifeclinics.com,.greenlifeclinics.com,localhost,127.0.0.1,192.168.40.96"),
             ("CSRF_TRUSTED_ORIGINS", "https://staff.greenlifeclinics.com"),
             # The web containers and PostgreSQL live on the same Compose network.
             # Never route database traffic back through the host/LAN IP: doing so
