@@ -35,6 +35,104 @@
 .db-row strong{color:#25443f;font-size:12px}.db-row small{display:block;color:#6a7f82;font-size:10px;margin-top:4px}.db-row b{color:#25775d}.db-row button{background:#8f4650;border:0;border-radius:8px;color:#fff;padding:7px;cursor:pointer}
 @media(max-width:1180px){.db-grid{grid-template-columns:1fr}.db-calendar{max-height:62vh}}
 @media(max-width:650px){.db-form{grid-template-columns:1fr}.db-row{grid-template-columns:60px 1fr}.db-row b{grid-column:1}.db-row form{grid-column:2}}
+
+/* Device booking desktop v2 — bright operational scheduler */
+@media(min-width:900px){
+  html{background:#f4f8f7!important;background-image:none!important;color-scheme:light!important}
+  body.gl-page-device_booking_schedule{
+    background:#f4f8f7!important;background-image:none!important;color:#244943!important;color-scheme:light!important;
+  }
+  body.gl-page-device_booking_schedule:before,
+  body.gl-page-device_booking_schedule::before,
+  body.gl-page-device_booking_schedule .app-main:before,
+  body.gl-page-device_booking_schedule .app-main::before{
+    display:none!important;content:none!important;opacity:0!important;background:none!important;
+  }
+  body.gl-page-device_booking_schedule .app-main{
+    background:
+      radial-gradient(circle at 12% 2%,rgba(41,166,115,.05),transparent 22%),
+      radial-gradient(circle at 88% 10%,rgba(60,139,218,.045),transparent 24%),
+      #f4f8f7!important;
+    min-height:100vh!important;
+  }
+  body.gl-page-device_booking_schedule .topbar{
+    background:rgba(255,255,255,.97)!important;background-image:none!important;color:#284a42!important;
+    border-bottom:1px solid #e0ebe7!important;box-shadow:0 5px 18px rgba(40,81,69,.055)!important;
+  }
+  body.gl-page-device_booking_schedule .topbar-search{background:#f7faf9!important;border-color:#dce8e4!important}
+  body.gl-page-device_booking_schedule .topbar-search input{background:transparent!important;color:#284a42!important}
+  body.gl-page-device_booking_schedule .topbar-date,
+  body.gl-page-device_booking_schedule .header-person strong{color:#284a42!important}
+  body.gl-page-device_booking_schedule .header-person span{color:#7b8f8a!important}
+
+  .db-shell{max-width:1740px!important;margin:10px auto 34px!important;gap:13px!important;color:#244943!important}
+  .db-hero{
+    position:relative;overflow:hidden;min-height:122px;
+    padding:24px 26px!important;border:1px solid #d8e9e3!important;border-radius:24px!important;
+    background:
+      radial-gradient(circle at 12% 18%,rgba(255,255,255,.9),transparent 25%),
+      linear-gradient(120deg,#e6f7ef 0%,#f9fffc 48%,#fff6e9 100%)!important;
+    box-shadow:0 15px 34px rgba(39,82,71,.065)!important;
+  }
+  .db-hero:before{content:"";position:absolute;left:-35px;bottom:-55px;width:280px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(52,167,116,.15),transparent 67%)}
+  .db-hero:after{content:"";position:absolute;left:55px;bottom:12px;width:92px;height:38px;border-radius:95% 8% 95% 8%;background:linear-gradient(135deg,#4bad7a,#bce6d3);transform:rotate(14deg);opacity:.72}
+  .db-hero h1{position:relative;z-index:2;font-size:27px!important;color:#123f35!important;margin:0 0 8px!important}
+  .db-hero .db-muted{position:relative;z-index:2;max-width:760px;color:#607b74!important;font-size:11px!important}
+  .db-hero .db-action{position:relative;z-index:2}
+
+  .db-grid{grid-template-columns:minmax(300px,.72fr) minmax(0,2.15fr)!important;gap:13px!important;align-items:start!important}
+  .db-panel{
+    border:1px solid #e0ebe7!important;border-radius:22px!important;background:#fff!important;
+    box-shadow:0 13px 30px rgba(39,82,71,.055)!important;padding:17px!important;
+  }
+  .db-panel h2{color:#173f36!important;font-size:16px!important}
+  .db-muted{color:#718782!important}
+
+  .db-form{gap:10px!important}
+  .db-form label{color:#506d66!important;font-size:10.5px!important}
+  .db-form select,.db-form input{
+    min-height:43px!important;border-color:#d7e5e0!important;border-radius:12px!important;background:#fbfdfc!important;color:#244942!important;
+    box-shadow:inset 0 1px 2px rgba(36,73,64,.025);
+  }
+  .db-form select:focus,.db-form input:focus{outline:none;border-color:#8bcdb2!important;box-shadow:0 0 0 3px rgba(64,170,125,.09)!important}
+  .db-form button,.db-action{
+    min-height:42px;border-radius:12px!important;background:linear-gradient(135deg,#177e5b,#2a9d75)!important;color:#fff!important;
+    box-shadow:0 8px 18px rgba(28,123,91,.14);font-size:10.5px!important;
+  }
+  .db-device-note{background:#edf8f3!important;color:#2b7159!important;border:1px solid #d6e9e0}
+
+  .db-calendar{border-color:#dfe9e6!important;border-radius:17px!important;background:#fbfdfc!important;max-height:68vh!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.55)}
+  .db-table thead th{background:linear-gradient(180deg,#edf8f3,#f8fbfa)!important;border-color:#dfe9e6!important;min-width:158px!important;height:76px!important}
+  .db-table thead th strong{color:#173f36!important;font-size:12px!important}
+  .db-table thead th small{color:#718782!important;font-size:9px!important}
+  .db-time{background:#f3f8f6!important;color:#31584d!important;border-color:#dfe9e6!important}
+  .db-table thead .db-time{background:#e6f4ed!important}
+  .db-cell{height:58px!important}
+  .db-free{height:47px!important;border:1px solid #addbc7!important;background:#e9f8f0!important;color:#166e50!important;border-radius:11px!important;box-shadow:0 4px 10px rgba(38,122,90,.04)}
+  .db-free:hover{background:#daf2e6!important;border-color:#76c5a3!important}
+  .db-busy{height:47px!important;border-color:#f0c9a8!important;background:#fff2e5!important;border-radius:11px!important}
+  .db-busy strong{color:#794b24!important}.db-busy small{color:#916947!important}
+  .db-off{height:47px!important;background:repeating-linear-gradient(135deg,#f5f7f6,#f5f7f6 7px,#edf1ef 7px,#edf1ef 14px)!important;color:#9aa8a4!important}
+  .db-legend{color:#627a74!important;font-size:9.5px!important}
+  .db-row{background:#fbfdfc!important;border-color:#e1ebe8!important;border-radius:13px!important;padding:11px!important}
+  .db-row strong{color:#244942!important}.db-row small{color:#728883!important}.db-row b{color:#1f7658!important}
+
+  .db-empty-devices{
+    min-height:250px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    padding:28px 18px;background:linear-gradient(180deg,#fff,#fbfdfc);color:#69817b;
+  }
+  .db-empty-devices .icon{width:70px;height:70px;border-radius:22px;background:#e8f6ef;color:#23815f;display:grid;place-items:center;font-size:31px;margin-bottom:12px;box-shadow:0 10px 22px rgba(35,125,92,.09)}
+  .db-empty-devices strong{color:#234a40;font-size:14px}.db-empty-devices p{max-width:440px;margin:7px 0 0;font-size:10px;line-height:1.9}
+  .db-empty-devices a{margin-top:12px;text-decoration:none;padding:9px 13px;border-radius:11px;background:#e3f4eb;color:#1f6d51;font-size:10px;font-weight:900}
+
+  .db-datebar{display:flex;justify-content:space-between;gap:12px;align-items:end;flex-wrap:wrap;padding:2px 0 8px}
+  .db-datebar h2{margin:0!important}.db-datebar form{display:flex;gap:6px;align-items:center}
+  .db-datebar input{height:40px;padding:8px;border:1px solid #d6e4df;border-radius:10px;background:#fbfdfc;color:#294a42;width:130px}
+}
+@media(min-width:900px) and (max-width:1180px){
+  .db-grid{grid-template-columns:1fr!important}.db-calendar{max-height:60vh!important}
+}
+
 </style>
 
 <div class="db-shell">
@@ -92,9 +190,9 @@
 </section>
 
 <section class="db-panel">
-  <div style="display:flex;justify-content:space-between;gap:12px;align-items:end;flex-wrap:wrap">
-    <div><h2 style="font-size:15px;color:#24443f;margin:0">ظرفیت دستگاه‌ها · {{ day_jalali }}</h2><div class="db-muted">ردیف‌ها هر {{ slot_minutes }} دقیقه؛ ستون‌ها دستگاه‌ها هستند.</div></div>
-    <form method="get" style="display:flex;gap:6px;align-items:center"><input type="hidden" name="branch" value="{{ branch.pk }}">{% if appointment %}<input type="hidden" name="appointment" value="{{ appointment.pk }}">{% endif %}<input name="day" value="{{ day_jalali }}" style="padding:8px;border:1px solid #cadcd6;border-radius:9px;width:125px"><button class="db-action" type="submit">رفتن به تاریخ</button></form>
+  <div class="db-datebar">
+    <div><h2>ظرفیت دستگاه‌ها · {{ day_jalali }}</h2><div class="db-muted">ردیف‌ها هر {{ slot_minutes }} دقیقه؛ هر ستون یک دستگاه واقعی با کابین فعلی آن است.</div></div>
+    <form method="get"><input type="hidden" name="branch" value="{{ branch.pk }}">{% if appointment %}<input type="hidden" name="appointment" value="{{ appointment.pk }}">{% endif %}<input name="day" value="{{ day_jalali }}"><button class="db-action" type="submit">رفتن به تاریخ</button></form>
   </div>
   <div class="db-legend"><span><i class="lg-free"></i>آزاد</span><span><i class="lg-busy"></i>پر / رزرو شده</span><span><i class="lg-off"></i>خارج از ساعت یا گذشته</span></div>
 
@@ -119,7 +217,7 @@
           </td>
         {% endfor %}
         </tr>
-      {% empty %}<tr><td colspan="99" style="padding:30px;color:#748984">دستگاه فعالی برای این شعبه تعریف نشده است.</td></tr>{% endfor %}
+      {% empty %}<tr><td colspan="99" style="padding:0"><div class="db-empty-devices"><div class="icon">▣</div><strong>برای {{ branch.name }} هنوز دستگاه فعالی در تقویم تعریف نشده است</strong><p>برای نمایش ستون‌های واقعی مثل CoolTech 1، CoolTech 2 یا Define، دستگاه باید در تنظیمات ظرفیت به این شعبه و یک کابین فعال متصل باشد.</p>{% if can_manage %}<a href="{% url 'device_capacity_settings' %}?branch={{ branch.pk }}">رفتن به تنظیمات دستگاه‌ها</a>{% endif %}</div></td></tr>{% endfor %}
       </tbody>
     </table>
   </div>
