@@ -183,9 +183,36 @@ if [[ -f "$LAN_COMPOSE_FILE" ]]; then
 fi
 
 if ! ./scripts/healthcheck.sh; then
-  echo "Healthcheck failed. Existing database backup is available in backups/." >&2
-  echo "Code rollback is handled by the GitHub workflow source snapshot." >&2
-  exit 1
+  echo "Initial healthcheck failed; collecting runtime diagnostics and attempting one controlled web recovery..." >&2
+  "${COMPOSE[@]}" ps || true
+  echo "---- recent public web logs ----" >&2
+  "${COMPOSE[@]}" logs --no-color --tail=160 web >&2 || true
+  echo "---- recent database logs ----" >&2
+  "${COMPOSE[@]}" logs --no-color --tail=100 db >&2 || true
+
+  # Recreate only the application-facing services. PostgreSQL/data volumes are
+  # intentionally left untouched. This repairs stale container networking,
+  # wedged gunicorn workers, and stale nginx upstream DNS without risking data.
+  "${COMPOSE[@]}" restart web || true
+  if "${COMPOSE[@]}" config --services | grep -qx web_lan; then
+    "${COMPOSE[@]}" restart web_lan || true
+  fi
+  sleep 5
+  "${COMPOSE[@]}" restart nginx || true
+  if "${COMPOSE[@]}" config --services | grep -qx nginx_lan; then
+    "${COMPOSE[@]}" restart nginx_lan || true
+  fi
+
+  HEALTHCHECK_TRIES=20 HEALTHCHECK_SLEEP=2 ./scripts/healthcheck.sh || {
+    echo "Recovery healthcheck failed. Existing database backup is available in backups/." >&2
+    echo "---- final public web logs ----" >&2
+    "${COMPOSE[@]}" logs --no-color --tail=220 web >&2 || true
+    echo "---- final compose state ----" >&2
+    "${COMPOSE[@]}" ps >&2 || true
+    echo "Code rollback is handled by the GitHub workflow source snapshot." >&2
+    exit 1
+  }
+  echo "Application recovered after controlled web/proxy restart."
 fi
 
 echo "Checking public login + CSRF path through production nginx..."
