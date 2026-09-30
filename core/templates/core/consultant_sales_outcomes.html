@@ -94,6 +94,206 @@
 @media(max-width:1100px){.care-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:899px){.care-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.care-shortcuts{width:100%}.care .care-grid{grid-template-columns:1fr!important}.care-rail{grid-template-columns:1fr}.care-metric{background:#1a3040;border-color:#3e5b69}.care-metric small,.care-metric em{color:#bdcbd7}.care-metric strong{color:#f4fcf8}}
 @media(max-width:580px){.care-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.care-hero{flex-wrap:wrap}.care-shortcuts a{flex:1 1 43%;font-size:10px}.care-rail{grid-template-columns:1fr}}
+
+/* Consultant desktop v3 — KPI-style colorful premium dashboard */
+@media(min-width:900px){
+  .care{
+    position:relative;
+    padding:16px!important;
+    border:1px solid #d9e7e2;
+    border-radius:28px;
+    background:
+      radial-gradient(circle at 8% 4%,rgba(59,184,137,.10),transparent 22%),
+      radial-gradient(circle at 90% 12%,rgba(66,135,245,.09),transparent 25%),
+      linear-gradient(180deg,#f7fbfa 0%,#eef5f3 100%);
+    box-shadow:0 22px 55px rgba(31,74,61,.08);
+  }
+  .care:before{
+    content:"";position:absolute;inset:0;pointer-events:none;border-radius:28px;
+    background:linear-gradient(120deg,rgba(255,255,255,.72),transparent 32%);
+  }
+  .care>*{position:relative;z-index:1}
+
+  .care .care-hero{
+    overflow:hidden;
+    min-height:132px;
+    padding:25px 28px!important;
+    border:1px solid rgba(50,146,111,.24)!important;
+    border-radius:24px!important;
+    background:
+      radial-gradient(circle at 8% 15%,rgba(255,255,255,.80),transparent 24%),
+      radial-gradient(circle at 78% -20%,rgba(67,142,245,.17),transparent 34%),
+      linear-gradient(120deg,#dff6eb 0%,#f7fffb 45%,#e9f2ff 100%)!important;
+    box-shadow:0 18px 42px rgba(45,114,88,.12)!important;
+  }
+  .care .care-hero:after{
+    content:"";position:absolute;left:-30px;bottom:-56px;width:190px;height:190px;border-radius:50%;
+    background:radial-gradient(circle,rgba(245,174,86,.20),transparent 67%);
+  }
+  .care .care-hero small{letter-spacing:.2px}
+  .care .care-hero h1{font-size:28px!important;line-height:1.35!important;margin-top:5px!important}
+  .care .care-hero p{font-size:12px!important;line-height:2!important;max-width:620px}
+  .care-shortcuts{gap:10px!important;max-width:520px;justify-content:flex-start}
+  .care-shortcuts a{
+    min-height:44px;
+    border:0!important;
+    border-radius:14px!important;
+    padding:10px 15px!important;
+    box-shadow:0 8px 20px rgba(27,66,58,.08);
+    transition:.18s ease;
+  }
+  .care-shortcuts a:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(27,66,58,.13)}
+  .care-shortcuts a:nth-child(1){background:linear-gradient(135deg,#d8f3e7,#eefaf5)!important;color:#17664d!important}
+  .care-shortcuts a:nth-child(2){background:linear-gradient(135deg,#dfeafe,#f1f6ff)!important;color:#315f9c!important}
+  .care-shortcuts a:nth-child(3){background:linear-gradient(135deg,#ffe8dc,#fff5ef)!important;color:#9a5534!important}
+  .care-shortcuts a:nth-child(4){background:linear-gradient(135deg,#fff0cc,#fff8e8)!important;color:#8a601e!important}
+
+  .care-metrics{gap:13px!important}
+  .care-metric{
+    min-height:126px;
+    padding:18px 19px 16px!important;
+    border:0!important;
+    border-radius:22px!important;
+    box-shadow:0 14px 30px rgba(39,80,68,.09)!important;
+    transition:.18s ease;
+  }
+  .care-metric:hover{transform:translateY(-3px);box-shadow:0 18px 36px rgba(39,80,68,.13)!important}
+  .care-metric:before{
+    position:absolute;left:16px;top:15px;width:37px;height:37px;border-radius:12px;
+    display:grid;place-items:center;font-size:17px;font-weight:900;
+    background:rgba(255,255,255,.67);box-shadow:inset 0 0 0 1px rgba(255,255,255,.58);
+  }
+  .care-metric:nth-child(1){background:linear-gradient(145deg,#dff7ec,#f7fffb)!important}
+  .care-metric:nth-child(1):before{content:"◷";color:#177157}
+  .care-metric:nth-child(2){background:linear-gradient(145deg,#e3f1ff,#f8fbff)!important}
+  .care-metric:nth-child(2):before{content:"◎";color:#346ba4}
+  .care-metric:nth-child(3){background:linear-gradient(145deg,#fff0d9,#fffaf2)!important}
+  .care-metric:nth-child(3):before{content:"◈";color:#a46a1d}
+  .care-metric:nth-child(4){background:linear-gradient(145deg,#dcf7f4,#f5fffd)!important}
+  .care-metric:nth-child(4):before{content:"⌁";color:#14796f}
+  .care-metric:nth-child(5){background:linear-gradient(145deg,#ffe9df,#fff8f4)!important}
+  .care-metric:nth-child(5):before{content:"＋";color:#a55a3d}
+  .care-metric small{font-size:11px!important;color:#4a6462!important}
+  .care-metric strong{font-size:34px!important;margin-top:12px!important;color:#173f37!important}
+  .care-metric em{font-size:10px!important;color:#6b7f7d!important}
+
+  .care .care-grid{
+    grid-template-columns:minmax(250px,.72fr) minmax(520px,1.9fr) minmax(235px,.68fr)!important;
+    gap:14px!important;
+    align-items:stretch!important;
+  }
+  .care .queue,.care .workspace{
+    min-height:520px;
+    border:0!important;
+    border-radius:22px!important;
+    background:#fff!important;
+    box-shadow:0 15px 34px rgba(33,76,64,.08)!important;
+  }
+  .care .queue{overflow:hidden}
+  .care .care-head{
+    min-height:59px;
+    padding:15px 17px!important;
+    background:linear-gradient(135deg,#f0faf6,#fbfefd)!important;
+    border-color:#e3eee9!important
+  }
+  .care .care-head h2{font-size:15px!important}
+  .care-filter{height:44px!important;border-radius:13px!important;background:#f8fbfa!important;border-color:#d8e6e1!important}
+  .care .queue-list{padding:10px!important;gap:8px!important}
+  .care .queue-row{
+    border:1px solid #e0ebe7!important;border-radius:14px!important;
+    background:#fbfdfc!important;min-height:70px!important;padding:12px!important;
+  }
+  .care .queue-row:hover,.care .queue-row.active{
+    background:linear-gradient(135deg,#e7f7ef,#f7fcfa)!important;
+    border-color:#87cdb0!important;
+    box-shadow:0 8px 18px rgba(43,126,94,.10)
+  }
+
+  .care .workspace{overflow:hidden}
+  .care-empty-state{
+    min-height:520px!important;
+    padding:50px 36px!important;
+    background:
+      radial-gradient(circle at 50% 40%,rgba(37,151,108,.08),transparent 30%),
+      linear-gradient(180deg,#ffffff,#fbfefd);
+  }
+  .care-empty-state .care-empty-symbol{
+    width:88px!important;height:88px!important;border-radius:28px!important;
+    background:linear-gradient(145deg,#dff5ea,#effbf5)!important;
+    color:#17805c!important;font-size:42px!important;
+    box-shadow:0 15px 30px rgba(36,126,91,.13)
+  }
+  .care-empty-state h3{font-size:21px!important}
+  .care-empty-state p{font-size:12px!important;max-width:480px;line-height:2}
+  .care-empty-state a{
+    min-height:43px;align-items:center;border-radius:13px!important;
+    background:linear-gradient(135deg,#1b8b64,#2eaa7c)!important;color:#fff!important;
+    box-shadow:0 10px 22px rgba(28,129,94,.18)
+  }
+
+  .care-rail{gap:14px!important}
+  .care-rail-card{
+    position:relative;overflow:hidden;
+    padding:18px!important;border:0!important;border-radius:21px!important;
+    box-shadow:0 14px 30px rgba(33,76,64,.08)!important
+  }
+  .care-rail-card:nth-child(1){background:linear-gradient(145deg,#e5f7ef,#fbfffd)!important}
+  .care-rail-card:nth-child(2){background:linear-gradient(145deg,#e8f1ff,#fcfdff)!important}
+  .care-rail-card:nth-child(3){background:linear-gradient(145deg,#fff0e6,#fffaf6)!important}
+  .care-rail-card:after{content:"";position:absolute;width:100px;height:100px;left:-26px;bottom:-38px;border-radius:50%;background:rgba(255,255,255,.42)}
+  .care-rail-card>*{position:relative;z-index:1}
+  .care-rail-card h3{font-size:15px!important}
+  .care-rail-card p{font-size:10.5px!important}
+  .care-rail-link{border:0!important;border-radius:13px!important;box-shadow:0 7px 16px rgba(35,72,64,.07)}
+  .care-rail-link.purple{background:#e4eefc!important;color:#3f6595!important}
+  .care-rail-link.amber{background:#fff0d7!important;color:#916124!important}
+
+  .care .patient-bar{padding:17px 19px!important;background:linear-gradient(135deg,#ecf8f2,#f9fdfb)!important}
+  .care .patient-bar h2{font-size:22px!important}
+  .care .doctor-box{border-radius:17px!important;background:linear-gradient(135deg,#eef4ff,#fbfdff)!important;border-color:#d9e5f5!important}
+  .care .doctor-box h3{color:#355d8a!important}
+  .care .doctor-chips span{background:#e4eefb!important;color:#3d628b!important}
+  .care .item{border-radius:14px!important;box-shadow:0 5px 14px rgba(35,77,68,.035)}
+  .care .item.doctor{border-right:4px solid #4d8ad0!important}
+  .care .item.consultant{border-right:4px solid #25a172!important}
+  .care .final-box{border-radius:18px!important;background:linear-gradient(145deg,#f0f9f5,#fbfefd)!important}
+  .care .total-card{border:0!important;border-radius:14px!important;box-shadow:0 7px 15px rgba(36,77,66,.06)}
+  .care .total-card:nth-child(1){background:#e9f6ff!important}
+  .care .total-card:nth-child(2){background:#fff2df!important}
+  .care .total-card:nth-child(3){background:#e6f7ee!important}
+  .care .primary,.care .pay-self{background:linear-gradient(135deg,#178760,#2aa87c)!important;box-shadow:0 8px 18px rgba(31,133,98,.18)}
+  .care .send-rec{background:linear-gradient(135deg,#3c6fa5,#5688bd)!important}
+  .device-booking-callout{
+    margin-top:12px;padding:13px 14px;border:1px solid #c7e7d9;border-radius:15px;
+    background:linear-gradient(135deg,#e8f8f1,#f8fdfb);
+  }
+  .device-booking-callout a{
+    display:inline-flex;padding:10px 14px;border-radius:11px;
+    background:linear-gradient(135deg,#16805e,#2ba27b);color:#fff;font-weight:900;font-size:11px;text-decoration:none;
+    box-shadow:0 8px 18px rgba(30,125,93,.15)
+  }
+  .device-booking-callout small{display:block;color:#53756c;margin-top:7px;line-height:1.8}
+
+  .care .recent{
+    margin-top:0!important;
+    border:0!important;border-radius:22px!important;background:#fff!important;
+    padding:16px 18px!important;box-shadow:0 15px 34px rgba(33,76,64,.08)!important
+  }
+  .care .recent h3{font-size:14px!important;margin-bottom:10px!important}
+  .care .recent-row{
+    min-height:44px;align-items:center;padding:10px 8px!important;border-color:#e9efed!important;border-radius:9px
+  }
+  .care .recent-row:nth-child(even){background:#f8fbfa}
+  .care .recent-row b{
+    min-width:110px;text-align:center;padding:6px 10px;border-radius:10px;
+    background:#e7f6ef;color:#1c7657!important;font-weight:950
+  }
+}
+@media(min-width:900px) and (max-width:1280px){
+  .care .care-grid{grid-template-columns:minmax(230px,.7fr) minmax(0,1.8fr)!important}
+  .care-rail{grid-column:1/-1!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+
 </style>
 <div class="care">
   <section class="care-hero"><div><small style="color:#26835e;font-weight:900">GREENLIFE · میز کار مشاور</small><h1>پنل مشاوره و چرخه درمان</h1><p>صف بیماران، پکیج درمان، نوبت دستگاه و عملیات مالی، در یک فضای کاری.</p></div><div class="care-shortcuts"><a href="{% url 'device_booking_schedule' %}">◷ نوبت دستگاه‌ها</a><a href="{% url 'internal_messages' %}">✉ چت پرسنل</a><a href="{% url 'consultant_expense_entry' %}">＋ ثبت هزینه</a><a href="{% url 'finance_entry' %}">◈ ثبت دریافت</a></div></section>
@@ -140,9 +340,9 @@
           <div class="next-actions"><a class="pay-self" href="{{ payment_url }}">پرداخت توسط خود مشاور</a><form method="post" style="margin:0">{% csrf_token %}<input type="hidden" name="action" value="send_to_reception"><input type="hidden" name="appointment_id" value="{{ selected.pk }}"><button class="send-rec" type="submit" style="width:100%">ارسال برای پرداخت منشی</button></form></div>
           <div class="status-note">{% if plan.status == 'payment_pending' %}این پرونده هم‌اکنون در صف پرداخت منشی است؛ تا قبل از ثبت پرداخت می‌توانید از همینجا پرداخت را انجام دهید.{% else %}پکیج نهایی شده و آماده دریافت وجه است.{% endif %}</div>
           {% endif %}
-<div style="margin-top:12px;padding:11px;border:1px solid #396b67;border-radius:12px;background:#102e32">
-  <a href="{% url 'device_booking_schedule' %}?appointment={{ selected.pk }}" style="display:inline-flex;padding:9px 13px;border-radius:9px;background:#176d5b;color:#fff;font-weight:900;font-size:11px;text-decoration:none">تقویم و رزرو تک‌جلسه‌ای دستگاه‌ها</a>
-  <small style="display:block;color:#c9e5e4;margin-top:6px">با بیعانه یا تسویه ثبت‌شده، هر بار فقط یک جلسه از هر خدمت رزرو می‌شود.</small>
+<div class="device-booking-callout">
+  <a href="{% url 'device_booking_schedule' %}?appointment={{ selected.pk }}">تقویم و رزرو تک‌جلسه‌ای دستگاه‌ها</a>
+  <small>با بیعانه یا تسویه ثبت‌شده، هر بار فقط یک جلسه از هر خدمت رزرو می‌شود.</small>
 </div>
           {% if plan.status != 'partial_paid' and plan.status != 'paid' %}<div class="nosale"><form method="post">{% csrf_token %}<input type="hidden" name="action" value="no_sale"><input type="hidden" name="appointment_id" value="{{ selected.pk }}"><select name="failure_reason">{% for key,label in failure_reasons %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select><textarea name="failure_note" placeholder="توضیح اختیاری"></textarea><button class="danger" type="submit">فعلاً خرید نکرد / برگشت به پیگیری</button></form></div>{% endif %}
         </div>
