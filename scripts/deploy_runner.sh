@@ -164,18 +164,16 @@ else
   "${COMPOSE[@]}" up -d --no-build --remove-orphans
 fi
 
-# nginx.conf is bind-mounted. An infrastructure-only deploy may leave the
-# existing nginx container running, so reload it explicitly to apply proxy
-# header changes without rebuilding or contacting Docker Hub.
+# nginx resolves Docker service names when workers start. Replacing the web
+# container can give it a new bridge IP while nginx keeps the old upstream IP.
+# Validate config, then restart the public proxy so it always resolves the
+# current web endpoint. This fixes intermittent 502/healthcheck failures after
+# otherwise healthy source-only deploys.
 "${COMPOSE[@]}" exec -T nginx nginx -t
-"${COMPOSE[@]}" exec -T nginx nginx -s reload
+echo "Refreshing public proxy DNS after web replacement..."
+"${COMPOSE[@]}" restart nginx
 
-# Docker service names are resolved by nginx when its workers start. The LAN
-# web container can receive a new bridge IP during an application deploy while
-# nginx_lan itself remains up, leaving its workers pointed at the retired IP.
-# Restart only the LAN proxy after container replacement so it always resolves
-# the current web_lan address. Public nginx (8085), CRM and PostgreSQL are not
-# interrupted by this operation.
+# Do the same for the private LAN proxy after web_lan replacement.
 if [[ -f "$LAN_COMPOSE_FILE" ]]; then
   echo "Refreshing private LAN proxy DNS after web_lan replacement..."
   "${COMPOSE[@]}" exec -T nginx_lan nginx -t
@@ -190,18 +188,20 @@ if ! ./scripts/healthcheck.sh; then
   echo "---- recent database logs ----" >&2
   "${COMPOSE[@]}" logs --no-color --tail=100 db >&2 || true
 
-  # Recreate only the application-facing services. PostgreSQL/data volumes are
-  # intentionally left untouched. A plain restart can preserve a stale Docker
-  # endpoint/DNS binding, so force-create fresh endpoints for web + proxies.
-  recovery_services=(web nginx)
+  # Recreate application containers first, then restart proxies only after the
+  # new web endpoints exist. Recreating web + nginx concurrently can make nginx
+  # resolve the retiring web IP and keep returning 502 even after Gunicorn boots.
+  recovery_web_services=(web)
   if "${COMPOSE[@]}" config --services | grep -qx web_lan; then
-    recovery_services+=(web_lan)
+    recovery_web_services+=(web_lan)
   fi
+  "${COMPOSE[@]}" up -d --no-deps --force-recreate "${recovery_web_services[@]}" || true
+  sleep 5
+  "${COMPOSE[@]}" restart nginx || true
   if "${COMPOSE[@]}" config --services | grep -qx nginx_lan; then
-    recovery_services+=(nginx_lan)
+    "${COMPOSE[@]}" restart nginx_lan || true
   fi
-  "${COMPOSE[@]}" up -d --no-deps --force-recreate "${recovery_services[@]}" || true
-  sleep 7
+  sleep 3
 
   echo "---- recovery connectivity probes ----" >&2
   "${COMPOSE[@]}" exec -T web python - <<'PY' >&2 || true
