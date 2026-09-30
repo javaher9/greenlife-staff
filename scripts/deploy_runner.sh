@@ -49,6 +49,26 @@ fi
 if "${COMPOSE[@]}" config --services | grep -qx db; then
   echo "Ensuring PostgreSQL service is running..."
   "${COMPOSE[@]}" up -d db
+
+  echo "Waiting for PostgreSQL readiness..."
+  db_ready=0
+  for i in {1..30}; do
+    if "${COMPOSE[@]}" exec -T db pg_isready -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-${POSTGRES_USER:-postgres}}" >/dev/null 2>&1; then
+      db_ready=1
+      echo "PostgreSQL is ready."
+      break
+    fi
+    if [[ "$i" == "6" ]]; then
+      echo "PostgreSQL still not ready; restarting database container once..." >&2
+      "${COMPOSE[@]}" restart db || true
+    fi
+    sleep 2
+  done
+  if [[ "$db_ready" != "1" ]]; then
+    echo "PostgreSQL did not become ready. Recent database log:" >&2
+    "${COMPOSE[@]}" logs --no-color --tail=120 db >&2 || true
+    exit 1
+  fi
 fi
 
 # Summarize the outgoing web container before replacement. Only aggregate
