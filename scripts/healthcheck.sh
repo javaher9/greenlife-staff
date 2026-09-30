@@ -5,7 +5,7 @@ URL="${HEALTHCHECK_URL:-http://127.0.0.1:${NGINX_PORT:-8085}/api/health/}"
 TRIES="${HEALTHCHECK_TRIES:-30}"
 SLEEP="${HEALTHCHECK_SLEEP:-3}"
 for ((i=1;i<=TRIES;i++)); do
-  if curl -fsS --max-time 5 "$URL" | grep -q '"status"[[:space:]]*:[[:space:]]*"ok"'; then
+  if curl -fsS --max-time 5 -H 'Host: staff.greenlifeclinics.com' -H 'X-Forwarded-Proto: https' "$URL" | grep -q '"status"[[:space:]]*:[[:space:]]*"ok"'; then
     echo "Healthcheck OK: $URL"
     exit 0
   fi
