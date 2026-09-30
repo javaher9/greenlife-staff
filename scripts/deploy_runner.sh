@@ -191,17 +191,29 @@ if ! ./scripts/healthcheck.sh; then
   "${COMPOSE[@]}" logs --no-color --tail=100 db >&2 || true
 
   # Recreate only the application-facing services. PostgreSQL/data volumes are
-  # intentionally left untouched. This repairs stale container networking,
-  # wedged gunicorn workers, and stale nginx upstream DNS without risking data.
-  "${COMPOSE[@]}" restart web || true
+  # intentionally left untouched. A plain restart can preserve a stale Docker
+  # endpoint/DNS binding, so force-create fresh endpoints for web + proxies.
+  recovery_services=(web nginx)
   if "${COMPOSE[@]}" config --services | grep -qx web_lan; then
-    "${COMPOSE[@]}" restart web_lan || true
+    recovery_services+=(web_lan)
   fi
-  sleep 5
-  "${COMPOSE[@]}" restart nginx || true
   if "${COMPOSE[@]}" config --services | grep -qx nginx_lan; then
-    "${COMPOSE[@]}" restart nginx_lan || true
+    recovery_services+=(nginx_lan)
   fi
+  "${COMPOSE[@]}" up -d --no-deps --force-recreate "${recovery_services[@]}" || true
+  sleep 7
+
+  echo "---- recovery connectivity probes ----" >&2
+  "${COMPOSE[@]}" exec -T web python - <<'PY' >&2 || true
+import socket
+print("web hostname:", socket.gethostname())
+s=socket.create_connection(("127.0.0.1",8005),3)
+s.sendall(b"GET /api/health/ HTTP/1.0\r\nHost: staff.greenlifeclinics.com\r\n\r\n")
+print(s.recv(500).decode("latin1","replace"))
+s.close()
+PY
+  "${COMPOSE[@]}" exec -T nginx sh -c 'getent hosts web || true; wget -S -O- -T 5 http://web:8005/api/health/ 2>&1 | head -40' >&2 || true
+  "${COMPOSE[@]}" logs --no-color --tail=100 nginx >&2 || true
 
   HEALTHCHECK_TRIES=20 HEALTHCHECK_SLEEP=2 ./scripts/healthcheck.sh || {
     echo "Recovery healthcheck failed. Existing database backup is available in backups/." >&2
