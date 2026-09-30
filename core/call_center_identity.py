@@ -237,6 +237,9 @@ class FlowerLeadProxy:
         if self._is_instagram_lead():
             return self.instagram_page_display or 'Greenlifeclinics'
         source_url=str(getattr(self._flower_lead,'source_url','') or '').lower()
+        notes=str(getattr(self._flower_lead,'notes','') or '').lower()
+        if '/persian-beauty/' in source_url or '[channel:persian_beauty]' in notes:
+            return 'Persian Beauty'
         if self._is_beytoote_lead():
             return 'بیتوته'
         if '/aparat/' in source_url or 'aparat' in source_url:
