@@ -278,6 +278,35 @@ class PublicReferralLeadForm(ReferralLeadForm):
         }
 
 
+class PersianBeautyPublicLeadForm(forms.ModelForm):
+    """Minimal two-field landing form for Persian Beauty traffic."""
+    class Meta:
+        model=ReferralLead
+        fields=['full_name','phone']
+        labels={
+            'full_name':'نام و نام خانوادگی',
+            'phone':'شماره موبایل',
+        }
+        widgets={
+            'full_name':forms.TextInput(attrs={
+                'placeholder':'نام و نام خانوادگی',
+                'autocomplete':'name',
+            }),
+            'phone':forms.TextInput(attrs={
+                'placeholder':'مثلاً 09121234567',
+                'inputmode':'tel',
+                'autocomplete':'tel',
+                'dir':'ltr',
+            }),
+        }
+
+    def clean_phone(self):
+        value=''.join(ch for ch in self.cleaned_data['phone'] if ch.isdigit() or ch=='+')
+        if len(value)<10:
+            raise forms.ValidationError('شماره موبایل معتبر وارد کنید.')
+        return value
+
+
 class BeytootePublicLeadForm(forms.ModelForm):
     class Meta:
         model=ReferralLead
