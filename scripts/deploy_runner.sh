@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Zero-downtime smoke test marker
 set -Eeuo pipefail
 # Runtime diagnostic refresh marker. Emergency production recovery trigger 2026-09-30.
 
