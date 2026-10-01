@@ -424,22 +424,18 @@ else
 fi
 
 if [[ -f "$LAN_COMPOSE_FILE" ]]; then
-  echo "Checking private LAN login endpoint..."
-  lan_ok=0
-  for i in {1..30}; do
-    # Use the real LAN Host, not localhost: localhost is accepted by both web
-    # services and could hide a stale nginx_lan upstream after a Docker IP swap.
-    code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 5 -H 'Host: 192.168.40.96' http://127.0.0.1:8086/login/ || true)"
-    if [[ "$code" == "200" ]]; then
-      lan_ok=1
-      echo "LAN login endpoint OK: http://192.168.40.96:8086/login/"
+  echo "Checking private LAN login through nginx container..."
+  lan_login_ok=0
+  for i in {1..20}; do
+    if docker exec "$LAN_NGINX" sh -c "wget -q -O /dev/null -T 4 --header='Host: 192.168.40.96' http://127.0.0.1/login/"; then
+      lan_login_ok=1
+      echo "LAN login endpoint OK through nginx container."
       break
     fi
-    echo "Waiting for LAN login endpoint ($i/30), HTTP ${code:-none}..."
-    sleep 2
+    sleep 1
   done
-  if [[ "$lan_ok" != "1" ]]; then
-    echo "LAN login healthcheck failed." >&2
+  if [[ "$lan_login_ok" != "1" ]]; then
+    echo "LAN login healthcheck failed inside nginx container." >&2
     exit 1
   fi
 fi
