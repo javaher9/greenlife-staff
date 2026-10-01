@@ -233,6 +233,40 @@ background:#1a2c38!important;border-color:#486174!important;color:#fff!important
 }
 </style>
 
+
+<style id="settings-submenu-readability-v1">
+.gl-settings-menu>summary{
+  color:#f2f7fa!important;
+  font-size:12.5px!important;
+  font-weight:900!important;
+}
+.gl-settings-menu>summary .settings-caret{color:#c2ced8!important}
+.gl-settings-submenu{
+  background:rgba(10,25,34,.72)!important;
+  border-right-color:#3d5f70!important;
+}
+.gl-settings-submenu a{
+  color:#dfe8ee!important;
+  font-size:11.5px!important;
+  font-weight:850!important;
+  line-height:1.45!important;
+  letter-spacing:0!important;
+}
+.gl-settings-submenu a:hover{
+  color:#ffffff!important;
+  background:#17303c!important;
+}
+.gl-settings-submenu a.is-active{
+  color:#ffffff!important;
+  background:linear-gradient(135deg,#1c5a46,#17483b)!important;
+  box-shadow:inset 0 0 0 1px rgba(104,184,150,.22)!important;
+}
+.gl-settings-submenu a .nav-ico{
+  color:#cfe8dc!important;
+  opacity:1!important;
+}
+</style>
+
 </head>
 <body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'doctor' or user.profile.role == 'receptionist' %}gl-role-employee{% endif %} {% if user.profile.role == 'call_center' %}gl-role-call-center{% endif %} {% if user.profile.role == 'consultant' %}gl-role-consultant{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
 {% if request.session.impersonator_user_id %}
