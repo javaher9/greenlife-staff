@@ -37,6 +37,12 @@
 .cap-toggle-form{margin:0!important;display:inline-flex!important}
 .cap-toggle{min-height:34px!important;padding:6px 10px!important;font-size:9.5px!important;border-radius:999px!important}
 .cap-toggle.off{background:linear-gradient(135deg,#8b3e36,#b95b4d)!important}
+.cap-delete{background:linear-gradient(135deg,#692d35,#8d3945)!important;color:#ffe9ed!important;border:1px solid rgba(231,120,136,.24)!important;box-shadow:none!important}
+.cap-delete:hover{filter:brightness(1.08)}
+.cap-cabins{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 2px}
+.cap-cabin-chip{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:11px;background:#0c2230;border:1px solid rgba(97,145,160,.22);color:#dce9e6;font-size:10px;font-weight:900}
+.cap-cabin-chip form{margin:0!important}
+.cap-cabin-chip button{min-height:30px!important;padding:5px 8px!important;font-size:9px!important}
 .cap-device-row.is-off{opacity:.66;filter:saturate(.72)}
 .cap-device-row.is-off:before{background:linear-gradient(#6d7681,#4c5660)}
 .cap-device-row.is-off strong{color:#c8d0d3}
@@ -88,7 +94,9 @@
 </section>
 <section class="cap-panel">
 <div class="cap-section-head"><div><h2>کابین‌ها و دستگاه‌های فیزیکی</h2><div class="cap-note">ابتدا کابین را بسازید، سپس دستگاه را به آن متصل کنید.</div></div><span class="cap-icon device-icon">▣</span></div>
-<div class="cap-new-box"><span class="cap-badge">＋ کابین جدید</span><form method="post">{% csrf_token %}<input type="hidden" name="action" value="cabin"><input type="hidden" name="branch" value="{{ branch.pk }}"><label>نام کابین<input name="name" placeholder="مثلاً کابین ۱" required></label><button>افزودن کابین</button></form></div>
+<div class="cap-new-box"><span class="cap-badge">＋ کابین جدید</span><form method="post">{% csrf_token %}<input type="hidden" name="action" value="cabin"><input type="hidden" name="branch" value="{{ branch.pk }}"><label>نام کابین<input name="name" placeholder="مثلاً کابین ۱" required></label><button>افزودن کابین</button></form>
+{% if cabins %}<div class="cap-cabins">{% for cabin in cabins %}<div class="cap-cabin-chip"><span>{{ cabin.name }}</span><form method="post" onsubmit="return confirm('کابین «{{ cabin.name }}» حذف شود؟');">{% csrf_token %}<input type="hidden" name="action" value="delete_cabin"><input type="hidden" name="branch" value="{{ branch.pk }}"><input type="hidden" name="cabin_id" value="{{ cabin.pk }}"><button class="cap-delete" type="submit">حذف</button></form></div>{% endfor %}</div>{% endif %}
+</div>
 <div class="cap-new-box device"><span class="cap-badge">＋ دستگاه جدید</span><form method="post">{% csrf_token %}<input type="hidden" name="action" value="device"><input type="hidden" name="branch" value="{{ branch.pk }}"><label>نام دستگاه فیزیکی<input name="name" placeholder="مثلاً CoolTech 1" required></label><label>نوع دستگاه<select name="type_id">{% for t in active_types %}<option value="{{ t.pk }}">{{ t.name }} · {{ t.code }}</option>{% endfor %}</select></label><label>کابین<select name="cabin_id">{% for cabin in cabins %}<option value="{{ cabin.pk }}">{{ cabin.name }}</option>{% endfor %}</select></label><button>افزودن دستگاه</button></form></div>
 {% for device in devices %}<div class="cap-row cap-device-row {% if not device.is_active %}is-off{% endif %}">
 <div class="cap-device-head">
@@ -113,6 +121,12 @@
         <button class="cap-toggle" type="submit">فعال کردن</button>
       </form>
     {% endif %}
+    <form method="post" class="cap-toggle-form" onsubmit="return confirm('دستگاه «{{ device.name }}» حذف شود؟ اگر سابقه نوبت داشته باشد سیستم اجازه حذف نمی‌دهد.');">{% csrf_token %}
+      <input type="hidden" name="action" value="delete_device">
+      <input type="hidden" name="branch" value="{{ branch.pk }}">
+      <input type="hidden" name="device_id" value="{{ device.pk }}">
+      <button class="cap-toggle cap-delete" type="submit">حذف</button>
+    </form>
   </div>
 </div>
 <form method="post">{% csrf_token %}<input type="hidden" name="action" value="move"><input type="hidden" name="branch" value="{{ branch.pk }}"><input type="hidden" name="device_id" value="{{ device.pk }}"><label>کابین<select name="cabin_id"> {% for cabin in cabins %}<option value="{{ cabin.pk }}" {% if device.cabin_id == cabin.pk %}selected{% endif %}>{{ cabin.name }}</option>{% endfor %}</select></label><label>شروع کار<input name="work_start" type="time" value="{{ device.work_start|time:'H:i' }}"></label><label>آخرین شروع<input name="last_start" type="time" value="{{ device.last_start|time:'H:i' }}"></label><button>ذخیره</button></form></div>{% empty %}<p class="cap-note cap-muted">هنوز دستگاهی تعریف نشده؛ ابتدا کابین و سپس دستگاه فیزیکی اضافه کنید.</p>{% endfor %}
