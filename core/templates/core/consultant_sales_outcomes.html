@@ -45,7 +45,7 @@
 .care-empty-state h3{margin:0;color:#24473f;font-size:18px}
 .care-empty-state p{margin:0;color:#607887;font-size:12px}
 .care-empty-state a{margin-top:8px;display:inline-flex;text-decoration:none;border-radius:10px;background:#dff3e9;color:#206548;padding:11px 16px;font-weight:900;font-size:11px}
-@media(min-width:900px){
+@media(min-width:701px){
   body.gl-page-consultant_sales_outcomes .app-main{background:#f3f7f6!important;background-image:none!important;color:#243d47!important}
   body.gl-page-consultant_sales_outcomes .care{color:#263f49!important}
   .care .care-hero{padding:22px 25px!important;border-color:#b8ddca!important;background:linear-gradient(108deg,#e9f6ef,#fff 65%,#f1f4ff)!important;box-shadow:0 12px 29px rgba(34,108,77,.08)!important}
@@ -90,13 +90,13 @@
   .care .plan{padding-bottom:19px!important}
   .care .plan-title{margin-top:18px!important}
 }
-@media(min-width:900px) and (max-width:1420px){.care .care-grid{grid-template-columns:minmax(230px,.75fr) minmax(0,2fr)!important}.care-rail{grid-column:1/-1;grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:701px) and (max-width:1420px){.care .care-grid{grid-template-columns:minmax(230px,.75fr) minmax(0,2fr)!important}.care-rail{grid-column:1/-1;grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:1100px){.care-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:899px){.care-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.care-shortcuts{width:100%}.care .care-grid{grid-template-columns:1fr!important}.care-rail{grid-template-columns:1fr}.care-metric{background:#1a3040;border-color:#3e5b69}.care-metric small,.care-metric em{color:#bdcbd7}.care-metric strong{color:#f4fcf8}}
+@media(max-width:700px){.care-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.care-shortcuts{width:100%}.care .care-grid{grid-template-columns:1fr!important}.care-rail{grid-template-columns:1fr}.care-metric{background:#1a3040;border-color:#3e5b69}.care-metric small,.care-metric em{color:#bdcbd7}.care-metric strong{color:#f4fcf8}}
 @media(max-width:580px){.care-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.care-hero{flex-wrap:wrap}.care-shortcuts a{flex:1 1 43%;font-size:10px}.care-rail{grid-template-columns:1fr}}
 
 /* Consultant desktop v4 — approved bright center workspace */
-@media (min-width:900px){
+@media(min-width:701px){
   html{background:#f4f8f7!important;background-image:none!important;color-scheme:light!important}
   body.gl-page-consultant_sales_outcomes{
     background:#f4f8f7!important;
@@ -422,10 +422,33 @@
 
   .empty{color:#728883!important}
 }
-@media (min-width:900px) and (max-width:1199px){
+@media(min-width:701px) and (max-width:1199px){
   .care-grid{grid-template-columns:minmax(220px,.75fr) minmax(0,1.8fr)!important;grid-template-areas:"queue workspace" "rail rail"!important}
   .care-rail{display:grid!important;grid-template-columns:170px 1fr;gap:12px;min-height:auto}
   .quick-actions{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.quick-action{grid-template-columns:36px 1fr;min-height:66px}.quick-action .qa-arrow{display:none}.quick-action .qa-icon{width:36px;height:36px}.quick-summary{display:none}
+}
+
+
+@media(min-width:701px) and (max-width:1100px){
+  body.gl-page-consultant_sales_outcomes .care .queue,
+  body.gl-page-consultant_sales_outcomes .care .workspace,
+  body.gl-page-consultant_sales_outcomes .care .care-rail{min-height:430px!important}
+  body.gl-page-consultant_sales_outcomes .care-empty-state{min-height:430px!important;padding:30px 24px!important}
+  body.gl-page-consultant_sales_outcomes .care-empty-state .patient-empty-art{transform:scale(.9);margin-bottom:-2px}
+}
+@media(min-width:701px){
+  body.gl-page-consultant_sales_outcomes .care-filter{
+    background:#f8fbfa!important;color:#294a43!important;border-color:#d7e4df!important;
+  }
+  body.gl-page-consultant_sales_outcomes .quick-action{box-shadow:0 8px 18px rgba(38,79,68,.055)!important}
+  body.gl-page-consultant_sales_outcomes .quick-action strong{color:inherit!important}
+  body.gl-page-consultant_sales_outcomes .quick-action small{color:inherit!important;opacity:.72!important}
+  body.gl-page-consultant_sales_outcomes .recent-row b{
+    min-width:138px!important;padding:7px 11px!important;border-radius:10px!important;
+    background:#e2f4eb!important;color:#176d50!important;font-size:10.5px!important;font-weight:950!important;
+  }
+  body.gl-page-consultant_sales_outcomes .recent-row span{color:#657b75!important}
+  body.gl-page-consultant_sales_outcomes .recent-cols{color:#6d827d!important}
 }
 
 </style>
