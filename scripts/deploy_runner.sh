@@ -220,11 +220,33 @@ fi
 
 set_public_upstream() {
   local target="$1"
-  sed -E -i 's#set \\$greenlife_web_upstream [^;]+;#set $greenlife_web_upstream '"${target}"':8005;#' "$DEPLOY_PATH/deploy/nginx.conf"
+  python3 - "$DEPLOY_PATH/deploy/nginx.conf" "$target" <<'PY'
+from pathlib import Path
+import re, sys
+path=Path(sys.argv[1])
+target=sys.argv[2]
+text=path.read_text()
+text,n=re.subn(r'set \$greenlife_web_upstream\s+[^;]+;', f'set $greenlife_web_upstream {target}:8005;', text, count=1)
+if n != 1:
+    raise SystemExit('public upstream directive not found')
+with path.open('w', encoding='utf-8') as handle:
+    handle.write(text)
+PY
 }
 set_lan_upstream() {
   local target="$1"
-  sed -E -i 's#set \\$greenlife_lan_upstream [^;]+;#set $greenlife_lan_upstream '"${target}"':8005;#' "$DEPLOY_PATH/deploy/nginx-lan.conf"
+  python3 - "$DEPLOY_PATH/deploy/nginx-lan.conf" "$target" <<'PY'
+from pathlib import Path
+import re, sys
+path=Path(sys.argv[1])
+target=sys.argv[2]
+text=path.read_text()
+text,n=re.subn(r'set \$greenlife_lan_upstream\s+[^;]+;', f'set $greenlife_lan_upstream {target}:8005;', text, count=1)
+if n != 1:
+    raise SystemExit('LAN upstream directive not found')
+with path.open('w', encoding='utf-8') as handle:
+    handle.write(text)
+PY
 }
 reload_public_nginx() {
   docker exec "$PUBLIC_NGINX" nginx -t
