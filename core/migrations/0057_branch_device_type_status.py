@@ -5,7 +5,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0056_device_booking'),
+        ('core', '0046_call_outcome_sms_events'),
     ]
 
     operations = [
