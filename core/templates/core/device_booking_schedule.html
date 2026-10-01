@@ -133,14 +133,29 @@
   .db-grid{grid-template-columns:1fr!important}.db-calendar{max-height:60vh!important}
 }
 
+
+@media(min-width:821px){
+  body.gl-role-consultant .db-shell{max-width:1740px!important}
+  body.gl-role-consultant .db-hero{display:flex;align-items:center;justify-content:space-between;gap:18px}
+  body.gl-role-consultant .db-hero-copy{position:relative;z-index:2;max-width:820px}
+  body.gl-role-consultant .db-back{
+    position:relative;z-index:2;display:inline-flex;align-items:center;justify-content:center;
+    min-height:42px;padding:0 15px;border-radius:12px;background:#e3f5eb;color:#1c6a4e;
+    border:1px solid #cfe7db;text-decoration:none;font-size:10px;font-weight:900;white-space:nowrap;
+  }
+}
+
 </style>
 
 <div class="db-shell">
 <section class="db-hero">
-  <h1>تقویم دستگاه‌ها · {{ branch.name }}</h1>
-  {% if is_admin %}<form method="get" style="display:flex;gap:8px;align-items:center;margin:8px 0"><select name="branch" style="padding:8px;border:1px solid #cadcd6;border-radius:9px;background:#fff;color:#25443f">{% for b in branches %}<option value="{{ b.pk }}" {% if branch.pk == b.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select><button style="padding:8px;border:0;border-radius:8px;background:#138568;color:#fff">انتخاب شعبه</button></form>{% endif %}
-  <div class="db-muted">هر ستون یک دستگاه واقعی است و کابین فعلی همان دستگاه زیر نامش دیده می‌شود. اگر دستگاه بین کابین‌ها جابه‌جا شود، فقط عنوان کابین آن ستون تغییر می‌کند.</div>
-  {% if can_manage %}<p><a class="db-action" href="{% url 'device_capacity_settings' %}">تنظیم دستگاه‌ها، کابین‌ها و ساعت کاری</a></p>{% endif %}
+  <div class="db-hero-copy">
+    <h1>تقویم دستگاه‌ها · {{ branch.name }}</h1>
+    {% if is_admin %}<form method="get" style="display:flex;gap:8px;align-items:center;margin:8px 0"><select name="branch" style="padding:8px;border:1px solid #cadcd6;border-radius:9px;background:#fff;color:#25443f">{% for b in branches %}<option value="{{ b.pk }}" {% if branch.pk == b.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select><button style="padding:8px;border:0;border-radius:8px;background:#138568;color:#fff">انتخاب شعبه</button></form>{% endif %}
+    <div class="db-muted">هر ستون یک دستگاه واقعی است و کابین فعلی همان دستگاه زیر نامش دیده می‌شود. اگر دستگاه بین کابین‌ها جابه‌جا شود، فقط عنوان کابین آن ستون تغییر می‌کند.</div>
+    {% if can_manage %}<p><a class="db-action" href="{% url 'device_capacity_settings' %}">تنظیم دستگاه‌ها، کابین‌ها و ساعت کاری</a></p>{% endif %}
+  </div>
+  {% if user.profile.role == 'consultant' %}<a class="db-back" href="{% url 'consultant_sales_outcomes' %}">← بازگشت به پنل مشاور</a>{% endif %}
 </section>
 
 <div class="db-grid">
