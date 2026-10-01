@@ -451,6 +451,70 @@
   body.gl-page-consultant_sales_outcomes .recent-cols{color:#6d827d!important}
 }
 
+
+@media(min-width:701px){
+  body.gl-page-consultant_sales_outcomes .recent-cols,
+  body.gl-page-consultant_sales_outcomes .recent-row{
+    grid-template-columns:minmax(180px,1.35fr) 190px 170px!important;
+  }
+  body.gl-page-consultant_sales_outcomes .recent-cols>span:nth-child(2),
+  body.gl-page-consultant_sales_outcomes .recent-cols>span:nth-child(3){
+    text-align:right!important;
+  }
+  body.gl-page-consultant_sales_outcomes .recent-date-time{
+    width:100%;
+    display:flex!important;
+    flex-direction:row!important;
+    direction:rtl!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:8px!important;
+    text-align:right!important;
+    color:#536f67!important;
+    font-size:10.5px!important;
+    font-weight:800!important;
+    line-height:1.25!important;
+    transform:translateY(-1px);
+    white-space:nowrap;
+  }
+  body.gl-page-consultant_sales_outcomes .recent-time{
+    color:#315d52!important;
+    font-weight:950!important;
+    font-size:11px!important;
+  }
+  body.gl-page-consultant_sales_outcomes .recent-date{
+    color:#71857f!important;
+    font-weight:800!important;
+    font-size:10.5px!important;
+  }
+  body.gl-page-consultant_sales_outcomes .recent-money{
+    min-width:145px!important;
+    display:inline-flex!important;
+    flex-direction:row!important;
+    direction:rtl!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:4px!important;
+    padding:7px 11px!important;
+    border-radius:10px!important;
+    background:#e2f4eb!important;
+    color:#176d50!important;
+    text-align:right!important;
+    white-space:nowrap!important;
+    line-height:1.15!important;
+  }
+  body.gl-page-consultant_sales_outcomes .recent-money-number{
+    font-size:11px!important;
+    font-weight:950!important;
+    color:#125e45!important;
+  }
+  body.gl-page-consultant_sales_outcomes .recent-money-unit{
+    font-size:10px!important;
+    font-weight:850!important;
+    color:#28745a!important;
+  }
+}
+
 </style>
 <div class="care">
   <section class="care-hero">
@@ -518,7 +582,7 @@
       <div class="quick-summary"><div><span>نوبت دستگاه امروز</span><b>{{ kpis.device_bookings_today }}</b></div><div><span>هزینه منتظر تأیید</span><b>{{ kpis.expenses_pending }}</b></div></div>
     </aside>
   </div>
-  <section class="recent"><div class="recent-header"><h3>آخرین دریافت‌های ثبت‌شده توسط شما</h3><span>آخرین موارد</span></div><div class="recent-cols"><span>نام بیمار</span><span>تاریخ و ساعت</span><span>مبلغ</span></div>{% for tx in recent_paid %}<div class="recent-row"><strong>{{ tx.person_name|default:"—" }}</strong><span>{{ tx.created_at|jdatetime }}</span><b>{{ tx.amount|million_toman }} میلیون تومان</b></div>{% empty %}<div class="empty">هنوز پرداختی ثبت نشده است.</div>{% endfor %}</section>
+  <section class="recent"><div class="recent-header"><h3>آخرین دریافت‌های ثبت‌شده توسط شما</h3><span>آخرین موارد</span></div><div class="recent-cols"><span>نام بیمار</span><span>تاریخ و ساعت</span><span>مبلغ</span></div>{% for tx in recent_paid %}<div class="recent-row"><strong>{{ tx.person_name|default:"—" }}</strong><span class="recent-date-time"><span class="recent-time" dir="ltr">{{ tx.created_at|date:"H:i" }}</span><span class="recent-date" dir="ltr">{{ tx.created_at|jdate_en }}</span></span><b class="recent-money"><span class="recent-money-number" dir="ltr">{{ tx.amount|million_toman }}</span><span class="recent-money-unit">میلیون تومان</span></b></div>{% empty %}<div class="empty">هنوز پرداختی ثبت نشده است.</div>{% endfor %}</section>
 </div>
 <script>
 (function(){
