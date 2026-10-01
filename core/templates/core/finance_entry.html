@@ -35,11 +35,45 @@
   .panel .sectionhead{align-items:flex-start;gap:9px;flex-direction:column}
   .fin-cash-fields.open{grid-template-columns:1fr}
 }
+
+@media(min-width:821px){
+  body.gl-role-consultant .finance-entry-shell{max-width:1500px;margin:12px auto 36px;gap:13px}
+  body.gl-role-consultant .finance-entry-shell .hero{
+    display:flex!important;align-items:center!important;justify-content:space-between!important;gap:18px!important;
+    padding:23px 25px!important;min-height:120px!important;
+  }
+  body.gl-role-consultant .fin-hero-copy{max-width:760px}
+  body.gl-role-consultant .fin-back{
+    display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 15px;
+    border-radius:12px;background:#e3f5eb;color:#1c6a4e;text-decoration:none;font-size:10px;font-weight:900;
+    border:1px solid #cfe7db;white-space:nowrap;
+  }
+  body.gl-role-consultant .finance-entry-shell .panel{border-radius:20px!important;padding:18px!important}
+  body.gl-role-consultant .finance-entry-form .grid{gap:12px!important}
+  body.gl-role-consultant .finance-entry-form label{display:grid;gap:6px;font-size:10px!important;font-weight:850!important}
+  body.gl-role-consultant .finance-entry-form input,
+  body.gl-role-consultant .finance-entry-form select,
+  body.gl-role-consultant .finance-entry-form textarea{border-radius:11px!important;min-height:42px!important}
+  body.gl-role-consultant .finance-entry-form textarea{min-height:86px!important}
+  body.gl-role-consultant .fin-cash-fields{
+    background:#f0faf5!important;border-color:#d4eadf!important;color:#2f5d4e!important;
+  }
+  body.gl-role-consultant .fin-cash-note{color:#4f7467!important}
+  body.gl-role-consultant .fin-submit{
+    background:linear-gradient(135deg,#18805c,#2c9f76)!important;color:#fff!important;
+    box-shadow:0 9px 20px rgba(28,123,91,.15)!important;border-radius:12px!important;
+  }
+  body.gl-role-consultant .finance-entry-shell .primary{
+    background:linear-gradient(135deg,#18805c,#2c9f76)!important;color:#fff!important;border-radius:10px!important;
+  }
+}
+
 </style>
 
 <div class="finance-entry-shell">
 <section class="hero">
-  <div><span class="eyebrow">ثبت فروش شعبه</span><h1>ثبت فروش و پرداخت</h1><p>مبلغ دریافتی و پکیج/خدمت را ثبت کنید؛ فروش افسریه از مراجعه مستقیم شعبه جدا می‌شود.</p></div>
+  <div class="fin-hero-copy"><span class="eyebrow">ثبت فروش شعبه</span><h1>ثبت فروش و پرداخت</h1><p>مبلغ دریافتی و پکیج/خدمت را ثبت کنید؛ فروش افسریه از مراجعه مستقیم شعبه جدا می‌شود.</p></div>
+  {% if user.profile.role == 'consultant' %}<a class="fin-back" href="{% url 'consultant_sales_outcomes' %}">← بازگشت به پنل مشاور</a>{% endif %}
 </section>
 
 {% if pending_appointments %}<section class="panel">
