@@ -22,6 +22,33 @@
 .cons-expense .exp-row b{white-space:nowrap;color:#8af1c1;font-size:12px}.cons-expense .exp-status{display:block;color:#edd4a2;font-size:10px;margin-top:4px}
 @media(min-width:900px){.cons-expense .exp-card{background:#fff;border-color:#dce7e6}.cons-expense h2,.cons-expense .exp-row strong{color:#203c43}.cons-expense .exp-card label{color:#344a58}.cons-expense .exp-card input,.cons-expense .exp-card select,.cons-expense .exp-card textarea{background:#f8fbfc;color:#1e3948;border-color:#cbdcd9}.cons-expense .exp-help,.cons-expense .exp-row small{color:#607987}.cons-expense .exp-row{border-color:#e3ecee}.cons-expense .exp-row b{color:#16684a}.cons-expense .exp-status{color:#8c6225}.cons-expense .exp-error{color:#ae3f59}}
 @media(max-width:820px){.cons-expense .exp-layout{grid-template-columns:1fr}.cons-expense .exp-top{flex-wrap:wrap}.cons-expense .exp-fields{grid-template-columns:1fr}}
+
+@media(min-width:821px){
+  body.gl-role-consultant .cons-expense{max-width:1360px!important;margin:12px auto 36px!important}
+  body.gl-role-consultant .cons-expense .exp-top{min-height:118px!important;padding:23px 25px!important}
+  body.gl-role-consultant .cons-expense .exp-layout{grid-template-columns:minmax(0,1.35fr) minmax(310px,.65fr)!important;gap:14px!important}
+  body.gl-role-consultant .cons-expense .exp-card{border-radius:20px!important;padding:20px!important}
+  body.gl-role-consultant .cons-expense .exp-fields{gap:12px!important}
+  body.gl-role-consultant .cons-expense .exp-field{gap:6px!important}
+  body.gl-role-consultant .cons-expense input,
+  body.gl-role-consultant .cons-expense select,
+  body.gl-role-consultant .cons-expense textarea{min-height:43px!important}
+  body.gl-role-consultant .cons-expense textarea{min-height:100px!important;resize:vertical}
+  body.gl-role-consultant .cons-expense input[type=file]{
+    padding:7px!important;background:#f8fbfa!important;border:1px dashed #bfd9ce!important;
+  }
+  body.gl-role-consultant .cons-expense input[type=file]::file-selector-button{
+    border:0;border-radius:9px;background:#e3f4eb;color:#1d6b50;padding:9px 12px;margin-left:9px;
+    font:900 10px "Noto Sans Arabic",Tahoma;cursor:pointer;
+  }
+  body.gl-role-consultant .cons-expense .exp-save{
+    background:linear-gradient(135deg,#18805c,#2c9f76)!important;border:0!important;
+    min-height:44px!important;box-shadow:0 9px 20px rgba(28,123,91,.15)!important;
+  }
+  body.gl-role-consultant .cons-expense .exp-return{box-shadow:0 7px 16px rgba(32,105,78,.08)}
+  body.gl-role-consultant .cons-expense .exp-row{padding:12px 0!important}
+}
+
 </style>
 <div class="cons-expense">
 <header class="exp-top"><div><h1>ثبت هزینه مشاور</h1><p>هزینه شعبه را با رسید ثبت کنید؛ بررسی و تأیید نهایی با واحد مالی است.</p></div><a class="exp-return" href="{% url 'consultant_sales_outcomes' %}">← بازگشت به پنل مشاور</a></header>
