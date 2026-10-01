@@ -219,11 +219,11 @@ fi
 
 set_public_upstream() {
   local target="$1"
-  sed -E -i "s#set \\$greenlife_web_upstream [^;]+;#set \\$greenlife_web_upstream ${target}:8005;#" "$DEPLOY_PATH/deploy/nginx.conf"
+  sed -E -i 's#set \\$greenlife_web_upstream [^;]+;#set $greenlife_web_upstream '"${target}"':8005;#' "$DEPLOY_PATH/deploy/nginx.conf"
 }
 set_lan_upstream() {
   local target="$1"
-  sed -E -i "s#set \\$greenlife_lan_upstream [^;]+;#set \\$greenlife_lan_upstream ${target}:8005;#" "$DEPLOY_PATH/deploy/nginx-lan.conf"
+  sed -E -i 's#set \\$greenlife_lan_upstream [^;]+;#set $greenlife_lan_upstream '"${target}"':8005;#' "$DEPLOY_PATH/deploy/nginx-lan.conf"
 }
 reload_public_nginx() {
   docker exec "$PUBLIC_NGINX" nginx -t
