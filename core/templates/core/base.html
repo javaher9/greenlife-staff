@@ -233,6 +233,40 @@ background:#1a2c38!important;border-color:#486174!important;color:#fff!important
 }
 </style>
 
+<style id="consultant-light-readability-guard-v1">
+@media(min-width:701px){
+  /* Permanent readability floor for every light consultant workspace. */
+  body.gl-role-consultant .app-main{
+    --gl-light-text:#1f3f3a;
+    --gl-light-heading:#123d34;
+    --gl-light-muted:#536f68;
+    --gl-light-soft:#6a817b;
+  }
+  body.gl-role-consultant .app-main :where(h1,h2,h3,h4,strong,b){
+    color:var(--gl-light-heading)!important;
+  }
+  body.gl-role-consultant .app-main :where(p,label,td,th,li,span,small,div){
+    text-shadow:none;
+  }
+  body.gl-role-consultant .app-main :where(p,label,td,th,li){
+    color:var(--gl-light-text);
+  }
+  body.gl-role-consultant .app-main :where(.muted,.db-muted,small){
+    color:var(--gl-light-muted)!important;
+  }
+  body.gl-role-consultant .app-main :where(input,select,textarea){
+    color:#203f39!important;
+  }
+  body.gl-role-consultant .app-main :where(input,textarea)::placeholder{
+    color:#70857f!important;
+    opacity:1!important;
+  }
+  body.gl-role-consultant .app-main :where([class*="muted"],[class*="hint"],[class*="help"],[class*="note"]){
+    opacity:1!important;
+  }
+}
+</style>
+
 
 <style id="settings-submenu-readability-v1">
 .gl-settings-menu>summary{
