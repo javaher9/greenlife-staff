@@ -240,7 +240,7 @@
   <div class="db-hero-copy">
     <h1>تقویم دستگاه‌ها · {{ branch.name }}</h1>
     {% if is_admin %}<form method="get" style="display:flex;gap:8px;align-items:center;margin:8px 0"><select name="branch" style="padding:8px;border:1px solid #cadcd6;border-radius:9px;background:#fff;color:#25443f">{% for b in branches %}<option value="{{ b.pk }}" {% if branch.pk == b.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select><button style="padding:8px;border:0;border-radius:8px;background:#138568;color:#fff">انتخاب شعبه</button></form>{% endif %}
-    <div class="db-muted">هر ستون یک دستگاه واقعی است و کابین فعلی همان دستگاه زیر نامش دیده می‌شود. اگر دستگاه بین کابین‌ها جابه‌جا شود، فقط عنوان کابین آن ستون تغییر می‌کند.</div>
+    <div class="db-muted">هر پلاک یک دستگاه واقعی است. ظرفیت روز بر اساس ساعت کاری و مدت درمان + آماده‌سازی همان دستگاه، به ردیف‌های شماره‌دار و مشخص تبدیل می‌شود.</div>
     {% if can_manage %}<p><a class="db-action" href="{% url 'device_capacity_settings' %}">تنظیم دستگاه‌ها، کابین‌ها و ساعت کاری</a></p>{% endif %}
   </div>
   {% if user.profile.role == 'consultant' %}<a class="db-back" href="{% url 'consultant_sales_outcomes' %}">← بازگشت به پنل مشاور</a>{% endif %}
@@ -292,7 +292,7 @@
   <label style="display:flex;align-items:center;gap:7px;grid-column:1/-1"><input style="width:auto" type="checkbox" id="dbDouble" name="double_define" value="1">Double Define · رزرو هم‌زمان دو دستگاه</label>
   <button type="submit" {% if not items or not devices %}disabled{% endif %}>ثبت قطعی یک جلسه + ارسال پیامک</button>
 </form>
-{% else %}<p class="db-muted">یک بیمار دارای پکیج نهایی را انتخاب کنید؛ بعد می‌توانید از خانه‌های «آزاد» جدول، زمان و دستگاه را با یک کلیک انتخاب کنید.</p>{% endif %}
+{% else %}<p class="db-muted">یک بیمار دارای پکیج نهایی را انتخاب کنید؛ سپس یکی از ردیف‌های «آزاد» روی پلاک دستگاه را لمس کنید تا دستگاه و ساعت خودکار انتخاب شود.</p>{% endif %}
 {% else %}<p class="db-muted">نمایش تقویم برای شما فعال است؛ ثبت نوبت با مشاور یا مدیریت است.</p>{% endif %}
 </section>
 
