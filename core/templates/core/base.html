@@ -125,8 +125,116 @@ background:#1a2c38!important;border-color:#486174!important;color:#fff!important
   .gl-authenticated .sidebar-footer .sidebar-logout-link{margin-right:auto!important;color:#d9a6ad!important}
 }
 </style>
+
+<style id="consultant-desktop-light-v1">
+@media(min-width:821px){
+  html:has(body.gl-role-consultant){
+    background:#f4f8f7!important;background-image:none!important;color-scheme:light!important;
+  }
+  body.gl-role-consultant{
+    background:#f4f8f7!important;background-image:none!important;color:#263f49!important;color-scheme:light!important;
+  }
+  body.gl-role-consultant:before,
+  body.gl-role-consultant::before,
+  body.gl-role-consultant .app-main:before,
+  body.gl-role-consultant .app-main::before{
+    display:none!important;content:none!important;opacity:0!important;background:none!important;
+  }
+  body.gl-role-consultant .app-main{
+    background:
+      radial-gradient(circle at 12% 2%,rgba(42,165,115,.05),transparent 22%),
+      radial-gradient(circle at 88% 9%,rgba(63,137,210,.04),transparent 25%),
+      #f4f8f7!important;
+    background-image:
+      radial-gradient(circle at 12% 2%,rgba(42,165,115,.05),transparent 22%),
+      radial-gradient(circle at 88% 9%,rgba(63,137,210,.04),transparent 25%)!important;
+    color:#263f49!important;min-height:100vh!important;
+  }
+  body.gl-role-consultant .topbar{
+    background:rgba(255,255,255,.97)!important;background-image:none!important;
+    color:#294a43!important;border-bottom:1px solid #e2ebe8!important;
+    box-shadow:0 5px 18px rgba(40,81,69,.05)!important;backdrop-filter:blur(14px)!important;
+  }
+  body.gl-role-consultant .topbar-search{
+    background:#f7faf9!important;border-color:#dce8e4!important;
+  }
+  body.gl-role-consultant .topbar-search input{background:transparent!important;color:#294a43!important}
+  body.gl-role-consultant .topbar-date,
+  body.gl-role-consultant .header-person strong{color:#294a43!important}
+  body.gl-role-consultant .header-person span{color:#7a8f89!important}
+
+  body.gl-role-consultant.gl-page-finance_entry .hero,
+  body.gl-role-consultant.gl-page-finance_entry .panel{
+    background:#fff!important;background-image:none!important;color:#274840!important;
+    border:1px solid #dfeae6!important;box-shadow:0 13px 30px rgba(39,82,71,.055)!important;
+  }
+  body.gl-role-consultant.gl-page-finance_entry .hero{
+    background:
+      radial-gradient(circle at 11% 20%,rgba(255,255,255,.88),transparent 25%),
+      linear-gradient(120deg,#e7f7ef,#fbfffd 58%,#eef6ff)!important;
+    border-radius:24px!important;
+  }
+  body.gl-role-consultant.gl-page-finance_entry .hero h1,
+  body.gl-role-consultant.gl-page-finance_entry .panel h2{color:#173f36!important}
+  body.gl-role-consultant.gl-page-finance_entry .hero p,
+  body.gl-role-consultant.gl-page-finance_entry .panel small{color:#6b817c!important}
+  body.gl-role-consultant.gl-page-finance_entry .eyebrow{color:#2b7d61!important}
+  body.gl-role-consultant.gl-page-finance_entry .tablewrap{
+    background:#fff!important;border-color:#e0eae7!important;
+  }
+  body.gl-role-consultant.gl-page-finance_entry table{background:#fff!important;color:#294a43!important}
+  body.gl-role-consultant.gl-page-finance_entry th{
+    background:#edf7f3!important;color:#355c52!important;border-color:#e0ebe7!important;
+  }
+  body.gl-role-consultant.gl-page-finance_entry td{
+    background:#fff!important;color:#3b5550!important;border-color:#e8efed!important;
+  }
+  body.gl-role-consultant.gl-page-finance_entry tr:nth-child(even) td{background:#fbfdfc!important}
+  body.gl-role-consultant.gl-page-finance_entry .panel input,
+  body.gl-role-consultant.gl-page-finance_entry .panel select,
+  body.gl-role-consultant.gl-page-finance_entry .panel textarea{
+    background:#fbfdfc!important;color:#263f49!important;border-color:#d4e2dd!important;
+  }
+  body.gl-role-consultant.gl-page-finance_entry .panel label{color:#435f58!important}
+  body.gl-role-consultant.gl-page-finance_entry .fin-today-stat,
+  body.gl-role-consultant.gl-page-finance_entry .fin-today-card{
+    background:#f8fbfa!important;border-color:#e0ebe7!important;color:#294a43!important;
+  }
+  body.gl-role-consultant.gl-page-finance_entry .fin-today-stat span,
+  body.gl-role-consultant.gl-page-finance_entry .fin-today-meta{color:#6f857f!important}
+  body.gl-role-consultant.gl-page-finance_entry .fin-submit-status{
+    background:#e9f7f0!important;border-color:#cfe9dd!important;color:#226b50!important;
+  }
+  body.gl-role-consultant.gl-page-finance_entry .fin-submit-help{color:#70857f!important}
+
+  body.gl-role-consultant.gl-page-consultant_expense_entry .cons-expense{color:#294a43!important}
+  body.gl-role-consultant.gl-page-consultant_expense_entry .exp-top{
+    background:
+      radial-gradient(circle at 12% 20%,rgba(255,255,255,.9),transparent 25%),
+      linear-gradient(120deg,#e7f7ef,#fbfffd 58%,#fff6e9)!important;
+    border-color:#d9e9e3!important;box-shadow:0 13px 30px rgba(39,82,71,.055)!important;
+  }
+  body.gl-role-consultant.gl-page-consultant_expense_entry .exp-top h1{color:#173f36!important}
+  body.gl-role-consultant.gl-page-consultant_expense_entry .exp-top p{color:#667e78!important}
+  body.gl-role-consultant.gl-page-consultant_expense_entry .exp-card{
+    background:#fff!important;border-color:#dfeae6!important;box-shadow:0 13px 30px rgba(39,82,71,.05)!important;
+  }
+  body.gl-role-consultant.gl-page-consultant_expense_entry .exp-card h2,
+  body.gl-role-consultant.gl-page-consultant_expense_entry .exp-row strong{color:#173f36!important}
+  body.gl-role-consultant.gl-page-consultant_expense_entry .exp-card label{color:#435f58!important}
+  body.gl-role-consultant.gl-page-consultant_expense_entry .exp-card input,
+  body.gl-role-consultant.gl-page-consultant_expense_entry .exp-card select,
+  body.gl-role-consultant.gl-page-consultant_expense_entry .exp-card textarea{
+    background:#fbfdfc!important;color:#263f49!important;border-color:#d4e2dd!important;
+  }
+  body.gl-role-consultant.gl-page-consultant_expense_entry .exp-help,
+  body.gl-role-consultant.gl-page-consultant_expense_entry .exp-row small{color:#6f857f!important}
+  body.gl-role-consultant.gl-page-consultant_expense_entry .exp-row{border-color:#e7eeeb!important}
+}
+</style>
+
 </head>
-<body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'doctor' or user.profile.role == 'receptionist' %}gl-role-employee{% endif %} {% if user.profile.role == 'call_center' %}gl-role-call-center{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
+<body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'doctor' or user.profile.role == 'receptionist' %}gl-role-employee{% endif %} {% if user.profile.role == 'call_center' %}gl-role-call-center{% endif %} {% if user.profile.role == 'consultant' %}gl-role-consultant{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
 {% if request.session.impersonator_user_id %}
 <div class="impersonation-banner"><span>در حال مشاهده به‌عنوان {{ user.get_full_name|default:user.username }}</span><form method="post" action="{% url 'impersonate_return' %}">{% csrf_token %}<button type="submit">بازگشت به ادمین</button></form></div>
 {% endif %}
