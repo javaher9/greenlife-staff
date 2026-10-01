@@ -276,8 +276,26 @@ def finance_intelligence(context):
     ).select_related('branch', 'call_center_owner', 'appointment__lead')
     income = _apply_transaction_filters(income, branch, flower_id, source, service)
 
+    # Operational sales spectrum: a staff-recorded income is visible immediately
+    # as a sale candidate while finance approval remains the source of truth for
+    # confirmed revenue. Correction/cancelled rows never count as active sales.
+    registered_income = FinancialTransaction.objects.filter(
+        review_status__in=('pending','approved'),
+        entry_type='inc',
+        occurred_at__gte=start,
+        occurred_at__lt=end,
+    ).select_related('branch', 'call_center_owner', 'appointment__lead')
+    registered_income = _apply_transaction_filters(
+        registered_income, branch, flower_id, source, service,
+    )
+    pending_income = registered_income.filter(review_status='pending')
+
     total = _money(income.aggregate(v=Sum('amount'))['v'])
     count = income.count()
+    registered_total = _money(registered_income.aggregate(v=Sum('amount'))['v'])
+    registered_count = registered_income.count()
+    pending_total = _money(pending_income.aggregate(v=Sum('amount'))['v'])
+    pending_count = pending_income.count()
     avg_invoice = (total / count) if count else ZERO
 
     # Leads and appointments use the same visible dimensions where the relation exists.
@@ -301,7 +319,7 @@ def finance_intelligence(context):
         appointments = appointments.filter(lead__source=source)
     appointment_count = appointments.count()
     visit_count = appointments.filter(status__in=('arrived', 'completed')).count()
-    conversion = round((count * 100 / lead_count), 1) if lead_count else 0
+    conversion = round((registered_count * 100 / lead_count), 1) if lead_count else 0
     revenue_per_lead = (total / lead_count) if lead_count else ZERO
 
     # Last 7 calendar days, retaining all selected non-date dimensions.
@@ -440,6 +458,8 @@ def finance_intelligence(context):
         'flowers': EmployeeProfile.objects.filter(role='call_center', is_active=True, user__is_active=True).select_related('user').order_by('user__first_name', 'user__last_name'),
         'source_options': source_defs, 'service_options': FinancialTransaction.SALE_REASON,
         'total': total, 'count': count, 'avg_invoice': avg_invoice,
+        'registered_total': registered_total, 'registered_count': registered_count,
+        'pending_total': pending_total, 'pending_count': pending_count,
         'lead_count': lead_count, 'appointment_count': appointment_count, 'visit_count': visit_count,
         'conversion': conversion, 'revenue_per_lead': revenue_per_lead,
         'trend': trend, 'branch_rows': branch_rows, 'branch_donut': branch_donut,
