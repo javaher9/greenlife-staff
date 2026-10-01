@@ -11,8 +11,8 @@ from django.utils import timezone
 from .jalali import format_jalali, parse_jalali
 from .models import (
     ApiServerSettings, Branch, ConsultationPlan, ConsultationPlanItem,
-    DeviceCabin, DeviceSessionBooking, DeviceTypeSchedule, FinancialTransaction,
-    PhysicalDevice, VisitAppointment,
+    BranchDeviceTypeStatus, DeviceCabin, DeviceSessionBooking, DeviceTypeSchedule,
+    FinancialTransaction, PhysicalDevice, VisitAppointment,
 )
 from .sms import send_sms
 
@@ -100,7 +100,37 @@ def device_capacity_settings(request):
         if not request.user.is_superuser:
             _role_allowed(_profile(request),('admin','manager'))
         action=request.POST.get('action')
-        if action=='type':
+        if action=='toggle_type_branch':
+            kind=get_object_or_404(DeviceTypeSchedule,pk=request.POST.get('type_id'),is_active=True)
+            target_active=(request.POST.get('active')=='1')
+            if not target_active:
+                has_future_booking=DeviceSessionBooking.objects.filter(
+                    branch=branch,
+                    status='booked',
+                    starts_at__gte=timezone.now(),
+                ).filter(
+                    Q(device__device_type=kind)|Q(secondary_device__device_type=kind)
+                ).exists()
+                if has_future_booking:
+                    messages.error(
+                        request,
+                        'این نوع دستگاه در این شعبه نوبت آینده فعال دارد؛ ابتدا نوبت‌های آینده آن را تعیین تکلیف کنید.'
+                    )
+                else:
+                    status,_=BranchDeviceTypeStatus.objects.get_or_create(
+                        branch=branch,device_type=kind,
+                    )
+                    status.is_active=False
+                    status.save(update_fields=['is_active'])
+                    messages.success(request,f'{kind.name} برای شعبه {branch.name} غیرفعال شد.')
+            else:
+                status,_=BranchDeviceTypeStatus.objects.get_or_create(
+                    branch=branch,device_type=kind,
+                )
+                status.is_active=True
+                status.save(update_fields=['is_active'])
+                messages.success(request,f'{kind.name} برای شعبه {branch.name} فعال شد.')
+        elif action=='type':
             kind=get_object_or_404(DeviceTypeSchedule,pk=request.POST.get('type_id'))
             treatment=_mins(request.POST.get('treatment_minutes'),kind.treatment_minutes)
             preparation=_mins(request.POST.get('preparation_minutes'),kind.preparation_minutes)
@@ -117,7 +147,11 @@ def device_capacity_settings(request):
                 cabin,created=DeviceCabin.objects.get_or_create(branch=branch,name=name)
                 messages.success(request,'کابین ثبت شد.' if created else 'این کابین قبلاً ثبت شده است.')
         elif action=='device':
-            kind=get_object_or_404(DeviceTypeSchedule,pk=request.POST.get('type_id'))
+            kind=get_object_or_404(DeviceTypeSchedule,pk=request.POST.get('type_id'),is_active=True)
+            branch_status=BranchDeviceTypeStatus.objects.filter(branch=branch,device_type=kind).first()
+            if branch_status and not branch_status.is_active:
+                messages.error(request,'این نوع دستگاه برای این شعبه غیرفعال است؛ ابتدا آن را فعال کنید.')
+                return redirect(f'/settings/device-capacity/?branch={branch.pk}')
             cabin=get_object_or_404(DeviceCabin,pk=request.POST.get('cabin_id'),branch=branch)
             name=(request.POST.get('name') or '').strip()[:100]
             if name:
@@ -173,10 +207,19 @@ def device_capacity_settings(request):
                         messages.success(request,'کابین و ساعت کاری دستگاه ذخیره شد.')
         return redirect(f'/settings/device-capacity/?branch={branch.pk}')
 
+    types=list(DeviceTypeSchedule.objects.filter(is_active=True))
+    branch_statuses={
+        row.device_type_id:row.is_active
+        for row in BranchDeviceTypeStatus.objects.filter(branch=branch,device_type__in=types)
+    }
+    for kind in types:
+        kind.branch_active=branch_statuses.get(kind.pk,True)
+    active_types=[kind for kind in types if kind.branch_active]
+
     return render(request,'core/device_capacity_settings.html',{
         'branch':branch,'branches':Branch.objects.filter(is_active=True).order_by('name'),
         'is_admin':request.user.is_superuser or _profile(request).role=='admin',
-        'types':DeviceTypeSchedule.objects.filter(is_active=True),
+        'types':types,'active_types':active_types,
         'cabins':DeviceCabin.objects.filter(branch=branch,is_active=True),
         'devices':PhysicalDevice.objects.filter(branch=branch).select_related('device_type','cabin'),
     })
@@ -247,12 +290,22 @@ def device_booking_schedule(request):
                 PhysicalDevice.objects.select_related('device_type'),
                 pk=request.POST.get('device'),branch=branch,is_active=True,
             )
+            disabled_type_ids=set(
+                BranchDeviceTypeStatus.objects.filter(branch=branch,is_active=False)
+                .values_list('device_type_id',flat=True)
+            )
+            if device.device_type_id in disabled_type_ids:
+                messages.error(request,'این نوع دستگاه برای این شعبه غیرفعال است.')
+                return redirect(f'/device-bookings/?appointment={appointment.pk}')
             second_raw=(request.POST.get('secondary_device') or '').strip()
             second=(
                 get_object_or_404(PhysicalDevice.objects.select_related('device_type'),
                                   pk=int(second_raw),branch=branch,is_active=True)
                 if second_raw.isdigit() else None
             )
+            if second and second.device_type_id in disabled_type_ids:
+                messages.error(request,'نوع دستگاه دوم برای این شعبه غیرفعال است.')
+                return redirect(f'/device-bookings/?appointment={appointment.pk}')
             if device.cabin_id!=cabin.pk or (second and second.cabin_id!=cabin.pk):
                 messages.error(request,'دستگاه‌های انتخابی باید در کابین رزرو باشند.')
                 return redirect(f'/device-bookings/?appointment={appointment.pk}')
@@ -317,8 +370,13 @@ def device_booking_schedule(request):
         .order_by('starts_at','cabin__name')
     )
     booking_list=list(bookings)
+    disabled_type_ids=set(
+        BranchDeviceTypeStatus.objects.filter(branch=branch,is_active=False)
+        .values_list('device_type_id',flat=True)
+    )
     device_lines=list(
         PhysicalDevice.objects.filter(branch=branch,is_active=True)
+        .exclude(device_type_id__in=disabled_type_ids)
         .select_related('device_type','cabin')
         .order_by('name','id')
     )
