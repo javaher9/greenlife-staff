@@ -60,8 +60,25 @@
 <div class="exp-field"><label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>{{ form.category }}{% for error in form.category.errors %}<span class="exp-error">{{ error }}</span>{% endfor %}</div>
 <div class="exp-field wide"><label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>{{ form.description }}{% for error in form.description.errors %}<span class="exp-error">{{ error }}</span>{% endfor %}</div>
 <div class="exp-field wide"><label for="{{ form.receipt_image.id_for_label }}">{{ form.receipt_image.label }}</label>{{ form.receipt_image }}{% for error in form.receipt_image.errors %}<span class="exp-error">{{ error }}</span>{% endfor %}<span class="exp-help">تصویر رسید الزامی است؛ JPG، PNG یا WebP تا ۱۰ مگابایت.</span></div>
-</div><button class="exp-save" type="submit">ثبت هزینه و ارسال برای تأیید</button></form></section>
+</div><button class="exp-save" id="consultantExpenseSubmit" type="submit">ثبت هزینه و ارسال برای تأیید</button><div class="exp-help" id="consultantExpenseStatus" hidden>در حال ثبت هزینه و ارسال رسید… لطفاً دوباره کلیک نکنید.</div></form></section>
 <aside class="exp-card"><h2>آخرین هزینه‌های شما</h2>
 {% for entry in recent_expenses %}<div class="exp-row"><div><strong>{{ entry.account_heading }}</strong><small>{{ entry.created_at|date:"Y/m/d H:i" }} · {{ entry.description|truncatechars:55 }}</small><span class="exp-status">{{ entry.get_review_status_display }}</span></div><b>{{ entry.amount_toman_display }} تومان</b></div>{% empty %}<p class="exp-help">هنوز هزینه‌ای ثبت نشده است.</p>{% endfor %}
 </aside></div></div>
+<script>
+(function(){
+  const form=document.querySelector('.cons-expense form[method="post"]');
+  const button=document.getElementById('consultantExpenseSubmit');
+  const status=document.getElementById('consultantExpenseStatus');
+  if(!form||!button)return;
+  let submitted=false;
+  form.addEventListener('submit',function(e){
+    if(submitted){e.preventDefault();return;}
+    if(!form.checkValidity())return;
+    submitted=true;
+    button.disabled=true;
+    button.textContent='در حال ثبت…';
+    if(status)status.hidden=false;
+  });
+})();
+</script>
 {% endblock %}
