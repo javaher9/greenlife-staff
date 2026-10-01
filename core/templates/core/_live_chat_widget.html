@@ -27,6 +27,63 @@
 .gl-live-chat-compose{padding:8px;border-top:1px solid #223246;display:grid;grid-template-columns:minmax(0,1fr) 48px;gap:6px}.gl-live-chat-compose textarea{min-height:42px;max-height:86px;resize:none;border:1px solid #2a3b50;border-radius:10px;background:#0e1823;color:#f1f5f8;padding:8px 9px;font-size:9px;outline:none}.gl-live-chat-compose textarea:focus{border-color:#7466ef;box-shadow:0 0 0 2px rgba(119,98,255,.1)}.gl-live-chat-compose button{border:1px solid rgba(119,98,255,.5);border-radius:10px;background:linear-gradient(135deg,#352c79,#221d50);color:#fff;font-size:9px;font-weight:900;cursor:pointer}.gl-live-chat-compose button:disabled{opacity:.45;cursor:not-allowed}
 @keyframes glChatIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 @media(max-width:700px){.gl-live-chat{left:10px;bottom:76px}.gl-live-chat-launcher{width:50px;height:50px;border-radius:16px}.gl-live-chat-drawer{width:calc(100vw - 20px);height:min(66vh,590px);bottom:60px}.gl-live-chat-toast{width:min(280px,calc(100vw - 20px));bottom:60px}.gl-live-chat-body{grid-template-columns:112px minmax(0,1fr)}}
+
+@media(min-width:821px){
+  body.gl-role-consultant .gl-live-chat{left:16px;bottom:16px;color:#294a43}
+  body.gl-role-consultant .gl-live-chat-launcher{
+    width:50px;height:50px;border-radius:16px;border:1px solid #bfe0d1;
+    background:linear-gradient(145deg,#e9f8f1,#dff2e9);color:#176d51;
+    box-shadow:0 11px 26px rgba(35,111,82,.16);font-size:18px;
+  }
+  body.gl-role-consultant .gl-live-chat-launcher:hover{
+    box-shadow:0 13px 30px rgba(35,111,82,.2);
+  }
+  body.gl-role-consultant .gl-live-chat-badge{border-color:#f4f8f7}
+  body.gl-role-consultant .gl-live-chat-toast{
+    width:300px;background:#fff;border-color:#dfe9e6;box-shadow:0 16px 38px rgba(35,71,62,.16);
+  }
+  body.gl-role-consultant .gl-live-chat-toast b{color:#244942}
+  body.gl-role-consultant .gl-live-chat-toast p{color:#70857f}
+  body.gl-role-consultant .gl-live-chat-drawer{
+    width:min(410px,calc(100vw - 40px));height:min(570px,calc(100vh - 115px));
+    background:#fff;border-color:#dfe9e6;border-radius:20px;box-shadow:0 22px 52px rgba(35,71,62,.20);
+  }
+  body.gl-role-consultant .gl-live-chat-head{
+    background:linear-gradient(135deg,#f0faf6,#fbfefd);border-color:#e5eeeb;
+  }
+  body.gl-role-consultant .gl-live-chat-icon{background:#e2f4eb;color:#176d51;border-color:#cfe7dc;box-shadow:none}
+  body.gl-role-consultant .gl-live-chat-title strong{color:#244942}
+  body.gl-role-consultant .gl-live-chat-title small{color:#758984}
+  body.gl-role-consultant .gl-live-chat-close{background:#fff;color:#5f7670;border-color:#dbe6e2}
+  body.gl-role-consultant .gl-live-chat-body{grid-template-columns:125px minmax(0,1fr)}
+  body.gl-role-consultant .gl-live-chat-contacts{background:#f8fbfa;border-color:#e4ece9}
+  body.gl-role-consultant .gl-live-chat-contact{color:#4c655f}
+  body.gl-role-consultant .gl-live-chat-contact:hover{background:#eef7f3;border-color:#dcebe4}
+  body.gl-role-consultant .gl-live-chat-contact.active{background:#e6f5ed;border-color:#cfe7db;color:#1e6a4f}
+  body.gl-role-consultant .gl-live-chat-contact small{color:#81928e}
+  body.gl-role-consultant .gl-live-chat-thread{background:#fff}
+  body.gl-role-consultant .gl-live-chat-person{border-color:#e6eeeb}
+  body.gl-role-consultant .gl-live-chat-person strong{color:#244942}
+  body.gl-role-consultant .gl-live-chat-person small{color:#7d918b}
+  body.gl-role-consultant .gl-live-chat-stream{background:#fbfdfc}
+  body.gl-role-consultant .gl-live-chat-empty{color:#7a8d88}
+  body.gl-role-consultant .gl-live-chat-bubble{background:#fff;border-color:#e0e9e6;color:#294a43}
+  body.gl-role-consultant .gl-live-chat-bubble.mine{background:#e7f5ed;border-color:#cfe5da}
+  body.gl-role-consultant .gl-live-chat-bubble b{color:#667b75}
+  body.gl-role-consultant .gl-live-chat-bubble p{color:#244942}
+  body.gl-role-consultant .gl-live-chat-bubble small{color:#83958f}
+  body.gl-role-consultant .gl-live-chat-compose{background:#fff;border-color:#e5eeeb}
+  body.gl-role-consultant .gl-live-chat-compose textarea{
+    background:#f8fbfa;color:#294a43;border-color:#d9e5e0;
+  }
+  body.gl-role-consultant .gl-live-chat-compose textarea:focus{
+    border-color:#8bcdb2;box-shadow:0 0 0 3px rgba(64,170,125,.09);
+  }
+  body.gl-role-consultant .gl-live-chat-compose button{
+    border-color:#2d9670;background:linear-gradient(135deg,#18805c,#2c9f76);color:#fff;
+  }
+}
+
 </style>
 
 <div class="gl-live-chat" id="glLiveChat">
