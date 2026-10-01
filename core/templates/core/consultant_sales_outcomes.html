@@ -465,9 +465,9 @@
     width:100%;
     display:flex!important;
     flex-direction:row!important;
-    direction:rtl!important;
+    direction:ltr!important;
     align-items:center!important;
-    justify-content:flex-start!important;
+    justify-content:flex-end!important;
     gap:8px!important;
     text-align:right!important;
     color:#536f67!important;
@@ -582,7 +582,7 @@
       <div class="quick-summary"><div><span>نوبت دستگاه امروز</span><b>{{ kpis.device_bookings_today }}</b></div><div><span>هزینه منتظر تأیید</span><b>{{ kpis.expenses_pending }}</b></div></div>
     </aside>
   </div>
-  <section class="recent"><div class="recent-header"><h3>آخرین دریافت‌های ثبت‌شده توسط شما</h3><span>آخرین موارد</span></div><div class="recent-cols"><span>نام بیمار</span><span>تاریخ و ساعت</span><span>مبلغ</span></div>{% for tx in recent_paid %}<div class="recent-row"><strong>{{ tx.person_name|default:"—" }}</strong><span class="recent-date-time"><span class="recent-time" dir="ltr">{{ tx.created_at|date:"H:i" }}</span><span class="recent-date" dir="ltr">{{ tx.created_at|jdate_en }}</span></span><b class="recent-money"><span class="recent-money-number" dir="ltr">{{ tx.amount|million_toman }}</span><span class="recent-money-unit">میلیون تومان</span></b></div>{% empty %}<div class="empty">هنوز پرداختی ثبت نشده است.</div>{% endfor %}</section>
+  <section class="recent"><div class="recent-header"><h3>آخرین دریافت‌های ثبت‌شده توسط شما</h3><span>آخرین موارد</span></div><div class="recent-cols"><span>نام بیمار</span><span>تاریخ و ساعت</span><span>مبلغ</span></div>{% for tx in recent_paid %}<div class="recent-row"><strong>{{ tx.person_name|default:"—" }}</strong><span class="recent-date-time"><span class="recent-date" dir="ltr">{{ tx.created_at|jdate_en }}</span><span class="recent-time" dir="ltr">{{ tx.created_at|date:"H:i" }}</span></span><b class="recent-money"><span class="recent-money-number" dir="ltr">{{ tx.amount|million_toman }}</span><span class="recent-money-unit">میلیون تومان</span></b></div>{% empty %}<div class="empty">هنوز پرداختی ثبت نشده است.</div>{% endfor %}</section>
 </div>
 <script>
 (function(){
