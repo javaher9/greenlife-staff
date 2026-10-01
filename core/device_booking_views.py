@@ -30,11 +30,26 @@ def _role_allowed(profile, roles):
 
 
 def _branch_for_settings(request):
-    profile=_profile(request)
-    _role_allowed(profile,('admin','manager','internal_manager'))
+    profile=getattr(request.user,'profile',None)
     branch_id=(request.POST.get('branch') or request.GET.get('branch') or '').strip()
+
+    # Super Admin can always manage device capacity, even when its staff
+    # profile is missing a branch or carries a non-operational role.
+    if request.user.is_superuser:
+        if branch_id.isdigit():
+            return get_object_or_404(Branch,pk=int(branch_id),is_active=True)
+        if profile and profile.branch_id:
+            return profile.branch
+        branch=Branch.objects.filter(is_active=True).order_by('id').first()
+        if not branch:
+            raise PermissionDenied('شعبه فعالی وجود ندارد.')
+        return branch
+
+    if not profile:
+        raise PermissionDenied('پروفایل پرسنلی لازم است.')
+    _role_allowed(profile,('admin','manager','internal_manager'))
     if profile.role=='admin' and branch_id.isdigit():
-        return get_object_or_404(Branch,pk=int(branch_id))
+        return get_object_or_404(Branch,pk=int(branch_id),is_active=True)
     if not profile.branch_id:
         raise PermissionDenied('شعبه شما تعریف نشده است.')
     return profile.branch
@@ -84,7 +99,8 @@ def _send_confirmation(pk):
 def device_capacity_settings(request):
     branch=_branch_for_settings(request)
     if request.method=='POST':
-        _role_allowed(_profile(request),('admin','manager'))
+        if not request.user.is_superuser:
+            _role_allowed(_profile(request),('admin','manager'))
         action=request.POST.get('action')
         if action=='type':
             kind=get_object_or_404(DeviceTypeSchedule,pk=request.POST.get('type_id'))
@@ -140,7 +156,7 @@ def device_capacity_settings(request):
 
     return render(request,'core/device_capacity_settings.html',{
         'branch':branch,'branches':Branch.objects.filter(is_active=True).order_by('name'),
-        'is_admin':_profile(request).role=='admin',
+        'is_admin':request.user.is_superuser or _profile(request).role=='admin',
         'types':DeviceTypeSchedule.objects.filter(is_active=True),
         'cabins':DeviceCabin.objects.filter(branch=branch,is_active=True),
         'devices':PhysicalDevice.objects.filter(branch=branch).select_related('device_type','cabin'),
