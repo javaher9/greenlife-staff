@@ -436,44 +436,70 @@ def device_booking_schedule(request):
         .select_related('device_type','cabin')
         .order_by('name','id')
     )
-    schedule_rows=[]
-    if device_lines:
-        slot_minutes=30
-        first_clock=min(d.work_start for d in device_lines)
-        last_clock=max(d.last_start for d in device_lines)
-        cursor=timezone.make_aware(datetime.combine(day,first_clock))
-        schedule_end=timezone.make_aware(datetime.combine(day,last_clock))+timedelta(minutes=slot_minutes)
-        now=timezone.now()
-        while cursor<schedule_end:
+    device_cards=[]
+    now=timezone.now()
+    for device_line in device_lines:
+        slot_minutes=max(
+            10,
+            int(device_line.device_type.treatment_minutes or 0)
+            + int(device_line.device_type.preparation_minutes or 0),
+        )
+        work_start=timezone.make_aware(datetime.combine(day,device_line.work_start))
+        last_start=timezone.make_aware(datetime.combine(day,device_line.last_start))
+        cursor=work_start
+        slot_number=1
+        slots=[]
+        free_count=0
+        busy_count=0
+        off_count=0
+        while cursor<=last_start:
             slot_end=cursor+timedelta(minutes=slot_minutes)
-            cells=[]
-            for device_line in device_lines:
-                hit=next((
-                    b for b in booking_list
-                    if (b.device_id==device_line.pk or b.secondary_device_id==device_line.pk)
-                    and b.starts_at<slot_end and b.blocked_until>cursor
-                ),None)
-                work_start=timezone.make_aware(datetime.combine(day,device_line.work_start))
-                last_start=timezone.make_aware(datetime.combine(day,device_line.last_start))
-                if hit:
-                    state='busy'
-                elif not device_line.cabin_id or cursor<work_start or cursor>last_start or (day==timezone.localdate() and slot_end<=now):
-                    state='off'
-                else:
-                    state='free'
-                cells.append({
-                    'device':device_line,
-                    'state':state,
-                    'booking':hit,
-                    'start_value':cursor.strftime('%H:%M'),
-                })
-            schedule_rows.append({
-                'label':cursor.strftime('%H:%M'),
-                'cells':cells,
+            hit=next((
+                b for b in booking_list
+                if (
+                    b.device_id==device_line.pk
+                    or b.secondary_device_id==device_line.pk
+                    or (device_line.cabin_id and b.cabin_id==device_line.cabin_id)
+                )
+                and b.starts_at<slot_end and b.blocked_until>cursor
+            ),None)
+            if hit:
+                state='busy'
+                busy_count+=1
+                busy_reason=(
+                    'device'
+                    if hit.device_id==device_line.pk or hit.secondary_device_id==device_line.pk
+                    else 'cabin'
+                )
+            elif not device_line.cabin_id or (day==timezone.localdate() and slot_end<=now):
+                state='off'
+                off_count+=1
+                busy_reason=''
+            else:
+                state='free'
+                free_count+=1
+                busy_reason=''
+            slots.append({
+                'number':slot_number,
+                'device':device_line,
+                'state':state,
+                'booking':hit,
+                'busy_reason':busy_reason,
+                'start_value':cursor.strftime('%H:%M'),
+                'start_label':cursor.strftime('%H:%M'),
+                'end_label':slot_end.strftime('%H:%M'),
             })
             cursor=slot_end
-    else:
-        slot_minutes=30
+            slot_number+=1
+        device_cards.append({
+            'device':device_line,
+            'slots':slots,
+            'slot_minutes':slot_minutes,
+            'total_count':len(slots),
+            'free_count':free_count,
+            'busy_count':busy_count,
+            'off_count':off_count,
+        })
 
     plans=(
         ConsultationPlan.objects.filter(appointment__branch=branch,
@@ -487,7 +513,7 @@ def device_booking_schedule(request):
         'plans':plans,'bookings':booking_list,
         'cabins':DeviceCabin.objects.filter(branch=branch,is_active=True),
         'devices':device_lines,'device_lines':device_lines,
-        'schedule_rows':schedule_rows,'slot_minutes':slot_minutes,
+        'device_cards':device_cards,
         'can_book':profile.role in ('consultant','admin','manager'),
         'can_manage':profile.role in ('admin','manager','internal_manager'),
         'is_admin':profile.role=='admin',
