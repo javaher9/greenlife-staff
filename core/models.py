@@ -1779,4 +1779,7 @@ class WebsiteLeadIntegrationSettings(models.Model):
         return 'اتصال لید وب‌سایت گرین لایف'
 
 
-from .device_booking_models import DeviceTypeSchedule, DeviceCabin, PhysicalDevice, DeviceSessionBooking
+from .device_booking_models import (
+    DeviceTypeSchedule, BranchDeviceTypeStatus, DeviceCabin,
+    PhysicalDevice, DeviceSessionBooking,
+)
