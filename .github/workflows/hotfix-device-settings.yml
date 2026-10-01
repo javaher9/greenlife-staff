@@ -1,0 +1,88 @@
+name: Hotfix Device Settings Menu
+
+on:
+  push:
+    branches: [hotfix-device-settings]
+    paths:
+      - ".github/workflows/hotfix-device-settings.yml"
+
+concurrency:
+  group: greenlife-device-settings-hotfix
+  cancel-in-progress: false
+
+jobs:
+  hotfix:
+    runs-on: [self-hosted, linux, greenlife-prod]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Patch live settings menu only
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          containers=(
+            greenlife-staff-runtime-web-1
+            greenlife-staff-runtime-web_lan-1
+          )
+
+          for container in "${containers[@]}"; do
+            if ! docker ps --format '{{.Names}}' | grep -qx "$container"; then
+              echo "ERROR: $container is not running" >&2
+              exit 1
+            fi
+
+            docker exec -i "$container" python - <<'PY'
+from pathlib import Path
+
+path = Path("/app/core/templates/core/base.html")
+text = path.read_text(encoding="utf-8")
+
+if "device_capacity_settings" not in text:
+    lines = text.splitlines()
+    out = []
+    inserted = False
+    link = """        <a href="{% url 'device_capacity_settings' %}" class="{% if request.resolver_match.url_name == 'device_capacity_settings' %}is-active{% endif %}"><span class="nav-ico">▣</span><span>دستگاه‌ها و ظرفیت نوبت‌دهی</span></a>"""
+    for line in lines:
+        out.append(line)
+        if (not inserted
+            and "website_lead_settings" in line
+            and "اتصال لید وب‌سایت" in line):
+            out.append(link)
+            inserted = True
+    if not inserted:
+        raise SystemExit("settings submenu insertion point not found")
+    text = "\n".join(out) + "\n"
+
+needle = "request.resolver_match.url_name == 'shift_today_bulk'"
+if "device_capacity_settings" in text and "url_name == 'device_capacity_settings' or request.resolver_match.url_name == 'shift_today_bulk'" not in text:
+    text = text.replace(
+        needle,
+        "request.resolver_match.url_name == 'device_capacity_settings' or " + needle,
+        1,
+    )
+
+path.write_text(text, encoding="utf-8")
+print("patched", path)
+PY
+          done
+
+          # Reload Gunicorn workers in place so Django's cached template loader
+          # picks up the menu change. Containers and DB are not recreated.
+          for container in "${containers[@]}"; do
+            docker kill --signal HUP "$container" >/dev/null
+          done
+
+          sleep 3
+
+          for container in "${containers[@]}"; do
+            docker exec "$container" grep -q "دستگاه‌ها و ظرفیت نوبت‌دهی" /app/core/templates/core/base.html
+            echo "$container: menu link present"
+          done
+
+          code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 8             -H 'Host: staff.greenlifeclinics.com'             -H 'X-Forwarded-Proto: https'             http://127.0.0.1:8085/settings/device-capacity/ || true)"
+          case "$code" in
+            200|302) echo "device settings route reachable: HTTP $code" ;;
+            *) echo "ERROR: device settings route returned HTTP ${code:-none}" >&2; exit 1 ;;
+          esac
