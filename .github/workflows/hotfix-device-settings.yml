@@ -39,6 +39,7 @@ jobs:
             # Replace only the device-capacity view code; no image rebuild,
             # no DB migration and no container recreate.
             docker cp core/device_booking_views.py "$container":/app/core/device_booking_views.py
+            docker cp core/templates/core/device_capacity_settings.html "$container":/app/core/templates/core/device_capacity_settings.html
             docker exec "$container" python -m py_compile /app/core/device_booking_views.py
           done
 
