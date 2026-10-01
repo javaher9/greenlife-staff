@@ -389,6 +389,23 @@ def device_booking_schedule(request):
             if any(start_clock<m.work_start or start_clock>m.last_start for m in machines):
                 messages.error(request,'این ساعت خارج از بازه کاری دستگاه است.')
                 return redirect(f'/device-bookings/?appointment={appointment.pk}')
+            for machine in machines:
+                machine_slot_minutes=max(
+                    10,
+                    int(machine.device_type.treatment_minutes or 0)
+                    + int(machine.device_type.preparation_minutes or 0),
+                )
+                candidate=timezone.make_aware(datetime.combine(day,machine.work_start))
+                last_candidate=timezone.make_aware(datetime.combine(day,machine.last_start))
+                valid_slot=False
+                while candidate<=last_candidate:
+                    if candidate==start:
+                        valid_slot=True
+                        break
+                    candidate+=timedelta(minutes=machine_slot_minutes)
+                if not valid_slot:
+                    messages.error(request,'زمان انتخاب‌شده باید یکی از ردیف‌های استاندارد همین دستگاه باشد.')
+                    return redirect(f'/device-bookings/?appointment={appointment.pk}&day={raw_day}')
             treatment=max(m.device_type.treatment_minutes for m in machines)
             preparation=max(m.device_type.preparation_minutes for m in machines)
             treatment_end=start+timedelta(minutes=treatment)
