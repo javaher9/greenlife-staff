@@ -157,75 +157,132 @@ echo "Applying database migrations..."
 echo "Repairing staff account integrity..."
 "${COMPOSE[@]}" run --rm --entrypoint python web manage.py repair_staff_accounts --apply --verify-sessions
 
-echo "Starting/replacing containers..."
-if [[ "$APP_BUILD_REQUIRED" == "1" ]]; then
-  "${COMPOSE[@]}" up -d --remove-orphans
-else
-  "${COMPOSE[@]}" up -d --no-build --remove-orphans
-fi
+echo "Preparing shared static files before blue-green cutover..."
+"${COMPOSE[@]}" run --rm --entrypoint python web manage.py collectstatic --noinput
+"${COMPOSE[@]}" run --rm --entrypoint python web manage.py seed_initial_data
 
-# nginx resolves Docker service names when workers start. Replacing the web
-# container can give it a new bridge IP while nginx keeps the old upstream IP.
-# Validate config, then restart the public proxy so it always resolves the
-# current web endpoint. This fixes intermittent 502/healthcheck failures after
-# otherwise healthy source-only deploys.
-"${COMPOSE[@]}" exec -T nginx nginx -t
-echo "Refreshing public proxy DNS after web replacement..."
-"${COMPOSE[@]}" restart nginx
+echo "Starting blue-green candidate containers beside live production..."
+PUBLIC_WEB="greenlife-staff-runtime-web-1"
+LAN_WEB="greenlife-staff-runtime-web_lan-1"
+PUBLIC_NGINX="greenlife-staff-runtime-nginx-1"
+LAN_NGINX="greenlife-staff-runtime-nginx_lan-1"
+RELEASE_ID="${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}-$(date +%s)"
+PUBLIC_CANDIDATE="greenlife-web-candidate-${RELEASE_ID}"
+LAN_CANDIDATE="greenlife-web-lan-candidate-${RELEASE_ID}"
+NETWORK="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}' "$PUBLIC_WEB")"
+[[ -n "$NETWORK" ]] || { echo "ERROR: could not determine production Docker network." >&2; exit 1; }
 
-# Do the same for the private LAN proxy after web_lan replacement.
-if [[ -f "$LAN_COMPOSE_FILE" ]]; then
-  echo "Refreshing private LAN proxy DNS after web_lan replacement..."
-  "${COMPOSE[@]}" exec -T nginx_lan nginx -t
-  "${COMPOSE[@]}" restart nginx_lan
-fi
+cleanup_candidates() {
+  docker rm -f "$PUBLIC_CANDIDATE" "$LAN_CANDIDATE" >/dev/null 2>&1 || true
+}
+trap 'cleanup_candidates' EXIT
 
-if ! ./scripts/healthcheck.sh; then
-  echo "Initial healthcheck failed; collecting runtime diagnostics and attempting one controlled web recovery..." >&2
-  "${COMPOSE[@]}" ps || true
-  echo "---- recent public web logs ----" >&2
-  "${COMPOSE[@]}" logs --no-color --tail=160 web >&2 || true
-  echo "---- recent database logs ----" >&2
-  "${COMPOSE[@]}" logs --no-color --tail=100 db >&2 || true
+docker rm -f "$PUBLIC_CANDIDATE" "$LAN_CANDIDATE" >/dev/null 2>&1 || true
+docker image inspect greenlife-staff-runtime-web:latest >/dev/null 2>&1 || { echo "ERROR: candidate image missing." >&2; exit 1; }
 
-  # Recreate application containers first, then restart proxies only after the
-  # new web endpoints exist. Recreating web + nginx concurrently can make nginx
-  # resolve the retiring web IP and keep returning 502 even after Gunicorn boots.
-  recovery_web_services=(web)
-  if "${COMPOSE[@]}" config --services | grep -qx web_lan; then
-    recovery_web_services+=(web_lan)
+docker run -d --name "$PUBLIC_CANDIDATE" \
+  --network "$NETWORK" --env-file "$ENV_FILE" --volumes-from "$PUBLIC_WEB" \
+  --entrypoint gunicorn greenlife-staff-runtime-web:latest greenlife.wsgi:application \
+  --bind 0.0.0.0:8005 --workers "${GUNICORN_WORKERS:-3}" --timeout 120 >/dev/null
+
+if docker ps --format '{{.Names}}' | grep -qx "$LAN_WEB"; then
+  if ! docker image inspect greenlife-staff-runtime-web_lan:latest >/dev/null 2>&1; then
+    docker tag greenlife-staff-runtime-web:latest greenlife-staff-runtime-web_lan:latest
   fi
-  "${COMPOSE[@]}" up -d --no-deps --force-recreate "${recovery_web_services[@]}" || true
-  sleep 5
-  "${COMPOSE[@]}" restart nginx || true
-  if "${COMPOSE[@]}" config --services | grep -qx nginx_lan; then
-    "${COMPOSE[@]}" restart nginx_lan || true
-  fi
-  sleep 3
-
-  echo "---- recovery connectivity probes ----" >&2
-  "${COMPOSE[@]}" exec -T web python - <<'PY' >&2 || true
-import socket
-print("web hostname:", socket.gethostname())
-s=socket.create_connection(("127.0.0.1",8005),3)
-s.sendall(b"GET /api/health/ HTTP/1.0\r\nHost: staff.greenlifeclinics.com\r\n\r\n")
-print(s.recv(500).decode("latin1","replace"))
-s.close()
-PY
-  "${COMPOSE[@]}" exec -T nginx sh -c 'getent hosts web || true; wget -S -O- -T 5 http://web:8005/api/health/ 2>&1 | head -40' >&2 || true
-  "${COMPOSE[@]}" logs --no-color --tail=100 nginx >&2 || true
-
-  HEALTHCHECK_TRIES=20 HEALTHCHECK_SLEEP=2 ./scripts/healthcheck.sh || {
-    echo "Recovery healthcheck failed. Existing database backup is available in backups/." >&2
-    echo "---- final public web logs ----" >&2
-    "${COMPOSE[@]}" logs --no-color --tail=220 web >&2 || true
-    echo "---- final compose state ----" >&2
-    "${COMPOSE[@]}" ps >&2 || true
-    echo "Code rollback is handled by the GitHub workflow source snapshot." >&2
-    exit 1
-  }
-  echo "Application recovered after controlled web/proxy restart."
+  docker run -d --name "$LAN_CANDIDATE" \
+    --network "$NETWORK" --env-file "$ENV_FILE" --volumes-from "$LAN_WEB" \
+    -e LAN_MODE=1 -e ALLOWED_HOSTS="192.168.40.96,localhost,127.0.0.1" \
+    -e CSRF_TRUSTED_ORIGINS="http://192.168.40.96:8086" \
+    --entrypoint gunicorn greenlife-staff-runtime-web_lan:latest greenlife.wsgi:application \
+    --bind 0.0.0.0:8005 --workers 2 --timeout 120 >/dev/null
 fi
+
+probe_candidate() {
+  local proxy="$1" target="$2" host="$3"
+  for i in {1..40}; do
+    if docker exec "$proxy" sh -c "wget -q -O- -T 4 --header='Host: $host' http://$target:8005/api/health/" 2>/dev/null \
+      | grep -q '"status"[[:space:]]*:[[:space:]]*"ok"'; then
+      echo "Healthy candidate: $target"
+      return 0
+    fi
+    sleep 2
+  done
+  echo "ERROR: candidate $target failed direct healthcheck." >&2
+  docker logs --tail=160 "$target" >&2 || true
+  return 1
+}
+
+probe_candidate "$PUBLIC_NGINX" "$PUBLIC_CANDIDATE" "staff.greenlifeclinics.com"
+if docker ps --format '{{.Names}}' | grep -qx "$LAN_CANDIDATE"; then
+  probe_candidate "$LAN_NGINX" "$LAN_CANDIDATE" "192.168.40.96"
+fi
+
+set_public_upstream() {
+  local target="$1"
+  sed -E -i "s#set \\$greenlife_web_upstream [^;]+;#set \\$greenlife_web_upstream ${target}:8005;#" "$DEPLOY_PATH/deploy/nginx.conf"
+}
+set_lan_upstream() {
+  local target="$1"
+  sed -E -i "s#set \\$greenlife_lan_upstream [^;]+;#set \\$greenlife_lan_upstream ${target}:8005;#" "$DEPLOY_PATH/deploy/nginx-lan.conf"
+}
+reload_public_nginx() {
+  docker exec "$PUBLIC_NGINX" nginx -t
+  docker exec "$PUBLIC_NGINX" nginx -s reload
+}
+reload_lan_nginx() {
+  docker exec "$LAN_NGINX" nginx -t
+  docker exec "$LAN_NGINX" nginx -s reload
+}
+
+echo "Gracefully switching public traffic to the healthy candidate..."
+set_public_upstream "$PUBLIC_CANDIDATE"
+reload_public_nginx
+if docker ps --format '{{.Names}}' | grep -qx "$LAN_CANDIDATE"; then
+  echo "Gracefully switching LAN traffic to the healthy candidate..."
+  set_lan_upstream "$LAN_CANDIDATE"
+  reload_lan_nginx
+fi
+
+if ! HEALTHCHECK_TRIES=15 HEALTHCHECK_SLEEP=1 ./scripts/healthcheck.sh; then
+  echo "Candidate cutover failed; returning traffic to untouched stable services." >&2
+  set_public_upstream web
+  reload_public_nginx || true
+  if docker ps --format '{{.Names}}' | grep -qx "$LAN_WEB"; then
+    set_lan_upstream web_lan
+    reload_lan_nginx || true
+  fi
+  exit 1
+fi
+
+echo "Candidate is serving traffic. Updating stable web containers behind it..."
+"${COMPOSE[@]}" up -d --no-deps --no-build --force-recreate web
+if "${COMPOSE[@]}" config --services | grep -qx web_lan; then
+  "${COMPOSE[@]}" up -d --no-deps --no-build --force-recreate web_lan
+fi
+
+probe_candidate "$PUBLIC_NGINX" "$PUBLIC_WEB" "staff.greenlifeclinics.com"
+if docker ps --format '{{.Names}}' | grep -qx "$LAN_WEB"; then
+  probe_candidate "$LAN_NGINX" "$LAN_WEB" "192.168.40.96"
+fi
+
+echo "Gracefully returning traffic to upgraded stable services..."
+set_public_upstream web
+reload_public_nginx
+if docker ps --format '{{.Names}}' | grep -qx "$LAN_WEB"; then
+  set_lan_upstream web_lan
+  reload_lan_nginx
+fi
+
+HEALTHCHECK_TRIES=20 HEALTHCHECK_SLEEP=1 ./scripts/healthcheck.sh
+
+if "${COMPOSE[@]}" config --services | grep -qx sms_worker; then
+  echo "Refreshing SMS worker after successful cutover..."
+  "${COMPOSE[@]}" up -d --no-deps --no-build --force-recreate sms_worker
+fi
+
+cleanup_candidates
+trap - EXIT
+echo "Blue-green cutover complete; nginx was never restarted."
 
 echo "Checking public login + CSRF path through production nginx..."
 public_cookie_jar="$(mktemp)"
