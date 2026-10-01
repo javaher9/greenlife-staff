@@ -1,8 +1,15 @@
 {% extends 'core/base.html' %}{% block content %}
 <style>
 .cap{max-width:1380px;margin:12px auto 36px;display:grid;gap:14px;color:#e8f3f1}
-.cap-panel{padding:20px;border:1px solid rgba(123,172,163,.18);border-radius:22px;background:linear-gradient(145deg,rgba(20,42,52,.98),rgba(9,25,35,.98));box-shadow:0 18px 42px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.025)}
-.cap-hero{position:relative;overflow:hidden;min-height:142px;padding:24px 26px;background:radial-gradient(circle at 10% 16%,rgba(47,181,126,.18),transparent 24%),radial-gradient(circle at 86% 22%,rgba(79,130,210,.14),transparent 27%),linear-gradient(135deg,#14352f 0%,#102a33 48%,#15233b 100%);border-color:rgba(86,170,143,.24)}
+.cap-panel{padding:20px;border:1px solid rgba(123,172,163,.22);border-radius:22px;background:
+radial-gradient(circle at 12% 8%,rgba(52,188,137,.08),transparent 24%),
+radial-gradient(circle at 88% 14%,rgba(75,132,225,.08),transparent 26%),
+linear-gradient(145deg,rgba(20,42,52,.98),rgba(9,25,35,.98));box-shadow:0 18px 42px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.035)}
+.cap-hero{position:relative;overflow:hidden;min-height:142px;padding:24px 26px;background:
+radial-gradient(circle at 8% 14%,rgba(43,207,139,.28),transparent 24%),
+radial-gradient(circle at 88% 18%,rgba(79,140,245,.23),transparent 28%),
+radial-gradient(circle at 62% 90%,rgba(225,165,74,.10),transparent 24%),
+linear-gradient(135deg,#123c34 0%,#102c38 45%,#182846 100%);border-color:rgba(102,193,160,.34);box-shadow:0 20px 45px rgba(0,0,0,.26),0 0 30px rgba(52,177,132,.06)}
 .cap-hero:before{content:"";position:absolute;left:-35px;bottom:-70px;width:300px;height:190px;border-radius:50%;background:radial-gradient(circle,rgba(52,196,139,.18),transparent 68%)}
 .cap-hero:after{content:"";position:absolute;left:65px;bottom:18px;width:88px;height:36px;border-radius:90% 8% 90% 8%;background:linear-gradient(135deg,#2b9e70,#8bd7b3);transform:rotate(16deg);opacity:.62}
 .cap h1,.cap h2{margin:0;color:#f6fbfa;text-shadow:0 1px 0 rgba(0,0,0,.15)}.cap h1{font-size:28px;line-height:1.45}.cap h2{font-size:18px}
@@ -12,22 +19,22 @@
 .cap-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
 .cap-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:12px;border-bottom:1px solid rgba(141,181,173,.14);margin-bottom:10px}
 .cap-section-head .cap-icon{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;font-size:18px;font-weight:950}
-.cap-section-head .type-icon{background:rgba(73,142,215,.14);color:#91c8ff;border:1px solid rgba(88,149,213,.18)}
-.cap-section-head .device-icon{background:rgba(55,175,123,.14);color:#83e4bc;border:1px solid rgba(66,177,128,.18)}
+.cap-section-head .type-icon{background:linear-gradient(145deg,rgba(73,142,215,.22),rgba(107,86,200,.17));color:#a8d4ff;border:1px solid rgba(102,163,226,.28);box-shadow:0 8px 18px rgba(49,99,170,.10)}
+.cap-section-head .device-icon{background:linear-gradient(145deg,rgba(55,175,123,.22),rgba(216,158,63,.12));color:#9af0ca;border:1px solid rgba(80,190,140,.28);box-shadow:0 8px 18px rgba(35,130,92,.10)}
 .cap form{display:flex;flex-wrap:wrap;align-items:end;gap:9px;margin:9px 0}
 .cap label{display:grid;gap:5px;font-size:10.5px;color:#d6e2df;font-weight:850}
 .cap input,.cap select{min-width:120px;min-height:43px;padding:9px 11px;border:1px solid #3b5964;border-radius:11px;background:#0a1d28;color:#f7fbfa;box-shadow:inset 0 1px 2px rgba(0,0,0,.2)}
 .cap input::placeholder{color:#8ba0a8}.cap input:focus,.cap select:focus{outline:none;border-color:#55c196;box-shadow:0 0 0 3px rgba(78,178,138,.12),inset 0 1px 2px rgba(0,0,0,.15)}
 .cap button,.cap-link{border:0;border-radius:11px;padding:10px 14px;cursor:pointer;text-decoration:none;font-weight:950;min-height:42px;display:inline-flex;align-items:center;justify-content:center}
-.cap button{background:linear-gradient(135deg,#1b7c5e,#2da078);color:#fff;box-shadow:0 8px 18px rgba(20,110,80,.18)}.cap button:hover{filter:brightness(1.06)}
+.cap button{background:linear-gradient(135deg,#168967,#35b889);color:#fff;box-shadow:0 8px 18px rgba(20,126,88,.24)}.cap button:hover{filter:brightness(1.06)}
 .cap-link{background:linear-gradient(135deg,#244e7d,#34679a);color:#eef6ff;box-shadow:0 8px 18px rgba(31,73,118,.18)}
 .cap-row{position:relative;padding:14px 14px 12px;margin-top:10px;border:1px solid rgba(113,158,149,.15);border-radius:15px;background:linear-gradient(145deg,rgba(17,40,50,.92),rgba(8,24,34,.96));overflow:hidden}
 .cap-row:before{content:"";position:absolute;right:0;top:0;bottom:0;width:4px;background:linear-gradient(#2da078,#4d89c7)}
 .cap-row strong{display:block;color:#f7fbfa;font-size:13px;font-weight:950;margin-bottom:5px;letter-spacing:.1px}
 .cap-note{font-size:11px;color:#afc4bf;line-height:1.9}.cap-muted{color:#93aaa4}
-.cap-new-box{padding:13px;border:1px dashed rgba(91,156,137,.3);border-radius:14px;background:rgba(16,45,42,.4);margin-top:10px}
-.cap-new-box.device{background:rgba(23,45,65,.5);border-color:rgba(74,128,183,.3)}
-.cap-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:rgba(44,151,108,.16);color:#9be8c7;font-size:9px;font-weight:900}
+.cap-new-box{padding:13px;border:1px dashed rgba(91,181,150,.38);border-radius:14px;background:linear-gradient(145deg,rgba(16,59,48,.48),rgba(15,40,45,.44));margin-top:10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)}
+.cap-new-box.device{background:linear-gradient(145deg,rgba(25,51,79,.58),rgba(29,40,71,.48));border-color:rgba(89,145,210,.38)}
+.cap-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:linear-gradient(135deg,rgba(44,151,108,.24),rgba(65,124,191,.18));color:#b7f3d7;font-size:9px;font-weight:900;border:1px solid rgba(99,188,151,.20)}
 .cap-device-row{background:linear-gradient(145deg,rgba(18,44,51,.94),rgba(11,28,38,.97))}.cap-device-row:before{background:linear-gradient(#d9a34b,#2d9b74)}.cap-device-row strong{color:#fff4d8}
 .cap-device-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px}
 .cap-status-wrap{display:flex;align-items:center;gap:8px}
@@ -40,13 +47,16 @@
 .cap-delete{background:linear-gradient(135deg,#692d35,#8d3945)!important;color:#ffe9ed!important;border:1px solid rgba(231,120,136,.24)!important;box-shadow:none!important}
 .cap-delete:hover{filter:brightness(1.08)}
 .cap-cabins{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 2px}
-.cap-cabin-chip{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:11px;background:#0c2230;border:1px solid rgba(97,145,160,.22);color:#dce9e6;font-size:10px;font-weight:900}
+.cap-cabin-chip{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:11px;background:linear-gradient(145deg,#0d2a35,#11243f);border:1px solid rgba(107,157,190,.28);color:#e4f0ed;font-size:10px;font-weight:900;box-shadow:0 7px 16px rgba(0,0,0,.12)}
 .cap-cabin-chip form{margin:0!important}
 .cap-cabin-chip button{min-height:30px!important;padding:5px 8px!important;font-size:9px!important}
 .cap-device-row.is-off{opacity:.66;filter:saturate(.72)}
 .cap-device-row.is-off:before{background:linear-gradient(#6d7681,#4c5660)}
 .cap-device-row.is-off strong{color:#c8d0d3}
-.cap-type-row:nth-of-type(3n+1):before{background:linear-gradient(#42a67d,#7acbaa)}.cap-type-row:nth-of-type(3n+2):before{background:linear-gradient(#4a83bd,#7bb3ea)}.cap-type-row:nth-of-type(3n):before{background:linear-gradient(#d49b4b,#f0c57d)}
+.cap-type-row:nth-of-type(4n+1):before{background:linear-gradient(#30b57f,#78e0b5)}
+.cap-type-row:nth-of-type(4n+2):before{background:linear-gradient(#4d83d9,#8ab8ff)}
+.cap-type-row:nth-of-type(4n+3):before{background:linear-gradient(#d69a46,#ffd07d)}
+.cap-type-row:nth-of-type(4n):before{background:linear-gradient(#8a6bd6,#b69cf0)}
 .cap-type-row.is-off{opacity:.7;filter:saturate(.7)}.cap-type-row.is-off:before{background:linear-gradient(#69747d,#4f5960)}
 .cap-type-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:5px}
 @media(max-width:900px){.cap-grid{grid-template-columns:1fr}.cap{margin:10px 12px 28px}.cap-panel{padding:16px}.cap h1{font-size:23px}}
