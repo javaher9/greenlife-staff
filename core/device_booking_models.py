@@ -17,6 +17,23 @@ class DeviceTypeSchedule(models.Model):
         return self.name
 
 
+class BranchDeviceTypeStatus(models.Model):
+    """Per-branch availability for a globally defined device type."""
+    branch=models.ForeignKey('core.Branch',on_delete=models.CASCADE,related_name='device_type_statuses')
+    device_type=models.ForeignKey(DeviceTypeSchedule,on_delete=models.CASCADE,related_name='branch_statuses')
+    is_active=models.BooleanField(default=True)
+
+    class Meta:
+        constraints=[
+            models.UniqueConstraint(fields=['branch','device_type'],name='uniq_branch_device_type_status')
+        ]
+        ordering=['branch_id','device_type_id']
+
+    def __str__(self):
+        state='active' if self.is_active else 'inactive'
+        return f'{self.branch}: {self.device_type.code} ({state})'
+
+
 class DeviceCabin(models.Model):
     branch=models.ForeignKey('core.Branch',on_delete=models.CASCADE,related_name='device_cabins')
     name=models.CharField(max_length=100)

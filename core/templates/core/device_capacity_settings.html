@@ -41,6 +41,8 @@
 .cap-device-row.is-off:before{background:linear-gradient(#6d7681,#4c5660)}
 .cap-device-row.is-off strong{color:#c8d0d3}
 .cap-type-row:nth-of-type(3n+1):before{background:linear-gradient(#42a67d,#7acbaa)}.cap-type-row:nth-of-type(3n+2):before{background:linear-gradient(#4a83bd,#7bb3ea)}.cap-type-row:nth-of-type(3n):before{background:linear-gradient(#d49b4b,#f0c57d)}
+.cap-type-row.is-off{opacity:.7;filter:saturate(.7)}.cap-type-row.is-off:before{background:linear-gradient(#69747d,#4f5960)}
+.cap-type-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:5px}
 @media(max-width:900px){.cap-grid{grid-template-columns:1fr}.cap{margin:10px 12px 28px}.cap-panel{padding:16px}.cap h1{font-size:23px}}
 </style>
 <div class="cap">
@@ -55,7 +57,31 @@
 <div class="cap-grid">
 <section class="cap-panel">
 <div class="cap-section-head"><div><h2>مدت درمان و آماده‌سازی</h2><div class="cap-note">زمان پایه هر نوع دستگاه را تنظیم کنید.</div></div><span class="cap-icon type-icon">◷</span></div>
-{% for t in types %}<div class="cap-row cap-type-row"><strong>{{ t.name }} · {{ t.code }}</strong>
+{% for t in types %}<div class="cap-row cap-type-row {% if not t.branch_active %}is-off{% endif %}">
+<div class="cap-type-head">
+  <strong>{{ t.name }} · {{ t.code }}</strong>
+  <div class="cap-status-wrap">
+    {% if t.branch_active %}
+      <span class="cap-status on">● فعال در {{ branch.name }}</span>
+      <form method="post" class="cap-toggle-form">{% csrf_token %}
+        <input type="hidden" name="branch" value="{{ branch.pk }}">
+        <input type="hidden" name="action" value="toggle_type_branch">
+        <input type="hidden" name="type_id" value="{{ t.pk }}">
+        <input type="hidden" name="active" value="0">
+        <button class="cap-toggle off" type="submit">غیرفعال</button>
+      </form>
+    {% else %}
+      <span class="cap-status off">● غیرفعال در {{ branch.name }}</span>
+      <form method="post" class="cap-toggle-form">{% csrf_token %}
+        <input type="hidden" name="branch" value="{{ branch.pk }}">
+        <input type="hidden" name="action" value="toggle_type_branch">
+        <input type="hidden" name="type_id" value="{{ t.pk }}">
+        <input type="hidden" name="active" value="1">
+        <button class="cap-toggle" type="submit">فعال</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
 <form method="post">{% csrf_token %}<input type="hidden" name="branch" value="{{ branch.pk }}"><input type="hidden" name="action" value="type"><input type="hidden" name="type_id" value="{{ t.pk }}">
 <label>درمان (دقیقه)<input type="number" min="10" max="240" name="treatment_minutes" value="{{ t.treatment_minutes }}"></label>
 <label>آماده‌سازی (دقیقه)<input type="number" min="0" max="240" name="preparation_minutes" value="{{ t.preparation_minutes }}"></label><button>ذخیره</button></form></div>{% endfor %}
@@ -63,7 +89,7 @@
 <section class="cap-panel">
 <div class="cap-section-head"><div><h2>کابین‌ها و دستگاه‌های فیزیکی</h2><div class="cap-note">ابتدا کابین را بسازید، سپس دستگاه را به آن متصل کنید.</div></div><span class="cap-icon device-icon">▣</span></div>
 <div class="cap-new-box"><span class="cap-badge">＋ کابین جدید</span><form method="post">{% csrf_token %}<input type="hidden" name="action" value="cabin"><input type="hidden" name="branch" value="{{ branch.pk }}"><label>نام کابین<input name="name" placeholder="مثلاً کابین ۱" required></label><button>افزودن کابین</button></form></div>
-<div class="cap-new-box device"><span class="cap-badge">＋ دستگاه جدید</span><form method="post">{% csrf_token %}<input type="hidden" name="action" value="device"><input type="hidden" name="branch" value="{{ branch.pk }}"><label>نام دستگاه فیزیکی<input name="name" placeholder="مثلاً CoolTech 1" required></label><label>نوع دستگاه<select name="type_id">{% for t in types %}<option value="{{ t.pk }}">{{ t.name }} · {{ t.code }}</option>{% endfor %}</select></label><label>کابین<select name="cabin_id">{% for cabin in cabins %}<option value="{{ cabin.pk }}">{{ cabin.name }}</option>{% endfor %}</select></label><button>افزودن دستگاه</button></form></div>
+<div class="cap-new-box device"><span class="cap-badge">＋ دستگاه جدید</span><form method="post">{% csrf_token %}<input type="hidden" name="action" value="device"><input type="hidden" name="branch" value="{{ branch.pk }}"><label>نام دستگاه فیزیکی<input name="name" placeholder="مثلاً CoolTech 1" required></label><label>نوع دستگاه<select name="type_id">{% for t in active_types %}<option value="{{ t.pk }}">{{ t.name }} · {{ t.code }}</option>{% endfor %}</select></label><label>کابین<select name="cabin_id">{% for cabin in cabins %}<option value="{{ cabin.pk }}">{{ cabin.name }}</option>{% endfor %}</select></label><button>افزودن دستگاه</button></form></div>
 {% for device in devices %}<div class="cap-row cap-device-row {% if not device.is_active %}is-off{% endif %}">
 <div class="cap-device-head">
   <strong>{{ device.name }} · {{ device.device_type.code }}</strong>
