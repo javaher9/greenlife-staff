@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Patch live settings menu only
+      - name: Patch live device settings safely
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -32,25 +32,28 @@ jobs:
               echo "ERROR: $container is not running" >&2
               exit 1
             fi
+
+            # Keep the menu entry present on the live template.
             docker exec -i "$container" python - < .github/scripts/hotfix_device_menu.py
+
+            # Replace only the device-capacity view code; no image rebuild,
+            # no DB migration and no container recreate.
+            docker cp core/device_booking_views.py "$container":/app/core/device_booking_views.py
+            docker exec "$container" python -m py_compile /app/core/device_booking_views.py
           done
 
+          # Gracefully reload Gunicorn workers so code/template changes are picked up.
           for container in "${containers[@]}"; do
             docker kill --signal HUP "$container" >/dev/null
           done
 
-          sleep 3
+          sleep 4
 
           for container in "${containers[@]}"; do
             docker exec "$container" grep -q "دستگاه‌ها و ظرفیت نوبت‌دهی" /app/core/templates/core/base.html
             echo "$container: menu link present"
           done
 
-          code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 8 \
-            -H 'Host: staff.greenlifeclinics.com' \
-            -H 'X-Forwarded-Proto: https' \
-            http://127.0.0.1:8085/settings/device-capacity/ || true)"
-          case "$code" in
-            200|302) echo "device settings route reachable: HTTP $code" ;;
-            *) echo "ERROR: device settings route returned HTTP ${code:-none}" >&2; exit 1 ;;
-          esac
+          # Functional permission check as a real Super Admin session, directly
+          # against Django. This confirms the previous 403 is gone.
+          docker exec greenlife-staff-runtime-web-1 sh -lc "cd /app && python manage.py shell -c \"from django.test import Client; from django.contrib.auth import get_user_model; U=get_user_model(); u=U.objects.filter(is_superuser=True,is_active=True).first(); assert u is not None, 'no active superuser'; c=Client(HTTP_HOST='staff.greenlifeclinics.com'); c.force_login(u); r=c.get('/settings/device-capacity/'); print('superadmin device settings HTTP', r.status_code); assert r.status_code==200\""
