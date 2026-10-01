@@ -29,28 +29,43 @@ def _role_allowed(profile, roles):
         raise PermissionDenied('دسترسی این بخش برای شما فعال نیست.')
 
 
+def _device_branches():
+    """Only real treatment branches belong in device scheduling/settings."""
+    return (
+        Branch.objects.filter(is_active=True)
+        .exclude(name__in=('افسریه','کال‌سنتر','کال سنتر','Call Center'))
+        .order_by('name')
+    )
+
+
 def _branch_for_settings(request):
     profile=getattr(request.user,'profile',None)
     branch_id=(request.POST.get('branch') or request.GET.get('branch') or '').strip()
+    allowed=_device_branches()
 
     if request.user.is_superuser:
         if branch_id.isdigit():
-            return get_object_or_404(Branch,pk=int(branch_id),is_active=True)
+            return get_object_or_404(allowed,pk=int(branch_id))
         if profile and profile.branch_id:
-            return profile.branch
-        branch=Branch.objects.filter(is_active=True).order_by('id').first()
+            own=allowed.filter(pk=profile.branch_id).first()
+            if own:
+                return own
+        branch=allowed.first()
         if not branch:
-            raise PermissionDenied('شعبه فعالی وجود ندارد.')
+            raise PermissionDenied('شعبه درمانی فعالی برای دستگاه‌ها وجود ندارد.')
         return branch
 
     if not profile:
         raise PermissionDenied('پروفایل پرسنلی لازم است.')
     _role_allowed(profile,('admin','manager','internal_manager'))
     if profile.role=='admin' and branch_id.isdigit():
-        return get_object_or_404(Branch,pk=int(branch_id),is_active=True)
+        return get_object_or_404(allowed,pk=int(branch_id))
     if not profile.branch_id:
         raise PermissionDenied('شعبه شما تعریف نشده است.')
-    return profile.branch
+    branch=allowed.filter(pk=profile.branch_id).first()
+    if not branch:
+        raise PermissionDenied('این مرکز برای نوبت‌دهی دستگاه تعریف نشده است.')
+    return branch
 
 
 def _mins(raw,default):
@@ -160,6 +175,44 @@ def device_capacity_settings(request):
                     defaults={'device_type':kind,'cabin':cabin},
                 )
                 messages.success(request,'دستگاه ثبت شد.' if created else 'این نام دستگاه قبلاً ثبت شده است.')
+        elif action=='delete_device':
+            with transaction.atomic():
+                device=get_object_or_404(
+                    PhysicalDevice.objects.select_for_update(),
+                    pk=request.POST.get('device_id'),branch=branch,
+                )
+                has_history=DeviceSessionBooking.objects.filter(
+                    Q(device=device)|Q(secondary_device=device)
+                ).exists()
+                if has_history:
+                    messages.error(
+                        request,
+                        f'{device.name} سابقه نوبت دارد و برای حفظ تاریخچه قابل حذف نیست؛ آن را غیرفعال کنید.'
+                    )
+                else:
+                    name=device.name
+                    device.delete()
+                    messages.success(request,f'{name} حذف شد.')
+        elif action=='delete_cabin':
+            with transaction.atomic():
+                cabin=get_object_or_404(
+                    DeviceCabin.objects.select_for_update(),
+                    pk=request.POST.get('cabin_id'),branch=branch,
+                )
+                if cabin.assigned_devices.exists():
+                    messages.error(
+                        request,
+                        f'کابین {cabin.name} هنوز دستگاه متصل دارد؛ ابتدا دستگاه‌ها را جابه‌جا یا حذف کنید.'
+                    )
+                elif cabin.device_sessions.exists():
+                    messages.error(
+                        request,
+                        f'کابین {cabin.name} سابقه نوبت دارد و برای حفظ تاریخچه قابل حذف نیست.'
+                    )
+                else:
+                    name=cabin.name
+                    cabin.delete()
+                    messages.success(request,f'کابین {name} حذف شد.')
         elif action=='toggle_device':
             device=get_object_or_404(PhysicalDevice,pk=request.POST.get('device_id'),branch=branch)
             target_active=(request.POST.get('active')=='1')
@@ -217,7 +270,7 @@ def device_capacity_settings(request):
     active_types=[kind for kind in types if kind.branch_active]
 
     return render(request,'core/device_capacity_settings.html',{
-        'branch':branch,'branches':Branch.objects.filter(is_active=True).order_by('name'),
+        'branch':branch,'branches':_device_branches(),
         'is_admin':request.user.is_superuser or _profile(request).role=='admin',
         'types':types,'active_types':active_types,
         'cabins':DeviceCabin.objects.filter(branch=branch,is_active=True),
@@ -230,18 +283,21 @@ def device_booking_schedule(request):
     profile=_profile(request)
     _role_allowed(profile,('consultant','receptionist','admin','manager','internal_manager'))
     branch_id=(request.POST.get('branch') or request.GET.get('branch') or '').strip()
+    allowed_branches=_device_branches()
     if profile.role=='admin' and branch_id.isdigit():
-        branch=get_object_or_404(Branch,pk=int(branch_id),is_active=True)
+        branch=get_object_or_404(allowed_branches,pk=int(branch_id))
     else:
         if not profile.branch_id:
             if profile.role=='admin':
-                branch=Branch.objects.filter(is_active=True).order_by('id').first()
+                branch=allowed_branches.first()
                 if not branch:
-                    raise PermissionDenied('شعبه فعالی وجود ندارد.')
+                    raise PermissionDenied('شعبه درمانی فعالی برای دستگاه‌ها وجود ندارد.')
             else:
                 raise PermissionDenied('شعبه شما تعریف نشده است.')
         else:
-            branch=profile.branch
+            branch=allowed_branches.filter(pk=profile.branch_id).first()
+            if not branch:
+                raise PermissionDenied('این مرکز برای نوبت‌دهی دستگاه تعریف نشده است.')
     raw_day=(request.POST.get('day') or request.GET.get('day') or '').strip()
     try:
         day=parse_jalali(raw_day) if raw_day else timezone.localdate()
@@ -435,7 +491,7 @@ def device_booking_schedule(request):
         'can_book':profile.role in ('consultant','admin','manager'),
         'can_manage':profile.role in ('admin','manager','internal_manager'),
         'is_admin':profile.role=='admin',
-        'branches':Branch.objects.filter(is_active=True).order_by('name'),
+        'branches':_device_branches(),
     })
 
 
