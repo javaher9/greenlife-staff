@@ -1,6 +1,6 @@
-{% extends 'core/base.html' %}{% block content %}
+{% extends 'core/base.html' %}{% load staff_i18n %}{% block content %}
 <style>
-  .glp-page{max-width:1440px;margin:0 auto;padding:18px 12px 32px;direction:rtl;color:#fff}
+  .glp-page{max-width:1440px;margin:0 auto;padding:18px 12px 32px;direction:inherit;color:#fff}
   .glp-card{background:linear-gradient(135deg,#07111f 0%,#0a1324 58%,#11132b 100%);border:1px solid #26364d;border-radius:30px;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.34)}
   .glp-row{display:grid;align-items:center;min-height:142px;padding:24px 34px;border-bottom:1px solid #2b3b50;gap:22px}
   .glp-row:last-child{border-bottom:0}
@@ -56,12 +56,12 @@
 
       <div class="glp-meta">
         <span class="glp-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 5V3h6v2h4a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4Zm2 0h2V4h-2v1Zm-6 6v7h14v-7h-5v1.5h-4V11H5Zm0-4v2h5V8h4v1h5V7H5Z"/></svg></span>
-        <span>{{ profile.job_title|default:'پرسنل' }}</span>
+        <span>{% if profile.job_title %}{{ profile.job_title }}{% else %}{% gl_t 'profile.staff' %}{% endif %}</span>
       </div>
 
       <div class="glp-meta">
         <span class="glp-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 21V4h10v4h6v13H4Zm3-3h2v-2H7v2Zm0-5h2v-2H7v2Zm0-5h2V6H7v2Zm5 10h2v-2h-2v2Zm0-5h2v-2h-2v2Zm5 5h1v-7h-1v7Z"/></svg></span>
-        <span>شعبه {{ profile.branch|default:'—' }}</span>
+        <span>{% gl_t 'profile.branch' branch=profile.branch|default:'—' %}</span>
       </div>
 
       <div class="glp-photo-wrap">
@@ -70,14 +70,14 @@
             {% if profile.avatar %}<img src="{{ profile.avatar.url }}" alt="{{ user.get_full_name|default:user.username }}">{% else %}<span>{{ user.first_name|first|default:user.username|first }}</span>{% endif %}
           </div>
         </div>
-        {% if avatar_form %}<button type="button" class="glp-camera" id="profilePhotoSelect" aria-label="تغییر عکس">📷</button>{% endif %}
+        {% if avatar_form %}<button type="button" class="glp-camera" id="profilePhotoSelect" aria-label="{% gl_t 'profile.change_photo' %}">📷</button>{% endif %}
       </div>
     </div>
 
     <div class="glp-row glp-age">
       <div class="glp-item">
         <span class="glp-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-5 0-8 2.5-8 5.2V21h16v-1.8C20 16.5 17 14 12 14Z"/></svg></span>
-        <span class="glp-label">سن</span><span class="glp-sep"></span>
+        <span class="glp-label">{% gl_t 'profile.age' %}</span><span class="glp-sep"></span>
         <strong class="glp-value" id="profileAge" data-birth="{% if profile.birth_date %}{{ profile.birth_date|date:'Y-m-d' }}{% endif %}">—</strong>
       </div>
     </div>
@@ -86,13 +86,13 @@
       <div class="glp-pair">
         <div class="glp-item">
           <span class="glp-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m2 8 10-5 10 5-10 5L2 8Zm4 3.3 6 3 6-3V16c0 1.7-2.7 3.5-6 3.5S6 17.7 6 16v-4.7Z"/></svg></span>
-          <span class="glp-label">تحصیلات</span><span class="glp-sep"></span>
-          <strong class="glp-value">{{ profile.education|default:'ثبت نشده' }}</strong>
+          <span class="glp-label">{% gl_t 'profile.education' %}</span><span class="glp-sep"></span>
+          <strong class="glp-value">{% if profile.education %}{{ profile.education }}{% else %}{% gl_t 'profile.not_recorded' %}{% endif %}</strong>
         </div>
         <div class="glp-item">
           <span class="glp-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5Z"/></svg></span>
-          <span class="glp-label">نشانی</span><span class="glp-sep"></span>
-          <strong class="glp-value">{{ profile.address|default:'ثبت نشده' }}</strong>
+          <span class="glp-label">{% gl_t 'profile.address' %}</span><span class="glp-sep"></span>
+          <strong class="glp-value">{% if profile.address %}{{ profile.address }}{% else %}{% gl_t 'profile.not_recorded' %}{% endif %}</strong>
         </div>
       </div>
     </div>
@@ -101,12 +101,12 @@
       <div class="glp-pair">
         <div class="glp-item">
           <span class="glp-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.6 2 10 5.4 8.1 8.1c1.3 2.6 3.2 4.5 5.8 5.8l2.7-1.9L20 15.4v2.3c0 1.3-1 2.3-2.3 2.3C9.6 20 4 14.4 4 6.3 4 5 5 4 6.3 4h.3V2Z"/></svg></span>
-          <span class="glp-label">شماره تماس</span><span class="glp-sep"></span>
+          <span class="glp-label">{% gl_t 'profile.phone' %}</span><span class="glp-sep"></span>
           <strong class="glp-value" dir="ltr">{{ profile.phone|default:'—' }}</strong>
         </div>
         <div class="glp-item">
           <span class="glp-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 5h18v14H3V5Zm2 2v.4l7 5 7-5V7H5Zm14 10V9.8l-7 5-7-5V17h14Z"/></svg></span>
-          <span class="glp-label">ایمیل</span><span class="glp-sep"></span>
+          <span class="glp-label">{% gl_t 'profile.email' %}</span><span class="glp-sep"></span>
           <strong class="glp-value" dir="ltr">{{ user.email|default:'—' }}</strong>
         </div>
       </div>
@@ -117,21 +117,22 @@
   <form method="post" enctype="multipart/form-data" id="profilePhotoForm" class="glp-actions">
     {% csrf_token %}
     <div class="glp-file-hidden">{{ avatar_form.avatar }}</div>
-    <button type="button" class="glp-btn" id="profilePhotoSelect2">📷 انتخاب عکس جدید</button>
-    <button type="submit" class="glp-btn primary" id="profilePhotoSave">ذخیره عکس</button>
-    <span class="glp-hint" id="profileFileName">JPG، PNG یا WEBP · پس از انتخاب، خودکار ذخیره می‌شود</span>
+    <button type="button" class="glp-btn" id="profilePhotoSelect2">📷 {% gl_t 'profile.select_photo' %}</button>
+    <button type="submit" class="glp-btn primary" id="profilePhotoSave">{% gl_t 'profile.save_photo' %}</button>
+    <span class="glp-hint" id="profileFileName">{% gl_t 'profile.photo_hint' %}</span>
     {{ avatar_form.avatar.errors }}
   </form>
   {% endif %}
 
   <div class="glp-actions">
-    <a class="glp-btn" href="/device-issues/new/">🛠️ گزارش خرابی دستگاه</a>
-    <a class="glp-btn" href="/logout/">خروج از حساب کاربری</a>
+    <a class="glp-btn" href="/device-issues/new/">🛠️ {% gl_t 'profile.report_issue' %}</a>
+    <a class="glp-btn" href="/logout/">{% gl_t 'profile.logout' %}</a>
   </div>
 </div>
 
 <script>
 (function(){
+  const I18N={years:"{% gl_t 'profile.years' age='__AGE__' %}",uploading:"{% gl_t 'profile.uploading' name='__NAME__' %}",preview:"{% gl_t 'profile.preview' %}",saving:"{% gl_t 'profile.saving' %}"};
   const ageEl=document.getElementById('profileAge');
   if(ageEl){
     const raw=ageEl.dataset.birth;
@@ -141,7 +142,7 @@
       let age=today.getFullYear()-birth.getFullYear();
       const m=today.getMonth()-birth.getMonth();
       if(m<0 || (m===0 && today.getDate()<birth.getDate())) age--;
-      ageEl.textContent=age>=0 ? age+' سال' : '—';
+      ageEl.textContent=age>=0 ? I18N.years.replace('__AGE__',age) : '—';
     }
   }
   const form=document.getElementById('profilePhotoForm');
@@ -158,12 +159,12 @@
     fileInput.addEventListener('change',function(){
       const file=this.files&&this.files[0];
       if(!file)return;
-      if(fileName)fileName.textContent='در حال آپلود: '+file.name;
+      if(fileName)fileName.textContent=I18N.uploading.replace('__NAME__',file.name);
       if(preview && file.type && file.type.startsWith('image/')){
         const url=URL.createObjectURL(file);
-        preview.innerHTML='<img src="'+url+'" alt="پیش‌نمایش عکس">';
+        preview.innerHTML='<img src="'+url+'" alt="'+I18N.preview+'">';
       }
-      if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='در حال ذخیره…';}
+      if(saveBtn){saveBtn.disabled=true;saveBtn.textContent=I18N.saving;}
       if(form)setTimeout(function(){form.submit();},120);
     });
   }
