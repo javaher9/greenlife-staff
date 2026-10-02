@@ -380,7 +380,7 @@ html,body{background:#0a1520!important}
             <div class="box-title"><span>{% gl_t 'doc.add_new_plan' %}</span><small>{% gl_t 'doc.doctor_suggestion' %}</small></div>
             <div class="form-grid two">
               <div class="doctor-field"><label>{% gl_t 'doc.lipo_type' %}</label><select name="protocol_name" required><option value="">{% gl_t 'doc.select' %}</option>{% for x in lipolytic_options %}<option value="{{ x.name }}">{{ x.name }}{% if x.price %} — {{ x.price }}{% endif %}</option>{% endfor %}</select></div>
-              <div class="doctor-field"><label>{% gl_t 'doc.area' %}</label><select name="area"><option value="">انتخاب {% gl_t 'doc.area' %}</option>{% for x in body_areas %}<option>{{ x }}</option>{% endfor %}</select></div>
+              <div class="doctor-field"><label>{% gl_t 'doc.area' %}</label><select name="area"><option value="">{% gl_t 'doc.select_area' %}</option>{% for x in body_areas %}<option>{{ x }}</option>{% endfor %}</select></div>
               <div class="doctor-field"><label>{% gl_t 'doc.session_count' %}</label><input type="number" min="1" max="20" name="sessions" value="1"></div>
             </div>
             <button class="care-submit" type="submit">+ {% gl_t 'doc.save_lipo' %}</button>
