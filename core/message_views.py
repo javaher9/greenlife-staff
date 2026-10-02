@@ -12,6 +12,7 @@ from django.http import JsonResponse
 from django.urls import reverse
 from django.utils import timezone
 
+from .staff_i18n import translate
 from .models import InternalMessage, StaffNotification
 
 
@@ -53,14 +54,14 @@ def internal_messages(request):
         recipient=None
         if target!='all':
             if not target.isdigit() or int(target) not in contact_ids:
-                messages.error(request,'گیرنده معتبر نیست.')
+                messages.error(request,translate('msg.invalid_recipient',getattr(request,'ui_language','fa')))
                 return redirect('internal_messages')
             recipient=next((u for u in contacts if u.pk==int(target)),None)
 
         if not body:
-            messages.error(request,'متن پیام خالی است.')
+            messages.error(request,translate('msg.empty_body',getattr(request,'ui_language','fa')))
         elif len(body)>2000:
-            messages.error(request,'پیام حداکثر ۲۰۰۰ کاراکتر می‌تواند باشد.')
+            messages.error(request,translate('msg.too_long',getattr(request,'ui_language','fa')))
         else:
             InternalMessage.objects.create(
                 sender=request.user,
@@ -70,13 +71,13 @@ def internal_messages(request):
             if recipient:
                 StaffNotification.objects.create(
                     user=recipient,
-                    title='پیام داخلی جدید',
+                    title=translate('msg.new_notification',getattr(request,'ui_language','fa')),
                     message=f'{request.user.get_full_name() or request.user.username}: {body[:140]}',
                     notification_type='internal_message',
                 )
-                messages.success(request,'پیام ارسال شد.')
+                messages.success(request,translate('msg.sent',getattr(request,'ui_language','fa')))
                 return redirect(f"{reverse('internal_messages')}?with={recipient.pk}")
-            messages.success(request,'پیام در گفتگوی عمومی ارسال شد.')
+            messages.success(request,translate('msg.sent_public',getattr(request,'ui_language','fa')))
             return redirect('internal_messages')
 
     if selected:
@@ -93,8 +94,8 @@ def internal_messages(request):
         thread_qs=InternalMessage.objects.filter(
             recipient__isnull=True
         ).select_related('sender').order_by('-created_at')[:200]
-        room_title='گفتگوی عمومی پرسنل'
-        room_subtitle='همه پرسنل فعال می‌توانند این گفتگو را ببینند و پاسخ دهند.'
+        room_title=translate('msg.public_chat',getattr(request,'ui_language','fa'))
+        room_subtitle=translate('msg.all_can',getattr(request,'ui_language','fa'))
 
     thread=list(reversed(list(thread_qs)))
     unread_by_sender={}
@@ -140,7 +141,7 @@ def internal_messages(request):
         'room_subtitle':room_subtitle,
         'unread_total':unread_total,
         'staff_count':len(contacts)+1,
-        'room_kind':'خصوصی' if selected else 'عمومی',
+        'room_kind':translate('msg.private',getattr(request,'ui_language','fa')) if selected else translate('msg.public',getattr(request,'ui_language','fa')),
     })
     response['Cache-Control']='no-store, private'
     return response
@@ -205,11 +206,11 @@ def internal_message_live_widget(request):
         target=(request.POST.get('recipient') or '').strip()
         body=(request.POST.get('body') or '').strip()
         if not target.isdigit() or int(target) not in contact_map:
-            return JsonResponse({'ok':False,'error':'گیرنده معتبر نیست.'},status=400)
+            return JsonResponse({'ok':False,'error':translate('msg.invalid_recipient',getattr(request,'ui_language','fa'))},status=400)
         if not body:
-            return JsonResponse({'ok':False,'error':'متن پیام خالی است.'},status=400)
+            return JsonResponse({'ok':False,'error':translate('msg.empty_body',getattr(request,'ui_language','fa'))},status=400)
         if len(body)>2000:
-            return JsonResponse({'ok':False,'error':'پیام حداکثر ۲۰۰۰ کاراکتر می‌تواند باشد.'},status=400)
+            return JsonResponse({'ok':False,'error':translate('msg.too_long',getattr(request,'ui_language','fa'))},status=400)
 
         recipient=contact_map[int(target)]
         item=InternalMessage.objects.create(
@@ -219,7 +220,7 @@ def internal_message_live_widget(request):
         )
         StaffNotification.objects.create(
             user=recipient,
-            title='پیام داخلی جدید',
+            title=translate('msg.new_notification',getattr(request,'ui_language','fa')),
             message=f'{request.user.get_full_name() or request.user.username}: {body[:140]}',
             notification_type='internal_message',
         )
