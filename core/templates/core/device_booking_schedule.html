@@ -824,6 +824,36 @@
     text-align:center!important;
   }
 }
+
+/* Clean single-title device header v8 */
+@media(min-width:701px){
+  .db-plate-title{
+    display:block!important;
+  }
+  .db-plate-name{
+    width:100%!important;
+  }
+  .db-plate-name strong{
+    width:100%!important;
+    min-height:42px!important;
+    margin:0!important;
+    padding:8px 12px!important;
+    border-radius:14px!important;
+    font-size:14px!important;
+    line-height:1.15!important;
+    font-weight:950!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+    color:#fff!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    box-sizing:border-box!important;
+  }
+  .db-plate-badge{display:none!important}
+}
 </style>
 
 <div class="db-shell">
@@ -910,7 +940,7 @@
               <strong>{{ card.device.name }}</strong>
 
             </div>
-            <span class="db-plate-badge">{{ card.total_count }}</span>
+
           </div>
           <div class="db-plate-stats">
             <div class="db-stat"><b>{{ card.free_count }}</b><span>آزاد</span></div>
