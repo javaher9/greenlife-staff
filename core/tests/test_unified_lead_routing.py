@@ -1,5 +1,5 @@
 from collections import Counter
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -132,6 +132,28 @@ class UnifiedLeadRoutingTests(TestCase):
         for lead in leads:
             lead.refresh_from_db()
             self.assertIsNotNone(lead.assigned_at)
+
+    def test_friday_duty_releases_pending_queue_as_soon_as_operator_is_present(self):
+        self._keep_only(1)
+        lead=self._new_lead(90)
+        today=timezone.localdate()
+        friday=today+timedelta(days=(4-today.weekday())%7)
+        now=timezone.make_aware(
+            datetime.combine(friday,time(9,15)),
+            timezone.get_current_timezone(),
+        )
+        Attendance.objects.update_or_create(
+            user=self.operators[1].user,
+            date=friday,
+            defaults={'check_in':now,'check_out':None,'status':'present'},
+        )
+
+        released=release_pending_leads_if_ready(now=now)
+
+        self.assertEqual(released,1)
+        lead.refresh_from_db()
+        self.assertEqual(lead.assigned_to_id,self.operators[1].id)
+        self.assertIsNotNone(lead.assigned_at)
 
     def test_website_leads_never_go_to_kamelya_or_laleh(self):
         self._check_in(*range(6))
