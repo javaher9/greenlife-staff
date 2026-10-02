@@ -1117,6 +1117,28 @@ EN.update({
     'rec.amount_toman':'{amount} toman','rec.today_checkin':'✓ Today’s check-in {time}',
 })
 
+FA.update({
+    'con.diet_label':'رژیم: {name}','con.session_count_text':'{count} جلسه','con.doctor_original':'اصل پزشک: {title}{area} · {qty} مورد/جلسه',
+    'con.new_service_placeholder':'خدمت جدید','con.area_short_placeholder':'ناحیه / توضیح کوتاه',
+    'con.amount_toman':'{amount} تومان','con.discount_toman_short':'تخفیف / تومان',
+    'con.select_case_help2':'از صف پرونده‌ها یک بیمار را انتخاب کنید تا اطلاعات بیمار، نسخه پزشک، پکیج درمان و عملیات مرتبط در همین بخش نمایش داده شود.',
+    'con.expense_action':'ثبت هزینه','con.payment_action':'ثبت دریافت','con.recent_recorded':'آخرین دریافت‌های ثبت‌شده توسط شما',
+})
+TR.update({
+    'con.diet_label':'Diyet: {name}','con.session_count_text':'{count} seans','con.doctor_original':'Doktorun aslı: {title}{area} · {qty} öğe/seans',
+    'con.new_service_placeholder':'Yeni hizmet','con.area_short_placeholder':'Bölge / kısa açıklama',
+    'con.amount_toman':'{amount} toman','con.discount_toman_short':'İndirim / toman',
+    'con.select_case_help2':'Hasta bilgilerini, doktor planını, tedavi paketini ve ilgili işlemleri görmek için kuyruktan bir dosya seçin.',
+    'con.expense_action':'Gider Kaydı','con.payment_action':'Tahsilat Kaydı','con.recent_recorded':'Son Tahsilatlarınız',
+})
+EN.update({
+    'con.diet_label':'Diet: {name}','con.session_count_text':'{count} sessions','con.doctor_original':'Doctor original: {title}{area} · {qty} item/session',
+    'con.new_service_placeholder':'New service','con.area_short_placeholder':'Area / short note',
+    'con.amount_toman':'{amount} toman','con.discount_toman_short':'Discount / toman',
+    'con.select_case_help2':'Select a patient from the queue to view patient information, doctor plan, treatment package, and related actions.',
+    'con.expense_action':'Add Expense','con.payment_action':'Add Payment','con.recent_recorded':'Your Recent Payments',
+})
+
 
 TRANSLATIONS = {'fa': FA, 'tr': TR, 'en': EN}
 
