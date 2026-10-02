@@ -1104,6 +1104,19 @@ FA.update({'dash.to':'تا'})
 TR.update({'dash.to':'-'})
 EN.update({'dash.to':'to'})
 
+FA.update({
+    'rec.consultant_label':'مشاور: {name}','rec.package_line':'{qty} جلسه × {units} واحد · {price} تومان/واحد',
+    'rec.amount_toman':'{amount} تومان','rec.today_checkin':'✓ ورود امروز {time}',
+})
+TR.update({
+    'rec.consultant_label':'Danışman: {name}','rec.package_line':'{qty} seans × {units} birim · {price} toman/birim',
+    'rec.amount_toman':'{amount} toman','rec.today_checkin':'✓ Bugünkü giriş {time}',
+})
+EN.update({
+    'rec.consultant_label':'Consultant: {name}','rec.package_line':'{qty} sessions × {units} units · {price} toman/unit',
+    'rec.amount_toman':'{amount} toman','rec.today_checkin':'✓ Today’s check-in {time}',
+})
+
 
 TRANSLATIONS = {'fa': FA, 'tr': TR, 'en': EN}
 
