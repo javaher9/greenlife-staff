@@ -1,4 +1,4 @@
-{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+{% extends 'core/base.html' %}{% load jalali_tags staff_i18n %}{% block content %}
 <style>
 /* Call Center v5 — bright, patient-focused, photo-ready desktop/tablet workspace */
 .cc-v5{
@@ -188,123 +188,123 @@
     <div class="cc-v5-hero-main">
       <div class="cc-v5-operator-avatar">{% if user.profile.avatar %}<img src="{{ user.profile.avatar.url }}" alt="">{% else %}{{ user.first_name|first|default:user.username|first }}{% endif %}</div>
       <div>
-        <span class="cc-v5-eyebrow">● میز کار فعال · {{ today|jdate }}</span>
-        <h1>سلام {{ user.first_name|default:user.username }}، آماده‌ای یک روز خوب بسازیم؟</h1>
-        <p>لیدها، تماس‌ها، نوبت‌ها و ارتباط با تیم؛ همه در یک میز کار روشن و بیمارمحور.</p>
+        <span class="cc-v5-eyebrow">{% gl_t 'cc.active_desk' date=today|jdate %}</span>
+        <h1>{% gl_t 'cc.greeting' name=user.first_name|default:user.username %}</h1>
+        <p>{% gl_t 'cc.hero' %}</p>
       </div>
     </div>
     <div class="cc-v6-hero-side">
-      <div class="cc-v5-motto"><span class="cc-v5-motto-ico">✦</span><div><small>شعار امروز</small><strong>هر تماس، یک قدم برای حال بهتر</strong></div></div>
-      <div class="cc-v6-flow" aria-label="مسیر مراجعه">
-        <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">☎</span><strong>تماس</strong><small>شروع ارتباط</small></div>
-        <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">↻</span><strong>پیگیری</strong><small>ادامه مسیر</small></div>
-        <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">▣</span><strong>نوبت</strong><small>ثبت زمان</small></div>
-        <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">♥</span><strong>مراجعه</strong><small>تجربه بهتر</small></div>
+      <div class="cc-v5-motto"><span class="cc-v5-motto-ico">✦</span><div><small>{% gl_t 'cc.today_motto' %}</small><strong>{% gl_t 'cc.motto' %}</strong></div></div>
+      <div class="cc-v6-flow" aria-label="{% gl_t 'cc.journey' %}">
+        <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">☎</span><strong>{% gl_t 'cc.call' %}</strong><small>{% gl_t 'cc.contact_start' %}</small></div>
+        <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">↻</span><strong>{% gl_t 'common.follow_up' %}</strong><small>{% gl_t 'cc.continue_path' %}</small></div>
+        <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">▣</span><strong>{% gl_t 'common.appointment' %}</strong><small>ثبت زمان</small></div>
+        <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">♥</span><strong>{% gl_t 'cc.visit' %}</strong><small>{% gl_t 'cc.better_experience' %}</small></div>
       </div>
     </div>
   </header>
 
   <section class="cc-v5-kpis">
-    <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">لیدهای امروز</span><span class="cc-v5-kpi-icon">＋</span></div><strong>{{ stats.today }}</strong><small>ورودی تازه در صف شما</small></article>
-    <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">کل مراجعین من</span><span class="cc-v5-kpi-icon">◎</span></div><strong>{{ stats.all }}</strong><small>همه لیدهای تخصیص‌یافته</small></article>
-    <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">پیگیری باز</span><span class="cc-v5-kpi-icon">!</span></div><strong>{{ stats.follow_up }}</strong><small>امروز یا عقب‌افتاده</small></article>
-    <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">نوبت امروز</span><span class="cc-v5-kpi-icon">▣</span></div><strong>{{ stats.appointment_today }}</strong><small>نوبت واقعی امروز</small></article>
-    <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">نوبت‌های آینده</span><span class="cc-v5-kpi-icon">↗</span></div><strong>{{ stats.appointment }}</strong><small>از امروز به بعد</small></article>
+    <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">{% gl_t 'cc.today_leads' %}</span><span class="cc-v5-kpi-icon">＋</span></div><strong>{{ stats.today }}</strong><small>{% gl_t 'cc.fresh_queue' %}</small></article>
+    <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">{% gl_t 'cc.my_total' %}</span><span class="cc-v5-kpi-icon">◎</span></div><strong>{{ stats.all }}</strong><small>{% gl_t 'cc.all_assigned' %}</small></article>
+    <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">{% gl_t 'cc.open_followups' %}</span><span class="cc-v5-kpi-icon">!</span></div><strong>{{ stats.follow_up }}</strong><small>{% gl_t 'cc.today_or_overdue' %}</small></article>
+    <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">نوبت امروز</span><span class="cc-v5-kpi-icon">▣</span></div><strong>{{ stats.appointment_today }}</strong><small>{% gl_t 'cc.today_real_appointments' %}</small></article>
+    <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">{% gl_t 'cc.future_appointments' %}</span><span class="cc-v5-kpi-icon">↗</span></div><strong>{{ stats.appointment }}</strong><small>{% gl_t 'cc.from_today' %}</small></article>
   </section>
 
-  <section class="cc-v7-performance cc-v5-card" aria-label="عملکرد من">
-    <div class="cc-v7-performance-head"><div><h2>عملکرد من</h2><p>آمار واقعی از لید، نوبت، مراجعه و فروش؛ بدون تغییر در بخش‌های قبلی.</p></div><span class="cc-v7-period">ماه جاری</span></div>
+  <section class="cc-v7-performance cc-v5-card" aria-label="{% gl_t 'cc.my_performance' %}">
+    <div class="cc-v7-performance-head"><div><h2>{% gl_t 'cc.my_performance' %}</h2><p>{% gl_t 'cc.performance_intro' %}</p></div><span class="cc-v7-period">{% gl_t 'cc.current_month' %}</span></div>
     <div class="cc-v7-metrics">
-      <article class="cc-v7-metric attention"><span>بدون تماس امروز</span><strong>{{ performance.today_uncontacted }}</strong><small>از {{ stats.today }} لید امروز</small></article>
-      <article class="cc-v7-metric purple"><span>سهم لید امروز</span><strong>{{ performance.lead_share_today }}%</strong><small>از {{ performance.team_today }} لید کل تیم</small></article>
-      <article class="cc-v7-metric"><span>نرخ رسیدگی ماه</span><strong>{{ performance.care_rate }}%</strong><small>{{ performance.month_handled }} از {{ performance.month_total }} لید</small></article>
-      <article class="cc-v7-metric good"><span>نوبت‌سازی ماه</span><strong>{{ performance.appointment_rate }}%</strong><small>{{ performance.month_appointments }} لید با نوبت واقعی</small></article>
-      <article class="cc-v7-metric good"><span>مراجعه از نوبت</span><strong>{{ performance.visit_rate }}%</strong><small>{{ performance.month_visits }} مراجعه ثبت‌شده</small></article>
-      <article class="cc-v7-metric purple"><span>تبدیل ماه</span><strong>{{ performance.conversion_rate }}%</strong><small>{{ performance.month_won }} فروش موفق</small></article>
-      <article class="cc-v7-metric"><span>فروش ماه</span><strong>{{ performance.sales_million|floatformat:-1 }}</strong><small>میلیون تومان</small></article>
-      <article class="cc-v7-metric attention"><span>پیگیری عقب‌افتاده</span><strong>{{ performance.overdue }}</strong><small>موارد گذشته از موعد</small></article>
+      <article class="cc-v7-metric attention"><span>{% gl_t 'cc.uncontacted_today' %}</span><strong>{{ performance.today_uncontacted }}</strong><small>{% gl_t 'cc.of_today_leads' count=stats.today %}</small></article>
+      <article class="cc-v7-metric purple"><span>{% gl_t 'cc.today_share' %}</span><strong>{{ performance.lead_share_today }}%</strong><small>{% gl_t 'cc.of_team_leads' count=performance.team_today %}</small></article>
+      <article class="cc-v7-metric"><span>{% gl_t 'cc.month_care_rate' %}</span><strong>{{ performance.care_rate }}%</strong><small>{% gl_t 'cc.handled_of_total' handled=performance.month_handled total=performance.month_total %}</small></article>
+      <article class="cc-v7-metric good"><span>{% gl_t 'cc.month_appointment_rate' %}</span><strong>{{ performance.appointment_rate }}%</strong><small>{% gl_t 'cc.real_appointments_count' count=performance.month_appointments %}</small></article>
+      <article class="cc-v7-metric good"><span>{% gl_t 'cc.visit_from_appointment' %}</span><strong>{{ performance.visit_rate }}%</strong><small>{% gl_t 'cc.visits_count' count=performance.month_visits %}</small></article>
+      <article class="cc-v7-metric purple"><span>{% gl_t 'cc.month_conversion' %}</span><strong>{{ performance.conversion_rate }}%</strong><small>{% gl_t 'cc.won_count' count=performance.month_won %}</small></article>
+      <article class="cc-v7-metric"><span>{% gl_t 'cc.month_sales' %}</span><strong>{{ performance.sales_million|floatformat:-1 }}</strong><small>{% gl_t 'common.million_toman' %}</small></article>
+      <article class="cc-v7-metric attention"><span>{% gl_t 'cc.overdue_followups' %}</span><strong>{{ performance.overdue }}</strong><small>{% gl_t 'cc.past_due' %}</small></article>
     </div>
-    <div class="cc-v7-funnel" aria-label="قیف ماه جاری">
-      <div class="cc-v7-funnel-step"><span>لید ماه</span><b>{{ performance.month_total }}</b></div>
-      <div class="cc-v7-funnel-step"><span>رسیدگی</span><b>{{ performance.month_handled }}</b></div>
-      <div class="cc-v7-funnel-step"><span>نوبت</span><b>{{ performance.month_appointments }}</b></div>
-      <div class="cc-v7-funnel-step"><span>مراجعه</span><b>{{ performance.month_visits }}</b></div>
-      <div class="cc-v7-funnel-step"><span>فروش</span><b>{{ performance.month_won }}</b></div>
+    <div class="cc-v7-funnel" aria-label="قیف {% gl_t 'cc.current_month' %}">
+      <div class="cc-v7-funnel-step"><span>{% gl_t 'cc.month_leads' %}</span><b>{{ performance.month_total }}</b></div>
+      <div class="cc-v7-funnel-step"><span>{% gl_t 'cc.handled' %}</span><b>{{ performance.month_handled }}</b></div>
+      <div class="cc-v7-funnel-step"><span>{% gl_t 'common.appointment' %}</span><b>{{ performance.month_appointments }}</b></div>
+      <div class="cc-v7-funnel-step"><span>{% gl_t 'cc.visit' %}</span><b>{{ performance.month_visits }}</b></div>
+      <div class="cc-v7-funnel-step"><span>{% gl_t 'cc.sale' %}</span><b>{{ performance.month_won }}</b></div>
     </div>
   </section>
 
   <nav class="cc-v5-actions">
-    <a class="cc-v5-action primary" href="?status=new">☎ تماس جدید</a>
-    <a class="cc-v5-action" href="?status=contacted">✓ ثبت نتیجه تماس</a>
-    <a class="cc-v5-action purple" href="{% url 'appointment_schedule' %}">▣ نوبت‌دهی</a>
+    <a class="cc-v5-action primary" href="?status=new">☎ {% gl_t 'cc.new_call' %}</a>
+    <a class="cc-v5-action" href="?status=contacted">✓ {% gl_t 'cc.save_call_result' %}</a>
+    <a class="cc-v5-action purple" href="{% url 'appointment_schedule' %}">▣ {% gl_t 'cc.appointment_booking' %}</a>
     <a class="cc-v5-action blue" href="{% url 'internal_messages' %}">✉ پیام داخلی {% if internal_unread %}<span class="cc-v5-count">{{ internal_unread }}</span>{% endif %}</a>
-    <a class="cc-v5-action" href="?status=contacted">◷ پیگیری امروز</a>
+    <a class="cc-v5-action" href="?status=contacted">◷ {% gl_t 'cc.followup_today' %}</a>
   </nav>
 
   <section class="cc-v5-toolbar">
-    <div class="cc-v5-search"><input id="ccSearch" type="search" placeholder="جستجوی نام، موبایل، خدمت یا معرف..."></div>
-    <select id="ccSourceFilter" class="cc-v5-select"><option value="">همه منابع</option><option value="panel">ثبت در پنل</option><option value="link">لینک اختصاصی</option><option value="qr">QR اختصاصی</option><option value="import">ورودی فایل</option></select>
-    <div class="cc-v5-quick"><button type="button" class="active" data-time="all">همه</button><button type="button" data-time="overdue">عقب‌افتاده</button><button type="button" data-time="today">امروز</button><button type="button" data-time="future">پیگیری بعدی</button></div>
+    <div class="cc-v5-search"><input id="ccSearch" type="search" placeholder="{% gl_t 'cc.search_placeholder' %}"></div>
+    <select id="ccSourceFilter" class="cc-v5-select"><option value="">{% gl_t 'cc.all_sources' %}</option><option value="panel">{% gl_t 'cc.source_panel' %}</option><option value="link">{% gl_t 'cc.source_link' %}</option><option value="qr">{% gl_t 'cc.source_qr' %}</option><option value="import">{% gl_t 'cc.source_import' %}</option></select>
+    <div class="cc-v5-quick"><button type="button" class="active" data-time="all">{% gl_t 'common.all' %}</button><button type="button" data-time="overdue">{% gl_t 'cc.overdue' %}</button><button type="button" data-time="today">{% gl_t 'common.today' %}</button><button type="button" data-time="future">{% gl_t 'cc.next_followup' %}</button></div>
   </section>
 
   <section class="cc-v5-groups">
-    <div class="cc-v5-group-label"><strong>گروه‌های لید</strong><small>تفکیک سریع صف</small></div>
+    <div class="cc-v5-group-label"><strong>{% gl_t 'cc.lead_groups' %}</strong><small>{% gl_t 'cc.queue_split' %}</small></div>
     <div class="cc-v5-group-list">
       <a class="cc-v5-chip {% if not group_filter %}active{% endif %}" href="{% url 'call_center_dashboard' %}">همه <b>{{ stats.all }}</b></a>
       {% for group in groups %}<a class="cc-v5-chip {% if group.is_default %}default{% endif %} {% if group_filter == group.pk|stringformat:'s' %}active{% endif %}" href="?group={{ group.pk }}">{{ group.name }} <b>{{ group.lead_count }}</b></a>{% endfor %}
-      {% if stats.ungrouped %}<a class="cc-v5-chip {% if group_filter == 'ungrouped' %}active{% endif %}" href="?group=ungrouped">بدون گروه <b>{{ stats.ungrouped }}</b></a>{% endif %}
+      {% if stats.ungrouped %}<a class="cc-v5-chip {% if group_filter == 'ungrouped' %}active{% endif %}" href="?group=ungrouped">{% gl_t 'cc.no_group' %} <b>{{ stats.ungrouped }}</b></a>{% endif %}
     </div>
-    <form class="cc-v5-group-new" method="post" action="{% url 'call_center_group_create' %}">{% csrf_token %}<input name="name" maxlength="80" placeholder="گروه جدید..." required><button type="submit">＋ ساخت</button></form>
+    <form class="cc-v5-group-new" method="post" action="{% url 'call_center_group_create' %}">{% csrf_token %}<input name="name" maxlength="80" placeholder="{% gl_t 'cc.new_group' %}" required><button type="submit">＋ {% gl_t 'cc.build' %}</button></form>
   </section>
 
   <form class="cc-v5-lead-new" method="post" action="{% url 'call_center_lead_create' %}">
     {% csrf_token %}
-    <input name="full_name" maxlength="140" placeholder="نام مراجعه‌کننده" required>
-    <input name="phone" maxlength="30" inputmode="tel" autocomplete="tel" dir="ltr" placeholder="شماره موبایل" required>
-    <select name="group" required aria-label="گروه مربوطه">
+    <input name="full_name" maxlength="140" placeholder="{% gl_t 'cc.person_name' %}" required>
+    <input name="phone" maxlength="30" inputmode="tel" autocomplete="tel" dir="ltr" placeholder="{% gl_t 'common.phone' %}" required>
+    <select name="group" required aria-label="{% gl_t 'cc.group' %}">
       {% for group in groups %}<option value="{{ group.pk }}" {% if group_filter == group.pk|stringformat:'s' %}selected{% endif %}>{{ group.name }}</option>{% endfor %}
     </select>
-    <input name="interested_service" maxlength="160" placeholder="خدمت موردنظر (اختیاری)">
-    <input name="notes" maxlength="500" placeholder="توضیح کوتاه (اختیاری)">
-    <button type="submit">＋ ثبت تلفن در گروه</button>
+    <input name="interested_service" maxlength="160" placeholder="{% gl_t 'cc.service_optional' %}">
+    <input name="notes" maxlength="500" placeholder="{% gl_t 'cc.note_optional' %}">
+    <button type="submit">＋ {% gl_t 'cc.add_to_group' %}</button>
   </form>
 
   <div class="cc-v5-stage">
     <section class="cc-v5-main">
       <section class="cc-v5-card">
-        <header class="cc-v5-section-head"><div><h2>مراجعین و لیدهای من</h2><p>آواتارها آماده‌اند تا بعداً با عکس واقعی پرونده جایگزین شوند.</p></div><a href="{% url 'appointment_schedule' %}">برنامه نوبت‌ها ←</a></header>
+        <header class="cc-v5-section-head"><div><h2>{% gl_t 'cc.my_patients_leads' %}</h2><p>{% gl_t 'cc.patient_avatar_note' %}</p></div><a href="{% url 'appointment_schedule' %}">{% gl_t 'cc.appointment_schedule' %} ←</a></header>
         <div class="cc-v5-patients" id="ccLeadList">
           {% for lead in leads %}
-          <article class="cc-v5-patient" data-source="{{ lead.source }}" data-followup="{{ lead.next_follow_up|date:'Y-m-d' }}" data-search="{{ lead.full_name }} {{ lead.phone }} {{ lead.interested_service }} {{ lead.referrer }} {{ lead.group.name|default:'' }} {{ lead.source_origin_display }}">
+          <article class="cc-v5-patient" data-source="{{ lead.source }}" data-followup="{{ lead.next_follow_up|date:'Y-m-d' }}" data-search="{{ lead.full_name }} {{ lead.phone }} {{ lead.interested_service }} {{ lead.referrer }} {{ lead.group.name|default:'' }} {% gl_choice 'lead_source' lead.source lead.source_origin_display %}">
             <div class="cc-v5-person">
-              <div class="cc-v5-person-avatar" title="جای عکس مراجع">{{ lead.full_name|first|default:"؟" }}</div>
+              <div class="cc-v5-person-avatar" title="{% gl_t 'cc.photo_placeholder' %}">{{ lead.full_name|first|default:"؟" }}</div>
               <div class="cc-v5-person-copy">
                 <strong>{{ lead.full_name }}</strong>
-                <div class="cc-v5-person-meta"><b>{{ lead.phone }}</b>{% if lead.country %}<span class="cc-v5-tag source">{{ lead.country.flag_emoji }} {{ lead.country.code }}</span>{% endif %}<span class="cc-v5-tag source">{{ lead.source_origin_display }}</span><span class="cc-v5-tag group">{{ lead.group.name|default:'بدون گروه' }}</span><span>معرف: {{ lead.referrer }}</span></div>
+                <div class="cc-v5-person-meta"><b>{{ lead.phone }}</b>{% if lead.country %}<span class="cc-v5-tag source">{{ lead.country.flag_emoji }} {{ lead.country.code }}</span>{% endif %}<span class="cc-v5-tag source">{% gl_choice 'lead_source' lead.source lead.source_origin_display %}</span><span class="cc-v5-tag group">{{ lead.group.name|default:'{% gl_t 'cc.no_group' %}' }}</span><span>{% gl_t 'cc.referrer' name=lead.referrer %}</span></div>
               </div>
             </div>
-            <div class="cc-v5-service">{{ lead.interested_service|default:'خدمت مشخص نشده' }}</div>
-            <span class="cc-v5-status">{{ lead.get_status_display }}</span>
-            <div class="cc-v5-follow">{% if lead.next_follow_up %}{{ lead.next_follow_up|jdate }}{% else %}تعیین نشده{% endif %}</div>
-            <div class="cc-v5-row-actions"><a class="cc-v5-call" href="tel:{{ lead.phone }}">☎ تماس</a><a class="cc-v5-open" href="{% url 'call_center_lead' lead.pk %}">پرونده</a></div>
+            <div class="cc-v5-service">{% if lead.interested_service %}{{ lead.interested_service }}{% else %}{% gl_t 'cc.service_unspecified' %}{% endif %}</div>
+            <span class="cc-v5-status">{% gl_choice 'lead_status' lead.status lead.get_status_display %}</span>
+            <div class="cc-v5-follow">{% if lead.next_follow_up %}{{ lead.next_follow_up|jdate }}{% else %}{% gl_t 'cc.not_scheduled' %}{% endif %}</div>
+            <div class="cc-v5-row-actions"><a class="cc-v5-call" href="tel:{{ lead.phone }}">☎ {% gl_t 'cc.call' %}</a><a class="cc-v5-open" href="{% url 'call_center_lead' lead.pk %}">{% gl_t 'cc.case' %}</a></div>
           </article>
-          {% empty %}<div class="cc-v5-empty">در این فیلتر مراجع یا لیدی وجود ندارد.</div>{% endfor %}
+          {% empty %}<div class="cc-v5-empty">{% gl_t 'cc.no_leads_filter' %}</div>{% endfor %}
         </div>
       </section>
 
       <div class="cc-v6-lower">
         <section class="cc-v5-card">
-          <header class="cc-v5-section-head"><div><h3>تجربه مشتری (CEM)</h3><p>یک نگاه سریع به مواردی که امروز نیاز به توجه دارند.</p></div><a href="?status=contacted">پیگیری‌ها ←</a></header>
+          <header class="cc-v5-section-head"><div><h3>{% gl_t 'cc.customer_experience' %}</h3><p>{% gl_t 'cc.cem_intro' %}</p></div><a href="?status=contacted">{% gl_t 'cc.followups' %} ←</a></header>
           <div class="cc-v5-cem">
-            <div class="cc-v5-cem-focus"><span class="cc-v5-cem-icon">♥</span><div><strong>تمرکز امروز: پیگیری انسانی و منظم</strong><p>مراجع باید احساس کند از اولین تماس، یک نفر مشخص حواسش به مسیر او هست.</p></div></div>
-            <div class="cc-v5-cem-stats"><div class="cc-v5-cem-stat"><b>{{ stats.follow_up }}</b><span>پیگیری باز</span></div><div class="cc-v5-cem-stat"><b>{{ stats.appointment_today }}</b><span>نوبت امروز</span></div><div class="cc-v5-cem-stat"><b>{{ internal_unread }}</b><span>پیام داخلی</span></div></div>
+            <div class="cc-v5-cem-focus"><span class="cc-v5-cem-icon">♥</span><div><strong>{% gl_t 'cc.human_focus' %}</strong><p>{% gl_t 'cc.human_focus_body' %}</p></div></div>
+            <div class="cc-v5-cem-stats"><div class="cc-v5-cem-stat"><b>{{ stats.follow_up }}</b><span>{% gl_t 'cc.open_followups' %}</span></div><div class="cc-v5-cem-stat"><b>{{ stats.appointment_today }}</b><span>نوبت امروز</span></div><div class="cc-v5-cem-stat"><b>{{ internal_unread }}</b><span>پیام داخلی</span></div></div>
           </div>
         </section>
 
         <section class="cc-v5-card cc-v6-chat">
           <header class="cc-v5-section-head">
-            <div><h3>ارتباط داخلی تیم {% if internal_unread %}<span class="cc-v5-count">{{ internal_unread }}</span>{% endif %}</h3><p>پیام سریع به منشی، همکار کال‌سنتر یا سایر پرسنل</p></div>
-            <a href="{% url 'internal_messages' %}">گفتگوی کامل ←</a>
+            <div><h3>{% gl_t 'cc.team_comms' %} {% if internal_unread %}<span class="cc-v5-count">{{ internal_unread }}</span>{% endif %}</h3><p>{% gl_t 'cc.quick_team_message' %}</p></div>
+            <a href="{% url 'internal_messages' %}">{% gl_t 'cc.full_chat' %} ←</a>
           </header>
           <div class="cc-v6-chat-feed" id="ccDashboardChatFeed">
             {% for item in recent_internal_messages %}
@@ -312,16 +312,16 @@
               <span class="cc-v6-chat-avatar">{% if item.sender.profile.avatar %}<img src="{{ item.sender.profile.avatar.url }}" alt="">{% else %}{{ item.sender.first_name|first|default:item.sender.username|first }}{% endif %}</span>
               <div class="cc-v6-chat-copy"><strong>{{ item.sender.get_full_name|default:item.sender.username }}</strong><p>{{ item.body|truncatechars:110 }}</p><small>{{ item.created_at|jdatetime }}</small></div>
             </div>
-            {% empty %}<div class="cc-v6-chat-empty">هنوز پیامی ثبت نشده؛ از کادر پایین اولین پیام را بفرستید.</div>{% endfor %}
+            {% empty %}<div class="cc-v6-chat-empty">{% gl_t 'cc.no_messages' %}</div>{% endfor %}
           </div>
           <div class="cc-v6-chat-compose">
             <form class="cc-v6-chat-form" id="ccQuickMessageForm">{% csrf_token %}
               <select name="recipient" required aria-label="گیرنده">
-                <option value="">انتخاب همکار...</option>
+                <option value="">{% gl_t 'cc.select_colleague' %}</option>
                 {% for person in chat_contacts %}<option value="{{ person.pk }}">{{ person.get_full_name|default:person.username }}{% if person.profile.job_title %} · {{ person.profile.job_title }}{% endif %}</option>{% endfor %}
               </select>
-              <textarea name="body" maxlength="1200" required placeholder="پیام کوتاه به همکار..."></textarea>
-              <button type="submit">ارسال</button>
+              <textarea name="body" maxlength="1200" required placeholder="{% gl_t 'cc.short_message' %}"></textarea>
+              <button type="submit">{% gl_t 'common.send' %}</button>
             </form>
             <div class="cc-v6-chat-status" id="ccQuickMessageStatus"></div>
           </div>
@@ -331,17 +331,17 @@
 
     <aside class="cc-v5-side">
       <section class="cc-v5-card">
-        <header class="cc-v5-section-head"><div><h3>برنامه نوبت‌های امروز</h3><p>۰۹:۰۰ تا ۱۸:۰۰ · هر ۱۵ دقیقه</p></div><a href="{% url 'appointment_schedule' %}">کامل ←</a></header>
-        <div class="cc-v5-schedule-note">نوبت‌های کال‌سنتر و منشی در یک برنامه مشترک‌اند</div>
+        <header class="cc-v5-section-head"><div><h3>{% gl_t 'cc.today_schedule' %}</h3><p>{% gl_t 'cc.schedule_hours' %}</p></div><a href="{% url 'appointment_schedule' %}">{% gl_t 'common.full_schedule' %} ←</a></header>
+        <div class="cc-v5-schedule-note">{% gl_t 'cc.shared_schedule' %}</div>
         <div class="cc-v5-slots">
           {% for slot in appointment_slots %}
           <div class="cc-v5-slot {% if slot.appointment %}booked{% endif %}">
             <span class="cc-v5-slot-time">{{ slot.label }}</span>
             {% if slot.appointment %}
-              <span class="cc-v5-slot-avatar" title="جای عکس مراجع">{{ slot.appointment.full_name|first|default:"؟" }}</span>
-              <div class="cc-v5-slot-person"><strong>{{ slot.appointment.full_name }}</strong><small>{{ slot.appointment.service|default:"مشاوره" }} · {{ slot.appointment.branch }}</small></div><span class="cc-v5-slot-dot">●</span>
+              <span class="cc-v5-slot-avatar" title="{% gl_t 'cc.photo_placeholder' %}">{{ slot.appointment.full_name|first|default:"؟" }}</span>
+              <div class="cc-v5-slot-person"><strong>{{ slot.appointment.full_name }}</strong><small>{{ slot.appointment.service|default:"{% gl_t 'cc.consultation' %}" }} · {{ slot.appointment.branch }}</small></div><span class="cc-v5-slot-dot">●</span>
             {% else %}
-              <span class="cc-v5-slot-avatar cc-v5-slot-empty-avatar">·</span><span class="cc-v5-slot-empty">خالی است</span><span class="cc-v5-slot-dot">·</span>
+              <span class="cc-v5-slot-avatar cc-v5-slot-empty-avatar">·</span><span class="cc-v5-slot-empty">{% gl_t 'cc.empty' %}</span><span class="cc-v5-slot-dot">·</span>
             {% endif %}
           </div>
           {% endfor %}
