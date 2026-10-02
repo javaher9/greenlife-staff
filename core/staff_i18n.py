@@ -981,6 +981,31 @@ COUNTRY_UI_NAMES = {
     'OM': {'fa':'عمان','tr':'Umman','en':'Oman'},
 }
 
+FA.update({
+    'common.invalid_request':'درخواست نامعتبر است.','common.access_denied':'دسترسی مجاز نیست.','common.invalid_result':'نتیجه نامعتبر است.',
+    'action.already_reviewed':'این مورد قبلاً بررسی شده است.','action.request_approved':'درخواست تایید شد.',
+    'action.request_rejected':'درخواست رد شد.','action.correction_approved':'اصلاح حضور تایید شد.',
+    'action.correction_rejected':'اصلاح حضور رد شد.','action.device_reviewing':'وضعیت به «در حال بررسی» تغییر کرد.',
+    'action.device_resolved':'خرابی دستگاه رفع‌شده ثبت شد.','action.task_done':'وظیفه انجام‌شده ثبت شد.',
+    'action.no_shortcut':'این نوع اقدام هنوز میان‌بر نهایی ندارد.',
+})
+TR.update({
+    'common.invalid_request':'Geçersiz istek.','common.access_denied':'Bu işlem için yetkiniz yok.','common.invalid_result':'Geçersiz sonuç.',
+    'action.already_reviewed':'Bu kayıt daha önce incelendi.','action.request_approved':'Talep onaylandı.',
+    'action.request_rejected':'Talep reddedildi.','action.correction_approved':'Devam düzeltmesi onaylandı.',
+    'action.correction_rejected':'Devam düzeltmesi reddedildi.','action.device_reviewing':'Durum “İnceleniyor” olarak değiştirildi.',
+    'action.device_resolved':'Cihaz arızası çözüldü olarak kaydedildi.','action.task_done':'Görev tamamlandı olarak kaydedildi.',
+    'action.no_shortcut':'Bu aksiyon türü için henüz hızlı işlem yok.',
+})
+EN.update({
+    'common.invalid_request':'Invalid request.','common.access_denied':'Access denied.','common.invalid_result':'Invalid result.',
+    'action.already_reviewed':'This item has already been reviewed.','action.request_approved':'Request approved.',
+    'action.request_rejected':'Request rejected.','action.correction_approved':'Attendance correction approved.',
+    'action.correction_rejected':'Attendance correction rejected.','action.device_reviewing':'Status changed to “Under Review”.',
+    'action.device_resolved':'Device issue marked as resolved.','action.task_done':'Task marked as completed.',
+    'action.no_shortcut':'This action type does not have a quick action yet.',
+})
+
 
 TRANSLATIONS = {'fa': FA, 'tr': TR, 'en': EN}
 
