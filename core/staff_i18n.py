@@ -696,6 +696,10 @@ EN.update({
 
 # Extended operational workspace copy.
 FA.update({
+    'expense.amount':'مبلغ هزینه (تومان)','expense.category':'دسته هزینه','expense.description':'شرح هزینه','expense.receipt':'تصویر رسید',
+    'expense.amount_placeholder':'مبلغ به تومان','expense.description_placeholder':'چه چیزی، برای چه کاری و از کجا تهیه شد؟',
+    'expense.receipt_too_large':'حجم رسید باید کمتر از ۱۰ مگابایت باشد.','expense.receipt_type':'رسید باید JPG، PNG یا WebP باشد.',
+    'expense.permission':'ثبت هزینه مشاور فقط برای مشاور فعال دارای شعبه مجاز است.','expense.success':'هزینه همراه رسید ثبت شد و برای تأیید مالی در انتظار بررسی است.',
     'report.secure_required':'برای ضبط صدا باید صفحه با HTTPS باز شود. از آدرس https://staff.greenlifeclinics.com استفاده کنید.',
     'report.no_capture':'مرورگر شما ضبط مستقیم صدا را پشتیبانی نمی‌کند. لطفاً از گزینه انتخاب فایل صوتی استفاده کنید.',
     'report.no_media_recorder':'مرورگر شما MediaRecorder را پشتیبانی نمی‌کند. لطفاً از گزینه انتخاب فایل صوتی استفاده کنید.',
@@ -753,6 +757,10 @@ FA.update({
 })
 
 TR.update({
+    'expense.amount':'Gider Tutarı (toman)','expense.category':'Gider Kategorisi','expense.description':'Gider Açıklaması','expense.receipt':'Fiş Görseli',
+    'expense.amount_placeholder':'Toman tutarı','expense.description_placeholder':'Ne alındı, ne için ve nereden?',
+    'expense.receipt_too_large':'Fiş görseli 10 MB altında olmalıdır.','expense.receipt_type':'Fiş JPG, PNG veya WebP olmalıdır.',
+    'expense.permission':'Gider kaydı yalnızca aktif ve şubeye bağlı danışmanlar içindir.','expense.success':'Gider ve fiş kaydedildi; finans onayı için incelemede.',
     'report.secure_required':'Ses kaydı için sayfa HTTPS üzerinden açık olmalıdır. https://staff.greenlifeclinics.com adresini kullanın.',
     'report.no_capture':'Tarayıcınız doğrudan ses kaydını desteklemiyor. Lütfen ses dosyası seçme seçeneğini kullanın.',
     'report.no_media_recorder':'Tarayıcınız MediaRecorder özelliğini desteklemiyor. Lütfen bir ses dosyası seçin.',
@@ -806,6 +814,10 @@ TR.update({
 })
 
 EN.update({
+    'expense.amount':'Expense Amount (toman)','expense.category':'Expense Category','expense.description':'Expense Description','expense.receipt':'Receipt Image',
+    'expense.amount_placeholder':'Amount in toman','expense.description_placeholder':'What was purchased, for what purpose, and from where?',
+    'expense.receipt_too_large':'Receipt image must be under 10 MB.','expense.receipt_type':'Receipt must be JPG, PNG, or WebP.',
+    'expense.permission':'Expense entry is available only to active consultants assigned to a branch.','expense.success':'Expense and receipt recorded and sent for Finance approval.',
     'report.secure_required':'Voice recording requires HTTPS. Open https://staff.greenlifeclinics.com.',
     'report.no_capture':'Your browser does not support direct voice recording. Please use the audio-file picker.',
     'report.no_media_recorder':'Your browser does not support MediaRecorder. Please choose an audio file instead.',
@@ -915,6 +927,16 @@ CHOICES = {
         'absent': {'fa':'غایب','tr':'Devamsız','en':'Absent'},
         'leave': {'fa':'مرخصی','tr':'İzinli','en':'On Leave'},
         'mission': {'fa':'مأموریت','tr':'Görevde','en':'On Assignment'},
+    },
+    'task_status': {
+        'todo': {'fa':'انجام نشده','tr':'Yapılmadı','en':'To Do'},
+        'doing': {'fa':'در حال انجام','tr':'Devam Ediyor','en':'In Progress'},
+        'done': {'fa':'انجام شده','tr':'Tamamlandı','en':'Done'},
+    },
+    'task_priority': {
+        'low': {'fa':'کم','tr':'Düşük','en':'Low'},
+        'normal': {'fa':'متوسط','tr':'Normal','en':'Normal'},
+        'high': {'fa':'زیاد','tr':'Yüksek','en':'High'},
     },
     'role': {
         'admin': {'fa':'مدیر سیستم','tr':'Sistem Yöneticisi','en':'System Admin'},
