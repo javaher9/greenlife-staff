@@ -296,10 +296,17 @@ def turkey_dashboard(request):
         return redirect('public_network:turkey_login')
     request.session['public_network_locale'] = 'tr'
     direct_members = member.members.filter(is_active=True).select_related('user')
+    source_labels = {
+        'story': 'Story / Story',
+        'referral': 'Davet linki / Referral link',
+        'qr': 'QR daveti / QR invite',
+        'direct': 'Doğrudan / Direct',
+    }
     return render(request, 'public_network/turkey_dashboard.html', {
         'member': member,
         'direct_members': direct_members[:12],
         'direct_count': direct_members.count(),
+        'source_label': source_labels.get(member.source, member.source),
         'share_url': _turkey_member_share_url(request, member),
         'share_qr_url': reverse('public_network:turkey_invite_qr', args=[member.code]),
     })
