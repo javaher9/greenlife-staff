@@ -250,7 +250,7 @@
   <section class="cc-v5-groups">
     <div class="cc-v5-group-label"><strong>{% gl_t 'cc.lead_groups' %}</strong><small>{% gl_t 'cc.queue_split' %}</small></div>
     <div class="cc-v5-group-list">
-      <a class="cc-v5-chip {% if not group_filter %}active{% endif %}" href="{% url 'call_center_dashboard' %}">همه <b>{{ stats.all }}</b></a>
+      <a class="cc-v5-chip {% if not group_filter %}active{% endif %}" href="{% url 'call_center_dashboard' %}">{% gl_t 'common.all' %} <b>{{ stats.all }}</b></a>
       {% for group in groups %}<a class="cc-v5-chip {% if group.is_default %}default{% endif %} {% if group_filter == group.pk|stringformat:'s' %}active{% endif %}" href="?group={{ group.pk }}">{{ group.name }} <b>{{ group.lead_count }}</b></a>{% endfor %}
       {% if stats.ungrouped %}<a class="cc-v5-chip {% if group_filter == 'ungrouped' %}active{% endif %}" href="?group=ungrouped">{% gl_t 'cc.no_group' %} <b>{{ stats.ungrouped }}</b></a>{% endif %}
     </div>
@@ -316,7 +316,7 @@
           </div>
           <div class="cc-v6-chat-compose">
             <form class="cc-v6-chat-form" id="ccQuickMessageForm">{% csrf_token %}
-              <select name="recipient" required aria-label="گیرنده">
+              <select name="recipient" required aria-label="{% gl_t 'cc.recipient' %}">
                 <option value="">{% gl_t 'cc.select_colleague' %}</option>
                 {% for person in chat_contacts %}<option value="{{ person.pk }}">{{ person.get_full_name|default:person.username }}{% if person.profile.job_title %} · {{ person.profile.job_title }}{% endif %}</option>{% endfor %}
               </select>
