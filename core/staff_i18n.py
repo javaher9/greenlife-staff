@@ -1100,6 +1100,10 @@ EN.update({
     'dash.active':'Active','dash.future':'Future',
 })
 
+FA.update({'dash.to':'تا'})
+TR.update({'dash.to':'-'})
+EN.update({'dash.to':'to'})
+
 
 TRANSLATIONS = {'fa': FA, 'tr': TR, 'en': EN}
 
