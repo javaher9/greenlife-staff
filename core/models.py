@@ -6,8 +6,59 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
+
+class Country(models.Model):
+    """Operational market/country configuration for the shared Green Life app."""
+    LANGUAGE_CHOICES=[
+        ('fa','فارسی'),
+        ('tr','Türkçe'),
+        ('en','English'),
+        ('ar','العربية'),
+    ]
+    code=models.CharField(max_length=2,unique=True,db_index=True)
+    name_english=models.CharField(max_length=80)
+    name_local=models.CharField(max_length=80)
+    flag_emoji=models.CharField(max_length=8,blank=True)
+    primary_language=models.CharField(max_length=5,choices=LANGUAGE_CHOICES,default='fa')
+    secondary_language=models.CharField(max_length=5,choices=LANGUAGE_CHOICES,blank=True)
+    currency_code=models.CharField(max_length=3,default='IRR')
+    currency_symbol=models.CharField(max_length=12,blank=True)
+    timezone=models.CharField(max_length=64,default='Asia/Tehran')
+    phone_prefix=models.CharField(max_length=8,blank=True)
+    is_active=models.BooleanField(default=True,db_index=True)
+    sort_order=models.PositiveSmallIntegerField(default=100)
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering=['sort_order','name_english','code']
+
+    def save(self,*args,**kwargs):
+        self.code=(self.code or '').strip().upper()
+        self.currency_code=(self.currency_code or '').strip().upper()
+        return super().save(*args,**kwargs)
+
+    def __str__(self):
+        flag=f'{self.flag_emoji} ' if self.flag_emoji else ''
+        return f'{flag}{self.name_local or self.name_english}'
+
+
+def default_country_pk():
+    """Backward-compatible default for legacy create paths that do not send a country yet."""
+    try:
+        country=Country.objects.filter(code='IR',is_active=True).only('pk').first()
+        return country.pk if country else None
+    except Exception:
+        # Migrations/bootstrap must be able to create the Country table first.
+        return None
+
+
 class Branch(models.Model):
     name = models.CharField(max_length=80, unique=True)
+    country = models.ForeignKey(
+        Country,on_delete=models.PROTECT,null=True,blank=True,default=default_country_pk,
+        related_name='branches',
+    )
     is_active = models.BooleanField(default=True)
     work_start = models.TimeField(default='09:00')
     work_end = models.TimeField(default='17:00')
@@ -43,6 +94,11 @@ class EmployeeProfile(models.Model):
     ]
     user=models.OneToOneField(User,on_delete=models.CASCADE,related_name='profile')
     branch=models.ForeignKey(Branch,on_delete=models.SET_NULL,null=True,blank=True)
+    country=models.ForeignKey(
+        Country,on_delete=models.PROTECT,null=True,blank=True,default=default_country_pk,
+        related_name='staff',
+    )
+    preferred_language=models.CharField(max_length=5,choices=Country.LANGUAGE_CHOICES,default='fa')
     role=models.CharField(max_length=20,choices=ROLE_CHOICES,default='employee')
     shift_group=models.ForeignKey(ShiftGroup,on_delete=models.SET_NULL,null=True,blank=True,related_name='employees')
     job_title=models.CharField(max_length=120,blank=True)
@@ -196,6 +252,11 @@ class ReferralLead(models.Model):
     SOURCE=[('panel','ثبت در پنل'),('link','لینک اختصاصی'),('qr','QR اختصاصی'),('import','ورودی فایل')]
     SYNC_STATUS=ReferralProfile.SYNC_STATUS
     referrer=models.ForeignKey(ReferralProfile,on_delete=models.PROTECT,related_name='leads')
+    country=models.ForeignKey(
+        Country,on_delete=models.PROTECT,null=True,blank=True,default=default_country_pk,
+        related_name='referral_leads',
+    )
+    preferred_language=models.CharField(max_length=5,choices=Country.LANGUAGE_CHOICES,default='fa')
     full_name=models.CharField(max_length=140)
     phone=models.CharField(max_length=30,db_index=True)
     alternate_phone=models.CharField(max_length=30,blank=True)
