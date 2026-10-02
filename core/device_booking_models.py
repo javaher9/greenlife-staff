@@ -69,7 +69,15 @@ class PhysicalDevice(models.Model):
 
 
 class DeviceSessionBooking(models.Model):
-    STATUS=[('booked','رزرو شده'),('completed','انجام شد'),('cancelled','لغو شده')]
+    STATUS=[
+        ('booked','رزرو شده'),
+        ('arrived','حاضر شد'),
+        ('late','دیر رسید'),
+        ('completed','انجام شد'),
+        ('no_show','نیامد'),
+        ('cancelled','لغو شده'),
+        ('rescheduled','جابجا شد'),
+    ]
     branch=models.ForeignKey('core.Branch',on_delete=models.PROTECT,related_name='device_session_bookings')
     appointment=models.ForeignKey('core.VisitAppointment',on_delete=models.PROTECT,related_name='device_sessions')
     plan_item=models.ForeignKey('core.ConsultationPlanItem',on_delete=models.PROTECT,related_name='device_sessions')
