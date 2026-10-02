@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
-from .forms import PublicNetworkLoginForm, PublicNetworkSignupForm, TurkeyNetworkLoginForm, TurkeyNetworkSignupForm
+from .forms import PublicNetworkLoginForm, PublicNetworkSignupForm, TurkeyNetworkLeadForm, TurkeyNetworkLoginForm, TurkeyNetworkSignupForm
 from .models import PublicNetworkMember
 from core.models import Country
 
@@ -50,6 +50,49 @@ def _member_share_url(request, member):
 def _turkey_member_share_url(request, member):
     lang='en' if getattr(member,'preferred_language','tr') == 'en' else 'tr'
     return _public_base(request) + reverse('public_network:turkey_signup_with_code', args=[member.code]) + f'?src=referral&lang={lang}'
+
+
+def _turkey_member_referral_profile(member):
+    """Bridge a public Türkiye network member into the shared ReferralLead attribution model."""
+    from core.models import ReferralProfile
+
+    profile, created = ReferralProfile.objects.get_or_create(
+        user=member.user,
+        defaults={
+            'referral_code': member.code,
+            'phone': member.phone,
+            'is_active': member.is_active,
+            'created_by': member.user,
+        },
+    )
+    update_fields=[]
+    if profile.phone != member.phone:
+        profile.phone = member.phone
+        update_fields.append('phone')
+    if profile.is_active != member.is_active:
+        profile.is_active = member.is_active
+        update_fields.append('is_active')
+    if update_fields:
+        profile.save(update_fields=update_fields+['updated_at'])
+    return profile
+
+
+def _route_turkey_lead_to_call_center(lead):
+    """Route Türkiye leads through the existing call-center allocator and Türkiye group."""
+    from core.models import CallCenterLeadGroup
+    from core.referral_views import _auto_assign_call_center
+
+    operator = _auto_assign_call_center(lead)
+    if operator:
+        group, _ = CallCenterLeadGroup.objects.get_or_create(
+            owner=operator,
+            name='Türkiye | Turkey',
+            defaults={'is_default': False},
+        )
+        if lead.group_id != group.id:
+            lead.group = group
+            lead.save(update_fields=['group', 'updated_at'])
+    return operator
 
 
 def _turkey_lead_source_profile():
@@ -112,16 +155,7 @@ def _sync_turkey_signup_to_call_center(member, request):
         if update_fields:
             lead.save(update_fields=update_fields+['updated_at'])
 
-    operator = _auto_assign_call_center(lead)
-    if operator:
-        group, _ = CallCenterLeadGroup.objects.get_or_create(
-            owner=operator,
-            name='Türkiye | Turkey',
-            defaults={'is_default': False},
-        )
-        if lead.group_id != group.id:
-            lead.group = group
-            lead.save(update_fields=['group', 'updated_at'])
+    _route_turkey_lead_to_call_center(lead)
     return lead
 
 
@@ -340,6 +374,12 @@ def turkey_dashboard(request):
         member.preferred_language=lang
         member.save(update_fields=['preferred_language','updated_at'])
     direct_members = member.members.filter(is_active=True).select_related('user')
+    from core.models import ReferralLead
+    member_referral = _turkey_member_referral_profile(member)
+    member_leads = ReferralLead.objects.filter(
+        referrer=member_referral,
+        country__code='TR',
+    ).select_related('assigned_to__user').order_by('-created_at')
     source_labels_tr = {
         'story': 'Story',
         'referral': 'Davet linki',
@@ -357,9 +397,13 @@ def turkey_dashboard(request):
         'member': member,
         'direct_members': direct_members[:12],
         'direct_count': direct_members.count(),
+        'lead_count': member_leads.count(),
+        'recent_leads': member_leads[:8],
         'source_label': labels.get(member.source, member.source),
         'share_url': _turkey_member_share_url(request, member),
         'share_qr_url': reverse('public_network:turkey_invite_qr', args=[member.code]),
+        'customer_lead_url': _public_base(request) + reverse('public_network:turkey_public_lead', args=[member.code]) + f'?lang={lang}',
+        'customer_lead_qr_url': reverse('public_network:turkey_public_lead_qr', args=[member.code]) + f'?lang={lang}',
         'turkey_lang':lang,
     })
 
@@ -383,4 +427,125 @@ def turkey_invite_qr(request, code):
     response = HttpResponse(buffer.getvalue(), content_type='image/png')
     response['Content-Disposition'] = f'inline; filename="greenlife-turkey-{member.code}.png"'
     response['Cache-Control'] = 'public, max-age=3600'
+    return response
+
+
+def _turkey_member_or_404(code):
+    return get_object_or_404(
+        PublicNetworkMember.objects.select_related('user','country'),
+        code=code,
+        is_active=True,
+        country__code='TR',
+    )
+
+
+def _create_turkey_customer_lead(member, form, request, *, source):
+    from core.models import DuplicateLeadError, ReferralLead
+
+    lang='en' if member.preferred_language == 'en' else 'tr'
+    data=form.cleaned_data
+    marker=f'[market:turkey] | [channel:network_customer] | [member_code:{member.code}]'
+    try:
+        lead=ReferralLead.objects.create(
+            referrer=_turkey_member_referral_profile(member),
+            country=member.country or _country('TR'),
+            preferred_language=lang,
+            full_name=data['full_name'].strip(),
+            phone=data['phone'],
+            interested_service=(data.get('interested_service') or '').strip(),
+            notes=((data.get('notes') or '').strip() + ('\n' if data.get('notes') else '') + marker).strip(),
+            status='new',
+            source=source,
+            source_url=request.build_absolute_uri()[:500],
+            created_by=member.user if getattr(request,'user',None) and request.user.is_authenticated and request.user.pk == member.user_id else None,
+        )
+    except DuplicateLeadError as exc:
+        return None, getattr(exc,'existing_lead',None)
+
+    _route_turkey_lead_to_call_center(lead)
+    return lead, None
+
+
+@login_required
+def turkey_lead_create(request):
+    member=getattr(request.user,'public_network_member',None)
+    if not member or not member.is_active or not member.country_id or member.country.code != 'TR':
+        return redirect('public_network:turkey_login')
+
+    lang=_turkey_language(request)
+    if member.preferred_language != lang:
+        member.preferred_language=lang
+        member.save(update_fields=['preferred_language','updated_at'])
+
+    form=TurkeyNetworkLeadForm(request.POST or None, language=lang)
+    if request.method == 'POST' and form.is_valid():
+        lead, duplicate = _create_turkey_customer_lead(member, form, request, source='panel')
+        if duplicate:
+            message = (
+                'This mobile number was registered during the last 24 hours.'
+                if lang == 'en'
+                else 'Bu telefon numarası son 24 saat içinde zaten kaydedildi.'
+            )
+            form.add_error('phone', message)
+        else:
+            messages.success(
+                request,
+                'Lead sent to the Green Life call center.' if lang == 'en' else 'Lead Green Life çağrı merkezine gönderildi.'
+            )
+            return redirect(reverse('public_network:turkey_dashboard') + f'?lang={lang}')
+
+    return render(request,'public_network/turkey_lead_form.html',{
+        'form':form,
+        'member':member,
+        'turkey_lang':lang,
+        'public_mode':False,
+    })
+
+
+def turkey_public_lead(request, code):
+    member=_turkey_member_or_404(code)
+    lang=_turkey_language(request)
+    form=TurkeyNetworkLeadForm(request.POST or None, language=lang)
+    completed=False
+    if request.method == 'POST' and form.is_valid():
+        lead, duplicate = _create_turkey_customer_lead(member, form, request, source='link')
+        if duplicate:
+            message = (
+                'This mobile number was registered during the last 24 hours.'
+                if lang == 'en'
+                else 'Bu telefon numarası son 24 saat içinde zaten kaydedildi.'
+            )
+            form.add_error('phone', message)
+        else:
+            completed=True
+            form=TurkeyNetworkLeadForm(language=lang)
+    return render(request,'public_network/turkey_lead_form.html',{
+        'form':form,
+        'member':member,
+        'turkey_lang':lang,
+        'public_mode':True,
+        'completed':completed,
+    })
+
+
+def turkey_public_lead_qr(request, code):
+    member=_turkey_member_or_404(code)
+    lang=_turkey_language(request)
+    try:
+        import qrcode
+    except ImportError:
+        from django.http import HttpResponse
+        return HttpResponse('QR service unavailable', status=503, content_type='text/plain')
+    import io
+    from django.http import HttpResponse
+    target=_public_base(request) + reverse('public_network:turkey_public_lead', args=[member.code]) + f'?lang={lang}&src=qr'
+    qr=qrcode.QRCode(version=None,box_size=10,border=3,error_correction=qrcode.constants.ERROR_CORRECT_M)
+    qr.add_data(target)
+    qr.make(fit=True)
+    image=qr.make_image(fill_color='#0f766e',back_color='white')
+    buffer=io.BytesIO()
+    image.save(buffer,format='PNG')
+    response=HttpResponse(buffer.getvalue(),content_type='image/png')
+    response['Content-Disposition']=f'inline; filename="greenlife-turkey-lead-{member.code}.png"'
+    response['Cache-Control']='public, max-age=3600'
     return response
