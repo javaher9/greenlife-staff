@@ -20,3 +20,13 @@ def call_center_flower_user(request):
     profile=getattr(user,'profile',None)
     if not profile or profile.role!='call_center': return {}
     return {'user':FlowerUserProxy(user)}
+
+
+def country_workspace(request):
+    """Expose the resolved country scope to shared Staff templates."""
+    return {
+        'country_scope': getattr(request, 'country_scope', None),
+        'country_scope_code': getattr(request, 'country_scope_code', ''),
+        'country_scope_can_switch': getattr(request, 'country_scope_can_switch', False),
+        'country_scope_countries': getattr(request, 'country_scope_countries', ()),
+    }
