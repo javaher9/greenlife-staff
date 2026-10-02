@@ -201,3 +201,79 @@ class TurkeyNetworkLoginForm(PublicNetworkLoginForm):
         except forms.ValidationError:
             message = 'Incorrect username or password.' if self.language == 'en' else 'Kullanıcı adı veya şifre hatalı.'
             raise forms.ValidationError(message)
+
+
+
+class TurkeyNetworkLeadForm(forms.Form):
+    """Customer lead form for Türkiye network members, localized TR/EN."""
+
+    def __init__(self, *args, language='tr', **kwargs):
+        super().__init__(*args, **kwargs)
+        self.language = 'en' if language == 'en' else 'tr'
+        if self.language == 'en':
+            labels = {
+                'full_name': 'Customer name',
+                'phone': 'Mobile number',
+                'interested_service': 'Interested service (optional)',
+                'notes': 'Notes (optional)',
+            }
+            placeholders = {
+                'full_name': 'Full name',
+                'phone': '+90 5XX XXX XX XX',
+                'interested_service': 'e.g. body shaping, consultation',
+                'notes': 'Best time to call or any useful detail',
+            }
+        else:
+            labels = {
+                'full_name': 'Müşteri adı',
+                'phone': 'Telefon',
+                'interested_service': 'İlgilendiği hizmet (isteğe bağlı)',
+                'notes': 'Not (isteğe bağlı)',
+            }
+            placeholders = {
+                'full_name': 'Ad Soyad',
+                'phone': '+90 5XX XXX XX XX',
+                'interested_service': 'Örn. bölgesel incelme, danışmanlık',
+                'notes': 'Arama için uygun saat veya kısa not',
+            }
+
+        self.fields['full_name'] = forms.CharField(
+            label=labels['full_name'], max_length=140,
+            widget=forms.TextInput(attrs={'placeholder': placeholders['full_name'], 'autocomplete':'name'}),
+        )
+        self.fields['phone'] = forms.CharField(
+            label=labels['phone'], max_length=30,
+            widget=forms.TextInput(attrs={
+                'placeholder': placeholders['phone'], 'inputmode':'tel',
+                'autocomplete':'tel', 'dir':'ltr',
+            }),
+        )
+        self.fields['interested_service'] = forms.CharField(
+            label=labels['interested_service'], max_length=160, required=False,
+            widget=forms.TextInput(attrs={'placeholder': placeholders['interested_service']}),
+        )
+        self.fields['notes'] = forms.CharField(
+            label=labels['notes'], max_length=1000, required=False,
+            widget=forms.Textarea(attrs={'rows':4, 'placeholder': placeholders['notes']}),
+        )
+        required = 'This field is required.' if self.language == 'en' else 'Bu alan zorunludur.'
+        for field in self.fields.values():
+            field.error_messages['required'] = required
+
+    def clean_phone(self):
+        value = (self.cleaned_data.get('phone') or '').strip()
+        cleaned = ''.join(ch for ch in value if ch.isdigit() or ch == '+')
+        if cleaned.startswith('0090'):
+            cleaned = '+90' + cleaned[4:]
+        elif cleaned.startswith('90') and not cleaned.startswith('+90'):
+            cleaned = '+' + cleaned
+        elif cleaned.startswith('05'):
+            cleaned = '+90' + cleaned[1:]
+        digits = ''.join(ch for ch in cleaned if ch.isdigit())
+        if len(digits) == 10 and digits.startswith('5') and not cleaned.startswith('+'):
+            cleaned = '+90' + digits
+            digits = '90' + digits
+        if len(digits) < 10 or len(digits) > 15:
+            message = 'Enter a valid mobile number.' if self.language == 'en' else 'Geçerli bir telefon numarası girin.'
+            raise forms.ValidationError(message)
+        return cleaned
