@@ -23,6 +23,25 @@ from .country_workspace import scoped_queryset
 
 ALLOWED_ROLES = ('admin', 'manager', 'internal_manager')
 OPEN_STATUSES = ('new', 'contacted', 'appointment')
+
+
+
+def _lead_hub_queryset(request, queryset):
+    """Temporary shared Lead Hub: Iran + Türkiye together for management.
+
+    Country remains structured on each lead. Use ?market=IR/TR to narrow.
+    """
+    profile=getattr(request.user,'profile',None)
+    if profile and profile.role in ALLOWED_ROLES:
+        return queryset
+    return scoped_queryset(request,queryset)
+
+
+def _apply_market_filter(queryset, market):
+    market=(market or '').strip().upper()
+    if market in ('IR','TR'):
+        return queryset.filter(country__code=market)
+    return queryset
 STATUS_FILTER_CHOICES = (
     ('new', 'جدید'),
     ('contacted', 'تماس گرفته شد'),
@@ -254,7 +273,9 @@ def _operational_status_rows(leads, total):
 
 def _filtered_leads_for_trend(request):
     """Apply only source/operator dimensions to the live 30-day trend."""
-    leads=scoped_queryset(request,ReferralLead.objects.all())
+    leads=_lead_hub_queryset(request,ReferralLead.objects.all())
+    market_filter=(request.GET.get('market') or '').strip().upper()
+    leads=_apply_market_filter(leads,market_filter)
     source_filter=(request.GET.get('source') or '').strip()
     operator_filter=(request.GET.get('operator') or '').strip()
     if source_filter in ('instagram','website','beytoote','aparat','crm','whatsapp','campaign','telegram','bale'):
@@ -342,7 +363,7 @@ def lead_attention_bulk_action(request):
     ).strip()
     if same_owner_id.isdigit():
         lead = (
-            scoped_queryset(
+            _lead_hub_queryset(
                 request,
                 ReferralLead.objects.select_related('assigned_to__user'),
             )
@@ -401,7 +422,7 @@ def lead_attention_bulk_action(request):
     if not operator:
         messages.error(request, 'اپراتور انتخاب‌شده فعال نیست.')
         return redirect('lead_management_dashboard')
-    leads = scoped_queryset(request,ReferralLead.objects.all()).filter(pk__in=ids).exclude(status__in=('won','lost'))
+    leads = _lead_hub_queryset(request,ReferralLead.objects.all()).filter(pk__in=ids).exclude(status__in=('won','lost'))
     changed = 0
     from .referral_views import _default_call_center_group, _notify_call_center_assignment
     for lead in leads:
@@ -443,7 +464,7 @@ def lead_reassign_operator(request, pk):
     if not operator:
         return respond_error('گل انتخاب‌شده فعال نیست.',404)
 
-    lead=scoped_queryset(
+    lead=_lead_hub_queryset(
         request,
         ReferralLead.objects.select_related('assigned_to__user'),
     ).filter(pk=pk).first()
@@ -518,7 +539,9 @@ def lead_management_dashboard(request):
 
     now = timezone.now(); today = timezone.localdate(); start_week = today - timedelta(days=today.weekday()); start_month = today.replace(day=1)
     leads = ReferralLead.objects.select_related('country','assigned_to__user','group','referrer__user','referrer__sponsor__user','referrer__sponsor__sponsor__user','created_by').prefetch_related('appointments')
-    leads = scoped_queryset(request,leads)
+    leads = _lead_hub_queryset(request,leads)
+    market_filter=(request.GET.get('market') or '').strip().upper()
+    leads=_apply_market_filter(leads,market_filter)
     source_filter=(request.GET.get('source') or '').strip(); status_filter=(request.GET.get('status') or '').strip(); operator_filter=(request.GET.get('operator') or '').strip()
     filtered=leads
     if source_filter in ('instagram','website','crm','whatsapp','campaign','telegram','bale'): filtered=filtered.filter(_channel_q(source_filter))
@@ -578,4 +601,4 @@ def lead_management_dashboard(request):
     attention_backlog=list(attention_backlog_qs.order_by('-created_at')[:15])
     for lead in recent: _enrich_referral_group_label(lead)
     integration_rows=[{'name':'Instagram Form','state':'connected','detail':'فرم فعلی مستقیماً وارد ReferralLead می‌شود.'},{'name':'Website','state':'ready','detail':'برای اتصال فرم سایت به ورودی یکپارچه آماده است.'},{'name':'CRM','state':'ready','detail':'وب‌هوک/API ورودی برای اتصال CRM طراحی شده است.'},{'name':'WhatsApp / Campaigns','state':'ready','detail':'قابل اتصال با source و UTM مستقل.'}]
-    return render(request,'core/lead_management_dashboard.html',{'lead_kpis':{'total':total,'today':today_count,'week':week_count,'month':month_count,'contacted':contacted_count,'appointments':appointment_count,'won':won_count,'conversion':conversion,'contact_rate':contact_rate,'unassigned':unassigned_count,'overdue':overdue_count,'untouched':untouched_count,'duplicates':duplicate_phones,'sales_amount':sales_amount,'instagram_sales_amount':instagram_sales_amount,'website_sales_amount':website_sales_amount},'status_rows':status_rows,'source_rows':source_rows,'instagram_page_rows':instagram_page_rows,'group_rows':group_rows,'operator_rows':operator_rows,'recent_leads':[FlowerLeadProxy(lead) for lead in recent],'attention_current':[AttentionLeadProxy(lead, now, today) for lead in attention_current],'attention_backlog':[AttentionLeadProxy(lead, now, today) for lead in attention_backlog],'attention_backlog_count':attention_backlog_count,'attention_total_count':len(attention_current)+attention_backlog_count,'integration_rows':integration_rows,'operators':[FlowerProfileProxy(op) for op in operators],'source_filter':source_filter,'status_filter':status_filter,'operator_filter':operator_filter,'status_choices':STATUS_FILTER_CHOICES})
+    return render(request,'core/lead_management_dashboard.html',{'lead_kpis':{'total':total,'today':today_count,'week':week_count,'month':month_count,'contacted':contacted_count,'appointments':appointment_count,'won':won_count,'conversion':conversion,'contact_rate':contact_rate,'unassigned':unassigned_count,'overdue':overdue_count,'untouched':untouched_count,'duplicates':duplicate_phones,'sales_amount':sales_amount,'instagram_sales_amount':instagram_sales_amount,'website_sales_amount':website_sales_amount},'status_rows':status_rows,'source_rows':source_rows,'instagram_page_rows':instagram_page_rows,'group_rows':group_rows,'operator_rows':operator_rows,'recent_leads':[FlowerLeadProxy(lead) for lead in recent],'attention_current':[AttentionLeadProxy(lead, now, today) for lead in attention_current],'attention_backlog':[AttentionLeadProxy(lead, now, today) for lead in attention_backlog],'attention_backlog_count':attention_backlog_count,'attention_total_count':len(attention_current)+attention_backlog_count,'integration_rows':integration_rows,'operators':[FlowerProfileProxy(op) for op in operators],'source_filter':source_filter,'status_filter':status_filter,'operator_filter':operator_filter,'market_filter':market_filter,'status_choices':STATUS_FILTER_CHOICES,'market_counts':{'all':ReferralLead.objects.count(),'IR':ReferralLead.objects.filter(country__code='IR').count(),'TR':ReferralLead.objects.filter(country__code='TR').count()}})
