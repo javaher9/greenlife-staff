@@ -198,7 +198,7 @@
       <div class="cc-v6-flow" aria-label="{% gl_t 'cc.journey' %}">
         <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">☎</span><strong>{% gl_t 'cc.call' %}</strong><small>{% gl_t 'cc.contact_start' %}</small></div>
         <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">↻</span><strong>{% gl_t 'common.follow_up' %}</strong><small>{% gl_t 'cc.continue_path' %}</small></div>
-        <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">▣</span><strong>{% gl_t 'common.appointment' %}</strong><small>ثبت زمان</small></div>
+        <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">▣</span><strong>{% gl_t 'common.appointment' %}</strong><small>{% gl_t 'appt.booked' %}</small></div>
         <div class="cc-v6-flow-step"><span class="cc-v6-flow-ico">♥</span><strong>{% gl_t 'cc.visit' %}</strong><small>{% gl_t 'cc.better_experience' %}</small></div>
       </div>
     </div>
@@ -208,7 +208,7 @@
     <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">{% gl_t 'cc.today_leads' %}</span><span class="cc-v5-kpi-icon">＋</span></div><strong>{{ stats.today }}</strong><small>{% gl_t 'cc.fresh_queue' %}</small></article>
     <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">{% gl_t 'cc.my_total' %}</span><span class="cc-v5-kpi-icon">◎</span></div><strong>{{ stats.all }}</strong><small>{% gl_t 'cc.all_assigned' %}</small></article>
     <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">{% gl_t 'cc.open_followups' %}</span><span class="cc-v5-kpi-icon">!</span></div><strong>{{ stats.follow_up }}</strong><small>{% gl_t 'cc.today_or_overdue' %}</small></article>
-    <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">نوبت امروز</span><span class="cc-v5-kpi-icon">▣</span></div><strong>{{ stats.appointment_today }}</strong><small>{% gl_t 'cc.today_real_appointments' %}</small></article>
+    <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">{% gl_t 'rec.today_appointments' %}</span><span class="cc-v5-kpi-icon">▣</span></div><strong>{{ stats.appointment_today }}</strong><small>{% gl_t 'cc.today_real_appointments' %}</small></article>
     <article class="cc-v5-kpi"><div class="cc-v5-kpi-top"><span class="cc-v5-kpi-label">{% gl_t 'cc.future_appointments' %}</span><span class="cc-v5-kpi-icon">↗</span></div><strong>{{ stats.appointment }}</strong><small>{% gl_t 'cc.from_today' %}</small></article>
   </section>
 
@@ -280,7 +280,7 @@
               <div class="cc-v5-person-avatar" title="{% gl_t 'cc.photo_placeholder' %}">{{ lead.full_name|first|default:"؟" }}</div>
               <div class="cc-v5-person-copy">
                 <strong>{{ lead.full_name }}</strong>
-                <div class="cc-v5-person-meta"><b>{{ lead.phone }}</b>{% if lead.country %}<span class="cc-v5-tag source">{{ lead.country.flag_emoji }} {{ lead.country.code }}</span>{% endif %}<span class="cc-v5-tag source">{% gl_choice 'lead_source' lead.source lead.source_origin_display %}</span><span class="cc-v5-tag group">{{ lead.group.name|default:'{% gl_t 'cc.no_group' %}' }}</span><span>{% gl_t 'cc.referrer' name=lead.referrer %}</span></div>
+                <div class="cc-v5-person-meta"><b>{{ lead.phone }}</b>{% if lead.country %}<span class="cc-v5-tag source">{{ lead.country.flag_emoji }} {{ lead.country.code }}</span>{% endif %}<span class="cc-v5-tag source">{% gl_choice 'lead_source' lead.source lead.source_origin_display %}</span><span class="cc-v5-tag group">{% if lead.group %}{{ lead.group.name }}{% else %}{% gl_t 'cc.no_group' %}{% endif %}</span><span>{% gl_t 'cc.referrer' name=lead.referrer %}</span></div>
               </div>
             </div>
             <div class="cc-v5-service">{% if lead.interested_service %}{{ lead.interested_service }}{% else %}{% gl_t 'cc.service_unspecified' %}{% endif %}</div>
@@ -297,7 +297,7 @@
           <header class="cc-v5-section-head"><div><h3>{% gl_t 'cc.customer_experience' %}</h3><p>{% gl_t 'cc.cem_intro' %}</p></div><a href="?status=contacted">{% gl_t 'cc.followups' %} ←</a></header>
           <div class="cc-v5-cem">
             <div class="cc-v5-cem-focus"><span class="cc-v5-cem-icon">♥</span><div><strong>{% gl_t 'cc.human_focus' %}</strong><p>{% gl_t 'cc.human_focus_body' %}</p></div></div>
-            <div class="cc-v5-cem-stats"><div class="cc-v5-cem-stat"><b>{{ stats.follow_up }}</b><span>{% gl_t 'cc.open_followups' %}</span></div><div class="cc-v5-cem-stat"><b>{{ stats.appointment_today }}</b><span>نوبت امروز</span></div><div class="cc-v5-cem-stat"><b>{{ internal_unread }}</b><span>پیام داخلی</span></div></div>
+            <div class="cc-v5-cem-stats"><div class="cc-v5-cem-stat"><b>{{ stats.follow_up }}</b><span>{% gl_t 'cc.open_followups' %}</span></div><div class="cc-v5-cem-stat"><b>{{ stats.appointment_today }}</b><span>{% gl_t 'rec.today_appointments' %}</span></div><div class="cc-v5-cem-stat"><b>{{ internal_unread }}</b><span>{% gl_t 'common.internal_messages' %}</span></div></div>
           </div>
         </section>
 
@@ -339,7 +339,7 @@
             <span class="cc-v5-slot-time">{{ slot.label }}</span>
             {% if slot.appointment %}
               <span class="cc-v5-slot-avatar" title="{% gl_t 'cc.photo_placeholder' %}">{{ slot.appointment.full_name|first|default:"؟" }}</span>
-              <div class="cc-v5-slot-person"><strong>{{ slot.appointment.full_name }}</strong><small>{{ slot.appointment.service|default:"{% gl_t 'cc.consultation' %}" }} · {{ slot.appointment.branch }}</small></div><span class="cc-v5-slot-dot">●</span>
+              <div class="cc-v5-slot-person"><strong>{{ slot.appointment.full_name }}</strong><small>{% if slot.appointment.service %}{{ slot.appointment.service }}{% else %}{% gl_t 'cc.consultation' %}{% endif %} · {{ slot.appointment.branch }}</small></div><span class="cc-v5-slot-dot">●</span>
             {% else %}
               <span class="cc-v5-slot-avatar cc-v5-slot-empty-avatar">·</span><span class="cc-v5-slot-empty">{% gl_t 'cc.empty' %}</span><span class="cc-v5-slot-dot">·</span>
             {% endif %}
