@@ -31,7 +31,7 @@ body.gl-page-call_center_lead .app-main{background:#f5f7fb!important}
       </div>
       {% endif %}
     </article>
-    <article class="cc-card cc-form"><h2>ثبت {% gl_t 'cc.contact_result' %} و پیگیری</h2><p class="cc-sub">{% gl_t 'cc.keep_in_queue' %}</p><form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">{% gl_t 'cc.save_back_queue' %}</button></form></article>
+    <article class="cc-card cc-form"><h2>{% gl_t 'cc.save_followup_title' %}</h2><p class="cc-sub">{% gl_t 'cc.keep_in_queue' %}</p><form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">{% gl_t 'cc.save_back_queue' %}</button></form></article>
   </section>
 </div>
 {% endblock %}
