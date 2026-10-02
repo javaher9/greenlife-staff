@@ -350,7 +350,7 @@
           <option value="all" {% if not selected_contact %}selected{% endif %}>{% gl_t 'msg.all_staff' %}</option>
           {% for row in contact_rows %}<option value="{{ row.user.pk }}" {% if selected_contact and selected_contact.pk == row.user.pk %}selected{% endif %}>{{ row.user.get_full_name|default:row.user.username }}</option>{% endfor %}
         </select>
-        <textarea name="body" maxlength="2000" required placeholder="{% if selected_contact %}{% gl_t 'msg.send_to' name=selected_contact.get_full_name|default:selected_contact.username %}{% else %}پیام برای گفتگوی {% gl_t 'msg.public' %}...{% endif %}"></textarea>
+        <textarea name="body" maxlength="2000" required placeholder="{% if selected_contact %}{% gl_t 'msg.send_to' name=selected_contact.get_full_name|default:selected_contact.username %}{% else %}{% gl_t 'msg.send_public' %}{% endif %}"></textarea>
         <button type="submit">{% gl_t 'common.send' %}</button>
       </form>
     </section>
