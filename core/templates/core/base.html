@@ -598,7 +598,7 @@ html[dir="ltr"] .app-main{direction:ltr}
         <select name="country" onchange="this.form.submit()" aria-label="{% gl_t 'common.country' %}">
           <option value="ALL" {% if country_scope_code == 'ALL' %}selected{% endif %}>🌍 {% gl_t 'shell.country_all' %}</option>
           {% for country in country_scope_countries %}
-          <option value="{{ country.code }}" {% if country_scope_code == country.code %}selected{% endif %}>{{ country.flag_emoji }} {{ country.name_local }}</option>
+          <option value="{{ country.code }}" {% if country_scope_code == country.code %}selected{% endif %}>{{ country.flag_emoji }} {% gl_country_name country %}</option>
           {% endfor %}
         </select>
       </form>
