@@ -162,7 +162,7 @@ def device_capacity_settings(request):
                 cabin,created=DeviceCabin.objects.get_or_create(branch=branch,name=name)
                 messages.success(request,'کابین ثبت شد.' if created else 'این کابین قبلاً ثبت شده است.')
         elif action=='device':
-            kind=get_object_or_404(DeviceTypeSchedule,pk=request.POST.get('type_id'),is_active=True)
+            kind=get_object_or_404(DeviceTypeSchedule,pk=request.POST.get('type_id'))
             name=(request.POST.get('name') or '').strip()[:100]
             if name:
                 with transaction.atomic():
@@ -260,7 +260,7 @@ def device_capacity_settings(request):
                     messages.success(request,'ساعت کاری دستگاه ذخیره شد.')
         return redirect(f'/settings/device-capacity/?branch={branch.pk}')
 
-    types=list(DeviceTypeSchedule.objects.filter(is_active=True))
+    types=list(DeviceTypeSchedule.objects.all())
 
     return render(request,'core/device_capacity_settings.html',{
         'branch':branch,'branches':_device_branches(),
