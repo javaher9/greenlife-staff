@@ -93,3 +93,36 @@ class PublicNetworkTests(TestCase):
         response = self.client.get(reverse('public_network:turkey_dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, reverse('public_network:turkey_signup_with_code', args=[member.code]))
+
+
+    def test_turkey_language_switch_renders_single_language_copy(self):
+        tr_response = self.client.get(reverse('public_network:turkey_signup') + '?lang=tr')
+        self.assertEqual(tr_response.status_code, 200)
+        self.assertContains(tr_response, 'Hesap oluştur')
+        self.assertNotContains(tr_response, 'Build your network.')
+
+        en_response = self.client.get(reverse('public_network:turkey_signup') + '?lang=en')
+        self.assertEqual(en_response.status_code, 200)
+        self.assertContains(en_response, 'Create account')
+        self.assertContains(en_response, 'Build your network.')
+        self.assertNotContains(en_response, 'Ağını kur.')
+
+    def test_english_turkey_signup_persists_language_on_member_and_lead(self):
+        payload = {
+            'first_name': 'Ece',
+            'last_name': 'English',
+            'phone': '0555 444 33 22',
+            'username': 'eceenglish',
+            'password': 'StrongPass123',
+            'password_confirm': 'StrongPass123',
+            'photo': self.photo('ece.png'),
+            'accept_terms': 'on',
+            'src': 'direct',
+            'lang': 'en',
+        }
+        response = self.client.post(reverse('public_network:turkey_signup'), payload)
+        self.assertRedirects(response, reverse('public_network:turkey_dashboard') + '?lang=en')
+        member = PublicNetworkMember.objects.get(user__username='eceenglish')
+        lead = ReferralLead.objects.get(phone='+905554443322')
+        self.assertEqual(member.preferred_language, 'en')
+        self.assertEqual(lead.preferred_language, 'en')
