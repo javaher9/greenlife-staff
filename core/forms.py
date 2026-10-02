@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.utils import timezone
 from PIL import Image, ImageOps
-from .models import DailyReport, Task, LeaveRequest, Announcement, BlackboardMessage, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, Branch, JobDutyTemplate, Guideline, DeviceIssue, ReferralProfile, ReferralLead, ReferralSale, FinancialTransaction, CallCenterLeadGroup, VisitAppointment, ApiServerSettings
+from .models import DailyReport, Task, LeaveRequest, Announcement, BlackboardMessage, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, Branch, Country, JobDutyTemplate, Guideline, DeviceIssue, ReferralProfile, ReferralLead, ReferralSale, FinancialTransaction, CallCenterLeadGroup, VisitAppointment, ApiServerSettings
 from .jalali import parse_jalali, format_jalali
 
 class JalaliDateInput(forms.TextInput):
@@ -209,6 +209,8 @@ class EmployeeCreateForm(forms.Form):
     )
     employee_code=forms.CharField(label='کد پرسنلی',required=False)
     job_title=forms.CharField(label='سمت',required=False); phone=forms.CharField(label='تلفن',required=False); birth_date=JalaliDateField(label='تاریخ تولد',required=False)
+    country=forms.ModelChoiceField(label='کشور',queryset=Country.objects.filter(is_active=True),required=False)
+    preferred_language=forms.ChoiceField(label='زبان پنل',choices=Country.LANGUAGE_CHOICES,initial='fa')
     branch=forms.ModelChoiceField(label='شعبه',queryset=Branch.objects.filter(is_active=True),required=False); role=forms.ChoiceField(label='نقش',choices=EmployeeProfile.ROLE_CHOICES)
     def clean_username(self):
         value=self.cleaned_data['username'].strip()
@@ -224,6 +226,17 @@ class EmployeeCreateForm(forms.Form):
         if value and (len(value)!=6 or not value.isdigit()):
             raise forms.ValidationError('PIN موبایل باید دقیقاً ۶ رقم باشد.')
         return value
+
+    def clean(self):
+        data=super().clean()
+        branch=data.get('branch')
+        country=data.get('country')
+        if branch and not country:
+            data['country']=branch.country
+            country=data['country']
+        if branch and country and branch.country_id and branch.country_id!=country.id:
+            self.add_error('branch','شعبه باید متعلق به کشور انتخاب‌شده باشد.')
+        return data
 
 
 class ReferralMemberForm(forms.Form):
@@ -574,6 +587,8 @@ class EmployeeEditForm(forms.Form):
     phone=forms.CharField(label='تلفن',required=False)
     birth_date=JalaliDateField(label='تاریخ تولد',required=False)
     start_date=JalaliDateField(label='شروع همکاری',required=False)
+    country=forms.ModelChoiceField(label='کشور',queryset=Country.objects.filter(is_active=True),required=False)
+    preferred_language=forms.ChoiceField(label='زبان پنل',choices=Country.LANGUAGE_CHOICES)
     branch=forms.ModelChoiceField(label='شعبه',queryset=Branch.objects.filter(is_active=True),required=False)
     role=forms.ChoiceField(label='نقش',choices=EmployeeProfile.ROLE_CHOICES)
     shift_group=forms.ModelChoiceField(label='گروه شیفت',queryset=None,required=False)
@@ -597,6 +612,7 @@ class EmployeeEditForm(forms.Form):
                 'username':employee.user.username,'email':employee.user.email,
                 'employee_code':employee.employee_code or '','job_title':employee.job_title,
                 'phone':employee.phone,'birth_date':employee.birth_date,'start_date':employee.start_date,
+                'country':employee.country,'preferred_language':employee.preferred_language,
                 'branch':employee.branch,'role':employee.role,'shift_group':employee.shift_group,
                 'address':employee.address,'education':employee.education,
                 'is_insured':employee.is_insured,'is_active':employee.is_active,
@@ -620,12 +636,23 @@ class EmployeeEditForm(forms.Form):
             raise forms.ValidationError('رمز دسکتاپ باید حداقل ۱۰ کاراکتر و شامل حرف و عدد باشد.')
         return value
 
+    def clean(self):
+        data=super().clean()
+        branch=data.get('branch')
+        country=data.get('country')
+        if branch and not country:
+            data['country']=branch.country
+            country=data['country']
+        if branch and country and branch.country_id and branch.country_id!=country.id:
+            self.add_error('branch','شعبه باید متعلق به کشور انتخاب‌شده باشد.')
+        return data
+
     def save(self):
         d=self.cleaned_data; employee=self.employee; user=employee.user
         user.first_name=d['first_name']; user.last_name=d['last_name']; user.username=d['username']; user.email=d['email']; user.is_active=d['is_active']
         if d.get('new_password'): user.set_password(d['new_password'])
         user.save()
-        for field in ('branch','role','shift_group','job_title','phone','birth_date','start_date','address','education','is_insured','is_active'):
+        for field in ('country','preferred_language','branch','role','shift_group','job_title','phone','birth_date','start_date','address','education','is_insured','is_active'):
             setattr(employee,field,d.get(field))
         if employee.role=='call_center' and not employee.job_title:
             employee.job_title='کارشناس کال‌سنتر'
