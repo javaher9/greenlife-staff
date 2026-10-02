@@ -316,6 +316,7 @@ def _notify_call_center_assignment(lead):
 @login_required
 def referral_dashboard(request):
     current=_ensure_profile(request.user)
+    is_manager=_role(request.user) in ('admin','manager')
     profiles=_visible_profiles(request, current)
     profile_ids=list(profiles.values_list('id', flat=True))
     leads=ReferralLead.objects.filter(referrer_id__in=profile_ids).select_related('referrer__user', 'assigned_to__user')
@@ -342,7 +343,7 @@ def referral_dashboard(request):
         'new_count':leads.filter(status='new').count(),'won_count':leads.filter(status='won').count(),
         'sales_total':approved.aggregate(x=Sum('amount'))['x'] or 0,'commission_total':income,
         'recent_leads':leads[:6],'recent_members':profiles.exclude(pk=current.pk)[:6],
-        'can_add_member':current.level<2,'is_manager':_role(request.user) in ('admin','manager'),
+        'can_add_member':current.level<2,'is_manager':is_manager,
         'today_count':leads.filter(created_at__date=today).count(),
         'action_count':active_leads.filter(Q(status__in=('new','contacted'))|Q(next_follow_up__lte=today)).distinct().count(),
         'followup_count':followups.count(),'recent_followups':followups[:5],
@@ -356,6 +357,22 @@ def referral_dashboard(request):
             'won':leads.filter(status='won').count(),
         },
     }
+    if is_manager:
+        from public_network.models import PublicNetworkMember
+        turkey_members=PublicNetworkMember.objects.filter(
+            is_active=True,country__code='TR'
+        ).select_related('user','sponsor__user','country').order_by('-created_at')
+        turkey_leads=ReferralLead.objects.filter(
+            country__code='TR'
+        ).select_related('country','referrer__user','assigned_to__user').order_by('-created_at')
+        context.update({
+            'turkey_member_count':turkey_members.count(),
+            'turkey_member_today':turkey_members.filter(created_at__date=today).count(),
+            'turkey_lead_count':turkey_leads.count(),
+            'turkey_lead_today':turkey_leads.filter(created_at__date=today).count(),
+            'turkey_recent_members':turkey_members[:8],
+            'turkey_recent_leads':turkey_leads[:8],
+        })
     return render(request, 'core/referrals/dashboard.html', context)
 
 
