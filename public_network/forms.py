@@ -96,37 +96,58 @@ class PublicNetworkLoginForm(forms.Form):
 
 
 class TurkeyNetworkSignupForm(PublicNetworkSignupForm):
-    """Turkish/English copy over the existing public-network signup rules."""
+    """Localized Turkish/English copy over the existing public-network signup rules."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, language='tr', **kwargs):
         super().__init__(*args, **kwargs)
-        labels = {
-            'first_name': 'Ad / First name',
-            'last_name': 'Soyad / Last name',
-            'phone': 'Telefon / Mobile number',
-            'username': 'Kullanıcı adı / Username',
-            'password': 'Şifre / Password (min. 6 characters)',
-            'password_confirm': 'Şifre tekrar / Confirm password',
-            'photo': 'Profil fotoğrafı / Profile photo',
-            'accept_terms': 'Üyelik koşullarını kabul ediyorum / I accept the membership terms',
-        }
-        for name, label in labels.items():
-            if name in self.fields:
-                self.fields[name].label = label
+        self.language = 'en' if language == 'en' else 'tr'
+        copy = {
+            'tr': {
+                'first_name': 'Ad',
+                'last_name': 'Soyad',
+                'phone': 'Telefon',
+                'username': 'Kullanıcı adı',
+                'password': 'Şifre (en az 6 karakter)',
+                'password_confirm': 'Şifre tekrar',
+                'photo': 'Profil fotoğrafı',
+                'accept_terms': 'Üyelik koşullarını kabul ediyorum',
+                'username_help': 'Sonraki girişler için',
+                'password_help': 'En az 6 karakter',
+                'required': 'Bu alan zorunludur.',
+            },
+            'en': {
+                'first_name': 'First name',
+                'last_name': 'Last name',
+                'phone': 'Mobile number',
+                'username': 'Username',
+                'password': 'Password (min. 6 characters)',
+                'password_confirm': 'Confirm password',
+                'photo': 'Profile photo',
+                'accept_terms': 'I accept the membership terms',
+                'username_help': 'For future sign-ins',
+                'password_help': 'At least 6 characters',
+                'required': 'This field is required.',
+            },
+        }[self.language]
+        for name in ('first_name','last_name','phone','username','password','password_confirm','photo','accept_terms'):
+            self.fields[name].label = copy[name]
         self.fields['phone'].widget.attrs.update({
             'placeholder': '+90 5XX XXX XX XX',
             'inputmode': 'tel',
             'autocomplete': 'tel',
         })
-        self.fields['username'].help_text = 'Sonraki girişler için / For future sign-ins'
-        self.fields['password'].help_text = 'En az 6 karakter / At least 6 characters'
+        self.fields['username'].help_text = copy['username_help']
+        self.fields['password'].help_text = copy['password_help']
         for field in self.fields.values():
-            field.error_messages['required'] = 'Bu alan zorunludur / This field is required.'
+            field.error_messages['required'] = copy['required']
+
+    def _message(self, tr, en):
+        return en if self.language == 'en' else tr
 
     def clean_username(self):
         value = self.cleaned_data['username'].strip()
         if User.objects.filter(username__iexact=value).exists():
-            raise forms.ValidationError('Bu kullanıcı adı kullanılıyor / This username is already in use.')
+            raise forms.ValidationError(self._message('Bu kullanıcı adı kullanılıyor.', 'This username is already in use.'))
         return value
 
     def clean_phone(self):
@@ -143,34 +164,40 @@ class TurkeyNetworkSignupForm(PublicNetworkSignupForm):
             cleaned = '+90' + digits
             digits = '90' + digits
         if len(digits) < 10 or len(digits) > 15:
-            raise forms.ValidationError('Geçerli bir telefon numarası girin / Enter a valid mobile number.')
+            raise forms.ValidationError(self._message('Geçerli bir telefon numarası girin.', 'Enter a valid mobile number.'))
         if PublicNetworkMember.objects.filter(phone=cleaned, is_active=True).exists():
-            raise forms.ValidationError('Bu telefonla aktif üyelik mevcut / An active account already exists for this number.')
+            raise forms.ValidationError(self._message('Bu telefonla aktif üyelik mevcut.', 'An active account already exists for this number.'))
         return cleaned
 
     def clean_photo(self):
         photo = self.cleaned_data.get('photo')
         if photo and getattr(photo, 'size', 0) > 8 * 1024 * 1024:
-            raise forms.ValidationError('Fotoğraf 8 MB altında olmalı / Photo must be under 8 MB.')
+            raise forms.ValidationError(self._message('Fotoğraf 8 MB altında olmalı.', 'Photo must be under 8 MB.'))
         return photo
 
     def clean(self):
         data = forms.Form.clean(self)
         if data.get('website'):
-            raise forms.ValidationError('Geçersiz istek / Invalid request.')
+            raise forms.ValidationError(self._message('Geçersiz istek.', 'Invalid request.'))
         if data.get('password') and data.get('password_confirm') and data['password'] != data['password_confirm']:
-            self.add_error('password_confirm', 'Şifreler eşleşmiyor / Passwords do not match.')
+            self.add_error('password_confirm', self._message('Şifreler eşleşmiyor.', 'Passwords do not match.'))
         return data
 
 
 class TurkeyNetworkLoginForm(PublicNetworkLoginForm):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, language='tr', **kwargs):
+        self.language = 'en' if language == 'en' else 'tr'
         super().__init__(*args, **kwargs)
-        self.fields['username'].label = 'Kullanıcı adı / Username'
-        self.fields['password'].label = 'Şifre / Password'
+        if self.language == 'en':
+            self.fields['username'].label = 'Username'
+            self.fields['password'].label = 'Password'
+        else:
+            self.fields['username'].label = 'Kullanıcı adı'
+            self.fields['password'].label = 'Şifre'
 
     def clean(self):
         try:
             return super().clean()
         except forms.ValidationError:
-            raise forms.ValidationError('Kullanıcı adı veya şifre hatalı / Incorrect username or password.')
+            message = 'Incorrect username or password.' if self.language == 'en' else 'Kullanıcı adı veya şifre hatalı.'
+            raise forms.ValidationError(message)
