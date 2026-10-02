@@ -365,8 +365,8 @@ def device_booking_schedule(request):
                 ConsultationPlanItem,pk=request.POST.get('plan_item'),
                 plan=plan,kind='device',included=True,
             )
-            existing=item.device_sessions.exclude(status='cancelled')
-            if existing.filter(status='booked').exists():
+            existing=item.device_sessions.exclude(status__in=('cancelled','rescheduled','no_show'))
+            if existing.filter(status__in=('booked','arrived','late')).exists():
                 messages.error(request,'برای این خدمت یک جلسه رزرو فعال وجود دارد؛ ابتدا آن را انجام یا لغو کنید.')
                 return redirect(f'/device-bookings/?appointment={appointment.pk}')
             if existing.count()>=item.quantity:
@@ -443,7 +443,7 @@ def device_booking_schedule(request):
             treatment_end=start+timedelta(minutes=treatment)
             end=treatment_end+timedelta(minutes=preparation)
             booked=DeviceSessionBooking.objects.filter(
-                branch=branch,status__in=('booked','completed'),
+                branch=branch,status__in=('booked','arrived','late','completed'),
                 starts_at__lt=end,blocked_until__gt=start,
             )
             machine_ids={m.pk for m in machines}
@@ -469,11 +469,12 @@ def device_booking_schedule(request):
 
     bookings=(
         DeviceSessionBooking.objects.filter(branch=branch,starts_at__date=day)
-        .exclude(status='cancelled')
         .select_related('appointment','device','secondary_device','cabin','plan_item')
-        .order_by('starts_at','device__name')
+        .order_by('starts_at','device__name','id')
     )
     booking_list=list(bookings)
+    blocking_statuses={'booked','arrived','late','completed'}
+    history_statuses={'no_show','cancelled','rescheduled'}
     device_lines=list(
         PhysicalDevice.objects.filter(branch=branch,is_active=True)
         .select_related('device_type','cabin')
@@ -497,18 +498,24 @@ def device_booking_schedule(request):
         off_count=0
         while cursor<=last_start:
             slot_end=cursor+timedelta(minutes=slot_minutes)
-            hit=next((
+            matches=[
                 b for b in booking_list
                 if (
                     b.device_id==device_line.pk
                     or b.secondary_device_id==device_line.pk
                 )
                 and b.starts_at<slot_end and b.blocked_until>cursor
-            ),None)
+            ]
+            hit=next((b for b in matches if b.status in blocking_statuses),None)
+            history_hit=next((b for b in reversed(matches) if b.status in history_statuses),None)
             if hit:
                 state='busy'
                 busy_count+=1
                 busy_reason='device'
+            elif history_hit:
+                state='history'
+                free_count+=1
+                busy_reason=''
             elif day==timezone.localdate() and slot_end<=now:
                 state='off'
                 off_count+=1
@@ -522,6 +529,7 @@ def device_booking_schedule(request):
                 'device':device_line,
                 'state':state,
                 'booking':hit,
+                'history_booking':history_hit,
                 'busy_reason':busy_reason,
                 'start_value':cursor.strftime('%H:%M'),
                 'start_label':cursor.strftime('%H:%M'),
@@ -552,10 +560,48 @@ def device_booking_schedule(request):
         'devices':device_lines,'device_lines':device_lines,
         'device_cards':device_cards,
         'can_book':profile.role in ('consultant','admin','manager'),
+        'can_update_status':profile.role in ('consultant','receptionist','admin','manager'),
         'can_manage':profile.role in ('admin','manager','internal_manager'),
         'is_admin':profile.role=='admin',
         'branches':_device_branches(),
     })
+
+
+@login_required
+def device_booking_status(request,pk,status):
+    if request.method!='POST':
+        return redirect('device_booking_schedule')
+    profile=_profile(request)
+    _role_allowed(profile,('consultant','receptionist','admin','manager'))
+    allowed={
+        'booked':'رزرو عادی',
+        'arrived':'حاضر شد',
+        'late':'دیر رسید',
+        'completed':'انجام شد',
+        'no_show':'نیامد',
+        'cancelled':'لغو شد',
+        'rescheduled':'جابجا شد',
+    }
+    if status not in allowed:
+        raise PermissionDenied('وضعیت نوبت معتبر نیست.')
+
+    qs=DeviceSessionBooking.objects.select_for_update().select_related('appointment','branch')
+    if not (request.user.is_superuser or profile.role=='admin'):
+        if not profile.branch_id:
+            raise PermissionDenied('شعبه شما مشخص نشده است.')
+        qs=qs.filter(branch_id=profile.branch_id)
+
+    with transaction.atomic():
+        booking=get_object_or_404(qs,pk=pk)
+        booking.status=status
+        booking.save(update_fields=['status','updated_at'])
+
+    day=format_jalali(timezone.localtime(booking.starts_at).date())
+    if status=='rescheduled':
+        messages.success(request,f'نوبت {booking.appointment.full_name} به‌عنوان جابجا شده ثبت شد؛ ردیف قبلی آزاد است و می‌توانید زمان جدید را انتخاب کنید.')
+    else:
+        messages.success(request,f'وضعیت {booking.appointment.full_name}: {allowed[status]}')
+    return redirect(f'/device-bookings/?appointment={booking.appointment_id}&day={day}')
 
 
 @login_required

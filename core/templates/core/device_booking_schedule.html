@@ -230,8 +230,71 @@
 .db-book-panel h2{font-size:19px!important}
 .db-selected-summary{display:grid;gap:5px;margin:10px 0;padding:10px 11px;border-radius:12px;border:1px solid #dbe9e4;background:linear-gradient(135deg,#f2faf6,#fff)}
 .db-selected-summary strong{font-size:11px;color:#1e5947}.db-selected-summary span{font-size:10px;color:#667f78}
-@media(max-width:1180px){.db-book-panel{position:static}.db-device-board{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}}
-@media(max-width:700px){.db-device-board{grid-template-columns:1fr}.db-slot{grid-template-columns:46px 1fr auto}.db-plate-name strong{font-size:16px}}
+@media(max-width:1180px){.db-book-panel{position:static}}
+@media(max-width:700px){.db-slot{grid-template-columns:42px minmax(0,1fr) auto}.db-plate-name strong{font-size:15px}}
+
+.db-device-board{
+  display:flex!important;gap:10px!important;align-items:flex-start!important;overflow-x:auto!important;
+  padding:2px 2px 12px!important;margin-top:12px!important;scroll-snap-type:x proximity;scrollbar-width:thin;
+}
+.db-device-plate{
+  flex:0 0 clamp(168px,14vw,194px)!important;min-width:168px!important;scroll-snap-align:start;
+  border-radius:18px!important;box-shadow:0 10px 24px rgba(32,79,66,.07)!important;
+}
+.db-plate-head{padding:13px 12px 10px!important}
+.db-plate-name strong{font-size:15px!important}
+.db-plate-name small{font-size:9.5px!important;line-height:1.45!important}
+.db-plate-badge{padding:5px 7px!important;font-size:8.5px!important}
+.db-plate-stats{gap:5px!important;margin-top:9px!important}
+.db-stat{padding:6px 4px!important;border-radius:10px!important}
+.db-stat b{font-size:13px!important}.db-stat span{font-size:8px!important}
+.db-slots{gap:6px!important;padding:8px!important}
+.db-slot{grid-template-columns:34px minmax(0,1fr) auto!important;gap:6px!important;min-height:56px!important;padding:7px!important;border-radius:12px!important}
+.db-slot-no{width:31px!important;height:31px!important;border-radius:9px!important;font-size:9px!important}
+.db-slot-no b{font-size:12px!important}.db-slot-no small{font-size:7px!important}
+.db-slot-time strong{font-size:10.5px!important;line-height:1.35!important}
+.db-slot-time small{font-size:8px!important;line-height:1.35!important}
+.db-slot-state{min-width:42px!important;padding:5px 6px!important;font-size:7.8px!important}
+.db-busy-person{
+  appearance:none;border:0;background:transparent;padding:0;margin:2px 0 0;display:block;width:100%;
+  text-align:right;cursor:pointer;color:#235b7d!important;font-size:10px!important;font-weight:950!important;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:underline;text-decoration-color:rgba(35,91,125,.25);text-underline-offset:2px;
+}
+.db-busy-meta{font-size:7.8px!important;line-height:1.35!important}
+.db-status-booked{border-color:#cbdff4!important;background:linear-gradient(135deg,#f4f9ff,#fff)!important}
+.db-status-booked .db-slot-state{background:#e1effd!important;color:#245d8a!important}
+.db-status-arrived,.db-status-completed{border-color:#c9e8d8!important;background:linear-gradient(135deg,#f0fbf5,#fff)!important}
+.db-status-arrived .db-slot-state,.db-status-completed .db-slot-state{background:#daf3e5!important;color:#176c4d!important}
+.db-status-late{border-color:#efdba4!important;background:linear-gradient(135deg,#fff9e8,#fffdf7)!important}
+.db-status-late .db-slot-state{background:#fff0bd!important;color:#82621b!important}
+.db-status-no_show,.db-status-cancelled{border-color:#efc7c7!important;background:linear-gradient(135deg,#fff4f4,#fffafa)!important}
+.db-status-no_show .db-slot-state,.db-status-cancelled .db-slot-state{background:#fde2e2!important;color:#9a4141!important}
+.db-status-rescheduled{border-color:#d9cdf2!important;background:linear-gradient(135deg,#f8f4ff,#fff)!important}
+.db-status-rescheduled .db-slot-state{background:#eadffb!important;color:#67459b!important}
+.db-slot.is-history{border-style:dashed!important}
+.db-slot.is-history .db-history-free{display:block;color:#23805e;font-size:7.5px;font-weight:900;margin-top:2px}
+.db-history-button{appearance:none;border:0;background:transparent;padding:0;margin:0;width:100%;font:inherit;color:inherit;cursor:pointer;text-align:inherit}
+.db-legend{gap:8px!important}
+.db-legend span{display:inline-flex;align-items:center;gap:4px;padding:5px 7px;border-radius:999px;background:#f8fbfa;border:1px solid #e2ebe8;font-size:9px;font-weight:850}
+.db-legend i{margin:0!important;width:9px!important;height:9px!important;border-radius:50%!important}
+.lg-booked{background:#80b9ea!important}.lg-arrived{background:#55b889!important}.lg-late{background:#e2b64e!important}.lg-noshow{background:#d97676!important}.lg-moved{background:#9a77d4!important}.lg-free{background:#8fd0ae!important}.lg-off{background:#b9c2bf!important}
+
+.db-patient-modal{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(14,31,37,.32);backdrop-filter:blur(5px)}
+.db-patient-modal.is-open{display:flex}
+.db-patient-card{width:min(520px,96vw);border:1px solid #dce9e5;border-radius:22px;background:#fff;box-shadow:0 28px 70px rgba(22,56,47,.22);overflow:hidden}
+.db-patient-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 20px;background:linear-gradient(120deg,#edf8f3,#f7f9ff 60%,#fff8ef)}
+.db-patient-head strong{font-size:18px;color:#183f36}.db-modal-close{border:0;background:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;color:#506762;font-size:18px;box-shadow:0 4px 12px rgba(0,0,0,.07)}
+.db-patient-body{padding:16px 20px 20px}
+.db-patient-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.db-patient-meta div{padding:10px;border:1px solid #e1ebe8;border-radius:12px;background:#fbfdfc}.db-patient-meta b{display:block;color:#274a43;font-size:9px}.db-patient-meta span,.db-patient-meta a{display:block;margin-top:3px;color:#536f68;font-size:11px;font-weight:850;text-decoration:none}
+.db-status-actions{display:flex;flex-wrap:wrap;gap:7px}.db-status-actions button,.db-patient-link{border:0;border-radius:10px;padding:8px 10px;font-size:9px;font-weight:900;cursor:pointer;text-decoration:none}
+.db-status-actions .s-booked{background:#e4f0fc;color:#275f8d}.db-status-actions .s-arrived,.db-status-actions .s-completed{background:#e1f4e9;color:#176c4d}.db-status-actions .s-late{background:#fff0bf;color:#7a5c15}.db-status-actions .s-no_show,.db-status-actions .s-cancelled{background:#fbe4e4;color:#934141}.db-status-actions .s-rescheduled{background:#eee4fb;color:#68489b}
+.db-patient-link{display:inline-flex;margin-top:11px;background:#edf7f3;color:#226a52;border:1px solid #d5e8df}
+@media(max-width:700px){
+  .db-device-board{overflow-x:auto!important}
+  .db-device-plate{flex-basis:240px!important;min-width:240px!important}
+  .db-patient-meta{grid-template-columns:1fr}
+}
 
 </style>
 
@@ -300,7 +363,15 @@
     <div><h2>ظرفیت دستگاه‌ها · {{ day_jalali }}</h2><div class="db-muted">هر پلاک یک دستگاه واقعی است؛ ردیف‌های هر دستگاه بر اساس مدت درمان + آماده‌سازی همان دستگاه ساخته می‌شوند.</div></div>
     <form method="get"><input type="hidden" name="branch" value="{{ branch.pk }}">{% if appointment %}<input type="hidden" name="appointment" value="{{ appointment.pk }}">{% endif %}<input name="day" value="{{ day_jalali }}"><button class="db-action" type="submit">رفتن به تاریخ</button></form>
   </div>
-  <div class="db-legend"><span><i class="lg-free"></i>آزاد</span><span><i class="lg-busy"></i>پر / رزرو شده</span><span><i class="lg-off"></i>خارج از ساعت یا گذشته</span></div>
+  <div class="db-legend">
+    <span><i class="lg-booked"></i>آبی: رزرو</span>
+    <span><i class="lg-arrived"></i>سبز: حاضر / انجام شد</span>
+    <span><i class="lg-late"></i>زرد: دیرکرد</span>
+    <span><i class="lg-noshow"></i>قرمز: نیامد / لغو</span>
+    <span><i class="lg-moved"></i>بنفش: جابه‌جا شد</span>
+    <span><i class="lg-free"></i>آزاد</span>
+    <span><i class="lg-off"></i>بسته / گذشته</span>
+  </div>
 
   <div class="db-device-board">
     {% for card in device_cards %}
@@ -330,15 +401,47 @@
                 </span>
               </button>
             {% elif slot.state == 'busy' %}
-              <div class="db-slot is-busy" title="{{ slot.booking.appointment.full_name }} · {{ slot.booking.plan_item.title }}">
+              <div class="db-slot is-busy db-status-{{ slot.booking.status }}" title="{{ slot.booking.appointment.full_name }} · {{ slot.booking.plan_item.title }}">
                 <span class="db-slot-no"><span><b>{{ slot.number }}</b><small>ردیف</small></span></span>
                 <span class="db-slot-time">
                   <strong>{{ slot.start_label }} – {{ slot.end_label }}</strong>
-                  <span class="db-busy-person">{{ slot.booking.appointment.full_name }}</span>
+                  <button type="button" class="db-busy-person"
+                    data-booking="{{ slot.booking.pk }}"
+                    data-appointment="{{ slot.booking.appointment_id }}"
+                    data-name="{{ slot.booking.appointment.full_name }}"
+                    data-phone="{{ slot.booking.appointment.phone }}"
+                    data-service="{{ slot.booking.appointment.service|default:slot.booking.plan_item.title }}"
+                    data-plan="{{ slot.booking.plan_item.title }}"
+                    data-device="{{ slot.booking.device.name }}{% if slot.booking.secondary_device %} + {{ slot.booking.secondary_device.name }}{% endif %}"
+                    data-status="{{ slot.booking.get_status_display }}"
+                    data-time="{{ slot.start_label }} – {{ slot.end_label }}"
+                    onclick="openPatientCard(this)">{{ slot.booking.appointment.full_name }}</button>
                   <span class="db-busy-meta">{{ slot.booking.plan_item.title }}</span>
                 </span>
-                <span class="db-slot-state">رزرو</span>
+                <span class="db-slot-state">{{ slot.booking.get_status_display }}</span>
               </div>
+            {% elif slot.state == 'history' %}
+              <button type="button" class="db-history-button" data-device="{{ slot.device.pk }}" data-device-name="{{ slot.device.name }}" data-time="{{ slot.start_value }}" data-end="{{ slot.end_label }}" data-row="{{ slot.number }}" onclick="pickDeviceSlot(this)">
+                <span class="db-slot is-history db-status-{{ slot.history_booking.status }}">
+                  <span class="db-slot-no"><span><b>{{ slot.number }}</b><small>ردیف</small></span></span>
+                  <span class="db-slot-time">
+                    <strong>{{ slot.start_label }} – {{ slot.end_label }}</strong>
+                    <span class="db-busy-person"
+                      data-booking="{{ slot.history_booking.pk }}"
+                      data-appointment="{{ slot.history_booking.appointment_id }}"
+                      data-name="{{ slot.history_booking.appointment.full_name }}"
+                      data-phone="{{ slot.history_booking.appointment.phone }}"
+                      data-service="{{ slot.history_booking.appointment.service|default:slot.history_booking.plan_item.title }}"
+                      data-plan="{{ slot.history_booking.plan_item.title }}"
+                      data-device="{{ slot.history_booking.device.name }}{% if slot.history_booking.secondary_device %} + {{ slot.history_booking.secondary_device.name }}{% endif %}"
+                      data-status="{{ slot.history_booking.get_status_display }}"
+                      data-time="{{ slot.start_label }} – {{ slot.end_label }}"
+                      onclick="event.stopPropagation();openPatientCard(this)">{{ slot.history_booking.appointment.full_name }}</span>
+                    <span class="db-history-free">این ردیف دوباره آزاد است</span>
+                  </span>
+                  <span class="db-slot-state">{{ slot.history_booking.get_status_display }}</span>
+                </span>
+              </button>
             {% else %}
               <div class="db-slot is-off">
                 <span class="db-slot-no"><span><b>{{ slot.number }}</b><small>ردیف</small></span></span>
@@ -357,18 +460,57 @@
   </div>
 
   <div class="db-list">
-  {% for booking in bookings %}<div class="db-row">
+  {% for booking in bookings %}<div class="db-row db-status-{{ booking.status }}">
     <b>{{ booking.starts_at|date:'H:i' }}</b>
-    <div><strong>{{ booking.appointment.full_name }}</strong>
+    <div>
+      <button type="button" class="db-busy-person"
+        data-booking="{{ booking.pk }}"
+        data-appointment="{{ booking.appointment_id }}"
+        data-name="{{ booking.appointment.full_name }}"
+        data-phone="{{ booking.appointment.phone }}"
+        data-service="{{ booking.appointment.service|default:booking.plan_item.title }}"
+        data-plan="{{ booking.plan_item.title }}"
+        data-device="{{ booking.device.name }}{% if booking.secondary_device %} + {{ booking.secondary_device.name }}{% endif %}"
+        data-status="{{ booking.get_status_display }}"
+        data-time="{{ booking.starts_at|date:'H:i' }}"
+        onclick="openPatientCard(this)">{{ booking.appointment.full_name }}</button>
       <small>{{ booking.device.name }}{% if booking.secondary_device %} + {{ booking.secondary_device.name }}{% endif %} · {{ booking.plan_item.title }}</small>
       <small>درمان {{ booking.treatment_minutes_snapshot }} دقیقه · آماده‌سازی {{ booking.preparation_minutes_snapshot }} دقیقه · آزاد از {{ booking.blocked_until|date:'H:i' }}</small>
     </div>
     <b>{{ booking.get_status_display }}</b>
-    {% if can_book and booking.status == 'booked' %}<form method="post" action="{% url 'device_booking_cancel' booking.pk %}">{% csrf_token %}<button type="submit">لغو</button></form>{% endif %}
+    <span></span>
   </div>{% empty %}<p class="db-muted">در این تاریخ نوبت دستگاه ثبت نشده است.</p>{% endfor %}
   </div>
 </section>
 </div>
+</div>
+
+<div class="db-patient-modal" id="dbPatientModal" aria-hidden="true">
+  <div class="db-patient-card" role="dialog" aria-modal="true" aria-labelledby="dbPatientName">
+    <div class="db-patient-head"><strong id="dbPatientName">بیمار</strong><button type="button" class="db-modal-close" onclick="closePatientCard()">×</button></div>
+    <div class="db-patient-body">
+      <div class="db-patient-meta">
+        <div><b>تلفن</b><a id="dbPatientPhone" href="#"></a></div>
+        <div><b>وضعیت</b><span id="dbPatientStatus"></span></div>
+        <div><b>دستگاه / ساعت</b><span id="dbPatientDevice"></span></div>
+        <div><b>خدمت</b><span id="dbPatientService"></span></div>
+      </div>
+      {% if can_update_status %}
+      <form method="post" id="dbStatusForm">{% csrf_token %}
+        <div class="db-status-actions">
+          <button type="button" class="s-booked" data-status="booked">رزرو عادی</button>
+          <button type="button" class="s-arrived" data-status="arrived">حاضر شد</button>
+          <button type="button" class="s-late" data-status="late">دیر رسید</button>
+          <button type="button" class="s-completed" data-status="completed">انجام شد</button>
+          <button type="button" class="s-no_show" data-status="no_show">نیامد</button>
+          <button type="button" class="s-cancelled" data-status="cancelled">لغو کرد</button>
+          <button type="button" class="s-rescheduled" data-status="rescheduled">جابجا شد</button>
+        </div>
+      </form>
+      {% endif %}
+      <a class="db-patient-link" id="dbPatientSelect" href="#">باز کردن همین بیمار در رزرو</a>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -384,6 +526,41 @@
     if(second.selectedOptions[0]&&second.selectedOptions[0].hidden)second.value='';
   }
   if(device){device.addEventListener('change',syncSecondDevice);syncSecondDevice();}
+
+  var patientModal=document.getElementById('dbPatientModal');
+  var activeBookingId='';
+  window.openPatientCard=function(el){
+    if(!patientModal||!el)return;
+    activeBookingId=el.dataset.booking||'';
+    var name=document.getElementById('dbPatientName');
+    var phone=document.getElementById('dbPatientPhone');
+    var status=document.getElementById('dbPatientStatus');
+    var dev=document.getElementById('dbPatientDevice');
+    var service=document.getElementById('dbPatientService');
+    var select=document.getElementById('dbPatientSelect');
+    if(name)name.textContent=el.dataset.name||'بیمار';
+    if(phone){phone.textContent=el.dataset.phone||'—';phone.href=el.dataset.phone?('tel:'+el.dataset.phone):'#';}
+    if(status)status.textContent=el.dataset.status||'—';
+    if(dev)dev.textContent=(el.dataset.device||'—')+' · '+(el.dataset.time||'');
+    if(service)service.textContent=el.dataset.service||el.dataset.plan||'—';
+    if(select)select.href=window.location.pathname+'?appointment='+(el.dataset.appointment||'')+'&day={{ day_jalali }}&branch={{ branch.pk }}';
+    patientModal.classList.add('is-open');patientModal.setAttribute('aria-hidden','false');
+  };
+  window.closePatientCard=function(){
+    if(patientModal){patientModal.classList.remove('is-open');patientModal.setAttribute('aria-hidden','true');}
+  };
+  if(patientModal){
+    patientModal.addEventListener('click',function(e){if(e.target===patientModal)closePatientCard();});
+  }
+  document.querySelectorAll('#dbStatusForm [data-status]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      if(!activeBookingId)return;
+      var form=document.getElementById('dbStatusForm');
+      form.action='/device-bookings/'+activeBookingId+'/status/'+btn.dataset.status+'/';
+      form.submit();
+    });
+  });
+
   window.pickDeviceSlot=function(btn){
     var form=document.getElementById('dbBookingForm');
     if(!form||!device){

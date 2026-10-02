@@ -22,6 +22,7 @@ path('settings/device-capacity/',device_booking_views.device_capacity_settings,n
 path('device-bookings/',device_booking_views.device_booking_schedule,name='device_booking_schedule'),
 path('consultant/expenses/',consultant_expense_views.consultant_expense_entry,name='consultant_expense_entry'),
 path('device-bookings/<int:pk>/cancel/',device_booking_views.device_booking_cancel,name='device_booking_cancel'),
+path('device-bookings/<int:pk>/status/<str:status>/',device_booking_views.device_booking_status,name='device_booking_status'),
 path('lead-management/attention/assign/',lead_management_views.lead_attention_bulk_action,name='lead_attention_bulk_action'),path('lead-management/<int:pk>/reassign/',lead_management_views.lead_reassign_operator,name='lead_reassign_operator'),path('lead-management/api/trend/',lead_management_views.lead_management_trend_data,name='lead_management_trend_data'),path('lead-command/',lead_command_views.lead_command_center,name='lead_command_center'),path('lead-command/api/live/',lead_command_views.lead_command_center_live,name='lead_command_center_live'),path('service-worker.js',views.service_worker,name='service_worker'),path('camp/',camp_views.camp_dashboard,name='camp_dashboard'),
 path('doctor/',doctor_views.doctor_dashboard,name='doctor_dashboard'),
 path('payroll/',payroll_views.payroll_dashboard,name='payroll_dashboard'),
