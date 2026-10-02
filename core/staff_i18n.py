@@ -697,6 +697,12 @@ EN.update({
 TRANSLATIONS = {'fa': FA, 'tr': TR, 'en': EN}
 
 CHOICES = {
+    'lead_source': {
+        'panel': {'fa':'ثبت در پنل','tr':'Panel Kaydı','en':'Panel Entry'},
+        'link': {'fa':'لینک اختصاصی','tr':'Özel Link','en':'Personal Link'},
+        'qr': {'fa':'QR اختصاصی','tr':'Özel QR','en':'Personal QR'},
+        'import': {'fa':'ورودی فایل','tr':'Dosya Aktarımı','en':'File Import'},
+    },
     'lead_status': {
         'new': {'fa':'جدید','tr':'Yeni','en':'New'},
         'contacted': {'fa':'تماس گرفته شد','tr':'Arandı','en':'Contacted'},
