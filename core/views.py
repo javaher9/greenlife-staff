@@ -958,8 +958,10 @@ def sop_list(request):
 
 @manager_required
 def employee_list(request):
+    from .country_workspace import scoped_queryset
     role=role_of(request.user)
-    qs=EmployeeProfile.objects.exclude(role='referrer').select_related('user','branch').order_by('branch__name','user__last_name')
+    qs=EmployeeProfile.objects.exclude(role='referrer').select_related('user','branch','country','branch__country').order_by('country__sort_order','branch__name','user__last_name')
+    qs=scoped_queryset(request,qs)
     if role=='manager': qs=qs.filter(branch=request.user.profile.branch)
     elif role=='internal_manager': qs=qs.filter(role__in=PERSONNEL_ROLES)
     return render(request,'core/employee_list.html',{
@@ -970,13 +972,22 @@ def employee_list(request):
 @manager_required
 def employee_create(request):
     form=EmployeeCreateForm(request.POST or None)
+    scope=getattr(request,'country_scope',None)
+    if scope:
+        form.fields['country'].queryset=Country.objects.filter(pk=scope.pk,is_active=True)
+        form.fields['country'].initial=scope
+        form.fields['branch'].queryset=form.fields['branch'].queryset.filter(country=scope)
+        if not form.is_bound:
+            form.fields['preferred_language'].initial=scope.primary_language
     if role_of(request.user)=='manager':
         form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=request.user.profile.branch_id); form.fields['branch'].initial=request.user.profile.branch; form.fields['role'].choices=[('employee','کارمند')]
     elif role_of(request.user)=='internal_manager':
         form.fields['role'].choices=[('employee','کارمند'),('call_center','کال‌سنتر'),('consultant','مشاور')]
     if request.method=='POST' and form.is_valid():
         d=form.cleaned_data; user=User.objects.create_user(username=d['username'],password=d['password'],first_name=d['first_name'],last_name=d['last_name'])
+        employee_country=d.get('country') or getattr(d.get('branch'),'country',None) or scope or Country.objects.filter(code='IR').first()
         EmployeeProfile.objects.update_or_create(user=user,defaults={
+            'country':employee_country,'preferred_language':d.get('preferred_language') or getattr(employee_country,'primary_language','fa'),
             'branch':d['branch'],'role':d['role'],
             'job_title':d['job_title'] or ('کارشناس کال‌سنتر' if d['role']=='call_center' else 'مشاور' if d['role']=='consultant' else 'منشی' if d['role']=='receptionist' else ''),
             'employee_code':d['employee_code'] or None,'phone':d['phone'],
@@ -995,6 +1006,10 @@ def employee_edit(request,pk):
         messages.error(request,'به این پرسنل دسترسی ندارید.')
         return redirect('employee_list')
     form=EmployeeEditForm(request.POST or None,employee=employee)
+    edit_scope=getattr(request,'country_scope',None)
+    if edit_scope:
+        form.fields['country'].queryset=Country.objects.filter(pk=edit_scope.pk,is_active=True)
+        form.fields['branch'].queryset=form.fields['branch'].queryset.filter(country=edit_scope)
     if role_of(request.user)=='manager':
         form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=request.user.profile.branch_id)
         form.fields['role'].choices=[('employee','کارمند')]
