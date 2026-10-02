@@ -22,6 +22,49 @@
   </div>
 
   {% if is_manager %}
+    <article class="rf-card" style="margin-bottom:14px;border-color:rgba(45,212,191,.28);background:linear-gradient(145deg,rgba(8,47,73,.32),rgba(15,23,42,.92))">
+      <div class="rf-card-head">
+        <div><span class="rf-card-kicker">🇹🇷 TÜRKİYE · TEMPORARY BRIDGE</span><h2>شبکه و لیدهای ترکیه</h2></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <a class="rf-btn" href="{% url 'lead_management_dashboard' %}?market=TR">مشاهده لیدهای ترکیه</a>
+          <a class="rf-btn" href="{% url 'public_network:management' %}?market=TR">اعضای شبکه ترکیه</a>
+        </div>
+      </div>
+      <div class="rf-kpis" style="margin-top:12px">
+        <div class="rf-kpi cyan"><span>اعضای Türkiye</span><strong>{{ turkey_member_count|default:0|fa }}</strong><small>{{ turkey_member_today|default:0|fa }} عضو جدید امروز</small></div>
+        <div class="rf-kpi green"><span>لیدهای Türkiye</span><strong>{{ turkey_lead_count|default:0|fa }}</strong><small>{{ turkey_lead_today|default:0|fa }} لید امروز</small></div>
+      </div>
+      <div class="rf-grid rf-grid-main" style="margin-top:12px">
+        <div>
+          <div class="rf-card-head"><div><span class="rf-card-kicker">MEMBERS</span><h2>آخرین اعضای ترکیه</h2></div></div>
+          <div class="rf-list">
+            {% for item in turkey_recent_members %}
+            <div class="rf-list-row">
+              <div class="rf-avatar">{% if item.photo %}<img src="{{ item.photo.url }}" alt="{{ item.display_name }}">{% else %}<span>{{ item.display_name|first }}</span>{% endif %}</div>
+              <div><strong>{{ item.display_name }}</strong><small>🇹🇷 Türkiye · {{ item.phone }}{% if item.sponsor %} · معرف: {{ item.sponsor.display_name }}{% endif %}</small></div>
+              <em class="rf-status">عضو</em>
+            </div>
+            {% empty %}
+            <div class="rf-manager-empty"><span>🇹🇷</span><strong>هنوز عضو ترکیه ثبت نشده</strong></div>
+            {% endfor %}
+          </div>
+        </div>
+        <div>
+          <div class="rf-card-head"><div><span class="rf-card-kicker">LEADS</span><h2>آخرین لیدهای ترکیه</h2></div></div>
+          <div class="rf-list">
+            {% for lead in turkey_recent_leads %}
+            <a class="rf-list-row" href="{% url 'management_lead_follow_up' lead.pk %}">
+              <div class="rf-avatar"><span>{{ lead.full_name|first }}</span></div>
+              <div><strong>{{ lead.full_name }}</strong><small>🇹🇷 Türkiye · {{ lead.phone }}{% if lead.referrer %} · معرف: {{ lead.referrer.user.get_full_name|default:lead.referrer.user.username }}{% endif %}</small></div>
+              <em class="rf-status status-{{ lead.status }}">{{ lead.get_status_display }}</em>
+            </a>
+            {% empty %}
+            <div class="rf-manager-empty"><span>◎</span><strong>هنوز لید ترکیه ثبت نشده</strong></div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </article>
     {% referral_manager_live_dashboard %}
     <article class="rf-card rf-pipeline-card">
       <div class="rf-card-head"><div><span class="rf-card-kicker">وضعیت زنده فروش</span><h2>قیف تبدیل مشتری</h2></div><a href="{% url 'referral_lead_list' %}">{{ action_count|fa }} مورد نیازمند اقدام</a></div>
