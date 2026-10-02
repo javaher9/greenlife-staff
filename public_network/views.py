@@ -32,12 +32,24 @@ def _country(code):
     return Country.objects.filter(code=code,is_active=True).first()
 
 
+def _turkey_language(request):
+    raw=(request.GET.get('lang') or request.POST.get('lang') or request.session.get('public_network_locale') or 'tr').strip().lower()
+    lang='en' if raw == 'en' else 'tr'
+    request.session['public_network_locale']=lang
+    return lang
+
+
+def _turkey_copy(lang, tr, en):
+    return en if lang == 'en' else tr
+
+
 def _member_share_url(request, member):
     return _public_base(request) + reverse('public_network:signup_with_code', args=[member.code]) + '?src=referral'
 
 
 def _turkey_member_share_url(request, member):
-    return _public_base(request) + reverse('public_network:turkey_signup_with_code', args=[member.code]) + '?src=referral'
+    lang='en' if getattr(member,'preferred_language','tr') == 'en' else 'tr'
+    return _public_base(request) + reverse('public_network:turkey_signup_with_code', args=[member.code]) + f'?src=referral&lang={lang}'
 
 
 def _turkey_lead_source_profile():
@@ -244,21 +256,22 @@ def invite_qr(request, code):
 
 
 def turkey_terms(request):
-    return render(request, 'public_network/turkey_terms.html')
+    lang=_turkey_language(request)
+    return render(request, 'public_network/turkey_terms.html', {'turkey_lang':lang})
 
 
 def turkey_signup(request, code=None):
+    lang=_turkey_language(request)
     sponsor = None
     if code:
         sponsor = get_object_or_404(
             PublicNetworkMember.objects.select_related('user'), code=code, is_active=True, country__code='TR'
         )
     if request.user.is_authenticated and hasattr(request.user, 'public_network_member'):
-        request.session['public_network_locale'] = 'tr'
-        return redirect('public_network:turkey_dashboard')
+        return redirect(reverse('public_network:turkey_dashboard') + f'?lang={lang}')
 
     initial = {'src': _source_from_request(request, sponsor)}
-    form = TurkeyNetworkSignupForm(request.POST or None, request.FILES or None, initial=initial)
+    form = TurkeyNetworkSignupForm(request.POST or None, request.FILES or None, initial=initial, language=lang)
     if request.method == 'POST' and form.is_valid():
         data = form.cleaned_data
         source = _source_from_request(request, sponsor)
@@ -272,7 +285,7 @@ def turkey_signup(request, code=None):
             member = PublicNetworkMember.objects.create(
                 user=user,
                 country=_country('TR'),
-                preferred_language='tr',
+                preferred_language=lang,
                 sponsor=sponsor,
                 phone=data['phone'],
                 photo=data['photo'],
@@ -281,27 +294,31 @@ def turkey_signup(request, code=None):
             )
         _sync_turkey_signup_to_call_center(member, request)
         login(request, user)
-        request.session['public_network_locale'] = 'tr'
-        messages.success(request, 'Üyeliğiniz oluşturuldu / Your account has been created.')
-        return redirect('public_network:turkey_dashboard')
+        messages.success(request, _turkey_copy(lang, 'Üyeliğiniz oluşturuldu.', 'Your account has been created.'))
+        return redirect(reverse('public_network:turkey_dashboard') + f'?lang={lang}')
 
     return render(request, 'public_network/turkey_signup.html', {
         'form': form,
         'sponsor': sponsor,
         'source': _source_from_request(request, sponsor),
+        'turkey_lang': lang,
     })
 
 
 def turkey_login(request):
+    lang=_turkey_language(request)
     if request.user.is_authenticated and hasattr(request.user, 'public_network_member'):
-        request.session['public_network_locale'] = 'tr'
-        return redirect('public_network:turkey_dashboard')
-    form = TurkeyNetworkLoginForm(request.POST or None, request=request)
+        return redirect(reverse('public_network:turkey_dashboard') + f'?lang={lang}')
+    form = TurkeyNetworkLoginForm(request.POST or None, request=request, language=lang)
     if request.method == 'POST' and form.is_valid():
-        login(request, form.get_user())
-        request.session['public_network_locale'] = 'tr'
-        return redirect('public_network:turkey_dashboard')
-    return render(request, 'public_network/turkey_login.html', {'form': form})
+        user=form.get_user()
+        login(request, user)
+        member=getattr(user,'public_network_member',None)
+        if member and member.preferred_language != lang:
+            member.preferred_language=lang
+            member.save(update_fields=['preferred_language','updated_at'])
+        return redirect(reverse('public_network:turkey_dashboard') + f'?lang={lang}')
+    return render(request, 'public_network/turkey_login.html', {'form': form, 'turkey_lang':lang})
 
 
 @login_required
@@ -315,21 +332,34 @@ def turkey_dashboard(request):
     member = getattr(request.user, 'public_network_member', None)
     if not member or not member.is_active:
         return redirect('public_network:turkey_login')
-    request.session['public_network_locale'] = 'tr'
+    lang=_turkey_language(request)
+    if member.country_id and member.country.code != 'TR':
+        return redirect('public_network:dashboard')
+    if member.preferred_language != lang:
+        member.preferred_language=lang
+        member.save(update_fields=['preferred_language','updated_at'])
     direct_members = member.members.filter(is_active=True).select_related('user')
-    source_labels = {
-        'story': 'Story / Story',
-        'referral': 'Davet linki / Referral link',
-        'qr': 'QR daveti / QR invite',
-        'direct': 'Doğrudan / Direct',
+    source_labels_tr = {
+        'story': 'Story',
+        'referral': 'Davet linki',
+        'qr': 'QR daveti',
+        'direct': 'Doğrudan',
     }
+    source_labels_en = {
+        'story': 'Story',
+        'referral': 'Referral link',
+        'qr': 'QR invite',
+        'direct': 'Direct',
+    }
+    labels=source_labels_en if lang == 'en' else source_labels_tr
     return render(request, 'public_network/turkey_dashboard.html', {
         'member': member,
         'direct_members': direct_members[:12],
         'direct_count': direct_members.count(),
-        'source_label': source_labels.get(member.source, member.source),
+        'source_label': labels.get(member.source, member.source),
         'share_url': _turkey_member_share_url(request, member),
         'share_qr_url': reverse('public_network:turkey_invite_qr', args=[member.code]),
+        'turkey_lang':lang,
     })
 
 
