@@ -3,6 +3,7 @@ import uuid
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
+from core.models import default_country_pk
 
 
 def _new_code():
@@ -19,7 +20,7 @@ class PublicNetworkMember(models.Model):
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='public_network_member')
     country = models.ForeignKey(
-        'core.Country', on_delete=models.PROTECT, null=True, blank=True,
+        'core.Country', on_delete=models.PROTECT, null=True, blank=True, default=default_country_pk,
         related_name='public_network_members',
     )
     preferred_language = models.CharField(
