@@ -1152,6 +1152,19 @@ EN.update({
     'doc.header_meta':'{date} · {count} appointments today','doc.selected_center':'Selected center',
 })
 
+FA.update({
+    'att.shift_line':'{date} · شیفت: {name}','att.shift_times':'{start} تا {end}','att.voluntary':'کشیک اختیاری',
+    'att.minutes':'{count} دقیقه','att.distance':'فاصله {count} متر',
+})
+TR.update({
+    'att.shift_line':'{date} · Vardiya: {name}','att.shift_times':'{start} - {end}','att.voluntary':'İsteğe Bağlı Nöbet',
+    'att.minutes':'{count} dakika','att.distance':'Mesafe {count} metre',
+})
+EN.update({
+    'att.shift_line':'{date} · Shift: {name}','att.shift_times':'{start} to {end}','att.voluntary':'Voluntary Duty',
+    'att.minutes':'{count} minutes','att.distance':'Distance {count} m',
+})
+
 
 TRANSLATIONS = {'fa': FA, 'tr': TR, 'en': EN}
 
