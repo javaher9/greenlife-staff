@@ -854,6 +854,27 @@
   }
   .db-plate-badge{display:none!important}
 }
+
+/* Final device title contrast override */
+@media(min-width:701px){
+  .db-plate-name strong{
+    background:linear-gradient(135deg,#8f72e6 0%,#bba7ff 100%)!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    opacity:1!important;
+    text-shadow:0 1px 2px rgba(62,38,117,.28)!important;
+    box-shadow:0 8px 20px rgba(121,89,210,.24)!important;
+    border:1px solid rgba(255,255,255,.28)!important;
+  }
+  .db-device-plate:nth-child(4n+1) .db-plate-name strong,
+  .db-device-plate:nth-child(4n+2) .db-plate-name strong,
+  .db-device-plate:nth-child(4n+3) .db-plate-name strong,
+  .db-device-plate:nth-child(4n) .db-plate-name strong{
+    background:linear-gradient(135deg,#8f72e6 0%,#bba7ff 100%)!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+  }
+}
 </style>
 
 <div class="db-shell">
