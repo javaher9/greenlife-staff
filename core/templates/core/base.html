@@ -1,5 +1,5 @@
-{% load static jalali_tags %}<!doctype html>
-<html lang="fa" dir="rtl" class="{% if user.is_authenticated and user.profile.role == 'call_center' %}gl-call-center-html{% endif %}">
+{% load static jalali_tags staff_i18n %}<!doctype html>
+<html lang="{{ ui_language|default:'fa' }}" dir="{{ ui_direction|default:'rtl' }}" class="{% if user.is_authenticated and user.profile.role == 'call_center' %}gl-call-center-html{% endif %}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -316,11 +316,44 @@ body.gl-role-consultant .gl-country-switcher .gl-country-label{color:#758e87}
 @media(max-width:980px){.gl-country-switcher{min-width:118px;padding-left:6px}.gl-country-switcher .gl-country-label{display:none}.gl-country-switcher select{min-width:88px;font-size:10px!important}}
 @media(max-width:700px){.gl-country-switcher{height:34px;min-width:102px}.gl-country-switcher .gl-country-globe{display:none}.gl-country-switcher select{min-width:90px;max-width:108px}}
 </style>
+<style id="staff-language-engine-v1">
+.gl-workspace-switchers{display:flex;align-items:center;gap:7px;direction:ltr;white-space:nowrap}
+.gl-language-switcher{height:38px;display:flex;align-items:center;gap:3px;padding:3px;border:1px solid rgba(151,181,171,.22);border-radius:12px;background:rgba(16,38,33,.72);box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+.gl-language-switcher button{min-width:34px;height:30px;padding:0 8px!important;border:0!important;border-radius:9px!important;background:transparent!important;color:#8fb4a9!important;font:900 9px/1 Tahoma,Arial,sans-serif!important;letter-spacing:.4px;box-shadow:none!important;cursor:pointer!important}
+.gl-language-switcher button.is-active{background:#1f5a48!important;color:#f0fff8!important;box-shadow:0 4px 12px rgba(27,118,83,.16)!important}
+.gl-language-switcher button:hover{color:#fff!important}
+body.gl-role-call-center .gl-language-switcher,
+body.gl-role-consultant .gl-language-switcher{background:#f7faf9;border-color:#dce8e4;box-shadow:none}
+body.gl-role-call-center .gl-language-switcher button,
+body.gl-role-consultant .gl-language-switcher button{color:#728b84!important}
+body.gl-role-call-center .gl-language-switcher button.is-active,
+body.gl-role-consultant .gl-language-switcher button.is-active{background:#e7f5ef!important;color:#246d52!important}
+html[dir="ltr"] .app-nav{direction:ltr!important}
+html[dir="ltr"] .app-nav>a,html[dir="ltr"] .gl-settings-menu>summary,html[dir="ltr"] .gl-settings-submenu a{direction:ltr!important;text-align:left}
+html[dir="ltr"] .gl-settings-menu>summary .settings-caret{margin-left:auto!important;margin-right:0!important}
+html[dir="ltr"] .topbar-search,html[dir="ltr"] .topbar-meta,html[dir="ltr"] .header-person{direction:ltr!important}
+html[dir="ltr"] .header-person>div:last-child{text-align:left}
+html[dir="ltr"] .sidebar-footer{direction:ltr}
+html[dir="ltr"] .app-main{direction:ltr}
+@media(min-width:701px){
+  .topbar{grid-template-columns:minmax(180px,1fr) auto auto auto!important;gap:12px!important}
+}
+@media(max-width:980px){
+  .gl-workspace-switchers{gap:4px}
+  .gl-language-switcher{height:34px}
+  .gl-language-switcher button{min-width:30px;height:27px;padding:0 6px!important;font-size:8px!important}
+}
+@media(max-width:700px){
+  .gl-workspace-switchers{position:fixed;top:7px;left:50%;transform:translateX(-50%);z-index:120;padding:3px;border-radius:14px;background:rgba(8,20,18,.88);backdrop-filter:blur(12px)}
+  body.gl-role-call-center .gl-workspace-switchers,body.gl-role-consultant .gl-workspace-switchers{background:rgba(255,255,255,.94)}
+  .gl-country-switcher{display:none!important}
+}
+</style>
 
 </head>
-<body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'doctor' or user.profile.role == 'receptionist' %}gl-role-employee{% endif %} {% if user.profile.role == 'call_center' %}gl-role-call-center{% endif %} {% if user.profile.role == 'consultant' %}gl-role-consultant{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
+<body class="gl-app gl-premium-dark gl-lang-{{ ui_language|default:'fa' }} gl-dir-{{ ui_direction|default:'rtl' }} gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'doctor' or user.profile.role == 'receptionist' %}gl-role-employee{% endif %} {% if user.profile.role == 'call_center' %}gl-role-call-center{% endif %} {% if user.profile.role == 'consultant' %}gl-role-consultant{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
 {% if request.session.impersonator_user_id %}
-<div class="impersonation-banner"><span>در حال مشاهده به‌عنوان {{ user.get_full_name|default:user.username }}</span><form method="post" action="{% url 'impersonate_return' %}">{% csrf_token %}<button type="submit">بازگشت به ادمین</button></form></div>
+<div class="impersonation-banner"><span>{% gl_t 'shell.impersonating' name=user.get_full_name|default:user.username %}</span><form method="post" action="{% url 'impersonate_return' %}">{% csrf_token %}<button type="submit">{% gl_t 'shell.back_admin' %}</button></form></div>
 {% endif %}
 <div class="mobile-more-backdrop" hidden></div>
 <aside class="app-sidebar">
@@ -547,37 +580,46 @@ body.gl-role-consultant .gl-country-switcher .gl-country-label{color:#758e87}
 
 <main class="app-main">
   <header class="topbar">
-    <div class="topbar-search"><span>⌕</span><input type="text" placeholder="جستجو در گرین‌لایف..." disabled></div>
-    {% if country_scope_can_switch %}
-    <form method="post" action="{% url 'country_switch' %}" class="gl-country-switcher" title="فضای کاری کشور / Country workspace">
-      {% csrf_token %}
-      <input type="hidden" name="next" value="{{ request.get_full_path }}">
-      <span class="gl-country-globe">🌍</span>
-      <span class="gl-country-label">COUNTRY</span>
-      <select name="country" onchange="this.form.submit()" aria-label="انتخاب کشور">
-        <option value="ALL" {% if country_scope_code == 'ALL' %}selected{% endif %}>🌍 همه / All</option>
-        {% for country in country_scope_countries %}
-        <option value="{{ country.code }}" {% if country_scope_code == country.code %}selected{% endif %}>{{ country.flag_emoji }} {{ country.name_local }}</option>
+    <div class="topbar-search"><span>⌕</span><input type="text" placeholder="{% gl_t 'shell.search_placeholder' %}" disabled></div>
+    <div class="gl-workspace-switchers">
+      <form method="post" action="{% url 'language_switch' %}" class="gl-language-switcher" title="{% gl_t 'shell.language_title' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        {% for code,short,label in ui_languages %}
+        <button type="submit" name="language" value="{{ code }}" class="{% if ui_language == code %}is-active{% endif %}" aria-label="{{ label }}">{{ short }}</button>
         {% endfor %}
-      </select>
-    </form>
-    {% endif %}
+      </form>
+      {% if country_scope_can_switch %}
+      <form method="post" action="{% url 'country_switch' %}" class="gl-country-switcher" title="{% gl_t 'shell.country_title' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <span class="gl-country-globe">🌍</span>
+        <span class="gl-country-label">COUNTRY</span>
+        <select name="country" onchange="this.form.submit()" aria-label="{% gl_t 'common.country' %}">
+          <option value="ALL" {% if country_scope_code == 'ALL' %}selected{% endif %}>🌍 {% gl_t 'shell.country_all' %}</option>
+          {% for country in country_scope_countries %}
+          <option value="{{ country.code }}" {% if country_scope_code == country.code %}selected{% endif %}>{{ country.flag_emoji }} {{ country.name_local }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      {% endif %}
+    </div>
     <div class="topbar-meta"><span class="topbar-date">{% if data.date %}{{ data.date }}{% else %}{{ request.user.date_joined|jdate }}{% endif %}</span><a class="topbar-bell" href="/notifications/">♢{% if alerts %}<b>{{ alerts|length }}</b>{% endif %}</a></div>
     <div class="header-person">
       <div class="avatar-xs">{% if user.profile.avatar %}<img src="{{ user.profile.avatar.url }}">{% else %}<span>{{ user.first_name|first|default:user.username|first }}</span>{% endif %}</div>
-      <div><strong>{{ user.get_full_name|default:user.username }}</strong><span>{{ user.profile.job_title|default:'مدیر سیستم' }}{% if user.profile.branch %} · {{ user.profile.branch }}{% endif %}</span></div>
+      <div><strong>{{ user.get_full_name|default:user.username }}</strong><span>{% if user.profile.job_title %}{{ user.profile.job_title }}{% else %}{% gl_choice 'role' user.profile.role %}{% endif %}{% if user.profile.branch %} · {{ user.profile.branch }}{% endif %}</span></div>
     </div>
   </header>
   {% for message in messages %}<div class="msg {{ message.tags }}">{{ message }}</div>{% endfor %}
   {% block content %}{% endblock %}
 </main>
 {% if user.is_authenticated and user.profile.role == 'call_center' %}
-<nav class="cc-desktop-dock" aria-label="ابزارهای اصلی کال‌سنتر">
-  <a class="dock-primary {% if request.path|slice:':13' == '/call-center/' %}is-active{% endif %}" href="/call-center/"><span class="dock-ico">☎</span><span>بیماران / لیدها</span></a>
-  <a class="{% if request.path|slice:':14' == '/appointments/' %}is-active{% endif %}" href="/appointments/"><span class="dock-ico">▣</span><span>نوبت‌ها</span></a>
-  <a class="{% if request.path|slice:':10' == '/messages/' %}is-active{% endif %}" href="{% url 'internal_messages' %}"><span class="dock-ico">✉</span><span>پیام داخلی</span></a>
-  <a class="{% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}" href="/notifications/"><span class="dock-ico">♢</span><span>اعلان‌ها</span></a>
-  <a href="/logout/"><span class="dock-ico">↪</span><span>خروج</span></a>
+<nav class="cc-desktop-dock" aria-label="{% gl_t 'shell.call_center_tools' %}">
+  <a class="dock-primary {% if request.path|slice:':13' == '/call-center/' %}is-active{% endif %}" href="/call-center/"><span class="dock-ico">☎</span><span>{% gl_t 'shell.patients_leads' %}</span></a>
+  <a class="{% if request.path|slice:':14' == '/appointments/' %}is-active{% endif %}" href="/appointments/"><span class="dock-ico">▣</span><span>{% gl_t 'common.appointments' %}</span></a>
+  <a class="{% if request.path|slice:':10' == '/messages/' %}is-active{% endif %}" href="{% url 'internal_messages' %}"><span class="dock-ico">✉</span><span>{% gl_t 'common.internal_messages' %}</span></a>
+  <a class="{% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}" href="/notifications/"><span class="dock-ico">♢</span><span>{% gl_t 'common.notifications' %}</span></a>
+  <a href="/logout/"><span class="dock-ico">↪</span><span>{% gl_t 'common.logout' %}</span></a>
 </nav>
 {% endif %}
 
@@ -633,12 +675,12 @@ body.gl-role-consultant .gl-country-switcher .gl-country-label{color:#758e87}
 
 <div id="pwaInstallBar" class="pwa-install-bar" hidden>
   <div>
-    <strong>نصب GreenLife Staff</strong>
-    <small>برای باز شدن مثل یک اپ واقعی روی صفحه اصلی نصبش کنید.</small>
+    <strong>{% gl_t 'shell.install_title' %}</strong>
+    <small>{% gl_t 'shell.install_body' %}</small>
   </div>
   <div class="pwa-install-actions">
-    <button id="pwaInstallBtn" type="button">نصب اپ</button>
-    <button id="pwaInstallClose" type="button" class="ghost">بعداً</button>
+    <button id="pwaInstallBtn" type="button">{% gl_t 'shell.install' %}</button>
+    <button id="pwaInstallClose" type="button" class="ghost">{% gl_t 'shell.later' %}</button>
   </div>
 </div>
 <script>
