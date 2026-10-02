@@ -301,6 +301,22 @@ background:#1a2c38!important;border-color:#486174!important;color:#fff!important
 }
 </style>
 
+<style id="country-workspace-v1">
+.gl-country-switcher{display:flex;align-items:center;gap:7px;min-width:160px;height:38px;padding:4px 7px 4px 10px;border:1px solid rgba(151,181,171,.22);border-radius:12px;background:rgba(16,38,33,.72);box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+.gl-country-switcher .gl-country-globe{font-size:14px;line-height:1}
+.gl-country-switcher .gl-country-label{font-size:9px;font-weight:850;letter-spacing:.4px;color:#8fb4a9;white-space:nowrap}
+.gl-country-switcher select{min-width:104px;border:0!important;outline:0!important;background:transparent!important;color:#eef9f5!important;font:800 11px/1.2 Tahoma,Arial,sans-serif!important;padding:4px 1px!important;box-shadow:none!important;cursor:pointer}
+.gl-country-switcher select option{color:#1f2f2b;background:#fff}
+body.gl-role-call-center .gl-country-switcher,
+body.gl-role-consultant .gl-country-switcher{background:#f7faf9;border-color:#dce8e4;box-shadow:none}
+body.gl-role-call-center .gl-country-switcher select,
+body.gl-role-consultant .gl-country-switcher select{color:#294a43!important}
+body.gl-role-call-center .gl-country-switcher .gl-country-label,
+body.gl-role-consultant .gl-country-switcher .gl-country-label{color:#758e87}
+@media(max-width:980px){.gl-country-switcher{min-width:118px;padding-left:6px}.gl-country-switcher .gl-country-label{display:none}.gl-country-switcher select{min-width:88px;font-size:10px!important}}
+@media(max-width:700px){.gl-country-switcher{height:34px;min-width:102px}.gl-country-switcher .gl-country-globe{display:none}.gl-country-switcher select{min-width:90px;max-width:108px}}
+</style>
+
 </head>
 <body class="gl-app gl-premium-dark gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'doctor' or user.profile.role == 'receptionist' %}gl-role-employee{% endif %} {% if user.profile.role == 'call_center' %}gl-role-call-center{% endif %} {% if user.profile.role == 'consultant' %}gl-role-consultant{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
 {% if request.session.impersonator_user_id %}
@@ -532,6 +548,20 @@ background:#1a2c38!important;border-color:#486174!important;color:#fff!important
 <main class="app-main">
   <header class="topbar">
     <div class="topbar-search"><span>⌕</span><input type="text" placeholder="جستجو در گرین‌لایف..." disabled></div>
+    {% if country_scope_can_switch %}
+    <form method="post" action="{% url 'country_switch' %}" class="gl-country-switcher" title="فضای کاری کشور / Country workspace">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <span class="gl-country-globe">🌍</span>
+      <span class="gl-country-label">COUNTRY</span>
+      <select name="country" onchange="this.form.submit()" aria-label="انتخاب کشور">
+        <option value="ALL" {% if country_scope_code == 'ALL' %}selected{% endif %}>🌍 همه / All</option>
+        {% for country in country_scope_countries %}
+        <option value="{{ country.code }}" {% if country_scope_code == country.code %}selected{% endif %}>{{ country.flag_emoji }} {{ country.name_local }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    {% endif %}
     <div class="topbar-meta"><span class="topbar-date">{% if data.date %}{{ data.date }}{% else %}{{ request.user.date_joined|jdate }}{% endif %}</span><a class="topbar-bell" href="/notifications/">♢{% if alerts %}<b>{{ alerts|length }}</b>{% endif %}</a></div>
     <div class="header-person">
       <div class="avatar-xs">{% if user.profile.avatar %}<img src="{{ user.profile.avatar.url }}">{% else %}<span>{{ user.first_name|first|default:user.username|first }}</span>{% endif %}</div>
