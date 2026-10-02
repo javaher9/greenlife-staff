@@ -9,7 +9,7 @@
 <div class="stats">
 <div class="stat"><span class="muted">Doğrudan üyelerim</span><small>My direct members</small><b>{{ direct_count }}</b></div>
 <div class="stat"><span class="muted">Ağ seviyem</span><small>My network depth</small><b>{{ member.depth }}</b></div>
-<div class="stat"><span class="muted">Kayıt kaynağı</span><small>Signup source</small><b style="font-size:17px">{{ member.get_source_display }}</b></div>
+<div class="stat"><span class="muted">Kayıt kaynağı</span><small>Signup source</small><b style="font-size:17px">{{ source_label }}</b></div>
 </div>
 <section class="card share"><h2 style="margin:0">Davet linkim <small style="font-size:13px;color:#87a69f">/ My invite link</small></h2><div class="intro">Bu linkle katılan kişiler doğrudan senin ağında görünür. / People joining through this link are recorded directly in your network.</div><div class="sharebox"><input id="share" value="{{ share_url }}" readonly><button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('share').value);this.innerText='Kopyalandı / Copied'">KOPYALA / COPY</button><a class="btn" href="{{ share_qr_url }}" target="_blank">QR</a></div></section>
 <section class="card members" style="margin-top:16px"><h2 style="margin-top:0">Son doğrudan üyeler <small style="font-size:13px;color:#87a69f">/ Recent direct members</small></h2>{% for item in direct_members %}<div class="row"><img class="mini" src="{{ item.photo.url }}" alt=""><div><strong>{{ item.display_name }}</strong><div class="muted" style="font-size:11px">{{ item.created_at|date:'Y-m-d H:i' }}</div></div></div>{% empty %}<div class="muted">Henüz üye yok / No direct members yet.</div>{% endfor %}</section>
