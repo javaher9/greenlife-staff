@@ -11,6 +11,7 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from .models import AuditLog, FinancialTransaction
+from .staff_i18n import normalize_ui_language, translate, translate_choice
 
 COST_TYPES = (
     ('device', 'دستگاه و تجهیزات'),
@@ -25,24 +26,38 @@ COST_TYPES = (
 class ConsultantExpenseForm(forms.Form):
     amount_toman = forms.IntegerField(
         label='مبلغ هزینه (تومان)', min_value=1,
-        widget=forms.NumberInput(attrs={'min': 1, 'step': 1, 'inputmode': 'numeric', 'placeholder': 'مبلغ به تومان'}),
+        widget=forms.NumberInput(attrs={'min': 1, 'step': 1, 'inputmode': 'numeric'}),
     )
     category = forms.ChoiceField(label='دسته هزینه', choices=COST_TYPES)
     description = forms.CharField(
         label='شرح هزینه', max_length=1000,
-        widget=forms.Textarea(attrs={'rows': 3, 'placeholder': 'چه چیزی، برای چه کاری و از کجا تهیه شد؟'}),
+        widget=forms.Textarea(attrs={'rows': 3}),
     )
     receipt_image = forms.ImageField(
         label='تصویر رسید', required=True,
         widget=forms.ClearableFileInput(attrs={'accept': 'image/jpeg,image/png,image/webp'}),
     )
 
+    def __init__(self,*args,language='fa',**kwargs):
+        super().__init__(*args,**kwargs)
+        self.language=normalize_ui_language(language)
+        self.fields['amount_toman'].label=translate('expense.amount',self.language)
+        self.fields['category'].label=translate('expense.category',self.language)
+        self.fields['description'].label=translate('expense.description',self.language)
+        self.fields['receipt_image'].label=translate('expense.receipt',self.language)
+        self.fields['amount_toman'].widget.attrs['placeholder']=translate('expense.amount_placeholder',self.language)
+        self.fields['description'].widget.attrs['placeholder']=translate('expense.description_placeholder',self.language)
+        self.fields['category'].choices=[
+            (value,translate_choice('expense_category',value,self.language,fallback=label))
+            for value,label in COST_TYPES
+        ]
+
     def clean_receipt_image(self):
         receipt = self.cleaned_data['receipt_image']
         if receipt.size > 10 * 1024 * 1024:
-            raise forms.ValidationError('حجم رسید باید کمتر از ۱۰ مگابایت باشد.')
+            raise forms.ValidationError(translate('expense.receipt_too_large',self.language))
         if receipt.content_type not in ('image/jpeg', 'image/png', 'image/webp'):
-            raise forms.ValidationError('رسید باید JPG، PNG یا WebP باشد.')
+            raise forms.ValidationError(translate('expense.receipt_type',self.language))
         return receipt
 
 
@@ -50,9 +65,10 @@ class ConsultantExpenseForm(forms.Form):
 def consultant_expense_entry(request):
     profile = getattr(request.user, 'profile', None)
     if not profile or profile.role != 'consultant' or not profile.is_active or not profile.branch_id:
-        raise PermissionDenied('ثبت هزینه مشاور فقط برای مشاور فعال دارای شعبه مجاز است.')
+        raise PermissionDenied(translate('expense.permission',getattr(request,'ui_language','fa')))
 
-    form = ConsultantExpenseForm(request.POST or None, request.FILES or None)
+    language=getattr(request,'ui_language','fa')
+    form = ConsultantExpenseForm(request.POST or None, request.FILES or None, language=language)
     if request.method == 'POST' and form.is_valid():
         cleaned = form.cleaned_data
         category_label = dict(COST_TYPES)[cleaned['category']]
@@ -90,7 +106,7 @@ def consultant_expense_entry(request):
                 summary=f'ثبت هزینه مشاور: {category_label}',
                 metadata={'amount_rial': str(entry.amount), 'branch_id': profile.branch_id},
             )
-        messages.success(request, 'هزینه همراه رسید ثبت شد و برای تأیید مالی در انتظار بررسی است.')
+        messages.success(request, translate('expense.success',language))
         return redirect('consultant_expense_entry')
 
     recent = list(FinancialTransaction.objects.filter(
@@ -98,6 +114,8 @@ def consultant_expense_entry(request):
     ).order_by('-created_at')[:12])
     for entry in recent:
         entry.amount_toman_display = int(entry.amount / Decimal('10'))
+        category=(entry.raw_data or {}).get('category','')
+        entry.localized_heading=translate_choice('expense_category',category,language,fallback=entry.account_heading)
     return render(request, 'core/consultant_expense_entry.html', {
         'form': form, 'recent_expenses': recent, 'branch': profile.branch,
     })
