@@ -18,6 +18,7 @@ from . import device_booking_views
 from . import consultant_expense_views
 from .mcp import mcp_endpoint
 urlpatterns=[
+path('workspace/language/',views.language_switch,name='language_switch'),
 path('workspace/country/',views.country_switch,name='country_switch'),
 path('settings/device-capacity/',device_booking_views.device_capacity_settings,name='device_capacity_settings'),
 path('device-bookings/',device_booking_views.device_booking_schedule,name='device_booking_schedule'),
