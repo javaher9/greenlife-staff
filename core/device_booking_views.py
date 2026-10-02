@@ -560,6 +560,7 @@ def device_booking_schedule(request):
         'devices':device_lines,'device_lines':device_lines,
         'device_cards':device_cards,
         'can_book':profile.role in ('consultant','admin','manager'),
+        'can_update_status':profile.role in ('consultant','receptionist','admin','manager'),
         'can_manage':profile.role in ('admin','manager','internal_manager'),
         'is_admin':profile.role=='admin',
         'branches':_device_branches(),
