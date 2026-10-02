@@ -210,7 +210,7 @@ class EmployeeCreateForm(forms.Form):
     employee_code=forms.CharField(label='کد پرسنلی',required=False)
     job_title=forms.CharField(label='سمت',required=False); phone=forms.CharField(label='تلفن',required=False); birth_date=JalaliDateField(label='تاریخ تولد',required=False)
     country=forms.ModelChoiceField(label='کشور',queryset=Country.objects.filter(is_active=True),required=False)
-    preferred_language=forms.ChoiceField(label='زبان پنل',choices=Country.LANGUAGE_CHOICES,initial='fa')
+    preferred_language=forms.ChoiceField(label='زبان پنل',choices=Country.LANGUAGE_CHOICES,initial='fa',required=False)
     branch=forms.ModelChoiceField(label='شعبه',queryset=Branch.objects.filter(is_active=True),required=False); role=forms.ChoiceField(label='نقش',choices=EmployeeProfile.ROLE_CHOICES)
     def clean_username(self):
         value=self.cleaned_data['username'].strip()
@@ -236,6 +236,8 @@ class EmployeeCreateForm(forms.Form):
             country=data['country']
         if branch and country and branch.country_id and branch.country_id!=country.id:
             self.add_error('branch','شعبه باید متعلق به کشور انتخاب‌شده باشد.')
+        if not data.get('preferred_language'):
+            data['preferred_language']=getattr(country,'primary_language','fa') or 'fa'
         return data
 
 
@@ -588,7 +590,7 @@ class EmployeeEditForm(forms.Form):
     birth_date=JalaliDateField(label='تاریخ تولد',required=False)
     start_date=JalaliDateField(label='شروع همکاری',required=False)
     country=forms.ModelChoiceField(label='کشور',queryset=Country.objects.filter(is_active=True),required=False)
-    preferred_language=forms.ChoiceField(label='زبان پنل',choices=Country.LANGUAGE_CHOICES)
+    preferred_language=forms.ChoiceField(label='زبان پنل',choices=Country.LANGUAGE_CHOICES,required=False)
     branch=forms.ModelChoiceField(label='شعبه',queryset=Branch.objects.filter(is_active=True),required=False)
     role=forms.ChoiceField(label='نقش',choices=EmployeeProfile.ROLE_CHOICES)
     shift_group=forms.ModelChoiceField(label='گروه شیفت',queryset=None,required=False)
@@ -645,6 +647,8 @@ class EmployeeEditForm(forms.Form):
             country=data['country']
         if branch and country and branch.country_id and branch.country_id!=country.id:
             self.add_error('branch','شعبه باید متعلق به کشور انتخاب‌شده باشد.')
+        if not data.get('preferred_language'):
+            data['preferred_language']=getattr(country,'primary_language',None) or self.employee.preferred_language or 'fa'
         return data
 
     def save(self):
