@@ -893,6 +893,39 @@ EN.update({
 TRANSLATIONS = {'fa': FA, 'tr': TR, 'en': EN}
 
 CHOICES = {
+    'expense_category': {
+        'device': {'fa':'دستگاه و تجهیزات','tr':'Cihaz ve Ekipman','en':'Devices & Equipment'},
+        'lipolytic': {'fa':'لیپولیتیک و مزوتراپی','tr':'Lipolitik ve Mezoterapi','en':'Lipolytic & Mesotherapy'},
+        'skin': {'fa':'پوست و زیبایی','tr':'Cilt ve Estetik','en':'Skin & Beauty'},
+        'daya': {'fa':'دایا','tr':'Daya','en':'Daya'},
+        'consumables': {'fa':'مواد مصرفی','tr':'Sarf Malzemeleri','en':'Consumables'},
+        'other': {'fa':'سایر','tr':'Diğer','en':'Other'},
+    },
+    'finance_sale_reason': {
+        'device_package': {'fa':'پکیج دستگاه','tr':'Cihaz Paketi','en':'Device Package'},
+        'daya_package': {'fa':'پکیج دایا','tr':'Daya Paketi','en':'Daya Package'},
+        'lipolytic': {'fa':'لیپولیتیک','tr':'Lipolitik','en':'Lipolytic'},
+        'skin': {'fa':'پوست','tr':'Cilt','en':'Skin'},
+        'other': {'fa':'سایر','tr':'Diğer','en':'Other'},
+    },
+    'finance_sale_origin': {
+        'afsariyeh': {'fa':'فروش افسریه','tr':'Yönlendirilmiş Satış','en':'Referred Sale'},
+        'branch_walk_in': {'fa':'مراجعه مستقیم شعبه','tr':'Doğrudan Şube Başvurusu','en':'Direct Branch Visit'},
+    },
+    'cash_currency': {
+        'IRR': {'fa':'ریال ایران','tr':'İran Riyali','en':'Iranian Rial'},
+        'USD': {'fa':'دلار آمریکا','tr':'ABD Doları','en':'US Dollar'},
+        'EUR': {'fa':'یورو','tr':'Euro','en':'Euro'},
+        'TRY': {'fa':'لیر ترکیه','tr':'Türk Lirası','en':'Turkish Lira'},
+        'AED': {'fa':'درهم امارات','tr':'BAE Dirhemi','en':'UAE Dirham'},
+        'OTHER': {'fa':'سایر ارزها','tr':'Diğer Para Birimleri','en':'Other Currencies'},
+    },
+    'review_status': {
+        'pending': {'fa':'در انتظار بررسی','tr':'İnceleme Bekliyor','en':'Pending Review'},
+        'approved': {'fa':'تأییدشده','tr':'Onaylandı','en':'Approved'},
+        'needs_correction': {'fa':'نیازمند اصلاح','tr':'Düzeltme Gerekli','en':'Needs Correction'},
+        'cancelled': {'fa':'ابطال‌شده','tr':'İptal Edildi','en':'Cancelled'},
+    },
     'lead_source': {
         'panel': {'fa':'ثبت در پنل','tr':'Panel Kaydı','en':'Panel Entry'},
         'link': {'fa':'لینک اختصاصی','tr':'Özel Link','en':'Personal Link'},
