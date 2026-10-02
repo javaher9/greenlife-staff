@@ -36,6 +36,36 @@ def role_of(user): return getattr(getattr(user,'profile',None),'role','employee'
 
 
 @require_POST
+def language_switch(request):
+    """Switch presentation language without changing the selected country."""
+    from .staff_i18n import (
+        SUPPORTED_UI_LANGUAGE_CODES,
+        UI_LANGUAGE_SESSION_KEY,
+        normalize_ui_language,
+    )
+
+    raw=(request.POST.get('language') or '').strip().lower()
+    current=getattr(request,'ui_language','fa')
+    language=normalize_ui_language(raw) if raw in SUPPORTED_UI_LANGUAGE_CODES else current
+    request.session[UI_LANGUAGE_SESSION_KEY]=language
+
+    if request.user.is_authenticated:
+        profile=getattr(request.user,'profile',None)
+        if profile and profile.preferred_language != language:
+            profile.preferred_language=language
+            profile.save(update_fields=['preferred_language'])
+
+    target=(request.POST.get('next') or '').strip() or reverse('dashboard')
+    if not url_has_allowed_host_and_scheme(
+        target,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        target=reverse('dashboard')
+    return redirect(target)
+
+
+@require_POST
 @login_required
 def country_switch(request):
     """Switch the management workspace without changing any underlying records."""
@@ -195,7 +225,8 @@ def login_view(request):
         secret=form.cleaned_data.get('password') or ''
         matched=User.objects.filter(username__iexact=raw_username,is_active=True).order_by('id').first()
         user=None
-        auth_error='نام کاربری یا رمز صحیح نیست.'
+        from .staff_i18n import translate
+        auth_error=translate('login.invalid',getattr(request,'ui_language','fa'))
 
         if matched:
             if mobile_login:
@@ -207,7 +238,7 @@ def login_view(request):
                     # existing desktop password on mobile until a PIN is assigned.
                     user=authenticate(request,username=matched.username,password=secret)
                 elif status=='locked':
-                    auth_error='ورود موبایل موقتاً قفل شده است. ده دقیقه دیگر دوباره امتحان کنید.'
+                    auth_error=translate('login.mobile_locked',getattr(request,'ui_language','fa'))
             else:
                 user=authenticate(request,username=matched.username,password=secret)
 
