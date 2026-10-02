@@ -280,7 +280,7 @@
               <div class="cc-v5-person-avatar" title="جای عکس مراجع">{{ lead.full_name|first|default:"؟" }}</div>
               <div class="cc-v5-person-copy">
                 <strong>{{ lead.full_name }}</strong>
-                <div class="cc-v5-person-meta"><b>{{ lead.phone }}</b><span class="cc-v5-tag source">{{ lead.source_origin_display }}</span><span class="cc-v5-tag group">{{ lead.group.name|default:'بدون گروه' }}</span><span>معرف: {{ lead.referrer }}</span></div>
+                <div class="cc-v5-person-meta"><b>{{ lead.phone }}</b>{% if lead.country %}<span class="cc-v5-tag source">{{ lead.country.flag_emoji }} {{ lead.country.code }}</span>{% endif %}<span class="cc-v5-tag source">{{ lead.source_origin_display }}</span><span class="cc-v5-tag group">{{ lead.group.name|default:'بدون گروه' }}</span><span>معرف: {{ lead.referrer }}</span></div>
               </div>
             </div>
             <div class="cc-v5-service">{{ lead.interested_service|default:'خدمت مشخص نشده' }}</div>
