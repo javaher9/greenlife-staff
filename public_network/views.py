@@ -250,7 +250,10 @@ def management(request):
         messages.error(request, 'این بخش فقط برای مدیریت مرکزی شبکه عمومی قابل دسترسی است.')
         return redirect('dashboard')
 
-    members = PublicNetworkMember.objects.filter(is_active=True).select_related('user', 'sponsor__user')
+    members = PublicNetworkMember.objects.filter(is_active=True).select_related('user', 'sponsor__user', 'country')
+    market_filter=(request.GET.get('market') or '').strip().upper()
+    if market_filter in ('IR','TR'):
+        members=members.filter(country__code=market_filter)
     today = timezone.localdate()
     month_start = today.replace(day=1)
     latest = members.order_by('-created_at')[:30]
@@ -265,6 +268,12 @@ def management(request):
         'source_counts': source_counts,
         'top_members': top,
         'story_signup_url': _public_base(request) + reverse('public_network:signup') + '?src=story',
+        'market_filter': market_filter,
+        'market_counts': {
+            'all': PublicNetworkMember.objects.filter(is_active=True).count(),
+            'IR': PublicNetworkMember.objects.filter(is_active=True,country__code='IR').count(),
+            'TR': PublicNetworkMember.objects.filter(is_active=True,country__code='TR').count(),
+        },
     })
 
 
