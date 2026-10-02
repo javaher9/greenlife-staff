@@ -1,4 +1,4 @@
-{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+{% extends 'core/base.html' %}{% load jalali_tags staff_i18n %}{% block content %}
 <style>
 /* Internal Messaging v4 — full-width desktop/tablet workspace */
 .msg-shell{
@@ -10,7 +10,7 @@
   display:flex!important;align-items:center!important;justify-content:space-between!important;gap:16px!important;
   width:100%!important;margin:0 0 11px!important;padding:13px 16px!important;
   border:1px solid #e5eaf1!important;border-radius:16px!important;background:#fff!important;
-  box-shadow:0 6px 20px rgba(42,54,78,.045)!important;direction:rtl!important;
+  box-shadow:0 6px 20px rgba(42,54,78,.045)!important;direction:var(--gl-msg-dir,rtl)!important;
 }
 .msg-page-title{display:flex!important;align-items:center!important;gap:11px!important;min-width:0!important}
 .msg-page-icon{
@@ -39,14 +39,14 @@
   grid-area:contacts!important;position:relative!important;inset:auto!important;width:auto!important;height:auto!important;
   min-width:0!important;max-width:none!important;margin:0!important;padding:0!important;overflow:hidden!important;
   border:1px solid #e2e7ee!important;border-radius:17px!important;background:#fff!important;background-image:none!important;
-  box-shadow:0 8px 24px rgba(38,50,73,.05)!important;direction:rtl!important;
+  box-shadow:0 8px 24px rgba(38,50,73,.05)!important;direction:var(--gl-msg-dir,rtl)!important;
 }
 .msg-thread{
   grid-area:thread!important;position:relative!important;width:auto!important;min-width:0!important;max-width:none!important;
   margin:0!important;padding:0!important;overflow:hidden!important;display:grid!important;
   grid-template-rows:auto minmax(520px,calc(100vh - 295px)) auto!important;
   border:1px solid #e2e7ee!important;border-radius:17px!important;background:#fff!important;background-image:none!important;
-  box-shadow:0 8px 24px rgba(38,50,73,.05)!important;direction:rtl!important;
+  box-shadow:0 8px 24px rgba(38,50,73,.05)!important;direction:var(--gl-msg-dir,rtl)!important;
 }
 
 .msg-contacts-head,.msg-thread-head{
@@ -119,7 +119,7 @@
 
 .msg-thread-head{
   min-height:76px!important;padding:13px 16px!important;display:flex!important;justify-content:space-between!important;
-  align-items:center!important;gap:12px!important;direction:rtl!important;
+  align-items:center!important;gap:12px!important;direction:var(--gl-msg-dir,rtl)!important;
 }
 .msg-room-person{display:flex!important;align-items:center!important;gap:10px!important;min-width:0!important}
 .msg-room-avatar{
@@ -144,7 +144,7 @@
 .msg-stream{
   width:100%!important;min-width:0!important;padding:18px 20px!important;overflow:auto!important;
   background:#f8fafc!important;background-image:none!important;display:flex!important;flex-direction:column!important;gap:8px!important;
-  direction:rtl!important;
+  direction:var(--gl-msg-dir,rtl)!important;
 }
 .msg-day-hint{
   align-self:center!important;margin:0 0 5px!important;padding:4px 8px!important;border-radius:999px!important;
@@ -179,7 +179,7 @@
 .msg-compose{
   width:100%!important;min-width:0!important;margin:0!important;padding:10px 12px!important;border:0!important;border-top:1px solid #e9edf3!important;
   background:#fff!important;background-image:none!important;display:grid!important;grid-template-columns:180px minmax(0,1fr) 82px!important;
-  gap:7px!important;align-items:stretch!important;direction:rtl!important;box-shadow:none!important;
+  gap:7px!important;align-items:stretch!important;direction:var(--gl-msg-dir,rtl)!important;box-shadow:none!important;
 }
 .msg-compose select,.msg-compose textarea{
   width:100%!important;margin:0!important;border:1px solid #dce2eb!important;border-radius:10px!important;
@@ -267,30 +267,30 @@
   <header class="msg-page-head">
     <div class="msg-page-title">
       <span class="msg-page-icon">✉</span>
-      <div><h1>مرکز پیام داخلی</h1><p>گفتگوی عمومی و پیام مستقیم بین پرسنل؛ سریع، خصوصی و داخل Staff App</p></div>
+      <div><h1>{% gl_t 'msg.title' %}</h1><p>{% gl_t 'msg.intro' %}</p></div>
     </div>
     <div class="msg-page-stats">
-      <span class="msg-stat-pill green"><b>{{ staff_count }}</b> عضو فعال</span>
-      <span class="msg-stat-pill purple"><b>{{ unread_total }}</b> خوانده‌نشده</span>
-      <span class="msg-stat-pill">↻ به‌روزرسانی خودکار</span>
+      <span class="msg-stat-pill green"><b>{{ staff_count }}</b> {% gl_t 'msg.active_member' %}</span>
+      <span class="msg-stat-pill purple"><b>{{ unread_total }}</b> {% gl_t 'msg.unread' %}</span>
+      <span class="msg-stat-pill">↻ {% gl_t 'msg.auto_refresh' %}</span>
     </div>
   </header>
 
   <div class="msg-layout">
     <aside class="msg-contacts">
       <div class="msg-contacts-head">
-        <div class="msg-contacts-head-top"><div><h2>همکاران</h2><p>برای شروع گفتگو یک نفر را انتخاب کنید</p></div><span class="msg-contact-total">{{ contact_rows|length }}</span></div>
+        <div class="msg-contacts-head-top"><div><h2>{% gl_t 'msg.colleagues' %}</h2><p>{% gl_t 'msg.select_person' %}</p></div><span class="msg-contact-total">{{ contact_rows|length }}</span></div>
       </div>
 
       <div class="msg-contact-search">
-        <div class="msg-contact-search-wrap"><input id="msgContactSearch" type="search" placeholder="جستجوی نام، سمت یا شعبه..."></div>
+        <div class="msg-contact-search-wrap"><input id="msgContactSearch" type="search" placeholder="{% gl_t 'msg.search' %}"></div>
       </div>
 
       <div class="msg-public-wrap">
         <a class="msg-contact public {% if not selected_contact %}active{% endif %}" href="{% url 'internal_messages' %}">
           <span class="msg-avatar">◎</span>
-          <span class="msg-contact-copy"><strong>گفتگوی عمومی پرسنل</strong><small>پیام قابل مشاهده برای همه اعضای فعال</small></span>
-          <span class="msg-contact-side"><span class="msg-contact-time">عمومی</span></span>
+          <span class="msg-contact-copy"><strong>{% gl_t 'msg.public_chat' %}</strong><small>{% gl_t 'msg.public_visible' %}</small></span>
+          <span class="msg-contact-side"><span class="msg-contact-time">{% gl_t 'msg.public' %}</span></span>
         </a>
       </div>
 
@@ -303,7 +303,7 @@
           <span class="msg-contact-copy">
             <strong>{{ row.user.get_full_name|default:row.user.username }}</strong>
             <small>{{ row.user.profile.job_title|default:row.user.profile.get_role_display }}{% if row.user.profile.branch %} · {{ row.user.profile.branch }}{% endif %}</small>
-            {% if row.last_message %}<span class="msg-contact-preview">{{ row.last_message.body|truncatechars:55 }}</span>{% else %}<span class="msg-contact-preview">هنوز گفتگویی شروع نشده</span>{% endif %}
+            {% if row.last_message %}<span class="msg-contact-preview">{{ row.last_message.body|truncatechars:55 }}</span>{% else %}<span class="msg-contact-preview">{% gl_t 'msg.no_chat' %}</span>{% endif %}
           </span>
           <span class="msg-contact-side">
             {% if row.unread %}<b class="msg-unread">{{ row.unread }}</b>{% endif %}
@@ -311,7 +311,7 @@
           </span>
         </a>
         {% empty %}
-        <div class="msg-empty"><b>◎</b><span>همکاری برای نمایش وجود ندارد</span></div>
+        <div class="msg-empty"><b>◎</b><span>{% gl_t 'msg.no_colleague' %}</span></div>
         {% endfor %}
       </div>
     </aside>
@@ -328,12 +328,12 @@
         </div>
         <div class="msg-room-actions">
           <span class="msg-room-pill {% if selected_contact %}private{% endif %}">{{ room_kind }}</span>
-          <span class="msg-room-pill live">پیام‌ها خودکار تازه می‌شوند</span>
+          <span class="msg-room-pill live">{% gl_t 'msg.auto_fresh' %}</span>
         </div>
       </header>
 
       <div class="msg-stream" id="msgStream">
-        {% if thread %}<div class="msg-day-hint">آخرین پیام‌های این گفتگو</div>{% endif %}
+        {% if thread %}<div class="msg-day-hint">{% gl_t 'msg.latest' %}</div>{% endif %}
         {% for item in thread %}
         <article class="msg-bubble {% if item.sender_id == user.id %}mine{% else %}theirs{% endif %}" data-id="{{ item.pk }}">
           <strong>{{ item.sender.get_full_name|default:item.sender.username }}</strong>
@@ -341,17 +341,17 @@
           <small>{{ item.created_at|jdatetime }}</small>
         </article>
         {% empty %}
-        <div class="msg-empty" id="msgEmpty"><b>✉</b><span>هنوز پیامی در این گفتگو نیست</span>اولین پیام را از کادر پایین ارسال کنید.</div>
+        <div class="msg-empty" id="msgEmpty"><b>✉</b><span>{% gl_t 'msg.no_message' %}</span>{% gl_t 'msg.first' %}</div>
         {% endfor %}
       </div>
 
       <form class="msg-compose" method="post">{% csrf_token %}
-        <select name="recipient" aria-label="گیرنده">
-          <option value="all" {% if not selected_contact %}selected{% endif %}>همه پرسنل</option>
+        <select name="recipient" aria-label="{% gl_t 'msg.recipient' %}">
+          <option value="all" {% if not selected_contact %}selected{% endif %}>{% gl_t 'msg.all_staff' %}</option>
           {% for row in contact_rows %}<option value="{{ row.user.pk }}" {% if selected_contact and selected_contact.pk == row.user.pk %}selected{% endif %}>{{ row.user.get_full_name|default:row.user.username }}</option>{% endfor %}
         </select>
-        <textarea name="body" maxlength="2000" required placeholder="{% if selected_contact %}پیام به {{ selected_contact.get_full_name|default:selected_contact.username }}...{% else %}پیام برای گفتگوی عمومی...{% endif %}"></textarea>
-        <button type="submit">ارسال</button>
+        <textarea name="body" maxlength="2000" required placeholder="{% if selected_contact %}{% gl_t 'msg.send_to' name=selected_contact.get_full_name|default:selected_contact.username %}{% else %}پیام برای گفتگوی {% gl_t 'msg.public' %}...{% endif %}"></textarea>
+        <button type="submit">{% gl_t 'common.send' %}</button>
       </form>
     </section>
   </div>
