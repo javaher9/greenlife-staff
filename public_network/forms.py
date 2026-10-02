@@ -120,6 +120,14 @@ class TurkeyNetworkSignupForm(PublicNetworkSignupForm):
         })
         self.fields['username'].help_text = 'Sonraki girişler için / For future sign-ins'
         self.fields['password'].help_text = 'En az 6 karakter / At least 6 characters'
+        for field in self.fields.values():
+            field.error_messages['required'] = 'Bu alan zorunludur / This field is required.'
+
+    def clean_username(self):
+        value = self.cleaned_data['username'].strip()
+        if User.objects.filter(username__iexact=value).exists():
+            raise forms.ValidationError('Bu kullanıcı adı kullanılıyor / This username is already in use.')
+        return value
 
     def clean_phone(self):
         value = (self.cleaned_data.get('phone') or '').strip()
@@ -131,11 +139,28 @@ class TurkeyNetworkSignupForm(PublicNetworkSignupForm):
         elif cleaned.startswith('05'):
             cleaned = '+90' + cleaned[1:]
         digits = ''.join(ch for ch in cleaned if ch.isdigit())
+        if len(digits) == 10 and digits.startswith('5') and not cleaned.startswith('+'):
+            cleaned = '+90' + digits
+            digits = '90' + digits
         if len(digits) < 10 or len(digits) > 15:
             raise forms.ValidationError('Geçerli bir telefon numarası girin / Enter a valid mobile number.')
         if PublicNetworkMember.objects.filter(phone=cleaned, is_active=True).exists():
             raise forms.ValidationError('Bu telefonla aktif üyelik mevcut / An active account already exists for this number.')
         return cleaned
+
+    def clean_photo(self):
+        photo = self.cleaned_data.get('photo')
+        if photo and getattr(photo, 'size', 0) > 8 * 1024 * 1024:
+            raise forms.ValidationError('Fotoğraf 8 MB altında olmalı / Photo must be under 8 MB.')
+        return photo
+
+    def clean(self):
+        data = forms.Form.clean(self)
+        if data.get('website'):
+            raise forms.ValidationError('Geçersiz istek / Invalid request.')
+        if data.get('password') and data.get('password_confirm') and data['password'] != data['password_confirm']:
+            self.add_error('password_confirm', 'Şifreler eşleşmiyor / Passwords do not match.')
+        return data
 
 
 class TurkeyNetworkLoginForm(PublicNetworkLoginForm):
