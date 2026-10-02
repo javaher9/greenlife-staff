@@ -792,7 +792,7 @@ def report_create(request):
             messages.info(request,'این گزارش قبلاً ثبت شده بود؛ از ثبت تکراری جلوگیری شد.')
             return redirect('report_detail',pk=existing.pk)
 
-    form=ReportForm(request.POST or None,request.FILES or None)
+    form=ReportForm(request.POST or None,request.FILES or None,language=getattr(request,'ui_language','fa'))
     if request.method=='POST' and form.is_valid():
         obj=form.save(commit=False)
         obj.user=request.user
