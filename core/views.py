@@ -219,7 +219,7 @@ def login_view(request):
         return redirect('dashboard')
 
     mobile_login=_is_mobile_request(request)
-    form=StaffLoginForm(request.POST or None,mobile=mobile_login)
+    form=StaffLoginForm(request.POST or None,mobile=mobile_login,language=getattr(request,'ui_language','fa'))
     if request.method=='POST' and form.is_valid():
         raw_username=(form.cleaned_data.get('username') or '').strip()
         secret=form.cleaned_data.get('password') or ''
