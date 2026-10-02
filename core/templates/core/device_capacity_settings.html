@@ -63,10 +63,12 @@ linear-gradient(135deg,#123c34 0%,#102c38 45%,#182846 100%);border-color:rgba(10
 .cap-type-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .cap-type-new{background:linear-gradient(145deg,rgba(54,38,83,.56),rgba(24,45,66,.52));border-color:rgba(142,106,220,.38)}
 .cap-type-new .cap-badge{background:linear-gradient(135deg,rgba(130,88,214,.30),rgba(67,127,201,.20));border-color:rgba(158,124,225,.28);color:#e4d9ff!important}
-.cap-type-edit{display:grid!important;grid-template-columns:minmax(150px,1.15fr) minmax(105px,.65fr) minmax(115px,.65fr) minmax(115px,.65fr) auto;align-items:end!important;gap:9px!important}
+.cap-type-edit{display:grid!important;grid-template-columns:minmax(130px,.9fr) minmax(105px,.55fr) minmax(115px,.55fr) auto auto;align-items:end!important;gap:8px!important}
 .cap-type-edit label{min-width:0}.cap-type-edit input{width:100%;min-width:0}
-.cap-type-edit input[readonly]{background:#141c2c!important;border-color:#544a70!important;color:#cfc4e8!important}
-@media(max-width:1100px){.cap-type-edit{grid-template-columns:repeat(2,minmax(0,1fr))}.cap-type-edit button{grid-column:1/-1}}
+.cap-name-field{max-width:220px}
+.cap-inline-delete{background:linear-gradient(135deg,#702f3a,#9b4050)!important;color:#ffecef!important;box-shadow:none!important;border:1px solid rgba(230,120,140,.22)!important}
+.cap-inline-delete:hover{filter:brightness(1.08)}
+@media(max-width:1100px){.cap-type-edit{grid-template-columns:repeat(2,minmax(0,1fr))}.cap-type-edit button{grid-column:auto}.cap-name-field{max-width:none}}
 
 .cap-switch{min-height:36px!important;padding:5px 8px!important;display:inline-flex!important;align-items:center!important;gap:7px!important;border-radius:999px!important;background:linear-gradient(135deg,#172a3f,#223149)!important;border:1px solid rgba(129,148,185,.28)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)!important}
 .cap-switch-label{font-size:8.5px;font-weight:950;color:#8797a8;transition:.18s ease}
@@ -114,33 +116,25 @@ linear-gradient(135deg,#123c34 0%,#102c38 45%,#182846 100%);border-color:rgba(10
 <div class="cap-grid">
 <section class="cap-panel">
 <div class="cap-section-head"><div><h2>بانک انواع دستگاه</h2><div class="cap-note">مدل‌های اصلی دستگاه را اینجا تعریف، ویرایش یا حذف کنید؛ بعد در هر مرکز از همین بانک دستگاه فیزیکی می‌چینید.</div></div><span class="cap-icon type-icon">◷</span></div>
-<div class="cap-new-box cap-type-new"><span class="cap-badge">＋ نوع دستگاه جدید</span><form method="post">{% csrf_token %}<input type="hidden" name="branch" value="{{ branch.pk }}"><input type="hidden" name="action" value="new_type"><label>نام دستگاه<input name="name" placeholder="مثلاً SculpSure" required></label><label>کد دستگاه<input name="code" placeholder="مثلاً XR یا SCULP" maxlength="24" required></label><label>درمان (دقیقه)<input type="number" min="10" max="240" name="treatment_minutes" value="60" required></label><label>آماده‌سازی (دقیقه)<input type="number" min="0" max="240" name="preparation_minutes" value="20" required></label><button type="submit">افزودن به بانک</button></form></div>
+<div class="cap-new-box cap-type-new"><span class="cap-badge">＋ نوع دستگاه جدید</span><form method="post">{% csrf_token %}<input type="hidden" name="branch" value="{{ branch.pk }}"><input type="hidden" name="action" value="new_type"><label class="cap-name-field">نام دستگاه<input name="name" placeholder="مثلاً کرایو یا SculpSure" required></label><label>درمان (دقیقه)<input type="number" min="10" max="240" name="treatment_minutes" value="60" required></label><label>آماده‌سازی (دقیقه)<input type="number" min="0" max="240" name="preparation_minutes" value="20" required></label><button type="submit">افزودن به بانک</button></form></div>
 {% for t in types %}<div class="cap-row cap-type-row">
-<div class="cap-type-head">
-  <strong>{{ t.name }} · {{ t.code }}</strong>
-  <div class="cap-type-actions">
-    <span class="cap-catalog-chip">در بانک دستگاه‌ها</span>
-    <form method="post" class="cap-toggle-form" onsubmit="return confirm('نوع دستگاه «{{ t.name }} · {{ t.code }}» از بانک حذف شود؟ اگر در مرکزی استفاده شده باشد سیستم اجازه حذف نمی‌دهد.');">{% csrf_token %}
-      <input type="hidden" name="branch" value="{{ branch.pk }}">
-      <input type="hidden" name="action" value="delete_type">
-      <input type="hidden" name="type_id" value="{{ t.pk }}">
-      <button class="cap-toggle cap-delete" type="submit">حذف</button>
-    </form>
-  </div>
-</div>
-<form method="post" class="cap-type-edit">{% csrf_token %}<input type="hidden" name="branch" value="{{ branch.pk }}"><input type="hidden" name="action" value="type"><input type="hidden" name="type_id" value="{{ t.pk }}">
-<label>نام دستگاه<input name="name" value="{{ t.name }}" required></label>
-<label>کد<input name="code" value="{{ t.code }}" maxlength="24" {% if t.code == 'DIF70' %}readonly title="کد DIF70 برای Double Define رزرو شده است"{% endif %} required></label>
-<label>درمان (دقیقه)<input type="number" min="10" max="240" name="treatment_minutes" value="{{ t.treatment_minutes }}"></label>
-<label>آماده‌سازی (دقیقه)<input type="number" min="0" max="240" name="preparation_minutes" value="{{ t.preparation_minutes }}"></label>
-<button>ذخیره ویرایش</button></form></div>{% empty %}<p class="cap-note cap-muted">هنوز نوع دستگاهی در بانک ثبت نشده است.</p>{% endfor %}
+<form method="post" class="cap-type-edit">{% csrf_token %}
+  <input type="hidden" name="branch" value="{{ branch.pk }}">
+  <input type="hidden" name="action" value="type">
+  <input type="hidden" name="type_id" value="{{ t.pk }}">
+  <label class="cap-name-field">نام دستگاه<input name="name" value="{{ t.name }}" required></label>
+  <label>درمان (دقیقه)<input type="number" min="10" max="240" name="treatment_minutes" value="{{ t.treatment_minutes }}"></label>
+  <label>آماده‌سازی (دقیقه)<input type="number" min="0" max="240" name="preparation_minutes" value="{{ t.preparation_minutes }}"></label>
+  <button>ذخیره</button>
+  <button class="cap-inline-delete" type="submit" formaction="" name="action" value="delete_type" onclick="return confirm('نوع دستگاه «{{ t.name }}» از بانک حذف شود؟ اگر در مرکزی استفاده شده باشد سیستم اجازه حذف نمی‌دهد.');">حذف</button>
+</form></div>{% empty %}<p class="cap-note cap-muted">هنوز نوع دستگاهی در بانک ثبت نشده است.</p>{% endfor %}
 </section>
 <section class="cap-panel">
 <div class="cap-section-head"><div><h2>دستگاه‌های این مرکز</h2><div class="cap-note">برای هر دستگاه یک کد مشخص مثل RSA1، CRYO1 یا DF1 ثبت کنید؛ فقط دستگاه‌های روشن وارد نوبت‌دهی می‌شوند.</div></div><span class="cap-icon device-icon">▣</span></div>
-<div class="cap-new-box device"><span class="cap-badge">＋ چیدمان دستگاه فیزیکی</span><form method="post">{% csrf_token %}<input type="hidden" name="action" value="device"><input type="hidden" name="branch" value="{{ branch.pk }}"><label>کد / نام دستگاه<input name="name" placeholder="مثلاً RSA1 یا CRYO2" required></label><label>نوع دستگاه<select name="type_id">{% for t in active_types %}<option value="{{ t.pk }}">{{ t.name }} · {{ t.code }}</option>{% endfor %}</select></label><button>افزودن به این مرکز</button></form></div>
+<div class="cap-new-box device"><span class="cap-badge">＋ چیدمان دستگاه فیزیکی</span><form method="post">{% csrf_token %}<input type="hidden" name="action" value="device"><input type="hidden" name="branch" value="{{ branch.pk }}"><label>کد / نام دستگاه<input name="name" placeholder="مثلاً RSA1 یا CRYO2" required></label><label>نوع دستگاه<select name="type_id">{% for t in active_types %}<option value="{{ t.pk }}">{{ t.name }}</option>{% endfor %}</select></label><button>افزودن به این مرکز</button></form></div>
 {% for device in devices %}<div class="cap-row cap-device-row {% if not device.is_active %}is-off{% endif %}">
 <div class="cap-device-head">
-  <strong>{{ device.name }} · {{ device.device_type.code }}</strong>
+  <strong>{{ device.name }} · {{ device.device_type.name }}</strong>
   <div class="cap-status-wrap">
     <form method="post" class="cap-toggle-form">{% csrf_token %}
       <input type="hidden" name="action" value="toggle_device">
