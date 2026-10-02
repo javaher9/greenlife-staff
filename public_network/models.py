@@ -18,6 +18,15 @@ class PublicNetworkMember(models.Model):
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='public_network_member')
+    country = models.ForeignKey(
+        'core.Country', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='public_network_members',
+    )
+    preferred_language = models.CharField(
+        max_length=5,
+        choices=[('fa','فارسی'),('tr','Türkçe'),('en','English'),('ar','العربية')],
+        default='fa',
+    )
     sponsor = models.ForeignKey(
         'self', on_delete=models.PROTECT, null=True, blank=True, related_name='members'
     )
