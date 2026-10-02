@@ -1,41 +1,41 @@
-{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+{% extends 'core/base.html' %}{% load jalali_tags staff_i18n %}{% block content %}
 <div class="owner-dashboard-v35 action-center-dashboard-v35">
   <section class="owner-hero-v35">
     <div class="owner-hero-copy">
-      <h1>مرکز اقدام مدیر</h1>
-      <p>{{ today|jdate }} · مواردی که امروز نیاز به تصمیم یا پیگیری دارند</p>
+      <h1>{% gl_t 'action.title' %}</h1>
+      <p>{% gl_t 'action.subtitle' date=today|jdate %}</p>
     </div>
     <div class="owner-hero-orb" aria-hidden="true"></div>
     <div class="owner-hero-actions">
-      <a class="owner-new-request" href="?priority=critical"><span>⚡</span> فقط موارد فوری</a>
-      <a class="owner-action-back-v35" href="/live/">بازگشت به داشبورد</a>
+      <a class="owner-new-request" href="?priority=critical"><span>⚡</span> {% gl_t "action.urgent_only" %}</a>
+      <a class="owner-action-back-v35" href="/live/">{% gl_t "action.back_dashboard" %}</a>
     </div>
   </section>
 
   <section class="owner-kpis-v35 action-center-kpis-v35">
-    <a class="owner-kpi teal" href="/action-center/"><span class="owner-kpi-icon">▥</span><div><small>کل صف اقدام</small><strong>{{ counts.all }}</strong><em>مورد نیازمند توجه</em></div></a>
-    <a class="owner-kpi amber" href="?priority=critical"><span class="owner-kpi-icon">⚡</span><div><small>فوری</small><strong>{{ counts.critical }}</strong><em>نیازمند اقدام مستقیم</em></div></a>
-    <a class="owner-kpi purple" href="?priority=high"><span class="owner-kpi-icon">◆</span><div><small>مهم</small><strong>{{ counts.high }}</strong><em>اولویت بالا</em></div></a>
-    <a class="owner-kpi blue" href="?priority=medium"><span class="owner-kpi-icon">◷</span><div><small>پیگیری</small><strong>{{ counts.medium }}</strong><em>اولویت متوسط</em></div></a>
-    <a class="owner-kpi green" href="/employees/"><span class="owner-kpi-icon">♟</span><div><small>افراد درگیر</small><strong>{{ counts.people }}</strong><em>پرسنل مرتبط</em></div></a>
+    <a class="owner-kpi teal" href="/action-center/"><span class="owner-kpi-icon">▥</span><div><small>{% gl_t 'action.total_queue' %}</small><strong>{{ counts.all }}</strong><em>{% gl_t 'action.needs_attention' %}</em></div></a>
+    <a class="owner-kpi amber" href="?priority=critical"><span class="owner-kpi-icon">⚡</span><div><small>{% gl_t 'action.critical' %}</small><strong>{{ counts.critical }}</strong><em>{% gl_t 'action.direct_required' %}</em></div></a>
+    <a class="owner-kpi purple" href="?priority=high"><span class="owner-kpi-icon">◆</span><div><small>{% gl_t 'action.high' %}</small><strong>{{ counts.high }}</strong><em>{% gl_t 'action.high_priority' %}</em></div></a>
+    <a class="owner-kpi blue" href="?priority=medium"><span class="owner-kpi-icon">◷</span><div><small>{% gl_t 'action.followup' %}</small><strong>{{ counts.medium }}</strong><em>{% gl_t 'action.medium_priority' %}</em></div></a>
+    <a class="owner-kpi green" href="/employees/"><span class="owner-kpi-icon">♟</span><div><small>{% gl_t 'action.people' %}</small><strong>{{ counts.people }}</strong><em>{% gl_t 'action.related_staff' %}</em></div></a>
   </section>
 
   <section class="action-center-main-v36">
     <article class="action-center-queue-v36">
       <div class="action-center-head-v36">
-        <div><h2>صف اقدامات</h2><span>تصمیم‌های روزانه را همین‌جا نهایی کنید؛ بدون خروج از صفحه.</span></div>
-        <label class="action-center-search-v36"><span aria-hidden="true">⌕</span><input id="actionCenterSearchV36" type="search" placeholder="جستجو نام، شعبه یا موضوع..." autocomplete="off"></label>
+        <div><h2>{% gl_t 'action.queue' %}</h2><span>{% gl_t 'action.queue_help' %}</span></div>
+        <label class="action-center-search-v36"><span aria-hidden="true">⌕</span><input id="actionCenterSearchV36" type="search" placeholder="{% gl_t 'action.search_placeholder' %}" autocomplete="off"></label>
       </div>
 
-      <div class="action-center-filters-v36" aria-label="فیلتر نوع اقدام">
-        <a href="/action-center/" class="{% if not priority_filter and not kind_filter %}active{% endif %}">همه</a>
-        <a href="?kind=missing_attendance" class="{% if kind_filter == 'missing_attendance' %}active{% endif %}">عدم ثبت ورود</a>
-        <a href="?kind=late" class="{% if kind_filter == 'late' %}active{% endif %}">تأخیر</a>
-        <a href="?kind=correction" class="{% if kind_filter == 'correction' %}active{% endif %}">اصلاح حضور</a>
-        <a href="?kind=leave" class="{% if kind_filter == 'leave' %}active{% endif %}">مرخصی</a>
-        <a href="?kind=device" class="{% if kind_filter == 'device' %}active{% endif %}">خرابی دستگاه</a>
-        <a href="?kind=task" class="{% if kind_filter == 'task' %}active{% endif %}">وظایف</a>
-        <a href="?kind=report" class="{% if kind_filter == 'report' %}active{% endif %}">گزارش</a>
+      <div class="action-center-filters-v36" aria-label="{% gl_t 'action.filter_label' %}">
+        <a href="/action-center/" class="{% if not priority_filter and not kind_filter %}active{% endif %}">{% gl_t 'action.all' %}</a>
+        <a href="?kind=missing_attendance" class="{% if kind_filter == 'missing_attendance' %}active{% endif %}">{% gl_t 'action.missing_attendance' %}</a>
+        <a href="?kind=late" class="{% if kind_filter == 'late' %}active{% endif %}">{% gl_t 'action.late' %}</a>
+        <a href="?kind=correction" class="{% if kind_filter == 'correction' %}active{% endif %}">{% gl_t 'action.correction' %}</a>
+        <a href="?kind=leave" class="{% if kind_filter == 'leave' %}active{% endif %}">{% gl_t 'action.leave' %}</a>
+        <a href="?kind=device" class="{% if kind_filter == 'device' %}active{% endif %}">{% gl_t 'action.device' %}</a>
+        <a href="?kind=task" class="{% if kind_filter == 'task' %}active{% endif %}">{% gl_t 'action.tasks' %}</a>
+        <a href="?kind=report" class="{% if kind_filter == 'report' %}active{% endif %}">{% gl_t 'action.report' %}</a>
       </div>
 
       <form class="action-center-csrf" aria-hidden="true">{% csrf_token %}</form>
@@ -43,7 +43,7 @@
         {% for item in items %}
         <div class="action-center-row-v36 {{ item.priority }}" data-kind="{{ item.kind }}" data-url="{{ item.url }}" data-search="{{ item.title }} {{ item.subtitle }} {% if item.user %}{{ item.user.get_full_name|default:item.user.username }} {{ item.user.profile.branch|default:'' }}{% endif %}">
           {% if item.user %}
-          <a class="action-person-v36" href="{% url 'employee_file' item.user.profile.pk %}" title="پرونده {{ item.user.get_full_name|default:item.user.username }}">
+          <a class="action-person-v36" href="{% url 'employee_file' item.user.profile.pk %}" title="{% gl_t 'action.file_title' name=item.user.get_full_name|default:item.user.username %}">
             <span class="action-avatar-v36">{% if item.user.profile.avatar %}<img src="{{ item.user.profile.avatar.url }}" alt="{{ item.user.get_full_name|default:item.user.username }}">{% else %}{{ item.user.first_name|first|default:item.user.username|first }}{% endif %}</span>
             <span class="action-person-copy-v36"><b>{{ item.user.get_full_name|default:item.user.username }}</b>{% if item.user.profile.branch %}<small>{{ item.user.profile.branch }}</small>{% endif %}</span>
           </a>
@@ -52,32 +52,32 @@
           {% endif %}
 
           <div class="action-center-copy-v36">
-            <div class="action-center-title-v36"><strong>{{ item.title }}</strong><em class="{{ item.priority }}">{% if item.priority == 'critical' %}فوری{% elif item.priority == 'high' %}مهم{% elif item.priority == 'medium' %}پیگیری{% else %}عادی{% endif %}</em></div>
+            <div class="action-center-title-v36"><strong>{{ item.title }}</strong><em class="{{ item.priority }}">{% if item.priority == 'critical' %}{% gl_t 'action.critical' %}{% elif item.priority == 'high' %}{% gl_t 'action.high' %}{% elif item.priority == 'medium' %}{% gl_t 'action.followup' %}{% else %}{% gl_t 'action.normal' %}{% endif %}</em></div>
             <p>{{ item.subtitle }}</p>
           </div>
 
           <div class="action-center-buttons-v36">
             {% if item.kind == 'leave' or item.kind == 'correction' %}
-              <button type="button" class="action-quick-v36 approve" data-action="approved">تأیید شد</button>
-              <button type="button" class="action-quick-v36 reject" data-action="rejected">رد شد</button>
+              <button type="button" class="action-quick-v36 approve" data-action="approved">{% gl_t 'action.approved' %}</button>
+              <button type="button" class="action-quick-v36 reject" data-action="rejected">{% gl_t 'action.rejected' %}</button>
             {% elif item.kind == 'device' %}
-              <button type="button" class="action-quick-v36 done" data-action="resolved">رفع شد</button>
-              <button type="button" class="action-quick-v36 review" data-action="reviewing">در حال بررسی</button>
+              <button type="button" class="action-quick-v36 done" data-action="resolved">{% gl_t 'action.resolved' %}</button>
+              <button type="button" class="action-quick-v36 review" data-action="reviewing">{% gl_t 'action.reviewing' %}</button>
             {% elif item.kind == 'task' %}
-              <button type="button" class="action-quick-v36 done" data-action="done">انجام شد</button>
+              <button type="button" class="action-quick-v36 done" data-action="done">{% gl_t 'action.done' %}</button>
             {% else %}
-              <a class="action-open-v36" href="{{ item.url }}">مشاهده</a>
+              <a class="action-open-v36" href="{{ item.url }}">{% gl_t 'action.view' %}</a>
             {% endif %}
           </div>
         </div>
-        {% empty %}<div class="action-center-empty-v36">مورد بازی با فیلتر فعلی باقی نمانده است.</div>{% endfor %}
-        <div class="action-center-empty-v36" id="actionCenterNoResultsV36" hidden>موردی با این جستجو پیدا نشد.</div>
+        {% empty %}<div class="action-center-empty-v36">{% gl_t "action.empty" %}</div>{% endfor %}
+        <div class="action-center-empty-v36" id="actionCenterNoResultsV36" hidden>{% gl_t "action.no_result" %}</div>
       </div>
     </article>
 
     <div class="action-center-bottom-v36">
-      <article class="action-center-mini-v36"><h3>راهنمای اقدام</h3><p>تأیید، رد، انجام شد و رفع شد مستقیماً همین صفحه ثبت می‌شوند و ردیف انجام‌شده از صف حذف می‌شود.</p></article>
-      <article class="action-center-mini-v36"><h3>رنگ و رابط</h3><p>سطح، حاشیه، متن و رنگ تأکیدی این صفحه مستقیماً از پالت ثابت داشبورد استفاده می‌کند.</p></article>
+      <article class="action-center-mini-v36"><h3>{% gl_t "action.guide" %}</h3><p>{% gl_t "action.guide_body" %}</p></article>
+      <article class="action-center-mini-v36"><h3>{% gl_t "action.color_ui" %}</h3><p>{% gl_t "action.color_ui_body" %}</p></article>
     </div>
   </section>
 </div>
@@ -241,6 +241,14 @@
 
 <script>
 (function(){
+  const I18N={
+    invalidId:"{% gl_t 'action.invalid_id' %}",
+    saveFailed:"{% gl_t 'action.save_failed' %}",
+    saved:"{% gl_t 'action.saved' %}",
+    savedButton:"{% gl_t 'action.saved_button' %}",
+    queueEmpty:"{% gl_t 'action.queue_empty' %}",
+    error:"{% gl_t 'action.error' %}"
+  };
   const input=document.getElementById('actionCenterSearchV36');
   const list=document.getElementById('actionCenterListV36');
   const empty=document.getElementById('actionCenterNoResultsV36');
@@ -256,17 +264,17 @@
     const row=btn.closest('.action-center-row-v36');if(!row)return;
     e.preventDefault();e.stopPropagation();
     const match=(row.dataset.url||'').match(/\/(\d+)\/(?:review\/)?$/);const pk=match?match[1]:'';
-    if(!pk){showToast('شناسه این اقدام پیدا نشد.',true);return;}
+    if(!pk){showToast(I18N.invalidId,true);return;}
     const buttons=[...row.querySelectorAll('.action-quick-v36')];buttons.forEach(b=>b.disabled=true);
     try{
       const body=new URLSearchParams({kind:row.dataset.kind||'',pk:pk,action:btn.dataset.action||''});
       const res=await fetch('/action-center/quick/',{method:'POST',headers:{'X-CSRFToken':csrf?csrf.value:'','X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:body.toString(),credentials:'same-origin'});
       const data=await res.json();
-      if(!res.ok||!data.ok)throw new Error(data.message||'ثبت اقدام انجام نشد.');
-      showToast(data.message||'اقدام ثبت شد.');
-      if(data.keep){buttons.forEach(b=>b.disabled=false);btn.textContent='ثبت شد';btn.disabled=true;return;}
-      row.classList.add('is-removing');setTimeout(()=>{row.remove();filterRows();if(rows().length===0&&empty){empty.hidden=false;empty.textContent='صف اقدام خالی است.';}},190);
-    }catch(err){buttons.forEach(b=>b.disabled=false);showToast(err.message||'خطا در ثبت اقدام.',true);}
+      if(!res.ok||!data.ok)throw new Error(data.message||I18N.saveFailed);
+      showToast(data.message||I18N.saved);
+      if(data.keep){buttons.forEach(b=>b.disabled=false);btn.textContent=I18N.savedButton;btn.disabled=true;return;}
+      row.classList.add('is-removing');setTimeout(()=>{row.remove();filterRows();if(rows().length===0&&empty){empty.hidden=false;empty.textContent=I18N.queueEmpty;}},190);
+    }catch(err){buttons.forEach(b=>b.disabled=false);showToast(err.message||I18N.error,true);}
   });
 })();
 </script>
