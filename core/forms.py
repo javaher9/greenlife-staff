@@ -169,7 +169,15 @@ class SmsTestForm(forms.Form):
 class ReportForm(forms.ModelForm):
     class Meta:
         model=DailyReport; fields=['text','audio']
-        widgets={'text':forms.Textarea(attrs={'rows':5,'placeholder':'امروز چه کاری انجام دادی و چه چیزی لازم است مدیریت بداند؟'}),'audio':forms.ClearableFileInput(attrs={'accept':'audio/*,.webm,.m4a,.mp3,.wav,.ogg'})}
+        widgets={'text':forms.Textarea(attrs={'rows':5}),'audio':forms.ClearableFileInput(attrs={'accept':'audio/*,.webm,.m4a,.mp3,.wav,.ogg'})}
+
+    def __init__(self,*args,language='fa',**kwargs):
+        super().__init__(*args,**kwargs)
+        from .staff_i18n import normalize_ui_language, translate
+        language=normalize_ui_language(language)
+        self.fields['text'].label=translate('report.text_label',language)
+        self.fields['audio'].label=translate('report.audio_label',language)
+        self.fields['text'].widget.attrs['placeholder']=translate('report.text_placeholder',language)
 
 class TaskStatusForm(forms.ModelForm):
     class Meta: model=Task; fields=['status']
