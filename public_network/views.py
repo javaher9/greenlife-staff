@@ -1,3 +1,4 @@
+from urllib.parse import quote
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
@@ -549,3 +550,70 @@ def turkey_public_lead_qr(request, code):
     response['Content-Disposition']=f'inline; filename="greenlife-turkey-lead-{member.code}.png"'
     response['Cache-Control']='public, max-age=3600'
     return response
+
+
+@login_required
+def turkey_member_create(request):
+    sponsor=getattr(request.user,'public_network_member',None)
+    if not sponsor or not sponsor.is_active or not sponsor.country_id or sponsor.country.code != 'TR':
+        return redirect('public_network:turkey_login')
+
+    lang=_turkey_language(request)
+    form=TurkeyNetworkSignupForm(request.POST or None, request.FILES or None, language=lang)
+    if request.method == 'POST' and form.is_valid():
+        data=form.cleaned_data
+        with transaction.atomic():
+            user=User.objects.create_user(
+                username=data['username'],
+                password=data['password'],
+                first_name=data['first_name'].strip(),
+                last_name=data['last_name'].strip(),
+            )
+            member=PublicNetworkMember.objects.create(
+                user=user,
+                country=sponsor.country,
+                preferred_language=lang,
+                sponsor=sponsor,
+                phone=data['phone'],
+                photo=data['photo'],
+                source='referral',
+                source_url=request.build_absolute_uri()[:500],
+            )
+        _sync_turkey_signup_to_call_center(member, request)
+
+        full_name=member.display_name
+        login_url=_public_base(request) + reverse('public_network:turkey_login') + f'?lang={lang}'
+        if lang == 'en':
+            invite_text=(
+                f'Hello {full_name}\n'
+                'Your Green Life Türkiye network account is ready.\n\n'
+                f'Username: {data["username"]}\n'
+                f'Password: {data["password"]}\n'
+                f'Sign in: {login_url}\n\n'
+                'Please keep these details private.'
+            )
+        else:
+            invite_text=(
+                f'Merhaba {full_name}\n'
+                'Green Life Türkiye network hesabın hazır.\n\n'
+                f'Kullanıcı adı: {data["username"]}\n'
+                f'Şifre: {data["password"]}\n'
+                f'Giriş: {login_url}\n\n'
+                'Lütfen bu bilgileri gizli tut.'
+            )
+        digits=''.join(ch for ch in member.phone if ch.isdigit())
+        whatsapp_url=f'https://wa.me/{digits}?text={quote(invite_text)}'
+        return render(request,'public_network/turkey_member_created.html',{
+            'member':member,
+            'plain_password':data['password'],
+            'login_url':login_url,
+            'invite_text':invite_text,
+            'whatsapp_url':whatsapp_url,
+            'turkey_lang':lang,
+        })
+
+    return render(request,'public_network/turkey_member_create.html',{
+        'form':form,
+        'sponsor':sponsor,
+        'turkey_lang':lang,
+    })
