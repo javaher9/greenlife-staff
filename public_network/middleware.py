@@ -7,6 +7,7 @@ class PublicNetworkMemberMiddleware:
     ALLOWED_PREFIXES = (
         '/join/greenlife/',
         '/public-network/',
+        '/tr/network/',
         '/static/',
         '/media/',
         '/api/health/',
@@ -19,5 +20,7 @@ class PublicNetworkMemberMiddleware:
         user = getattr(request, 'user', None)
         if user and user.is_authenticated and hasattr(user, 'public_network_member'):
             if not request.path.startswith(self.ALLOWED_PREFIXES):
+                if request.session.get('public_network_locale') == 'tr':
+                    return redirect('public_network:turkey_dashboard')
                 return redirect('public_network:dashboard')
         return self.get_response(request)
