@@ -84,7 +84,7 @@ def _sync_turkey_signup_to_call_center(member, request):
         lead = ReferralLead.objects.create(
             referrer=_turkey_lead_source_profile(),
             country=member.country or _country('TR'),
-            preferred_language='tr',
+            preferred_language=member.preferred_language if member.preferred_language in ('tr','en') else 'tr',
             full_name=full_name,
             phone=member.phone,
             interested_service='Türkiye Network Marketing',
@@ -105,8 +105,9 @@ def _sync_turkey_signup_to_call_center(member, request):
         if turkey and lead.country_id!=turkey.id:
             lead.country=turkey
             update_fields.append('country')
-        if lead.preferred_language!='tr':
-            lead.preferred_language='tr'
+        member_lang=member.preferred_language if member.preferred_language in ('tr','en') else 'tr'
+        if lead.preferred_language!=member_lang:
+            lead.preferred_language=member_lang
             update_fields.append('preferred_language')
         if update_fields:
             lead.save(update_fields=update_fields+['updated_at'])
