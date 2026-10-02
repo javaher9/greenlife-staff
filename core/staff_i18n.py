@@ -889,6 +889,98 @@ EN.update({
     'msg.sent_public':'Message sent to the general chat.','msg.new_notification':'New internal message',
 })
 
+FA.update({
+    'action.title':'مرکز اقدام مدیر','action.subtitle':'{date} · مواردی که امروز نیاز به تصمیم یا پیگیری دارند',
+    'action.urgent_only':'فقط موارد فوری','action.back_dashboard':'بازگشت به داشبورد',
+    'action.total_queue':'کل صف اقدام','action.needs_attention':'مورد نیازمند توجه',
+    'action.critical':'فوری','action.direct_required':'نیازمند اقدام مستقیم',
+    'action.high':'مهم','action.high_priority':'اولویت بالا','action.followup':'پیگیری','action.medium_priority':'اولویت متوسط',
+    'action.people':'افراد درگیر','action.related_staff':'پرسنل مرتبط','action.queue':'صف اقدامات',
+    'action.queue_help':'تصمیم‌های روزانه را همین‌جا نهایی کنید؛ بدون خروج از صفحه.',
+    'action.search_placeholder':'جستجو نام، شعبه یا موضوع...','action.filter_label':'فیلتر نوع اقدام',
+    'action.all':'همه','action.missing_attendance':'عدم ثبت ورود','action.late':'تأخیر',
+    'action.correction':'اصلاح حضور','action.leave':'مرخصی','action.device':'خرابی دستگاه',
+    'action.tasks':'وظایف','action.report':'گزارش','action.file_title':'پرونده {name}',
+    'action.normal':'عادی','action.approved':'تأیید شد','action.rejected':'رد شد','action.resolved':'رفع شد',
+    'action.reviewing':'در حال بررسی','action.done':'انجام شد','action.view':'مشاهده',
+    'action.empty':'مورد بازی با فیلتر فعلی باقی نمانده است.','action.no_result':'موردی با این جستجو پیدا نشد.',
+    'action.guide':'راهنمای اقدام','action.guide_body':'تأیید، رد، انجام شد و رفع شد مستقیماً همین صفحه ثبت می‌شوند و ردیف انجام‌شده از صف حذف می‌شود.',
+    'action.color_ui':'رنگ و رابط','action.color_ui_body':'سطح، حاشیه، متن و رنگ تأکیدی این صفحه مستقیماً از پالت ثابت داشبورد استفاده می‌کند.',
+    'action.leave_title':'درخواست مرخصی/ماموریت','action.leave_subtitle':'{type} · {start} تا {end}',
+    'action.correction_title':'درخواست اصلاح حضور','action.correction_subtitle':'{date} · {reason}',
+    'action.device_title':'خرابی دستگاه: {device}','action.overdue_task_title':'وظیفه عقب‌افتاده',
+    'action.overdue_task_subtitle':'{title} · {days} روز تأخیر','action.today_late_title':'تأخیر امروز',
+    'action.late_entry':'ورود {time}','action.minutes_late':'{minutes} دقیقه دیرتر',
+    'action.missing_attendance_title':'ورود امروز ثبت نشده','action.missing_attendance_subtitle':'از زمان شروع شیفت گذشته و ورود ثبت نشده است.',
+    'action.missing_report_title':'گزارش روزانه ارسال نشده','action.missing_report_subtitle':'گزارش {date} ثبت نشده است.',
+    'action.invalid_id':'شناسه این اقدام پیدا نشد.','action.save_failed':'ثبت اقدام انجام نشد.',
+    'action.saved':'اقدام ثبت شد.','action.saved_button':'ثبت شد','action.queue_empty':'صف اقدام خالی است.',
+    'action.error':'خطا در ثبت اقدام.',
+})
+TR.update({
+    'action.title':'Yönetici Aksiyon Merkezi','action.subtitle':'{date} · Bugün karar veya takip gerektiren konular',
+    'action.urgent_only':'Yalnızca Acil','action.back_dashboard':'Panele Dön',
+    'action.total_queue':'Toplam Aksiyon Kuyruğu','action.needs_attention':'Dikkat Gerektiren Kayıt',
+    'action.critical':'Acil','action.direct_required':'Doğrudan İşlem Gerekli',
+    'action.high':'Önemli','action.high_priority':'Yüksek Öncelik','action.followup':'Takip','action.medium_priority':'Orta Öncelik',
+    'action.people':'İlgili Kişiler','action.related_staff':'İlgili Personel','action.queue':'Aksiyon Kuyruğu',
+    'action.queue_help':'Günlük kararları bu ekrandan çıkmadan tamamlayın.',
+    'action.search_placeholder':'Ad, şube veya konu ara...','action.filter_label':'Aksiyon Türü Filtresi',
+    'action.all':'Tümü','action.missing_attendance':'Giriş Kaydı Yok','action.late':'Gecikme',
+    'action.correction':'Devam Düzeltmesi','action.leave':'İzin','action.device':'Cihaz Arızası',
+    'action.tasks':'Görevler','action.report':'Rapor','action.file_title':'{name} Dosyası',
+    'action.normal':'Normal','action.approved':'Onaylandı','action.rejected':'Reddedildi','action.resolved':'Çözüldü',
+    'action.reviewing':'İnceleniyor','action.done':'Tamamlandı','action.view':'Görüntüle',
+    'action.empty':'Mevcut filtrede açık kayıt kalmadı.','action.no_result':'Bu aramayla eşleşen kayıt bulunamadı.',
+    'action.guide':'Aksiyon Rehberi','action.guide_body':'Onay, ret, tamamlandı ve çözüldü işlemleri doğrudan bu sayfada kaydedilir; tamamlanan satır kuyruktan kaldırılır.',
+    'action.color_ui':'Renk ve Arayüz','action.color_ui_body':'Bu sayfanın yüzey, kenarlık, metin ve vurgu renkleri ana panel paletini kullanır.',
+    'action.leave_title':'İzin / Görevlendirme Talebi','action.leave_subtitle':'{type} · {start} - {end}',
+    'action.correction_title':'Devam Düzeltme Talebi','action.correction_subtitle':'{date} · {reason}',
+    'action.device_title':'Cihaz Arızası: {device}','action.overdue_task_title':'Gecikmiş Görev',
+    'action.overdue_task_subtitle':'{title} · {days} gün gecikmiş','action.today_late_title':'Bugünkü Gecikme',
+    'action.late_entry':'Giriş {time}','action.minutes_late':'{minutes} dakika geç',
+    'action.missing_attendance_title':'Bugünkü Giriş Kaydedilmedi','action.missing_attendance_subtitle':'Vardiya başlangıç saati geçti ve giriş kaydı yapılmadı.',
+    'action.missing_report_title':'Günlük Rapor Gönderilmedi','action.missing_report_subtitle':'{date} raporu kaydedilmedi.',
+    'action.invalid_id':'Bu aksiyonun kimliği bulunamadı.','action.save_failed':'Aksiyon kaydedilemedi.',
+    'action.saved':'Aksiyon kaydedildi.','action.saved_button':'Kaydedildi','action.queue_empty':'Aksiyon kuyruğu boş.',
+    'action.error':'Aksiyon kaydedilirken hata oluştu.',
+})
+EN.update({
+    'action.title':'Manager Action Center','action.subtitle':'{date} · Items that need a decision or follow-up today',
+    'action.urgent_only':'Urgent Only','action.back_dashboard':'Back to Dashboard',
+    'action.total_queue':'Total Action Queue','action.needs_attention':'Items Needing Attention',
+    'action.critical':'Critical','action.direct_required':'Direct Action Required',
+    'action.high':'High Priority','action.high_priority':'High Priority','action.followup':'Follow-up','action.medium_priority':'Medium Priority',
+    'action.people':'People Involved','action.related_staff':'Related Staff','action.queue':'Action Queue',
+    'action.queue_help':'Finalize daily decisions here without leaving the page.',
+    'action.search_placeholder':'Search name, branch, or topic...','action.filter_label':'Action Type Filter',
+    'action.all':'All','action.missing_attendance':'No Check-in','action.late':'Late',
+    'action.correction':'Attendance Correction','action.leave':'Leave','action.device':'Device Issue',
+    'action.tasks':'Tasks','action.report':'Report','action.file_title':'{name} File',
+    'action.normal':'Normal','action.approved':'Approved','action.rejected':'Rejected','action.resolved':'Resolved',
+    'action.reviewing':'Under Review','action.done':'Done','action.view':'View',
+    'action.empty':'No open items remain with the current filter.','action.no_result':'No items match this search.',
+    'action.guide':'Action Guide','action.guide_body':'Approve, reject, done, and resolved actions are recorded directly on this page; completed rows leave the queue.',
+    'action.color_ui':'Color & Interface','action.color_ui_body':'This page uses the dashboard palette for surfaces, borders, text, and accents.',
+    'action.leave_title':'Leave / Assignment Request','action.leave_subtitle':'{type} · {start} to {end}',
+    'action.correction_title':'Attendance Correction Request','action.correction_subtitle':'{date} · {reason}',
+    'action.device_title':'Device Issue: {device}','action.overdue_task_title':'Overdue Task',
+    'action.overdue_task_subtitle':'{title} · {days} days late','action.today_late_title':'Late Today',
+    'action.late_entry':'Check-in {time}','action.minutes_late':'{minutes} minutes late',
+    'action.missing_attendance_title':'Today’s Check-in Not Recorded','action.missing_attendance_subtitle':'The shift start time has passed and no check-in was recorded.',
+    'action.missing_report_title':'Daily Report Not Submitted','action.missing_report_subtitle':'The report for {date} was not submitted.',
+    'action.invalid_id':'This action ID could not be found.','action.save_failed':'The action could not be saved.',
+    'action.saved':'Action saved.','action.saved_button':'Saved','action.queue_empty':'The action queue is empty.',
+    'action.error':'Error saving action.',
+})
+
+COUNTRY_UI_NAMES = {
+    'IR': {'fa':'ایران','tr':'İran','en':'Iran'},
+    'TR': {'fa':'ترکیه','tr':'Türkiye','en':'Türkiye'},
+    'AE': {'fa':'امارات','tr':'BAE','en':'UAE'},
+    'OM': {'fa':'عمان','tr':'Umman','en':'Oman'},
+}
+
 
 TRANSLATIONS = {'fa': FA, 'tr': TR, 'en': EN}
 
@@ -1315,6 +1407,13 @@ def translate(key, language='fa', **kwargs):
         except (KeyError, ValueError, IndexError):
             pass
     return text
+
+
+def translate_country_name(country, language='fa'):
+    language=normalize_ui_language(language)
+    code=(getattr(country,'code','') or '').upper()
+    names=COUNTRY_UI_NAMES.get(code,{})
+    return names.get(language) or names.get('en') or getattr(country,'name_local',None) or getattr(country,'name',None) or code
 
 
 def translate_choice(namespace, value, language='fa', fallback=''):
