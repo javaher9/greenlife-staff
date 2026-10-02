@@ -1,14 +1,23 @@
 from django.contrib import admin
-from .models import Branch,EmployeeProfile,Task,Announcement,DailyReport,SOPDocument,LeaveRequest,Attendance, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue
+from .models import Country,Branch,EmployeeProfile,Task,Announcement,DailyReport,SOPDocument,LeaveRequest,Attendance, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue
+@admin.register(Country)
+class CountryAdmin(admin.ModelAdmin):
+    list_display=('flag_emoji','code','name_local','name_english','primary_language','currency_code','timezone','is_active','sort_order')
+    list_filter=('is_active','primary_language','currency_code')
+    search_fields=('code','name_local','name_english')
+    list_editable=('is_active','sort_order')
+
+
 @admin.register(Branch)
 class BranchAdmin(admin.ModelAdmin):
-    list_display=('name','is_active','geofence_enabled','attendance_radius_m','latitude','longitude')
+    list_display=('name','country','is_active','geofence_enabled','attendance_radius_m','latitude','longitude')
+    list_filter=('country','is_active','geofence_enabled')
     list_editable=('geofence_enabled','attendance_radius_m')
 
 @admin.register(EmployeeProfile)
 class EmployeeProfileAdmin(admin.ModelAdmin):
-    list_display=('user','branch','role','job_title','shift_group','is_active')
-    list_filter=('branch','role','shift_group','is_active')
+    list_display=('user','country','branch','role','preferred_language','job_title','shift_group','is_active')
+    list_filter=('country','branch','role','preferred_language','shift_group','is_active')
     search_fields=('user__username','user__first_name','user__last_name','job_title','employee_code')
     autocomplete_fields=('user',)
 
@@ -119,8 +128,8 @@ class ReferralProfileAdmin(admin.ModelAdmin):
 
 @admin.register(ReferralLead)
 class ReferralLeadAdmin(admin.ModelAdmin):
-    list_display=('full_name','phone','referrer','status','source','assigned_to','next_follow_up','sync_status','created_at')
-    list_filter=('status','source','sync_status','created_at')
+    list_display=('full_name','country','preferred_language','phone','referrer','status','source','assigned_to','next_follow_up','sync_status','created_at')
+    list_filter=('country','preferred_language','status','source','sync_status','created_at')
     search_fields=('full_name','phone','alternate_phone','referrer__referral_code','referrer__user__first_name','referrer__user__last_name','crm_id')
     autocomplete_fields=('referrer','assigned_to','created_by')
 
