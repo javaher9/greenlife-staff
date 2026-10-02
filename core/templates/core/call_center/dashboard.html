@@ -224,7 +224,7 @@
       <article class="cc-v7-metric"><span>{% gl_t 'cc.month_sales' %}</span><strong>{{ performance.sales_million|floatformat:-1 }}</strong><small>{% gl_t 'common.million_toman' %}</small></article>
       <article class="cc-v7-metric attention"><span>{% gl_t 'cc.overdue_followups' %}</span><strong>{{ performance.overdue }}</strong><small>{% gl_t 'cc.past_due' %}</small></article>
     </div>
-    <div class="cc-v7-funnel" aria-label="قیف {% gl_t 'cc.current_month' %}">
+    <div class="cc-v7-funnel" aria-label="{% gl_t 'cc.month_funnel' %}">
       <div class="cc-v7-funnel-step"><span>{% gl_t 'cc.month_leads' %}</span><b>{{ performance.month_total }}</b></div>
       <div class="cc-v7-funnel-step"><span>{% gl_t 'cc.handled' %}</span><b>{{ performance.month_handled }}</b></div>
       <div class="cc-v7-funnel-step"><span>{% gl_t 'common.appointment' %}</span><b>{{ performance.month_appointments }}</b></div>
@@ -237,7 +237,7 @@
     <a class="cc-v5-action primary" href="?status=new">☎ {% gl_t 'cc.new_call' %}</a>
     <a class="cc-v5-action" href="?status=contacted">✓ {% gl_t 'cc.save_call_result' %}</a>
     <a class="cc-v5-action purple" href="{% url 'appointment_schedule' %}">▣ {% gl_t 'cc.appointment_booking' %}</a>
-    <a class="cc-v5-action blue" href="{% url 'internal_messages' %}">✉ پیام داخلی {% if internal_unread %}<span class="cc-v5-count">{{ internal_unread }}</span>{% endif %}</a>
+    <a class="cc-v5-action blue" href="{% url 'internal_messages' %}">✉ {% gl_t 'common.internal_messages' %} {% if internal_unread %}<span class="cc-v5-count">{{ internal_unread }}</span>{% endif %}</a>
     <a class="cc-v5-action" href="?status=contacted">◷ {% gl_t 'cc.followup_today' %}</a>
   </nav>
 
