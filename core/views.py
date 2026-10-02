@@ -1139,6 +1139,15 @@ def attendance(request):
                         user=request.user,points=5,reason='attendance',description='حضور به‌موقع'
                     )
                 record.save()
+                if profile and profile.role=='call_center':
+                    # Re-evaluate the pending lead queue immediately when an
+                    # operator checks in. The routing policy itself decides
+                    # whether release is allowed: Friday duty releases at once;
+                    # normal workdays wait for the expected team or 11:00.
+                    from .lead_routing import release_pending_leads_if_ready
+                    transaction.on_commit(
+                        lambda: release_pending_leads_if_ready(now=timezone.now())
+                    )
                 _attendance_audit(
                     request,'attendance_checkin','ثبت ورود',
                     {
