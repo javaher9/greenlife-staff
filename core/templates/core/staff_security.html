@@ -1,4 +1,4 @@
-{% extends 'core/base.html' %}
+{% extends 'core/base.html' %}{% load staff_i18n %}
 {% block content %}
 <style>
 .staff-security{max-width:760px;margin:20px auto 70px;display:grid;gap:14px}
@@ -14,30 +14,30 @@
 </style>
 <div class="staff-security">
   <section class="ss-head">
-    <h1>تغییر رمز ورود</h1>
-    <p>می‌توانید رمز دسکتاپ و PIN شش‌رقمی موبایل را خودتان تغییر دهید. برای امنیت، ابتدا رمز فعلی یا PIN فعلی را وارد کنید.</p>
+    <h1>{% gl_t 'security.title' %}</h1>
+    <p>{% gl_t 'security.intro' %}</p>
   </section>
   <form method="post" class="ss-card" autocomplete="off">
     {% csrf_token %}
-    <h2>تأیید هویت</h2>
-    <p>یکی از اطلاعات فعلی شما کافی است.</p>
+    <h2>{% gl_t 'security.verify' %}</h2>
+    <p>{% gl_t 'security.verify_help' %}</p>
     <div class="ss-grid">
-      <div class="ss-field full"><label>رمز فعلی یا PIN فعلی</label><input type="password" name="current_secret" required autocomplete="current-password"></div>
+      <div class="ss-field full"><label>{% gl_t 'security.current' %}</label><input type="password" name="current_secret" required autocomplete="current-password"></div>
     </div>
-    <h2 style="margin-top:20px">رمز دسکتاپ</h2>
-    <p>اختیاری؛ اگر نمی‌خواهید عوض شود، خالی بگذارید.</p>
+    <h2 style="margin-top:20px">{% gl_t 'security.desktop' %}</h2>
+    <p>{% gl_t 'security.desktop_optional' %}</p>
     <div class="ss-grid">
-      <div class="ss-field"><label>رمز دسکتاپ جدید</label><input type="password" name="new_password" autocomplete="new-password" placeholder="حداقل ۱۰ کاراکتر، شامل حرف و عدد"></div>
-      <div class="ss-field"><label>تکرار رمز دسکتاپ</label><input type="password" name="confirm_password" autocomplete="new-password"></div>
+      <div class="ss-field"><label>{% gl_t 'security.desktop' %} جدید</label><input type="password" name="new_password" autocomplete="new-password" placeholder="{% gl_t 'security.desktop_rule' %}"></div>
+      <div class="ss-field"><label>تکرار {% gl_t 'security.desktop' %}</label><input type="password" name="confirm_password" autocomplete="new-password"></div>
     </div>
-    <h2 style="margin-top:20px">PIN موبایل</h2>
-    <p>{% if mobile_pin_set %}PIN موبایل شما فعال است.{% else %}هنوز PIN اختصاصی برای موبایل ثبت نشده است.{% endif %}</p>
+    <h2 style="margin-top:20px">{% gl_t 'security.mobile' %}</h2>
+    <p>{% if mobile_pin_set %}{% gl_t 'security.mobile' %} شما فعال است.{% else %}{% gl_t 'security.pin_missing' %}{% endif %}</p>
     <div class="ss-grid">
-      <div class="ss-field"><label>PIN جدید</label><input type="password" name="new_pin" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" placeholder="۶ رقم"></div>
-      <div class="ss-field"><label>تکرار PIN</label><input type="password" name="confirm_pin" maxlength="6" inputmode="numeric" pattern="[0-9]{6}"></div>
+      <div class="ss-field"><label>{% gl_t 'security.new_pin' %}</label><input type="password" name="new_pin" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" placeholder="{% gl_t 'security.six_digits' %}"></div>
+      <div class="ss-field"><label>{% gl_t 'security.confirm_pin' %}</label><input type="password" name="confirm_pin" maxlength="6" inputmode="numeric" pattern="[0-9]{6}"></div>
     </div>
-    <div class="ss-note">PINهای خیلی ساده مثل 123456 یا 111111 پذیرفته نمی‌شوند. تغییر رمز دسکتاپ، شما را از همین جلسه خارج نمی‌کند.</div>
-    <div class="ss-actions"><button class="ss-save" type="submit">ذخیره تغییرات</button><a class="ss-back" href="/profile/">بازگشت به پروفایل</a></div>
+    <div class="ss-note">PINهای خیلی ساده مثل 123456 یا 111111 پذیرفته نمی‌شوند. تغییر {% gl_t 'security.desktop' %}، شما را از همین جلسه خارج نمی‌کند.</div>
+    <div class="ss-actions"><button class="ss-save" type="submit">{% gl_t 'security.save' %}</button><a class="ss-back" href="/profile/">{% gl_t 'security.back_profile' %}</a></div>
   </form>
 </div>
 {% endblock %}
