@@ -694,6 +694,69 @@
     color:#75837f!important;
   }
 }
+
+/* Minimal device card cleanup v6 */
+@media(min-width:701px){
+  .db-plate-name strong{
+    min-height:42px!important;
+    margin:6px 8px 0!important;
+    border-radius:14px!important;
+    background:linear-gradient(135deg,#183f36,#1f5a4c)!important;
+    box-shadow:0 7px 16px rgba(25,74,60,.16)!important;
+  }
+  .db-device-plate:nth-child(4n+2) .db-plate-name strong{
+    background:linear-gradient(135deg,#274f73,#4774a5)!important;
+  }
+  .db-device-plate:nth-child(4n+3) .db-plate-name strong{
+    background:linear-gradient(135deg,#775329,#a97a3d)!important;
+  }
+  .db-device-plate:nth-child(4n) .db-plate-name strong{
+    background:linear-gradient(135deg,#554079,#7a62ad)!important;
+  }
+  .db-plate-name small{
+    padding:6px 8px 2px!important;
+    color:#5b716c!important;
+    background:transparent!important;
+  }
+  .db-plate-badge{
+    margin-top:5px!important;
+    background:linear-gradient(135deg,#f4f0fb,#eef7f3)!important;
+    border-color:#ddd3ef!important;
+    color:#594776!important;
+  }
+  .db-slot-no{
+    background:linear-gradient(145deg,#eef6f3,#f7f3fb)!important;
+    border-color:#d8e7e0!important;
+    color:#214f43!important;
+  }
+  .db-slot-no b{
+    font-size:15px!important;
+    font-weight:950!important;
+  }
+  .db-empty-mark{
+    color:#a8b4b0!important;
+    font-size:13px!important;
+    font-weight:800!important;
+    letter-spacing:1px;
+  }
+  .db-off-mark{
+    color:#b5bdb9!important;
+    font-size:12px!important;
+  }
+  .db-slot.is-free{
+    background:linear-gradient(135deg,#e8f8f0,#f8fbff 62%,#f7f2fc)!important;
+    border-color:#a9ddc6!important;
+  }
+  .db-slot.is-free:hover{
+    background:linear-gradient(135deg,#dcf4e8,#eef7ff 60%,#efe6fa)!important;
+    border-color:#7bc7a6!important;
+  }
+  .db-slot.is-free .db-slot-state{
+    background:linear-gradient(135deg,#ccefdc,#ddd4f3)!important;
+    color:#215b4a!important;
+    border-color:#bfdccc!important;
+  }
+}
 </style>
 
 <div class="db-shell">
@@ -778,9 +841,9 @@
           <div class="db-plate-title">
             <div class="db-plate-name">
               <strong>{{ card.device.name }}</strong>
-              <small>{{ card.device.device_type.name }} · هر نوبت {{ card.slot_minutes }} دقیقه</small>
+              <small>هر نوبت {{ card.slot_minutes }} دقیقه</small>
             </div>
-            <span class="db-plate-badge">{{ card.total_count }} ردیف</span>
+            <span class="db-plate-badge">{{ card.total_count }}</span>
           </div>
           <div class="db-plate-stats">
             <div class="db-stat"><b>{{ card.free_count }}</b><span>آزاد</span></div>
@@ -793,14 +856,14 @@
             {% if slot.state == 'free' %}
               <button type="button" class="db-slot-button db-free-slot" data-device="{{ slot.device.pk }}" data-device-name="{{ slot.device.name }}" data-time="{{ slot.start_value }}" data-end="{{ slot.end_label }}" data-row="{{ slot.number }}" onclick="pickDeviceSlot(this)">
                 <span class="db-slot is-free">
-                  <span class="db-slot-no"><span><b>{{ slot.number }}</b><small>ردیف</small></span></span>
-                  <span class="db-slot-time"><strong>{{ slot.start_label }} – {{ slot.end_label }}</strong><small>برای رزرو لمس کنید</small></span>
+                  <span class="db-slot-no"><span><b>{{ slot.number }}</b></span></span>
+                  <span class="db-slot-time"><strong>{{ slot.start_label }} – {{ slot.end_label }}</strong><small class="db-empty-mark">—</small></span>
                   <span class="db-slot-state">آزاد</span>
                 </span>
               </button>
             {% elif slot.state == 'busy' %}
               <div class="db-slot is-busy db-status-{{ slot.booking.status }}" title="{{ slot.booking.appointment.full_name }} · {{ slot.booking.plan_item.title }}">
-                <span class="db-slot-no"><span><b>{{ slot.number }}</b><small>ردیف</small></span></span>
+                <span class="db-slot-no"><span><b>{{ slot.number }}</b></span></span>
                 <span class="db-slot-time">
                   <strong>{{ slot.start_label }} – {{ slot.end_label }}</strong>
                   <button type="button" class="db-busy-person"
@@ -821,7 +884,7 @@
             {% elif slot.state == 'history' %}
               <button type="button" class="db-history-button" data-device="{{ slot.device.pk }}" data-device-name="{{ slot.device.name }}" data-time="{{ slot.start_value }}" data-end="{{ slot.end_label }}" data-row="{{ slot.number }}" onclick="pickDeviceSlot(this)">
                 <span class="db-slot is-history db-status-{{ slot.history_booking.status }}">
-                  <span class="db-slot-no"><span><b>{{ slot.number }}</b><small>ردیف</small></span></span>
+                  <span class="db-slot-no"><span><b>{{ slot.number }}</b></span></span>
                   <span class="db-slot-time">
                     <strong>{{ slot.start_label }} – {{ slot.end_label }}</strong>
                     <span class="db-busy-person"
@@ -842,8 +905,8 @@
               </button>
             {% else %}
               <div class="db-slot is-off">
-                <span class="db-slot-no"><span><b>{{ slot.number }}</b><small>ردیف</small></span></span>
-                <span class="db-slot-time"><strong>{{ slot.start_label }} – {{ slot.end_label }}</strong><small>غیرفعال</small></span>
+                <span class="db-slot-no"><span><b>{{ slot.number }}</b></span></span>
+                <span class="db-slot-time"><strong>{{ slot.start_label }} – {{ slot.end_label }}</strong><small class="db-off-mark">—</small></span>
                 <span class="db-slot-state">بسته</span>
               </div>
             {% endif %}
