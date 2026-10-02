@@ -30,3 +30,12 @@ def country_workspace(request):
         'country_scope_can_switch': getattr(request, 'country_scope_can_switch', False),
         'country_scope_countries': getattr(request, 'country_scope_countries', ()),
     }
+
+
+def staff_language(request):
+    """Expose the active UI language independently from the country workspace."""
+    return {
+        'ui_language': getattr(request, 'ui_language', 'fa'),
+        'ui_direction': getattr(request, 'ui_direction', 'rtl'),
+        'ui_languages': getattr(request, 'ui_languages', (('fa','FA','فارسی'),('tr','TR','Türkçe'),('en','EN','English'))),
+    }
