@@ -858,6 +858,25 @@ EN.update({
     'notif.empty':'No notifications.',
 })
 
+FA.update({
+    'msg.private':'خصوصی','msg.all_can':'همه پرسنل فعال می‌توانند این گفتگو را ببینند و پاسخ دهند.',
+    'msg.invalid_recipient':'گیرنده معتبر نیست.','msg.empty_body':'متن پیام خالی است.',
+    'msg.too_long':'پیام حداکثر ۲۰۰۰ کاراکتر می‌تواند باشد.','msg.sent':'پیام ارسال شد.',
+    'msg.sent_public':'پیام در گفتگوی عمومی ارسال شد.','msg.new_notification':'پیام داخلی جدید',
+})
+TR.update({
+    'msg.private':'Özel','msg.all_can':'Tüm aktif personel bu konuşmayı görebilir ve yanıtlayabilir.',
+    'msg.invalid_recipient':'Geçersiz alıcı.','msg.empty_body':'Mesaj metni boş.',
+    'msg.too_long':'Mesaj en fazla 2000 karakter olabilir.','msg.sent':'Mesaj gönderildi.',
+    'msg.sent_public':'Mesaj genel sohbete gönderildi.','msg.new_notification':'Yeni iç mesaj',
+})
+EN.update({
+    'msg.private':'Private','msg.all_can':'All active staff can view and reply to this conversation.',
+    'msg.invalid_recipient':'Invalid recipient.','msg.empty_body':'Message cannot be empty.',
+    'msg.too_long':'Messages can be up to 2000 characters.','msg.sent':'Message sent.',
+    'msg.sent_public':'Message sent to the general chat.','msg.new_notification':'New internal message',
+})
+
 
 TRANSLATIONS = {'fa': FA, 'tr': TR, 'en': EN}
 
