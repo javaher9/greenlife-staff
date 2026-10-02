@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from .forms import PublicNetworkLoginForm, PublicNetworkSignupForm, TurkeyNetworkLoginForm, TurkeyNetworkSignupForm
 from .models import PublicNetworkMember
+from core.models import Country
 
 
 def _source_from_request(request, sponsor):
@@ -25,6 +26,10 @@ def _source_from_request(request, sponsor):
 
 def _public_base(request):
     return request.build_absolute_uri('/').rstrip('/')
+
+
+def _country(code):
+    return Country.objects.filter(code=code,is_active=True).first()
 
 
 def _member_share_url(request, member):
@@ -66,6 +71,8 @@ def _sync_turkey_signup_to_call_center(member, request):
     try:
         lead = ReferralLead.objects.create(
             referrer=_turkey_lead_source_profile(),
+            country=member.country or _country('TR'),
+            preferred_language='tr',
             full_name=full_name,
             phone=member.phone,
             interested_service='Türkiye Network Marketing',
@@ -78,9 +85,19 @@ def _sync_turkey_signup_to_call_center(member, request):
         lead = getattr(exc, 'existing_lead', None)
         if not lead:
             return None
+        update_fields=[]
         if '[market:turkey]' not in (lead.notes or ''):
             lead.notes = ((lead.notes or '').rstrip() + '\n' + marker).strip()
-            lead.save(update_fields=['notes', 'updated_at'])
+            update_fields.append('notes')
+        turkey=member.country or _country('TR')
+        if turkey and lead.country_id!=turkey.id:
+            lead.country=turkey
+            update_fields.append('country')
+        if lead.preferred_language!='tr':
+            lead.preferred_language='tr'
+            update_fields.append('preferred_language')
+        if update_fields:
+            lead.save(update_fields=update_fields+['updated_at'])
 
     operator = _auto_assign_call_center(lead)
     if operator:
@@ -111,7 +128,7 @@ def signup(request, code=None):
     sponsor = None
     if code:
         sponsor = get_object_or_404(
-            PublicNetworkMember.objects.select_related('user'), code=code, is_active=True
+            PublicNetworkMember.objects.select_related('user'), code=code, is_active=True, country__code='IR'
         )
     if request.user.is_authenticated and hasattr(request.user, 'public_network_member'):
         return redirect('public_network:dashboard')
@@ -130,6 +147,8 @@ def signup(request, code=None):
             )
             member = PublicNetworkMember.objects.create(
                 user=user,
+                country=_country('IR'),
+                preferred_language='fa',
                 sponsor=sponsor,
                 phone=data['phone'],
                 photo=data['photo'],
@@ -232,7 +251,7 @@ def turkey_signup(request, code=None):
     sponsor = None
     if code:
         sponsor = get_object_or_404(
-            PublicNetworkMember.objects.select_related('user'), code=code, is_active=True
+            PublicNetworkMember.objects.select_related('user'), code=code, is_active=True, country__code='TR'
         )
     if request.user.is_authenticated and hasattr(request.user, 'public_network_member'):
         request.session['public_network_locale'] = 'tr'
@@ -252,6 +271,8 @@ def turkey_signup(request, code=None):
             )
             member = PublicNetworkMember.objects.create(
                 user=user,
+                country=_country('TR'),
+                preferred_language='tr',
                 sponsor=sponsor,
                 phone=data['phone'],
                 photo=data['photo'],
