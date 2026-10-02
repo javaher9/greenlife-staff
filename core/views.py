@@ -16,8 +16,10 @@ from django.db import IntegrityError, transaction
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, BlackboardMessageForm, EmployeeCreateForm, EmployeeEditForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm, ConsultantFinanceEntryForm, StaffLoginForm, StaffCredentialUpdateForm
-from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, Branch, BranchWorkSchedule, EmployeeWorkSchedule, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction, MeetingActionUpdate, StaffCredential, VisitAppointment, TreatmentCatalogItem, DeviceBaseTariff
+from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, Branch, Country, BranchWorkSchedule, EmployeeWorkSchedule, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction, MeetingActionUpdate, StaffCredential, VisitAppointment, TreatmentCatalogItem, DeviceBaseTariff
 from .ai import analyze_finance_receipt, process_report
 from .jalali import format_jalali, gregorian_to_jalali, jalali_to_gregorian, parse_jalali
 from .reporting import day_summary, leaderboard, answer_query
@@ -31,6 +33,39 @@ from .credential_security import (
 )
 
 def role_of(user): return getattr(getattr(user,'profile',None),'role','employee')
+
+
+@require_POST
+@login_required
+def country_switch(request):
+    """Switch the management workspace without changing any underlying records."""
+    from .country_workspace import COUNTRY_SCOPE_SESSION_KEY, can_switch_country
+
+    if not can_switch_country(request.user):
+        raise PermissionDenied('Country workspace switching is not available for this account.')
+
+    code=(request.POST.get('country') or '').strip().upper()
+    if code!='ALL' and not Country.objects.filter(code=code,is_active=True).exists():
+        messages.error(request,'کشور انتخاب‌شده فعال نیست.')
+        code=getattr(getattr(request,'country_scope',None),'code','IR') or 'IR'
+
+    request.session[COUNTRY_SCOPE_SESSION_KEY]=code
+    if code=='ALL':
+        messages.success(request,'نمای مدیریتی روی همه کشورها قرار گرفت.')
+    else:
+        country=Country.objects.filter(code=code,is_active=True).first()
+        if country:
+            messages.success(request,f'فضای کاری روی {country.flag_emoji} {country.name_local} قرار گرفت.')
+
+    target=(request.POST.get('next') or '').strip() or reverse('dashboard')
+    if not url_has_allowed_host_and_scheme(
+        target,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        target=reverse('dashboard')
+    return redirect(target)
+
 
 MANAGEMENT_ROLES=('admin','internal_manager','manager')
 FINANCE_ROLES=('admin','manager')
