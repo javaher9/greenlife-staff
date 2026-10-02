@@ -296,6 +296,234 @@
   .db-patient-meta{grid-template-columns:1fr}
 }
 
+
+/* Full-width operational board v4 — compact booking bar + stronger color contrast */
+@media(min-width:701px){
+  .db-grid{
+    grid-template-columns:1fr!important;
+    gap:10px!important;
+  }
+
+  .db-book-panel{
+    position:static!important;
+    top:auto!important;
+    padding:13px 15px!important;
+    border-color:#d9e7e2!important;
+    background:
+      radial-gradient(circle at 6% 18%,rgba(68,170,128,.08),transparent 22%),
+      radial-gradient(circle at 92% 10%,rgba(111,89,188,.07),transparent 24%),
+      linear-gradient(120deg,#fbfffd 0%,#f8fbff 52%,#fffaf3 100%)!important;
+    box-shadow:0 9px 22px rgba(35,76,66,.045)!important;
+  }
+  .db-book-panel:before{
+    content:"رزرو سریع";
+    margin:0 0 8px!important;
+    padding:5px 9px!important;
+    background:linear-gradient(135deg,#dff3e8,#e8e7fb)!important;
+    color:#225e4d!important;
+    border:1px solid #cfe5db!important;
+  }
+  .db-book-panel h2{
+    display:inline-block;
+    margin:0 10px 8px 0!important;
+    font-size:16px!important;
+    color:#183f36!important;
+  }
+  .db-book-panel form.db-form{
+    display:grid!important;
+    grid-template-columns:minmax(180px,1.2fr) minmax(130px,.7fr) minmax(120px,.65fr) minmax(145px,.8fr) minmax(145px,.8fr) minmax(130px,.65fr);
+    gap:8px!important;
+    align-items:end!important;
+    margin:8px 0!important;
+  }
+  .db-book-panel form.db-form > label,
+  .db-book-panel form.db-form > .db-selected-summary{
+    min-width:0!important;
+  }
+  .db-book-panel form.db-form > button[type="submit"]{
+    grid-column:auto!important;
+    min-height:40px!important;
+    white-space:nowrap;
+  }
+  .db-book-panel .db-selected-summary{
+    grid-column:span 2!important;
+    margin:0!important;
+    min-height:43px!important;
+    padding:7px 9px!important;
+  }
+  .db-book-panel .db-tags{
+    margin:3px 0 5px!important;
+  }
+  .db-book-panel .db-tags span{
+    background:linear-gradient(135deg,#eaf7f1,#f1effb)!important;
+    border-color:#d6e7df!important;
+    color:#315d52!important;
+  }
+  .db-book-panel .db-device-note{
+    padding:5px 7px!important;
+    margin-top:3px!important;
+    background:#e4f5ec!important;
+    color:#165f45!important;
+    border-color:#c9e7d8!important;
+  }
+
+  .db-panel:not(.db-book-panel){
+    background:
+      radial-gradient(circle at 7% 4%,rgba(51,159,116,.055),transparent 21%),
+      radial-gradient(circle at 90% 2%,rgba(100,84,181,.045),transparent 22%),
+      linear-gradient(180deg,#ffffff 0%,#fcfffe 100%)!important;
+  }
+
+  .db-datebar{
+    padding-bottom:7px!important;
+  }
+  .db-datebar h2{
+    color:#123f35!important;
+    font-size:20px!important;
+  }
+  .db-datebar .db-muted{
+    color:#536f68!important;
+    font-weight:750!important;
+  }
+
+  .db-device-board{
+    width:100%!important;
+    gap:8px!important;
+    padding:4px 1px 14px!important;
+  }
+  .db-device-plate{
+    flex:0 0 clamp(168px,13.2vw,188px)!important;
+    min-width:168px!important;
+    border-color:#d1e4dc!important;
+    background:linear-gradient(180deg,#ffffff,#f7fcfa)!important;
+    box-shadow:0 10px 25px rgba(33,82,67,.075)!important;
+  }
+  .db-device-plate:nth-child(4n+1) .db-plate-head{
+    background:linear-gradient(135deg,#e8f7ef,#f7fffb 58%,#fff8ec)!important;
+  }
+  .db-device-plate:nth-child(4n+2) .db-plate-head{
+    background:linear-gradient(135deg,#eaf4fb,#f8fcff 58%,#eef8f4)!important;
+  }
+  .db-device-plate:nth-child(4n+3) .db-plate-head{
+    background:linear-gradient(135deg,#fff5e6,#fffdf8 58%,#eef8f1)!important;
+  }
+  .db-device-plate:nth-child(4n) .db-plate-head{
+    background:linear-gradient(135deg,#f0ecfb,#fbf9ff 58%,#edf8f2)!important;
+  }
+
+  .db-plate-name strong{
+    color:#103f34!important;
+    font-size:15px!important;
+  }
+  .db-plate-name small{
+    color:#4d6d65!important;
+    font-weight:850!important;
+  }
+  .db-plate-badge{
+    background:#fff!important;
+    color:#225d4b!important;
+    border-color:#cbded7!important;
+  }
+  .db-stat{
+    background:rgba(255,255,255,.9)!important;
+    border-color:#d8e8e2!important;
+  }
+  .db-stat b{color:#114f3d!important}
+  .db-stat span{color:#526e66!important}
+
+  .db-slot.is-free{
+    border-color:#9fd9bd!important;
+    background:linear-gradient(135deg,#e3f7ec,#f7fdf9)!important;
+  }
+  .db-slot.is-free .db-slot-no{
+    background:linear-gradient(145deg,#cfeedd,#eef9f3)!important;
+    border-color:#abdcc4!important;
+    color:#105e43!important;
+  }
+  .db-slot.is-free .db-slot-time strong{
+    color:#174f40!important;
+  }
+  .db-slot.is-free .db-slot-time small{
+    color:#356b5a!important;
+    font-weight:850!important;
+  }
+  .db-slot.is-free .db-slot-state{
+    background:#c9efdc!important;
+    color:#0d6244!important;
+    border:1px solid #acd9c2!important;
+  }
+
+  .db-status-booked{
+    border-color:#afd0ee!important;
+    background:linear-gradient(135deg,#eaf5ff,#f9fcff)!important;
+  }
+  .db-status-booked .db-slot-state{
+    background:#d3e9fb!important;
+    color:#174f7b!important;
+  }
+
+  .db-status-arrived,.db-status-completed{
+    border-color:#a9ddc1!important;
+    background:linear-gradient(135deg,#e5f7ed,#fbfffd)!important;
+  }
+  .db-status-arrived .db-slot-state,.db-status-completed .db-slot-state{
+    background:#c9efd9!important;
+    color:#0e6546!important;
+  }
+
+  .db-status-late{
+    border-color:#e9ce7c!important;
+    background:linear-gradient(135deg,#fff5cf,#fffdf4)!important;
+  }
+  .db-status-late .db-slot-state{
+    background:#ffe7a0!important;
+    color:#6f520e!important;
+  }
+
+  .db-status-no_show,.db-status-cancelled{
+    border-color:#e6abab!important;
+    background:linear-gradient(135deg,#fde7e7,#fff8f8)!important;
+  }
+  .db-status-no_show .db-slot-state,.db-status-cancelled .db-slot-state{
+    background:#f6cece!important;
+    color:#863434!important;
+  }
+
+  .db-status-rescheduled{
+    border-color:#cbb9e9!important;
+    background:linear-gradient(135deg,#f0e9fb,#fcfaff)!important;
+  }
+  .db-status-rescheduled .db-slot-state{
+    background:#dfd1f4!important;
+    color:#5b378d!important;
+  }
+
+  .db-busy-person{
+    color:#174f78!important;
+    text-decoration-color:rgba(23,79,120,.3)!important;
+  }
+  .db-busy-meta{
+    color:#5a6f6a!important;
+    font-weight:800!important;
+  }
+
+  .db-legend span{
+    background:#fff!important;
+    color:#3f5f58!important;
+    border-color:#d8e6e1!important;
+    box-shadow:0 3px 8px rgba(36,75,65,.035);
+  }
+}
+
+@media(min-width:701px) and (max-width:1180px){
+  .db-book-panel form.db-form{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  }
+  .db-book-panel .db-selected-summary{
+    grid-column:span 2!important;
+  }
+}
+
 </style>
 
 <div class="db-shell">
