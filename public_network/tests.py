@@ -97,6 +97,7 @@ class PublicNetworkTests(TestCase):
         self.assertContains(response, reverse('public_network:turkey_signup_with_code', args=[member.code]))
         self.assertContains(response, reverse('public_network:turkey_public_lead', args=[member.code]))
         self.assertContains(response, reverse('public_network:turkey_lead_create'))
+        self.assertContains(response, reverse('public_network:turkey_member_create'))
 
 
     def test_turkey_language_switch_renders_single_language_copy(self):
@@ -206,3 +207,35 @@ class PublicNetworkTests(TestCase):
         self.assertEqual(response.status_code,200)
         lead=ReferralLead.objects.get(phone='+905332221100')
         self.assertEqual(lead.source,'qr')
+
+
+    def test_turkey_member_can_register_direct_member(self):
+        turkey=Country.objects.get(code='TR')
+        sponsor_user=User.objects.create_user('turkey-sponsor-direct',password='StrongPass123',first_name='Sultan')
+        sponsor=PublicNetworkMember.objects.create(
+            user=sponsor_user,country=turkey,preferred_language='tr',
+            phone='+905550004444',photo=self.photo('sponsor.png'),
+        )
+        self.client.login(username='turkey-sponsor-direct',password='StrongPass123')
+        response=self.client.post(
+            reverse('public_network:turkey_member_create') + '?lang=tr',
+            {
+                'lang':'tr',
+                'first_name':'Yeni',
+                'last_name':'Üye',
+                'phone':'0534 111 22 33',
+                'username':'turkey-child-direct',
+                'password':'StrongPass123',
+                'password_confirm':'StrongPass123',
+                'photo':self.photo('child.png'),
+                'accept_terms':'on',
+            },
+        )
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'Üye hesabı oluşturuldu')
+        child=PublicNetworkMember.objects.get(user__username='turkey-child-direct')
+        self.assertEqual(child.sponsor,sponsor)
+        self.assertEqual(child.country.code,'TR')
+        self.assertEqual(child.source,'referral')
+        self.assertEqual(child.preferred_language,'tr')
+        self.assertTrue(ReferralLead.objects.filter(phone='+905341112233',country=turkey).exists())
