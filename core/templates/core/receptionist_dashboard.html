@@ -103,7 +103,7 @@
 
   <main class="main">
     <header class="top">
-      <div class="hello"><h1>{% gl_t 'rec.greeting' name=user.first_name|default:user.username %}</h1><p>{{ profile.branch|default:"مرکز {% gl_t 'rec.reception_action' %}" }} · {{ jalali_dashboard_date }}</p></div>
+      <div class="hello"><h1>{% gl_t 'rec.greeting' name=user.first_name|default:user.username %}</h1><p>{% if profile.branch %}{{ profile.branch }}{% else %}{% gl_t "rec.center" %}{% endif %} · {{ jalali_dashboard_date }}</p></div>
       <label class="search"><span>⌕</span><input disabled placeholder="{% gl_t 'rec.search' %}"></label>
       <form method="post" action="{% url 'language_switch' %}" class="rec-lang" aria-label="{% gl_t 'shell.language_title' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">{% for code,short,label in ui_languages %}<button type="submit" name="language" value="{{ code }}" class="{% if ui_language == code %}active{% endif %}" aria-label="{{ label }}">{{ short }}</button>{% endfor %}</form>
       <div class="userbox">
@@ -114,23 +114,23 @@
 
     <section class="kpis">
       <article class="kpi"><div class="kpi-copy"><small>{% gl_t 'rec.today_appointments' %}</small><strong>{{ receptionist_appointment_count|default:0 }}</strong><p>{% gl_t 'rec.real_branch_appointments' %}</p></div><div class="kpi-icon">▣</div></article>
-      <article class="kpi"><div class="kpi-copy"><small>{% gl_t 'rec.patients' %} امروز</small><strong>{{ receptionist_arrived_count|default:0 }}</strong><p>بر اساس {% gl_t 'common.status' %} {% gl_t 'rec.today_appointments' %}</p></div><div class="kpi-icon">♙</div></article>
-      <article class="kpi"><div class="kpi-copy"><small>{% gl_t 'common.payment' %}‌های امروز</small><strong>{{ receptionist_payment_count|default:0 }}</strong><p>{% gl_t 'rec.recorded_by_you' %}</p></div><div class="kpi-icon">▤</div></article>
-      <article class="kpi"><div class="kpi-copy"><small>{% gl_t 'common.follow_up' %}‌های باز</small><strong>{{ receptionist_task_count|default:0 }}</strong><p>{% gl_t 'rec.by_real_tasks' %}</p></div><div class="kpi-icon">✓</div></article>
+      <article class="kpi"><div class="kpi-copy"><small>{% gl_t 'rec.today_patients' %}</small><strong>{{ receptionist_arrived_count|default:0 }}</strong><p>{% gl_t 'rec.by_today_status' %}</p></div><div class="kpi-icon">♙</div></article>
+      <article class="kpi"><div class="kpi-copy"><small>{% gl_t 'rec.today_payments' %}</small><strong>{{ receptionist_payment_count|default:0 }}</strong><p>{% gl_t 'rec.recorded_by_you' %}</p></div><div class="kpi-icon">▤</div></article>
+      <article class="kpi"><div class="kpi-copy"><small>{% gl_t 'rec.open_followups' %}</small><strong>{{ receptionist_task_count|default:0 }}</strong><p>{% gl_t 'rec.by_real_tasks' %}</p></div><div class="kpi-icon">✓</div></article>
     </section>
 
     {% if receptionist_payment_queue %}
     <section class="card payment-queue">
-      <div class="card-head"><h2>در انتظار {% gl_t 'common.payment' %} از مشاور <span class="payment-badge">{{ receptionist_payment_waiting_count }}</span></h2><span>{% gl_t 'rec.package_ready' %}</span></div>
+      <div class="card-head"><h2>{% gl_t 'rec.waiting_payment' %} <span class="payment-badge">{{ receptionist_payment_waiting_count }}</span></h2><span>{% gl_t 'rec.package_ready' %}</span></div>
       <div class="payment-list">
         {% for item in receptionist_payment_queue %}
         <div class="payment-row">
-          <div><strong>{{ item.full_name }}</strong><small>{{ item.phone }} · مشاور: {{ item.consultation_plan.consultant.get_full_name|default:item.consultation_plan.consultant.username|default:"—" }}</small>
-            <small style="margin-top:5px;color:#33445e">{% for part in item.consultation_plan.items.all %}{% if part.included %}{{ part.title }}{% if part.area %} ({{ part.area }}){% endif %} × {{ part.quantity }} جلسه × {{ part.units_per_session }} واحد · {{ part.unit_price_toman|floatformat:0 }} تومان/واحد{% if not forloop.last %} | {% endif %}{% endif %}{% endfor %}</small>
+          <div><strong>{{ item.full_name }}</strong><small>{{ item.phone }} · {% gl_t "rec.consultant_label" name=item.consultation_plan.consultant.get_full_name|default:item.consultation_plan.consultant.username|default:"—" %}</small>
+            <small style="margin-top:5px;color:#33445e">{% for part in item.consultation_plan.items.all %}{% if part.included %}{{ part.title }}{% if part.area %} ({{ part.area }}){% endif %} · {% gl_t "rec.package_line" qty=part.quantity units=part.units_per_session price=part.unit_price_toman|floatformat:0 %}{% if not forloop.last %} | {% endif %}{% endif %}{% endfor %}</small>
             {% if item.consultation_plan.status == 'partial_paid' %}<small style="color:#a16909">{% gl_t 'rec.deposit_note' %}</small>{% endif %}
           </div>
-          <div class="payment-amount">{{ item.consultation_plan.final_amount_toman|floatformat:0 }} تومان <small style="display:block;text-align:left">{% gl_t 'rec.total_package' %}</small></div>
-          <a class="payment-go" href="{% url 'finance_entry' %}?appointment={{ item.pk }}">ثبت {% gl_t 'common.payment' %}</a>
+          <div class="payment-amount">{% gl_t "rec.amount_toman" amount=item.consultation_plan.final_amount_toman|floatformat:0 %} <small style="display:block;text-align:left">{% gl_t 'rec.total_package' %}</small></div>
+          <a class="payment-go" href="{% url 'finance_entry' %}?appointment={{ item.pk }}">{% gl_t "rec.record_payment" %}</a>
         </div>
         {% endfor %}
       </div>
@@ -139,7 +139,7 @@
 
     <section class="grid-main">
       <article class="card appointments">
-        <div class="card-head"><h2>لیست {% gl_t 'rec.today_appointments' %}</h2><a href="{% url 'appointment_schedule' %}">{% gl_t 'common.full_schedule' %}</a></div>
+        <div class="card-head"><h2>{% gl_t "rec.today_list" %}</h2><a href="{% url 'appointment_schedule' %}">{% gl_t 'common.full_schedule' %}</a></div>
         <div class="table-head"><span>{% gl_t 'common.time' %}</span><span>{% gl_t 'rec.patient_name' %}</span><span>{% gl_t 'common.service' %}</span><span>{% gl_t 'common.status' %}</span></div>
         {% for item in receptionist_appointments %}
         <div class="appointment-row">
@@ -157,7 +157,7 @@
         <div class="card-head"><h2>{% gl_t 'rec.urgent_today' %}</h2><a href="/tasks/">{% gl_t 'common.view_all' %}</a></div>
         <div class="urgent-list">
           {% for task in receptionist_tasks %}
-          <a class="urgent-row" href="/tasks/"><span class="check"></span><div><strong>{{ task.title }}</strong><small>{{ task.get_priority_display }}{% if task.due_date %} · {{ task.due_date|jdate }}{% endif %}</small></div></a>
+          <a class="urgent-row" href="/tasks/"><span class="check"></span><div><strong>{{ task.title }}</strong><small>{% gl_choice 'task_priority' task.priority task.get_priority_display %}{% if task.due_date %} · {{ task.due_date|jdate }}{% endif %}</small></div></a>
           {% empty %}
           <div class="empty-mini">{% gl_t 'rec.no_open_task' %}</div>
           {% endfor %}
@@ -172,7 +172,7 @@
           <div class="profile-placeholder"><div class="patient-avatar">♙</div><div><strong>{% gl_t 'rec.select_patient' %}</strong><small>{% gl_t 'rec.profile_future' %}</small></div></div>
           <div class="tier-title">{% gl_t 'rec.customer_level' %}</div>
           <div class="tiers"><span class="tier">Silver</span><span class="tier gold">Gold</span><span class="tier platinum">Platinum</span><span class="tier diamond">Diamond</span></div>
-          <div class="future-note">{% gl_t 'rec.customer_level' %} از الان در طراحی سیستم لحاظ شده و بعداً با قوانین ارزش مشتری و CEM به‌صورت واقعی محاسبه/ثبت می‌شود.</div>
+          <div class="future-note">{% gl_t 'rec.level_future' %}</div>
         </div>
       </article>
 
@@ -186,7 +186,7 @@
       </article>
 
       <article class="card messages-card">
-        <div class="card-head"><h2>کارتابل و {% gl_t 'common.internal_messages' %}</h2><a href="{% url 'internal_messages' %}">{% gl_t 'rec.open_messages' %}</a></div>
+        <div class="card-head"><h2>{% gl_t 'rec.inbox' %}</h2><a href="{% url 'internal_messages' %}">{% gl_t 'rec.open_messages' %}</a></div>
         <div class="messages">
           {% for item in receptionist_notifications %}
           <a class="msg" href="/notifications/"><strong>{{ item.title }}</strong><small>{% gl_t 'rec.internal_alert' %}</small><p>{{ item.message|truncatechars:120 }}</p></a>
@@ -194,14 +194,14 @@
           <div class="empty-mini">{% gl_t 'rec.no_unread' %}</div>
           {% endfor %}
         </div>
-        <div class="composer"><a href="{% url 'internal_messages' %}" style="color:inherit;text-decoration:none;font-weight:900">✉ ورود به کارتابل {% gl_t 'common.internal_messages' %}</a></div>
+        <div class="composer"><a href="{% url 'internal_messages' %}" style="color:inherit;text-decoration:none;font-weight:900">✉ {% gl_t "rec.enter_inbox" %}</a></div>
       </article>
     </section>
 
     <div class="actions">
       <a class="primary-action" href="{% url 'receptionist_appointment_create' %}">＋ {% gl_t 'rec.new_appointment' %}</a>
       <div>
-        {% if attendance_today.check_in %}<span class="attendance-pill">✓ ورود امروز {{ attendance_today.check_in|date:"H:i" }}</span>{% elif today_shift.is_off %}<span class="attendance-pill">{% gl_t 'rec.non_working' %}</span>{% else %}<a href="/attendance/" class="attendance-pill off">{% gl_t 'rec.not_checked_in' %}</a>{% endif %}
+        {% if attendance_today.check_in %}<span class="attendance-pill">{% gl_t "rec.today_checkin" time=attendance_today.check_in|date:"H:i" %}</span>{% elif today_shift.is_off %}<span class="attendance-pill">{% gl_t 'rec.non_working' %}</span>{% else %}<a href="/attendance/" class="attendance-pill off">{% gl_t 'rec.not_checked_in' %}</a>{% endif %}
       </div>
       <span class="footnote">{% gl_t 'rec.desktop_note' %}</span>
     </div>
