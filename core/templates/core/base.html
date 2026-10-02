@@ -363,192 +363,192 @@ html[dir="ltr"] .app-main{direction:ltr}
   </div>
   <nav class="app-nav">
     {% if executive_access %}
-    <a href="/my-office/" class="gl-executive-nav {% if request.path|slice:':11' == '/my-office/' %}is-active{% endif %}"><span class="nav-ico">✦</span><span>دفتر من</span><b class="gl-private-badge">PRIVATE</b></a>
-    <a href="{% url 'doctor_dashboard' %}" class="gl-executive-nav {% if request.resolver_match.url_name == 'doctor_dashboard' %}is-active{% endif %}"><span class="nav-ico">✚</span><span>حالت پزشک</span></a>
+    <a href="/my-office/" class="gl-executive-nav {% if request.path|slice:':11' == '/my-office/' %}is-active{% endif %}"><span class="nav-ico">✦</span><span>{% gl_t 'shell.my_office' %}</span><b class="gl-private-badge">PRIVATE</b></a>
+    <a href="{% url 'doctor_dashboard' %}" class="gl-executive-nav {% if request.resolver_match.url_name == 'doctor_dashboard' %}is-active{% endif %}"><span class="nav-ico">✚</span><span>{% gl_t 'shell.doctor_mode' %}</span></a>
     {% endif %}
     {% if executive_access or user.is_superuser %}
     <details class="gl-settings-menu" {% if request.resolver_match.url_name == 'treatment_catalog_settings' or request.resolver_match.url_name == 'credential_settings' or request.resolver_match.url_name == 'api_server_settings' or request.resolver_match.url_name == 'sms_management' or request.resolver_match.url_name == 'website_lead_settings' or request.resolver_match.url_name == 'shift_today_bulk' or request.resolver_match.url_name == 'device_capacity_settings' or request.path|slice:':12' == '/guidelines/' %}open{% endif %}>
-      <summary><span class="nav-ico">⚙</span><span>تنظیمات</span><span class="settings-caret">⌄</span></summary>
+      <summary><span class="nav-ico">⚙</span><span>{% gl_t 'common.settings' %}</span><span class="settings-caret">⌄</span></summary>
       <div class="gl-settings-submenu">
-        <a href="{% url 'treatment_catalog_settings' %}" class="{% if request.resolver_match.url_name == 'treatment_catalog_settings' %}is-active{% endif %}"><span class="nav-ico">◈</span><span>خدمات و درمان‌ها</span></a>
-        <a href="{% url 'credential_settings' %}" class="{% if request.resolver_match.url_name == 'credential_settings' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>مدیریت رمزها</span></a>
-        <a href="{% url 'credential_settings' %}#panel-preview" class="{% if request.resolver_match.url_name == 'credential_settings' %}is-active{% endif %}"><span class="nav-ico">◫</span><span>نمای صفحات پرسنل</span></a>
-        <a href="{% url 'api_server_settings' %}" class="{% if request.resolver_match.url_name == 'api_server_settings' %}is-active{% endif %}"><span class="nav-ico">⌁</span><span>اتصال API Server</span></a>
-        <a href="{% url 'sms_management' %}" class="{% if request.resolver_match.url_name == 'sms_management' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>مدیریت پیامک</span></a>
-        <a href="{% url 'website_lead_settings' %}" class="{% if request.resolver_match.url_name == 'website_lead_settings' %}is-active{% endif %}"><span class="nav-ico">◎</span><span>اتصال لید وب‌سایت</span></a>
-        <a href="{% url 'device_capacity_settings' %}" class="{% if request.resolver_match.url_name == 'device_capacity_settings' %}is-active{% endif %}"><span class="nav-ico">▣</span><span>دستگاه‌ها و ظرفیت نوبت‌دهی</span></a>
-        <a href="{% url 'shift_today_bulk' %}" class="{% if request.resolver_match.url_name == 'shift_today_bulk' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>تنظیم ساعت کاری</span></a>
-        <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>شرح وظایف و دستورالعمل‌ها</span></a>
+        <a href="{% url 'treatment_catalog_settings' %}" class="{% if request.resolver_match.url_name == 'treatment_catalog_settings' %}is-active{% endif %}"><span class="nav-ico">◈</span><span>{% gl_t 'shell.treatments' %}</span></a>
+        <a href="{% url 'credential_settings' %}" class="{% if request.resolver_match.url_name == 'credential_settings' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>{% gl_t 'shell.credentials' %}</span></a>
+        <a href="{% url 'credential_settings' %}#panel-preview" class="{% if request.resolver_match.url_name == 'credential_settings' %}is-active{% endif %}"><span class="nav-ico">◫</span><span>{% gl_t 'shell.staff_preview' %}</span></a>
+        <a href="{% url 'api_server_settings' %}" class="{% if request.resolver_match.url_name == 'api_server_settings' %}is-active{% endif %}"><span class="nav-ico">⌁</span><span>{% gl_t 'shell.api' %}</span></a>
+        <a href="{% url 'sms_management' %}" class="{% if request.resolver_match.url_name == 'sms_management' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>{% gl_t 'shell.sms' %}</span></a>
+        <a href="{% url 'website_lead_settings' %}" class="{% if request.resolver_match.url_name == 'website_lead_settings' %}is-active{% endif %}"><span class="nav-ico">◎</span><span>{% gl_t 'shell.website_leads' %}</span></a>
+        <a href="{% url 'device_capacity_settings' %}" class="{% if request.resolver_match.url_name == 'device_capacity_settings' %}is-active{% endif %}"><span class="nav-ico">▣</span><span>{% gl_t 'shell.device_capacity' %}</span></a>
+        <a href="{% url 'shift_today_bulk' %}" class="{% if request.resolver_match.url_name == 'shift_today_bulk' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'shell.work_hours' %}</span></a>
+        <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>{% gl_t 'shell.guidelines_full' %}</span></a>
       </div>
     </details>
     {% endif %}
     {% if user.profile.role != 'referrer' and user.profile.role != 'doctor' %}
-    <a href="{% url 'internal_messages' %}" class="{% if request.resolver_match.url_name == 'internal_messages' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>پیام داخلی</span></a>
+    <a href="{% url 'internal_messages' %}" class="{% if request.resolver_match.url_name == 'internal_messages' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>{% gl_t 'common.internal_messages' %}</span></a>
     {% endif %}
     {% if user.profile.role == 'doctor' %}
-    <a href="{% url 'doctor_dashboard' %}" class="nav-main {% if request.resolver_match.url_name == 'doctor_dashboard' %}is-active{% endif %}"><span class="nav-ico">✚</span><span>داشبورد پزشک</span></a>
-    <a href="{% url 'doctor_dashboard' %}" class="{% if request.resolver_match.url_name == 'doctor_dashboard' %}is-active{% endif %}"><span class="nav-ico">▣</span><span>نوبت‌های امروز</span></a>
-    <a href="{% url 'internal_messages' %}" class="{% if request.resolver_match.url_name == 'internal_messages' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>چت و پیام‌ها</span></a>
-    <a href="/attendance/" class="attendance-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور و غیاب</span></a>
-    <a href="/requests/" class="{% if request.path|slice:':10' == '/requests/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>مرخصی</span></a>
-    <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>تغییر رمز</span></a>
-    <a href="/requests/" class="{% if request.path|slice:':10' == '/requests/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>مرخصی</span></a>
-    <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>تغییر رمز</span></a>
-    <a href="/requests/" class="{% if request.path|slice:':10' == '/requests/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>مرخصی</span></a>
-    <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>تغییر رمز</span></a>
-    <a href="/requests/" class="{% if request.path|slice:':10' == '/requests/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>مرخصی</span></a>
-    <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>تغییر رمز</span></a>
-    <a href="/profile/"><span class="nav-ico">◉</span><span>پروفایل</span></a>
-    <a href="/logout/"><span class="nav-ico">↪</span><span>خروج</span></a>
+    <a href="{% url 'doctor_dashboard' %}" class="nav-main {% if request.resolver_match.url_name == 'doctor_dashboard' %}is-active{% endif %}"><span class="nav-ico">✚</span><span>{% gl_t 'shell.doctor_dashboard' %}</span></a>
+    <a href="{% url 'doctor_dashboard' %}" class="{% if request.resolver_match.url_name == 'doctor_dashboard' %}is-active{% endif %}"><span class="nav-ico">▣</span><span>{% gl_t 'shell.today_appointments' %}</span></a>
+    <a href="{% url 'internal_messages' %}" class="{% if request.resolver_match.url_name == 'internal_messages' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>{% gl_t 'shell.chat_messages' %}</span></a>
+    <a href="/attendance/" class="attendance-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'common.attendance' %}</span></a>
+    <a href="/requests/" class="{% if request.path|slice:':10' == '/requests/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'common.leave' %}</span></a>
+    <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>{% gl_t 'shell.change_password' %}</span></a>
+    <a href="/requests/" class="{% if request.path|slice:':10' == '/requests/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'common.leave' %}</span></a>
+    <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>{% gl_t 'shell.change_password' %}</span></a>
+    <a href="/requests/" class="{% if request.path|slice:':10' == '/requests/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'common.leave' %}</span></a>
+    <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>{% gl_t 'shell.change_password' %}</span></a>
+    <a href="/requests/" class="{% if request.path|slice:':10' == '/requests/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'common.leave' %}</span></a>
+    <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>{% gl_t 'shell.change_password' %}</span></a>
+    <a href="/profile/"><span class="nav-ico">◉</span><span>{% gl_t 'common.profile' %}</span></a>
+    <a href="/logout/"><span class="nav-ico">↪</span><span>{% gl_t 'common.logout' %}</span></a>
     {% elif user.profile.role == 'consultant' %}
-    <a href="{% url 'consultant_sales_outcomes' %}" class="nav-main {% if request.resolver_match.url_name == 'consultant_sales_outcomes' %}is-active{% endif %}"><span class="nav-ico">◈</span><span>پنل مشاور و پکیج درمان</span></a>
-    <a href="/" class="{% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico">⌂</span><span>خانه پرسنلی</span></a>
-    <a href="/finance/entry/" class="consultant-finance-nav {% if request.path|slice:':15' == '/finance/entry/' %}is-active{% endif %}"><span class="nav-ico">▧</span><span>ثبت مالی</span></a>
-    <a href="/attendance/" class="attendance-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور و غیاب</span></a>
-    <a href="/tasks/" class="{% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>وظایف من</span></a>
-    <a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش روزانه</span></a>
-    <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>شرح وظایف</span></a>
-    {% if user.profile.role != 'admin' %}<a href="/service-requests/"><span class="nav-ico">✓</span><span>درخواست‌ها</span></a>{% endif %}
-    <a href="/device-issues/mine/"><span class="nav-ico">⚒</span><span>خرابی دستگاه</span></a>
-    <a href="/notifications/" class="{% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico">♢</span><span>اعلان‌ها</span></a>
-    <a href="/profile/"><span class="nav-ico">◉</span><span>پروفایل</span></a>
-    <a href="/logout/"><span class="nav-ico">↪</span><span>خروج</span></a>
+    <a href="{% url 'consultant_sales_outcomes' %}" class="nav-main {% if request.resolver_match.url_name == 'consultant_sales_outcomes' %}is-active{% endif %}"><span class="nav-ico">◈</span><span>{% gl_t 'shell.consultant_panel' %}</span></a>
+    <a href="/" class="{% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico">⌂</span><span>{% gl_t 'shell.staff_home' %}</span></a>
+    <a href="/finance/entry/" class="consultant-finance-nav {% if request.path|slice:':15' == '/finance/entry/' %}is-active{% endif %}"><span class="nav-ico">▧</span><span>{% gl_t 'shell.finance_entry' %}</span></a>
+    <a href="/attendance/" class="attendance-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'common.attendance' %}</span></a>
+    <a href="/tasks/" class="{% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>{% gl_t 'common.tasks' %}</span></a>
+    <a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>{% gl_t 'common.daily_report' %}</span></a>
+    <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>{% gl_t 'common.guidelines' %}</span></a>
+    {% if user.profile.role != 'admin' %}<a href="/service-requests/"><span class="nav-ico">✓</span><span>{% gl_t 'common.requests' %}</span></a>{% endif %}
+    <a href="/device-issues/mine/"><span class="nav-ico">⚒</span><span>{% gl_t 'common.device_issue' %}</span></a>
+    <a href="/notifications/" class="{% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico">♢</span><span>{% gl_t 'common.notifications' %}</span></a>
+    <a href="/profile/"><span class="nav-ico">◉</span><span>{% gl_t 'common.profile' %}</span></a>
+    <a href="/logout/"><span class="nav-ico">↪</span><span>{% gl_t 'common.logout' %}</span></a>
     {% elif user.profile.role == 'call_center' %}
-    <a href="/" class="nav-main employee-bottom-nav cc-mobile-home {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico">⌂</span><span>خانه</span></a>
-    <a href="/attendance/" class="attendance-nav employee-bottom-nav cc-mobile-attendance {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور و غیاب</span></a>
-    <a href="/tasks/" class="employee-bottom-nav cc-mobile-tasks {% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>وظایف من</span></a>
-    <a href="/reports/" class="employee-bottom-nav cc-mobile-reports {% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش روزانه</span></a>
-    <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>شرح وظایف</span></a>
-    <a href="/notifications/" class="employee-bottom-nav cc-mobile-notifications {% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico">♢</span><span>اعلان‌ها</span></a>
-    <a href="/profile/"><span class="nav-ico">◉</span><span>پروفایل</span></a>
-    <a href="/logout/"><span class="nav-ico">↪</span><span>خروج</span></a>
+    <a href="/" class="nav-main employee-bottom-nav cc-mobile-home {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico">⌂</span><span>{% gl_t 'common.home' %}</span></a>
+    <a href="/attendance/" class="attendance-nav employee-bottom-nav cc-mobile-attendance {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'common.attendance' %}</span></a>
+    <a href="/tasks/" class="employee-bottom-nav cc-mobile-tasks {% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>{% gl_t 'common.tasks' %}</span></a>
+    <a href="/reports/" class="employee-bottom-nav cc-mobile-reports {% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>{% gl_t 'common.daily_report' %}</span></a>
+    <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>{% gl_t 'common.guidelines' %}</span></a>
+    <a href="/notifications/" class="employee-bottom-nav cc-mobile-notifications {% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico">♢</span><span>{% gl_t 'common.notifications' %}</span></a>
+    <a href="/profile/"><span class="nav-ico">◉</span><span>{% gl_t 'common.profile' %}</span></a>
+    <a href="/logout/"><span class="nav-ico">↪</span><span>{% gl_t 'common.logout' %}</span></a>
     {% elif user.profile.role == 'receptionist' %}
-    <a href="/" class="employee-bottom-nav {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico">⌂</span><span>خانه</span></a>
-    <a href="/attendance/" class="attendance-nav employee-bottom-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور و غیاب</span></a>
-    <a href="/tasks/" class="employee-bottom-nav {% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>وظایف من</span></a>
-    <a href="/reports/" class="employee-bottom-nav {% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش روزانه</span></a>
-    <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>شرح وظایف</span></a>
-    <a href="/service-requests/"><span class="nav-ico">✓</span><span>درخواست‌ها</span></a>
-    <a href="/device-issues/mine/"><span class="nav-ico">⚒</span><span>خرابی دستگاه</span></a>
-    <a href="/notifications/" class="employee-bottom-nav {% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico">♢</span><span>اعلان‌ها</span></a>
-    <a href="/profile/"><span class="nav-ico">◉</span><span>پروفایل</span></a>
-    <a href="/logout/"><span class="nav-ico">↪</span><span>خروج</span></a>
+    <a href="/" class="employee-bottom-nav {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico">⌂</span><span>{% gl_t 'common.home' %}</span></a>
+    <a href="/attendance/" class="attendance-nav employee-bottom-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'common.attendance' %}</span></a>
+    <a href="/tasks/" class="employee-bottom-nav {% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>{% gl_t 'common.tasks' %}</span></a>
+    <a href="/reports/" class="employee-bottom-nav {% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>{% gl_t 'common.daily_report' %}</span></a>
+    <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>{% gl_t 'common.guidelines' %}</span></a>
+    <a href="/service-requests/"><span class="nav-ico">✓</span><span>{% gl_t 'common.requests' %}</span></a>
+    <a href="/device-issues/mine/"><span class="nav-ico">⚒</span><span>{% gl_t 'common.device_issue' %}</span></a>
+    <a href="/notifications/" class="employee-bottom-nav {% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico">♢</span><span>{% gl_t 'common.notifications' %}</span></a>
+    <a href="/profile/"><span class="nav-ico">◉</span><span>{% gl_t 'common.profile' %}</span></a>
+    <a href="/logout/"><span class="nav-ico">↪</span><span>{% gl_t 'common.logout' %}</span></a>
     {% elif user.profile.role == 'referral_supervisor' %}
-    <a href="{% url 'referral_supervisor_dashboard' %}" class="is-active"><span class="nav-ico">◉</span><span>نظارت شبکه فروش</span></a>
-    <a href="/profile/"><span class="nav-ico">♙</span><span>پروفایل</span></a>
-    <a href="/logout/"><span class="nav-ico">↪</span><span>خروج</span></a>
+    <a href="{% url 'referral_supervisor_dashboard' %}" class="is-active"><span class="nav-ico">◉</span><span>{% gl_t 'shell.sales_network_watch' %}</span></a>
+    <a href="/profile/"><span class="nav-ico">♙</span><span>{% gl_t 'common.profile' %}</span></a>
+    <a href="/logout/"><span class="nav-ico">↪</span><span>{% gl_t 'common.logout' %}</span></a>
     {% elif user.profile.role == 'referrer' %}
-    <a href="/referrals/" class="{% if request.path == '/referrals/' %}is-active{% endif %}"><span class="nav-ico">✦</span><span>شبکه فروش من</span></a>
-    <a href="/referrals/leads/" class="{% if '/referrals/leads/' in request.path %}is-active{% endif %}"><span class="nav-ico">◈</span><span>لیدهای من</span></a>
-    <a href="/referrals/network/" class="{% if '/referrals/network/' in request.path %}is-active{% endif %}"><span class="nav-ico">⌘</span><span>شبکه من</span></a>
-    <a href="/referrals/sales/" class="{% if '/referrals/sales/' in request.path %}is-active{% endif %}"><span class="nav-ico">◇</span><span>فروش و درآمد</span></a>
-    <a href="/logout/"><span class="nav-ico">↪</span><span>خروج</span></a>
+    <a href="/referrals/" class="{% if request.path == '/referrals/' %}is-active{% endif %}"><span class="nav-ico">✦</span><span>{% gl_t 'shell.my_sales_network' %}</span></a>
+    <a href="/referrals/leads/" class="{% if '/referrals/leads/' in request.path %}is-active{% endif %}"><span class="nav-ico">◈</span><span>{% gl_t 'shell.my_leads' %}</span></a>
+    <a href="/referrals/network/" class="{% if '/referrals/network/' in request.path %}is-active{% endif %}"><span class="nav-ico">⌘</span><span>{% gl_t 'shell.my_network' %}</span></a>
+    <a href="/referrals/sales/" class="{% if '/referrals/sales/' in request.path %}is-active{% endif %}"><span class="nav-ico">◇</span><span>{% gl_t 'shell.sales_income' %}</span></a>
+    <a href="/logout/"><span class="nav-ico">↪</span><span>{% gl_t 'common.logout' %}</span></a>
     {% else %}
-    <a href="/" class="nav-main employee-bottom-nav {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 11.2 12 3l9 8.2V21h-6v-6H9v6H3v-9.8Z"/></svg></span><span class="nav-label nav-label-desktop">امروز چه خبر</span><span class="nav-label nav-label-mobile">خانه</span></a>
+    <a href="/" class="nav-main employee-bottom-nav {% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M3 11.2 12 3l9 8.2V21h-6v-6H9v6H3v-9.8Z"/></svg></span><span class="nav-label nav-label-desktop">{% gl_t 'shell.whats_new' %}</span><span class="nav-label nav-label-mobile">{% gl_t 'common.home' %}</span></a>
     {% if user.profile.role == 'internal_manager' %}
-    <a href="/meeting-minutes/new/" class="{% if request.resolver_match.url_name == 'meeting_minute_create' %}is-active{% endif %}"><span class="nav-ico">＋</span><span>صورت‌جلسه جدید</span></a>
-    <a href="/meeting-minutes/" class="{% if '/meeting-minutes/' in request.path and request.resolver_match.url_name != 'meeting_minute_create' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>لیست صورت‌جلسات</span></a>
+    <a href="/meeting-minutes/new/" class="{% if request.resolver_match.url_name == 'meeting_minute_create' %}is-active{% endif %}"><span class="nav-ico">＋</span><span>{% gl_t 'shell.meeting_new' %}</span></a>
+    <a href="/meeting-minutes/" class="{% if '/meeting-minutes/' in request.path and request.resolver_match.url_name != 'meeting_minute_create' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>{% gl_t 'shell.meeting_list' %}</span></a>
     {% elif user.profile.role == 'admin' %}
-    <a href="/meeting-minutes/" class="{% if '/meeting-minutes/' in request.path %}is-active{% endif %}"><span class="nav-ico">▤</span><span>صورت‌جلسات</span></a>
+    <a href="/meeting-minutes/" class="{% if '/meeting-minutes/' in request.path %}is-active{% endif %}"><span class="nav-ico">▤</span><span>{% gl_t 'shell.meetings' %}</span></a>
     {% endif %}
     {% if user.profile.role == 'employee' %}
     <a href="/profile/" class="employee-profile-nav employee-bottom-nav {% if request.resolver_match.url_name == 'profile' %}is-active{% endif %}" aria-label="پرونده من">
       <span class="nav-ico profile-nav-icon"><svg viewBox="0 0 24 24"><path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0 2c-5.1 0-8 2.55-8 5.25V21h16v-1.75C20 16.55 17.1 14 12 14Z"/></svg></span>
-      <span>پرونده</span>
+      <span>{% gl_t 'shell.file' %}</span>
     </a>
     {% endif %}
     {% if user.profile.role == 'employee' %}
-    <a href="/tasks/" class="employee-tasks-nav {% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 4h11v2H4V4Zm0 7h11v2H4v-2Zm0 7h11v2H4v-2Zm14-14h2v2h-2V4Zm0 7h2v2h-2v-2Zm0 7h2v2h-2v-2Z"/></svg></span><span>وظایف</span></a>
+    <a href="/tasks/" class="employee-tasks-nav {% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 4h11v2H4V4Zm0 7h11v2H4v-2Zm0 7h11v2H4v-2Zm14-14h2v2h-2V4Zm0 7h2v2h-2v-2Zm0 7h2v2h-2v-2Z"/></svg></span><span>{% gl_t 'common.tasks' %}</span></a>
     {% endif %}
-    {% if user.profile.role != 'employee' %}<a href="/live/"><span class="nav-ico">⌘</span><span>{% if user.profile.role == "manager" %}مدیریت شعبه{% elif user.profile.role == "internal_manager" %}مدیریت داخلی{% else %}پنل مدیریتی{% endif %}</span></a>{% endif %}
-    {% if user.profile.role != 'employee' %}<a href="/action-center/"><span class="nav-ico">⚡</span><span>مرکز اقدام</span></a>{% endif %}
+    {% if user.profile.role != 'employee' %}<a href="/live/"><span class="nav-ico">⌘</span><span>{% if user.profile.role == "manager" %}{% gl_t 'shell.branch_management' %}{% elif user.profile.role == "internal_manager" %}{% gl_t 'shell.internal_management' %}{% else %}{% gl_t 'shell.management_panel' %}{% endif %}</span></a>{% endif %}
+    {% if user.profile.role != 'employee' %}<a href="/action-center/"><span class="nav-ico">⚡</span><span>{% gl_t 'shell.action_center' %}</span></a>{% endif %}
     {% if user.profile.role == 'admin' %}
     <details class="gl-settings-menu" {% if request.resolver_match.url_name == 'lead_management_dashboard' or request.resolver_match.url_name == 'instagram_manual_lead' %}open{% endif %}>
-      <summary><span class="nav-ico">◉</span><span>لیدها</span><span class="settings-caret">⌄</span></summary>
+      <summary><span class="nav-ico">◉</span><span>{% gl_t 'common.leads' %}</span><span class="settings-caret">⌄</span></summary>
       <div class="gl-settings-submenu">
-        <a href="/lead-management/" class="{% if request.resolver_match.url_name == 'lead_management_dashboard' %}is-active{% endif %}"><span class="nav-ico">◉</span><span>مدیریت لیدها</span></a>
-        <a href="{% url 'instagram_manual_lead' %}" class="{% if request.resolver_match.url_name == 'instagram_manual_lead' %}is-active{% endif %}"><span class="nav-ico">＋</span><span>ثبت لید</span></a>
+        <a href="/lead-management/" class="{% if request.resolver_match.url_name == 'lead_management_dashboard' %}is-active{% endif %}"><span class="nav-ico">◉</span><span>{% gl_t 'shell.lead_management' %}</span></a>
+        <a href="{% url 'instagram_manual_lead' %}" class="{% if request.resolver_match.url_name == 'instagram_manual_lead' %}is-active{% endif %}"><span class="nav-ico">＋</span><span>{% gl_t 'shell.add_lead' %}</span></a>
       </div>
     </details>
     {% elif user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}
-    <a href="/lead-management/" class="{% if request.resolver_match.url_name == 'lead_management_dashboard' %}is-active{% endif %}"><span class="nav-ico">◉</span><span>لیدها</span></a>
+    <a href="/lead-management/" class="{% if request.resolver_match.url_name == 'lead_management_dashboard' %}is-active{% endif %}"><span class="nav-ico">◉</span><span>{% gl_t 'common.leads' %}</span></a>
     {% endif %}
-    {% if user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}<a href="/my-tasks/" class="{% if request.path|slice:':10' == '/my-tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>وظایف من</span></a>{% endif %}
-    {% if user.profile.role != 'employee' and user.profile.role != 'admin' %}<a href="/blackboard/" class="{% if '/blackboard/' in request.path %}is-active{% endif %}"><span class="nav-ico">▰</span><span>تخته‌سیاه پرسنل</span></a>{% endif %}
-    {% if user.profile.role != 'employee' and user.profile.role != 'admin' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌های پرسنل</span></a>{% endif %}
+    {% if user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}<a href="/my-tasks/" class="{% if request.path|slice:':10' == '/my-tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>{% gl_t 'common.tasks' %}</span></a>{% endif %}
+    {% if user.profile.role != 'employee' and user.profile.role != 'admin' %}<a href="/blackboard/" class="{% if '/blackboard/' in request.path %}is-active{% endif %}"><span class="nav-ico">▰</span><span>{% gl_t 'shell.staff_blackboard' %}</span></a>{% endif %}
+    {% if user.profile.role != 'employee' and user.profile.role != 'admin' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>{% gl_t 'shell.staff_reports' %}</span></a>{% endif %}
     {% if user.profile.role == 'admin' %}
     <details class="gl-settings-menu" {% if '/employees/' in request.path or '/blackboard/' in request.path or request.path|slice:':9' == '/reports/' %}open{% endif %}>
-      <summary><span class="nav-ico">♙</span><span>پرسنل</span><span class="settings-caret">⌄</span></summary>
+      <summary><span class="nav-ico">♙</span><span>{% gl_t 'common.staff' %}</span><span class="settings-caret">⌄</span></summary>
       <div class="gl-settings-submenu">
-        <a href="/employees/"><span class="nav-ico">♙</span><span>فهرست پرسنل</span></a>
-        <a href="/blackboard/" class="{% if '/blackboard/' in request.path %}is-active{% endif %}"><span class="nav-ico">▰</span><span>تخته‌سیاه پرسنل</span></a>
-        <a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌های پرسنل</span></a>
+        <a href="/employees/"><span class="nav-ico">♙</span><span>{% gl_t 'shell.staff_list' %}</span></a>
+        <a href="/blackboard/" class="{% if '/blackboard/' in request.path %}is-active{% endif %}"><span class="nav-ico">▰</span><span>{% gl_t 'shell.staff_blackboard' %}</span></a>
+        <a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>{% gl_t 'shell.staff_reports' %}</span></a>
       </div>
     </details>
     {% else %}
-    <a href="/employees/"><span class="nav-ico">♙</span><span>پرسنل</span></a>
+    <a href="/employees/"><span class="nav-ico">♙</span><span>{% gl_t 'common.staff' %}</span></a>
     {% endif %}
-    {% if user.profile.role == 'internal_manager' %}<a href="{% url 'shift_today_bulk' %}" class="{% if request.resolver_match.url_name == 'shift_today_bulk' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>تنظیم ساعت کاری</span></a>{% endif %}
-    <a href="/referrals/" class="{% if '/referrals/' in request.path %}is-active{% endif %}"><span class="nav-ico">✦</span><span>{% if user.profile.role == 'employee' %}شبکه فروش من{% else %}مدیریت شبکه فروش{% endif %}</span></a>
-    {% if user.profile.role == 'employee' %}<a href="/attendance/" class="attendance-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2h2V2Zm12 7H5v10h14V9Zm-8 2h2v4h3v2h-5v-6Z"/></svg></span><span class="nav-label nav-label-desktop">حضور و غیاب</span><span class="nav-label nav-label-mobile">حضور</span></a>{% elif user.profile.role == 'manager' or user.profile.role == 'internal_manager' %}<a href="/attendance/team/" class="{% if request.path|slice:':17' == '/attendance/team/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>حضور تیم</span></a>{% endif %}
-    {% if user.profile.role != 'employee' %}<a href="/kpi/"><span class="nav-ico">◎</span><span>عملکرد و KPI</span></a>{% endif %}
-    {% if user.profile.role != 'admin' %}<a href="/sop/" class="{% if request.path|slice:':5' == '/sop/' %}is-active{% endif %}"><span class="nav-ico">◇</span><span>آموزش</span></a>{% endif %}
-    {% if user.profile.role != 'admin' %}<a href="/guidelines/" class="{% if user.profile.role == 'employee' %}employee-guidelines-nav employee-bottom-nav {% endif %}{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>{% if user.profile.role == 'employee' %}شرح وظایف{% else %}شرح وظایف و دستورالعمل‌ها{% endif %}</span></a>{% endif %}
-    <a href="/service-requests/"><span class="nav-ico">✓</span><span>درخواست‌ها</span></a>
+    {% if user.profile.role == 'internal_manager' %}<a href="{% url 'shift_today_bulk' %}" class="{% if request.resolver_match.url_name == 'shift_today_bulk' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'shell.work_hours' %}</span></a>{% endif %}
+    <a href="/referrals/" class="{% if '/referrals/' in request.path %}is-active{% endif %}"><span class="nav-ico">✦</span><span>{% if user.profile.role == 'employee' %}{% gl_t 'shell.my_sales_network' %}{% else %}{% gl_t 'shell.sales_network_management' %}{% endif %}</span></a>
+    {% if user.profile.role == 'employee' %}<a href="/attendance/" class="attendance-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2h2V2Zm12 7H5v10h14V9Zm-8 2h2v4h3v2h-5v-6Z"/></svg></span><span class="nav-label nav-label-desktop">حضور و غیاب</span><span class="nav-label nav-label-mobile">حضور</span></a>{% elif user.profile.role == 'manager' or user.profile.role == 'internal_manager' %}<a href="/attendance/team/" class="{% if request.path|slice:':17' == '/attendance/team/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'shell.team_attendance' %}</span></a>{% endif %}
+    {% if user.profile.role != 'employee' %}<a href="/kpi/"><span class="nav-ico">◎</span><span>{% gl_t 'shell.performance_kpi' %}</span></a>{% endif %}
+    {% if user.profile.role != 'admin' %}<a href="/sop/" class="{% if request.path|slice:':5' == '/sop/' %}is-active{% endif %}"><span class="nav-ico">◇</span><span>{% gl_t 'common.training' %}</span></a>{% endif %}
+    {% if user.profile.role != 'admin' %}<a href="/guidelines/" class="{% if user.profile.role == 'employee' %}employee-guidelines-nav employee-bottom-nav {% endif %}{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>{% if user.profile.role == 'employee' %}{% gl_t 'common.guidelines' %}{% else %}{% gl_t 'shell.guidelines_full' %}{% endif %}</span></a>{% endif %}
+    <a href="/service-requests/"><span class="nav-ico">✓</span><span>{% gl_t 'common.requests' %}</span></a>
     {% if user.profile.role == 'employee' %}
-    <a href="/requests/" class="{% if request.path|slice:':10' == '/requests/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>مرخصی و مأموریت</span></a>
-    <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>تغییر رمز</span></a>
+    <a href="/requests/" class="{% if request.path|slice:':10' == '/requests/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'shell.leave_mission' %}</span></a>
+    <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>{% gl_t 'shell.change_password' %}</span></a>
     {% endif %}
-    {% if user.profile.role == 'employee' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>گزارش‌ها</span></a>{% endif %}
-    {% if user.profile.role == 'admin' or user.profile.role == 'manager' %}<a href="/finance/"><span class="nav-ico">▧</span><span>مالی و درآمد</span></a>{% endif %}
-    {% if user.profile.role == 'admin' %}<a href="{% url 'payroll_dashboard' %}" class="{% if request.resolver_match.url_name == 'payroll_dashboard' %}is-active{% endif %}"><span class="nav-ico">¤</span><span>حقوق‌ها</span></a>{% endif %}
-    {% if user.profile.role != 'admin' %}<a href="/notifications/" class="notifications-nav employee-bottom-nav {% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 6.2-3 7-3 9h18c0-2-3-2.8-3-9Zm-8 11h4a2 2 0 0 1-4 0Z"/></svg></span><span>اعلان‌ها</span></a>{% endif %}
+    {% if user.profile.role == 'employee' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>{% gl_t 'shell.reports' %}</span></a>{% endif %}
+    {% if user.profile.role == 'admin' or user.profile.role == 'manager' %}<a href="/finance/"><span class="nav-ico">▧</span><span>{% gl_t 'common.finance' %}</span></a>{% endif %}
+    {% if user.profile.role == 'admin' %}<a href="{% url 'payroll_dashboard' %}" class="{% if request.resolver_match.url_name == 'payroll_dashboard' %}is-active{% endif %}"><span class="nav-ico">¤</span><span>{% gl_t 'shell.payroll' %}</span></a>{% endif %}
+    {% if user.profile.role != 'admin' %}<a href="/notifications/" class="notifications-nav employee-bottom-nav {% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 6.2-3 7-3 9h18c0-2-3-2.8-3-9Zm-8 11h4a2 2 0 0 1-4 0Z"/></svg></span><span>{% gl_t 'common.notifications' %}</span></a>{% endif %}
 
-    {% if user.profile.role != 'admin' %}<a href="/device-issues/mine/" class="{% if request.path|slice:':15' == '/device-issues/' %}is-active{% endif %}"><span class="nav-ico">🛠</span><span>خرابی دستگاه</span></a>{% endif %}
+    {% if user.profile.role != 'admin' %}<a href="/device-issues/mine/" class="{% if request.path|slice:':15' == '/device-issues/' %}is-active{% endif %}"><span class="nav-ico">🛠</span><span>{% gl_t 'common.device_issue' %}</span></a>{% endif %}
     {% if user.profile.role == 'internal_manager' or user.profile.role == 'manager' or user.username == 'sadeghi' %}
-    <a href="/device-issues/manage/"><span class="nav-ico">⚒</span><span>مدیریت خرابی‌ها</span></a>
+    <a href="/device-issues/manage/"><span class="nav-ico">⚒</span><span>{% gl_t 'shell.device_issue_management' %}</span></a>
     {% endif %}
 
     <button type="button" class="mobile-more-toggle employee-bottom-nav" aria-expanded="false" aria-controls="mobileMoreMenu">
-      <span class="nav-ico mobile-more-grid"><svg viewBox="0 0 24 24"><path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z"/></svg></span><span>بیشتر</span>
+      <span class="nav-ico mobile-more-grid"><svg viewBox="0 0 24 24"><path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z"/></svg></span><span>{% gl_t 'shell.more' %}</span>
     </button>
 
     <div class="mobile-more-menu" id="mobileMoreMenu" hidden>
       <div class="mobile-more-head">
-        <strong>{% if user.profile.role == 'employee' %}منوی بیشتر{% else %}منوی کامل{% endif %}</strong>
-        <button type="button" class="mobile-more-close" aria-label="بستن">×</button>
+        <strong>{% if user.profile.role == 'employee' %}{% gl_t 'shell.more_menu' %}{% else %}{% gl_t 'shell.full_menu' %}{% endif %}</strong>
+        <button type="button" class="mobile-more-close" aria-label="{% gl_t 'shell.close' %}">×</button>
       </div>
       <div class="mobile-more-links">
         {% if user.profile.role == 'employee' %}
-          <a href="/requests/"><span>◷</span>مرخصی و مأموریت</a>
-          <a href="{% url 'staff_security' %}"><span>⚿</span>تغییر رمز / PIN</a>
-          <a href="/reports/"><span>▥</span>گزارش‌ها</a>
-          <a href="/sop/"><span>◇</span>آموزش</a>
-          <a href="/service-requests/"><span>✓</span>درخواست داخلی</a>
-          <a href="/device-issues/mine/"><span>⚒</span>خرابی دستگاه</a>
-          <a href="/logout/" class="employee-more-logout"><span>↪</span>خروج</a>
+          <a href="/requests/"><span>◷</span>{% gl_t 'shell.leave_mission' %}</a>
+          <a href="{% url 'staff_security' %}"><span>⚿</span>{% gl_t 'shell.change_password_pin' %}</a>
+          <a href="/reports/"><span>▥</span>{% gl_t 'shell.reports' %}</a>
+          <a href="/sop/"><span>◇</span>{% gl_t 'common.training' %}</a>
+          <a href="/service-requests/"><span>✓</span>{% gl_t 'shell.internal_request' %}</a>
+          <a href="/device-issues/mine/"><span>⚒</span>{% gl_t 'common.device_issue' %}</a>
+          <a href="/logout/" class="employee-more-logout"><span>↪</span>{% gl_t 'common.logout' %}</a>
         {% else %}
-          <a href="/live/"><span>⌘</span>امروز چه خبر</a>
-          {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}<a href="/lead-management/"><span>◉</span>لیدها</a>{% endif %}
-          {% if user.profile.role == 'admin' %}<a href="{% url 'instagram_manual_lead' %}"><span>＋</span>ثبت لید</a>{% endif %}
-          {% if user.profile.role == 'internal_manager' %}<a href="/meeting-minutes/new/"><span>＋</span>صورت‌جلسه جدید</a><a href="/meeting-minutes/"><span>▤</span>لیست صورت‌جلسات</a>{% elif user.profile.role == 'admin' %}<a href="/meeting-minutes/"><span>▤</span>صورت‌جلسات</a>{% endif %}
-          {% if user.profile.role != 'admin' %}<a href="/reports/"><span>▥</span>گزارش‌های پرسنل</a>{% endif %}
-          {% if user.profile.role != 'admin' %}<a href="/employees/"><span>♙</span>پرسنل</a>{% endif %}
-          {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' %}<a href="{% url 'shift_today_bulk' %}"><span>◷</span>تنظیم ساعت کاری</a>{% endif %}
-          {% if user.profile.role != 'admin' %}<a href="/referrals/"><span>✦</span>مدیریت شبکه فروش</a>{% endif %}
-          {% if user.profile.role == 'manager' or user.profile.role == 'internal_manager' %}<a href="/attendance/team/"><span>◷</span>حضور تیم</a>{% endif %}
+          <a href="/live/"><span>⌘</span>{% gl_t 'shell.whats_new' %}</a>
+          {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}<a href="/lead-management/"><span>◉</span>{% gl_t 'common.leads' %}</a>{% endif %}
+          {% if user.profile.role == 'admin' %}<a href="{% url 'instagram_manual_lead' %}"><span>＋</span>{% gl_t 'shell.add_lead' %}</a>{% endif %}
+          {% if user.profile.role == 'internal_manager' %}<a href="/meeting-minutes/new/"><span>＋</span>{% gl_t 'shell.meeting_new' %}</a><a href="/meeting-minutes/"><span>▤</span>{% gl_t 'shell.meeting_list' %}</a>{% elif user.profile.role == 'admin' %}<a href="/meeting-minutes/"><span>▤</span>{% gl_t 'shell.meetings' %}</a>{% endif %}
+          {% if user.profile.role != 'admin' %}<a href="/reports/"><span>▥</span>{% gl_t 'shell.staff_reports' %}</a>{% endif %}
+          {% if user.profile.role != 'admin' %}<a href="/employees/"><span>♙</span>{% gl_t 'common.staff' %}</a>{% endif %}
+          {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' %}<a href="{% url 'shift_today_bulk' %}"><span>◷</span>{% gl_t 'shell.work_hours' %}</a>{% endif %}
+          {% if user.profile.role != 'admin' %}<a href="/referrals/"><span>✦</span>{% gl_t 'shell.sales_network_management' %}</a>{% endif %}
+          {% if user.profile.role == 'manager' or user.profile.role == 'internal_manager' %}<a href="/attendance/team/"><span>◷</span>{% gl_t 'shell.team_attendance' %}</a>{% endif %}
           {% if user.profile.role != 'admin' %}<a href="/kpi/"><span>◎</span>عملکرد و KPI</span></a>{% endif %}
-          <a href="/sop/"><span>◇</span>آموزش</a>
-          <a href="/service-requests/"><span>✓</span>درخواست‌ها</a>
-          <a href="/notifications/"><span>⚙</span>اعلان‌ها</a>
-          {% if user.profile.role == 'admin' %}<a href="/device-issues/manage/"><span>⚒</span>خرابی دستگاه‌ها</a>{% endif %}
-          <a href="/profile/"><span>◉</span>پروفایل</a>
-          <a href="/logout/"><span>↪</span>خروج</a>
+          <a href="/sop/"><span>◇</span>{% gl_t 'common.training' %}</a>
+          <a href="/service-requests/"><span>✓</span>{% gl_t 'common.requests' %}</a>
+          <a href="/notifications/"><span>⚙</span>{% gl_t 'common.notifications' %}</a>
+          {% if user.profile.role == 'admin' %}<a href="/device-issues/manage/"><span>⚒</span>{% gl_t 'shell.device_issues' %}</a>{% endif %}
+          <a href="/profile/"><span>◉</span>{% gl_t 'common.profile' %}</a>
+          <a href="/logout/"><span>↪</span>{% gl_t 'common.logout' %}</a>
         {% endif %}
       </div>
     </div>
 
-    <div class="nav-section-title">ماژول‌ها</div>
+    <div class="nav-section-title">{% gl_t 'shell.modules' %}</div>
     <a href="#" class="nav-module muted-module"><span class="nav-ico">⌂</span><span>Clinic</span></a>
     <a href="#" class="nav-module muted-module"><span class="nav-ico">☎</span><span>Call Center</span></a>
     {% if user.profile.role == 'admin' or user.profile.role == 'manager' %}<a href="/finance/" class="nav-module"><span class="nav-ico">▥</span><span>Finance</span></a>{% endif %}
@@ -571,10 +571,10 @@ html[dir="ltr"] .app-main{direction:ltr}
   </nav>
   <div class="sidebar-footer">
     {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'doctor' or user.profile.role == 'receptionist' %}
-      <a href="/requests/">مرخصی</a>
-      <a href="{% url 'staff_security' %}">رمز</a>
+      <a href="/requests/">{% gl_t 'common.leave' %}</a>
+      <a href="{% url 'staff_security' %}">{% gl_t 'shell.password_short' %}</a>
     {% endif %}
-    <a href="/profile/">پروفایل</a><a href="/logout/" class="sidebar-logout-link">خروج</a>
+    <a href="/profile/">{% gl_t 'common.profile' %}</a><a href="/logout/" class="sidebar-logout-link">{% gl_t 'common.logout' %}</a>
   </div>
 </aside>
 
