@@ -93,3 +93,59 @@ class PublicNetworkLoginForm(forms.Form):
 
     def get_user(self):
         return self.user
+
+
+class TurkeyNetworkSignupForm(PublicNetworkSignupForm):
+    """Turkish/English copy over the existing public-network signup rules."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        labels = {
+            'first_name': 'Ad / First name',
+            'last_name': 'Soyad / Last name',
+            'phone': 'Telefon / Mobile number',
+            'username': 'Kullanıcı adı / Username',
+            'password': 'Şifre / Password (min. 6 characters)',
+            'password_confirm': 'Şifre tekrar / Confirm password',
+            'photo': 'Profil fotoğrafı / Profile photo',
+            'accept_terms': 'Üyelik koşullarını kabul ediyorum / I accept the membership terms',
+        }
+        for name, label in labels.items():
+            if name in self.fields:
+                self.fields[name].label = label
+        self.fields['phone'].widget.attrs.update({
+            'placeholder': '+90 5XX XXX XX XX',
+            'inputmode': 'tel',
+            'autocomplete': 'tel',
+        })
+        self.fields['username'].help_text = 'Sonraki girişler için / For future sign-ins'
+        self.fields['password'].help_text = 'En az 6 karakter / At least 6 characters'
+
+    def clean_phone(self):
+        value = (self.cleaned_data.get('phone') or '').strip()
+        cleaned = ''.join(ch for ch in value if ch.isdigit() or ch == '+')
+        if cleaned.startswith('0090'):
+            cleaned = '+90' + cleaned[4:]
+        elif cleaned.startswith('90') and not cleaned.startswith('+90'):
+            cleaned = '+' + cleaned
+        elif cleaned.startswith('05'):
+            cleaned = '+90' + cleaned[1:]
+        digits = ''.join(ch for ch in cleaned if ch.isdigit())
+        if len(digits) < 10 or len(digits) > 15:
+            raise forms.ValidationError('Geçerli bir telefon numarası girin / Enter a valid mobile number.')
+        if PublicNetworkMember.objects.filter(phone=cleaned, is_active=True).exists():
+            raise forms.ValidationError('Bu telefonla aktif üyelik mevcut / An active account already exists for this number.')
+        return cleaned
+
+
+class TurkeyNetworkLoginForm(PublicNetworkLoginForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].label = 'Kullanıcı adı / Username'
+        self.fields['password'].label = 'Şifre / Password'
+
+    def clean(self):
+        try:
+            return super().clean()
+        except forms.ValidationError:
+            raise forms.ValidationError('Kullanıcı adı veya şifre hatalı / Incorrect username or password.')
