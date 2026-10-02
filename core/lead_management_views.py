@@ -18,6 +18,7 @@ from .call_center_identity import (
 from .models import AuditLog, EmployeeProfile, ReferralLead, ReferralSale, StaffNotification
 from .instagram_views import INSTAGRAM_PAGE_SOURCES
 from .jalali import gregorian_to_jalali
+from .country_workspace import scoped_queryset
 
 
 ALLOWED_ROLES = ('admin', 'manager', 'internal_manager')
@@ -253,7 +254,7 @@ def _operational_status_rows(leads, total):
 
 def _filtered_leads_for_trend(request):
     """Apply only source/operator dimensions to the live 30-day trend."""
-    leads=ReferralLead.objects.all()
+    leads=scoped_queryset(request,ReferralLead.objects.all())
     source_filter=(request.GET.get('source') or '').strip()
     operator_filter=(request.GET.get('operator') or '').strip()
     if source_filter in ('instagram','website','beytoote','aparat','crm','whatsapp','campaign','telegram','bale'):
@@ -341,8 +342,10 @@ def lead_attention_bulk_action(request):
     ).strip()
     if same_owner_id.isdigit():
         lead = (
-            ReferralLead.objects
-            .select_related('assigned_to__user')
+            scoped_queryset(
+                request,
+                ReferralLead.objects.select_related('assigned_to__user'),
+            )
             .filter(pk=int(same_owner_id))
             .exclude(status__in=('won','lost'))
             .first()
@@ -398,7 +401,7 @@ def lead_attention_bulk_action(request):
     if not operator:
         messages.error(request, 'اپراتور انتخاب‌شده فعال نیست.')
         return redirect('lead_management_dashboard')
-    leads = ReferralLead.objects.filter(pk__in=ids).exclude(status__in=('won','lost'))
+    leads = scoped_queryset(request,ReferralLead.objects.all()).filter(pk__in=ids).exclude(status__in=('won','lost'))
     changed = 0
     from .referral_views import _default_call_center_group, _notify_call_center_assignment
     for lead in leads:
@@ -440,7 +443,10 @@ def lead_reassign_operator(request, pk):
     if not operator:
         return respond_error('گل انتخاب‌شده فعال نیست.',404)
 
-    lead=ReferralLead.objects.filter(pk=pk).select_related('assigned_to__user').first()
+    lead=scoped_queryset(
+        request,
+        ReferralLead.objects.select_related('assigned_to__user'),
+    ).filter(pk=pk).first()
     if not lead:
         return respond_error('لید پیدا نشد.',404)
 
@@ -511,7 +517,8 @@ def lead_management_dashboard(request):
         return render(request, 'core/lead_management_forbidden.html', status=403)
 
     now = timezone.now(); today = timezone.localdate(); start_week = today - timedelta(days=today.weekday()); start_month = today.replace(day=1)
-    leads = ReferralLead.objects.select_related('assigned_to__user','group','referrer__user','referrer__sponsor__user','referrer__sponsor__sponsor__user','created_by').prefetch_related('appointments')
+    leads = ReferralLead.objects.select_related('country','assigned_to__user','group','referrer__user','referrer__sponsor__user','referrer__sponsor__sponsor__user','created_by').prefetch_related('appointments')
+    leads = scoped_queryset(request,leads)
     source_filter=(request.GET.get('source') or '').strip(); status_filter=(request.GET.get('status') or '').strip(); operator_filter=(request.GET.get('operator') or '').strip()
     filtered=leads
     if source_filter in ('instagram','website','crm','whatsapp','campaign','telegram','bale'): filtered=filtered.filter(_channel_q(source_filter))
@@ -546,7 +553,7 @@ def lead_management_dashboard(request):
     operator_rows.sort(key=lambda x:(x['won'],x['appointments'],x['total']),reverse=True)
     group_rows=list(leads.exclude(group__isnull=True).values('group__name').annotate(count=Count('id')).order_by('-count')[:12])
 
-    sales=ReferralSale.objects.filter(status__in=('approved','paid')); sales_amount=sales.aggregate(v=Sum('amount'))['v'] or 0
+    sales=ReferralSale.objects.filter(status__in=('approved','paid'),lead__in=leads); sales_amount=sales.aggregate(v=Sum('amount'))['v'] or 0
     instagram_sales_amount=sales.filter(lead__in=leads.filter(_channel_q('instagram'))).aggregate(v=Sum('amount'))['v'] or 0; website_sales_amount=sales.filter(lead__in=leads.filter(_channel_q('website'))).aggregate(v=Sum('amount'))['v'] or 0
     recent=list(filtered.order_by('-created_at')[:150])
     urgent_q=Q(assigned_to__isnull=True,status__in=OPEN_STATUSES)|stale_new_q|overdue_attention_q
