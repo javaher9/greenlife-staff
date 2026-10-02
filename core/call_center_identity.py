@@ -240,6 +240,8 @@ class FlowerLeadProxy:
         notes=str(getattr(self._flower_lead,'notes','') or '').lower()
         if '/persian-beauty/' in source_url or '[channel:persian_beauty]' in notes:
             return 'Persian Beauty'
+        if '/tr/network/' in source_url or '[market:turkey]' in notes:
+            return 'Türkiye • Network'
         if self._is_beytoote_lead():
             return 'بیتوته'
         if '/aparat/' in source_url or 'aparat' in source_url:
