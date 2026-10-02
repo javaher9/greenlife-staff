@@ -163,17 +163,20 @@ def device_capacity_settings(request):
                 messages.success(request,'کابین ثبت شد.' if created else 'این کابین قبلاً ثبت شده است.')
         elif action=='device':
             kind=get_object_or_404(DeviceTypeSchedule,pk=request.POST.get('type_id'),is_active=True)
-            branch_status=BranchDeviceTypeStatus.objects.filter(branch=branch,device_type=kind).first()
-            if branch_status and not branch_status.is_active:
-                messages.error(request,'این نوع دستگاه برای این شعبه غیرفعال است؛ ابتدا آن را فعال کنید.')
-                return redirect(f'/settings/device-capacity/?branch={branch.pk}')
-            cabin=get_object_or_404(DeviceCabin,pk=request.POST.get('cabin_id'),branch=branch)
             name=(request.POST.get('name') or '').strip()[:100]
             if name:
-                _,created=PhysicalDevice.objects.get_or_create(
-                    branch=branch,name=name,
-                    defaults={'device_type':kind,'cabin':cabin},
-                )
+                with transaction.atomic():
+                    device,created=PhysicalDevice.objects.get_or_create(
+                        branch=branch,name=name,
+                        defaults={'device_type':kind},
+                    )
+                    if created and not device.cabin_id:
+                        internal_cabin,_=DeviceCabin.objects.get_or_create(
+                            branch=branch,name=f'__DEV_{device.pk}',
+                            defaults={'is_active':True},
+                        )
+                        device.cabin=internal_cabin
+                        device.save(update_fields=['cabin'])
                 messages.success(request,'دستگاه ثبت شد.' if created else 'این نام دستگاه قبلاً ثبت شده است.')
         elif action=='delete_device':
             with transaction.atomic():
@@ -236,44 +239,33 @@ def device_capacity_settings(request):
                 messages.success(request,f'{device.name} دوباره فعال شد و در نوبت‌دهی قابل استفاده است.')
         elif action=='move':
             device=get_object_or_404(PhysicalDevice,pk=request.POST.get('device_id'),branch=branch)
-            cabin=get_object_or_404(DeviceCabin,pk=request.POST.get('cabin_id'),branch=branch)
-            existing=DeviceSessionBooking.objects.filter(
-                Q(device=device)|Q(secondary_device=device),
-                status='booked',starts_at__gte=timezone.now(),
-            ).exists()
-            if existing and device.cabin_id!=cabin.pk:
-                messages.error(request,'برای جابه‌جایی دستگاه ابتدا نوبت‌های آینده آن را تعیین تکلیف کنید.')
+            try:
+                start=_parse_time(request.POST.get('work_start') or '08:30')
+                last=_parse_time(request.POST.get('last_start') or '17:30')
+            except ValueError:
+                messages.error(request,'ساعت کاری معتبر نیست.')
             else:
-                try:
-                    start=_parse_time(request.POST.get('work_start') or '08:30')
-                    last=_parse_time(request.POST.get('last_start') or '17:30')
-                except ValueError:
-                    messages.error(request,'ساعت کاری معتبر نیست.')
+                if start>=last:
+                    messages.error(request,'ساعت شروع باید قبل از آخرین شروع نوبت باشد.')
                 else:
-                    if start>=last:
-                        messages.error(request,'ساعت شروع باید قبل از آخرین شروع نوبت باشد.')
-                    else:
-                        device.cabin=cabin
-                        device.work_start=start
-                        device.last_start=last
-                        device.save(update_fields=['cabin','work_start','last_start'])
-                        messages.success(request,'کابین و ساعت کاری دستگاه ذخیره شد.')
+                    if not device.cabin_id:
+                        internal_cabin,_=DeviceCabin.objects.get_or_create(
+                            branch=branch,name=f'__DEV_{device.pk}',
+                            defaults={'is_active':True},
+                        )
+                        device.cabin=internal_cabin
+                    device.work_start=start
+                    device.last_start=last
+                    device.save(update_fields=['cabin','work_start','last_start'])
+                    messages.success(request,'ساعت کاری دستگاه ذخیره شد.')
         return redirect(f'/settings/device-capacity/?branch={branch.pk}')
 
     types=list(DeviceTypeSchedule.objects.filter(is_active=True))
-    branch_statuses={
-        row.device_type_id:row.is_active
-        for row in BranchDeviceTypeStatus.objects.filter(branch=branch,device_type__in=types)
-    }
-    for kind in types:
-        kind.branch_active=branch_statuses.get(kind.pk,True)
-    active_types=[kind for kind in types if kind.branch_active]
 
     return render(request,'core/device_capacity_settings.html',{
         'branch':branch,'branches':_device_branches(),
         'is_admin':request.user.is_superuser or _profile(request).role=='admin',
-        'types':types,'active_types':active_types,
-        'cabins':DeviceCabin.objects.filter(branch=branch,is_active=True),
+        'types':types,'active_types':types,
         'devices':PhysicalDevice.objects.filter(branch=branch).select_related('device_type','cabin'),
     })
 
@@ -320,8 +312,8 @@ def device_booking_schedule(request):
             messages.error(request,'ابتدا پکیج بیمار را نهایی کنید.')
             return redirect('device_booking_schedule')
         with transaction.atomic():
-            # A branch-wide DB lock serialises concurrent allocations of cabinets
-            # and machines even if two consultants click at the same instant.
+            # A branch-wide DB lock serialises concurrent machine allocation even
+            # if two consultants click at the same instant.
             Branch.objects.select_for_update().get(pk=branch.pk)
             item=get_object_or_404(
                 ConsultationPlanItem,pk=request.POST.get('plan_item'),
@@ -341,30 +333,24 @@ def device_booking_schedule(request):
             if paid<=0 and plan.status!='paid':
                 messages.error(request,'برای رزرو قطعی، ابتدا بیعانه یا تسویه را ثبت کنید.')
                 return redirect(f'/device-bookings/?appointment={appointment.pk}')
-            cabin=get_object_or_404(DeviceCabin,pk=request.POST.get('cabin'),branch=branch,is_active=True)
             device=get_object_or_404(
-                PhysicalDevice.objects.select_related('device_type'),
+                PhysicalDevice.objects.select_related('device_type','cabin'),
                 pk=request.POST.get('device'),branch=branch,is_active=True,
             )
-            disabled_type_ids=set(
-                BranchDeviceTypeStatus.objects.filter(branch=branch,is_active=False)
-                .values_list('device_type_id',flat=True)
-            )
-            if device.device_type_id in disabled_type_ids:
-                messages.error(request,'این نوع دستگاه برای این شعبه غیرفعال است.')
-                return redirect(f'/device-bookings/?appointment={appointment.pk}')
+            if not device.cabin_id:
+                internal_cabin,_=DeviceCabin.objects.get_or_create(
+                    branch=branch,name=f'__DEV_{device.pk}',
+                    defaults={'is_active':True},
+                )
+                device.cabin=internal_cabin
+                device.save(update_fields=['cabin'])
+            cabin=device.cabin
             second_raw=(request.POST.get('secondary_device') or '').strip()
             second=(
-                get_object_or_404(PhysicalDevice.objects.select_related('device_type'),
+                get_object_or_404(PhysicalDevice.objects.select_related('device_type','cabin'),
                                   pk=int(second_raw),branch=branch,is_active=True)
                 if second_raw.isdigit() else None
             )
-            if second and second.device_type_id in disabled_type_ids:
-                messages.error(request,'نوع دستگاه دوم برای این شعبه غیرفعال است.')
-                return redirect(f'/device-bookings/?appointment={appointment.pk}')
-            if device.cabin_id!=cabin.pk or (second and second.cabin_id!=cabin.pk):
-                messages.error(request,'دستگاه‌های انتخابی باید در کابین رزرو باشند.')
-                return redirect(f'/device-bookings/?appointment={appointment.pk}')
             if second and (second.pk==device.pk or
                 second.device_type.code!='DIF70' or device.device_type.code!='DIF70'):
                 messages.error(request,'برای Double Define دو دستگاه مجزای DIF70 انتخاب کنید.')
@@ -416,13 +402,12 @@ def device_booking_schedule(request):
             )
             machine_ids={m.pk for m in machines}
             collision=booked.filter(
-                Q(cabin=cabin) |
                 Q(device_id__in=machine_ids) |
                 Q(secondary_device_id__in=machine_ids) |
                 Q(appointment=appointment),
             ).exists()
             if collision:
-                messages.error(request,'در این بازه کابین، دستگاه یا خود بیمار رزرو هم‌پوشان دارد.')
+                messages.error(request,'در این بازه دستگاه یا خود بیمار رزرو هم‌پوشان دارد.')
                 return redirect(f'/device-bookings/?appointment={appointment.pk}&day={raw_day}')
             created=DeviceSessionBooking.objects.create(
                 branch=branch,appointment=appointment,plan_item=item,
@@ -433,23 +418,18 @@ def device_booking_schedule(request):
                 created_by=request.user,
             )
             transaction.on_commit(lambda pk=created.pk:_send_confirmation(pk))
-        messages.success(request,'نوبت تک‌جلسه‌ای ثبت شد؛ ظرفیت دستگاه و کابین تا پایان آماده‌سازی اشغال است.')
+        messages.success(request,'نوبت تک‌جلسه‌ای ثبت شد؛ ظرفیت دستگاه تا پایان آماده‌سازی اشغال است.')
         return redirect(f'/device-bookings/?appointment={appointment.pk}&day={raw_day}')
 
     bookings=(
         DeviceSessionBooking.objects.filter(branch=branch,starts_at__date=day)
         .exclude(status='cancelled')
         .select_related('appointment','device','secondary_device','cabin','plan_item')
-        .order_by('starts_at','cabin__name')
+        .order_by('starts_at','device__name')
     )
     booking_list=list(bookings)
-    disabled_type_ids=set(
-        BranchDeviceTypeStatus.objects.filter(branch=branch,is_active=False)
-        .values_list('device_type_id',flat=True)
-    )
     device_lines=list(
         PhysicalDevice.objects.filter(branch=branch,is_active=True)
-        .exclude(device_type_id__in=disabled_type_ids)
         .select_related('device_type','cabin')
         .order_by('name','id')
     )
@@ -476,19 +456,14 @@ def device_booking_schedule(request):
                 if (
                     b.device_id==device_line.pk
                     or b.secondary_device_id==device_line.pk
-                    or (device_line.cabin_id and b.cabin_id==device_line.cabin_id)
                 )
                 and b.starts_at<slot_end and b.blocked_until>cursor
             ),None)
             if hit:
                 state='busy'
                 busy_count+=1
-                busy_reason=(
-                    'device'
-                    if hit.device_id==device_line.pk or hit.secondary_device_id==device_line.pk
-                    else 'cabin'
-                )
-            elif not device_line.cabin_id or (day==timezone.localdate() and slot_end<=now):
+                busy_reason='device'
+            elif day==timezone.localdate() and slot_end<=now:
                 state='off'
                 off_count+=1
                 busy_reason=''
@@ -528,7 +503,6 @@ def device_booking_schedule(request):
         'appointment':appointment,'plan':plan,
         'items':plan.items.filter(kind='device',included=True) if plan else [],
         'plans':plans,'bookings':booking_list,
-        'cabins':DeviceCabin.objects.filter(branch=branch,is_active=True),
         'devices':device_lines,'device_lines':device_lines,
         'device_cards':device_cards,
         'can_book':profile.role in ('consultant','admin','manager'),
