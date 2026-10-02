@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 from django.contrib.auth.models import User
 from django.db import transaction
@@ -25,12 +25,26 @@ def assignment_for(user, day):
 
 
 def shift_rule(user, day):
-    # Friday is a company-wide day off for every role and branch.
-    # Any employee who happens to come in may still check in voluntarily; that
-    # check-in is treated as present (never late) and does not require a shift.
-    # This rule intentionally overrides one-day, personal, branch and group
-    # schedules so nobody is marked absent or generates attendance alerts Friday.
+    profile=getattr(user,'profile',None)
+
+    # Friday remains a company-wide day off, but call-center staff may clock in
+    # voluntarily. Their presence is then used as the live routing pool for new
+    # leads until they clock out. Keeping is_off=True prevents absent/late/report
+    # penalties for call-center staff who are not selected for Friday duty.
     if day.weekday()==4:
+        if getattr(profile,'role',None)=='call_center':
+            return {
+                'name':'جمعه کال‌سنتر - حضور اختیاری',
+                'start':time(11,0),
+                'end':time(18,0),
+                'grace':0,
+                'report_required':False,
+                'assignment':None,
+                'source':'friday_call_center_optional',
+                'is_working':False,
+                'is_off':True,
+                'voluntary_checkin':True,
+            }
         return {
             'name':'جمعه - تعطیل سراسری',
             'start':None,
@@ -63,7 +77,6 @@ def shift_rule(user, day):
             'is_off':False,
         }
 
-    profile=getattr(user,'profile',None)
     active_on_day=Q(effective_until__isnull=True)|Q(effective_until__gte=day)
     weekly=EmployeeWorkSchedule.objects.filter(
         user=user,weekday=day.weekday(),effective_from__lte=day,
