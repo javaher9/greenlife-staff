@@ -281,6 +281,10 @@ def _auto_assign_call_center(lead):
             date=today,
             status__in=('present','late'),
             check_in__isnull=False,
+            check_out__isnull=True,
+            user__profile__role='call_center',
+            user__profile__is_active=True,
+            user__is_active=True,
         ).values_list('user_id',flat=True)
         candidates=candidates.filter(user_id__in=present_user_ids)
     operator=(candidates
