@@ -19,6 +19,12 @@ INSTAGRAM_PAGE_SOURCES = {
     'greenlife_cafe': 'Greenlife.cafe',
     'greenlife_rejim_ir': 'Greenlife.rejim.ir',
     'greenlife_camp': 'Greenlife.camp',
+    'story_campaign_1': 'Story Campaign 1',
+    'story_campaign_2': 'Story Campaign 2',
+    'story_campaign_3': 'Story Campaign 3',
+    'story_campaign_4': 'Story Campaign 4',
+    'story_campaign_5': 'Story Campaign 5',
+    'story_campaign_6': 'Story Campaign 6',
 }
 INSTAGRAM_DEFAULT_PAGE = 'greenlifeclinics'
 
