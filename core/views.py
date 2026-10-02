@@ -26,6 +26,7 @@ from .reporting import day_summary, leaderboard, answer_query
 from .operations import shift_rule, attendance_status_for, overtime_minutes, award_report, award_task, missing_report_days, auto_kpi, approve_correction, report_required, report_exists
 from .smart_alerts import generate_smart_alerts
 from .executive_engine import ceo_score, trend_alerts, calendar_events
+from .staff_i18n import translate, translate_choice
 from .credential_security import (
     change_desktop_password, change_mobile_pin, decrypt_secret,
     record_desktop_login, record_mobile_login, remember_desktop_password,
@@ -3269,9 +3270,8 @@ def action_center(request):
     role=role_of(request.user)
     profile=getattr(request.user,'profile',None)
     day=timezone.localdate()
+    language=getattr(request,'ui_language','fa')
 
-    # Operational alerts belong to employee accounts. Manager/admin accounts
-    # must not appear as absent or missing-report staff in their own queue.
     users=User.objects.filter(
         profile__is_active=True,
         profile__role__in=PERSONNEL_ROLES,
@@ -3293,33 +3293,38 @@ def action_center(request):
             'url':url,'created_at':dt,'icon':icon,'meta':meta or {},
         })
 
-    # Pending leave requests
     for x in LeaveRequest.objects.filter(user_id__in=user_ids,status='pending').select_related('user','user__profile','user__profile__branch'):
         add_item(
-            'leave','medium','درخواست مرخصی/ماموریت',
-            f'{x.get_request_type_display()} · {format_jalali(x.start_date)} تا {format_jalali(x.end_date)}',
+            'leave','medium',translate('action.leave_title',language),
+            translate(
+                'action.leave_subtitle',language,
+                type=x.get_request_type_display(),
+                start=format_jalali(x.start_date),
+                end=format_jalali(x.end_date),
+            ),
             x.user,f'/requests/{x.pk}/review/',x.created_at,'◫'
         )
 
-    # Pending attendance corrections
     for x in AttendanceCorrectionRequest.objects.filter(user_id__in=user_ids,status='pending').select_related('user','user__profile'):
         add_item(
-            'correction','high','درخواست اصلاح حضور',
-            f'{format_jalali(x.date)} · {(x.reason or "")[:90]}',
+            'correction','high',translate('action.correction_title',language),
+            translate(
+                'action.correction_subtitle',language,
+                date=format_jalali(x.date),
+                reason=(x.reason or '')[:90],
+            ),
             x.user,f'/attendance/corrections/{x.pk}/review/',x.created_at,'◷'
         )
 
-    # Open device issues
     for x in DeviceIssue.objects.filter(reporter_id__in=user_ids).exclude(status='resolved').select_related('reporter','branch'):
         add_item(
             'device','high' if x.status=='new' else 'medium',
-            f'خرابی دستگاه: {x.device_name}',
+            translate('action.device_title',language,device=x.device_name),
             (x.description or '')[:110],
             x.reporter,f'/device-issues/{x.pk}/review/',x.created_at,'⚒',
             {'status':x.get_status_display()}
         )
 
-    # Overdue tasks
     overdue_qs=Task.objects.filter(
         assigned_to_id__in=user_ids,
         status__in=('todo','doing'),
@@ -3329,14 +3334,13 @@ def action_center(request):
         days=(day-x.due_date).days if x.due_date else 0
         add_item(
             'task','high' if days>=3 else 'medium',
-            'وظیفه عقب‌افتاده',
-            f'{x.title} · {days} روز تأخیر',
+            translate('action.overdue_task_title',language),
+            translate('action.overdue_task_subtitle',language,title=x.title,days=days),
             x.assigned_to,
             f'/employees/{x.assigned_to.profile.pk}/360/' if hasattr(x.assigned_to,'profile') else '/tasks/',
             timezone.now(),'✓',{'days':days}
         )
 
-    # Attendance exceptions today
     recs={r.user_id:r for r in Attendance.objects.filter(user_id__in=user_ids,date=day).select_related('user')}
     approved_leave_ids=set(LeaveRequest.objects.filter(
         user_id__in=user_ids,status='approved',start_date__lte=day,end_date__gte=day
@@ -3361,10 +3365,12 @@ def action_center(request):
                 if shift.get('start'):
                     expected=timezone.make_aware(datetime.combine(day,shift['start']),timezone.get_current_timezone())
                     late_mins=max(0,int((rec.check_in-expected).total_seconds()//60))
+                subtitle=translate('action.late_entry',language,time=timezone.localtime(rec.check_in).strftime("%H:%M"))
+                if late_mins:
+                    subtitle+=f" · {translate('action.minutes_late',language,minutes=late_mins)}"
                 add_item(
-                    'late','medium','تأخیر امروز',
-                    f'ورود {timezone.localtime(rec.check_in).strftime("%H:%M")}'
-                    + (f' · {late_mins} دقیقه دیرتر' if late_mins else ''),
+                    'late','medium',translate('action.today_late_title',language),
+                    subtitle,
                     u,f'/employees/{u.profile.pk}/360/',rec.check_in,'◷',
                     {'late_minutes':late_mins}
                 )
@@ -3375,19 +3381,17 @@ def action_center(request):
                 is_due=timezone.now() > due_dt + timedelta(minutes=int(shift.get('grace') or 0))
             if is_due:
                 add_item(
-                    'missing_attendance','critical','ورود امروز ثبت نشده',
-                    'از زمان شروع شیفت گذشته و ورود ثبت نشده است.',
+                    'missing_attendance','critical',translate('action.missing_attendance_title',language),
+                    translate('action.missing_attendance_subtitle',language),
                     u,f'/employees/{u.profile.pk}/360/',timezone.now(),'!'
                 )
 
-    # Missing report from yesterday, computed directly from DailyReport to avoid helper coupling.
     yesterday=day-timedelta(days=1)
     submitted_ids=set(DailyReport.objects.filter(
         user_id__in=user_ids,
         created_at__date=yesterday
     ).values_list('user_id',flat=True))
     for u in users:
-        # Only create the alert when the user had an expected workday.
         try:
             shift=shift_rule(u,yesterday) or {}
             should_report=bool(shift) and not shift.get('is_off',False)
@@ -3395,8 +3399,8 @@ def action_center(request):
             should_report=True
         if should_report and u.id not in submitted_ids:
             add_item(
-                'report','medium','گزارش روزانه ارسال نشده',
-                f'گزارش {format_jalali(yesterday)} ثبت نشده است.',
+                'report','medium',translate('action.missing_report_title',language),
+                translate('action.missing_report_subtitle',language,date=format_jalali(yesterday)),
                 u,f'/employees/{u.profile.pk}/360/',timezone.now(),'▤'
             )
 
