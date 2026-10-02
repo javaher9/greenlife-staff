@@ -757,6 +757,73 @@
     border-color:#bfdccc!important;
   }
 }
+
+/* Header title centering + centered empty marks v7 */
+@media(min-width:701px){
+  .db-plate-head{
+    padding:8px 8px 9px!important;
+    background:linear-gradient(180deg,#fbfefd,#f6faf8)!important;
+  }
+  .db-plate-title{
+    display:grid!important;
+    grid-template-columns:1fr auto!important;
+    align-items:center!important;
+    gap:7px!important;
+  }
+  .db-plate-name{
+    min-width:0!important;
+    display:block!important;
+  }
+  .db-plate-name strong{
+    margin:0!important;
+    min-height:44px!important;
+    width:100%!important;
+    border-radius:14px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+    padding:8px 10px!important;
+    color:#fff!important;
+    font-size:16px!important;
+    font-weight:950!important;
+    line-height:1.15!important;
+    opacity:1!important;
+    text-shadow:none!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+  }
+  .db-plate-badge{
+    margin:0!important;
+    min-width:34px!important;
+    height:34px!important;
+    padding:0 8px!important;
+    border-radius:999px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    font-size:10px!important;
+    font-weight:950!important;
+    background:linear-gradient(135deg,#efe7fb,#e8f6f0)!important;
+    color:#5b427e!important;
+    border:1px solid #d9cceb!important;
+    flex:0 0 auto!important;
+  }
+  .db-plate-stats{
+    margin:8px 0 0!important;
+  }
+  .db-empty-mark,
+  .db-off-mark{
+    display:block!important;
+    width:100%!important;
+    text-align:center!important;
+    margin:0!important;
+  }
+  .db-slot-time{
+    text-align:center!important;
+  }
+}
 </style>
 
 <div class="db-shell">
@@ -841,7 +908,7 @@
           <div class="db-plate-title">
             <div class="db-plate-name">
               <strong>{{ card.device.name }}</strong>
-              <small>هر نوبت {{ card.slot_minutes }} دقیقه</small>
+
             </div>
             <span class="db-plate-badge">{{ card.total_count }}</span>
           </div>
