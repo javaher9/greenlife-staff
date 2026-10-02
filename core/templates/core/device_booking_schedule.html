@@ -241,7 +241,7 @@
     <h1>تقویم دستگاه‌ها · {{ branch.name }}</h1>
     {% if is_admin %}<form method="get" style="display:flex;gap:8px;align-items:center;margin:8px 0"><select name="branch" style="padding:8px;border:1px solid #cadcd6;border-radius:9px;background:#fff;color:#25443f">{% for b in branches %}<option value="{{ b.pk }}" {% if branch.pk == b.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select><button style="padding:8px;border:0;border-radius:8px;background:#138568;color:#fff">انتخاب شعبه</button></form>{% endif %}
     <div class="db-muted">هر پلاک یک دستگاه واقعی است. ظرفیت روز بر اساس ساعت کاری و مدت درمان + آماده‌سازی همان دستگاه، به ردیف‌های شماره‌دار و مشخص تبدیل می‌شود.</div>
-    {% if can_manage %}<p><a class="db-action" href="{% url 'device_capacity_settings' %}">تنظیم دستگاه‌ها، کابین‌ها و ساعت کاری</a></p>{% endif %}
+    {% if can_manage %}<p><a class="db-action" href="{% url 'device_capacity_settings' %}">تنظیم دستگاه‌ها و ساعت کاری</a></p>{% endif %}
   </div>
   {% if user.profile.role == 'consultant' %}<a class="db-back" href="{% url 'consultant_sales_outcomes' %}">← بازگشت به پنل مشاور</a>{% endif %}
 </section>
@@ -267,7 +267,6 @@
 <form method="post" class="db-form" id="dbBookingForm" style="margin-top:12px">{% csrf_token %}
   <input type="hidden" name="branch" value="{{ branch.pk }}">
   <input type="hidden" name="appointment" value="{{ appointment.pk }}">
-  <input type="hidden" name="cabin" id="dbCabin" value="">
   <label>خدمت پکیج
     <select name="plan_item" required>{% for item in items %}<option value="{{ item.pk }}">{{ item.title }} · {{ item.quantity }} جلسه</option>{% empty %}<option value="">خدمت دستگاهی در پکیج نیست</option>{% endfor %}</select>
   </label>
@@ -275,13 +274,13 @@
   <label style="grid-column:1/-1">دستگاه
     <select name="device" id="dbDevice" required>
       <option value="">انتخاب دستگاه</option>
-      {% for device in devices %}<option value="{{ device.pk }}" data-cabin="{{ device.cabin_id|default:'' }}" data-cabin-name="{{ device.cabin.name|default:'بدون کابین' }}" data-type="{{ device.device_type.code }}">{{ device.name }} · {{ device.cabin.name|default:"بدون کابین" }}</option>{% endfor %}
+      {% for device in devices %}<option value="{{ device.pk }}" data-type="{{ device.device_type.code }}">{{ device.name }} · {{ device.device_type.name }}</option>{% endfor %}
     </select>
-    <span class="db-device-note" id="dbCabinLabel">با انتخاب دستگاه، کابین فعلی آن خودکار انتخاب می‌شود.</span>
+    <span class="db-device-note">نوبت مستقیماً روی همین دستگاه فیزیکی ثبت می‌شود.</span>
   </label>
   <label>دستگاه دوم (فقط Double Define)
     <select name="secondary_device" id="dbSecond"><option value="">ندارد</option>
-      {% for device in devices %}{% if device.device_type.code == 'DIF70' %}<option value="{{ device.pk }}" data-cabin="{{ device.cabin_id|default:'' }}">{{ device.name }} · {{ device.cabin.name|default:"بدون کابین" }}</option>{% endif %}{% endfor %}
+      {% for device in devices %}{% if device.device_type.code == 'DIF70' %}<option value="{{ device.pk }}">{{ device.name }}</option>{% endif %}{% endfor %}
     </select>
   </label>
   <label>زمان انتخاب‌شده<input name="start_time" id="dbStartTime" type="time" step="60" value="" required readonly></label>
@@ -310,7 +309,7 @@
           <div class="db-plate-title">
             <div class="db-plate-name">
               <strong>{{ card.device.name }}</strong>
-              <small>{{ card.device.cabin.name|default:"بدون کابین" }} · {{ card.device.device_type.name }} · هر نوبت {{ card.slot_minutes }} دقیقه</small>
+              <small>{{ card.device.device_type.name }} · هر نوبت {{ card.slot_minutes }} دقیقه</small>
             </div>
             <span class="db-plate-badge">{{ card.total_count }} ردیف</span>
           </div>
@@ -323,7 +322,7 @@
         <div class="db-slots">
           {% for slot in card.slots %}
             {% if slot.state == 'free' %}
-              <button type="button" class="db-slot-button db-free-slot" data-device="{{ slot.device.pk }}" data-device-name="{{ slot.device.name }}" data-cabin="{{ slot.device.cabin_id|default:'' }}" data-cabin-name="{{ slot.device.cabin.name|default:'بدون کابین' }}" data-time="{{ slot.start_value }}" data-end="{{ slot.end_label }}" data-row="{{ slot.number }}" onclick="pickDeviceSlot(this)">
+              <button type="button" class="db-slot-button db-free-slot" data-device="{{ slot.device.pk }}" data-device-name="{{ slot.device.name }}" data-time="{{ slot.start_value }}" data-end="{{ slot.end_label }}" data-row="{{ slot.number }}" onclick="pickDeviceSlot(this)">
                 <span class="db-slot is-free">
                   <span class="db-slot-no"><span><b>{{ slot.number }}</b><small>ردیف</small></span></span>
                   <span class="db-slot-time"><strong>{{ slot.start_label }} – {{ slot.end_label }}</strong><small>برای رزرو این ردیف لمس کنید</small></span>
@@ -336,14 +335,14 @@
                 <span class="db-slot-time">
                   <strong>{{ slot.start_label }} – {{ slot.end_label }}</strong>
                   <span class="db-busy-person">{{ slot.booking.appointment.full_name }}</span>
-                  <span class="db-busy-meta">{% if slot.busy_reason == 'cabin' %}کابین اشغال است{% else %}{{ slot.booking.plan_item.title }}{% endif %}</span>
+                  <span class="db-busy-meta">{{ slot.booking.plan_item.title }}</span>
                 </span>
                 <span class="db-slot-state">رزرو</span>
               </div>
             {% else %}
               <div class="db-slot is-off">
                 <span class="db-slot-no"><span><b>{{ slot.number }}</b><small>ردیف</small></span></span>
-                <span class="db-slot-time"><strong>{{ slot.start_label }} – {{ slot.end_label }}</strong><small>{% if not card.device.cabin_id %}بدون کابین{% else %}گذشته / غیرفعال{% endif %}</small></span>
+                <span class="db-slot-time"><strong>{{ slot.start_label }} – {{ slot.end_label }}</strong><small>گذشته / غیرفعال</small></span>
                 <span class="db-slot-state">بسته</span>
               </div>
             {% endif %}
@@ -353,7 +352,7 @@
         </div>
       </article>
     {% empty %}
-      <div class="db-empty-devices" style="grid-column:1/-1"><div class="icon">▣</div><strong>برای {{ branch.name }} هنوز دستگاه فعالی در تقویم تعریف نشده است</strong><p>برای نمایش پلاک دستگاه‌ها، دستگاه باید در تنظیمات ظرفیت به این شعبه و یک کابین فعال متصل باشد.</p>{% if can_manage %}<a href="{% url 'device_capacity_settings' %}?branch={{ branch.pk }}">رفتن به تنظیمات دستگاه‌ها</a>{% endif %}</div>
+      <div class="db-empty-devices" style="grid-column:1/-1"><div class="icon">▣</div><strong>برای {{ branch.name }} هنوز دستگاه فعالی در تقویم تعریف نشده است</strong><p>از تنظیمات، دستگاه‌های فیزیکی این مرکز را با کدهایی مثل RSA1، CRYO1 یا DF1 اضافه و روشن کنید.</p>{% if can_manage %}<a href="{% url 'device_capacity_settings' %}?branch={{ branch.pk }}">رفتن به تنظیمات دستگاه‌ها</a>{% endif %}</div>
     {% endfor %}
   </div>
 
@@ -361,7 +360,7 @@
   {% for booking in bookings %}<div class="db-row">
     <b>{{ booking.starts_at|date:'H:i' }}</b>
     <div><strong>{{ booking.appointment.full_name }}</strong>
-      <small>{{ booking.device.name }}{% if booking.secondary_device %} + {{ booking.secondary_device.name }}{% endif %} · {{ booking.cabin.name }} · {{ booking.plan_item.title }}</small>
+      <small>{{ booking.device.name }}{% if booking.secondary_device %} + {{ booking.secondary_device.name }}{% endif %} · {{ booking.plan_item.title }}</small>
       <small>درمان {{ booking.treatment_minutes_snapshot }} دقیقه · آماده‌سازی {{ booking.preparation_minutes_snapshot }} دقیقه · آزاد از {{ booking.blocked_until|date:'H:i' }}</small>
     </div>
     <b>{{ booking.get_status_display }}</b>
@@ -374,22 +373,17 @@
 
 <script>
 (function(){
-  var device=document.getElementById('dbDevice'), cabin=document.getElementById('dbCabin'), label=document.getElementById('dbCabinLabel'), second=document.getElementById('dbSecond');
-  function syncDevice(){
-    if(!device||!cabin)return;
-    var opt=device.options[device.selectedIndex];
-    var cabinId=opt ? (opt.dataset.cabin||'') : '';
-    cabin.value=cabinId;
-    if(label)label.textContent=opt&&opt.value ? ('کابین فعلی: '+(opt.dataset.cabinName||'—')) : 'با انتخاب دستگاه، کابین فعلی آن خودکار انتخاب می‌شود.';
-    if(second){
-      Array.from(second.options).forEach(function(o){
-        if(!o.value){o.hidden=false;return;}
-        o.hidden=Boolean(cabinId && o.dataset.cabin!==cabinId);
-      });
-      if(second.selectedOptions[0]&&second.selectedOptions[0].hidden)second.value='';
-    }
+  var device=document.getElementById('dbDevice'), second=document.getElementById('dbSecond');
+  function syncSecondDevice(){
+    if(!device||!second)return;
+    var selected=device.value||'';
+    Array.from(second.options).forEach(function(o){
+      if(!o.value){o.hidden=false;return;}
+      o.hidden=(o.value===selected);
+    });
+    if(second.selectedOptions[0]&&second.selectedOptions[0].hidden)second.value='';
   }
-  if(device){device.addEventListener('change',syncDevice);syncDevice();}
+  if(device){device.addEventListener('change',syncSecondDevice);syncSecondDevice();}
   window.pickDeviceSlot=function(btn){
     var form=document.getElementById('dbBookingForm');
     if(!form||!device){
@@ -398,7 +392,7 @@
       return;
     }
     device.value=btn.dataset.device;
-    syncDevice();
+    syncSecondDevice();
     var time=document.getElementById('dbStartTime');
     if(time)time.value=btn.dataset.time;
     document.querySelectorAll('.db-slot.db-selected').forEach(function(x){x.classList.remove('db-selected')});
@@ -406,7 +400,7 @@
     if(visual)visual.classList.add('db-selected');
     var summary=document.getElementById('dbSelectedSummary');
     if(summary){
-      summary.innerHTML='<strong>'+((btn.dataset.deviceName||'دستگاه')+' · ردیف '+(btn.dataset.row||''))+'</strong><span>'+((btn.dataset.time||'')+' تا '+(btn.dataset.end||'')+' · '+(btn.dataset.cabinName||'بدون کابین'))+'</span>';
+      summary.innerHTML='<strong>'+((btn.dataset.deviceName||'دستگاه')+' · ردیف '+(btn.dataset.row||''))+'</strong><span>'+((btn.dataset.time||'')+' تا '+(btn.dataset.end||''))+'</span>';
     }
     form.scrollIntoView({behavior:'smooth',block:'center'});
   };
