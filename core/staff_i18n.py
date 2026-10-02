@@ -1139,6 +1139,19 @@ EN.update({
     'con.expense_action':'Add Expense','con.payment_action':'Add Payment','con.recent_recorded':'Your Recent Payments',
 })
 
+FA.update({
+    'common.record':'ثبت','msg.to':'به {name}',
+    'doc.header_meta':'{date} · {count} نوبت امروز','doc.selected_center':'مرکز انتخاب‌شده',
+})
+TR.update({
+    'common.record':'Kaydet','msg.to':'{name} kişisine',
+    'doc.header_meta':'{date} · bugün {count} randevu','doc.selected_center':'Seçili merkez',
+})
+EN.update({
+    'common.record':'Save','msg.to':'To {name}',
+    'doc.header_meta':'{date} · {count} appointments today','doc.selected_center':'Selected center',
+})
+
 
 TRANSLATIONS = {'fa': FA, 'tr': TR, 'en': EN}
 
