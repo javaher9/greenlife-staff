@@ -1,10 +1,10 @@
-{% load static jalali_tags %}
+{% load static jalali_tags staff_i18n %}
 <!doctype html>
-<html lang="fa" dir="rtl">
+<html lang="{{ ui_language|default:'fa' }}" dir="{{ ui_direction|default:'rtl' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>پنل منشی | Staff</title>
+  <title>{% gl_t 'rec.title' %} | Staff</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700;800&display=swap">
@@ -27,7 +27,7 @@
     .ico{width:29px;height:29px;border-radius:10px;background:#f4f5f9;display:grid;place-items:center;font-size:14px}.active .ico{background:#dfd8ff}
     .side-foot{margin-top:auto;border-top:1px solid var(--line);padding-top:14px;display:grid;gap:6px}.side-foot a{padding:9px 11px;border-radius:11px;font-size:12px}.side-foot a:hover{background:#f6f7fa}
     .main{grid-column:1;padding:22px 26px 34px;min-width:0}
-    .top{background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px 16px;display:grid;grid-template-columns:auto minmax(260px,1fr) auto;align-items:center;gap:18px;box-shadow:0 7px 24px rgba(34,43,74,.045)}
+    .top{background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px 16px;display:grid;grid-template-columns:auto minmax(220px,1fr) auto auto;align-items:center;gap:18px;box-shadow:0 7px 24px rgba(34,43,74,.045)}
     .hello h1{font-size:18px;margin:0 0 4px}.hello p{font-size:11px;color:var(--muted);margin:0}
     .search{height:44px;border-radius:14px;background:#f6f7fa;border:1px solid #eff1f5;display:flex;align-items:center;gap:10px;padding:0 14px;color:#9aa2b2}
     .search input{border:0;outline:0;background:transparent;width:100%;color:#949baa}.search input::placeholder{color:#a5acba}
@@ -59,69 +59,78 @@
     .attendance-pill{padding:8px 11px;border-radius:12px;background:var(--green-soft);color:#168456;font-size:10px;font-weight:700}.attendance-pill.off{background:var(--amber-soft);color:#9e7119}
     .footnote{font-size:9px;color:#a1a8b5}
     .payment-queue{margin:0 0 14px}.payment-list{padding:8px 14px 14px;display:grid;gap:7px}.payment-row{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:11px 12px;border:1px solid #e4e8ef;border-radius:13px;background:#fbfcfe}.payment-row strong{display:block;font-size:11px}.payment-row small{display:block;margin-top:3px;color:var(--muted);font-size:9px}.payment-amount{font-size:12px;font-weight:900;color:#247153;direction:ltr}.payment-go{padding:8px 11px;border-radius:10px;background:#6750d9;color:#fff;font-size:9px;font-weight:900}.payment-badge{display:inline-flex;margin-right:5px;padding:3px 6px;border-radius:999px;background:#fff0d9;color:#9a6415;font-size:8px;font-weight:900}
-    @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.bottom-grid{grid-template-columns:1fr}.grid-main{grid-template-columns:1fr}.side{width:210px}.shell{grid-template-columns:minmax(0,1fr) 210px}}
+    .rec-lang{display:flex;gap:3px;padding:3px;border:1px solid #e2e6ef;border-radius:999px;background:#fafbfd}
+    .rec-lang button{min-width:34px;height:29px;padding:0;border:0;border-radius:999px;background:transparent;color:#8a93a4;font:900 9px Arial,Tahoma;cursor:pointer}
+    .rec-lang button.active{background:#ede8ff;color:#6549d9}
+    html[dir="ltr"] .shell{grid-template-columns:232px minmax(0,1fr)}
+    html[dir="ltr"] .side{grid-column:1;border-right:1px solid var(--line)}
+    html[dir="ltr"] .main{grid-column:2}
+    html[dir="ltr"] .side,html[dir="ltr"] .main,html[dir="ltr"] .top,html[dir="ltr"] .nav{text-align:left;direction:ltr}
+    html[dir="ltr"] .payment-amount{text-align:right}
+    @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.bottom-grid{grid-template-columns:1fr}.grid-main{grid-template-columns:1fr}.side{width:210px}.shell{grid-template-columns:minmax(0,1fr) 210px}html[dir="ltr"] .shell{grid-template-columns:210px minmax(0,1fr)}}
   </style>
 </head>
 <body>
 {% if request.session.impersonator_user_id %}
 <div style="position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:99999;display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;background:#a7273f;color:#fff;box-shadow:0 8px 24px rgba(96,12,30,.28);font:800 11px/1.5 Tahoma,sans-serif">
-  <span>در حال مشاهده به‌عنوان {{ user.get_full_name|default:user.username }}</span>
-  <form method="post" action="{% url 'impersonate_return' %}" style="margin:0">{% csrf_token %}<button type="submit" style="border:0;border-radius:8px;padding:6px 10px;background:#fff;color:#8a1f36;font-family:inherit;font-weight:900;cursor:pointer">بازگشت به ادمین</button></form>
+  <span>{% gl_t 'shell.impersonating' name=user.get_full_name|default:user.username %}</span>
+  <form method="post" action="{% url 'impersonate_return' %}" style="margin:0">{% csrf_token %}<button type="submit" style="border:0;border-radius:8px;padding:6px 10px;background:#fff;color:#8a1f36;font-family:inherit;font-weight:900;cursor:pointer">{% gl_t 'shell.back_admin' %}</button></form>
 </div>
 {% endif %}
 <div class="shell">
   <aside class="side">
     <div class="side-head">
       <div class="side-mark">M</div>
-      <div><strong>پنل منشی</strong><span>{{ profile.branch|default:"پذیرش" }}</span></div>
+      <div><strong>{% gl_t 'rec.title' %}</strong><span>{% if profile.branch %}{{ profile.branch }}{% else %}{% gl_t 'rec.reception' %}{% endif %}</span></div>
     </div>
     <nav class="nav">
-      <a href="/" class="active"><span class="ico">⌂</span>داشبورد</a>
-      <span class="disabled" title="پس از اتصال CRM فعال می‌شود"><span class="ico">♙</span>مراجعین</span>
-      <a href="{% url 'appointment_schedule' %}"><span class="ico">▣</span>نوبت‌دهی</a>
-      <span class="disabled" title="پس از اتصال CRM فعال می‌شود"><span class="ico">◎</span>پذیرش</span>
-      <a href="{% url 'finance_entry' %}"><span class="ico">▤</span>پرداخت</a>
-      <a href="/tasks/"><span class="ico">✓</span>پیگیری</a>
-      <span class="disabled" title="در فاز بعدی فعال می‌شود"><span class="ico">◈</span>CRM / CEM</span>
-      <a href="{% url 'internal_messages' %}"><span class="ico">✉</span>پیام داخلی</a>
-      <a href="/reports/"><span class="ico">▥</span>گزارش روزانه</a>
+      <a href="/" class="active"><span class="ico">⌂</span>{% gl_t 'common.dashboard' %}</a>
+      <span class="disabled" title="{% gl_t 'rec.crm_later' %}"><span class="ico">♙</span>{% gl_t 'rec.patients' %}</span>
+      <a href="{% url 'appointment_schedule' %}"><span class="ico">▣</span>{% gl_t 'cc.appointment_booking' %}</a>
+      <span class="disabled" title="{% gl_t 'rec.crm_later' %}"><span class="ico">◎</span>{% gl_t 'rec.reception_action' %}</span>
+      <a href="{% url 'finance_entry' %}"><span class="ico">▤</span>{% gl_t 'common.payment' %}</a>
+      <a href="/tasks/"><span class="ico">✓</span>{% gl_t 'common.follow_up' %}</a>
+      <span class="disabled" title="{% gl_t 'rec.next_phase' %}"><span class="ico">◈</span>CRM / CEM</span>
+      <a href="{% url 'internal_messages' %}"><span class="ico">✉</span>{% gl_t 'common.internal_messages' %}</a>
+      <a href="/reports/"><span class="ico">▥</span>{% gl_t 'common.daily_report' %}</a>
     </nav>
     <div class="side-foot">
-      <a href="/attendance/">◷ حضور و غیاب</a>
-      <a href="/profile/">◉ پرونده من</a>
-      <a href="/logout/">↪ خروج</a>
+      <a href="/attendance/">◷ {% gl_t 'common.attendance' %}</a>
+      <a href="/profile/">◉ {% gl_t 'rec.my_file' %}</a>
+      <a href="/logout/">↪ {% gl_t 'common.logout' %}</a>
     </div>
   </aside>
 
   <main class="main">
     <header class="top">
-      <div class="hello"><h1>سلام {{ user.first_name|default:user.username }} 👋</h1><p>{{ profile.branch|default:"مرکز پذیرش" }} · {{ jalali_dashboard_date }}</p></div>
-      <label class="search"><span>⌕</span><input disabled placeholder="جستجوی نام مراجعه‌کننده، تلفن یا کد پرونده"></label>
+      <div class="hello"><h1>{% gl_t 'rec.greeting' name=user.first_name|default:user.username %}</h1><p>{{ profile.branch|default:"مرکز {% gl_t 'rec.reception_action' %}" }} · {{ jalali_dashboard_date }}</p></div>
+      <label class="search"><span>⌕</span><input disabled placeholder="{% gl_t 'rec.search' %}"></label>
+      <form method="post" action="{% url 'language_switch' %}" class="rec-lang" aria-label="{% gl_t 'shell.language_title' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">{% for code,short,label in ui_languages %}<button type="submit" name="language" value="{{ code }}" class="{% if ui_language == code %}active{% endif %}" aria-label="{{ label }}">{{ short }}</button>{% endfor %}</form>
       <div class="userbox">
         <div class="avatar">{% if profile.avatar %}<img src="{{ profile.avatar.url }}" alt="">{% else %}{{ user.first_name|first|default:user.username|first }}{% endif %}</div>
-        <div><strong>{{ user.get_full_name|default:user.username }}</strong><small>{{ profile.job_title|default:"منشی" }}</small></div>
+        <div><strong>{{ user.get_full_name|default:user.username }}</strong><small>{% if profile.job_title %}{{ profile.job_title }}{% else %}{% gl_t 'common.receptionist' %}{% endif %}</small></div>
       </div>
     </header>
 
     <section class="kpis">
-      <article class="kpi"><div class="kpi-copy"><small>نوبت‌های امروز</small><strong>{{ receptionist_appointment_count|default:0 }}</strong><p>نوبت‌های واقعی همین شعبه</p></div><div class="kpi-icon">▣</div></article>
-      <article class="kpi"><div class="kpi-copy"><small>مراجعین امروز</small><strong>{{ receptionist_arrived_count|default:0 }}</strong><p>بر اساس وضعیت نوبت‌های امروز</p></div><div class="kpi-icon">♙</div></article>
-      <article class="kpi"><div class="kpi-copy"><small>پرداخت‌های امروز</small><strong>{{ receptionist_payment_count|default:0 }}</strong><p>ثبت‌شده توسط شما</p></div><div class="kpi-icon">▤</div></article>
-      <article class="kpi"><div class="kpi-copy"><small>پیگیری‌های باز</small><strong>{{ receptionist_task_count|default:0 }}</strong><p>بر اساس وظایف واقعی شما</p></div><div class="kpi-icon">✓</div></article>
+      <article class="kpi"><div class="kpi-copy"><small>{% gl_t 'rec.today_appointments' %}</small><strong>{{ receptionist_appointment_count|default:0 }}</strong><p>{% gl_t 'rec.real_branch_appointments' %}</p></div><div class="kpi-icon">▣</div></article>
+      <article class="kpi"><div class="kpi-copy"><small>{% gl_t 'rec.patients' %} امروز</small><strong>{{ receptionist_arrived_count|default:0 }}</strong><p>بر اساس {% gl_t 'common.status' %} {% gl_t 'rec.today_appointments' %}</p></div><div class="kpi-icon">♙</div></article>
+      <article class="kpi"><div class="kpi-copy"><small>{% gl_t 'common.payment' %}‌های امروز</small><strong>{{ receptionist_payment_count|default:0 }}</strong><p>{% gl_t 'rec.recorded_by_you' %}</p></div><div class="kpi-icon">▤</div></article>
+      <article class="kpi"><div class="kpi-copy"><small>{% gl_t 'common.follow_up' %}‌های باز</small><strong>{{ receptionist_task_count|default:0 }}</strong><p>{% gl_t 'rec.by_real_tasks' %}</p></div><div class="kpi-icon">✓</div></article>
     </section>
 
     {% if receptionist_payment_queue %}
     <section class="card payment-queue">
-      <div class="card-head"><h2>در انتظار پرداخت از مشاور <span class="payment-badge">{{ receptionist_payment_waiting_count }}</span></h2><span>پکیج نهایی شده و آماده دریافت وجه</span></div>
+      <div class="card-head"><h2>در انتظار {% gl_t 'common.payment' %} از مشاور <span class="payment-badge">{{ receptionist_payment_waiting_count }}</span></h2><span>{% gl_t 'rec.package_ready' %}</span></div>
       <div class="payment-list">
         {% for item in receptionist_payment_queue %}
         <div class="payment-row">
           <div><strong>{{ item.full_name }}</strong><small>{{ item.phone }} · مشاور: {{ item.consultation_plan.consultant.get_full_name|default:item.consultation_plan.consultant.username|default:"—" }}</small>
             <small style="margin-top:5px;color:#33445e">{% for part in item.consultation_plan.items.all %}{% if part.included %}{{ part.title }}{% if part.area %} ({{ part.area }}){% endif %} × {{ part.quantity }} جلسه × {{ part.units_per_session }} واحد · {{ part.unit_price_toman|floatformat:0 }} تومان/واحد{% if not forloop.last %} | {% endif %}{% endif %}{% endfor %}</small>
-            {% if item.consultation_plan.status == 'partial_paid' %}<small style="color:#a16909">بیعانه ثبت شده؛ مانده در فرم دریافت محاسبه می‌شود.</small>{% endif %}
+            {% if item.consultation_plan.status == 'partial_paid' %}<small style="color:#a16909">{% gl_t 'rec.deposit_note' %}</small>{% endif %}
           </div>
-          <div class="payment-amount">{{ item.consultation_plan.final_amount_toman|floatformat:0 }} تومان <small style="display:block;text-align:left">مبلغ کل پکیج</small></div>
-          <a class="payment-go" href="{% url 'finance_entry' %}?appointment={{ item.pk }}">ثبت پرداخت</a>
+          <div class="payment-amount">{{ item.consultation_plan.final_amount_toman|floatformat:0 }} تومان <small style="display:block;text-align:left">{% gl_t 'rec.total_package' %}</small></div>
+          <a class="payment-go" href="{% url 'finance_entry' %}?appointment={{ item.pk }}">ثبت {% gl_t 'common.payment' %}</a>
         </div>
         {% endfor %}
       </div>
@@ -130,27 +139,27 @@
 
     <section class="grid-main">
       <article class="card appointments">
-        <div class="card-head"><h2>لیست نوبت‌های امروز</h2><a href="{% url 'appointment_schedule' %}">نمایش برنامه کامل</a></div>
-        <div class="table-head"><span>ساعت</span><span>نام مراجعه‌کننده</span><span>خدمت</span><span>وضعیت</span></div>
+        <div class="card-head"><h2>لیست {% gl_t 'rec.today_appointments' %}</h2><a href="{% url 'appointment_schedule' %}">{% gl_t 'common.full_schedule' %}</a></div>
+        <div class="table-head"><span>{% gl_t 'common.time' %}</span><span>{% gl_t 'rec.patient_name' %}</span><span>{% gl_t 'common.service' %}</span><span>{% gl_t 'common.status' %}</span></div>
         {% for item in receptionist_appointments %}
         <div class="appointment-row">
           <b>{{ item.appointment_time|date:"H:i" }}</b>
           <div><strong>{{ item.full_name }}</strong><small>{{ item.phone }} · {{ item.get_source_display }}</small></div>
           <span>{{ item.service|default:"—" }}</span>
-          <span class="appointment-status">{{ item.get_status_display }}</span>
+          <span class="appointment-status">{% gl_choice 'appointment_status' item.status item.get_status_display %}</span>
         </div>
         {% empty %}
-        <div class="empty-big"><div><div class="symbol">▣</div><strong>برای امروز نوبتی ثبت نشده</strong><p>نوبت‌هایی که کال‌سنتر یا منشی ثبت می‌کنند، همین‌جا نمایش داده می‌شوند.</p></div></div>
+        <div class="empty-big"><div><div class="symbol">▣</div><strong>{% gl_t 'rec.no_today_appointment' %}</strong><p>{% gl_t 'rec.no_today_body' %}</p></div></div>
         {% endfor %}
       </article>
 
       <article class="card">
-        <div class="card-head"><h2>کارهای فوری امروز</h2><a href="/tasks/">نمایش همه</a></div>
+        <div class="card-head"><h2>{% gl_t 'rec.urgent_today' %}</h2><a href="/tasks/">{% gl_t 'common.view_all' %}</a></div>
         <div class="urgent-list">
           {% for task in receptionist_tasks %}
           <a class="urgent-row" href="/tasks/"><span class="check"></span><div><strong>{{ task.title }}</strong><small>{{ task.get_priority_display }}{% if task.due_date %} · {{ task.due_date|jdate }}{% endif %}</small></div></a>
           {% empty %}
-          <div class="empty-mini">در حال حاضر کار باز ثبت‌شده‌ای ندارید.</div>
+          <div class="empty-mini">{% gl_t 'rec.no_open_task' %}</div>
           {% endfor %}
         </div>
       </article>
@@ -158,43 +167,43 @@
 
     <section class="bottom-grid">
       <article class="card profile-card">
-        <div class="card-head"><h2>پروفایل مراجعه‌کننده</h2><span>Customer Tier</span></div>
+        <div class="card-head"><h2>{% gl_t 'rec.patient_profile' %}</h2><span>Customer Tier</span></div>
         <div class="profile-body">
-          <div class="profile-placeholder"><div class="patient-avatar">♙</div><div><strong>یک مراجعه‌کننده را انتخاب کنید</strong><small>پروفایل، سابقه و سطح مشتری اینجا نمایش داده می‌شود.</small></div></div>
-          <div class="tier-title">سطح مشتری</div>
+          <div class="profile-placeholder"><div class="patient-avatar">♙</div><div><strong>{% gl_t 'rec.select_patient' %}</strong><small>{% gl_t 'rec.profile_future' %}</small></div></div>
+          <div class="tier-title">{% gl_t 'rec.customer_level' %}</div>
           <div class="tiers"><span class="tier">Silver</span><span class="tier gold">Gold</span><span class="tier platinum">Platinum</span><span class="tier diamond">Diamond</span></div>
-          <div class="future-note">سطح مشتری از الان در طراحی سیستم لحاظ شده و بعداً با قوانین ارزش مشتری و CEM به‌صورت واقعی محاسبه/ثبت می‌شود.</div>
+          <div class="future-note">{% gl_t 'rec.customer_level' %} از الان در طراحی سیستم لحاظ شده و بعداً با قوانین ارزش مشتری و CEM به‌صورت واقعی محاسبه/ثبت می‌شود.</div>
         </div>
       </article>
 
       <article class="card cem-card">
-        <div class="card-head"><h2>شناخت مراجعه‌کننده (CEM)</h2><span>Experience</span></div>
+        <div class="card-head"><h2>{% gl_t 'rec.cem' %}</h2><span>Experience</span></div>
         <div class="cem-body">
-          <div class="insight"><div class="insight-icon">◷</div><div><strong>ترجیحات و حساسیت‌ها</strong><p>نکاتی مثل حساسیت به معطلی، روش تماس ترجیحی و سبک تصمیم‌گیری اینجا ثبت می‌شود.</p></div></div>
-          <div class="insight"><div class="insight-icon">✎</div><div><strong>یادداشت مشترک تیم</strong><p>کال‌سنتر، منشی و سایر افراد مجاز می‌توانند نکته مرتبط با تجربه مراجعه را ثبت کنند.</p></div></div>
-          <div class="disc"><div class="disc-title"><strong>تیپ شخصیتی (DISC)</strong><span>تستی / تخمینی</span></div><div class="disc-grid"><b>D</b><b>I</b><b>S</b><b>C</b></div></div>
+          <div class="insight"><div class="insight-icon">◷</div><div><strong>{% gl_t 'rec.preferences' %}</strong><p>{% gl_t 'rec.preferences_body' %}</p></div></div>
+          <div class="insight"><div class="insight-icon">✎</div><div><strong>{% gl_t 'rec.shared_note' %}</strong><p>{% gl_t 'rec.shared_note_body' %}</p></div></div>
+          <div class="disc"><div class="disc-title"><strong>{% gl_t 'rec.disc' %}</strong><span>{% gl_t 'rec.estimated' %}</span></div><div class="disc-grid"><b>D</b><b>I</b><b>S</b><b>C</b></div></div>
         </div>
       </article>
 
       <article class="card messages-card">
-        <div class="card-head"><h2>کارتابل و پیام داخلی</h2><a href="{% url 'internal_messages' %}">باز کردن پیام‌ها</a></div>
+        <div class="card-head"><h2>کارتابل و {% gl_t 'common.internal_messages' %}</h2><a href="{% url 'internal_messages' %}">{% gl_t 'rec.open_messages' %}</a></div>
         <div class="messages">
           {% for item in receptionist_notifications %}
-          <a class="msg" href="/notifications/"><strong>{{ item.title }}</strong><small>اعلان داخلی</small><p>{{ item.message|truncatechars:120 }}</p></a>
+          <a class="msg" href="/notifications/"><strong>{{ item.title }}</strong><small>{% gl_t 'rec.internal_alert' %}</small><p>{{ item.message|truncatechars:120 }}</p></a>
           {% empty %}
-          <div class="empty-mini">پیام یا اعلان خوانده‌نشده‌ای ندارید.</div>
+          <div class="empty-mini">{% gl_t 'rec.no_unread' %}</div>
           {% endfor %}
         </div>
-        <div class="composer"><a href="{% url 'internal_messages' %}" style="color:inherit;text-decoration:none;font-weight:900">✉ ورود به کارتابل پیام داخلی</a></div>
+        <div class="composer"><a href="{% url 'internal_messages' %}" style="color:inherit;text-decoration:none;font-weight:900">✉ ورود به کارتابل {% gl_t 'common.internal_messages' %}</a></div>
       </article>
     </section>
 
     <div class="actions">
-      <a class="primary-action" href="{% url 'receptionist_appointment_create' %}">＋ نوبت جدید</a>
+      <a class="primary-action" href="{% url 'receptionist_appointment_create' %}">＋ {% gl_t 'rec.new_appointment' %}</a>
       <div>
-        {% if attendance_today.check_in %}<span class="attendance-pill">✓ ورود امروز {{ attendance_today.check_in|date:"H:i" }}</span>{% elif today_shift.is_off %}<span class="attendance-pill">امروز روز غیرکاری شماست</span>{% else %}<a href="/attendance/" class="attendance-pill off">ورود امروز هنوز ثبت نشده</a>{% endif %}
+        {% if attendance_today.check_in %}<span class="attendance-pill">✓ ورود امروز {{ attendance_today.check_in|date:"H:i" }}</span>{% elif today_shift.is_off %}<span class="attendance-pill">{% gl_t 'rec.non_working' %}</span>{% else %}<a href="/attendance/" class="attendance-pill off">{% gl_t 'rec.not_checked_in' %}</a>{% endif %}
       </div>
-      <span class="footnote">نسخه دسکتاپ منشی · تم سفید</span>
+      <span class="footnote">{% gl_t 'rec.desktop_note' %}</span>
     </div>
   </main>
 </div>
