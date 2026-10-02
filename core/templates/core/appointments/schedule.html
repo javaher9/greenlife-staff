@@ -1,4 +1,4 @@
-{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+{% extends 'core/base.html' %}{% load jalali_tags staff_i18n %}{% block content %}
 <style>
 .schedule-shell{max-width:1200px;margin:0 auto 80px;font-family:Tahoma,sans-serif;color:#1e2a3d}
 .schedule-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;padding:18px 20px;background:#fff;border:1px solid #e3e7ef;border-radius:18px;box-shadow:0 8px 24px rgba(38,50,73,.06);margin-bottom:12px}.schedule-head h1{margin:0 0 5px}.schedule-head p{margin:0;color:#7b8798;font-size:11px}.schedule-actions{display:flex;gap:8px;flex-wrap:wrap}.schedule-actions a{padding:10px 12px;border-radius:10px;text-decoration:none;font-weight:900;font-size:11px}.new-appt{background:#7553a8;color:#fff}.back-appt{border:1px solid #dfe4ec;color:#526077;background:#fff}
@@ -8,19 +8,19 @@
 </style>
 <section class="schedule-shell">
   <header class="schedule-head">
-    <div><h1>برنامه نوبت‌دهی</h1><p>{{ schedule_branch|default:'—' }} · ساعت ۰۹:۰۰ تا ۱۸:۰۰ · هر ۱۵ دقیقه</p></div>
+    <div><h1>{% gl_t 'appt.schedule' %}</h1><p>{{ schedule_branch|default:'—' }} · {% gl_t 'cc.schedule_hours' %}</p></div>
     <div class="schedule-actions">
-      {% if appointment_role == 'receptionist' %}<a class="new-appt" href="{% url 'receptionist_appointment_create' %}">＋ نوبت جدید</a>{% endif %}
-      {% if appointment_role == 'call_center' %}<a class="back-appt" href="{% url 'call_center_dashboard' %}">بازگشت به کال‌سنتر</a>{% else %}<a class="back-appt" href="/">بازگشت به داشبورد</a>{% endif %}
+      {% if appointment_role == 'receptionist' %}<a class="new-appt" href="{% url 'receptionist_appointment_create' %}">＋ {% gl_t 'appt.new' %}</a>{% endif %}
+      {% if appointment_role == 'call_center' %}<a class="back-appt" href="{% url 'call_center_dashboard' %}">{% gl_t 'appt.back_cc' %}</a>{% else %}<a class="back-appt" href="/">{% gl_t 'appt.back_dashboard' %}</a>{% endif %}
     </div>
   </header>
 
   <form class="schedule-filter" method="get">
     {% if appointment_role != 'receptionist' %}
-    <label>شعبه<select name="branch">{% for b in appointment_branches %}<option value="{{ b.pk }}" {% if schedule_branch and b.pk == schedule_branch.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></label>
+    <label>{% gl_t 'common.branch' %}<select name="branch">{% for b in appointment_branches %}<option value="{{ b.pk }}" {% if schedule_branch and b.pk == schedule_branch.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></label>
     {% endif %}
-    <label>تاریخ<input type="date" name="date" value="{{ schedule_date|date:'Y-m-d' }}"></label>
-    <button type="submit">نمایش برنامه</button>
+    <label>{% gl_t 'common.date' %}<input type="date" name="date" value="{{ schedule_date|date:'Y-m-d' }}"></label>
+    <button type="submit">{% gl_t 'appt.show' %}</button>
   </form>
 
   <div class="schedule-card">
@@ -29,16 +29,16 @@
       <div class="slot-time">{{ row.time }}</div>
       {% if row.appointment %}
         <div class="slot-person"><strong>{{ row.appointment.full_name }}</strong><small>{{ row.appointment.phone }}{% if row.appointment.service %} · {{ row.appointment.service }}{% endif %}</small></div>
-        <div><span class="slot-status">{{ row.appointment.get_status_display }}</span><div class="slot-source">{{ row.appointment.get_source_display }}</div><div class="slot-payment">پرداخت تأییدشده: <b>{{ row.appointment|appointment_paid_million }}</b> میلیون تومان</div></div>
+        <div><span class="slot-status">{% gl_choice 'appointment_status' row.appointment.status row.appointment.get_status_display %}</span><div class="slot-source">{{ row.appointment.get_source_display }}</div><div class="slot-payment">{% gl_t 'appt.payment_confirmed' %}: <b>{{ row.appointment|appointment_paid_million }}</b> {% gl_t 'common.million_toman' %}</div></div>
         {% if appointment_role == 'receptionist' %}
         <div class="slot-buttons">
-          {% if row.appointment.status == 'booked' %}<form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'arrived' %}">{% csrf_token %}<button class="arrive">مراجعه کرد</button></form>{% endif %}
-          {% if row.appointment.status != 'completed' %}<form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'completed' %}">{% csrf_token %}<button class="complete">انجام شد</button></form>{% endif %}
-          <form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'cancelled' %}">{% csrf_token %}<button class="cancel">لغو</button></form>
+          {% if row.appointment.status == 'booked' %}<form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'arrived' %}">{% csrf_token %}<button class="arrive">{% gl_t 'appt.arrived' %}</button></form>{% endif %}
+          {% if row.appointment.status != 'completed' %}<form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'completed' %}">{% csrf_token %}<button class="complete">{% gl_t 'appt.completed' %}</button></form>{% endif %}
+          <form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'cancelled' %}">{% csrf_token %}<button class="cancel">{% gl_t 'appt.cancelled' %}</button></form>
         </div>
-        {% else %}<div class="slot-source">رزرو شده</div>{% endif %}
+        {% else %}<div class="slot-source">{% gl_t 'appt.booked' %}</div>{% endif %}
       {% else %}
-        <div class="slot-empty">آزاد</div><div></div><div></div>
+        <div class="slot-empty">{% gl_t 'appt.free' %}</div><div></div><div></div>
       {% endif %}
     </div>
     {% endfor %}
