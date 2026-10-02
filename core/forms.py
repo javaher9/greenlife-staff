@@ -41,18 +41,22 @@ class StaffLoginForm(forms.Form):
         label='رمز ورود',
         widget=forms.PasswordInput(attrs={'autocomplete':'current-password'}),
     )
-    def __init__(self,*args,mobile=False,**kwargs):
+    def __init__(self,*args,mobile=False,language='fa',**kwargs):
         super().__init__(*args,**kwargs)
+        from .staff_i18n import normalize_ui_language, translate
         self.mobile=mobile
+        self.language=normalize_ui_language(language)
+        self.fields['username'].label=translate('login.username',self.language)
+        self.fields['username'].widget.attrs['placeholder']=translate('login.username',self.language)
         if mobile:
-            self.fields['password'].label='PIN موبایل'
+            self.fields['password'].label=translate('login.mobile_pin',self.language)
             self.fields['password'].widget.attrs.update({
                 'inputmode':'numeric',
-                'placeholder':'PIN شش‌رقمی یا رمز فعلی',
+                'placeholder':translate('login.mobile_pin',self.language),
             })
         else:
-            self.fields['password'].label='رمز دسکتاپ'
-            self.fields['password'].widget.attrs['placeholder']='رمز دسکتاپ'
+            self.fields['password'].label=translate('login.desktop_password',self.language)
+            self.fields['password'].widget.attrs['placeholder']=translate('login.desktop_password',self.language)
 
 
 class StaffCredentialUpdateForm(forms.Form):
