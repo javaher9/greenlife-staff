@@ -118,8 +118,7 @@ def _turkey_lead_source_profile():
 
 def _sync_turkey_signup_to_call_center(member, request):
     """Create/mark a Lead Hub record and route it to the current Tehran call-center pool."""
-    from core.models import CallCenterLeadGroup, DuplicateLeadError, ReferralLead
-    from core.referral_views import _auto_assign_call_center
+    from core.models import DuplicateLeadError, ReferralLead
 
     full_name = member.display_name
     marker = '[market:turkey] | [channel:public_network] | Türkiye Network Marketing'
@@ -439,10 +438,10 @@ def _turkey_member_or_404(code):
     )
 
 
-def _create_turkey_customer_lead(member, form, request, *, source):
+def _create_turkey_customer_lead(member, form, request, *, source, language):
     from core.models import DuplicateLeadError, ReferralLead
 
-    lang='en' if member.preferred_language == 'en' else 'tr'
+    lang='en' if language == 'en' else 'tr'
     data=form.cleaned_data
     marker=f'[market:turkey] | [channel:network_customer] | [member_code:{member.code}]'
     try:
@@ -479,7 +478,7 @@ def turkey_lead_create(request):
 
     form=TurkeyNetworkLeadForm(request.POST or None, language=lang)
     if request.method == 'POST' and form.is_valid():
-        lead, duplicate = _create_turkey_customer_lead(member, form, request, source='panel')
+        lead, duplicate = _create_turkey_customer_lead(member, form, request, source='panel', language=lang)
         if duplicate:
             message = (
                 'This mobile number was registered during the last 24 hours.'
@@ -508,7 +507,8 @@ def turkey_public_lead(request, code):
     form=TurkeyNetworkLeadForm(request.POST or None, language=lang)
     completed=False
     if request.method == 'POST' and form.is_valid():
-        lead, duplicate = _create_turkey_customer_lead(member, form, request, source='link')
+        lead_source='qr' if request.GET.get('src') == 'qr' or request.POST.get('src') == 'qr' else 'link'
+        lead, duplicate = _create_turkey_customer_lead(member, form, request, source=lead_source, language=lang)
         if duplicate:
             message = (
                 'This mobile number was registered during the last 24 hours.'
