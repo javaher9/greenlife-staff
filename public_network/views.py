@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
-from .forms import PublicNetworkLoginForm, PublicNetworkSignupForm
+from .forms import PublicNetworkLoginForm, PublicNetworkSignupForm, TurkeyNetworkLoginForm, TurkeyNetworkSignupForm
 from .models import PublicNetworkMember
 
 
@@ -29,6 +29,70 @@ def _public_base(request):
 
 def _member_share_url(request, member):
     return _public_base(request) + reverse('public_network:signup_with_code', args=[member.code]) + '?src=referral'
+
+
+def _turkey_member_share_url(request, member):
+    return _public_base(request) + reverse('public_network:turkey_signup_with_code', args=[member.code]) + '?src=referral'
+
+
+def _turkey_lead_source_profile():
+    """Technical source used to make Turkey network signups visible in Lead Hub."""
+    from core.models import ReferralProfile
+    user, _ = User.objects.get_or_create(
+        username='turkey-network-source',
+        defaults={'first_name': 'Türkiye', 'last_name': 'Network', 'is_active': False},
+    )
+    if user.has_usable_password():
+        user.set_unusable_password()
+        user.save(update_fields=['password'])
+    profile, _ = ReferralProfile.objects.get_or_create(
+        user=user,
+        defaults={
+            'referral_code': 'GLTURKEY',
+            'is_active': False,
+            'created_by': None,
+        },
+    )
+    return profile
+
+
+def _sync_turkey_signup_to_call_center(member, request):
+    """Create/mark a Lead Hub record and route it to the current Tehran call-center pool."""
+    from core.models import CallCenterLeadGroup, DuplicateLeadError, ReferralLead
+    from core.referral_views import _auto_assign_call_center
+
+    full_name = member.display_name
+    marker = '[market:turkey] | [channel:public_network] | Türkiye Network Marketing'
+    try:
+        lead = ReferralLead.objects.create(
+            referrer=_turkey_lead_source_profile(),
+            full_name=full_name,
+            phone=member.phone,
+            interested_service='Türkiye Network Marketing',
+            status='new',
+            source='link',
+            source_url=request.build_absolute_uri()[:500],
+            notes=marker,
+        )
+    except DuplicateLeadError as exc:
+        lead = getattr(exc, 'existing_lead', None)
+        if not lead:
+            return None
+        if '[market:turkey]' not in (lead.notes or ''):
+            lead.notes = ((lead.notes or '').rstrip() + '\n' + marker).strip()
+            lead.save(update_fields=['notes', 'updated_at'])
+
+    operator = _auto_assign_call_center(lead)
+    if operator:
+        group, _ = CallCenterLeadGroup.objects.get_or_create(
+            owner=operator,
+            name='Türkiye | Turkey',
+            defaults={'is_default': False},
+        )
+        if lead.group_id != group.id:
+            lead.group = group
+            lead.save(update_fields=['group', 'updated_at'])
+    return lead
 
 
 def _management_allowed(user):
@@ -156,5 +220,108 @@ def invite_qr(request, code):
     image.save(buffer, format='PNG')
     response = HttpResponse(buffer.getvalue(), content_type='image/png')
     response['Content-Disposition'] = f'inline; filename="greenlife-public-{member.code}.png"'
+    response['Cache-Control'] = 'public, max-age=3600'
+    return response
+
+
+def turkey_terms(request):
+    return render(request, 'public_network/turkey_terms.html')
+
+
+def turkey_signup(request, code=None):
+    sponsor = None
+    if code:
+        sponsor = get_object_or_404(
+            PublicNetworkMember.objects.select_related('user'), code=code, is_active=True
+        )
+    if request.user.is_authenticated and hasattr(request.user, 'public_network_member'):
+        request.session['public_network_locale'] = 'tr'
+        return redirect('public_network:turkey_dashboard')
+
+    initial = {'src': _source_from_request(request, sponsor)}
+    form = TurkeyNetworkSignupForm(request.POST or None, request.FILES or None, initial=initial)
+    if request.method == 'POST' and form.is_valid():
+        data = form.cleaned_data
+        source = _source_from_request(request, sponsor)
+        with transaction.atomic():
+            user = User.objects.create_user(
+                username=data['username'],
+                password=data['password'],
+                first_name=data['first_name'].strip(),
+                last_name=data['last_name'].strip(),
+            )
+            member = PublicNetworkMember.objects.create(
+                user=user,
+                sponsor=sponsor,
+                phone=data['phone'],
+                photo=data['photo'],
+                source=source,
+                source_url=request.build_absolute_uri()[:500],
+            )
+        _sync_turkey_signup_to_call_center(member, request)
+        login(request, user)
+        request.session['public_network_locale'] = 'tr'
+        messages.success(request, 'Üyeliğiniz oluşturuldu / Your account has been created.')
+        return redirect('public_network:turkey_dashboard')
+
+    return render(request, 'public_network/turkey_signup.html', {
+        'form': form,
+        'sponsor': sponsor,
+        'source': _source_from_request(request, sponsor),
+    })
+
+
+def turkey_login(request):
+    if request.user.is_authenticated and hasattr(request.user, 'public_network_member'):
+        request.session['public_network_locale'] = 'tr'
+        return redirect('public_network:turkey_dashboard')
+    form = TurkeyNetworkLoginForm(request.POST or None, request=request)
+    if request.method == 'POST' and form.is_valid():
+        login(request, form.get_user())
+        request.session['public_network_locale'] = 'tr'
+        return redirect('public_network:turkey_dashboard')
+    return render(request, 'public_network/turkey_login.html', {'form': form})
+
+
+@login_required
+def turkey_logout(request):
+    logout(request)
+    return redirect('public_network:turkey_login')
+
+
+@login_required
+def turkey_dashboard(request):
+    member = getattr(request.user, 'public_network_member', None)
+    if not member or not member.is_active:
+        return redirect('public_network:turkey_login')
+    request.session['public_network_locale'] = 'tr'
+    direct_members = member.members.filter(is_active=True).select_related('user')
+    return render(request, 'public_network/turkey_dashboard.html', {
+        'member': member,
+        'direct_members': direct_members[:12],
+        'direct_count': direct_members.count(),
+        'share_url': _turkey_member_share_url(request, member),
+        'share_qr_url': reverse('public_network:turkey_invite_qr', args=[member.code]),
+    })
+
+
+def turkey_invite_qr(request, code):
+    member = get_object_or_404(PublicNetworkMember, code=code, is_active=True)
+    try:
+        import qrcode
+    except ImportError:
+        from django.http import HttpResponse
+        return HttpResponse('QR service unavailable', status=503, content_type='text/plain')
+    import io
+    from django.http import HttpResponse
+    target = _turkey_member_share_url(request, member).replace('src=referral', 'src=qr')
+    qr = qrcode.QRCode(version=None, box_size=10, border=3, error_correction=qrcode.constants.ERROR_CORRECT_M)
+    qr.add_data(target)
+    qr.make(fit=True)
+    image = qr.make_image(fill_color='#0f766e', back_color='white')
+    buffer = io.BytesIO()
+    image.save(buffer, format='PNG')
+    response = HttpResponse(buffer.getvalue(), content_type='image/png')
+    response['Content-Disposition'] = f'inline; filename="greenlife-turkey-{member.code}.png"'
     response['Cache-Control'] = 'public, max-age=3600'
     return response
