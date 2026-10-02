@@ -27,16 +27,16 @@
     <h2 style="margin-top:20px">{% gl_t 'security.desktop' %}</h2>
     <p>{% gl_t 'security.desktop_optional' %}</p>
     <div class="ss-grid">
-      <div class="ss-field"><label>{% gl_t 'security.desktop' %} جدید</label><input type="password" name="new_password" autocomplete="new-password" placeholder="{% gl_t 'security.desktop_rule' %}"></div>
-      <div class="ss-field"><label>تکرار {% gl_t 'security.desktop' %}</label><input type="password" name="confirm_password" autocomplete="new-password"></div>
+      <div class="ss-field"><label>{% gl_t 'security.new_desktop' %}</label><input type="password" name="new_password" autocomplete="new-password" placeholder="{% gl_t 'security.desktop_rule' %}"></div>
+      <div class="ss-field"><label>{% gl_t 'security.confirm_desktop' %}</label><input type="password" name="confirm_password" autocomplete="new-password"></div>
     </div>
     <h2 style="margin-top:20px">{% gl_t 'security.mobile' %}</h2>
-    <p>{% if mobile_pin_set %}{% gl_t 'security.mobile' %} شما فعال است.{% else %}{% gl_t 'security.pin_missing' %}{% endif %}</p>
+    <p>{% if mobile_pin_set %}{% gl_t 'security.pin_active' %}{% else %}{% gl_t 'security.pin_missing' %}{% endif %}</p>
     <div class="ss-grid">
       <div class="ss-field"><label>{% gl_t 'security.new_pin' %}</label><input type="password" name="new_pin" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" placeholder="{% gl_t 'security.six_digits' %}"></div>
       <div class="ss-field"><label>{% gl_t 'security.confirm_pin' %}</label><input type="password" name="confirm_pin" maxlength="6" inputmode="numeric" pattern="[0-9]{6}"></div>
     </div>
-    <div class="ss-note">PINهای خیلی ساده مثل 123456 یا 111111 پذیرفته نمی‌شوند. تغییر {% gl_t 'security.desktop' %}، شما را از همین جلسه خارج نمی‌کند.</div>
+    <div class="ss-note">{% gl_t 'security.pin_rule' %}</div>
     <div class="ss-actions"><button class="ss-save" type="submit">{% gl_t 'security.save' %}</button><a class="ss-back" href="/profile/">{% gl_t 'security.back_profile' %}</a></div>
   </form>
 </div>
