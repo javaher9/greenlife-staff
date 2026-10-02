@@ -1,4 +1,4 @@
-{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+{% extends 'core/base.html' %}{% load jalali_tags staff_i18n %}{% block content %}
 <style>
 .cons-expense{max-width:1180px;margin:12px auto 32px;color:#eef5fb;font-family:"Noto Sans Arabic",Tahoma,sans-serif}
 .cons-expense *{box-sizing:border-box}
@@ -51,18 +51,18 @@
 
 </style>
 <div class="cons-expense">
-<header class="exp-top"><div><h1>ثبت هزینه مشاور</h1><p>هزینه شعبه را با رسید ثبت کنید؛ بررسی و تأیید نهایی با واحد مالی است.</p></div><a class="exp-return" href="{% url 'consultant_sales_outcomes' %}">← بازگشت به پنل مشاور</a></header>
+<header class="exp-top"><div><h1>{% gl_t 'expense.title' %}</h1><p>{% gl_t 'expense.intro' %}</p></div><a class="exp-return" href="{% url 'consultant_sales_outcomes' %}">← {% gl_t 'fin.back_consultant' %}</a></header>
 <div class="exp-layout">
-<section class="exp-card"><h2>هزینه جدید · {{ branch.name }}</h2>
+<section class="exp-card"><h2>{% gl_t 'expense.new' branch=branch.name %}</h2>
 <form method="post" enctype="multipart/form-data">{% csrf_token %}
 <div class="exp-fields">
 <div class="exp-field"><label for="{{ form.amount_toman.id_for_label }}">{{ form.amount_toman.label }}</label>{{ form.amount_toman }}{% for error in form.amount_toman.errors %}<span class="exp-error">{{ error }}</span>{% endfor %}</div>
 <div class="exp-field"><label for="{{ form.category.id_for_label }}">{{ form.category.label }}</label>{{ form.category }}{% for error in form.category.errors %}<span class="exp-error">{{ error }}</span>{% endfor %}</div>
 <div class="exp-field wide"><label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>{{ form.description }}{% for error in form.description.errors %}<span class="exp-error">{{ error }}</span>{% endfor %}</div>
-<div class="exp-field wide"><label for="{{ form.receipt_image.id_for_label }}">{{ form.receipt_image.label }}</label>{{ form.receipt_image }}{% for error in form.receipt_image.errors %}<span class="exp-error">{{ error }}</span>{% endfor %}<span class="exp-help">تصویر رسید الزامی است؛ JPG، PNG یا WebP تا ۱۰ مگابایت.</span></div>
-</div><button class="exp-save" id="consultantExpenseSubmit" type="submit">ثبت هزینه و ارسال برای تأیید</button><div class="exp-help" id="consultantExpenseStatus" hidden>در حال ثبت هزینه و ارسال رسید… لطفاً دوباره کلیک نکنید.</div></form></section>
-<aside class="exp-card"><h2>آخرین هزینه‌های شما</h2>
-{% for entry in recent_expenses %}<div class="exp-row"><div><strong>{{ entry.account_heading }}</strong><small>{{ entry.created_at|date:"Y/m/d H:i" }} · {{ entry.description|truncatechars:55 }}</small><span class="exp-status">{{ entry.get_review_status_display }}</span></div><b>{{ entry.amount_toman_display }} تومان</b></div>{% empty %}<p class="exp-help">هنوز هزینه‌ای ثبت نشده است.</p>{% endfor %}
+<div class="exp-field wide"><label for="{{ form.receipt_image.id_for_label }}">{{ form.receipt_image.label }}</label>{{ form.receipt_image }}{% for error in form.receipt_image.errors %}<span class="exp-error">{{ error }}</span>{% endfor %}<span class="exp-help">{% gl_t 'expense.receipt_help' %}</span></div>
+</div><button class="exp-save" id="consultantExpenseSubmit" type="submit">{% gl_t 'expense.submit' %}</button><div class="exp-help" id="consultantExpenseStatus" hidden>{% gl_t 'expense.submitting_help' %}</div></form></section>
+<aside class="exp-card"><h2>{% gl_t 'expense.recent' %}</h2>
+{% for entry in recent_expenses %}<div class="exp-row"><div><strong>{{ entry.localized_heading }}</strong><small>{{ entry.created_at|date:"Y/m/d H:i" }} · {{ entry.description|truncatechars:55 }}</small><span class="exp-status">{% gl_choice 'review_status' entry.review_status entry.get_review_status_display %}</span></div><b>{{ entry.amount_toman_display }} {% gl_t 'common.toman' %}</b></div>{% empty %}<p class="exp-help">{% gl_t 'expense.empty' %}</p>{% endfor %}
 </aside></div></div>
 <script>
 (function(){
@@ -76,7 +76,7 @@
     if(!form.checkValidity())return;
     submitted=true;
     button.disabled=true;
-    button.textContent='در حال ثبت…';
+    button.textContent='{% gl_t "expense.submitting" %}';
     if(status)status.hidden=false;
   });
 })();
