@@ -80,6 +80,15 @@ def _parse_time(value):
     return time.fromisoformat(value)
 
 
+def _next_device_type_code():
+    prefix='TYPE'
+    used=set(DeviceTypeSchedule.objects.filter(code__startswith=prefix).values_list('code',flat=True))
+    i=1
+    while f'{prefix}{i}' in used:
+        i+=1
+    return f'{prefix}{i}'
+
+
 def _send_confirmation(pk):
     try:
         booking=DeviceSessionBooking.objects.select_related(
@@ -147,43 +156,35 @@ def device_capacity_settings(request):
                 messages.success(request,f'{kind.name} برای شعبه {branch.name} فعال شد.')
         elif action=='new_type':
             name=(request.POST.get('name') or '').strip()[:100]
-            code=(request.POST.get('code') or '').strip().upper().replace(' ','')[:24]
             treatment=_mins(request.POST.get('treatment_minutes'),60)
             preparation=_mins(request.POST.get('preparation_minutes'),20)
-            if not name or not code:
-                messages.error(request,'نام و کد دستگاه الزامی است.')
+            if not name:
+                messages.error(request,'نام دستگاه الزامی است.')
             elif treatment<10:
                 messages.error(request,'مدت درمان باید حداقل ۱۰ دقیقه باشد.')
-            elif DeviceTypeSchedule.objects.filter(code__iexact=code).exists():
-                messages.error(request,f'کد {code} قبلاً در بانک دستگاه‌ها ثبت شده است.')
             else:
+                code=_next_device_type_code()
                 DeviceTypeSchedule.objects.create(
                     name=name,code=code,
                     treatment_minutes=treatment,
                     preparation_minutes=preparation,
                     is_active=True,
                 )
-                messages.success(request,f'{name} با کد {code} به بانک دستگاه‌ها اضافه شد.')
+                messages.success(request,f'{name} به بانک دستگاه‌ها اضافه شد.')
         elif action=='type':
             kind=get_object_or_404(DeviceTypeSchedule,pk=request.POST.get('type_id'))
             name=(request.POST.get('name') or '').strip()[:100]
-            requested_code=(request.POST.get('code') or '').strip().upper().replace(' ','')[:24]
             treatment=_mins(request.POST.get('treatment_minutes'),kind.treatment_minutes)
             preparation=_mins(request.POST.get('preparation_minutes'),kind.preparation_minutes)
-            if not name or not requested_code:
-                messages.error(request,'نام و کد دستگاه الزامی است.')
+            if not name:
+                messages.error(request,'نام دستگاه الزامی است.')
             elif treatment<10:
                 messages.error(request,'مدت درمان باید حداقل ۱۰ دقیقه باشد.')
-            elif kind.code=='DIF70' and requested_code!='DIF70':
-                messages.error(request,'کد DIF70 برای منطق Double Define رزرو شده و قابل تغییر نیست؛ نام دستگاه را می‌توانید ویرایش کنید.')
-            elif DeviceTypeSchedule.objects.filter(code__iexact=requested_code).exclude(pk=kind.pk).exists():
-                messages.error(request,f'کد {requested_code} قبلاً در بانک دستگاه‌ها ثبت شده است.')
             else:
                 kind.name=name
-                kind.code=requested_code
                 kind.treatment_minutes=treatment
                 kind.preparation_minutes=preparation
-                kind.save(update_fields=['name','code','treatment_minutes','preparation_minutes'])
+                kind.save(update_fields=['name','treatment_minutes','preparation_minutes'])
                 messages.success(request,'اطلاعات نوع دستگاه به‌روزرسانی شد؛ نوبت‌های ثبت‌شده قبلی بدون تغییر می‌مانند.')
         elif action=='delete_type':
             with transaction.atomic():
@@ -199,9 +200,8 @@ def device_capacity_settings(request):
                     )
                 else:
                     name=kind.name
-                    code=kind.code
                     kind.delete()
-                    messages.success(request,f'{name} · {code} از بانک دستگاه‌ها حذف شد.')
+                    messages.success(request,f'{name} از بانک دستگاه‌ها حذف شد.')
         elif action=='cabin':
             name=(request.POST.get('name') or '').strip()[:100]
             if name:
