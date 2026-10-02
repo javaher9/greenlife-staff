@@ -4,6 +4,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .models import PublicNetworkMember
+from core.models import ReferralLead
 
 
 PNG_1X1 = (
@@ -54,3 +55,35 @@ class PublicNetworkTests(TestCase):
         self.client.login(username='publicuser', password='StrongPass123')
         response = self.client.get('/')
         self.assertRedirects(response, reverse('public_network:dashboard'))
+
+
+    def test_turkey_signup_creates_bilingual_member_and_call_center_lead(self):
+        payload = {
+            'first_name': 'Deniz',
+            'last_name': 'Yilmaz',
+            'phone': '0532 123 45 67',
+            'username': 'deniztr',
+            'password': 'StrongPass123',
+            'password_confirm': 'StrongPass123',
+            'photo': self.photo('tr.png'),
+            'accept_terms': 'on',
+            'src': 'direct',
+        }
+        response = self.client.post(reverse('public_network:turkey_signup'), payload)
+        self.assertRedirects(response, reverse('public_network:turkey_dashboard'))
+        member = PublicNetworkMember.objects.get(user__username='deniztr')
+        self.assertEqual(member.phone, '+905321234567')
+        lead = ReferralLead.objects.get(phone='+905321234567')
+        self.assertIn('[market:turkey]', lead.notes)
+        self.assertEqual(lead.interested_service, 'Türkiye Network Marketing')
+        self.assertIn('/tr/network/', lead.source_url)
+
+    def test_turkey_dashboard_uses_turkey_invite_link(self):
+        user = User.objects.create_user('turkeymember', password='StrongPass123', first_name='Ada')
+        member = PublicNetworkMember.objects.create(
+            user=user, phone='+905551111111', photo=self.photo('ada.png')
+        )
+        self.client.login(username='turkeymember', password='StrongPass123')
+        response = self.client.get(reverse('public_network:turkey_dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse('public_network:turkey_signup_with_code', args=[member.code]))
