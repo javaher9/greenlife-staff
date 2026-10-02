@@ -9,7 +9,7 @@
 <section class="hero">
 <img class="avatar" src="{{ member.photo.url }}" alt="">
 <div><h1 style="margin:0 0 5px">{{ member.display_name }}</h1><div class="muted">{% if turkey_lang == 'en' %}Green Life Türkiye network member{% else %}Green Life Türkiye ağı üyesi{% endif %}</div><div class="code">{% if turkey_lang == 'en' %}Personal code{% else %}Kişisel kod{% endif %}: {{ member.code }}</div></div>
-<div class="quick"><a class="btn" href="{% url 'public_network:turkey_lead_create' %}?lang={{ turkey_lang }}">＋ {% if turkey_lang == 'en' %}ADD LEAD{% else %}LEAD EKLE{% endif %}</a><a class="btn secondary" href="#memberInvite">＋ {% if turkey_lang == 'en' %}INVITE MEMBER{% else %}ÜYE DAVET ET{% endif %}</a></div>
+<div class="quick"><a class="btn" href="{% url 'public_network:turkey_lead_create' %}?lang={{ turkey_lang }}">＋ {% if turkey_lang == 'en' %}ADD LEAD{% else %}LEAD EKLE{% endif %}</a><a class="btn secondary" href="{% url 'public_network:turkey_member_create' %}?lang={{ turkey_lang }}">＋ {% if turkey_lang == 'en' %}REGISTER MEMBER{% else %}ÜYE KAYDET{% endif %}</a></div>
 </section>
 
 <div class="stats">
@@ -31,6 +31,7 @@
 <span class="kicker">NETWORK · MEMBER</span>
 {% if turkey_lang == 'en' %}<h2>Invite a network member</h2><div class="intro">Send this separate personal link to someone who wants to join your network. Their account will be registered directly under you.</div>{% else %}<h2>Ağa yeni üye davet et</h2><div class="intro">Ağına katılacak kişiye bu ayrı kişisel linki gönder. Hesabı doğrudan senin altında kaydedilir.</div>{% endif %}
 <div class="sharebox"><input id="memberInviteLink" value="{{ share_url }}" readonly><button class="btn" type="button" onclick="navigator.clipboard.writeText(document.getElementById('memberInviteLink').value);this.textContent='{% if turkey_lang == 'en' %}COPIED{% else %}KOPYALANDI{% endif %}'">{% if turkey_lang == 'en' %}COPY{% else %}KOPYALA{% endif %}</button><a class="btn secondary" href="{{ share_qr_url }}" target="_blank">QR</a></div>
+<div style="margin-top:10px"><a class="btn secondary" href="{% url 'public_network:turkey_member_create' %}?lang={{ turkey_lang }}">＋ {% if turkey_lang == 'en' %}Register member manually{% else %}Üyeyi kendim kaydet{% endif %}</a></div>
 </article>
 </section>
 
