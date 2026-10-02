@@ -4,7 +4,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .models import PublicNetworkMember
-from core.models import ReferralLead
+from core.models import Country, ReferralLead, ReferralProfile
 
 
 PNG_1X1 = (
@@ -84,15 +84,19 @@ class PublicNetworkTests(TestCase):
         self.assertEqual(lead.interested_service, 'Türkiye Network Marketing')
         self.assertIn('/tr/network/', lead.source_url)
 
-    def test_turkey_dashboard_uses_turkey_invite_link(self):
+    def test_turkey_dashboard_uses_separate_member_and_customer_links(self):
         user = User.objects.create_user('turkeymember', password='StrongPass123', first_name='Ada')
+        turkey=Country.objects.get(code='TR')
         member = PublicNetworkMember.objects.create(
-            user=user, phone='+905551111111', photo=self.photo('ada.png')
+            user=user, country=turkey, preferred_language='tr',
+            phone='+905551111111', photo=self.photo('ada.png')
         )
         self.client.login(username='turkeymember', password='StrongPass123')
         response = self.client.get(reverse('public_network:turkey_dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, reverse('public_network:turkey_signup_with_code', args=[member.code]))
+        self.assertContains(response, reverse('public_network:turkey_public_lead', args=[member.code]))
+        self.assertContains(response, reverse('public_network:turkey_lead_create'))
 
 
     def test_turkey_language_switch_renders_single_language_copy(self):
@@ -126,3 +130,79 @@ class PublicNetworkTests(TestCase):
         lead = ReferralLead.objects.get(phone='+905554443322')
         self.assertEqual(member.preferred_language, 'en')
         self.assertEqual(lead.preferred_language, 'en')
+
+
+    def test_turkey_member_can_add_customer_lead_manually(self):
+        turkey=Country.objects.get(code='TR')
+        user=User.objects.create_user('turkey-lead-member',password='StrongPass123',first_name='Sultan')
+        member=PublicNetworkMember.objects.create(
+            user=user,country=turkey,preferred_language='tr',
+            phone='+905550001111',photo=self.photo('sultan.png'),
+        )
+        self.client.login(username='turkey-lead-member',password='StrongPass123')
+        response=self.client.post(
+            reverse('public_network:turkey_lead_create') + '?lang=tr',
+            {
+                'lang':'tr',
+                'full_name':'Müşteri Bir',
+                'phone':'0532 777 88 99',
+                'interested_service':'Body shaping',
+                'notes':'Öğleden sonra arayın',
+            },
+        )
+        self.assertRedirects(response,reverse('public_network:turkey_dashboard') + '?lang=tr')
+        lead=ReferralLead.objects.get(phone='+905327778899')
+        self.assertEqual(lead.country.code,'TR')
+        self.assertEqual(lead.preferred_language,'tr')
+        self.assertEqual(lead.referrer.user,user)
+        self.assertEqual(lead.created_by,user)
+        self.assertIn('[channel:network_customer]',lead.notes)
+        self.assertIn(member.code,lead.notes)
+
+    def test_public_customer_link_attributes_lead_to_member(self):
+        turkey=Country.objects.get(code='TR')
+        user=User.objects.create_user('turkey-public-referrer',password='StrongPass123',first_name='Emre')
+        member=PublicNetworkMember.objects.create(
+            user=user,country=turkey,preferred_language='en',
+            phone='+905550002222',photo=self.photo('emre.png'),
+        )
+        url=reverse('public_network:turkey_public_lead',args=[member.code]) + '?lang=en'
+        response=self.client.post(
+            url,
+            {
+                'lang':'en',
+                'full_name':'Customer Two',
+                'phone':'0555 333 22 11',
+                'interested_service':'Consultation',
+                'notes':'Call tomorrow',
+            },
+        )
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'Your request has been received')
+        lead=ReferralLead.objects.get(phone='+905553332211')
+        self.assertEqual(lead.referrer.user,user)
+        self.assertEqual(lead.country.code,'TR')
+        self.assertEqual(lead.preferred_language,'en')
+        self.assertEqual(lead.source,'link')
+        self.assertIsNone(lead.created_by)
+        self.assertTrue(ReferralProfile.objects.filter(user=user,referral_code=member.code).exists())
+
+    def test_public_customer_qr_source_is_preserved(self):
+        turkey=Country.objects.get(code='TR')
+        user=User.objects.create_user('turkey-qr-referrer',password='StrongPass123',first_name='Derya')
+        member=PublicNetworkMember.objects.create(
+            user=user,country=turkey,preferred_language='tr',
+            phone='+905550003333',photo=self.photo('derya.png'),
+        )
+        url=reverse('public_network:turkey_public_lead',args=[member.code]) + '?lang=tr&src=qr'
+        response=self.client.post(
+            url,
+            {
+                'lang':'tr','src':'qr',
+                'full_name':'QR Müşteri',
+                'phone':'0533 222 11 00',
+            },
+        )
+        self.assertEqual(response.status_code,200)
+        lead=ReferralLead.objects.get(phone='+905332221100')
+        self.assertEqual(lead.source,'qr')
