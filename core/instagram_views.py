@@ -5,7 +5,7 @@ from django.db.models import Count, Q
 from django.shortcuts import render
 from django.utils import timezone
 
-from .models import CallCenterLeadGroup, DuplicateLeadError, EmployeeProfile, LEAD_DUPLICATE_MESSAGE, ReferralLead, ReferralProfile, StaffNotification, normalize_lead_phone
+from .models import Attendance, CallCenterLeadGroup, DuplicateLeadError, EmployeeProfile, LEAD_DUPLICATE_MESSAGE, ReferralLead, ReferralProfile, StaffNotification, normalize_lead_phone
 
 
 INSTAGRAM_GROUP_NAME = 'اینستاگرام - لینک'
@@ -124,9 +124,25 @@ def _telegram_source_profile():
 
 
 def _assign_instagram_lead(lead, group_name=INSTAGRAM_GROUP_NAME, notification_title='لید جدید اینستاگرام'):
+    candidates = EmployeeProfile.objects.filter(role='call_center', is_active=True, user__is_active=True)
+    today = timezone.localdate()
+
+    # Friday routing is presence-driven: once a call-center operator checks in,
+    # new Instagram/Telegram/manual leads go only to the operators currently at
+    # the center. Clocking out removes that operator from the live Friday pool.
+    if today.weekday() == 4:
+        active_user_ids = Attendance.objects.filter(
+            date=today,
+            check_in__isnull=False,
+            check_out__isnull=True,
+            user__profile__role='call_center',
+            user__profile__is_active=True,
+            user__is_active=True,
+        ).values_list('user_id', flat=True)
+        candidates = candidates.filter(user_id__in=active_user_ids)
+
     operator = (
-        EmployeeProfile.objects
-        .filter(role='call_center', is_active=True, user__is_active=True)
+        candidates
         .annotate(open_leads=Count(
             'assigned_referral_leads',
             filter=Q(assigned_referral_leads__status__in=('new', 'contacted', 'appointment')),
