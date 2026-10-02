@@ -1,11 +1,11 @@
-{% extends 'core/base.html' %}{% load jalali_tags %}
+{% extends 'core/base.html' %}{% load jalali_tags staff_i18n %}
 {% block content %}
 <section class="panel reportbox">
-  <h1>گزارش امروز</h1>
-  <p class="muted">هر چیزی که مدیریت باید بداند را در کمتر از دو دقیقه بگو یا بنویس.</p>
+  <h1>{% gl_t 'report.today' %}</h1>
+  <p class="muted">{% gl_t 'report.intro' %}</p>
 
   <div class="recorder">
-    <button type="button" id="record">🎙 شروع ضبط</button>
+    <button type="button" id="record">🎙 {% gl_t 'report.start_record' %}</button>
     <span id="timer">00:00</span>
     <audio id="preview" controls hidden></audio>
     <p id="recordStatus" class="muted" style="margin-top:10px"></p>
@@ -15,13 +15,33 @@
     {% csrf_token %}
     <input type="hidden" name="submission_id" value="{{ submission_id }}">
     {{ form.as_p }}
-    <label class="check"><input type="checkbox" name="process_ai" value="1"> همین حالا با هوش مصنوعی تحلیل شود</label>
-    <button class="primary" id="submitReport">ارسال گزارش</button>
+    <label class="check"><input type="checkbox" name="process_ai" value="1"> {% gl_t 'report.ai' %}</label>
+    <button class="primary" id="submitReport">{% gl_t 'report.submit' %}</button>
   </form>
 </section>
 
 <script>
 (() => {
+  const I18N = {
+    secureRequired: "{% gl_t 'report.secure_required' %}",
+    noCapture: "{% gl_t 'report.no_capture' %}",
+    noMediaRecorder: "{% gl_t 'report.no_media_recorder' %}",
+    askMic: "{% gl_t 'report.ask_mic' %}",
+    recordAgain: "{% gl_t 'report.record_again' %}",
+    emptyAudio: "{% gl_t 'report.empty_audio' %}",
+    ready: "{% gl_t 'report.ready' %}",
+    recordError: "{% gl_t 'report.record_error' %}",
+    stop: "{% gl_t 'report.stop' %}",
+    recording: "{% gl_t 'report.recording' %}",
+    micDenied: "{% gl_t 'report.mic_denied' %}",
+    micMissing: "{% gl_t 'report.mic_missing' %}",
+    cannotStart: "{% gl_t 'report.cannot_start' %}",
+    sending: "{% gl_t 'report.sending' %}",
+    saving: "{% gl_t 'report.saving' %}",
+    sendingAudio: "{% gl_t 'report.sending_audio' %}",
+    submit: "{% gl_t 'report.submit' %}",
+    audioFailed: "{% gl_t 'report.audio_failed' %}"
+  };
   const btn = document.getElementById('record');
   const preview = document.getElementById('preview');
   const timer = document.getElementById('timer');
@@ -86,24 +106,24 @@
     }
 
     if (!window.isSecureContext) {
-      setStatus('برای ضبط صدا باید صفحه با HTTPS باز شود. از آدرس https://staff.greenlifeclinics.com استفاده کنید.', true);
+      setStatus(I18N.secureRequired, true);
       return;
     }
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setStatus('مرورگر شما ضبط مستقیم صدا را پشتیبانی نمی‌کند. لطفاً از گزینه انتخاب فایل صوتی استفاده کنید.', true);
+      setStatus(I18N.noCapture, true);
       if (fileInput) fileInput.click();
       return;
     }
 
     if (!window.MediaRecorder) {
-      setStatus('مرورگر شما MediaRecorder را پشتیبانی نمی‌کند. لطفاً از گزینه انتخاب فایل صوتی استفاده کنید.', true);
+      setStatus(I18N.noMediaRecorder, true);
       if (fileInput) fileInput.click();
       return;
     }
 
     try {
-      setStatus('در حال درخواست اجازه میکروفون...');
+      setStatus(I18N.askMic);
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       recordedMime = pickMime();
       recorder = recordedMime ? new MediaRecorder(stream, { mimeType: recordedMime }) : new MediaRecorder(stream);
@@ -116,19 +136,19 @@
 
       recorder.addEventListener('stop', () => {
         stopTimer();
-        btn.textContent = '🎙 ضبط دوباره';
+        btn.textContent = '🎙 ' + I18N.recordAgain;
 
         const mime = recorder.mimeType || recordedMime || 'audio/webm';
         recordedBlob = new Blob(chunks, { type: mime });
 
         if (!recordedBlob.size) {
-          setStatus('فایل صوتی خالی بود. لطفاً دوباره ضبط کنید.', true);
+          setStatus(I18N.emptyAudio, true);
           return;
         }
 
         preview.src = URL.createObjectURL(recordedBlob);
         preview.hidden = false;
-        setStatus('ضبط آماده است. برای ثبت، دکمه «ارسال گزارش» را بزنید.');
+        setStatus(I18N.ready);
 
         if (stream) {
           stream.getTracks().forEach(track => track.stop());
@@ -138,14 +158,14 @@
 
       recorder.addEventListener('error', e => {
         stopTimer();
-        setStatus('در ضبط صدا خطایی رخ داد. لطفاً دوباره تلاش کنید.', true);
+        setStatus(I18N.recordError, true);
         console.error('MediaRecorder error:', e);
       });
 
       recorder.start(500);
       resetTimer();
-      btn.textContent = '⏹ پایان ضبط';
-      setStatus('در حال ضبط...');
+      btn.textContent = '⏹ ' + I18N.stop;
+      setStatus(I18N.recording);
       interval = setInterval(() => {
         sec += 1;
         timer.textContent = String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
@@ -157,11 +177,11 @@
       stream = null;
       console.error(err);
       if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) {
-        setStatus('اجازه میکروفون داده نشده است. از تنظیمات مرورگر، Microphone را برای این سایت روی Allow بگذارید.', true);
+        setStatus(I18N.micDenied, true);
       } else if (err && err.name === 'NotFoundError') {
-        setStatus('میکروفونی روی دستگاه پیدا نشد.', true);
+        setStatus(I18N.micMissing, true);
       } else {
-        setStatus('امکان شروع ضبط وجود ندارد. صفحه را با HTTPS باز کنید و اجازه میکروفون را بررسی کنید.', true);
+        setStatus(I18N.cannotStart, true);
       }
     }
   });
@@ -176,15 +196,15 @@
     }
     submitting = true;
     submitBtn.disabled = true;
-    submitBtn.textContent = 'در حال ارسال...';
+    submitBtn.textContent = I18N.sending;
 
     if (!recordedBlob) {
-      setStatus('در حال ثبت گزارش...');
+      setStatus(I18N.saving);
       return; // normal browser POST; button remains locked
     }
 
     event.preventDefault();
-    setStatus('در حال ارسال گزارش صوتی...');
+    setStatus(I18N.sendingAudio);
 
     try {
       const data = new FormData(form);
@@ -206,8 +226,8 @@
       console.error(err);
       submitting = false;
       submitBtn.disabled = false;
-      submitBtn.textContent = 'ارسال گزارش';
-      setStatus('ارسال فایل صوتی ناموفق بود. اینترنت را بررسی کنید یا فایل صوتی را دستی انتخاب و دوباره ارسال کنید.', true);
+      submitBtn.textContent = I18N.submit;
+      setStatus(I18N.audioFailed, true);
     }
   });
 })();
