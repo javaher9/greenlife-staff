@@ -10,6 +10,7 @@ urlpatterns = [
     path('tr/network/login/', views.turkey_login, name='turkey_login'),
     path('tr/network/logout/', views.turkey_logout, name='turkey_logout'),
     path('tr/network/dashboard/', views.turkey_dashboard, name='turkey_dashboard'),
+    path('tr/network/member/new/', views.turkey_member_create, name='turkey_member_create'),
     path('tr/network/lead/new/', views.turkey_lead_create, name='turkey_lead_create'),
     path('tr/network/lead/<str:code>/', views.turkey_public_lead, name='turkey_public_lead'),
     path('tr/network/lead/<str:code>/qr/', views.turkey_public_lead_qr, name='turkey_public_lead_qr'),
