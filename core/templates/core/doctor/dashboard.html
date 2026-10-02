@@ -1,6 +1,6 @@
 {% load jalali_tags staff_i18n %}
 <!doctype html>
-<html lang="fa" dir="rtl">
+<html lang="{{ ui_language|default:'fa' }}" dir="{{ ui_direction|default:'rtl' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -185,6 +185,16 @@ html,body{background:#0a1520!important}
 .doctor-empty-primary p{color:#c2cfdb!important}
 .doctor-recent-row{background:#173044!important;border-color:#36536a!important}.doctor-recent-row p{color:#c2cfdb!important}
 
+
+  .doctor-lang{display:flex;gap:3px;padding:3px;border:1px solid #314157;border-radius:999px;background:#0d1721;margin:0}
+  .doctor-lang button{min-width:31px;height:29px;padding:0;border:0;border-radius:999px;background:transparent;color:#8393a8;font:900 8px Arial,Tahoma;cursor:pointer}
+  .doctor-lang button.active{background:#2b246a;color:#dcd7ff}
+  html[dir="ltr"] .doctor-side{right:auto;left:0;border-left:0;border-right:1px solid #223143}
+  html[dir="ltr"] .doctor-canvas{margin-right:0;margin-left:198px}
+  html[dir="ltr"] .doctor-grid{direction:ltr}
+  html[dir="ltr"] .doctor-grid>*{direction:ltr;text-align:left}
+  html[dir="ltr"] .doctor-shell-title,html[dir="ltr"] .patient-facts,html[dir="ltr"] .patient-name-row{direction:ltr}
+  html[dir="ltr"] .doctor-field,html[dir="ltr"] .history-row,html[dir="ltr"] .note-item,html[dir="ltr"] .chat-item{text-align:left}
 </style>
 </head>
 <body>
@@ -207,7 +217,7 @@ html,body{background:#0a1520!important}
     <header class="doctor-shellbar">
       <div class="doctor-shell-title">
         <span class="doctor-brand-mark" style="width:30px;height:30px;border-radius:9px;font-size:15px">✚</span>
-        <div><strong>{% gl_t 'doc.dashboard' %}</strong><small>{{ doctor_branch|default:"{% gl_t 'doc.visit_center_missing' %}" }} · {{ today|jdate }} · {{ appointment_stats.total }} نوبت امروز</small></div>
+        <div><strong>{% gl_t 'doc.dashboard' %}</strong><small>{% if doctor_branch %}{{ doctor_branch }}{% else %}{% gl_t 'doc.visit_center_missing' %}{% endif %} · {% gl_t 'doc.header_meta' date=today|jdate count=appointment_stats.total %}</small></div>
       </div>
       {% if executive_doctor_mode %}
       <form method="get" class="doctor-branch-form">
@@ -220,6 +230,7 @@ html,body{background:#0a1520!important}
       </form>
       {% endif %}
       <div class="doctor-shell-actions">
+        <form method="post" action="{% url 'language_switch' %}" class="doctor-lang" aria-label="{% gl_t 'shell.language_title' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">{% for code,short,label in ui_languages %}<button type="submit" name="language" value="{{ code }}" class="{% if ui_language == code %}active{% endif %}" aria-label="{{ label }}">{{ short }}</button>{% endfor %}</form>
         <a class="neon" href="#" data-open-live-chat>✉ {% gl_t 'doc.staff_chat' %}</a>
         {% if executive_doctor_mode %}<a href="/my-office/">{% gl_t 'doc.back_management' %}</a>{% endif %}
       </div>
@@ -238,11 +249,11 @@ html,body{background:#0a1520!important}
             <div>
               <div class="appt-name-line">
                 <div class="appt-name">{{ row.item.full_name }}</div>
-                <span class="appt-flower">گل: {{ row.owner|default:"{% gl_t 'cc.not_scheduled' %}" }}</span>
+                <span class="appt-flower">{% gl_t 'doc.owner' owner=row.owner|default:'—' %}</span>
               </div>
               <div class="appt-meta">
                 <span class="status-pill {{ row.status_tone }}">{{ row.status_label }}</span>
-                <span>{{ row.item.service|default:"{% gl_t 'doc.visit' %}" }}</span>
+                <span>{% if row.item.service %}{{ row.item.service }}{% else %}{% gl_t 'doc.visit' %}{% endif %}</span>
               </div>
             </div>
           </a>
@@ -252,7 +263,7 @@ html,body{background:#0a1520!important}
         </div>
       </section>
       <section class="doctor-card appt-summary">
-        <div class="doctor-card-head" style="padding:0 0 11px;border:0"><h3>{% gl_t 'doc.today_summary' %}</h3><small>{{ doctor_branch|default:"{% gl_t 'doc.no_branch' %}" }}</small></div>
+        <div class="doctor-card-head" style="padding:0 0 11px;border:0"><h3>{% gl_t 'doc.today_summary' %}</h3><small>{% if doctor_branch %}{{ doctor_branch }}{% else %}{% gl_t 'doc.no_branch' %}{% endif %}</small></div>
         <div class="appt-summary-grid">
           <div class="sum-box"><b>{{ appointment_stats.total }}</b><small>{% gl_t 'doc.total_appointments' %}</small></div>
           <div class="sum-box"><b>{{ appointment_stats.arrived }}</b><small>{% gl_t 'doc.arrived' %}</small></div>
@@ -271,15 +282,15 @@ html,body{background:#0a1520!important}
         <div>
           <div class="patient-name-row">
             <h1>{{ patient_summary.name }}</h1>
-            <span class="patient-flower {% if not selected_flower %}empty{% endif %}"><i>✦</i> گل: {{ selected_flower|default:"{% gl_t 'cc.not_scheduled' %}" }}</span>
+            <span class="patient-flower {% if not selected_flower %}empty{% endif %}"><i>✦</i> {% gl_t 'doc.owner' owner=selected_flower|default:'—' %}</span>
             {% if patient_summary.is_vip %}<span class="vip-badge">VIP</span>{% endif %}
           </div>
           <div class="patient-facts">
-            <span>◌ {% if patient_summary.age %}{{ patient_summary.age }} سال{% else %}{% gl_t 'doc.age_missing' %}{% endif %}</span>
+            <span>◌ {% if patient_summary.age %}{% gl_t 'profile.years' age=patient_summary.age %}{% else %}{% gl_t 'doc.age_missing' %}{% endif %}</span>
             <span>↕ {% if patient_summary.height %}{{ patient_summary.height }} cm{% else %}{% gl_t 'doc.height_missing' %}{% endif %}</span>
-            <span>⌖ {{ patient_summary.neighborhood|default:"{% gl_t 'doc.area_missing' %}" }}</span>
+            <span>⌖ {% if patient_summary.neighborhood %}{{ patient_summary.neighborhood }}{% else %}{% gl_t 'doc.area_missing' %}{% endif %}</span>
           </div>
-          <div class="patient-history">سابقه: {{ patient_summary.medical_history|default:"{% gl_t 'doc.history_missing' %}"|truncatechars:150 }}</div>
+          <div class="patient-history">{% if patient_summary.medical_history %}{% gl_t 'doc.history' history=patient_summary.medical_history|truncatechars:150 %}{% else %}{% gl_t 'doc.history_missing' %}{% endif %}</div>
         </div>
         <div class="hero-actions">
           <a class="hero-btn neon" href="#diet-panel">+ {% gl_t 'doc.new_plan' %}</a>
@@ -326,7 +337,7 @@ html,body{background:#0a1520!important}
               <div class="doctor-field"><label>{% gl_t 'doc.recommendation_pack' %}</label><select name="recommendation_pack"><option value="">{% gl_t 'doc.no_recommendation' %}</option>{% for x in recommendation_options %}<option value="{{ x.name }}">{{ x.name }}{% if x.price %} — {{ x.price }}{% endif %}</option>{% endfor %}</select></div>
               <div class="doctor-field"><label>{% gl_t 'doc.print_template' %}</label><select name="print_template"><option value="">{% gl_t 'doc.select_template' %}</option>{% for x in print_template_options %}<option value="{{ x.name }}">{{ x.name }}{% if x.price %} — {{ x.price }}{% endif %}</option>{% endfor %}</select></div>
             </div>
-            <button class="care-submit" type="submit">+ ثبت {% gl_t 'doc.diet_plan' %} و توصیه‌ها</button>
+            <button class="care-submit" type="submit">+ {% gl_t 'doc.save_diet' %}</button>
           </form>
         </div>
       </section>
@@ -345,34 +356,34 @@ html,body{background:#0a1520!important}
           <form method="post" class="new-box">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}">{% if doctor_branch %}<input type="hidden" name="branch_id" value="{{ doctor_branch.id }}">{% endif %}<input type="hidden" name="action" value="device">
             <div class="box-title"><span>{% gl_t 'doc.add_device' %}</span><small>{% gl_t 'doc.doctor_suggestion' %}</small></div>
             <div class="form-grid two">
-              <div class="doctor-field"><label>{% gl_t 'doc.device' %}</label><select name="device_name" required><option value="">انتخاب {% gl_t 'doc.device' %}…</option>{% for x in device_options %}<option value="{{ x.name }}">{{ x.name }}{% if x.price %} — {{ x.price }}{% endif %}</option>{% endfor %}</select></div>
-              <div class="doctor-field"><label>{% gl_t 'doc.area' %}</label><select name="area"><option value="">انتخاب {% gl_t 'doc.area' %}</option>{% for x in body_areas %}<option>{{ x }}</option>{% endfor %}</select></div>
+              <div class="doctor-field"><label>{% gl_t 'doc.device' %}</label><select name="device_name" required><option value="">{% gl_t 'doc.select_device' %}</option>{% for x in device_options %}<option value="{{ x.name }}">{{ x.name }}{% if x.price %} — {{ x.price }}{% endif %}</option>{% endfor %}</select></div>
+              <div class="doctor-field"><label>{% gl_t 'doc.area' %}</label><select name="area"><option value="">{% gl_t 'doc.select_area' %}</option>{% for x in body_areas %}<option>{{ x }}</option>{% endfor %}</select></div>
               <div class="doctor-field"><label>{% gl_t 'doc.session_count' %}</label><input type="number" min="1" max="30" name="sessions" value="1"></div>
             </div>
-            <button class="care-submit" type="submit">+ ثبت برنامه {% gl_t 'doc.device' %}</button>
+            <button class="care-submit" type="submit">+ {% gl_t 'doc.save_device' %}</button>
           </form>
         </div>
       </section>
 
       <section class="doctor-card care-panel lipo">
-        <div class="care-head"><h3>{% gl_t 'doc.lipolytic' %}</h3><span>سوابق جلسات + {% gl_t 'doc.new_plan' %}</span></div>
+        <div class="care-head"><h3>{% gl_t 'doc.lipolytic' %}</h3><span>{% gl_t 'doc.lipo_history_new' %}</span></div>
         <div class="care-body">
           <div class="history-box">
-            <div class="box-title"><span>سوابق {% gl_t 'doc.lipolytic' %}</span><small>{% gl_t 'doc.previous_sessions' %}</small></div>
+            <div class="box-title"><span>{% gl_t 'doc.lipo_history' %}</span><small>{% gl_t 'doc.previous_sessions' %}</small></div>
             <div class="history-list">
               {% for item in lipolytic_history %}
               <div class="history-row"><div><strong>{{ item.protocol_name }}{% if item.area %} · {{ item.area }}{% endif %}</strong><small>{% gl_t 'doc.sessions' done=item.sessions_completed total=item.sessions_prescribed %}</small></div><span class="status-pill {% if item.status == 'active' %}arrived{% elif item.status == 'completed' %}done{% else %}waiting{% endif %}">{{ item.get_status_display }}</span></div>
-              {% empty %}<div class="history-empty">هنوز سابقه {% gl_t 'doc.lipolytic' %} در App ثبت نشده است.</div>{% endfor %}
+              {% empty %}<div class="history-empty">{% gl_t 'doc.no_lipo_history' %}</div>{% endfor %}
             </div>
           </div>
           <form method="post" class="new-box">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}">{% if doctor_branch %}<input type="hidden" name="branch_id" value="{{ doctor_branch.id }}">{% endif %}<input type="hidden" name="action" value="lipolytic">
             <div class="box-title"><span>{% gl_t 'doc.add_new_plan' %}</span><small>{% gl_t 'doc.doctor_suggestion' %}</small></div>
             <div class="form-grid two">
-              <div class="doctor-field"><label>نوع {% gl_t 'doc.lipolytic' %}</label><select name="protocol_name" required><option value="">{% gl_t 'doc.select' %}</option>{% for x in lipolytic_options %}<option value="{{ x.name }}">{{ x.name }}{% if x.price %} — {{ x.price }}{% endif %}</option>{% endfor %}</select></div>
+              <div class="doctor-field"><label>{% gl_t 'doc.lipo_type' %}</label><select name="protocol_name" required><option value="">{% gl_t 'doc.select' %}</option>{% for x in lipolytic_options %}<option value="{{ x.name }}">{{ x.name }}{% if x.price %} — {{ x.price }}{% endif %}</option>{% endfor %}</select></div>
               <div class="doctor-field"><label>{% gl_t 'doc.area' %}</label><select name="area"><option value="">انتخاب {% gl_t 'doc.area' %}</option>{% for x in body_areas %}<option>{{ x }}</option>{% endfor %}</select></div>
               <div class="doctor-field"><label>{% gl_t 'doc.session_count' %}</label><input type="number" min="1" max="20" name="sessions" value="1"></div>
             </div>
-            <button class="care-submit" type="submit">+ ثبت برنامه {% gl_t 'doc.lipolytic' %}</button>
+            <button class="care-submit" type="submit">+ {% gl_t 'doc.save_lipo' %}</button>
           </form>
         </div>
       </section>
@@ -382,8 +393,8 @@ html,body{background:#0a1520!important}
           <div class="handoff-copy">
             <div class="handoff-icon">{% if selected_appointment.care_stage == 'consultant' %}✓{% else %}↗{% endif %}</div>
             <div>
-              <h3>{% if selected_appointment.care_stage == 'consultant' %}{% gl_t 'doc.sent_consultant' %}{% else %}{% gl_t 'doc.visit' %} آماده تحویل به مشاور است{% endif %}</h3>
-              <p>{% if selected_appointment.care_stage == 'consultant' %}{% gl_t 'doc.sent_consultant_help' %}{% else %}بعد از نهایی شدن انتخاب‌ها، {% gl_t 'doc.visit' %} را ببندید تا پیشنهادهای شما یکجا برای مشاور همان مرکز ارسال شود.{% endif %}</p>
+              <h3>{% if selected_appointment.care_stage == 'consultant' %}{% gl_t 'doc.sent_consultant' %}{% else %}{% gl_t 'doc.ready_consultant' %}{% endif %}</h3>
+              <p>{% if selected_appointment.care_stage == 'consultant' %}{% gl_t 'doc.sent_consultant_help' %}{% else %}{% gl_t 'doc.ready_consultant_help' %}{% endif %}</p>
               <div class="handoff-chips">
                 <span class="handoff-chip"><b>{{ current_visit_diet_count }}</b> {% gl_t 'doc.diet_plan' %}</span>
                 <span class="handoff-chip"><b>{{ current_visit_device_count }}</b> {% gl_t 'doc.device' %}</span>
@@ -394,13 +405,13 @@ html,body{background:#0a1520!important}
           </div>
           <div class="handoff-actions">
             {% if selected_appointment.care_stage == 'consultant' %}
-              <div class="handoff-done">✓ پایان {% gl_t 'doc.visit' %} · ارسال به مشاوره انجام شد</div>
+              <div class="handoff-done">✓ {% gl_t 'doc.visit_done' %}</div>
             {% else %}
               <form method="post">{% csrf_token %}
                 <input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}">
                 {% if doctor_branch %}<input type="hidden" name="branch_id" value="{{ doctor_branch.id }}">{% endif %}
                 <input type="hidden" name="action" value="send_to_consultant">
-                <button class="handoff-submit" type="submit">پایان {% gl_t 'doc.visit' %} و ارسال به مشاوره</button>
+                <button class="handoff-submit" type="submit">{% gl_t 'doc.finish_visit' %}</button>
               </form>
               <div class="handoff-hint">{% gl_t 'doc.edit_before_finish' %}</div>
             {% endif %}
@@ -410,19 +421,19 @@ html,body{background:#0a1520!important}
 
       <div class="lower-grid">
         <section class="doctor-card">
-          <div class="doctor-card-head"><h3>{% gl_t 'doc.note' %}‌های پرونده / CEM</h3><small>{% gl_t 'doc.shared_team_info' %}</small></div>
+          <div class="doctor-card-head"><h3>{% gl_t 'doc.cem_notes' %}</h3><small>{% gl_t 'doc.shared_team_info' %}</small></div>
           <div class="note-list">
             {% for note in care_notes %}
             <div class="note-item"><div><b>{{ note.get_note_type_display }} · {{ note.author.get_full_name|default:"{% gl_t 'doc.system' %}" }}</b> <small>{{ note.created_at|jdate }}</small></div><p>{{ note.body }}</p></div>
-            {% empty %}<div class="history-empty">{% gl_t 'doc.note' %}ی برای این بیمار ثبت نشده است.</div>{% endfor %}
+            {% empty %}<div class="history-empty">{% gl_t 'doc.no_notes' %}</div>{% endfor %}
           </div>
-          <form method="post" class="clinical-form">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}">{% if doctor_branch %}<input type="hidden" name="branch_id" value="{{ doctor_branch.id }}">{% endif %}<input type="hidden" name="action" value="clinical_note"><input name="body" placeholder="{% gl_t 'doc.note' %} کوتاه پزشک…"><button type="submit">ثبت</button></form>
+          <form method="post" class="clinical-form">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}">{% if doctor_branch %}<input type="hidden" name="branch_id" value="{{ doctor_branch.id }}">{% endif %}<input type="hidden" name="action" value="clinical_note"><input name="body" placeholder="{% gl_t 'doc.short_note' %}"><button type="submit">{% gl_t 'common.record' %}</button></form>
         </section>
         <section class="doctor-card">
           <div class="doctor-card-head"><h3>{% gl_t 'doc.staff_chat_title' %}</h3><a class="chat-open" href="#" data-open-live-chat>{% gl_t 'doc.open_live_chat' %} ←</a></div>
           <div class="chat-list">
             {% for msg in direct_messages %}
-            <div class="chat-item"><div><b>{% if msg.sender_id == user.id %}به {{ msg.recipient.get_full_name|default:msg.recipient.username }}{% else %}{{ msg.sender.get_full_name|default:msg.sender.username }}{% endif %}</b> <small>{{ msg.created_at|jdate }}</small></div><p>{{ msg.body|truncatechars:120 }}</p></div>
+            <div class="chat-item"><div><b>{% if msg.sender_id == user.id %}{% gl_t 'msg.to' name=msg.recipient.get_full_name|default:msg.recipient.username %}{% else %}{{ msg.sender.get_full_name|default:msg.sender.username }}{% endif %}</b> <small>{{ msg.created_at|jdate }}</small></div><p>{{ msg.body|truncatechars:120 }}</p></div>
             {% empty %}<div class="history-empty">{% gl_t 'doc.no_direct_messages' %}</div>{% endfor %}
           </div>
         </section>
@@ -431,8 +442,8 @@ html,body{background:#0a1520!important}
       <div class="doctor-empty-grid">
         <section class="doctor-card doctor-empty-primary">
           <div class="doctor-empty-icon">✚</div>
-          <h2>{% if appointment_stats.total %}برای شروع {% gl_t 'doc.visit' %}، بیمار را انتخاب کنید{% else %}{% gl_t 'doc.no_today' %}{% endif %}</h2>
-          <p>{% if appointment_stats.total %}از ستون {% gl_t 'doc.today_appointments' %} یک مراجعه‌کننده را باز کنید. پرونده، آنالیزها، رژیم‌ها، {% gl_t 'doc.devices' %} و {% gl_t 'doc.lipolytic' %} همان‌جا نمایش داده می‌شود.{% else %}مرکز {{ doctor_branch|default:"انتخاب‌شده" }} در حال حاضر نوبت ثبت‌شده‌ای برای امروز ندارد. چت زنده فعال است و هر پیام جدید بدون {% gl_t 'common.logout' %} از این صفحه نمایش داده می‌شود.{% endif %}</p>
+          <h2>{% if appointment_stats.total %}{% gl_t 'doc.select_patient' %}{% else %}{% gl_t 'doc.no_today' %}{% endif %}</h2>
+          <p>{% if appointment_stats.total %}{% gl_t 'doc.select_patient_help' %}{% else %}{% gl_t 'doc.no_today_help' branch=doctor_branch|default:'' %}{% endif %}</p>
           <div class="doctor-empty-actions">
             <button class="primary" type="button" data-open-live-chat>✉ {% gl_t 'doc.open_live_chat' %}</button>
             {% if executive_doctor_mode %}<a href="/my-office/">{% gl_t 'doc.back_management' %}</a>{% endif %}
@@ -442,7 +453,7 @@ html,body{background:#0a1520!important}
           <div class="doctor-card-head"><h3>{% gl_t 'doc.latest_staff_messages' %}</h3><button type="button" class="chat-open" data-open-live-chat style="border:0;background:transparent;cursor:pointer">{% gl_t 'doc.open_live_chat' %} ←</button></div>
           <div class="doctor-recent-list">
             {% for msg in direct_messages %}
-            <div class="doctor-recent-row"><b>{% if msg.sender_id == user.id %}به {{ msg.recipient.get_full_name|default:msg.recipient.username }}{% else %}{{ msg.sender.get_full_name|default:msg.sender.username }}{% endif %}</b><p>{{ msg.body|truncatechars:105 }}</p><small>{{ msg.created_at|jdatetime }}</small></div>
+            <div class="doctor-recent-row"><b>{% if msg.sender_id == user.id %}{% gl_t 'msg.to' name=msg.recipient.get_full_name|default:msg.recipient.username %}{% else %}{{ msg.sender.get_full_name|default:msg.sender.username }}{% endif %}</b><p>{{ msg.body|truncatechars:105 }}</p><small>{{ msg.created_at|jdatetime }}</small></div>
             {% empty %}<div class="history-empty">{% gl_t 'doc.no_direct_messages' %}</div>{% endfor %}
           </div>
         </section>
