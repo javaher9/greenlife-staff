@@ -24,6 +24,7 @@ from .models import InstagramIntegrationSettings, InstagramWebhookEvent
 from .views import _is_executive_user
 
 
+# OAuth proxy rewrite guard deployed with squashed base.
 INSTAGRAM_OAUTH_URL='https://www.instagram.com/oauth/authorize'
 INSTAGRAM_TOKEN_URL='https://api.instagram.com/oauth/access_token'
 INSTAGRAM_GRAPH_BASE='https://graph.instagram.com'
