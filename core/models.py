@@ -1840,6 +1840,66 @@ class WebsiteLeadIntegrationSettings(models.Model):
         return 'اتصال لید وب‌سایت گرین لایف'
 
 
+class InstagramIntegrationSettings(models.Model):
+    """Secure singleton configuration for the GreenLife Instagram API integration."""
+    app_id=models.CharField(max_length=80,blank=True)
+    app_secret_cipher=models.TextField(blank=True)
+    access_token_cipher=models.TextField(blank=True)
+    verify_token_cipher=models.TextField(blank=True)
+    instagram_user_id=models.CharField(max_length=120,blank=True,db_index=True)
+    username=models.CharField(max_length=120,blank=True)
+    token_expires_at=models.DateTimeField(null=True,blank=True)
+    is_enabled=models.BooleanField(default=False)
+    connected_at=models.DateTimeField(null=True,blank=True)
+    updated_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,
+        related_name='updated_instagram_integration_settings',
+    )
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name='اتصال اینستاگرام'
+        verbose_name_plural='اتصال اینستاگرام'
+
+    @classmethod
+    def load(cls):
+        obj,_=cls.objects.get_or_create(pk=1)
+        return obj
+
+    @property
+    def is_configured(self):
+        return bool(self.app_id and self.app_secret_cipher)
+
+    @property
+    def is_connected(self):
+        return bool(self.instagram_user_id and self.access_token_cipher)
+
+    def __str__(self):
+        return 'اتصال Instagram Green Life'
+
+
+class InstagramWebhookEvent(models.Model):
+    """Durable inbox for raw Meta webhook payloads; processing can safely be retried."""
+    STATUS_CHOICES=[
+        ('received','دریافت شد'),
+        ('processed','پردازش شد'),
+        ('ignored','نادیده گرفته شد'),
+        ('error','خطا'),
+    ]
+    event_hash=models.CharField(max_length=64,unique=True,db_index=True)
+    payload=models.JSONField(default=dict)
+    status=models.CharField(max_length=12,choices=STATUS_CHOICES,default='received',db_index=True)
+    error=models.CharField(max_length=500,blank=True)
+    received_at=models.DateTimeField(auto_now_add=True,db_index=True)
+    processed_at=models.DateTimeField(null=True,blank=True)
+
+    class Meta:
+        ordering=['-received_at','-id']
+
+    def __str__(self):
+        return f'Instagram webhook {self.id} - {self.status}'
+
+
 from .device_booking_models import (
     DeviceTypeSchedule, BranchDeviceTypeStatus, DeviceCabin,
     PhysicalDevice, DeviceSessionBooking,
