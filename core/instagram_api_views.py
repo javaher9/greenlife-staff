@@ -28,6 +28,7 @@ from .views import _is_executive_user
 INSTAGRAM_OAUTH_URL='https://www.instagram.com/oauth/authorize'
 INSTAGRAM_TOKEN_URL='https://api.instagram.com/oauth/access_token'
 INSTAGRAM_GRAPH_BASE='https://graph.instagram.com'
+INSTAGRAM_BRIDGE_BASE='https://instagram-bridge-production-e356.up.railway.app'
 INSTAGRAM_SCOPES=(
     'instagram_business_basic',
     'instagram_business_manage_messages',
@@ -62,6 +63,13 @@ def _webhook_uri(request):
 def _post_form(url,data,timeout=20):
     body=urlencode(data).encode('utf-8')
     req=Request(url,data=body,headers={'Content-Type':'application/x-www-form-urlencoded'},method='POST')
+    with urlopen(req,timeout=timeout) as response:
+        return json.loads(response.read().decode('utf-8') or '{}')
+
+
+def _post_json(url,data,timeout=25):
+    body=json.dumps(data).encode('utf-8')
+    req=Request(url,data=body,headers={'Content-Type':'application/json','Accept':'application/json'},method='POST')
     with urlopen(req,timeout=timeout) as response:
         return json.loads(response.read().decode('utf-8') or '{}')
 
@@ -111,7 +119,7 @@ def instagram_settings(request):
     response=render(request,'core/instagram_settings.html',{
         'config':config,
         'redirect_uri':_redirect_uri(request),
-        'webhook_uri':_webhook_uri(request),
+        'webhook_uri':INSTAGRAM_BRIDGE_BASE+'/meta/webhook',
         'direct_auth_url':direct_auth_url,
         'has_app_secret':bool(config.app_secret_cipher),
         'has_verify_token':bool(config.verify_token_cipher),
@@ -175,39 +183,21 @@ def instagram_oauth_callback(request):
         return HttpResponse('Instagram app credentials are not configured.',status=503)
 
     try:
-        short=_post_form(INSTAGRAM_TOKEN_URL,{
-            'client_id':config.app_id,
-            'client_secret':app_secret,
-            'grant_type':'authorization_code',
+        bridge=_post_json(INSTAGRAM_BRIDGE_BASE+'/meta/oauth-complete',{
+            'app_id':config.app_id,
+            'app_secret':app_secret,
             'redirect_uri':_redirect_uri(request),
             'code':code,
         })
-        token_payload=short
-        if not short.get('access_token') and isinstance(short.get('data'),list) and len(short['data'])==1:
-            token_payload=short['data'][0] if isinstance(short['data'][0],dict) else {}
-        short_token=token_payload.get('access_token')
-        user_id=str(token_payload.get('user_id') or token_payload.get('id') or '')
-        if not short_token:
-            raise ValueError('Meta did not return an access token.')
+        if not bridge.get('ok'):
+            raise ValueError('Instagram bridge did not complete OAuth.')
 
-        long_data=_get_json(INSTAGRAM_GRAPH_BASE+'/access_token',{
-            'grant_type':'ig_exchange_token',
-            'client_secret':app_secret,
-            'access_token':short_token,
-        })
-        token=long_data.get('access_token') or short_token
-        expires_in=int(long_data.get('expires_in') or 0)
-
-        username=''
-        try:
-            profile=_get_json(INSTAGRAM_GRAPH_BASE+'/me',{
-                'fields':'user_id,username',
-                'access_token':token,
-            })
-            user_id=str(profile.get('user_id') or profile.get('id') or user_id)
-            username=str(profile.get('username') or '')
-        except Exception:
-            pass
+        token=str(bridge.get('access_token') or '')
+        user_id=str(bridge.get('user_id') or '')
+        username=str(bridge.get('username') or '')
+        expires_in=int(bridge.get('expires_in') or 0)
+        if not token:
+            raise ValueError('Instagram bridge did not return an access token.')
 
         config.access_token_cipher=encrypt_secret(token)
         config.instagram_user_id=user_id
