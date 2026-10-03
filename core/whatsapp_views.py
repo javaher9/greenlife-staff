@@ -72,6 +72,81 @@ def whatsapp_hub(request):
             messages.success(request,'شماره واتساپ اضافه شد و برای اتصال Meta آماده است.')
             return redirect('whatsapp_hub')
 
+        if action=='edit_number':
+            number=get_object_or_404(WhatsAppNumber,pk=request.POST.get('number_id'))
+            label=(request.POST.get('label') or '').strip()
+            phone=(request.POST.get('phone_number') or '').strip()
+            phone_number_id=(request.POST.get('phone_number_id') or '').strip() or None
+            business_account_id=(request.POST.get('business_account_id') or '').strip()
+            branch_id=(request.POST.get('branch_id') or '').strip()
+            responsible_id=(request.POST.get('responsible_id') or '').strip()
+            number_type=(request.POST.get('number_type') or 'branch').strip()
+
+            if not label or not phone:
+                messages.error(request,'نام شماره و خود شماره واتساپ الزامی است.')
+                return redirect('whatsapp_hub')
+
+            if number_type not in dict(WhatsAppNumber.TYPE_CHOICES):
+                number_type='other'
+
+            if phone_number_id and WhatsAppNumber.objects.filter(
+                phone_number_id=phone_number_id,
+            ).exclude(pk=number.pk).exists():
+                messages.error(request,'این Phone Number ID قبلاً برای شماره دیگری ثبت شده است.')
+                return redirect('whatsapp_hub')
+
+            branch=None
+            if branch_id:
+                branch=Branch.objects.filter(pk=branch_id,is_active=True).first()
+
+            responsible=None
+            if responsible_id:
+                responsible=EmployeeProfile.objects.filter(
+                    pk=responsible_id,is_active=True,user__is_active=True,
+                ).select_related('user').first()
+
+            technical_changed=(
+                number.phone_number != phone[:32]
+                or number.phone_number_id != phone_number_id
+                or number.business_account_id != business_account_id[:120]
+            )
+
+            number.label=label[:100]
+            number.phone_number=phone[:32]
+            number.phone_number_id=phone_number_id
+            number.business_account_id=business_account_id[:120]
+            number.number_type=number_type
+            number.branch=branch
+            number.responsible=responsible
+            if technical_changed and number.connection_status=='connected':
+                number.connection_status='pending'
+                number.last_error=''
+                messages.warning(
+                    request,
+                    'اطلاعات فنی شماره تغییر کرد؛ وضعیت اتصال روی «در انتظار اتصال» قرار گرفت.',
+                )
+            number.save()
+            messages.success(request,'اطلاعات شماره واتساپ ویرایش شد.')
+            return redirect('whatsapp_hub')
+
+        if action=='delete_number':
+            number=get_object_or_404(WhatsAppNumber,pk=request.POST.get('number_id'))
+            has_history=number.messages.exists()
+            label=number.label
+            if has_history:
+                number.is_active=False
+                if number.connection_status=='connected':
+                    number.connection_status='disconnected'
+                number.save(update_fields=['is_active','connection_status','updated_at'])
+                messages.success(
+                    request,
+                    f'«{label}» آرشیو شد؛ سابقه پیام‌ها و آمار آن حفظ شد.',
+                )
+            else:
+                number.delete()
+                messages.success(request,f'«{label}» حذف شد.')
+            return redirect('whatsapp_hub')
+
         if action=='toggle_active':
             number=get_object_or_404(WhatsAppNumber,pk=request.POST.get('number_id'))
             number.is_active=not number.is_active

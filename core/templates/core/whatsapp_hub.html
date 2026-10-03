@@ -80,7 +80,7 @@
 .wa-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px}.wa-panel-head h2{margin:0;color:#fff;font-size:16px}.wa-panel-head p{margin:4px 0 0;color:#90aaa1;font-size:9px}
 .wa-number-list{display:grid;gap:9px}
 .wa-number-row{
-  display:grid;grid-template-columns:minmax(170px,1.25fr) minmax(145px,.95fr) minmax(115px,.72fr) minmax(120px,.78fr) minmax(260px,1.6fr) minmax(135px,.82fr) 76px;
+  display:grid;grid-template-columns:minmax(170px,1.25fr) minmax(145px,.95fr) minmax(115px,.72fr) minmax(120px,.78fr) minmax(260px,1.6fr) minmax(135px,.82fr) 154px;
   gap:10px;align-items:center;padding:11px 12px;border:1px solid rgba(198,229,219,.10);border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.018));
   transition:.18s ease;
 }
@@ -108,8 +108,8 @@
 .wa-inbox-grid{display:grid;grid-template-columns:310px 1fr;min-height:430px;border:1px solid var(--wa-line);border-radius:17px;overflow:hidden;background:#17282e}.wa-thread-list{border-left:1px solid var(--wa-line);background:#182a30}.wa-search{padding:10px;border-bottom:1px solid var(--wa-line)}.wa-search input{width:100%;box-sizing:border-box;border:1px solid rgba(193,224,214,.12);background:#20343b;color:#fff;border-radius:10px;padding:9px 10px;font:700 9px inherit}.wa-thread{padding:11px;border-bottom:1px solid rgba(197,227,217,.08)}.wa-thread strong{display:block;color:#fff;font-size:10px}.wa-thread small{display:block;margin-top:4px;color:#89a39a;font-size:8px}.wa-chat-empty{display:grid;place-items:center;text-align:center;padding:30px;color:#819c93}.wa-chat-empty b{display:block;color:#e9f5f1;margin-bottom:5px}
 .wa-analytics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.wa-analytic{position:relative;overflow:hidden;padding:15px;border:1px solid var(--wa-line);border-radius:15px;background:#1b3036}.wa-analytic span{display:block;color:#91aaa1;font-size:8px;font-weight:850}.wa-analytic b{display:block;margin-top:7px;color:#fff;font-size:20px}.wa-analytic em{position:absolute;left:10px;bottom:7px;font-style:normal;color:#6f8c82;font-size:7px}
 .wa-connect-box{padding:17px;border:1px solid var(--wa-line);border-radius:17px;background:linear-gradient(135deg,#1a3036,#1e343b)}.wa-connect-box h3{margin:0 0 7px;color:#fff;font-size:13px}.wa-connect-box p{margin:0;color:#9ab3aa;font-size:9px;line-height:1.9}.wa-code{margin-top:12px;padding:10px 12px;border-radius:11px;background:#102027;color:#80e5bd;direction:ltr;text-align:left;font:700 9px/1.7 monospace;overflow:auto}
-.wa-list-head{display:grid;grid-template-columns:minmax(170px,1.25fr) minmax(145px,.95fr) minmax(115px,.72fr) minmax(120px,.78fr) minmax(260px,1.6fr) minmax(135px,.82fr) 76px;gap:10px;padding:0 13px 7px;color:#78958b;font-size:7px;font-weight:900}
-@media(max-width:1180px){.wa-kpis{grid-template-columns:repeat(4,1fr)}.wa-number-row,.wa-list-head{grid-template-columns:minmax(170px,1.25fr) minmax(130px,.9fr) 110px 118px minmax(230px,1.55fr) 125px 70px}.wa-form-grid{grid-template-columns:1fr 1fr 1fr}.wa-form-technical{grid-template-columns:1fr 1fr auto}}
+.wa-list-head{display:grid;grid-template-columns:minmax(170px,1.25fr) minmax(145px,.95fr) minmax(115px,.72fr) minmax(120px,.78fr) minmax(260px,1.6fr) minmax(135px,.82fr) 154px;gap:10px;padding:0 13px 7px;color:#78958b;font-size:7px;font-weight:900}
+@media(max-width:1180px){.wa-kpis{grid-template-columns:repeat(4,1fr)}.wa-number-row,.wa-list-head{grid-template-columns:minmax(170px,1.25fr) minmax(130px,.9fr) 110px 118px minmax(230px,1.55fr) 125px 148px}.wa-form-grid{grid-template-columns:1fr 1fr 1fr}.wa-form-technical{grid-template-columns:1fr 1fr auto}}
 @media(max-width:820px){.wa-number-list{display:flex;overflow:auto;padding-bottom:3px}.wa-list-head{display:none}.wa-number-row{min-width:760px}.wa-inbox-grid{grid-template-columns:250px 1fr}}
 @media(max-width:700px){.wa-page{padding:0 9px;margin-top:11px}.wa-hero{padding:18px 16px}.wa-hero h1{font-size:22px}.wa-live{position:static;width:max-content;margin-top:12px}.wa-kpis{grid-template-columns:1fr 1fr}.wa-panel{padding:11px}.wa-form-grid,.wa-form-technical{grid-template-columns:1fr}.wa-inbox-grid{grid-template-columns:1fr}.wa-thread-list{border-left:0}.wa-chat-empty{display:none}.wa-analytics{grid-template-columns:1fr 1fr}.wa-chart-card{padding:12px 9px}.wa-chart-head{display:block}.wa-chart-controls{margin-top:9px}.wa-chart-wrap{height:260px}.wa-chart-label{font-size:8px}}
 
@@ -236,6 +236,27 @@
   box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 6px 14px rgba(0,0,0,.11)!important;
 }
 
+
+.wa-row-actions{display:flex;align-items:center;gap:5px;justify-content:flex-start;flex-wrap:wrap}
+.wa-icon-btn{min-width:40px;height:31px;border-radius:9px;border:1px solid rgba(185,221,210,.13);background:rgba(255,255,255,.045);color:#e7f4ef;font:900 8px/1 inherit;cursor:pointer;padding:0 8px}
+.wa-icon-btn.edit{color:#bfe7ff;background:rgba(83,164,220,.09);border-color:rgba(101,180,233,.19)}
+.wa-icon-btn.delete{color:#ffc0c2;background:rgba(214,84,96,.08);border-color:rgba(236,121,130,.18)}
+.wa-icon-btn:hover{filter:brightness(1.13);transform:translateY(-1px)}
+.wa-archive-note{display:block;color:#93aaa2;font-size:7px;margin-top:4px}
+.wa-modal-backdrop{position:fixed;inset:0;z-index:9997;background:rgba(5,13,17,.70);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:18px}
+.wa-modal-backdrop.is-open{display:flex}
+.wa-modal{width:min(760px,100%);max-height:92vh;overflow:auto;border-radius:22px;border:1px solid rgba(152,221,197,.24);background:
+  radial-gradient(circle at 8% 4%,rgba(67,196,151,.10),transparent 28%),
+  linear-gradient(145deg,#1b343c,#152b33);
+  box-shadow:0 26px 70px rgba(0,0,0,.38);padding:18px}
+.wa-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}
+.wa-modal-head h3{margin:0;color:#f7fffc;font-size:16px}.wa-modal-head p{margin:4px 0 0;color:#b8cec6;font-size:9px}
+.wa-modal-close{width:34px;height:34px;border:1px solid rgba(255,255,255,.10);border-radius:10px;background:rgba(255,255,255,.05);color:#fff;font-size:18px;cursor:pointer}
+.wa-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.wa-edit-wide{grid-column:1/-1}
+.wa-modal-actions{display:flex;gap:8px;justify-content:flex-start;margin-top:15px}.wa-modal-actions .wa-btn{min-width:105px}
+.wa-modal-cancel{background:rgba(255,255,255,.06)!important;color:#d6e8e1!important;border-color:rgba(255,255,255,.10)!important;box-shadow:none!important}
+@media(max-width:700px){.wa-edit-grid{grid-template-columns:1fr}.wa-edit-wide{grid-column:auto}.wa-modal{padding:14px}.wa-row-actions{flex-wrap:nowrap}}
+
 </style>
 
 <div class="wa-page">
@@ -328,11 +349,32 @@
             {% if item.unread_messages %}<span class="wa-unread">{{ item.unread_messages }} خوانده‌نشده</span>{% endif %}
           </div>
           <div>
-            <form method="post" style="margin:0">{% csrf_token %}
-              <input type="hidden" name="action" value="toggle_active">
-              <input type="hidden" name="number_id" value="{{ item.id }}">
-              <button class="wa-btn ghost {% if not item.is_active %}off{% endif %}" type="submit">{% if item.is_active %}فعال{% else %}خاموش{% endif %}</button>
-            </form>
+            <div class="wa-row-actions">
+              <button
+                class="wa-icon-btn edit js-wa-edit"
+                type="button"
+                data-id="{{ item.id }}"
+                data-label="{{ item.label }}"
+                data-phone="{{ item.phone_number }}"
+                data-type="{{ item.number_type }}"
+                data-responsible="{{ item.responsible_id|default:'' }}"
+                data-branch="{{ item.branch_id|default:'' }}"
+                data-phone-id="{{ item.phone_number_id|default:'' }}"
+                data-waba="{{ item.business_account_id|default:'' }}"
+              >ویرایش</button>
+              <form method="post" style="margin:0">{% csrf_token %}
+                <input type="hidden" name="action" value="toggle_active">
+                <input type="hidden" name="number_id" value="{{ item.id }}">
+                <button class="wa-icon-btn" type="submit">{% if item.is_active %}فعال{% else %}خاموش{% endif %}</button>
+              </form>
+              <form method="post" class="js-wa-delete" style="margin:0" data-label="{{ item.label }}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_number">
+                <input type="hidden" name="number_id" value="{{ item.id }}">
+                <button class="wa-icon-btn delete" type="submit">حذف</button>
+              </form>
+            </div>
+            {% if not item.is_active %}<span class="wa-archive-note">غیرفعال / آرشیوی</span>{% endif %}
           </div>
         </div>
         {% endfor %}
@@ -403,9 +445,89 @@
       </div>
     </div>
   </section>
+
+  <div class="wa-modal-backdrop" id="wa-edit-modal" aria-hidden="true">
+    <div class="wa-modal" role="dialog" aria-modal="true" aria-labelledby="wa-edit-title">
+      <div class="wa-modal-head">
+        <div>
+          <h3 id="wa-edit-title">ویرایش شماره واتساپ</h3>
+          <p>مرکز، مسئول، شماره یا اطلاعات Meta را اصلاح کن. تغییر اطلاعات فنی روی شماره متصل، اتصال مجدد می‌خواهد.</p>
+        </div>
+        <button class="wa-modal-close" type="button" id="wa-edit-close" aria-label="بستن">×</button>
+      </div>
+      <form method="post" id="wa-edit-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="edit_number">
+        <input type="hidden" name="number_id" id="wa-edit-id">
+        <div class="wa-edit-grid">
+          <div class="wa-field"><label>نام شماره</label><input id="wa-edit-label" name="label" required></div>
+          <div class="wa-field"><label>شماره واتساپ</label><input id="wa-edit-phone" name="phone_number" dir="ltr" required></div>
+          <div class="wa-field"><label>نوع شماره</label><select id="wa-edit-type" name="number_type">{% for value,label in number_types %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+          <div class="wa-field"><label>مسئول / صاحب شماره</label><select id="wa-edit-responsible" name="responsible_id"><option value="">بدون مسئول مشخص</option>{% for person in responsibles %}<option value="{{ person.id }}">{{ person.user.get_full_name|default:person.user.username }}{% if person.branch %} · {{ person.branch.name }}{% endif %}</option>{% endfor %}</select></div>
+          <div class="wa-field"><label>مرکز / شعبه</label><select id="wa-edit-branch" name="branch_id"><option value="">بدون شعبه</option>{% for branch in branches %}<option value="{{ branch.id }}">{{ branch.name }}</option>{% endfor %}</select></div>
+          <div class="wa-field"><label>Phone Number ID</label><input id="wa-edit-phone-id" name="phone_number_id" dir="ltr"></div>
+          <div class="wa-field wa-edit-wide"><label>WABA ID</label><input id="wa-edit-waba" name="business_account_id" dir="ltr"></div>
+        </div>
+        <div class="wa-modal-actions">
+          <button class="wa-btn" type="submit">ذخیره تغییرات</button>
+          <button class="wa-btn wa-modal-cancel" type="button" id="wa-edit-cancel">انصراف</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <script>
+(function(){
+  const modal=document.getElementById('wa-edit-modal');
+  const editButtons=[...document.querySelectorAll('.js-wa-edit')];
+  const closeButtons=[
+    document.getElementById('wa-edit-close'),
+    document.getElementById('wa-edit-cancel')
+  ].filter(Boolean);
+
+  const setValue=(id,value)=>{
+    const el=document.getElementById(id);
+    if(el){ el.value=value==null?'':String(value); }
+  };
+  const closeModal=()=>{
+    if(!modal) return;
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden','true');
+    document.body.style.overflow='';
+  };
+  const openModal=button=>{
+    if(!modal) return;
+    setValue('wa-edit-id',button.dataset.id);
+    setValue('wa-edit-label',button.dataset.label);
+    setValue('wa-edit-phone',button.dataset.phone);
+    setValue('wa-edit-type',button.dataset.type);
+    setValue('wa-edit-responsible',button.dataset.responsible);
+    setValue('wa-edit-branch',button.dataset.branch);
+    setValue('wa-edit-phone-id',button.dataset.phoneId);
+    setValue('wa-edit-waba',button.dataset.waba);
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden','false');
+    document.body.style.overflow='hidden';
+    setTimeout(()=>document.getElementById('wa-edit-label')?.focus(),0);
+  };
+
+  editButtons.forEach(button=>button.addEventListener('click',()=>openModal(button)));
+  closeButtons.forEach(button=>button.addEventListener('click',closeModal));
+  modal?.addEventListener('click',event=>{ if(event.target===modal) closeModal(); });
+  document.addEventListener('keydown',event=>{ if(event.key==='Escape') closeModal(); });
+
+  document.querySelectorAll('.js-wa-delete').forEach(form=>{
+    form.addEventListener('submit',event=>{
+      const label=form.dataset.label||'این شماره';
+      const ok=window.confirm(
+        '«'+label+'» حذف شود؟\n\nاگر سابقه پیام داشته باشد، برای حفظ آمار آرشیو می‌شود؛ اگر هیچ سابقه‌ای نداشته باشد کاملاً حذف می‌شود.'
+      );
+      if(!ok) event.preventDefault();
+    });
+  });
+})();
+
 (function(){
   const dataNode=document.getElementById('wa-chart-data');
   const svg=document.getElementById('wa-activity-svg');
