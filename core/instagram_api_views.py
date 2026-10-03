@@ -94,10 +94,25 @@ def instagram_settings(request):
         messages.success(request,'تنظیمات Instagram با امنیت ذخیره شد.')
         return redirect('instagram_settings')
 
+    direct_auth_url=''
+    if config.is_configured:
+        state=secrets.token_urlsafe(32)
+        request.session['instagram_oauth_state']=state
+        request.session['instagram_oauth_started_at']=timezone.now().isoformat()
+        direct_auth_url=INSTAGRAM_OAUTH_URL+'?'+urlencode({
+            'client_id':config.app_id,
+            'redirect_uri':_redirect_uri(request),
+            'response_type':'code',
+            'scope':','.join(INSTAGRAM_SCOPES),
+            'state':state,
+            'force_reauth':'true',
+        })
+
     response=render(request,'core/instagram_settings.html',{
         'config':config,
         'redirect_uri':_redirect_uri(request),
         'webhook_uri':_webhook_uri(request),
+        'direct_auth_url':direct_auth_url,
         'has_app_secret':bool(config.app_secret_cipher),
         'has_verify_token':bool(config.verify_token_cipher),
     })
