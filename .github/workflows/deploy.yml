@@ -197,50 +197,77 @@ jobs:
             printf '\nPUBLIC_BASE_URL=https://staff.greenlifeclinics.com\n' >> "$DEPLOY_PATH/.env"
           fi
 
-      - name: Ensure outbound DNS for public web
+      - name: Use host network DNS for public web
         shell: bash
         env:
           DEPLOY_PATH: /home/ubuntu/greenlife-staff-runtime
         run: |
           set -Eeuo pipefail
-          python3 - "$DEPLOY_PATH/docker-compose.yml" <<'PY'
+
+          DNS_SOURCE=""
+          if [ -r /run/systemd/resolve/resolv.conf ]; then
+            DNS_SOURCE="/run/systemd/resolve/resolv.conf"
+          elif [ -r /etc/resolv.conf ]; then
+            DNS_SOURCE="/etc/resolv.conf"
+          fi
+
+          mapfile -t HOST_DNS < <(
+            awk '/^nameserver[[:space:]]+/ {print $2}' "$DNS_SOURCE" 2>/dev/null               | grep -Ev '^(127\.|::1$)'               | awk '!seen[$0]++'               | head -n 2
+          )
+
+          if [ "${#HOST_DNS[@]}" -eq 0 ]; then
+            echo "ERROR: no non-loopback host DNS servers discovered." >&2
+            echo "Host /etc/resolv.conf:" >&2
+            cat /etc/resolv.conf >&2 || true
+            exit 1
+          fi
+
+          printf 'Host DNS selected for web container:'
+          printf ' %s' "${HOST_DNS[@]}"
+          printf '\n'
+
+          python3 - "$DEPLOY_PATH/docker-compose.yml" "${HOST_DNS[@]}" <<'PY'
           from pathlib import Path
           import sys
 
-          path = Path(sys.argv[1])
-          lines = path.read_text().splitlines()
-          web_start = next((i for i, line in enumerate(lines) if line == "  web:"), None)
+          path=Path(sys.argv[1])
+          dns=sys.argv[2:]
+          lines=path.read_text().splitlines()
+
+          web_start=next((i for i,line in enumerate(lines) if line == "  web:"),None)
           if web_start is None:
               raise SystemExit("web service not found in production compose")
 
-          web_end = len(lines)
-          for i in range(web_start + 1, len(lines)):
+          web_end=len(lines)
+          for i in range(web_start+1,len(lines)):
               if lines[i].startswith("  ") and not lines[i].startswith("    ") and lines[i].endswith(":"):
-                  web_end = i
+                  web_end=i
                   break
 
-          block = lines[web_start:web_end]
-          if any(line.strip() == "dns:" for line in block):
-              print("Production web DNS configuration already present.")
-          else:
-              insert_at = None
-              for i in range(web_start + 1, web_end):
-                  if lines[i].lstrip().startswith("env_file:"):
-                      insert_at = i + 1
-                      break
-              if insert_at is None:
-                  insert_at = web_start + 1
+          # Remove any existing web.dns block.
+          i=web_start+1
+          while i<web_end:
+              if lines[i].strip()=="dns:" and lines[i].startswith("    "):
+                  j=i+1
+                  while j<web_end and lines[j].startswith("      - "):
+                      j+=1
+                  del lines[i:j]
+                  web_end-=j-i
+                  continue
+              i+=1
 
-              lines[insert_at:insert_at] = [
-                  "    dns:",
-                  "      - 1.1.1.1",
-                  "      - 8.8.8.8",
-              ]
-              path.write_text("\n".join(lines) + "\n")
-              print("Added DNS fallback to production web service.")
+          insert_at=web_start+1
+          for i in range(web_start+1,web_end):
+              if lines[i].lstrip().startswith("env_file:"):
+                  insert_at=i+1
+                  break
 
-          # Validate syntax before any container operation.
+          block=["    dns:"]+[f"      - {server}" for server in dns]
+          lines[insert_at:insert_at]=block
+          path.write_text("\n".join(lines)+"\n")
+          print("Production web DNS updated to host upstream DNS.")
           PY
+
           docker compose -f "$DEPLOY_PATH/docker-compose.yml" config -q
 
       - name: Rebase source-only app changes from local runtime image
@@ -321,6 +348,22 @@ jobs:
         run: |
           set -Eeuo pipefail
           "$DEPLOY_PATH/scripts/deploy_runner.sh"
+
+      - name: Verify Instagram DNS from live web container
+        shell: bash
+        env:
+          DEPLOY_PATH: /home/ubuntu/greenlife-staff-runtime
+        run: |
+          set -Eeuo pipefail
+          docker exec greenlife-staff-runtime-web-1 python - <<'PY'
+          import socket
+          host='api.instagram.com'
+          rows=socket.getaddrinfo(host,443,type=socket.SOCK_STREAM)
+          ips=sorted({row[4][0] for row in rows})
+          print(host,'=>',','.join(ips))
+          if not ips:
+              raise SystemExit('Instagram DNS returned no addresses')
+          PY
 
       - name: Preserve live service if deployment fails
         if: ${{ failure() && steps.sync_source.outcome == 'success' }}
