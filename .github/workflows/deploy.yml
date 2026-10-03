@@ -270,6 +270,25 @@ jobs:
 
           docker compose -f "$DEPLOY_PATH/docker-compose.yml" config -q
 
+      - name: Verify Meta DNS before deployment
+        shell: bash
+        env:
+          DEPLOY_PATH: /home/ubuntu/greenlife-staff-runtime
+        run: |
+          set -Eeuo pipefail
+          echo "Host resolver:"
+          cat /etc/resolv.conf || true
+          echo "Live web container resolver:"
+          docker exec greenlife-staff-runtime-web-1 cat /etc/resolv.conf || true
+
+          for host in api.instagram.com graph.instagram.com; do
+            echo "Host lookup: $host"
+            python3 -c "import socket; h='$host'; print(sorted({r[4][0] for r in socket.getaddrinfo(h,443,type=socket.SOCK_STREAM)}))"
+
+            echo "Live container lookup: $host"
+            docker exec greenlife-staff-runtime-web-1 python -c "import socket; h='$host'; print(sorted({r[4][0] for r in socket.getaddrinfo(h,443,type=socket.SOCK_STREAM)}))"
+          done
+
       - name: Rebase source-only app changes from local runtime image
         if: ${{ false }}
         shell: bash
@@ -355,15 +374,9 @@ jobs:
           DEPLOY_PATH: /home/ubuntu/greenlife-staff-runtime
         run: |
           set -Eeuo pipefail
-          docker exec greenlife-staff-runtime-web-1 python - <<'PY'
-          import socket
-          host='api.instagram.com'
-          rows=socket.getaddrinfo(host,443,type=socket.SOCK_STREAM)
-          ips=sorted({row[4][0] for row in rows})
-          print(host,'=>',','.join(ips))
-          if not ips:
-              raise SystemExit('Instagram DNS returned no addresses')
-          PY
+          for host in api.instagram.com graph.instagram.com; do
+            docker exec greenlife-staff-runtime-web-1 python -c "import socket; h='$host'; ips=sorted({r[4][0] for r in socket.getaddrinfo(h,443,type=socket.SOCK_STREAM)}); print(h,'=>',','.join(ips)); assert ips"
+          done
 
       - name: Preserve live service if deployment fails
         if: ${{ failure() && steps.sync_source.outcome == 'success' }}
