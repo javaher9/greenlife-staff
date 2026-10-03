@@ -2,12 +2,16 @@ from django.contrib import admin
 from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
-from core import call_center_views, consultant_sales_views, instagram_views, lead_ingest_views, lead_action_views, lead_admin_views, lead_management_fixed_views, website_integration_views
+from core import call_center_views, consultant_sales_views, instagram_views, instagram_api_views, lead_ingest_views, lead_action_views, lead_admin_views, lead_management_fixed_views, website_integration_views
 
 urlpatterns=[
     path('admin/',admin.site.urls),
     path('api/integrations/leads/',lead_ingest_views.ingest_lead,name='lead_ingest'),
     path('settings/website-leads/',website_integration_views.website_lead_settings,name='website_lead_settings'),
+    path('settings/instagram-ai/',instagram_api_views.instagram_settings,name='instagram_settings'),
+    path('instagram/oauth/start/',instagram_api_views.instagram_oauth_start,name='instagram_oauth_start'),
+    path('api/instagram/callback/',instagram_api_views.instagram_oauth_callback,name='instagram_oauth_callback'),
+    path('api/instagram/webhook/',instagram_api_views.instagram_webhook,name='instagram_webhook'),
     path('instagram/',instagram_views.instagram_lead,name='instagram_lead'),
     path('telegram/',instagram_views.telegram_lead,name='telegram_lead'),
     path('instagram/manual/',instagram_views.instagram_manual_lead,name='instagram_manual_lead'),
