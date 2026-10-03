@@ -206,19 +206,42 @@ jobs:
           python3 - "$DEPLOY_PATH/docker-compose.yml" <<'PY'
           from pathlib import Path
           import sys
-          path=Path(sys.argv[1])
-          text=path.read_text()
-          if '    dns:\n      - 1.1.1.1\n      - 8.8.8.8\n' not in text:
-              needle='    env_file: .env\n    environment:\n'
-              repl='    env_file: .env\n    dns:\n      - 1.1.1.1\n      - 8.8.8.8\n    environment:\n'
-              if needle not in text:
-                  raise SystemExit('web env_file/environment block not found in production compose')
-              text=text.replace(needle,repl,1)
-              path.write_text(text)
-              print('Added DNS fallback to production web service.')
+
+          path = Path(sys.argv[1])
+          lines = path.read_text().splitlines()
+          web_start = next((i for i, line in enumerate(lines) if line == "  web:"), None)
+          if web_start is None:
+              raise SystemExit("web service not found in production compose")
+
+          web_end = len(lines)
+          for i in range(web_start + 1, len(lines)):
+              if lines[i].startswith("  ") and not lines[i].startswith("    ") and lines[i].endswith(":"):
+                  web_end = i
+                  break
+
+          block = lines[web_start:web_end]
+          if any(line.strip() == "dns:" for line in block):
+              print("Production web DNS configuration already present.")
           else:
-              print('Production web DNS fallback already present.')
+              insert_at = None
+              for i in range(web_start + 1, web_end):
+                  if lines[i].lstrip().startswith("env_file:"):
+                      insert_at = i + 1
+                      break
+              if insert_at is None:
+                  insert_at = web_start + 1
+
+              lines[insert_at:insert_at] = [
+                  "    dns:",
+                  "      - 1.1.1.1",
+                  "      - 8.8.8.8",
+              ]
+              path.write_text("\n".join(lines) + "\n")
+              print("Added DNS fallback to production web service.")
+
+          # Validate syntax before any container operation.
           PY
+          docker compose -f "$DEPLOY_PATH/docker-compose.yml" config -q
 
       - name: Rebase source-only app changes from local runtime image
         if: ${{ false }}
