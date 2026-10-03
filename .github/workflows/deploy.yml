@@ -197,6 +197,29 @@ jobs:
             printf '\nPUBLIC_BASE_URL=https://staff.greenlifeclinics.com\n' >> "$DEPLOY_PATH/.env"
           fi
 
+      - name: Ensure outbound DNS for public web
+        shell: bash
+        env:
+          DEPLOY_PATH: /home/ubuntu/greenlife-staff-runtime
+        run: |
+          set -Eeuo pipefail
+          python3 - "$DEPLOY_PATH/docker-compose.yml" <<'PY'
+          from pathlib import Path
+          import sys
+          path=Path(sys.argv[1])
+          text=path.read_text()
+          if '    dns:\n      - 1.1.1.1\n      - 8.8.8.8\n' not in text:
+              needle='    env_file: .env\n    environment:\n'
+              repl='    env_file: .env\n    dns:\n      - 1.1.1.1\n      - 8.8.8.8\n    environment:\n'
+              if needle not in text:
+                  raise SystemExit('web env_file/environment block not found in production compose')
+              text=text.replace(needle,repl,1)
+              path.write_text(text)
+              print('Added DNS fallback to production web service.')
+          else:
+              print('Production web DNS fallback already present.')
+          PY
+
       - name: Rebase source-only app changes from local runtime image
         if: ${{ false }}
         shell: bash
