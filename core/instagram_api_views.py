@@ -17,6 +17,7 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import escape
+from html import escape as html_escape
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods
 
@@ -201,10 +202,10 @@ def instagram_oauth_callback(request):
         'completion_url':completion_url,
     }
     inputs=''.join(
-        f'<input type="hidden" name="{escape(str(k),quote=True)}" value="{escape(str(v),quote=True)}">'
+        f'<input type="hidden" name="{html_escape(str(k), quote=True)}" value="{html_escape(str(v), quote=True)}">'
         for k,v in fields.items()
     )
-    safe_action=escape(relay_url,quote=True)
+    safe_action=html_escape(relay_url, quote=True)
     response=HttpResponse(
         '<!doctype html><html><head><meta charset="utf-8">'
         '<meta name="robots" content="noindex,nofollow">'
