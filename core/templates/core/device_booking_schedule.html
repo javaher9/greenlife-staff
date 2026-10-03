@@ -875,6 +875,18 @@
     -webkit-text-fill-color:#ffffff!important;
   }
 }
+
+/* Consultant patient picker + day navigation */
+.db-patient-picker-form{grid-template-columns:minmax(170px,.9fr) minmax(250px,1.35fr) minmax(250px,1fr) auto!important}
+.db-patient-picker-form select,.db-patient-picker-form input{color:#183f36!important;background:#fff!important;border-color:#c9ddd6!important}
+.db-patient-picker-form select option{color:#173b33!important;background:#fff!important}
+.db-day-picker{display:grid;gap:5px;min-width:0}.db-day-picker>span{font-size:9px;font-weight:900;color:#45645c}
+.db-day-nav{display:grid;grid-template-columns:38px minmax(130px,1fr) 38px;gap:6px;align-items:center}
+.db-day-arrow{height:40px;display:grid;place-items:center;border-radius:10px;text-decoration:none;background:linear-gradient(135deg,#654aa0,#8f72e6);color:#fff!important;font-size:18px;font-weight:950;box-shadow:0 5px 12px rgba(101,74,160,.18)}
+.db-day-arrow:hover{filter:brightness(1.08)}.db-today-link{font-size:8.5px;font-weight:900;color:#5c4b85!important;text-decoration:none}
+.db-plan-warning{margin-top:10px;padding:11px 13px;border-radius:12px;background:linear-gradient(135deg,#fff7df,#f6f0ff);border:1px solid #e6d5a2;color:#6f5721;font-size:10px;font-weight:850;line-height:1.8}
+.db-datebar-nav{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.db-datebar-nav form{display:flex;gap:6px;align-items:center}.db-datebar-nav input{width:120px}
+@media(max-width:1180px){.db-patient-picker-form{grid-template-columns:repeat(2,minmax(0,1fr))!important}.db-patient-picker-form>button{grid-column:auto!important}}
 </style>
 
 <div class="db-shell">
@@ -892,20 +904,32 @@
 <section class="db-panel db-book-panel">
 <h2 style="font-size:15px;color:#24443f;margin-top:0">ثبت جلسه درمان</h2>
 {% if can_book %}
-<form method="get" class="db-form" style="margin-bottom:13px">
+<form method="get" class="db-form db-patient-picker-form" style="margin-bottom:13px">
   <input type="hidden" name="branch" value="{{ branch.pk }}">
+  <label class="db-patient-search-label">جستجوی بیمار
+    <input type="search" id="dbPatientSearch" placeholder="نام یا شماره موبایل..." autocomplete="off">
+  </label>
   <label>پرونده بیمار
-    <select name="appointment" id="dbAppointment" onchange="this.form.submit()">
+    <select name="appointment" id="dbAppointment">
       <option value="">انتخاب بیمار</option>
-      {% for p in plans %}<option value="{{ p.appointment_id }}" {% if appointment.pk == p.appointment_id %}selected{% endif %}>{{ p.appointment.full_name }} · {{ p.get_status_display }}</option>{% endfor %}
+      {% for p in plans %}<option value="{{ p.appointment_id }}" data-search="{{ p.appointment.full_name }} {{ p.appointment.phone }}" {% if appointment.pk == p.appointment_id %}selected{% endif %}>{{ p.appointment.full_name }} · {{ p.appointment.phone }} · {{ p.get_status_display }}</option>{% endfor %}
     </select>
   </label>
-  <label>تاریخ شمسی<input name="day" value="{{ day_jalali }}" placeholder="۱۴۰۵/۰۷/۰۶"></label>
+  <div class="db-day-picker">
+    <span>تاریخ</span>
+    <div class="db-day-nav">
+      <a class="db-day-arrow" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ previous_day_jalali }}" title="روز قبل">→</a>
+      <input name="day" value="{{ day_jalali }}" placeholder="۱۴۰۵/۰۷/۰۶" aria-label="تاریخ شمسی">
+      <a class="db-day-arrow" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ next_day_jalali }}" title="روز بعد">←</a>
+    </div>
+    <a class="db-today-link" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ today_jalali }}">امروز</a>
+  </div>
   <button type="submit">نمایش پرونده</button>
 </form>
 
 {% if plan %}
 <div class="db-tags"><span>بیمار: {{ appointment.full_name }}</span><span>وضعیت: {{ plan.get_status_display }}</span></div>
+{% if plan_ready %}
 <form method="post" class="db-form" id="dbBookingForm" style="margin-top:12px">{% csrf_token %}
   <input type="hidden" name="branch" value="{{ branch.pk }}">
   <input type="hidden" name="appointment" value="{{ appointment.pk }}">
@@ -933,14 +957,22 @@
   <label style="display:flex;align-items:center;gap:7px;grid-column:1/-1"><input style="width:auto" type="checkbox" id="dbDouble" name="double_define" value="1">Double Define · رزرو هم‌زمان دو دستگاه</label>
   <button type="submit" {% if not items or not devices %}disabled{% endif %}>ثبت قطعی یک جلسه + ارسال پیامک</button>
 </form>
-{% else %}<p class="db-muted">یک بیمار دارای پکیج نهایی را انتخاب کنید؛ سپس یکی از ردیف‌های «آزاد» روی پلاک دستگاه را لمس کنید تا دستگاه و ساعت خودکار انتخاب شود.</p>{% endif %}
+{% else %}
+<div class="db-plan-warning">پکیج این بیمار هنوز برای رزرو دستگاه نهایی نشده است. بیمار قابل انتخاب و مشاهده است، اما رزرو بعد از نهایی‌شدن پکیج فعال می‌شود.</div>
+{% endif %}
+{% else %}<p class="db-muted">نام یا شماره بیمار را جستجو و پرونده را انتخاب کنید؛ سپس یکی از ردیف‌های آزاد دستگاه را بزنید.</p>{% endif %}
 {% else %}<p class="db-muted">نمایش تقویم برای شما فعال است؛ ثبت نوبت با مشاور یا مدیریت است.</p>{% endif %}
 </section>
 
 <section class="db-panel">
   <div class="db-datebar">
     <div><h2>ظرفیت دستگاه‌ها · {{ day_jalali }}</h2><div class="db-muted">هر پلاک یک دستگاه واقعی است؛ ردیف‌های هر دستگاه بر اساس مدت درمان + آماده‌سازی همان دستگاه ساخته می‌شوند.</div></div>
-    <form method="get"><input type="hidden" name="branch" value="{{ branch.pk }}">{% if appointment %}<input type="hidden" name="appointment" value="{{ appointment.pk }}">{% endif %}<input name="day" value="{{ day_jalali }}"><button class="db-action" type="submit">رفتن به تاریخ</button></form>
+    <div class="db-datebar-nav">
+      <a class="db-day-arrow" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ previous_day_jalali }}" title="روز قبل">→</a>
+      <form method="get"><input type="hidden" name="branch" value="{{ branch.pk }}">{% if appointment %}<input type="hidden" name="appointment" value="{{ appointment.pk }}">{% endif %}<input name="day" value="{{ day_jalali }}"><button class="db-action" type="submit">رفتن</button></form>
+      <a class="db-day-arrow" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ next_day_jalali }}" title="روز بعد">←</a>
+      <a class="db-today-link" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ today_jalali }}">امروز</a>
+    </div>
   </div>
   <div class="db-legend">
     <span><i class="lg-booked"></i>آبی: رزرو</span>
@@ -1094,6 +1126,23 @@
 
 <script>
 (function(){
+  var patientSearch=document.getElementById('dbPatientSearch');
+  var patientSelect=document.getElementById('dbAppointment');
+  if(patientSearch&&patientSelect){
+    var patientOptions=Array.from(patientSelect.options).slice(1);
+    function normalizePatientText(v){return (v||'').toString().trim().toLowerCase().replace(/ي/g,'ی').replace(/ك/g,'ک');}
+    patientSearch.addEventListener('input',function(){
+      var q=normalizePatientText(this.value);
+      patientOptions.forEach(function(option){
+        var hay=normalizePatientText(option.dataset.search||option.textContent);
+        option.hidden=!!q&&!hay.includes(q);
+      });
+    });
+    patientSelect.addEventListener('change',function(){
+      if(this.value)this.form.submit();
+    });
+  }
+
   var device=document.getElementById('dbDevice'), second=document.getElementById('dbSecond');
   function syncSecondDevice(){
     if(!device||!second)return;
