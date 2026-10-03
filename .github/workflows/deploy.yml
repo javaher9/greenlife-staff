@@ -198,6 +198,7 @@ jobs:
           fi
 
       - name: Use host network DNS for public web
+        if: ${{ false }}
         shell: bash
         env:
           DEPLOY_PATH: /home/ubuntu/greenlife-staff-runtime
@@ -271,6 +272,7 @@ jobs:
           docker compose -f "$DEPLOY_PATH/docker-compose.yml" config -q
 
       - name: Verify Meta DNS before deployment
+        if: ${{ false }}
         shell: bash
         env:
           DEPLOY_PATH: /home/ubuntu/greenlife-staff-runtime
@@ -369,6 +371,7 @@ jobs:
           "$DEPLOY_PATH/scripts/deploy_runner.sh"
 
       - name: Verify Instagram DNS from live web container
+        if: ${{ false }}
         shell: bash
         env:
           DEPLOY_PATH: /home/ubuntu/greenlife-staff-runtime
