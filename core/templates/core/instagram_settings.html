@@ -38,7 +38,7 @@
       </label>
       <div class="ig-actions">
         <button class="ig-btn" type="submit">ذخیره امن تنظیمات</button>
-        {% if config.is_configured %}<a class="ig-btn secondary" href="{% url 'instagram_oauth_start' %}">اتصال / ورود با Instagram</a>{% endif %}
+        {% if direct_auth_url %}<a class="ig-btn secondary" href="{{ direct_auth_url|safe }}" rel="noreferrer">اتصال / ورود با Instagram</a>{% endif %}
       </div>
     </form>
   </div>
