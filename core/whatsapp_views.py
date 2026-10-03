@@ -1,15 +1,170 @@
+import hashlib
+import hmac
+import json
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Max, Q
 from django.db.models.functions import TruncDate
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from datetime import timedelta
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods, require_POST
 
 from .models import Branch, EmployeeProfile, WhatsAppMessage, WhatsAppNumber
 from .views import _is_executive_user
+
+
+WHATSAPP_BRIDGE_EVENT_KEY_SHA256='7660ee37ec59818e06cac353a3f72a46a2f93c3213ad1196c34e422e6ac3b037'
+
+
+def _bridge_event_authorized(request):
+    supplied=(request.headers.get('X-WhatsApp-Bridge-Key') or '').strip()
+    if not supplied:
+        return False
+    digest=hashlib.sha256(supplied.encode('utf-8')).hexdigest()
+    return hmac.compare_digest(digest,WHATSAPP_BRIDGE_EVENT_KEY_SHA256)
+
+
+def _phone_digits(value):
+    return ''.join(ch for ch in str(value or '') if ch.isdigit())
+
+
+def _match_whatsapp_number(phone_number_id='',display_phone_number=''):
+    phone_number_id=str(phone_number_id or '').strip()
+    if phone_number_id:
+        match=WhatsAppNumber.objects.filter(phone_number_id=phone_number_id).first()
+        if match:
+            return match
+
+    digits=_phone_digits(display_phone_number)
+    if not digits:
+        return None
+    for item in WhatsAppNumber.objects.all().only('id','phone_number','phone_number_id'):
+        if _phone_digits(item.phone_number)==digits:
+            if phone_number_id and not item.phone_number_id:
+                item.phone_number_id=phone_number_id
+                item.save(update_fields=['phone_number_id','updated_at'])
+            return item
+    return None
+
+
+@csrf_exempt
+@require_POST
+def whatsapp_bridge_event(request):
+    if not _bridge_event_authorized(request):
+        return JsonResponse({'ok':False,'error':'unauthorized'},status=401)
+
+    try:
+        payload=json.loads(request.body.decode('utf-8') or '{}')
+    except (UnicodeDecodeError,json.JSONDecodeError):
+        return JsonResponse({'ok':False,'error':'invalid_json'},status=400)
+
+    if not isinstance(payload,dict):
+        return JsonResponse({'ok':False,'error':'invalid_payload'},status=400)
+
+    event_type=str(payload.get('event_type') or '').strip().lower()
+    phone_number_id=str(payload.get('phone_number_id') or '').strip()
+    display_phone_number=str(payload.get('display_phone_number') or '').strip()
+    number=_match_whatsapp_number(phone_number_id,display_phone_number)
+
+    if not number:
+        return JsonResponse({
+            'ok':False,
+            'error':'whatsapp_number_not_found',
+            'phone_number_id':phone_number_id or None,
+        },status=404)
+
+    now=timezone.now()
+    number_updates=['last_webhook_at','updated_at']
+    number.last_webhook_at=now
+    if number.connection_status!='connected':
+        number.connection_status='connected'
+        number_updates.append('connection_status')
+    if display_phone_number and not number.display_name:
+        number.display_name=display_phone_number[:120]
+        number_updates.append('display_name')
+    number.save(update_fields=list(dict.fromkeys(number_updates)))
+
+    if event_type in ('message','outbound_message'):
+        message_id=str(payload.get('message_id') or '').strip() or None
+        direction='outbound' if event_type=='outbound_message' else 'inbound'
+        outbound_mode=str(payload.get('outbound_mode') or '').strip()
+        if outbound_mode not in dict(WhatsAppMessage.OUTBOUND_MODE_CHOICES):
+            outbound_mode=''
+        status=str(payload.get('status') or '').strip()
+        valid_statuses=dict(WhatsAppMessage.STATUS_CHOICES)
+        if status not in valid_statuses:
+            status='sent' if direction=='outbound' else 'received'
+
+        defaults={
+            'whatsapp_number':number,
+            'contact_phone':str(payload.get('contact_phone') or '')[:32],
+            'contact_name':str(payload.get('contact_name') or '')[:140],
+            'direction':direction,
+            'outbound_mode':outbound_mode,
+            'message_type':str(payload.get('message_type') or 'text')[:32],
+            'body':str(payload.get('body') or ''),
+            'status':status,
+            'is_ai':outbound_mode=='ai',
+            'is_read_by_staff':direction=='outbound',
+            'metadata':payload.get('metadata') if isinstance(payload.get('metadata'),dict) else {},
+        }
+
+        if message_id:
+            message,created=WhatsAppMessage.objects.update_or_create(
+                wa_message_id=message_id,
+                defaults=defaults,
+            )
+        else:
+            message=WhatsAppMessage.objects.create(wa_message_id=None,**defaults)
+            created=True
+
+        return JsonResponse({
+            'ok':True,
+            'event_type':event_type,
+            'message_id':message.id,
+            'created':created,
+            'whatsapp_number_id':number.id,
+        },status=201 if created else 200)
+
+    if event_type=='status':
+        message_id=str(payload.get('message_id') or '').strip()
+        status=str(payload.get('status') or '').strip()
+        valid_statuses=dict(WhatsAppMessage.STATUS_CHOICES)
+        if not message_id or status not in valid_statuses:
+            return JsonResponse({'ok':False,'error':'invalid_status_event'},status=400)
+
+        message=WhatsAppMessage.objects.filter(
+            wa_message_id=message_id,
+            whatsapp_number=number,
+        ).first()
+        if not message:
+            return JsonResponse({
+                'ok':True,
+                'event_type':'status',
+                'updated':False,
+                'reason':'message_not_found_yet',
+            })
+
+        fields=['status']
+        message.status=status
+        if status=='delivered':
+            message.delivered_at=now
+            fields.append('delivered_at')
+        elif status=='read':
+            message.read_at=now
+            fields.append('read_at')
+            if not message.delivered_at:
+                message.delivered_at=now
+                fields.append('delivered_at')
+        message.save(update_fields=list(dict.fromkeys(fields)))
+        return JsonResponse({'ok':True,'event_type':'status','updated':True})
+
+    return JsonResponse({'ok':False,'error':'unsupported_event_type'},status=400)
 
 
 def _whatsapp_admin_required(view):
