@@ -29,6 +29,49 @@
 .wa-kpi span{display:block;color:var(--wa-muted);font-size:9px;font-weight:850;white-space:nowrap}.wa-kpi b{display:block;margin-top:6px;color:#fff;font-size:22px;line-height:1.1}.wa-kpi small{display:block;margin-top:6px;color:#8fa9a0;font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wa-tone-green{--tone:var(--wa-green)}.wa-tone-blue{--tone:var(--wa-blue)}.wa-tone-violet{--tone:var(--wa-violet)}.wa-tone-amber{--tone:var(--wa-amber)}
 .wa-tone-coral{--tone:var(--wa-coral)}.wa-tone-cyan{--tone:var(--wa-cyan)}
+/* Brighter premium KPI plaques: vivid but still controlled on the dark canvas. */
+.wa-kpi{border-color:rgba(255,255,255,.16);box-shadow:0 12px 27px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.08)}
+.wa-kpi:before{display:none}.wa-kpi:after{width:96px;height:96px;left:-24px;bottom:-44px;opacity:.18;filter:blur(1px)}
+.wa-kpi:nth-child(1){background:linear-gradient(140deg,#0f9e71,#16c88d 58%,#1f7f72)}
+.wa-kpi:nth-child(2){background:linear-gradient(140deg,#168d9b,#2dc8c6 55%,#2670a0)}
+.wa-kpi:nth-child(3){background:linear-gradient(140deg,#137cd4,#1aa6ed 54%,#395bd4)}
+.wa-kpi:nth-child(4){background:linear-gradient(140deg,#d98b24,#f1aa30 54%,#d96b3d)}
+.wa-kpi:nth-child(5){background:linear-gradient(140deg,#7552d8,#915fe8 56%,#593dc5)}
+.wa-kpi:nth-child(6){background:linear-gradient(140deg,#21a97c,#36d49f 54%,#138a77)}
+.wa-kpi:nth-child(7){background:linear-gradient(140deg,#c84573,#e45b91 54%,#a83f7f)}
+.wa-kpi:nth-child(8){background:linear-gradient(140deg,#318bd0,#4aa8e5 52%,#4962c7)}
+.wa-kpi span,.wa-kpi small{color:rgba(255,255,255,.86)}.wa-kpi b{color:#fff;text-shadow:0 2px 9px rgba(0,0,0,.15)}
+.wa-shell{background:linear-gradient(180deg,#1b323a,#172b32);border-color:rgba(134,213,188,.18)}
+.wa-tabs{background:linear-gradient(90deg,rgba(31,126,99,.08),rgba(78,95,169,.06))}
+.wa-tab{color:#c0d7cf;border-color:rgba(255,255,255,.045)}.wa-tab:hover{background:rgba(80,194,152,.10)}
+.wa-tab.active{color:#09271f;background:linear-gradient(135deg,#77efbf,#38c995);box-shadow:0 0 0 1px rgba(129,240,197,.25),0 8px 20px rgba(42,199,144,.20)}
+.wa-panel-head h2{color:#effff9}.wa-panel-head p{color:#a8c2b9}
+.wa-add{background:linear-gradient(135deg,rgba(39,151,115,.12),rgba(66,131,185,.08));border-color:rgba(105,219,177,.17)}
+.wa-field label{color:#b9d2c9}.wa-field input,.wa-field select{background:#213b43;border-color:rgba(168,218,202,.18);color:#fff}.wa-field input::placeholder{color:#87a79c}
+.wa-btn{background:linear-gradient(135deg,#70e7b9,#32c98e);box-shadow:0 6px 18px rgba(43,201,144,.18)}
+.wa-btn.ghost{background:linear-gradient(135deg,rgba(84,180,151,.11),rgba(76,139,197,.08));color:#e1f3ed;border-color:rgba(157,219,199,.14)}
+.wa-empty{background:linear-gradient(135deg,rgba(42,127,104,.055),rgba(50,116,158,.045));color:#b7ccc5}.wa-empty strong{color:#f0fff9}
+
+/* Multi-number 30-day trend chart */
+.wa-chart-card{margin:0 0 14px;padding:16px 16px 13px;border:1px solid rgba(92,204,181,.28);border-radius:22px;background:
+  radial-gradient(circle at 12% 6%,rgba(48,211,159,.08),transparent 26%),
+  radial-gradient(circle at 90% 4%,rgba(75,159,255,.09),transparent 26%),
+  linear-gradient(145deg,#16313a,#173746 62%,#15303a);
+  box-shadow:0 14px 34px rgba(0,0,0,.14)}
+.wa-chart-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:10px}
+.wa-chart-title h2{margin:0;color:#69efc2;font-size:15px}.wa-chart-title p{margin:4px 0 0;color:#a6beb6;font-size:9px}
+.wa-chart-controls{display:flex;gap:7px;flex-wrap:wrap;direction:rtl}.wa-chart-control{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 10px;border-radius:10px;border:1px solid rgba(122,202,177,.18);background:#1d3943;color:#e5f6f0;font-size:9px;font-weight:900}
+.wa-chart-wrap{position:relative;width:100%;height:310px;overflow:hidden;border-radius:16px;background:linear-gradient(180deg,rgba(9,30,38,.20),rgba(8,25,32,.07))}
+#wa-activity-svg{display:block;width:100%;height:100%;overflow:visible}
+.wa-chart-grid{stroke:rgba(184,225,212,.12);stroke-width:1;stroke-dasharray:3 4}.wa-chart-axis{stroke:rgba(191,224,213,.28);stroke-width:1}
+.wa-chart-label{fill:#94aea5;font-size:9px;font-family:inherit}.wa-chart-ylabel{fill:#b8d0c8;font-size:9px;font-weight:800;font-family:inherit}
+.wa-chart-line{fill:none;stroke-width:2.35;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 3px rgba(255,255,255,.08))}
+.wa-chart-point{stroke:#16323b;stroke-width:1.4}.wa-chart-area{opacity:.045}
+.wa-chart-legend{display:flex;flex-wrap:wrap;gap:7px 13px;justify-content:center;margin-top:10px}.wa-chart-legend button{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:#c4d9d2;font:800 8px/1.2 inherit;cursor:pointer;padding:4px 5px;border-radius:8px}
+.wa-chart-legend button:hover{background:rgba(255,255,255,.04)}.wa-chart-legend button.is-muted{opacity:.34}.wa-chart-dot{width:9px;height:9px;border-radius:50%;box-shadow:0 0 8px currentColor}
+.wa-chart-empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#91aca3;font-size:10px}.wa-chart-empty strong{display:block;color:#e8f8f3;font-size:12px;margin-bottom:4px}
+.wa-chart-tooltip{position:absolute;z-index:4;pointer-events:none;display:none;min-width:115px;padding:8px 9px;border-radius:10px;background:rgba(11,29,36,.96);border:1px solid rgba(158,220,200,.18);box-shadow:0 10px 26px rgba(0,0,0,.25);font-size:8px;color:#dcedea}
+.wa-chart-tooltip b{display:block;color:#fff;font-size:9px;margin-bottom:3px}.wa-chart-tooltip span{display:flex;justify-content:space-between;gap:10px}
 .wa-shell{overflow:hidden;border:1px solid var(--wa-line);border-radius:24px;background:linear-gradient(180deg,#172930,#14252b);box-shadow:0 16px 38px rgba(0,0,0,.13)}
 .wa-tabs{display:flex;gap:7px;padding:11px 12px;border-bottom:1px solid var(--wa-line);background:rgba(255,255,255,.02);overflow:auto}
 .wa-tab{border:1px solid transparent;background:transparent;color:#9fb9b0;border-radius:12px;padding:10px 15px;font:900 10px/1.2 inherit;cursor:pointer;white-space:nowrap}
@@ -68,7 +111,7 @@
 .wa-list-head{display:grid;grid-template-columns:minmax(170px,1.25fr) minmax(145px,.95fr) minmax(115px,.72fr) minmax(120px,.78fr) minmax(260px,1.6fr) minmax(135px,.82fr) 76px;gap:10px;padding:0 13px 7px;color:#78958b;font-size:7px;font-weight:900}
 @media(max-width:1180px){.wa-kpis{grid-template-columns:repeat(4,1fr)}.wa-number-row,.wa-list-head{grid-template-columns:minmax(170px,1.25fr) minmax(130px,.9fr) 110px 118px minmax(230px,1.55fr) 125px 70px}.wa-form-grid{grid-template-columns:1fr 1fr 1fr}.wa-form-technical{grid-template-columns:1fr 1fr auto}}
 @media(max-width:820px){.wa-number-list{display:flex;overflow:auto;padding-bottom:3px}.wa-list-head{display:none}.wa-number-row{min-width:760px}.wa-inbox-grid{grid-template-columns:250px 1fr}}
-@media(max-width:700px){.wa-page{padding:0 9px;margin-top:11px}.wa-hero{padding:18px 16px}.wa-hero h1{font-size:22px}.wa-live{position:static;width:max-content;margin-top:12px}.wa-kpis{grid-template-columns:1fr 1fr}.wa-panel{padding:11px}.wa-form-grid,.wa-form-technical{grid-template-columns:1fr}.wa-inbox-grid{grid-template-columns:1fr}.wa-thread-list{border-left:0}.wa-chat-empty{display:none}.wa-analytics{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.wa-page{padding:0 9px;margin-top:11px}.wa-hero{padding:18px 16px}.wa-hero h1{font-size:22px}.wa-live{position:static;width:max-content;margin-top:12px}.wa-kpis{grid-template-columns:1fr 1fr}.wa-panel{padding:11px}.wa-form-grid,.wa-form-technical{grid-template-columns:1fr}.wa-inbox-grid{grid-template-columns:1fr}.wa-thread-list{border-left:0}.wa-chat-empty{display:none}.wa-analytics{grid-template-columns:1fr 1fr}.wa-chart-card{padding:12px 9px}.wa-chart-head{display:block}.wa-chart-controls{margin-top:9px}.wa-chart-wrap{height:260px}.wa-chart-label{font-size:8px}}
 </style>
 
 <div class="wa-page">
@@ -88,6 +131,28 @@
     <div class="wa-kpi wa-tone-green"><span>پاسخ AI</span><b>{{ stats.today_ai }}</b><small>پاسخ هوشمند</small></div>
     <div class="wa-kpi wa-tone-coral"><span>خوانده‌نشده</span><b>{{ stats.unread_messages }}</b><small>نیازمند رسیدگی</small></div>
     <div class="wa-kpi wa-tone-blue"><span>فعال‌ترین امروز</span><b style="font-size:14px;margin-top:10px">{{ stats.most_active_label }}</b><small>{{ stats.most_active_count }} پیام امروز</small></div>
+  </section>
+
+  {{ chart_data|json_script:"wa-chart-data" }}
+  <section class="wa-chart-card" aria-labelledby="wa-chart-title">
+    <div class="wa-chart-head">
+      <div class="wa-chart-title">
+        <h2 id="wa-chart-title">روند فعالیت شماره‌های واتساپ</h2>
+        <p>مقایسه حجم کل پیام‌های ورودی و خروجی هر شماره در ۳۰ روز گذشته؛ دستی، اتوماتیک و AI همگی در مجموع محاسبه می‌شوند.</p>
+      </div>
+      <div class="wa-chart-controls">
+        <span class="wa-chart-control">همه شماره‌ها · تا ۱۰ خط</span>
+        <span class="wa-chart-control">۳۰ روز گذشته</span>
+      </div>
+    </div>
+    <div class="wa-chart-wrap" id="wa-chart-wrap">
+      <svg id="wa-activity-svg" viewBox="0 0 1200 310" role="img" aria-label="نمودار روند پیام‌های واتساپ"></svg>
+      <div class="wa-chart-tooltip" id="wa-chart-tooltip"></div>
+      <div class="wa-chart-empty" id="wa-chart-empty" hidden>
+        <div><strong>هنوز داده‌ای برای نمودار نیست</strong><span>با شروع تبادل پیام، منحنی هر شماره اینجا شکل می‌گیرد.</span></div>
+      </div>
+    </div>
+    <div class="wa-chart-legend" id="wa-chart-legend"></div>
   </section>
 
   <section class="wa-shell">
@@ -217,6 +282,133 @@
 </div>
 
 <script>
+(function(){
+  const dataNode=document.getElementById('wa-chart-data');
+  const svg=document.getElementById('wa-activity-svg');
+  const legend=document.getElementById('wa-chart-legend');
+  const empty=document.getElementById('wa-chart-empty');
+  const tooltip=document.getElementById('wa-chart-tooltip');
+  if(!dataNode || !svg || !legend){ return; }
+
+  let chartData={labels:[],series:[]};
+  try{ chartData=JSON.parse(dataNode.textContent||'{}'); }catch(e){}
+
+  const labels=Array.isArray(chartData.labels)?chartData.labels:[];
+  const series=(Array.isArray(chartData.series)?chartData.series:[]).map(item=>({...item,visible:true}));
+  if(!series.length || !labels.length){
+    empty.hidden=false;
+    return;
+  }
+
+  const NS='http://www.w3.org/2000/svg';
+  const W=1200,H=310,pad={top:17,right:24,bottom:48,left:54};
+  const plotW=W-pad.left-pad.right,plotH=H-pad.top-pad.bottom;
+  const create=(name,attrs={})=>{
+    const el=document.createElementNS(NS,name);
+    Object.entries(attrs).forEach(([key,val])=>el.setAttribute(key,String(val)));
+    return el;
+  };
+  const niceMax=value=>{
+    if(value<=5) return 5;
+    const p=Math.pow(10,Math.floor(Math.log10(value)));
+    const n=value/p;
+    const step=n<=1?1:n<=2?2:n<=5?5:10;
+    return step*p;
+  };
+  const maxValue=()=>Math.max(1,...series.filter(s=>s.visible).flatMap(s=>s.values||[]).map(Number));
+  const xAt=i=>pad.left+(labels.length<=1?plotW/2:(i/(labels.length-1))*plotW);
+  const yAt=(v,yMax)=>pad.top+plotH-(Number(v||0)/yMax)*plotH;
+
+  function smoothPath(points){
+    if(points.length<2) return points.length?('M '+points[0][0]+' '+points[0][1]):'';
+    let d='M '+points[0][0]+' '+points[0][1];
+    for(let i=0;i<points.length-1;i++){
+      const p0=points[i-1]||points[i],p1=points[i],p2=points[i+1],p3=points[i+2]||p2;
+      const cp1x=p1[0]+(p2[0]-p0[0])/6, cp1y=p1[1]+(p2[1]-p0[1])/6;
+      const cp2x=p2[0]-(p3[0]-p1[0])/6, cp2y=p2[1]-(p3[1]-p1[1])/6;
+      d+=' C '+cp1x+' '+cp1y+', '+cp2x+' '+cp2y+', '+p2[0]+' '+p2[1];
+    }
+    return d;
+  }
+
+  function render(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const yMax=niceMax(maxValue()*1.08);
+
+    const grid=create('g');
+    for(let i=0;i<=4;i++){
+      const value=Math.round((yMax/4)*i);
+      const y=yAt(value,yMax);
+      grid.appendChild(create('line',{x1:pad.left,y1:y,x2:W-pad.right,y2:y,class:'wa-chart-grid'}));
+      const t=create('text',{x:pad.left-9,y:y+3,'text-anchor':'end',class:'wa-chart-ylabel'});
+      t.textContent=value.toLocaleString('fa-IR');
+      grid.appendChild(t);
+    }
+    const step=Math.max(1,Math.ceil(labels.length/10));
+    labels.forEach((label,i)=>{
+      if(i%step!==0 && i!==labels.length-1) return;
+      const x=xAt(i);
+      grid.appendChild(create('line',{x1:x,y1:pad.top,x2:x,y2:H-pad.bottom,class:'wa-chart-grid'}));
+      const t=create('text',{x:x,y:H-pad.bottom+20,'text-anchor':'middle',class:'wa-chart-label'});
+      t.textContent=label;
+      grid.appendChild(t);
+    });
+    grid.appendChild(create('line',{x1:pad.left,y1:H-pad.bottom,x2:W-pad.right,y2:H-pad.bottom,class:'wa-chart-axis'}));
+    grid.appendChild(create('line',{x1:pad.left,y1:pad.top,x2:pad.left,y2:H-pad.bottom,class:'wa-chart-axis'}));
+    svg.appendChild(grid);
+
+    series.forEach((item,seriesIndex)=>{
+      if(!item.visible) return;
+      const values=Array.isArray(item.values)?item.values:[];
+      const points=values.map((v,i)=>[xAt(i),yAt(v,yMax)]);
+      if(!points.length) return;
+      const pathD=smoothPath(points);
+      const areaD=pathD+' L '+points[points.length-1][0]+' '+(H-pad.bottom)+' L '+points[0][0]+' '+(H-pad.bottom)+' Z';
+      svg.appendChild(create('path',{d:areaD,fill:item.color,class:'wa-chart-area'}));
+      svg.appendChild(create('path',{d:pathD,stroke:item.color,class:'wa-chart-line'}));
+      points.forEach((p,i)=>{
+        const point=create('circle',{cx:p[0],cy:p[1],r:3.2,fill:item.color,class:'wa-chart-point','data-series':seriesIndex,'data-index':i});
+        svg.appendChild(point);
+      });
+    });
+
+    const overlay=create('rect',{x:pad.left,y:pad.top,width:plotW,height:plotH,fill:'transparent',style:'cursor:crosshair'});
+    overlay.addEventListener('mousemove',ev=>{
+      const rect=svg.getBoundingClientRect();
+      const localX=((ev.clientX-rect.left)/rect.width)*W;
+      let idx=Math.round(((localX-pad.left)/plotW)*(labels.length-1));
+      idx=Math.max(0,Math.min(labels.length-1,idx));
+      const visible=series.filter(s=>s.visible);
+      if(!visible.length){tooltip.style.display='none';return;}
+      const rows=visible.map(s=>({label:s.label,color:s.color,value:Number((s.values||[])[idx]||0)})).sort((a,b)=>b.value-a.value).slice(0,5);
+      tooltip.innerHTML='<b>'+labels[idx]+'</b>'+rows.map(r=>'<span><i style="color:'+r.color+'">● '+r.label+'</i><strong>'+r.value.toLocaleString('fa-IR')+'</strong></span>').join('');
+      tooltip.style.display='block';
+      const wrap=document.getElementById('wa-chart-wrap').getBoundingClientRect();
+      let left=ev.clientX-wrap.left+12, top=ev.clientY-wrap.top-12;
+      if(left>wrap.width-160) left=wrap.width-160;
+      if(top>wrap.height-120) top=wrap.height-120;
+      tooltip.style.left=Math.max(8,left)+'px';
+      tooltip.style.top=Math.max(8,top)+'px';
+    });
+    overlay.addEventListener('mouseleave',()=>{tooltip.style.display='none';});
+    svg.appendChild(overlay);
+  }
+
+  series.forEach((item,index)=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.innerHTML='<span class="wa-chart-dot" style="background:'+item.color+';color:'+item.color+'"></span><span>'+item.label+'</span>';
+    btn.title=item.phone||item.label;
+    btn.addEventListener('click',()=>{
+      item.visible=!item.visible;
+      btn.classList.toggle('is-muted',!item.visible);
+      render();
+    });
+    legend.appendChild(btn);
+  });
+  render();
+})();
+
 (function(){
   const tabs=[...document.querySelectorAll('.wa-tab')];
   const panels=[...document.querySelectorAll('.wa-panel')];
