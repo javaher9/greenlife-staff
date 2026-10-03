@@ -257,6 +257,322 @@
 .wa-modal-cancel{background:rgba(255,255,255,.06)!important;color:#d6e8e1!important;border-color:rgba(255,255,255,.10)!important;box-shadow:none!important}
 @media(max-width:700px){.wa-edit-grid{grid-template-columns:1fr}.wa-edit-wide{grid-column:auto}.wa-modal{padding:14px}.wa-row-actions{flex-wrap:nowrap}}
 
+
+/* Final KPI-page visual alignment */
+.wa-page{
+  --wa-kpi-bg:#07131d;
+  --wa-kpi-card:#0d1f2c;
+  --wa-kpi-line:#254153;
+  --wa-kpi-muted:#b7c7d4;
+  --wa-kpi-text:#f8fbff;
+  max-width:100%!important;
+  color:#f8fbff!important;
+  font-family:Tahoma,"Segoe UI",Arial,sans-serif!important;
+}
+.wa-page,.wa-page *{box-sizing:border-box}
+.wa-page h1,.wa-page h2,.wa-page h3,.wa-page strong,.wa-page b{
+  color:#fff!important;
+  -webkit-text-fill-color:currentColor!important;
+}
+.wa-page p,.wa-page small,.wa-page span,.wa-page label{opacity:1!important}
+
+/* Hero: same restrained dark blue family as KPI panels */
+.wa-hero{
+  border:1px solid #2b4a5d!important;
+  border-radius:22px!important;
+  padding:24px 24px!important;
+  background:
+    radial-gradient(circle at 9% 108%,rgba(255,255,255,.06),transparent 34%),
+    linear-gradient(145deg,#0f2534,#0a1924)!important;
+  box-shadow:0 14px 30px rgba(0,0,0,.14)!important;
+}
+.wa-hero:after{display:none!important}
+.wa-hero h1{
+  font-size:31px!important;
+  line-height:1.25!important;
+  font-weight:950!important;
+  letter-spacing:-.35px!important;
+  color:#fff!important;
+}
+.wa-hero p{
+  margin-top:8px!important;
+  color:#c4d3de!important;
+  font-size:12px!important;
+  font-weight:700!important;
+}
+.wa-kicker{
+  color:#8fdcc0!important;
+  font-size:10px!important;
+  font-weight:900!important;
+}
+.wa-live{
+  background:#102331!important;
+  border:1px solid #2b4557!important;
+  color:#fff!important;
+  box-shadow:0 8px 18px rgba(0,0,0,.14)!important;
+}
+
+/* KPI plaques: same darkness, border and depth as Personnel KPI */
+.wa-kpis{gap:12px!important;margin-bottom:14px!important}
+.wa-kpi{
+  min-height:118px!important;
+  padding:17px 15px 15px!important;
+  border-radius:19px!important;
+  border:1px solid!important;
+  box-shadow:0 15px 30px rgba(0,0,0,.17)!important;
+  background-image:radial-gradient(circle at 8% 115%,rgba(255,255,255,.10),transparent 38%)!important;
+  background-blend-mode:screen,normal!important;
+}
+.wa-kpi:before{display:none!important}
+.wa-kpi:after{display:none!important}
+.wa-kpi:nth-child(1){background:linear-gradient(140deg,#0b442f,#0b2c22 56%,#092018)!important;border-color:#1d9b70!important}
+.wa-kpi:nth-child(2){background:linear-gradient(140deg,#10414a,#0d3038 56%,#091f27)!important;border-color:#3294a2!important}
+.wa-kpi:nth-child(3){background:linear-gradient(140deg,#0c426d,#0b2b49 55%,#091d30)!important;border-color:#2c91d7!important}
+.wa-kpi:nth-child(4){background:linear-gradient(140deg,#514617,#352d12 55%,#211d0f)!important;border-color:#a58b2f!important}
+.wa-kpi:nth-child(5){background:linear-gradient(140deg,#3b2467,#281a47 55%,#171128)!important;border-color:#865ed0!important}
+.wa-kpi:nth-child(6){background:linear-gradient(140deg,#0b442f,#0b2c22 56%,#092018)!important;border-color:#1d9b70!important}
+.wa-kpi:nth-child(7){background:linear-gradient(140deg,#55263a,#351b29 55%,#24131c)!important;border-color:#a54c70!important}
+.wa-kpi:nth-child(8){background:linear-gradient(140deg,#143f67,#102b47 55%,#0b1d2d)!important;border-color:#4b86c4!important}
+.wa-kpi span{
+  color:#f7fbff!important;
+  font-size:11px!important;
+  font-weight:950!important;
+  line-height:1.45!important;
+  white-space:normal!important;
+}
+.wa-kpi b{
+  margin-top:9px!important;
+  color:#fff!important;
+  font-size:27px!important;
+  line-height:1.08!important;
+  font-weight:950!important;
+  text-shadow:none!important;
+}
+.wa-kpi small{
+  margin-top:9px!important;
+  color:#d3dfe7!important;
+  font-size:9.5px!important;
+  font-weight:700!important;
+  line-height:1.45!important;
+  white-space:normal!important;
+}
+.wa-kpi:nth-child(1) b,.wa-kpi:nth-child(1) span{color:#64efb0!important}
+.wa-kpi:nth-child(2) b,.wa-kpi:nth-child(2) span{color:#76dde6!important}
+.wa-kpi:nth-child(3) b,.wa-kpi:nth-child(3) span{color:#7bcaff!important}
+.wa-kpi:nth-child(4) b,.wa-kpi:nth-child(4) span{color:#ffe170!important}
+.wa-kpi:nth-child(5) b,.wa-kpi:nth-child(5) span{color:#c9a7ff!important}
+.wa-kpi:nth-child(6) b,.wa-kpi:nth-child(6) span{color:#64efb0!important}
+.wa-kpi:nth-child(7) b,.wa-kpi:nth-child(7) span{color:#ff9fbd!important}
+.wa-kpi:nth-child(8) b,.wa-kpi:nth-child(8) span{color:#9acbff!important}
+
+/* Chart card becomes a KPI panel, not a bright glass block */
+.wa-chart-card{
+  border:1px solid #2b4a5d!important;
+  border-radius:20px!important;
+  background:linear-gradient(145deg,#0f2534,#0a1924)!important;
+  box-shadow:0 14px 30px rgba(0,0,0,.14)!important;
+  padding:18px!important;
+}
+.wa-chart-title h2{
+  color:#fff!important;
+  font-size:17px!important;
+  font-weight:950!important;
+}
+.wa-chart-title p{
+  color:#c2d0da!important;
+  font-size:10.5px!important;
+  font-weight:700!important;
+  line-height:1.75!important;
+}
+.wa-chart-control{
+  min-height:36px!important;
+  padding:0 12px!important;
+  border-radius:10px!important;
+  background:#102331!important;
+  border:1px solid #2b4557!important;
+  color:#f5fbff!important;
+  font-size:10px!important;
+  font-weight:900!important;
+}
+.wa-chart-wrap{
+  background:#0b1a25!important;
+  border:1px solid #203746!important;
+  border-radius:14px!important;
+}
+.wa-chart-grid{stroke:rgba(148,178,196,.15)!important}
+.wa-chart-axis{stroke:#466578!important}
+.wa-chart-label{fill:#c1d0da!important;font-size:9.5px!important;font-weight:700!important}
+.wa-chart-ylabel{fill:#dce7ee!important;font-size:10px!important;font-weight:900!important}
+.wa-chart-line{stroke-width:2.7!important}
+.wa-chart-point{stroke:#0a1823!important;stroke-width:1.8!important}
+.wa-chart-legend button{
+  color:#d9e5ec!important;
+  font-size:9.5px!important;
+  font-weight:850!important;
+}
+.wa-chart-empty{
+  color:#c5d3dc!important;
+  font-size:10.5px!important;
+}
+.wa-chart-empty strong{color:#fff!important;font-size:13px!important}
+
+/* Main WhatsApp section styled like KPI panels */
+.wa-shell{
+  border:1px solid #2b4a5d!important;
+  border-radius:20px!important;
+  background:linear-gradient(145deg,#0f2534,#0a1924)!important;
+  box-shadow:0 14px 30px rgba(0,0,0,.14)!important;
+}
+.wa-tabs{
+  padding:11px 12px!important;
+  background:#0d2130!important;
+  border-bottom:1px solid #274557!important;
+}
+.wa-tab{
+  min-height:38px!important;
+  padding:0 14px!important;
+  border-radius:10px!important;
+  border:1px solid #2b4557!important;
+  background:#102331!important;
+  color:#eaf2f7!important;
+  font-size:10.5px!important;
+  font-weight:900!important;
+}
+.wa-tab.active{
+  color:#fff!important;
+  background:linear-gradient(135deg,#0e8f60,#25c883)!important;
+  border-color:#36d89a!important;
+  box-shadow:0 8px 18px rgba(0,0,0,.14)!important;
+}
+.wa-panel{padding:19px!important}
+.wa-panel-head h2{
+  color:#fff!important;
+  font-size:17px!important;
+  font-weight:950!important;
+}
+.wa-panel-head p{
+  color:#c2d0da!important;
+  font-size:10px!important;
+  font-weight:700!important;
+  line-height:1.7!important;
+}
+
+/* Rows: darker, cleaner, larger labels */
+.wa-list-head{
+  color:#b8cad5!important;
+  font-size:8.5px!important;
+  font-weight:900!important;
+  padding-bottom:9px!important;
+}
+.wa-number-row{
+  background:#0b1a25!important;
+  border:1px solid #203746!important;
+  border-radius:14px!important;
+  padding:12px!important;
+  box-shadow:none!important;
+}
+.wa-number-row:hover{
+  background:#102839!important;
+  border-color:#39647c!important;
+  transform:translateY(-1px)!important;
+}
+.wa-number-main strong,.wa-meta-title{
+  color:#fff!important;
+  font-size:11.5px!important;
+  font-weight:950!important;
+}
+.wa-number-main small,.wa-meta-sub{
+  color:#b9cad6!important;
+  font-size:9px!important;
+  font-weight:700!important;
+}
+.wa-chip,.wa-badge,.wa-activity{
+  font-size:8.5px!important;
+  font-weight:900!important;
+}
+.wa-flow-item{
+  background:#102433!important;
+  border:1px solid #1d3342!important;
+}
+.wa-flow-item b{font-size:12px!important;color:#fff!important}
+.wa-flow-item span{font-size:8px!important;color:#c0d0db!important}
+.wa-last strong{font-size:10px!important;color:#fff!important}
+.wa-last small{font-size:8.5px!important;color:#b9cad6!important}
+
+/* Forms and actions: same readable KPI controls */
+.wa-add,.wa-connect-box,.wa-analytic{
+  background:#0b1a25!important;
+  border:1px solid #203746!important;
+  box-shadow:none!important;
+}
+.wa-add h3,.wa-connect-box h3{font-size:14px!important;font-weight:950!important}
+.wa-add>p,.wa-connect-box p{font-size:9.5px!important;color:#c3d0d9!important;font-weight:700!important}
+.wa-field label{
+  color:#d3e0e8!important;
+  font-size:9.5px!important;
+  font-weight:900!important;
+}
+.wa-field input,.wa-field select{
+  height:44px!important;
+  border-radius:11px!important;
+  background:#0b1b27!important;
+  border:1px solid #2d4a5c!important;
+  color:#f5fbff!important;
+  font-size:10.5px!important;
+  font-weight:800!important;
+  padding:0 11px!important;
+}
+.wa-field input::placeholder{color:#9cb0bf!important}
+.wa-btn,.wa-icon-btn{
+  font-size:9.5px!important;
+  font-weight:900!important;
+}
+.wa-btn{
+  min-height:38px!important;
+  background:linear-gradient(135deg,#0e8f60,#25c883)!important;
+  border:1px solid #36d89a!important;
+  color:#fff!important;
+}
+.wa-icon-btn{
+  background:#102331!important;
+  border:1px solid #2b4557!important;
+  color:#eef6fb!important;
+}
+.wa-icon-btn.edit{background:#12324a!important;border-color:#32607a!important;color:#b9e7ff!important}
+.wa-icon-btn.delete{background:#472229!important;border-color:#82414d!important;color:#ffb6bf!important}
+
+.wa-empty{
+  background:#0a1822!important;
+  border:1px dashed #284656!important;
+  color:#b9cad5!important;
+  font-size:10px!important;
+}
+.wa-empty strong{font-size:12px!important;color:#fff!important}
+.wa-analytics{gap:12px!important}
+.wa-analytic span{font-size:9.5px!important;color:#c4d3de!important}
+.wa-analytic b{font-size:23px!important;color:#fff!important}
+.wa-analytic em{font-size:8px!important;color:#9fb2bf!important}
+
+/* Edit modal aligned with KPI palette */
+.wa-modal{
+  border:1px solid #2b4a5d!important;
+  background:linear-gradient(145deg,#0f2534,#0a1924)!important;
+  box-shadow:0 24px 60px rgba(0,0,0,.38)!important;
+}
+.wa-modal-head h3{font-size:17px!important;color:#fff!important}
+.wa-modal-head p{font-size:10px!important;color:#c3d0d9!important}
+
+@media(max-width:1180px){
+  .wa-kpi{min-height:108px!important}
+}
+@media(max-width:700px){
+  .wa-hero h1{font-size:25px!important}
+  .wa-kpi{min-height:104px!important;padding:14px!important}
+  .wa-kpi span{font-size:10px!important}
+  .wa-kpi b{font-size:24px!important}
+  .wa-kpi small{font-size:9px!important}
+}
+
 </style>
 
 <div class="wa-page">
