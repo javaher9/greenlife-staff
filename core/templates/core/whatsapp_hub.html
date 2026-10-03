@@ -308,6 +308,9 @@
     Object.entries(attrs).forEach(([key,val])=>el.setAttribute(key,String(val)));
     return el;
   };
+  const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,ch=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[ch]));
   const niceMax=value=>{
     if(value<=5) return 5;
     const p=Math.pow(10,Math.floor(Math.log10(value)));
@@ -381,7 +384,7 @@
       const visible=series.filter(s=>s.visible);
       if(!visible.length){tooltip.style.display='none';return;}
       const rows=visible.map(s=>({label:s.label,color:s.color,value:Number((s.values||[])[idx]||0)})).sort((a,b)=>b.value-a.value).slice(0,5);
-      tooltip.innerHTML='<b>'+labels[idx]+'</b>'+rows.map(r=>'<span><i style="color:'+r.color+'">● '+r.label+'</i><strong>'+r.value.toLocaleString('fa-IR')+'</strong></span>').join('');
+      tooltip.innerHTML='<b>'+escapeHtml(labels[idx])+'</b>'+rows.map(r=>'<span><i style="color:'+r.color+'">● '+escapeHtml(r.label)+'</i><strong>'+r.value.toLocaleString('fa-IR')+'</strong></span>').join('');
       tooltip.style.display='block';
       const wrap=document.getElementById('wa-chart-wrap').getBoundingClientRect();
       let left=ev.clientX-wrap.left+12, top=ev.clientY-wrap.top-12;
@@ -397,7 +400,13 @@
   series.forEach((item,index)=>{
     const btn=document.createElement('button');
     btn.type='button';
-    btn.innerHTML='<span class="wa-chart-dot" style="background:'+item.color+';color:'+item.color+'"></span><span>'+item.label+'</span>';
+    const dot=document.createElement('span');
+    dot.className='wa-chart-dot';
+    dot.style.background=item.color;
+    dot.style.color=item.color;
+    const labelNode=document.createElement('span');
+    labelNode.textContent=item.label;
+    btn.append(dot,labelNode);
     btn.title=item.phone||item.label;
     btn.addEventListener('click',()=>{
       item.visible=!item.visible;
