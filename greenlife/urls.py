@@ -11,7 +11,6 @@ urlpatterns=[
     path('settings/instagram-ai/',instagram_api_views.instagram_settings,name='instagram_settings'),
     path('instagram/oauth/start/',instagram_api_views.instagram_oauth_start,name='instagram_oauth_start'),
     path('api/instagram/callback/',instagram_api_views.instagram_oauth_callback,name='instagram_oauth_callback'),
-    path('api/instagram/complete/',instagram_api_views.instagram_oauth_complete,name='instagram_oauth_complete'),
     path('api/instagram/webhook/',instagram_api_views.instagram_webhook,name='instagram_webhook'),
     path('instagram/',instagram_views.instagram_lead,name='instagram_lead'),
     path('telegram/',instagram_views.telegram_lead,name='telegram_lead'),
