@@ -1,58 +1,178 @@
 {% extends "core/base.html" %}
 {% block content %}
 <style>
-.wa-page{max-width:1240px;margin:22px auto 40px;padding:0 16px;color:#17352d}
-.wa-hero{position:relative;overflow:hidden;background:linear-gradient(135deg,#e9f8f1 0%,#fbfffd 58%,#eef6ff 100%);border:1px solid #dbe9e3;border-radius:26px;padding:24px 26px;box-shadow:0 16px 38px rgba(37,78,66,.07);margin-bottom:16px}
-.wa-hero:after{content:"";position:absolute;left:-60px;top:-85px;width:210px;height:210px;border-radius:50%;background:rgba(31,168,108,.08)}
-.wa-kicker{font-size:11px;font-weight:900;color:#2c8062;letter-spacing:.35px;margin-bottom:5px}
-.wa-hero h1{margin:0;font-size:28px;line-height:1.35;color:#173d34}.wa-hero p{margin:7px 0 0;color:#617a72;font-size:13px}
-.wa-live{position:absolute;left:24px;top:24px;display:flex;align-items:center;gap:7px;background:#fff;border:1px solid #dce9e4;border-radius:999px;padding:7px 11px;font-size:11px;font-weight:900;color:#45665d}
-.wa-live i{width:8px;height:8px;background:#16a36a;border-radius:50%;box-shadow:0 0 0 4px rgba(22,163,106,.11)}
-.wa-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:15px}
-.wa-stat{background:#fff;border:1px solid #e1ebe7;border-radius:17px;padding:15px 16px;box-shadow:0 8px 22px rgba(41,74,64,.045)}
-.wa-stat span{display:block;color:#7a8f89;font-size:10px;font-weight:800;margin-bottom:7px}.wa-stat b{font-size:24px;color:#1c4439}.wa-stat small{display:block;margin-top:4px;color:#91a19c;font-size:9px}
-.wa-shell{background:#fff;border:1px solid #dfe9e5;border-radius:22px;box-shadow:0 12px 32px rgba(35,71,61,.055);overflow:hidden}
-.wa-tabs{display:flex;gap:6px;padding:10px;background:#f6faf8;border-bottom:1px solid #e3ece8;overflow:auto}
-.wa-tab{border:0;background:transparent;border-radius:11px;padding:10px 15px;font-family:inherit;font-size:11px;font-weight:900;color:#6a8079;cursor:pointer;white-space:nowrap}
-.wa-tab.active{background:#173f34;color:#fff;box-shadow:0 6px 16px rgba(23,63,52,.14)}
-.wa-panel{display:none;padding:18px}.wa-panel.active{display:block}
-.wa-panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}.wa-panel-head h2{margin:0;color:#173d34;font-size:17px}.wa-panel-head p{margin:4px 0 0;color:#81948e;font-size:10px}
-.wa-table-wrap{overflow:auto;border:1px solid #e5edea;border-radius:15px}.wa-table{width:100%;border-collapse:collapse;min-width:790px}.wa-table th,.wa-table td{text-align:right;padding:12px 13px;border-bottom:1px solid #edf2f0;font-size:11px}.wa-table th{background:#f8fbfa;color:#6b817b;font-size:9px;font-weight:900}.wa-table tr:last-child td{border-bottom:0}.wa-number-main{display:flex;align-items:center;gap:10px}.wa-number-icon{width:34px;height:34px;border-radius:11px;background:#e8f7f0;display:grid;place-items:center;color:#17805b;font-weight:950}.wa-number-main strong{display:block;color:#203f37}.wa-number-main small{color:#8b9c97;direction:ltr;display:block;text-align:right}
-.wa-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;font-size:9px;font-weight:900;border:1px solid transparent}.wa-badge:before{content:"";width:6px;height:6px;border-radius:50%}.wa-connected{background:#ebf8f2;color:#177652;border-color:#d0ebdf}.wa-connected:before{background:#19a46d}.wa-pending{background:#fff7e8;color:#9a681a;border-color:#f4e3bd}.wa-pending:before{background:#d89b32}.wa-disconnected,.wa-error{background:#fff0f1;color:#9e4852;border-color:#f0d3d6}.wa-disconnected:before,.wa-error:before{background:#c95f69}
-.wa-btn{border:0;border-radius:11px;padding:9px 12px;background:#17805b;color:#fff;font:900 10px/1.2 inherit;cursor:pointer}.wa-btn.ghost{background:#eef5f2;color:#315d50}.wa-btn.dark{background:#233d36}.wa-btn:disabled{opacity:.45;cursor:not-allowed}
-.wa-empty{border:1px dashed #d5e2dd;border-radius:17px;padding:34px 18px;text-align:center;background:#fbfdfc;color:#758b84}.wa-empty .ico{width:46px;height:46px;margin:0 auto 10px;border-radius:15px;background:#eaf7f1;display:grid;place-items:center;font-size:20px}.wa-empty strong{display:block;color:#34584d;margin-bottom:5px}
-.wa-add{margin-top:16px;padding:16px;background:#f8fbfa;border:1px solid #e2ebe7;border-radius:17px}.wa-add h3{margin:0 0 12px;font-size:13px;color:#284c42}.wa-form-grid{display:grid;grid-template-columns:1.2fr 1.2fr 1fr 1fr 1fr auto;gap:9px;align-items:end}.wa-field label{display:block;font-size:9px;font-weight:900;color:#70857f;margin-bottom:5px}.wa-field input,.wa-field select{width:100%;box-sizing:border-box;height:39px;border:1px solid #d9e5e0;border-radius:10px;background:#fff;color:#29473f;padding:0 9px;font:700 10px/1.2 inherit;outline:none}.wa-field input:focus,.wa-field select:focus{border-color:#73b79d;box-shadow:0 0 0 3px rgba(55,151,112,.08)}
-.wa-inbox-grid{display:grid;grid-template-columns:310px 1fr;min-height:430px;border:1px solid #e4ece9;border-radius:16px;overflow:hidden}.wa-thread-list{border-left:1px solid #e7efec;background:#fbfdfc}.wa-search{padding:11px;border-bottom:1px solid #e8efed}.wa-search input{width:100%;box-sizing:border-box;border:1px solid #dfe8e5;background:#fff;border-radius:10px;padding:9px 10px;font:700 10px inherit}.wa-thread{padding:12px;border-bottom:1px solid #edf2f0}.wa-thread strong{display:block;font-size:11px}.wa-thread small{display:block;color:#879994;font-size:9px;margin-top:4px}.wa-chat-empty{display:grid;place-items:center;text-align:center;color:#83958f;padding:30px}.wa-chat-empty b{display:block;color:#3a5f54;margin-bottom:5px}
-.wa-analytics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}.wa-analytic{padding:16px;border:1px solid #e2ebe8;border-radius:15px;background:#fbfdfc}.wa-analytic span{display:block;color:#80928c;font-size:9px;font-weight:850}.wa-analytic b{display:block;font-size:21px;color:#24483e;margin-top:7px}.wa-connect-box{border:1px solid #dfe9e5;background:#f9fcfb;border-radius:16px;padding:17px}.wa-connect-box h3{margin:0 0 7px;font-size:14px}.wa-connect-box p{color:#728780;font-size:11px;line-height:1.9;margin:0}.wa-code{direction:ltr;text-align:left;background:#17342d;color:#dff4eb;border-radius:11px;padding:10px 12px;font:700 10px/1.7 monospace;margin-top:12px;overflow:auto}
-@media(max-width:1000px){.wa-form-grid{grid-template-columns:1fr 1fr 1fr}.wa-inbox-grid{grid-template-columns:260px 1fr}}
-@media(max-width:720px){.wa-page{padding:0 10px;margin-top:12px}.wa-hero{padding:19px 17px}.wa-hero h1{font-size:22px}.wa-live{position:static;width:max-content;margin-top:13px}.wa-stats{grid-template-columns:1fr 1fr}.wa-stat b{font-size:20px}.wa-panel{padding:12px}.wa-form-grid{grid-template-columns:1fr}.wa-inbox-grid{grid-template-columns:1fr}.wa-thread-list{border-left:0}.wa-chat-empty{display:none}.wa-analytics{grid-template-columns:1fr 1fr}}
+.wa-page{
+  --wa-bg:#14242a;--wa-card:#1b2d34;--wa-card2:#20363d;--wa-line:rgba(190,226,214,.13);
+  --wa-text:#f4fbf8;--wa-muted:#a9c0b8;--wa-green:#38d39f;--wa-blue:#63b8ff;--wa-violet:#b89cff;
+  --wa-amber:#ffc66d;--wa-coral:#ff8f91;--wa-cyan:#66d8dc;
+  max-width:1280px;margin:20px auto 42px;padding:0 16px;color:var(--wa-text);
+}
+.wa-hero{
+  position:relative;overflow:hidden;border:1px solid rgba(171,224,205,.18);border-radius:28px;
+  padding:25px 27px;margin-bottom:14px;
+  background:
+    radial-gradient(circle at 8% 10%,rgba(56,211,159,.22),transparent 28%),
+    radial-gradient(circle at 82% 5%,rgba(99,184,255,.18),transparent 26%),
+    linear-gradient(135deg,#1a3137 0%,#203840 46%,#263745 100%);
+  box-shadow:0 18px 44px rgba(0,0,0,.16);
+}
+.wa-hero:after{content:"";position:absolute;left:-48px;bottom:-86px;width:210px;height:210px;border-radius:50%;background:rgba(184,156,255,.11);filter:blur(2px)}
+.wa-kicker{font-size:10px;font-weight:950;letter-spacing:.9px;color:#79e6bd;margin-bottom:6px}
+.wa-hero h1{margin:0;font-size:28px;line-height:1.35;color:#fff}.wa-hero p{margin:7px 0 0;color:#bdd2cb;font-size:12px}
+.wa-live{position:absolute;left:23px;top:22px;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;
+  background:rgba(245,255,251,.09);border:1px solid rgba(195,238,224,.17);backdrop-filter:blur(12px);font-size:10px;font-weight:900;color:#e9fff6}
+.wa-live i{width:8px;height:8px;border-radius:50%;background:var(--wa-green);box-shadow:0 0 0 5px rgba(56,211,159,.12)}
+.wa-kpis{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:9px;margin-bottom:14px}
+.wa-kpi{position:relative;overflow:hidden;min-height:92px;padding:14px 14px 12px;border-radius:18px;border:1px solid var(--wa-line);background:var(--wa-card);box-shadow:0 10px 25px rgba(0,0,0,.09)}
+.wa-kpi:before{content:"";position:absolute;inset:0 auto auto 0;width:56%;height:4px;border-radius:0 0 8px 0;background:var(--tone)}
+.wa-kpi:after{content:"";position:absolute;left:-18px;bottom:-30px;width:72px;height:72px;border-radius:50%;background:var(--tone);opacity:.09}
+.wa-kpi span{display:block;color:var(--wa-muted);font-size:9px;font-weight:850;white-space:nowrap}.wa-kpi b{display:block;margin-top:6px;color:#fff;font-size:22px;line-height:1.1}.wa-kpi small{display:block;margin-top:6px;color:#8fa9a0;font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wa-tone-green{--tone:var(--wa-green)}.wa-tone-blue{--tone:var(--wa-blue)}.wa-tone-violet{--tone:var(--wa-violet)}.wa-tone-amber{--tone:var(--wa-amber)}
+.wa-tone-coral{--tone:var(--wa-coral)}.wa-tone-cyan{--tone:var(--wa-cyan)}
+.wa-shell{overflow:hidden;border:1px solid var(--wa-line);border-radius:24px;background:linear-gradient(180deg,#172930,#14252b);box-shadow:0 16px 38px rgba(0,0,0,.13)}
+.wa-tabs{display:flex;gap:7px;padding:11px 12px;border-bottom:1px solid var(--wa-line);background:rgba(255,255,255,.02);overflow:auto}
+.wa-tab{border:1px solid transparent;background:transparent;color:#9fb9b0;border-radius:12px;padding:10px 15px;font:900 10px/1.2 inherit;cursor:pointer;white-space:nowrap}
+.wa-tab:hover{background:rgba(255,255,255,.04);color:#fff}.wa-tab.active{color:#0f2b23;background:linear-gradient(135deg,#72e3b9,#49cfa0);box-shadow:0 7px 18px rgba(56,211,159,.16)}
+.wa-panel{display:none;padding:17px}.wa-panel.active{display:block}
+.wa-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px}.wa-panel-head h2{margin:0;color:#fff;font-size:16px}.wa-panel-head p{margin:4px 0 0;color:#90aaa1;font-size:9px}
+.wa-number-list{display:grid;gap:9px}
+.wa-number-row{
+  display:grid;grid-template-columns:minmax(170px,1.25fr) minmax(145px,.95fr) minmax(115px,.72fr) minmax(120px,.78fr) minmax(260px,1.6fr) minmax(135px,.82fr) 76px;
+  gap:10px;align-items:center;padding:11px 12px;border:1px solid rgba(198,229,219,.10);border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(255,255,255,.018));
+  transition:.18s ease;
+}
+.wa-number-row:hover{transform:translateY(-1px);border-color:rgba(83,211,164,.26);background:linear-gradient(135deg,rgba(69,185,144,.08),rgba(89,157,210,.035))}
+.wa-number-main{display:flex;align-items:center;gap:10px;min-width:0}.wa-number-icon{width:40px;height:40px;min-width:40px;border-radius:13px;display:grid;place-items:center;font-size:10px;font-weight:950;color:#0c3226;background:linear-gradient(145deg,#70e0b6,#42c997);box-shadow:0 8px 18px rgba(56,211,159,.15)}
+.wa-number-main strong{display:block;color:#fff;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.wa-number-main small{display:block;margin-top:3px;color:#91aaa2;font-size:9px;direction:ltr;text-align:right}
+.wa-meta-title{display:block;color:#f3faf7;font-size:10px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.wa-meta-sub{display:block;margin-top:4px;color:#8fa79f;font-size:8px}
+.wa-chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 8px;font-size:8px;font-weight:900;border:1px solid transparent;white-space:nowrap}
+.wa-chip-type{color:#bfeaff;background:rgba(99,184,255,.10);border-color:rgba(99,184,255,.16)}
+.wa-chip-branch{color:#eedfff;background:rgba(184,156,255,.10);border-color:rgba(184,156,255,.17)}
+.wa-status{display:flex;flex-direction:column;gap:6px;align-items:flex-start}.wa-badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 8px;font-size:8px;font-weight:950;border:1px solid transparent}.wa-badge:before{content:"";width:6px;height:6px;border-radius:50%}
+.wa-connected{color:#8cf0c9;background:rgba(56,211,159,.10);border-color:rgba(56,211,159,.18)}.wa-connected:before{background:var(--wa-green)}
+.wa-pending{color:#ffd997;background:rgba(255,198,109,.10);border-color:rgba(255,198,109,.18)}.wa-pending:before{background:var(--wa-amber)}
+.wa-disconnected,.wa-error{color:#ffb2b4;background:rgba(255,143,145,.10);border-color:rgba(255,143,145,.18)}.wa-disconnected:before,.wa-error:before{background:var(--wa-coral)}
+.wa-activity{display:inline-flex;align-items:center;gap:5px;font-size:8px;font-weight:900;color:#afc6be}.wa-activity:before{content:"";width:6px;height:6px;border-radius:50%;background:#627b73}.wa-activity.hot{color:#ffafab}.wa-activity.hot:before{background:#ff7d7f}.wa-activity.good{color:#86e9c1}.wa-activity.good:before{background:#38d39f}.wa-activity.mid{color:#8dd6ff}.wa-activity.mid:before{background:#63b8ff}.wa-activity.low{color:#f7d291}.wa-activity.low:before{background:#ffc66d}
+.wa-flow{display:grid;grid-template-columns:repeat(5,minmax(42px,1fr));gap:5px}.wa-flow-item{padding:6px 5px;border-radius:10px;text-align:center;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025)}
+.wa-flow-item b{display:block;color:#fff;font-size:11px}.wa-flow-item span{display:block;margin-top:2px;color:#78968c;font-size:7px;font-weight:800}.wa-flow-in{background:rgba(102,216,220,.055)}.wa-flow-out{background:rgba(99,184,255,.055)}.wa-flow-manual{background:rgba(255,198,109,.055)}.wa-flow-auto{background:rgba(184,156,255,.055)}.wa-flow-ai{background:rgba(56,211,159,.065)}
+.wa-last strong{display:block;color:#eff8f5;font-size:9px}.wa-last small{display:block;margin-top:4px;color:#829d94;font-size:8px}.wa-unread{display:inline-flex;margin-top:5px;padding:3px 6px;border-radius:999px;background:rgba(255,143,145,.10);color:#ffb4b5;font-size:7px;font-weight:900}
+.wa-btn{border:0;border-radius:10px;padding:8px 10px;font:900 9px/1.2 inherit;cursor:pointer;background:linear-gradient(135deg,#59d7a7,#34ba89);color:#103027;box-shadow:0 6px 14px rgba(38,165,119,.12)}.wa-btn.ghost{background:rgba(255,255,255,.06);color:#cce1da;border:1px solid rgba(255,255,255,.08);box-shadow:none}.wa-btn.off{color:#8da59d}
+.wa-empty{padding:34px 18px;text-align:center;border:1px dashed rgba(194,225,215,.14);border-radius:18px;background:rgba(255,255,255,.02);color:#8da79e}.wa-empty .ico{width:48px;height:48px;margin:0 auto 10px;border-radius:16px;display:grid;place-items:center;background:rgba(56,211,159,.09);color:#77e4bb;font-size:19px}.wa-empty strong{display:block;color:#e8f5f0;margin-bottom:5px}
+.wa-add{margin-top:14px;padding:15px;border:1px solid rgba(191,224,213,.11);border-radius:18px;background:linear-gradient(135deg,rgba(66,201,151,.05),rgba(99,184,255,.025))}
+.wa-add h3{margin:0 0 4px;color:#fff;font-size:13px}.wa-add>p{margin:0 0 12px;color:#8fa99f;font-size:8px}
+.wa-form-grid{display:grid;grid-template-columns:1.05fr 1.15fr .9fr 1.05fr 1fr;gap:8px;align-items:end}.wa-form-technical{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-top:8px}
+.wa-field label{display:block;margin-bottom:5px;color:#9bb4ab;font-size:8px;font-weight:900}.wa-field input,.wa-field select{width:100%;box-sizing:border-box;height:38px;border:1px solid rgba(191,224,213,.13);border-radius:10px;padding:0 9px;background:#20343b;color:#edf8f4;font:750 9px/1.2 inherit;outline:none}.wa-field input::placeholder{color:#6f8b82}.wa-field input:focus,.wa-field select:focus{border-color:rgba(77,207,158,.55);box-shadow:0 0 0 3px rgba(56,211,159,.08)}
+.wa-inbox-grid{display:grid;grid-template-columns:310px 1fr;min-height:430px;border:1px solid var(--wa-line);border-radius:17px;overflow:hidden;background:#17282e}.wa-thread-list{border-left:1px solid var(--wa-line);background:#182a30}.wa-search{padding:10px;border-bottom:1px solid var(--wa-line)}.wa-search input{width:100%;box-sizing:border-box;border:1px solid rgba(193,224,214,.12);background:#20343b;color:#fff;border-radius:10px;padding:9px 10px;font:700 9px inherit}.wa-thread{padding:11px;border-bottom:1px solid rgba(197,227,217,.08)}.wa-thread strong{display:block;color:#fff;font-size:10px}.wa-thread small{display:block;margin-top:4px;color:#89a39a;font-size:8px}.wa-chat-empty{display:grid;place-items:center;text-align:center;padding:30px;color:#819c93}.wa-chat-empty b{display:block;color:#e9f5f1;margin-bottom:5px}
+.wa-analytics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.wa-analytic{position:relative;overflow:hidden;padding:15px;border:1px solid var(--wa-line);border-radius:15px;background:#1b3036}.wa-analytic span{display:block;color:#91aaa1;font-size:8px;font-weight:850}.wa-analytic b{display:block;margin-top:7px;color:#fff;font-size:20px}.wa-analytic em{position:absolute;left:10px;bottom:7px;font-style:normal;color:#6f8c82;font-size:7px}
+.wa-connect-box{padding:17px;border:1px solid var(--wa-line);border-radius:17px;background:linear-gradient(135deg,#1a3036,#1e343b)}.wa-connect-box h3{margin:0 0 7px;color:#fff;font-size:13px}.wa-connect-box p{margin:0;color:#9ab3aa;font-size:9px;line-height:1.9}.wa-code{margin-top:12px;padding:10px 12px;border-radius:11px;background:#102027;color:#80e5bd;direction:ltr;text-align:left;font:700 9px/1.7 monospace;overflow:auto}
+.wa-list-head{display:grid;grid-template-columns:minmax(170px,1.25fr) minmax(145px,.95fr) minmax(115px,.72fr) minmax(120px,.78fr) minmax(260px,1.6fr) minmax(135px,.82fr) 76px;gap:10px;padding:0 13px 7px;color:#78958b;font-size:7px;font-weight:900}
+@media(max-width:1180px){.wa-kpis{grid-template-columns:repeat(4,1fr)}.wa-number-row,.wa-list-head{grid-template-columns:minmax(170px,1.25fr) minmax(130px,.9fr) 110px 118px minmax(230px,1.55fr) 125px 70px}.wa-form-grid{grid-template-columns:1fr 1fr 1fr}.wa-form-technical{grid-template-columns:1fr 1fr auto}}
+@media(max-width:820px){.wa-number-list{display:flex;overflow:auto;padding-bottom:3px}.wa-list-head{display:none}.wa-number-row{min-width:760px}.wa-inbox-grid{grid-template-columns:250px 1fr}}
+@media(max-width:700px){.wa-page{padding:0 9px;margin-top:11px}.wa-hero{padding:18px 16px}.wa-hero h1{font-size:22px}.wa-live{position:static;width:max-content;margin-top:12px}.wa-kpis{grid-template-columns:1fr 1fr}.wa-panel{padding:11px}.wa-form-grid,.wa-form-technical{grid-template-columns:1fr}.wa-inbox-grid{grid-template-columns:1fr}.wa-thread-list{border-left:0}.wa-chat-empty{display:none}.wa-analytics{grid-template-columns:1fr 1fr}}
 </style>
 
 <div class="wa-page">
   <section class="wa-hero">
-    <div class="wa-kicker">GREEN LIFE · WHATSAPP HUB</div>
+    <div class="wa-kicker">GREEN LIFE · WHATSAPP CONTROL CENTER</div>
     <h1>مرکز مدیریت واتساپ</h1>
-    <p>مدیریت چند شماره، پیام‌ها، اتصال‌ها و آمار در یک صفحه؛ آماده برای ۱۰ شماره و بیشتر.</p>
+    <p>شماره‌های کال‌سنتر، مراکز و ترکیه؛ عملکرد دستی، اتوماتیک و AI در یک نمای مدیریتی.</p>
     <div class="wa-live"><i></i> WhatsApp Bridge آماده است</div>
   </section>
 
-  <section class="wa-stats">
-    <div class="wa-stat"><span>شماره‌های ثبت‌شده</span><b>{{ stats.total_numbers }}</b><small>همه شماره‌های واتساپ</small></div>
-    <div class="wa-stat"><span>شماره‌های متصل</span><b>{{ stats.connected_numbers }}</b><small>اتصال فعال Meta</small></div>
-    <div class="wa-stat"><span>پیام‌های امروز</span><b>{{ stats.today_messages }}</b><small>ورودی و خروجی</small></div>
-    <div class="wa-stat"><span>خوانده‌نشده</span><b>{{ stats.unread_messages }}</b><small>پیام ورودی جدید</small></div>
+  <section class="wa-kpis">
+    <div class="wa-kpi wa-tone-green"><span>شماره‌های ثبت‌شده</span><b>{{ stats.total_numbers }}</b><small>ظرفیت چندشماره‌ای</small></div>
+    <div class="wa-kpi wa-tone-cyan"><span>شماره‌های متصل</span><b>{{ stats.connected_numbers }}</b><small>اتصال فعال Meta</small></div>
+    <div class="wa-kpi wa-tone-blue"><span>کل پیام امروز</span><b>{{ stats.today_messages }}</b><small>{{ stats.today_inbound }} ورودی · {{ stats.today_outbound }} خروجی</small></div>
+    <div class="wa-kpi wa-tone-amber"><span>پاسخ دستی</span><b>{{ stats.today_manual }}</b><small>ارسال توسط اپراتور</small></div>
+    <div class="wa-kpi wa-tone-violet"><span>اتوماتیک</span><b>{{ stats.today_automation }}</b><small>Rule / Automation</small></div>
+    <div class="wa-kpi wa-tone-green"><span>پاسخ AI</span><b>{{ stats.today_ai }}</b><small>پاسخ هوشمند</small></div>
+    <div class="wa-kpi wa-tone-coral"><span>خوانده‌نشده</span><b>{{ stats.unread_messages }}</b><small>نیازمند رسیدگی</small></div>
+    <div class="wa-kpi wa-tone-blue"><span>فعال‌ترین امروز</span><b style="font-size:14px;margin-top:10px">{{ stats.most_active_label }}</b><small>{{ stats.most_active_count }} پیام امروز</small></div>
   </section>
 
   <section class="wa-shell">
     <div class="wa-tabs">
-      <button class="wa-tab active" type="button" data-tab="inbox">صندوق پیام‌ها</button>
-      <button class="wa-tab" type="button" data-tab="numbers">شماره‌ها</button>
+      <button class="wa-tab active" type="button" data-tab="numbers">شماره‌ها و عملکرد</button>
+      <button class="wa-tab" type="button" data-tab="inbox">صندوق پیام‌ها</button>
       <button class="wa-tab" type="button" data-tab="analytics">آمار</button>
       <button class="wa-tab" type="button" data-tab="connection">اتصال Meta</button>
     </div>
 
-    <div class="wa-panel active" data-panel="inbox">
-      <div class="wa-panel-head"><div><h2>صندوق پیام‌ها</h2><p>همه گفتگوها؛ بعداً با فیلتر شماره، مرکز و اپراتور.</p></div></div>
+    <div class="wa-panel active" data-panel="numbers">
+      <div class="wa-panel-head">
+        <div><h2>شماره‌ها و عملکرد</h2><p>هر ردیف یک شماره؛ مسئول، مرکز، نوع استفاده و میزان فعالیت همان روز.</p></div>
+      </div>
+
+      {% if numbers %}
+      <div class="wa-list-head">
+        <span>شماره</span><span>برای چه کسی / نوع</span><span>مرکز</span><span>اتصال / فعالیت</span><span>عملکرد امروز</span><span>آخرین فعالیت</span><span>وضعیت</span>
+      </div>
+      <div class="wa-number-list">
+        {% for item in numbers %}
+        <div class="wa-number-row">
+          <div class="wa-number-main">
+            <span class="wa-number-icon">WA</span>
+            <div><strong>{{ item.label }}</strong><small>{{ item.phone_number }}</small></div>
+          </div>
+          <div>
+            <span class="wa-meta-title">{{ item.owner_name }}</span>
+            <span class="wa-chip wa-chip-type">{{ item.get_number_type_display }}</span>
+          </div>
+          <div>
+            <span class="wa-meta-title">{{ item.branch.name|default:"—" }}</span>
+            <span class="wa-meta-sub">{% if item.branch %}مرکز متصل{% else %}بدون مرکز{% endif %}</span>
+          </div>
+          <div class="wa-status">
+            <span class="wa-badge wa-{{ item.connection_status }}">{{ item.get_connection_status_display }}</span>
+            <span class="wa-activity {{ item.activity_class }}">{{ item.activity_label }}</span>
+          </div>
+          <div class="wa-flow">
+            <div class="wa-flow-item wa-flow-in"><b>{{ item.today_inbound }}</b><span>ورودی</span></div>
+            <div class="wa-flow-item wa-flow-out"><b>{{ item.today_outbound }}</b><span>خروجی</span></div>
+            <div class="wa-flow-item wa-flow-manual"><b>{{ item.today_manual }}</b><span>دستی</span></div>
+            <div class="wa-flow-item wa-flow-auto"><b>{{ item.today_automation }}</b><span>اتومات</span></div>
+            <div class="wa-flow-item wa-flow-ai"><b>{{ item.today_ai }}</b><span>AI</span></div>
+          </div>
+          <div class="wa-last">
+            <strong>{% if item.last_activity_at %}{{ item.last_activity_at|date:"H:i" }}{% else %}—{% endif %}</strong>
+            <small>{% if item.last_activity_at %}{{ item.last_activity_at|date:"Y/m/d" }}{% else %}هنوز فعالیتی نیست{% endif %}</small>
+            {% if item.unread_messages %}<span class="wa-unread">{{ item.unread_messages }} خوانده‌نشده</span>{% endif %}
+          </div>
+          <div>
+            <form method="post" style="margin:0">{% csrf_token %}
+              <input type="hidden" name="action" value="toggle_active">
+              <input type="hidden" name="number_id" value="{{ item.id }}">
+              <button class="wa-btn ghost {% if not item.is_active %}off{% endif %}" type="submit">{% if item.is_active %}فعال{% else %}خاموش{% endif %}</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="wa-empty"><div class="ico">＋</div><strong>هنوز شماره‌ای اضافه نشده</strong><span>شماره‌های گل‌های کال‌سنتر، مراکز و ترکیه را از فرم پایین اضافه کن.</span></div>
+      {% endif %}
+
+      <form class="wa-add" method="post">
+        {% csrf_token %}<input type="hidden" name="action" value="add_number">
+        <h3>افزودن شماره واتساپ</h3>
+        <p>برای هر شماره مشخص کن متعلق به چه کسی است، برای کدام مرکز است و چه کاربردی دارد.</p>
+        <div class="wa-form-grid">
+          <div class="wa-field"><label>نام شماره</label><input name="label" placeholder="مثلاً واتساپ نرگس" required></div>
+          <div class="wa-field"><label>شماره واتساپ</label><input name="phone_number" dir="ltr" placeholder="+98..." required></div>
+          <div class="wa-field"><label>نوع شماره</label><select name="number_type">{% for value,label in number_types %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+          <div class="wa-field"><label>مسئول / صاحب شماره</label><select name="responsible_id"><option value="">بدون مسئول مشخص</option>{% for person in responsibles %}<option value="{{ person.id }}">{{ person.user.get_full_name|default:person.user.username }}{% if person.branch %} · {{ person.branch.name }}{% endif %}</option>{% endfor %}</select></div>
+          <div class="wa-field"><label>مرکز / شعبه</label><select name="branch_id"><option value="">بدون شعبه</option>{% for branch in branches %}<option value="{{ branch.id }}">{{ branch.name }}</option>{% endfor %}</select></div>
+        </div>
+        <div class="wa-form-technical">
+          <div class="wa-field"><label>Phone Number ID</label><input name="phone_number_id" dir="ltr" placeholder="بعد از اتصال Meta"></div>
+          <div class="wa-field"><label>WABA ID</label><input name="business_account_id" dir="ltr" placeholder="WhatsApp Business Account ID"></div>
+          <button class="wa-btn" type="submit">＋ افزودن شماره</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="wa-panel" data-panel="inbox">
+      <div class="wa-panel-head"><div><h2>صندوق پیام‌ها</h2><p>گفتگوهای همه شماره‌ها؛ نام شماره و مرکز کنار هر گفتگو مشخص است.</p></div></div>
       {% if recent_messages %}
       <div class="wa-inbox-grid">
         <div class="wa-thread-list">
@@ -60,74 +180,37 @@
           {% for msg in recent_messages %}
           <div class="wa-thread">
             <strong>{{ msg.contact_name|default:msg.contact_phone }}</strong>
-            <small>{{ msg.whatsapp_number.label }} · {{ msg.body|default:"پیام غیرمتنی"|truncatechars:45 }}</small>
+            <small>{{ msg.whatsapp_number.label }} · {{ msg.body|default:"پیام غیرمتنی"|truncatechars:46 }}</small>
           </div>
           {% endfor %}
         </div>
-        <div class="wa-chat-empty"><div><b>یک گفتگو را انتخاب کنید</b><span>نمایش کامل پیام‌ها و پاسخ اپراتور در مرحله اتصال فعال می‌شود.</span></div></div>
+        <div class="wa-chat-empty"><div><b>یک گفتگو را انتخاب کنید</b><span>نمای کامل مکالمه و پاسخ اپراتور با اتصال پیام‌رسان فعال می‌شود.</span></div></div>
       </div>
       {% else %}
       <div class="wa-empty"><div class="ico">◔</div><strong>هنوز پیامی ثبت نشده</strong><span>بعد از اتصال اولین شماره، پیام‌های ورودی و خروجی اینجا دیده می‌شوند.</span></div>
       {% endif %}
     </div>
 
-    <div class="wa-panel" data-panel="numbers">
-      <div class="wa-panel-head"><div><h2>شماره‌های واتساپ</h2><p>هر شماره می‌تواند به یک شعبه یا کاربرد جدا متصل باشد.</p></div></div>
-      {% if numbers %}
-      <div class="wa-table-wrap">
-        <table class="wa-table">
-          <thead><tr><th>شماره</th><th>مرکز</th><th>وضعیت</th><th>پیام امروز</th><th>خوانده‌نشده</th><th>آخرین فعالیت</th><th>فعال</th></tr></thead>
-          <tbody>
-            {% for item in numbers %}
-            <tr>
-              <td><div class="wa-number-main"><span class="wa-number-icon">WA</span><div><strong>{{ item.label }}</strong><small>{{ item.phone_number }}</small></div></div></td>
-              <td>{{ item.branch.name|default:"—" }}</td>
-              <td><span class="wa-badge wa-{{ item.connection_status }}">{{ item.get_connection_status_display }}</span></td>
-              <td>{{ item.today_messages }}</td>
-              <td>{{ item.unread_messages }}</td>
-              <td>{% if item.last_webhook_at %}{{ item.last_webhook_at|date:"Y/m/d H:i" }}{% else %}—{% endif %}</td>
-              <td>
-                <form method="post" style="margin:0">{% csrf_token %}<input type="hidden" name="action" value="toggle_active"><input type="hidden" name="number_id" value="{{ item.id }}"><button class="wa-btn ghost" type="submit">{% if item.is_active %}فعال{% else %}غیرفعال{% endif %}</button></form>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-      <div class="wa-empty"><div class="ico">＋</div><strong>هنوز شماره‌ای اضافه نشده</strong><span>اولین شماره را از فرم پایین اضافه کنید؛ اتصال Meta در مرحله بعد انجام می‌شود.</span></div>
-      {% endif %}
-
-      <form class="wa-add" method="post">
-        {% csrf_token %}<input type="hidden" name="action" value="add_number">
-        <h3>افزودن شماره جدید</h3>
-        <div class="wa-form-grid">
-          <div class="wa-field"><label>نام / کاربرد</label><input name="label" placeholder="مثلاً نیاوران" required></div>
-          <div class="wa-field"><label>شماره واتساپ</label><input name="phone_number" dir="ltr" placeholder="+98..." required></div>
-          <div class="wa-field"><label>شعبه</label><select name="branch_id"><option value="">بدون شعبه</option>{% for branch in branches %}<option value="{{ branch.id }}">{{ branch.name }}</option>{% endfor %}</select></div>
-          <div class="wa-field"><label>Phone Number ID</label><input name="phone_number_id" dir="ltr" placeholder="اختیاری"></div>
-          <div class="wa-field"><label>WABA ID</label><input name="business_account_id" dir="ltr" placeholder="اختیاری"></div>
-          <button class="wa-btn" type="submit">افزودن شماره</button>
-        </div>
-      </form>
-    </div>
-
     <div class="wa-panel" data-panel="analytics">
-      <div class="wa-panel-head"><div><h2>آمار امروز</h2><p>اعداد به تفکیک شماره هم بعد از ورود داده نمایش داده می‌شوند.</p></div></div>
+      <div class="wa-panel-head"><div><h2>آمار عملکرد امروز</h2><p>تفکیک نوع پاسخ برای کنترل عملکرد هر شماره و اپراتور.</p></div></div>
       <div class="wa-analytics">
-        <div class="wa-analytic"><span>پیام ورودی</span><b>{{ stats.today_inbound }}</b></div>
-        <div class="wa-analytic"><span>پیام خروجی</span><b>{{ stats.today_outbound }}</b></div>
-        <div class="wa-analytic"><span>پاسخ AI</span><b>{{ stats.today_ai }}</b></div>
-        <div class="wa-analytic"><span>تحویل / خوانده شده</span><b>{{ stats.today_delivered }}</b></div>
+        <div class="wa-analytic"><span>ورودی</span><b>{{ stats.today_inbound }}</b><em>پیام مشتریان</em></div>
+        <div class="wa-analytic"><span>خروجی</span><b>{{ stats.today_outbound }}</b><em>کل پاسخ‌ها</em></div>
+        <div class="wa-analytic"><span>دستی</span><b>{{ stats.today_manual }}</b><em>توسط اپراتور</em></div>
+        <div class="wa-analytic"><span>اتوماتیک</span><b>{{ stats.today_automation }}</b><em>Automation</em></div>
+        <div class="wa-analytic"><span>AI</span><b>{{ stats.today_ai }}</b><em>پاسخ هوشمند</em></div>
+        <div class="wa-analytic"><span>تحویل / خوانده</span><b>{{ stats.today_delivered }}</b><em>Delivery status</em></div>
+        <div class="wa-analytic"><span>خوانده‌نشده</span><b>{{ stats.unread_messages }}</b><em>نیاز به رسیدگی</em></div>
+        <div class="wa-analytic"><span>فعال‌ترین شماره</span><b style="font-size:13px">{{ stats.most_active_label }}</b><em>{{ stats.most_active_count }} پیام</em></div>
       </div>
     </div>
 
     <div class="wa-panel" data-panel="connection">
-      <div class="wa-panel-head"><div><h2>اتصال Meta WhatsApp</h2><p>وضعیت فنی اتصال هر شماره از همین صفحه مدیریت خواهد شد.</p></div></div>
+      <div class="wa-panel-head"><div><h2>اتصال Meta WhatsApp</h2><p>هر شماره مستقل مدیریت می‌شود؛ اطلاعات محرمانه در صفحه نمایش داده نمی‌شود.</p></div></div>
       <div class="wa-connect-box">
         <h3>WhatsApp Bridge آماده است</h3>
-        <p>برای اتصال واقعی هر شماره، Phone Number ID و WABA ID ثبت می‌شود و سپس Access Token و Verify Token به‌صورت امن روی Bridge قرار می‌گیرند. Secret و Token در این صفحه نمایش داده نخواهند شد.</p>
-        <div class="wa-code">Webhook URL: در مرحله اتصال نهایی از Railway WhatsApp Bridge ثبت می‌شود.</div>
+        <p>برای اتصال واقعی هر شماره، Phone Number ID و WABA ID همان ردیف ثبت می‌شود. Access Token و Verify Token فقط به‌صورت امن در Bridge نگهداری می‌شوند. صفحه برای چند شماره و چند مرکز آماده است.</p>
+        <div class="wa-code">Bridge: Railway · Multi-number architecture ready</div>
       </div>
     </div>
   </section>
@@ -144,7 +227,7 @@
   }
   tabs.forEach(btn=>btn.addEventListener('click',()=>openTab(btn.dataset.tab)));
   const initial=(location.hash||'').replace('#','');
-  if(['inbox','numbers','analytics','connection'].includes(initial)){openTab(initial);}
+  if(['numbers','inbox','analytics','connection'].includes(initial)){openTab(initial);}
 })();
 </script>
 {% endblock %}
