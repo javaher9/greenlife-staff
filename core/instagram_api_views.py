@@ -10,6 +10,7 @@ from urllib.request import Request, urlopen
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -41,12 +42,19 @@ def _executive_required(view):
     return wrapper
 
 
+def _public_base_url(request):
+    configured=(getattr(settings,'PUBLIC_BASE_URL','') or '').strip().rstrip('/')
+    if configured:
+        return configured
+    return 'https://staff.greenlifeclinics.com'
+
+
 def _redirect_uri(request):
-    return request.build_absolute_uri(reverse('instagram_oauth_callback'))
+    return _public_base_url(request)+reverse('instagram_oauth_callback')
 
 
 def _webhook_uri(request):
-    return request.build_absolute_uri(reverse('instagram_webhook'))
+    return _public_base_url(request)+reverse('instagram_webhook')
 
 
 def _post_form(url,data,timeout=20):
@@ -70,6 +78,9 @@ def instagram_settings(request):
     if request.method=='POST':
         app_id=(request.POST.get('app_id') or '').strip()
         app_secret=(request.POST.get('app_secret') or '').strip()
+        if not app_id.isdigit():
+            messages.error(request,'App ID باید فقط شناسه عددی Meta باشد؛ آدرس سایت یا URL وارد نکنید.')
+            return redirect('instagram_settings')
         config.app_id=app_id
         if app_secret:
             config.app_secret_cipher=encrypt_secret(app_secret)
