@@ -1908,13 +1908,25 @@ class WhatsAppNumber(models.Model):
         ('disconnected','قطع'),
         ('error','خطا'),
     ]
+    TYPE_CHOICES=[
+        ('call_center','کال‌سنتر'),
+        ('branch','مرکز / شعبه'),
+        ('turkey','ترکیه'),
+        ('management','مدیریت'),
+        ('other','سایر'),
+    ]
     label=models.CharField(max_length=100)
     phone_number=models.CharField(max_length=32,db_index=True)
     display_name=models.CharField(max_length=120,blank=True)
     phone_number_id=models.CharField(max_length=120,null=True,blank=True,unique=True)
     business_account_id=models.CharField(max_length=120,blank=True,db_index=True)
+    number_type=models.CharField(max_length=20,choices=TYPE_CHOICES,default='branch',db_index=True)
     branch=models.ForeignKey(
         Branch,on_delete=models.SET_NULL,null=True,blank=True,
+        related_name='whatsapp_numbers',
+    )
+    responsible=models.ForeignKey(
+        EmployeeProfile,on_delete=models.SET_NULL,null=True,blank=True,
         related_name='whatsapp_numbers',
     )
     connection_status=models.CharField(
@@ -1939,6 +1951,12 @@ class WhatsAppNumber(models.Model):
 
 class WhatsAppMessage(models.Model):
     DIRECTION_CHOICES=[('inbound','ورودی'),('outbound','خروجی')]
+    OUTBOUND_MODE_CHOICES=[
+        ('manual','دستی'),
+        ('automation','اتوماتیک'),
+        ('ai','AI'),
+        ('system','سیستمی'),
+    ]
     STATUS_CHOICES=[
         ('received','دریافت شد'),
         ('queued','در صف'),
@@ -1954,6 +1972,7 @@ class WhatsAppMessage(models.Model):
     contact_phone=models.CharField(max_length=32,db_index=True)
     contact_name=models.CharField(max_length=140,blank=True)
     direction=models.CharField(max_length=12,choices=DIRECTION_CHOICES,db_index=True)
+    outbound_mode=models.CharField(max_length=12,choices=OUTBOUND_MODE_CHOICES,blank=True,db_index=True)
     message_type=models.CharField(max_length=32,default='text')
     body=models.TextField(blank=True)
     status=models.CharField(max_length=20,choices=STATUS_CHOICES,default='received',db_index=True)
