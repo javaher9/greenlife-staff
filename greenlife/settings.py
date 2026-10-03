@@ -22,6 +22,10 @@ for _host in ('staff.greenlifeclinics.com','.greenlifeclinics.com','localhost','
     if _host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(_host)
 CSRF_TRUSTED_ORIGINS = [x.strip() for x in os.getenv('CSRF_TRUSTED_ORIGINS','').split(',') if x.strip()]
+for _origin in ('https://staff.greenlifeclinics.com','https://crm.greenlifeclinics.com'):
+    if _origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_origin)
+CSRF_FAILURE_VIEW = 'core.security_views.csrf_failure'
 INSTALLED_APPS = ['django.contrib.admin','django.contrib.auth','django.contrib.contenttypes','django.contrib.sessions','django.contrib.messages','django.contrib.staticfiles','core','public_network']
 MIDDLEWARE = ['django.middleware.security.SecurityMiddleware','whitenoise.middleware.WhiteNoiseMiddleware','django.contrib.sessions.middleware.SessionMiddleware','django.middleware.common.CommonMiddleware','django.middleware.csrf.CsrfViewMiddleware','django.contrib.auth.middleware.AuthenticationMiddleware',
     'core.language_workspace.StaffLanguageMiddleware','core.country_workspace.CountryWorkspaceMiddleware','core.localized_response.StaticUiLocalizationMiddleware','core.call_center_views.CallCenterCallTrackingMiddleware','public_network.middleware.PublicNetworkMemberMiddleware','core.audit.AuditLogMiddleware','django.contrib.messages.middleware.MessageMiddleware','django.middleware.clickjacking.XFrameOptionsMiddleware']
