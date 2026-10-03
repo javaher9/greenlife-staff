@@ -29,6 +29,7 @@ INSTAGRAM_OAUTH_URL='https://www.instagram.com/oauth/authorize'
 INSTAGRAM_TOKEN_URL='https://api.instagram.com/oauth/access_token'
 INSTAGRAM_GRAPH_BASE='https://graph.instagram.com'
 INSTAGRAM_BRIDGE_BASE='https://instagram-bridge-production-e356.up.railway.app'
+# Railway bridge is the production Meta egress path.
 INSTAGRAM_SCOPES=(
     'instagram_business_basic',
     'instagram_business_manage_messages',
