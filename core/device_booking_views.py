@@ -547,15 +547,26 @@ def device_booking_schedule(request):
             'off_count':off_count,
         })
 
+    # Patient picker: do not hide patients merely because their package is still
+    # being finalized. The booking POST guard remains strict, but consultants
+    # can always find/select the patient and see the package state.
     plans=(
-        ConsultationPlan.objects.filter(appointment__branch=branch,
-            status__in=('finalized','payment_pending','partial_paid','paid'))
-        .select_related('appointment').order_by('-updated_at')[:75]
+        ConsultationPlan.objects.filter(appointment__branch=branch)
+        .exclude(status='no_sale')
+        .select_related('appointment')
+        .order_by('-updated_at','-id')[:300]
     )
+    bookable_plan_statuses=('finalized','payment_pending','partial_paid','paid')
+    plan_ready=bool(plan and plan.status in bookable_plan_statuses)
+    previous_day=day-timedelta(days=1)
+    next_day=day+timedelta(days=1)
     return render(request,'core/device_booking_schedule.html',{
         'branch':branch,'day':day,'day_jalali':format_jalali(day),
-        'appointment':appointment,'plan':plan,
-        'items':plan.items.filter(kind='device',included=True) if plan else [],
+        'previous_day_jalali':format_jalali(previous_day),
+        'next_day_jalali':format_jalali(next_day),
+        'today_jalali':format_jalali(timezone.localdate()),
+        'appointment':appointment,'plan':plan,'plan_ready':plan_ready,
+        'items':plan.items.filter(kind='device',included=True) if plan_ready else [],
         'plans':plans,'bookings':booking_list,
         'devices':device_lines,'device_lines':device_lines,
         'device_cards':device_cards,
