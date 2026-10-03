@@ -15,6 +15,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.html import escape
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods
 
@@ -122,7 +123,19 @@ def instagram_oauth_start(request):
         'state':state,
         'force_reauth':'true',
     }
-    return redirect(INSTAGRAM_OAUTH_URL+'?'+urlencode(query))
+    auth_url=INSTAGRAM_OAUTH_URL+'?'+urlencode(query)
+    # Some reverse-proxy stacks rewrite external Location headers. Return a tiny
+    # navigation document so the browser itself performs the absolute jump to Instagram.
+    safe_url=escape(auth_url, quote=True)
+    script_url=json.dumps(auth_url)
+    return HttpResponse(
+        '<!doctype html><html><head><meta charset="utf-8">'
+        f'<meta http-equiv="refresh" content="0;url={safe_url}">'
+        '<title>Instagram Login</title></head><body>'
+        f'<p><a href="{safe_url}" rel="noreferrer">Continue to Instagram</a></p>'
+        f'<script>window.location.replace({script_url});</script>'
+        '</body></html>'
+    )
 
 
 @require_GET
