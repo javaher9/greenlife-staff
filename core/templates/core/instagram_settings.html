@@ -1,0 +1,55 @@
+{% extends "core/base.html" %}
+{% block content %}
+<style>
+.ig-wrap{max-width:920px;margin:24px auto;padding:0 14px}
+.ig-card{background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:22px;margin-bottom:16px;box-shadow:0 10px 30px rgba(15,23,42,.06);color:#1f2937}
+.ig-title{font-size:22px;font-weight:900;margin:0 0 6px}.ig-sub{color:#64748b;margin:0 0 18px}
+.ig-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.ig-field label{display:block;font-weight:800;margin-bottom:6px}
+.ig-field input{width:100%;box-sizing:border-box;border:1px solid #dbe2ea;border-radius:12px;padding:11px 12px;font-family:inherit;background:#fff;color:#111827}
+.ig-code{direction:ltr;text-align:left;background:#f8fafc;border:1px solid #e2e8f0;padding:10px 12px;border-radius:12px;overflow:auto;font:700 12px/1.7 monospace}
+.ig-btn{display:inline-block;border:0;border-radius:12px;padding:11px 16px;font-weight:900;text-decoration:none;cursor:pointer;background:#15945f;color:#fff}
+.ig-btn.secondary{background:#334155}.ig-status{display:flex;gap:8px;align-items:center;font-weight:800;margin-top:12px}.dot{width:10px;height:10px;border-radius:50%;background:#94a3b8}.dot.ok{background:#16a34a}
+.ig-note{font-size:13px;color:#64748b;line-height:1.9}.ig-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+@media(max-width:700px){.ig-grid{grid-template-columns:1fr}}
+</style>
+<div class="ig-wrap">
+  <div class="ig-card">
+    <h1 class="ig-title">Instagram AI — Green Life</h1>
+    <p class="ig-sub">اتصال رسمی Meta به Staff App؛ Secret و Access Token به‌صورت رمزنگاری‌شده ذخیره می‌شوند.</p>
+    <div class="ig-status"><span class="dot {% if config.is_connected %}ok{% endif %}"></span>
+      {% if config.is_connected %}متصل به @{{ config.username|default:"Instagram" }}{% else %}هنوز به اکانت Instagram متصل نشده{% endif %}
+    </div>
+  </div>
+
+  <div class="ig-card">
+    <form method="post">{% csrf_token %}
+      <div class="ig-grid">
+        <div class="ig-field">
+          <label>Instagram App ID</label>
+          <input name="app_id" value="{{ config.app_id }}" autocomplete="off" required>
+        </div>
+        <div class="ig-field">
+          <label>Instagram App Secret</label>
+          <input name="app_secret" type="password" placeholder="{% if has_app_secret %}ذخیره شده؛ فقط برای تغییر دوباره وارد کنید{% else %}App Secret را وارد کنید{% endif %}" autocomplete="new-password">
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-weight:800">
+        <input type="checkbox" name="is_enabled" {% if config.is_enabled %}checked{% endif %}> اتصال فعال باشد
+      </label>
+      <div class="ig-actions">
+        <button class="ig-btn" type="submit">ذخیره امن تنظیمات</button>
+        {% if config.is_configured %}<a class="ig-btn secondary" href="{% url 'instagram_oauth_start' %}">اتصال / ورود با Instagram</a>{% endif %}
+      </div>
+    </form>
+  </div>
+
+  <div class="ig-card">
+    <h2 style="margin-top:0">آدرس‌هایی که در Meta وارد می‌شوند</h2>
+    <p class="ig-note">OAuth Redirect URL</p>
+    <div class="ig-code">{{ redirect_uri }}</div>
+    <p class="ig-note" style="margin-top:14px">Webhook Callback URL</p>
+    <div class="ig-code">{{ webhook_uri }}</div>
+    <p class="ig-note">Verify Token داخل Staff App ساخته و رمزنگاری شده و در صفحه عمومی نمایش داده نمی‌شود.</p>
+  </div>
+</div>
+{% endblock %}
