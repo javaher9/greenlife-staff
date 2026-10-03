@@ -10,14 +10,12 @@ from urllib.request import Request, urlopen
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.core import signing
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import escape
-from html import escape as html_escape
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods
 
@@ -30,8 +28,7 @@ from .views import _is_executive_user
 INSTAGRAM_OAUTH_URL='https://www.instagram.com/oauth/authorize'
 INSTAGRAM_TOKEN_URL='https://api.instagram.com/oauth/access_token'
 INSTAGRAM_GRAPH_BASE='https://graph.instagram.com'
-INSTAGRAM_BRIDGE_BASE='https://instagram-bridge-v2-production.up.railway.app'
-# Railway bridge is the production Meta egress path.
+INSTAGRAM_BRIDGE_BASE='https://instagram-bridge-production-e356.up.railway.app'
 INSTAGRAM_SCOPES=(
     'instagram_business_basic',
     'instagram_business_manage_messages',
@@ -185,85 +182,87 @@ def instagram_oauth_callback(request):
     if not config.app_id or not app_secret:
         return HttpResponse('Instagram app credentials are not configured.',status=503)
 
-    completion_token=signing.dumps(
-        {'state':str(state),'app_id':str(config.app_id)},
-        salt='instagram-oauth-completion',
-        compress=True,
-    )
-    completion_url=_public_base_url(request)+reverse('instagram_oauth_complete')
-    relay_url=INSTAGRAM_BRIDGE_BASE+'/meta/oauth-browser'
-
-    fields={
-        'app_id':str(config.app_id),
-        'app_secret':app_secret,
-        'redirect_uri':_redirect_uri(request),
-        'code':code,
-        'completion_token':completion_token,
-        'completion_url':completion_url,
-    }
-    inputs=''.join(
-        f'<input type="hidden" name="{html_escape(str(k), quote=True)}" value="{html_escape(str(v), quote=True)}">'
-        for k,v in fields.items()
-    )
-    safe_action=html_escape(relay_url, quote=True)
-    response=HttpResponse(
-        '<!doctype html><html><head><meta charset="utf-8">'
-        '<meta name="robots" content="noindex,nofollow">'
-        '<title>Connecting Instagram</title></head><body>'
-        '<p>Connecting Instagram…</p>'
-        f'<form id="ig-relay" method="post" action="{safe_action}">{inputs}</form>'
-        '<script>document.getElementById("ig-relay").submit();</script>'
-        '</body></html>'
-    )
-    response['Cache-Control']='no-store, private'
-    response['Pragma']='no-cache'
-    return response
-
-
-@csrf_exempt
-@require_http_methods(['POST'])
-def instagram_oauth_complete(request):
     try:
-        payload=json.loads((request.body or b'{}').decode('utf-8'))
-    except (UnicodeDecodeError,json.JSONDecodeError):
-        return JsonResponse({'ok':False,'error':'invalid_json'},status=400)
+        bridge=_post_json(INSTAGRAM_BRIDGE_BASE+'/meta/oauth-complete',{
+            'app_id':config.app_id,
+            'app_secret':app_secret,
+            'redirect_uri':_redirect_uri(request),
+            'code':code,
+        })
+        if not bridge.get('ok'):
+            raise ValueError('Instagram bridge did not complete OAuth.')
 
-    completion_token=str(payload.get('completion_token') or '')
-    try:
-        signed=signing.loads(
-            completion_token,
-            salt='instagram-oauth-completion',
-            max_age=600,
+        token=str(bridge.get('access_token') or '')
+        user_id=str(bridge.get('user_id') or '')
+        username=str(bridge.get('username') or '')
+        expires_in=int(bridge.get('expires_in') or 0)
+        if not token:
+            raise ValueError('Instagram bridge did not return an access token.')
+
+        config.access_token_cipher=encrypt_secret(token)
+        config.instagram_user_id=user_id
+        config.username=username
+        config.token_expires_at=timezone.now()+timedelta(seconds=expires_in) if expires_in else None
+        config.connected_at=timezone.now()
+        config.is_enabled=True
+        config.save(update_fields=[
+            'access_token_cipher','instagram_user_id','username','token_expires_at',
+            'connected_at','is_enabled','updated_at',
+        ])
+    except HTTPError as exc:
+        detail=''
+        try:
+            raw=exc.read().decode('utf-8','replace')
+            parsed=json.loads(raw or '{}')
+            error=parsed.get('error') if isinstance(parsed,dict) else None
+            if isinstance(error,dict):
+                detail=str(error.get('message') or error.get('error_user_msg') or error)
+                code=error.get('code')
+                error_type=error.get('type')
+                extras=[]
+                if error_type:
+                    extras.append(str(error_type))
+                if code is not None:
+                    extras.append(f'code {code}')
+                if extras:
+                    detail += ' ('+', '.join(extras)+')'
+            elif isinstance(parsed,dict):
+                detail=str(parsed.get('error_message') or parsed.get('message') or raw)
+            else:
+                detail=raw
+        except Exception:
+            detail=str(exc)
+        return HttpResponse(
+            'Instagram token exchange failed: '+(detail or f'HTTP {getattr(exc,"code","error")}'),
+            status=502,
         )
-    except signing.BadSignature:
-        return JsonResponse({'ok':False,'error':'invalid_completion_token'},status=403)
+    except URLError as exc:
+        reason=getattr(exc,'reason',None)
+        detail=repr(reason) if reason is not None else repr(exc)
+        return HttpResponse(
+            f'Instagram token exchange failed [network]: {detail}',
+            status=502,
+        )
+    except TimeoutError as exc:
+        return HttpResponse(
+            f'Instagram token exchange failed [timeout]: {repr(exc)}',
+            status=502,
+        )
+    except (ValueError,KeyError,json.JSONDecodeError) as exc:
+        return HttpResponse(
+            f'Instagram token exchange failed [response]: {repr(exc)}',
+            status=502,
+        )
+    except Exception as exc:
+        return HttpResponse(
+            f'Instagram token exchange failed [{type(exc).__name__}]: {repr(exc)}',
+            status=502,
+        )
 
-    config=InstagramIntegrationSettings.load()
-    if str(signed.get('app_id') or '') != str(config.app_id or ''):
-        return JsonResponse({'ok':False,'error':'app_mismatch'},status=403)
-
-    token=str(payload.get('access_token') or '')
-    if not token:
-        return JsonResponse({'ok':False,'error':'missing_access_token'},status=400)
-
-    user_id=str(payload.get('user_id') or '')
-    username=str(payload.get('username') or '')
-    try:
-        expires_in=int(payload.get('expires_in') or 0)
-    except (TypeError,ValueError):
-        expires_in=0
-
-    config.access_token_cipher=encrypt_secret(token)
-    config.instagram_user_id=user_id
-    config.username=username
-    config.token_expires_at=timezone.now()+timedelta(seconds=expires_in) if expires_in else None
-    config.connected_at=timezone.now()
-    config.is_enabled=True
-    config.save(update_fields=[
-        'access_token_cipher','instagram_user_id','username','token_expires_at',
-        'connected_at','is_enabled','updated_at',
-    ])
-    return JsonResponse({'ok':True,'username':username},status=200)
+    if request.user.is_authenticated:
+        messages.success(request,f'Instagram @{config.username or "account"} با موفقیت متصل شد.')
+        return redirect('instagram_settings')
+    return HttpResponse('Instagram connected successfully. You may close this page.')
 
 
 @csrf_exempt
