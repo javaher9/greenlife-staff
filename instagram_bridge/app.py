@@ -135,10 +135,10 @@ def oauth_browser():
     app_secret = str(request.form.get("app_secret") or "").strip()
     app_id = str(request.form.get("app_id") or INSTAGRAM_APP_ID).strip()
     redirect_uri = str(request.form.get("redirect_uri") or ALLOWED_REDIRECT_URI).strip()
-    completion_state = str(request.form.get("completion_state") or "").strip()
+    completion_token = str(request.form.get("completion_token") or "").strip()
     completion_url = str(request.form.get("completion_url") or "").strip()
 
-    if not code or not app_secret or not completion_state or not completion_url:
+    if not code or not app_secret or not completion_token or not completion_url:
         return jsonify({"error": "missing oauth relay fields"}), 400
     if app_id != INSTAGRAM_APP_ID:
         return jsonify({"error": "app_id not allowed"}), 400
@@ -208,17 +208,32 @@ def oauth_browser():
     except requests.RequestException:
         pass
 
-    fragment = urlencode({
-        "state": completion_state,
-        "access_token": token,
-        "user_id": user_id,
-        "username": username,
-        "expires_in": str(expires_in),
-    })
+    try:
+        complete = requests.post(
+            completion_url,
+            json={
+                "completion_token": completion_token,
+                "access_token": token,
+                "user_id": user_id,
+                "username": username,
+                "expires_in": expires_in,
+            },
+            timeout=20,
+        )
+    except requests.RequestException as exc:
+        return jsonify({"error": "staff_completion_network_error", "detail": f"{type(exc).__name__}: {exc}"}), 502
+
+    if not complete.ok:
+        try:
+            detail = complete.json()
+        except ValueError:
+            detail = complete.text[:2000]
+        return jsonify({"error": "staff_completion_error", "status": complete.status_code, "detail": detail}), 502
+
     return Response(
         status=302,
         headers={
-            "Location": completion_url + "#" + fragment,
+            "Location": "https://staff.greenlifeclinics.com/settings/instagram-ai/?connected=1",
             "Cache-Control": "no-store",
         },
     )
