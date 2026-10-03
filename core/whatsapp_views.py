@@ -2,8 +2,10 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Max, Q
+from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from datetime import timedelta
 from django.views.decorators.http import require_http_methods
 
 from .models import Branch, EmployeeProfile, WhatsAppMessage, WhatsAppNumber
@@ -155,6 +157,73 @@ def whatsapp_hub(request):
         .order_by('-created_at')[:30]
     )
 
+    # 30-day activity chart. Total activity includes every inbound/outbound
+    # message regardless of whether the reply was manual, automation, or AI.
+    chart_days=30
+    chart_start=today-timedelta(days=chart_days-1)
+    chart_dates=[chart_start+timedelta(days=offset) for offset in range(chart_days)]
+    chart_palette=[
+        '#36e6a5','#aa78ff','#2aa8ff','#ffc43d','#ff5eb7',
+        '#35d4f4','#ff8a34','#ff5d68','#8f9dff','#67e3d4',
+    ]
+
+    period_counts={
+        row['whatsapp_number_id']:row['total']
+        for row in (
+            WhatsAppMessage.objects
+            .filter(created_at__date__gte=chart_start,created_at__date__lte=today)
+            .values('whatsapp_number_id')
+            .annotate(total=Count('id'))
+        )
+    }
+    chart_numbers=sorted(
+        numbers,
+        key=lambda item:(period_counts.get(item.id,0),item.today_messages,item.id),
+        reverse=True,
+    )[:10]
+    chart_number_ids=[item.id for item in chart_numbers]
+
+    by_number_day={}
+    if chart_number_ids:
+        grouped=(
+            WhatsAppMessage.objects
+            .filter(
+                whatsapp_number_id__in=chart_number_ids,
+                created_at__date__gte=chart_start,
+                created_at__date__lte=today,
+            )
+            .annotate(day=TruncDate('created_at',tzinfo=timezone.get_current_timezone()))
+            .values('whatsapp_number_id','day')
+            .annotate(total=Count('id'))
+        )
+        for row in grouped:
+            by_number_day[(row['whatsapp_number_id'],row['day'])]=row['total']
+
+    chart_series=[]
+    for index,item in enumerate(chart_numbers):
+        chart_series.append({
+            'id':item.id,
+            'label':item.label,
+            'phone':item.phone_number,
+            'color':chart_palette[index % len(chart_palette)],
+            'values':[by_number_day.get((item.id,day),0) for day in chart_dates],
+            'total':period_counts.get(item.id,0),
+        })
+
+    persian_months=[
+        'ژانویه','فوریه','مارس','آوریل','مه','ژوئن',
+        'ژوئیه','اوت','سپتامبر','اکتبر','نوامبر','دسامبر',
+    ]
+    chart_labels=[
+        f'{day.day} {persian_months[day.month-1]}'
+        for day in chart_dates
+    ]
+    chart_data={
+        'labels':chart_labels,
+        'series':chart_series,
+        'days':chart_days,
+    }
+
     most_active=max(numbers,key=lambda item:item.today_messages,default=None)
     stats={
         'total_numbers':len(numbers),
@@ -183,6 +252,7 @@ def whatsapp_hub(request):
         ).select_related('user','branch').order_by('user__first_name','user__last_name','user__username'),
         'number_types':WhatsAppNumber.TYPE_CHOICES,
         'stats':stats,
+        'chart_data':chart_data,
     })
     response['Cache-Control']='no-store, private'
     return response
