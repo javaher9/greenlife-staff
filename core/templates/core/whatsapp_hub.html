@@ -1,0 +1,150 @@
+{% extends "core/base.html" %}
+{% block content %}
+<style>
+.wa-page{max-width:1240px;margin:22px auto 40px;padding:0 16px;color:#17352d}
+.wa-hero{position:relative;overflow:hidden;background:linear-gradient(135deg,#e9f8f1 0%,#fbfffd 58%,#eef6ff 100%);border:1px solid #dbe9e3;border-radius:26px;padding:24px 26px;box-shadow:0 16px 38px rgba(37,78,66,.07);margin-bottom:16px}
+.wa-hero:after{content:"";position:absolute;left:-60px;top:-85px;width:210px;height:210px;border-radius:50%;background:rgba(31,168,108,.08)}
+.wa-kicker{font-size:11px;font-weight:900;color:#2c8062;letter-spacing:.35px;margin-bottom:5px}
+.wa-hero h1{margin:0;font-size:28px;line-height:1.35;color:#173d34}.wa-hero p{margin:7px 0 0;color:#617a72;font-size:13px}
+.wa-live{position:absolute;left:24px;top:24px;display:flex;align-items:center;gap:7px;background:#fff;border:1px solid #dce9e4;border-radius:999px;padding:7px 11px;font-size:11px;font-weight:900;color:#45665d}
+.wa-live i{width:8px;height:8px;background:#16a36a;border-radius:50%;box-shadow:0 0 0 4px rgba(22,163,106,.11)}
+.wa-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:15px}
+.wa-stat{background:#fff;border:1px solid #e1ebe7;border-radius:17px;padding:15px 16px;box-shadow:0 8px 22px rgba(41,74,64,.045)}
+.wa-stat span{display:block;color:#7a8f89;font-size:10px;font-weight:800;margin-bottom:7px}.wa-stat b{font-size:24px;color:#1c4439}.wa-stat small{display:block;margin-top:4px;color:#91a19c;font-size:9px}
+.wa-shell{background:#fff;border:1px solid #dfe9e5;border-radius:22px;box-shadow:0 12px 32px rgba(35,71,61,.055);overflow:hidden}
+.wa-tabs{display:flex;gap:6px;padding:10px;background:#f6faf8;border-bottom:1px solid #e3ece8;overflow:auto}
+.wa-tab{border:0;background:transparent;border-radius:11px;padding:10px 15px;font-family:inherit;font-size:11px;font-weight:900;color:#6a8079;cursor:pointer;white-space:nowrap}
+.wa-tab.active{background:#173f34;color:#fff;box-shadow:0 6px 16px rgba(23,63,52,.14)}
+.wa-panel{display:none;padding:18px}.wa-panel.active{display:block}
+.wa-panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}.wa-panel-head h2{margin:0;color:#173d34;font-size:17px}.wa-panel-head p{margin:4px 0 0;color:#81948e;font-size:10px}
+.wa-table-wrap{overflow:auto;border:1px solid #e5edea;border-radius:15px}.wa-table{width:100%;border-collapse:collapse;min-width:790px}.wa-table th,.wa-table td{text-align:right;padding:12px 13px;border-bottom:1px solid #edf2f0;font-size:11px}.wa-table th{background:#f8fbfa;color:#6b817b;font-size:9px;font-weight:900}.wa-table tr:last-child td{border-bottom:0}.wa-number-main{display:flex;align-items:center;gap:10px}.wa-number-icon{width:34px;height:34px;border-radius:11px;background:#e8f7f0;display:grid;place-items:center;color:#17805b;font-weight:950}.wa-number-main strong{display:block;color:#203f37}.wa-number-main small{color:#8b9c97;direction:ltr;display:block;text-align:right}
+.wa-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;font-size:9px;font-weight:900;border:1px solid transparent}.wa-badge:before{content:"";width:6px;height:6px;border-radius:50%}.wa-connected{background:#ebf8f2;color:#177652;border-color:#d0ebdf}.wa-connected:before{background:#19a46d}.wa-pending{background:#fff7e8;color:#9a681a;border-color:#f4e3bd}.wa-pending:before{background:#d89b32}.wa-disconnected,.wa-error{background:#fff0f1;color:#9e4852;border-color:#f0d3d6}.wa-disconnected:before,.wa-error:before{background:#c95f69}
+.wa-btn{border:0;border-radius:11px;padding:9px 12px;background:#17805b;color:#fff;font:900 10px/1.2 inherit;cursor:pointer}.wa-btn.ghost{background:#eef5f2;color:#315d50}.wa-btn.dark{background:#233d36}.wa-btn:disabled{opacity:.45;cursor:not-allowed}
+.wa-empty{border:1px dashed #d5e2dd;border-radius:17px;padding:34px 18px;text-align:center;background:#fbfdfc;color:#758b84}.wa-empty .ico{width:46px;height:46px;margin:0 auto 10px;border-radius:15px;background:#eaf7f1;display:grid;place-items:center;font-size:20px}.wa-empty strong{display:block;color:#34584d;margin-bottom:5px}
+.wa-add{margin-top:16px;padding:16px;background:#f8fbfa;border:1px solid #e2ebe7;border-radius:17px}.wa-add h3{margin:0 0 12px;font-size:13px;color:#284c42}.wa-form-grid{display:grid;grid-template-columns:1.2fr 1.2fr 1fr 1fr 1fr auto;gap:9px;align-items:end}.wa-field label{display:block;font-size:9px;font-weight:900;color:#70857f;margin-bottom:5px}.wa-field input,.wa-field select{width:100%;box-sizing:border-box;height:39px;border:1px solid #d9e5e0;border-radius:10px;background:#fff;color:#29473f;padding:0 9px;font:700 10px/1.2 inherit;outline:none}.wa-field input:focus,.wa-field select:focus{border-color:#73b79d;box-shadow:0 0 0 3px rgba(55,151,112,.08)}
+.wa-inbox-grid{display:grid;grid-template-columns:310px 1fr;min-height:430px;border:1px solid #e4ece9;border-radius:16px;overflow:hidden}.wa-thread-list{border-left:1px solid #e7efec;background:#fbfdfc}.wa-search{padding:11px;border-bottom:1px solid #e8efed}.wa-search input{width:100%;box-sizing:border-box;border:1px solid #dfe8e5;background:#fff;border-radius:10px;padding:9px 10px;font:700 10px inherit}.wa-thread{padding:12px;border-bottom:1px solid #edf2f0}.wa-thread strong{display:block;font-size:11px}.wa-thread small{display:block;color:#879994;font-size:9px;margin-top:4px}.wa-chat-empty{display:grid;place-items:center;text-align:center;color:#83958f;padding:30px}.wa-chat-empty b{display:block;color:#3a5f54;margin-bottom:5px}
+.wa-analytics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}.wa-analytic{padding:16px;border:1px solid #e2ebe8;border-radius:15px;background:#fbfdfc}.wa-analytic span{display:block;color:#80928c;font-size:9px;font-weight:850}.wa-analytic b{display:block;font-size:21px;color:#24483e;margin-top:7px}.wa-connect-box{border:1px solid #dfe9e5;background:#f9fcfb;border-radius:16px;padding:17px}.wa-connect-box h3{margin:0 0 7px;font-size:14px}.wa-connect-box p{color:#728780;font-size:11px;line-height:1.9;margin:0}.wa-code{direction:ltr;text-align:left;background:#17342d;color:#dff4eb;border-radius:11px;padding:10px 12px;font:700 10px/1.7 monospace;margin-top:12px;overflow:auto}
+@media(max-width:1000px){.wa-form-grid{grid-template-columns:1fr 1fr 1fr}.wa-inbox-grid{grid-template-columns:260px 1fr}}
+@media(max-width:720px){.wa-page{padding:0 10px;margin-top:12px}.wa-hero{padding:19px 17px}.wa-hero h1{font-size:22px}.wa-live{position:static;width:max-content;margin-top:13px}.wa-stats{grid-template-columns:1fr 1fr}.wa-stat b{font-size:20px}.wa-panel{padding:12px}.wa-form-grid{grid-template-columns:1fr}.wa-inbox-grid{grid-template-columns:1fr}.wa-thread-list{border-left:0}.wa-chat-empty{display:none}.wa-analytics{grid-template-columns:1fr 1fr}}
+</style>
+
+<div class="wa-page">
+  <section class="wa-hero">
+    <div class="wa-kicker">GREEN LIFE · WHATSAPP HUB</div>
+    <h1>مرکز مدیریت واتساپ</h1>
+    <p>مدیریت چند شماره، پیام‌ها، اتصال‌ها و آمار در یک صفحه؛ آماده برای ۱۰ شماره و بیشتر.</p>
+    <div class="wa-live"><i></i> WhatsApp Bridge آماده است</div>
+  </section>
+
+  <section class="wa-stats">
+    <div class="wa-stat"><span>شماره‌های ثبت‌شده</span><b>{{ stats.total_numbers }}</b><small>همه شماره‌های واتساپ</small></div>
+    <div class="wa-stat"><span>شماره‌های متصل</span><b>{{ stats.connected_numbers }}</b><small>اتصال فعال Meta</small></div>
+    <div class="wa-stat"><span>پیام‌های امروز</span><b>{{ stats.today_messages }}</b><small>ورودی و خروجی</small></div>
+    <div class="wa-stat"><span>خوانده‌نشده</span><b>{{ stats.unread_messages }}</b><small>پیام ورودی جدید</small></div>
+  </section>
+
+  <section class="wa-shell">
+    <div class="wa-tabs">
+      <button class="wa-tab active" type="button" data-tab="inbox">صندوق پیام‌ها</button>
+      <button class="wa-tab" type="button" data-tab="numbers">شماره‌ها</button>
+      <button class="wa-tab" type="button" data-tab="analytics">آمار</button>
+      <button class="wa-tab" type="button" data-tab="connection">اتصال Meta</button>
+    </div>
+
+    <div class="wa-panel active" data-panel="inbox">
+      <div class="wa-panel-head"><div><h2>صندوق پیام‌ها</h2><p>همه گفتگوها؛ بعداً با فیلتر شماره، مرکز و اپراتور.</p></div></div>
+      {% if recent_messages %}
+      <div class="wa-inbox-grid">
+        <div class="wa-thread-list">
+          <div class="wa-search"><input placeholder="جست‌وجوی شماره یا نام..." disabled></div>
+          {% for msg in recent_messages %}
+          <div class="wa-thread">
+            <strong>{{ msg.contact_name|default:msg.contact_phone }}</strong>
+            <small>{{ msg.whatsapp_number.label }} · {{ msg.body|default:"پیام غیرمتنی"|truncatechars:45 }}</small>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="wa-chat-empty"><div><b>یک گفتگو را انتخاب کنید</b><span>نمایش کامل پیام‌ها و پاسخ اپراتور در مرحله اتصال فعال می‌شود.</span></div></div>
+      </div>
+      {% else %}
+      <div class="wa-empty"><div class="ico">◔</div><strong>هنوز پیامی ثبت نشده</strong><span>بعد از اتصال اولین شماره، پیام‌های ورودی و خروجی اینجا دیده می‌شوند.</span></div>
+      {% endif %}
+    </div>
+
+    <div class="wa-panel" data-panel="numbers">
+      <div class="wa-panel-head"><div><h2>شماره‌های واتساپ</h2><p>هر شماره می‌تواند به یک شعبه یا کاربرد جدا متصل باشد.</p></div></div>
+      {% if numbers %}
+      <div class="wa-table-wrap">
+        <table class="wa-table">
+          <thead><tr><th>شماره</th><th>مرکز</th><th>وضعیت</th><th>پیام امروز</th><th>خوانده‌نشده</th><th>آخرین فعالیت</th><th>فعال</th></tr></thead>
+          <tbody>
+            {% for item in numbers %}
+            <tr>
+              <td><div class="wa-number-main"><span class="wa-number-icon">WA</span><div><strong>{{ item.label }}</strong><small>{{ item.phone_number }}</small></div></div></td>
+              <td>{{ item.branch.name|default:"—" }}</td>
+              <td><span class="wa-badge wa-{{ item.connection_status }}">{{ item.get_connection_status_display }}</span></td>
+              <td>{{ item.today_messages }}</td>
+              <td>{{ item.unread_messages }}</td>
+              <td>{% if item.last_webhook_at %}{{ item.last_webhook_at|date:"Y/m/d H:i" }}{% else %}—{% endif %}</td>
+              <td>
+                <form method="post" style="margin:0">{% csrf_token %}<input type="hidden" name="action" value="toggle_active"><input type="hidden" name="number_id" value="{{ item.id }}"><button class="wa-btn ghost" type="submit">{% if item.is_active %}فعال{% else %}غیرفعال{% endif %}</button></form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="wa-empty"><div class="ico">＋</div><strong>هنوز شماره‌ای اضافه نشده</strong><span>اولین شماره را از فرم پایین اضافه کنید؛ اتصال Meta در مرحله بعد انجام می‌شود.</span></div>
+      {% endif %}
+
+      <form class="wa-add" method="post">
+        {% csrf_token %}<input type="hidden" name="action" value="add_number">
+        <h3>افزودن شماره جدید</h3>
+        <div class="wa-form-grid">
+          <div class="wa-field"><label>نام / کاربرد</label><input name="label" placeholder="مثلاً نیاوران" required></div>
+          <div class="wa-field"><label>شماره واتساپ</label><input name="phone_number" dir="ltr" placeholder="+98..." required></div>
+          <div class="wa-field"><label>شعبه</label><select name="branch_id"><option value="">بدون شعبه</option>{% for branch in branches %}<option value="{{ branch.id }}">{{ branch.name }}</option>{% endfor %}</select></div>
+          <div class="wa-field"><label>Phone Number ID</label><input name="phone_number_id" dir="ltr" placeholder="اختیاری"></div>
+          <div class="wa-field"><label>WABA ID</label><input name="business_account_id" dir="ltr" placeholder="اختیاری"></div>
+          <button class="wa-btn" type="submit">افزودن شماره</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="wa-panel" data-panel="analytics">
+      <div class="wa-panel-head"><div><h2>آمار امروز</h2><p>اعداد به تفکیک شماره هم بعد از ورود داده نمایش داده می‌شوند.</p></div></div>
+      <div class="wa-analytics">
+        <div class="wa-analytic"><span>پیام ورودی</span><b>{{ stats.today_inbound }}</b></div>
+        <div class="wa-analytic"><span>پیام خروجی</span><b>{{ stats.today_outbound }}</b></div>
+        <div class="wa-analytic"><span>پاسخ AI</span><b>{{ stats.today_ai }}</b></div>
+        <div class="wa-analytic"><span>تحویل / خوانده شده</span><b>{{ stats.today_delivered }}</b></div>
+      </div>
+    </div>
+
+    <div class="wa-panel" data-panel="connection">
+      <div class="wa-panel-head"><div><h2>اتصال Meta WhatsApp</h2><p>وضعیت فنی اتصال هر شماره از همین صفحه مدیریت خواهد شد.</p></div></div>
+      <div class="wa-connect-box">
+        <h3>WhatsApp Bridge آماده است</h3>
+        <p>برای اتصال واقعی هر شماره، Phone Number ID و WABA ID ثبت می‌شود و سپس Access Token و Verify Token به‌صورت امن روی Bridge قرار می‌گیرند. Secret و Token در این صفحه نمایش داده نخواهند شد.</p>
+        <div class="wa-code">Webhook URL: در مرحله اتصال نهایی از Railway WhatsApp Bridge ثبت می‌شود.</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  const tabs=[...document.querySelectorAll('.wa-tab')];
+  const panels=[...document.querySelectorAll('.wa-panel')];
+  function openTab(name){
+    tabs.forEach(btn=>btn.classList.toggle('active',btn.dataset.tab===name));
+    panels.forEach(panel=>panel.classList.toggle('active',panel.dataset.panel===name));
+    try{history.replaceState(null,'','#'+name)}catch(e){}
+  }
+  tabs.forEach(btn=>btn.addEventListener('click',()=>openTab(btn.dataset.tab)));
+  const initial=(location.hash||'').replace('#','');
+  if(['inbox','numbers','analytics','connection'].includes(initial)){openTab(initial);}
+})();
+</script>
+{% endblock %}
