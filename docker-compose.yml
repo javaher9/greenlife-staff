@@ -14,6 +14,9 @@ services:
     build: .
     restart: unless-stopped
     env_file: .env
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     environment:
       # Explicit production origin fallback keeps CSRF login validation stable
       # even if an older .env does not yet contain this value.
