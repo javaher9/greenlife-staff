@@ -246,8 +246,28 @@ def instagram_oauth_callback(request):
             'Instagram token exchange failed: '+(detail or f'HTTP {getattr(exc,"code","error")}'),
             status=502,
         )
-    except (URLError,ValueError,KeyError,json.JSONDecodeError) as exc:
-        return HttpResponse(f'Instagram token exchange failed: {exc}',status=502)
+    except URLError as exc:
+        reason=getattr(exc,'reason',None)
+        detail=repr(reason) if reason is not None else repr(exc)
+        return HttpResponse(
+            f'Instagram token exchange failed [network]: {detail}',
+            status=502,
+        )
+    except TimeoutError as exc:
+        return HttpResponse(
+            f'Instagram token exchange failed [timeout]: {repr(exc)}',
+            status=502,
+        )
+    except (ValueError,KeyError,json.JSONDecodeError) as exc:
+        return HttpResponse(
+            f'Instagram token exchange failed [response]: {repr(exc)}',
+            status=502,
+        )
+    except Exception as exc:
+        return HttpResponse(
+            f'Instagram token exchange failed [{type(exc).__name__}]: {repr(exc)}',
+            status=502,
+        )
 
     if request.user.is_authenticated:
         messages.success(request,f'Instagram @{config.username or "account"} با موفقیت متصل شد.')
