@@ -182,8 +182,11 @@ def instagram_oauth_callback(request):
             'redirect_uri':_redirect_uri(request),
             'code':code,
         })
-        short_token=short.get('access_token')
-        user_id=str(short.get('user_id') or '')
+        token_payload=short
+        if not short.get('access_token') and isinstance(short.get('data'),list) and len(short['data'])==1:
+            token_payload=short['data'][0] if isinstance(short['data'][0],dict) else {}
+        short_token=token_payload.get('access_token')
+        user_id=str(token_payload.get('user_id') or token_payload.get('id') or '')
         if not short_token:
             raise ValueError('Meta did not return an access token.')
 
@@ -216,7 +219,34 @@ def instagram_oauth_callback(request):
             'access_token_cipher','instagram_user_id','username','token_expires_at',
             'connected_at','is_enabled','updated_at',
         ])
-    except (HTTPError,URLError,ValueError,KeyError,json.JSONDecodeError) as exc:
+    except HTTPError as exc:
+        detail=''
+        try:
+            raw=exc.read().decode('utf-8','replace')
+            parsed=json.loads(raw or '{}')
+            error=parsed.get('error') if isinstance(parsed,dict) else None
+            if isinstance(error,dict):
+                detail=str(error.get('message') or error.get('error_user_msg') or error)
+                code=error.get('code')
+                error_type=error.get('type')
+                extras=[]
+                if error_type:
+                    extras.append(str(error_type))
+                if code is not None:
+                    extras.append(f'code {code}')
+                if extras:
+                    detail += ' ('+', '.join(extras)+')'
+            elif isinstance(parsed,dict):
+                detail=str(parsed.get('error_message') or parsed.get('message') or raw)
+            else:
+                detail=raw
+        except Exception:
+            detail=str(exc)
+        return HttpResponse(
+            'Instagram token exchange failed: '+(detail or f'HTTP {getattr(exc,"code","error")}'),
+            status=502,
+        )
+    except (URLError,ValueError,KeyError,json.JSONDecodeError) as exc:
         return HttpResponse(f'Instagram token exchange failed: {exc}',status=502)
 
     if request.user.is_authenticated:
