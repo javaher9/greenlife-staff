@@ -122,7 +122,7 @@ jobs:
           echo "Changed files:"
           printf '%s\n' "$changed"
 
-          if printf '%s\n' "$changed" | grep -Ev '^(\.github/|scripts/|deploy/|docker-compose(\.lan)?\.yml$)' | grep -q .; then
+          if printf '%s\n' "$changed" | grep -Ev '^(\.github/|scripts/|deploy/|instagram_bridge/|docker-compose(\.lan)?\.yml$)' | grep -q .; then
             echo "APP_BUILD_REQUIRED=1" >> "$GITHUB_ENV"
             echo "Application build required."
           else
