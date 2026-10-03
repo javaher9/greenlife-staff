@@ -120,9 +120,22 @@ if [[ "$APP_BUILD_REQUIRED" == "1" ]]; then
   fi
 
   if [[ "$local_overlay_ok" == "1" ]]; then
-    echo "Dependencies and Dockerfile are unchanged; building from approved local production image without Docker Hub."
+    echo "Dependencies and Dockerfile are unchanged; preparing a squashed local base to avoid Docker layer-depth exhaustion."
+
+    squash_container="greenlife-squash-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}"
+    squash_image="greenlife-staff-squashed-base:latest"
+    docker rm -f "$squash_container" >/dev/null 2>&1 || true
+
+    docker create --name "$squash_container" greenlife-staff-rollback-web:latest >/dev/null
+    docker export "$squash_container" | docker import \
+      --change 'WORKDIR /app' \
+      --change 'ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1' \
+      --change 'ENTRYPOINT ["/app/entrypoint.sh"]' \
+      - "$squash_image" >/dev/null
+    docker rm -f "$squash_container" >/dev/null 2>&1 || true
+
     cat >"$overlay_dockerfile" <<'EOF'
-FROM greenlife-staff-rollback-web:latest
+FROM greenlife-staff-squashed-base:latest
 WORKDIR /app
 COPY . .
 RUN chmod +x /app/entrypoint.sh
