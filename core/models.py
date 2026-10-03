@@ -1900,6 +1900,85 @@ class InstagramWebhookEvent(models.Model):
         return f'Instagram webhook {self.id} - {self.status}'
 
 
+
+class WhatsAppNumber(models.Model):
+    STATUS_CHOICES=[
+        ('pending','در انتظار اتصال'),
+        ('connected','متصل'),
+        ('disconnected','قطع'),
+        ('error','خطا'),
+    ]
+    label=models.CharField(max_length=100)
+    phone_number=models.CharField(max_length=32,db_index=True)
+    display_name=models.CharField(max_length=120,blank=True)
+    phone_number_id=models.CharField(max_length=120,null=True,blank=True,unique=True)
+    business_account_id=models.CharField(max_length=120,blank=True,db_index=True)
+    branch=models.ForeignKey(
+        Branch,on_delete=models.SET_NULL,null=True,blank=True,
+        related_name='whatsapp_numbers',
+    )
+    connection_status=models.CharField(
+        max_length=20,choices=STATUS_CHOICES,default='pending',db_index=True,
+    )
+    is_active=models.BooleanField(default=True)
+    quality_rating=models.CharField(max_length=40,blank=True)
+    last_webhook_at=models.DateTimeField(null=True,blank=True)
+    last_error=models.CharField(max_length=500,blank=True)
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering=['label','id']
+        indexes=[
+            models.Index(fields=['connection_status','is_active'],name='wa_num_status_active_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.label} - {self.phone_number}'
+
+
+class WhatsAppMessage(models.Model):
+    DIRECTION_CHOICES=[('inbound','ورودی'),('outbound','خروجی')]
+    STATUS_CHOICES=[
+        ('received','دریافت شد'),
+        ('queued','در صف'),
+        ('sent','ارسال شد'),
+        ('delivered','تحویل شد'),
+        ('read','خوانده شد'),
+        ('failed','ناموفق'),
+    ]
+    whatsapp_number=models.ForeignKey(
+        WhatsAppNumber,on_delete=models.CASCADE,related_name='messages',
+    )
+    wa_message_id=models.CharField(max_length=180,null=True,blank=True,unique=True)
+    contact_phone=models.CharField(max_length=32,db_index=True)
+    contact_name=models.CharField(max_length=140,blank=True)
+    direction=models.CharField(max_length=12,choices=DIRECTION_CHOICES,db_index=True)
+    message_type=models.CharField(max_length=32,default='text')
+    body=models.TextField(blank=True)
+    status=models.CharField(max_length=20,choices=STATUS_CHOICES,default='received',db_index=True)
+    is_ai=models.BooleanField(default=False)
+    is_read_by_staff=models.BooleanField(default=False,db_index=True)
+    sent_by=models.ForeignKey(
+        User,on_delete=models.SET_NULL,null=True,blank=True,
+        related_name='sent_whatsapp_messages',
+    )
+    metadata=models.JSONField(default=dict,blank=True)
+    created_at=models.DateTimeField(auto_now_add=True,db_index=True)
+    delivered_at=models.DateTimeField(null=True,blank=True)
+    read_at=models.DateTimeField(null=True,blank=True)
+
+    class Meta:
+        ordering=['-created_at','-id']
+        indexes=[
+            models.Index(fields=['whatsapp_number','-created_at'],name='wa_msg_num_created_idx'),
+            models.Index(fields=['contact_phone','-created_at'],name='wa_msg_contact_created_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.get_direction_display()} {self.contact_phone}'
+
+
 from .device_booking_models import (
     DeviceTypeSchedule, BranchDeviceTypeStatus, DeviceCabin,
     PhysicalDevice, DeviceSessionBooking,

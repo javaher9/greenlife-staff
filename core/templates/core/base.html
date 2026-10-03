@@ -395,6 +395,9 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
       </div>
     </details>
     {% endif %}
+    {% if executive_access or user.is_superuser or user.profile.role == 'admin' %}
+    <a href="{% url 'whatsapp_hub' %}" class="{% if request.resolver_match.url_name == 'whatsapp_hub' %}is-active{% endif %}"><span class="nav-ico">◉</span><span>واتساپ</span><b class="gl-private-badge">WA</b></a>
+    {% endif %}
     {% if user.profile.role != 'referrer' and user.profile.role != 'doctor' %}
     <a href="{% url 'internal_messages' %}" class="{% if request.resolver_match.url_name == 'internal_messages' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>{% gl_t 'common.internal_messages' %}</span></a>
     {% endif %}
