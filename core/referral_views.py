@@ -706,6 +706,8 @@ def call_center_required(view):
 @call_center_required
 def call_center_dashboard(request):
     operator=request.user.profile
+    from .lead_routing import operator_policy_notice
+    routing_policy_notice=operator_policy_notice(operator)
     default_group=_default_call_center_group(operator)
     ReferralLead.objects.filter(assigned_to=operator,group__isnull=True).update(group=default_group)
     all_leads=ReferralLead.objects.filter(assigned_to=operator)
@@ -846,6 +848,7 @@ def call_center_dashboard(request):
         'recent_internal_messages':recent_internal_messages,
         'internal_unread':internal_unread,
         'chat_contacts':chat_contacts,
+        'routing_policy_notice':routing_policy_notice,
     })
 
 

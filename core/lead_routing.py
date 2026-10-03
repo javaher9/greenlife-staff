@@ -25,16 +25,29 @@ OPEN_ROUTING_STATUSES = ('new', 'contacted', 'appointment')
 # as soon as the on-duty operator is present.
 PENDING_MORNING_RELEASE_HOUR = 11
 
-# Website leads are high-value inbound requests. Keep them away from the two
-# newer operators until management changes this policy. Match both real staff
-# identities and the flower aliases used in call-center screens.
-WEBSITE_EXCLUDED_OPERATOR_IDENTITIES = (
+# Management routing policy (2026-10-03): Kamelya and Laleh must not receive
+# any new lead until further notice. Existing ownership is deliberately kept.
+# Match both real staff identities and the flower aliases used in call-center
+# screens.
+BLOCKED_OPERATOR_IDENTITIES = (
     'پریسا کلکلی', 'کلکلی', 'kolkoli', 'kalakali', 'کاملیا',
     'شیما عباسی', 'عباسی', 'abbasi', 'لاله',
 )
 
-# All active call-center operators, including Khorشیدی / Mohammad Salehi,
-# are eligible again. Attendance and channel-specific restrictions still apply.
+# Mohammad Salehi / Khorshidi receives a very small share until his recorded
+# daily calling activity reaches the management target again. 0.20 means
+# roughly one fifth of a regular operator's routing weight.
+REDUCED_OPERATOR_WEIGHT_RULES = (
+    (('محمد صالحی', 'mohammad salehi', 'mohammad-salehi', 'khorshidi', 'خورشیدی'), 0.20),
+)
+
+KHORSHIDI_POLICY_NOTICE = (
+    'به‌دلیل اینکه تعداد تماس‌های روزانه شما به ۱۰۰ تماس نمی‌رسد، '
+    'تا اطلاع ثانوی لیدهای کمتری به شما تعلق می‌گیرد.'
+)
+
+# Recent performance metrics still fine-tune unrestricted operators. Manual
+# management blocks and reductions above take precedence over this calculation.
 CONTACT_RATE_WINDOW_DAYS = 7
 CONTACT_RATE_MIN_AGE_HOURS = 2
 CONTACT_OUTCOME_VALUES = ('follow_up', 'appointment', 'no_answer', 'won', 'sale_lost', 'not_interested')
@@ -59,16 +72,19 @@ def _operator_identity(operator):
     ))
 
 
-def _website_operator_allowed(operator):
+def _identity_matches(operator, aliases):
     identity=_operator_identity(operator)
-    return not any(_normalize(name) in identity for name in WEBSITE_EXCLUDED_OPERATOR_IDENTITIES)
+    return any(_normalize(name) in identity for name in aliases)
+
+
+def _operator_is_blocked(operator):
+    return _identity_matches(operator, BLOCKED_OPERATOR_IDENTITIES)
 
 
 def _operators_for_channel(operators, channel):
-    operators=list(operators)
-    if channel=='website':
-        return [operator for operator in operators if _website_operator_allowed(operator)]
-    return operators
+    # The block is channel-agnostic: website, Instagram, WhatsApp, campaigns,
+    # referral network and pending-queue releases all use this same pool.
+    return [operator for operator in operators if not _operator_is_blocked(operator)]
 
 
 def _recent_operator_metrics(operator, now=None):
@@ -119,9 +135,20 @@ def operator_weight(operator, now=None):
     punctual recorded attendance 10%. Daily workload balancing is applied
     separately, and only staff currently checked in can receive new leads.
     """
+    for aliases, weight in REDUCED_OPERATOR_WEIGHT_RULES:
+        if _identity_matches(operator, aliases):
+            return weight
     contact,engagement,volume,punctuality=_recent_operator_metrics(operator,now=now)
     score=0.45*contact+0.25*engagement+0.20*volume+0.10*punctuality
     return max(0.8,min(1.2,0.8+0.4*score))
+
+
+def operator_policy_notice(operator):
+    """Return the persistent dashboard warning for a manually limited operator."""
+    for aliases, _weight in REDUCED_OPERATOR_WEIGHT_RULES:
+        if _identity_matches(operator, aliases):
+            return KHORSHIDI_POLICY_NOTICE
+    return ''
 
 
 def expected_operator_user_ids(day=None):

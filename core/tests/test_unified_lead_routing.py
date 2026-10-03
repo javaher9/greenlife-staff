@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
 
-from core.lead_routing import assign_external_lead, assign_referral_lead, release_pending_leads_if_ready
+from core.lead_routing import assign_external_lead, assign_referral_lead, operator_policy_notice, operator_weight, release_pending_leads_if_ready
 from core.models import Attendance, EmployeeProfile, ReferralLead, ReferralProfile
 
 
@@ -77,7 +77,10 @@ class UnifiedLeadRoutingTests(TestCase):
         self.assertIsNone(lead.assigned_at)
 
     def test_equal_distribution_when_team_is_present(self):
-        self._check_in(*range(6))
+        # Use unrestricted operators so this test measures the balancing
+        # algorithm independently from management's manual routing policy.
+        self._keep_only(0, 2, 4)
+        self._check_in(0, 2, 4)
         assigned = []
         for index in range(1, 13):
             lead = self._new_lead(index)
@@ -85,31 +88,31 @@ class UnifiedLeadRoutingTests(TestCase):
 
         counts = Counter(assigned)
         self.assertEqual(
-            [counts[operator.id] for operator in self.operators],
-            [2, 2, 2, 2, 2, 2],
+            [counts[self.operators[index].id] for index in (0, 2, 4)],
+            [4, 4, 4],
         )
 
     def test_late_operator_catches_up_instead_of_first_arrival_keeping_all_leads(self):
-        self._keep_only(0, 1)
+        self._keep_only(0, 2)
         self._check_in(0)
 
         for index in range(1, 5):
             lead = self._new_lead(index)
             self.assertEqual(assign_referral_lead(lead).id, self.operators[0].id)
 
-        self._check_in(1)
+        self._check_in(2)
         for index in range(5, 9):
             lead = self._new_lead(index)
-            self.assertEqual(assign_referral_lead(lead).id, self.operators[1].id)
+            self.assertEqual(assign_referral_lead(lead).id, self.operators[2].id)
 
         counts = Counter(
             ReferralLead.objects.values_list('assigned_to_id', flat=True)
         )
         self.assertEqual(counts[self.operators[0].id], 4)
-        self.assertEqual(counts[self.operators[1].id], 4)
+        self.assertEqual(counts[self.operators[2].id], 4)
 
     def test_overnight_backlog_waits_for_more_staff_before_11(self):
-        self._keep_only(0, 1)
+        self._keep_only(0, 2)
         leads = [self._new_lead(index) for index in range(1, 7)]
         self._check_in(0)
 
@@ -120,7 +123,7 @@ class UnifiedLeadRoutingTests(TestCase):
             6,
         )
 
-        self._check_in(1)
+        self._check_in(2)
         released = release_pending_leads_if_ready(now=self._at(10, 0))
         self.assertEqual(released, 6)
 
@@ -128,7 +131,7 @@ class UnifiedLeadRoutingTests(TestCase):
             ReferralLead.objects.values_list('assigned_to_id', flat=True)
         )
         self.assertEqual(counts[self.operators[0].id], 3)
-        self.assertEqual(counts[self.operators[1].id], 3)
+        self.assertEqual(counts[self.operators[2].id], 3)
         for lead in leads:
             lead.refresh_from_db()
             self.assertIsNotNone(lead.assigned_at)
@@ -176,6 +179,22 @@ class UnifiedLeadRoutingTests(TestCase):
         self.assertTrue(blocked.isdisjoint(set(assigned)))
         allowed={self.operators[i].id for i in (0,1,2,4)}
         self.assertTrue(set(assigned).issubset(allowed))
+
+    def test_kamelya_and_laleh_never_receive_leads_from_any_channel(self):
+        self._check_in(*range(6))
+        blocked={self.operators[3].id,self.operators[5].id}
+        assigned=[]
+        for index in range(60, 84):
+            lead=self._new_lead(index)
+            assigned.append(assign_referral_lead(lead).id)
+        self.assertTrue(blocked.isdisjoint(set(assigned)))
+
+    def test_khorshidi_has_very_low_weight_and_dashboard_notice(self):
+        khorshidi=self.operators[1]
+        self.assertEqual(operator_weight(khorshidi),0.20)
+        self.assertIn('۱۰۰ تماس',operator_policy_notice(khorshidi))
+        self.assertIn('تا اطلاع ثانوی',operator_policy_notice(khorshidi))
+        self.assertEqual(operator_policy_notice(self.operators[0]),'')
 
     def test_website_lead_waits_if_only_kamelya_and_laleh_are_present(self):
         self._keep_only(3,5)
