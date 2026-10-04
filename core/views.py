@@ -1782,6 +1782,31 @@ def finance_entry_review(request,pk,action):
             message=f'تراکنش {entry.person_name} به وضعیت «{entry.get_review_status_display()}» تغییر کرد.',
             notification_type='finance_review',related_date=timezone.localdate(),
         )
+
+    # Reconcile the visit one final time as the last business write in this
+    # request. Finance approval/correction is the authority for payment stage.
+    if entry.appointment_id:
+        final_appointment=VisitAppointment.objects.filter(
+            pk=entry.appointment_id
+        ).select_related('consultation_plan').first()
+        if final_appointment:
+            final_plan=getattr(final_appointment,'consultation_plan',None)
+            approved_total=FinancialTransaction.objects.filter(
+                appointment_id=entry.appointment_id,
+                source='manual',
+                entry_type='inc',
+                review_status='approved',
+            ).aggregate(total=Sum('amount'))['total'] or 0
+            if final_plan:
+                required=(final_plan.final_amount_toman or 0)*10
+                final_paid=required>0 and approved_total>=required
+                VisitAppointment.objects.filter(pk=entry.appointment_id).update(
+                    care_stage='closed' if final_paid else 'payment',
+                    status='completed' if final_paid else (
+                        'arrived' if final_appointment.status=='completed' else final_appointment.status
+                    ),
+                    updated_at=timezone.now(),
+                )
     messages.success(request,'وضعیت تراکنش به‌روزرسانی شد.')
     return redirect('finance_dashboard')
 
