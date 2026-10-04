@@ -1757,6 +1757,19 @@ def finance_entry_review(request,pk,action):
                     appointment.lead.status='visited'
                     appointment.lead.contact_result='follow_up'
                     appointment.lead.save(update_fields=['status','contact_result','updated_at'])
+
+            # Final authoritative write after every related-model update. This
+            # prevents any stale in-memory appointment state from surviving a
+            # finance review and makes the lifecycle deterministic.
+            final_status='completed' if fully_paid else (
+                'arrived' if appointment.status=='completed' else appointment.status
+            )
+            final_stage='closed' if fully_paid else 'payment'
+            VisitAppointment.objects.filter(pk=appointment.pk).update(
+                status=final_status,
+                care_stage=final_stage,
+                updated_at=timezone.now(),
+            )
     AuditLog.objects.create(
         actor=request.user,action='finance_review',path=request.path,method='POST',
         object_type='FinancialTransaction',object_id=str(entry.pk),
