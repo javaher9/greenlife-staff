@@ -1807,6 +1807,45 @@ def finance_entry_review(request,pk,action):
                     ),
                     updated_at=timezone.now(),
                 )
+    # Reconcile appointment/lead one final time after audit/notification side effects.
+    # Finance approval is the source of truth for closing a visit and winning a lead.
+    if entry.appointment_id:
+        final_appointment=VisitAppointment.objects.filter(
+            pk=entry.appointment_id
+        ).select_related('consultation_plan','lead').first()
+        if final_appointment:
+            final_plan=getattr(final_appointment,'consultation_plan',None)
+            final_approved=FinancialTransaction.objects.filter(
+                appointment=final_appointment,
+                source='manual',
+                entry_type='inc',
+                review_status='approved',
+            ).aggregate(total=Sum('amount'))['total'] or 0
+            if final_plan:
+                final_total=final_plan.final_amount_toman*10
+                final_paid=final_total>0 and final_approved>=final_total
+            else:
+                final_paid=final_approved>0
+
+            VisitAppointment.objects.filter(pk=final_appointment.pk).update(
+                status='completed' if final_paid else (
+                    'arrived' if final_appointment.status=='completed' else final_appointment.status
+                ),
+                care_stage='closed' if final_paid else 'payment',
+                updated_at=timezone.now(),
+            )
+            if final_appointment.lead_id:
+                if final_paid:
+                    ReferralLead.objects.filter(pk=final_appointment.lead_id).update(
+                        status='won',contact_result='won',updated_at=timezone.now()
+                    )
+                else:
+                    ReferralLead.objects.filter(
+                        pk=final_appointment.lead_id,status='won'
+                    ).update(
+                        status='visited',contact_result='follow_up',updated_at=timezone.now()
+                    )
+
     messages.success(request,'وضعیت تراکنش به‌روزرسانی شد.')
     return redirect('finance_dashboard')
 
