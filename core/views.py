@@ -623,6 +623,16 @@ def dashboard(request):
         receptionist_arrived_count=receptionist_appointments.filter(
             status__in=('arrived','completed')
         ).count()
+        receptionist_waiting_arrival_count=receptionist_appointments.filter(status='booked').count()
+        receptionist_doctor_queue_count=receptionist_appointments.filter(
+            status='arrived',care_stage='doctor'
+        ).count()
+        receptionist_consultant_queue_count=receptionist_appointments.filter(
+            care_stage='consultant'
+        ).count()
+        receptionist_closed_count=receptionist_appointments.filter(
+            Q(care_stage='closed') | Q(status='completed')
+        ).count()
         receptionist_payment_count=FinancialTransaction.objects.filter(
             source='manual',recorded_by=request.user,created_at__date=today_local,
         ).exclude(review_status='cancelled').count()
@@ -653,6 +663,10 @@ def dashboard(request):
             'receptionist_appointments':receptionist_appointments,
             'receptionist_appointment_count':receptionist_appointment_count,
             'receptionist_arrived_count':receptionist_arrived_count,
+            'receptionist_waiting_arrival_count':receptionist_waiting_arrival_count,
+            'receptionist_doctor_queue_count':receptionist_doctor_queue_count,
+            'receptionist_consultant_queue_count':receptionist_consultant_queue_count,
+            'receptionist_closed_count':receptionist_closed_count,
             'receptionist_payment_count':receptionist_payment_count,
             'receptionist_payment_queue':receptionist_payment_queue,
             'receptionist_payment_waiting_count':receptionist_payment_queue.count(),
