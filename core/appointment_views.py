@@ -11,6 +11,7 @@ from django.utils import timezone
 
 from .forms import AppointmentFromLeadForm, ReceptionistAppointmentForm, visit_appointment_time_choices
 from .jalali import parse_jalali
+from .patient_ui import attach_patient_photos
 from .models import Branch, EmployeeProfile, ReferralLead, StaffNotification, VisitAppointment, SmsAutomationRule, SmsScheduledMessage
 from .sms_automation import schedule_sms_event
 from .jalali import format_jalali
@@ -146,11 +147,11 @@ def appointment_schedule(request):
 
     appointments=[]
     if branch:
-        appointments=list(
+        appointments=attach_patient_photos(list(
             VisitAppointment.objects.filter(
                 branch=branch,appointment_date=day
             ).exclude(status='cancelled').select_related('lead','created_by').order_by('appointment_time')
-        )
+        ))
     by_time={a.appointment_time.strftime('%H:%M'):a for a in appointments}
     schedule_rows=[
         {'time':value,'appointment':by_time.get(value)}
