@@ -67,9 +67,32 @@ class ReceptionistRoleTests(TestCase):
         self.assertEqual(response.status_code,200)
         self.assertContains(response,'میز عملیات پذیرش')
         self.assertContains(response,'منتظر پزشک')
-        self.assertContains(response,'پذیرش / ورود')
+        self.assertContains(response,'✓ پذیرش')
         self.assertContains(response,'پرونده ۳۶۰')
+        self.assertContains(response,'بیمار انتخاب‌شده')
+        self.assertContains(response,'data-wait-chip')
         self.assertContains(response,'بیمار تست')
+
+    def test_receptionist_checkin_can_return_to_dashboard(self):
+        appointment=VisitAppointment.objects.create(
+            branch=self.branch,
+            full_name='مراجعه سریع',
+            phone='09123334444',
+            service='مشاوره',
+            appointment_date=timezone.localdate(),
+            appointment_time=time(11,0),
+            status='booked',
+            care_stage='doctor',
+            source='call_center',
+        )
+        response=self.client.post(
+            reverse('receptionist_appointment_status',args=[appointment.pk,'arrived']),
+            {'next':'dashboard'},
+            HTTP_USER_AGENT='Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        )
+        self.assertRedirects(response,reverse('dashboard'))
+        appointment.refresh_from_db()
+        self.assertEqual(appointment.status,'arrived')
 
     def test_phone_dashboard_keeps_existing_dark_personnel_experience(self):
         response=self.client.get(
