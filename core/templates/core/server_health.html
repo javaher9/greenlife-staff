@@ -1,0 +1,161 @@
+{% extends "core/base.html" %}
+{% block content %}
+<style>
+.server-health{max-width:1180px;margin:0 auto;padding:8px 2px 28px;font-family:Tahoma,"Noto Sans Arabic",sans-serif}
+.sh-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin:4px 0 18px}
+.sh-title h1{margin:0;color:#182338;font-size:24px;font-weight:900}.sh-title p{margin:6px 0 0;color:#7a8799;font-size:12px;font-weight:700}
+.sh-live{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e4e8ef;border-radius:14px;padding:9px 12px;color:#536178;font-size:11px;font-weight:900}
+.sh-dot{width:9px;height:9px;border-radius:50%;background:#1aa56b;box-shadow:0 0 0 5px rgba(26,165,107,.10)}
+.sh-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.sh-card{background:#fff;border:1px solid #e6eaf0;border-radius:18px;padding:16px;min-width:0}
+.sh-card .label{color:#7a8799;font-size:11px;font-weight:900}.sh-card .value{margin-top:7px;color:#202c40;font-size:27px;line-height:1;font-weight:900;letter-spacing:-.5px}
+.sh-card .sub{margin-top:8px;color:#8c97a6;font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sh-card[data-tone="warn"]{border-color:#e8cda2;background:#fffdf8}.sh-card[data-tone="high"]{border-color:#e3b1b8;background:#fff9fa}.sh-card[data-tone="good"]{border-color:#d9e9e2}
+.sh-main{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:12px;margin-top:12px}
+.sh-panel{background:#fff;border:1px solid #e6eaf0;border-radius:18px;padding:16px;min-width:0}
+.sh-panel h2{margin:0 0 4px;color:#223047;font-size:14px;font-weight:900}.sh-panel .hint{color:#8b96a5;font-size:10px;font-weight:700}
+.sh-chart{margin-top:14px;height:220px;border-radius:14px;background:#f8fafc;border:1px solid #edf0f4;padding:10px;overflow:hidden}
+.sh-chart svg{width:100%;height:100%;display:block}.sh-gridline{stroke:#e6eaf0;stroke-width:1}.sh-line{fill:none;stroke:#3c7c68;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.sh-area{fill:rgba(60,124,104,.08)}
+.sh-list{display:grid;gap:9px;margin-top:13px}.sh-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #eef1f4}.sh-row:last-child{border-bottom:0}
+.sh-row span{color:#738095;font-size:11px;font-weight:800}.sh-row b{color:#243149;font-size:12px;font-weight:900;text-align:left;direction:ltr}
+.sh-foot{margin-top:12px;padding:13px 15px;border-radius:15px;background:#f7f9fb;border:1px solid #e8ecf1;color:#69778b;font-size:10px;font-weight:700;line-height:1.9}
+@media(max-width:980px){.sh-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sh-main{grid-template-columns:1fr}}
+@media(max-width:560px){.server-health{padding-top:2px}.sh-head{align-items:stretch;flex-direction:column}.sh-grid{grid-template-columns:1fr 1fr;gap:8px}.sh-card{padding:13px;border-radius:15px}.sh-card .value{font-size:23px}.sh-main{gap:8px}.sh-chart{height:180px}}
+</style>
+
+<div class="server-health">
+  <div class="sh-head">
+    <div class="sh-title">
+      <h1>وضعیت زنده سرور</h1>
+      <p>مانیتورینگ فقط‌خواندنی GreenLife Staff — بدون امکان ری‌استارت یا تغییر تنظیمات سرور</p>
+    </div>
+    <div class="sh-live"><span class="sh-dot" id="sh-dot"></span><span id="sh-state">در حال اتصال…</span></div>
+  </div>
+
+  <div class="sh-grid">
+    <div class="sh-card" id="card-cpu"><div class="label">CPU سرور</div><div class="value" id="cpu-value">—</div><div class="sub" id="cpu-sub">در حال نمونه‌برداری</div></div>
+    <div class="sh-card" id="card-memory"><div class="label">RAM سرور</div><div class="value" id="memory-value">—</div><div class="sub" id="memory-sub">—</div></div>
+    <div class="sh-card" id="card-disk"><div class="label">فضای دیسک</div><div class="value" id="disk-value">—</div><div class="sub" id="disk-sub">—</div></div>
+    <div class="sh-card" id="card-app"><div class="label">CPU اپلیکیشن</div><div class="value" id="app-value">—</div><div class="sub" id="app-sub">مصرف کانتینر وب</div></div>
+  </div>
+
+  <div class="sh-main">
+    <section class="sh-panel">
+      <h2>روند CPU</h2>
+      <div class="hint">۶۰ نمونه آخر؛ هر ۵ ثانیه یک‌بار به‌روزرسانی می‌شود و وقتی این صفحه مخفی است درخواست جدید نمی‌فرستد.</div>
+      <div class="sh-chart">
+        <svg id="cpu-chart" viewBox="0 0 700 220" preserveAspectRatio="none" aria-label="نمودار مصرف CPU">
+          <line class="sh-gridline" x1="0" y1="55" x2="700" y2="55"></line>
+          <line class="sh-gridline" x1="0" y1="110" x2="700" y2="110"></line>
+          <line class="sh-gridline" x1="0" y1="165" x2="700" y2="165"></line>
+          <path class="sh-area" id="cpu-area" d=""></path>
+          <polyline class="sh-line" id="cpu-line" points=""></polyline>
+        </svg>
+      </div>
+    </section>
+
+    <section class="sh-panel">
+      <h2>جزئیات سلامت</h2>
+      <div class="hint">اطلاعات حساس و دستورات مدیریتی عمداً در این صفحه وجود ندارند.</div>
+      <div class="sh-list">
+        <div class="sh-row"><span>Load Average</span><b id="load-value">—</b></div>
+        <div class="sh-row"><span>Database</span><b id="db-value">—</b></div>
+        <div class="sh-row"><span>دمای CPU</span><b id="temp-value">—</b></div>
+        <div class="sh-row"><span>Uptime</span><b id="uptime-value">—</b></div>
+        <div class="sh-row"><span>Network RX / TX</span><b id="network-value">—</b></div>
+        <div class="sh-row"><span>آخرین بروزرسانی</span><b id="updated-value">—</b></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="sh-foot" id="sh-note">
+    دمای واقعی CPU فقط وقتی نمایش داده می‌شود که سنسور سخت‌افزاری از داخل VM/Container قابل دسترس باشد. نوسان کوتاه CPU تا ۱۰۰٪ به‌تنهایی نشانه خرابی سخت‌افزار نیست.
+  </div>
+</div>
+
+<script>
+(function(){
+  const endpoint="{% url 'server_health_api' %}";
+  const history=[];
+  let busy=false;
+
+  function pct(v){ return (typeof v==="number" && isFinite(v)) ? v.toFixed(1)+"%" : "—"; }
+  function gb(v){ return (typeof v==="number" && isFinite(v)) ? (v/1073741824).toFixed(1)+" GB" : "—"; }
+  function bytes(v){
+    if(typeof v!=="number" || !isFinite(v)) return "—";
+    const units=["B","KB","MB","GB","TB"]; let n=v, i=0;
+    while(n>=1024 && i<units.length-1){n/=1024;i++;}
+    return n.toFixed(i<2?0:1)+" "+units[i];
+  }
+  function uptime(sec){
+    if(typeof sec!=="number") return "—";
+    const d=Math.floor(sec/86400), h=Math.floor((sec%86400)/3600), m=Math.floor((sec%3600)/60);
+    return (d?d+" روز ":"")+h+" ساعت "+m+" دقیقه";
+  }
+  function tone(card,value,warn,high){
+    if(!card || typeof value!=="number"){ if(card) card.removeAttribute("data-tone"); return; }
+    card.dataset.tone=value>=high?"high":value>=warn?"warn":"good";
+  }
+  function renderChart(){
+    const line=document.getElementById("cpu-line"), area=document.getElementById("cpu-area");
+    if(!history.length){line.setAttribute("points","");area.setAttribute("d","");return;}
+    const width=700,height=220,max=100;
+    const step=history.length>1?width/(history.length-1):0;
+    const points=history.map((v,i)=>[i*step,height-(Math.max(0,Math.min(max,v))/max)*height]);
+    line.setAttribute("points",points.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" "));
+    const d="M 0 "+height+" L "+points.map(p=>p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" L ")+" L "+points[points.length-1][0].toFixed(1)+" "+height+" Z";
+    area.setAttribute("d",d);
+  }
+  async function refresh(){
+    if(busy || document.hidden) return;
+    busy=true;
+    const state=document.getElementById("sh-state"), dot=document.getElementById("sh-dot");
+    try{
+      const res=await fetch(endpoint,{cache:"no-store",credentials:"same-origin",headers:{"Accept":"application/json"}});
+      if(!res.ok) throw new Error("HTTP "+res.status);
+      const data=await res.json();
+      const s=data.server||{}, app=data.app||{}, mem=s.memory||{}, disk=s.disk||{}, net=data.network||{}, db=data.database||{};
+
+      document.getElementById("cpu-value").textContent=pct(s.cpu_percent);
+      document.getElementById("cpu-sub").textContent=(s.cpu_count||"—")+" vCPU · Load "+((s.load&&s.load.one)!=null?s.load.one:"—");
+      document.getElementById("memory-value").textContent=pct(mem.percent);
+      document.getElementById("memory-sub").textContent=gb(mem.used_bytes)+" از "+gb(mem.total_bytes);
+      document.getElementById("disk-value").textContent=pct(disk.percent);
+      document.getElementById("disk-sub").textContent=gb(disk.free_bytes)+" آزاد";
+      document.getElementById("app-value").textContent=pct(app.cpu_percent);
+      const am=app.memory||{};
+      document.getElementById("app-sub").textContent=am.limit_bytes?("RAM "+pct(am.percent)+" · "+gb(am.used_bytes)):("RAM "+gb(am.used_bytes));
+
+      tone(document.getElementById("card-cpu"),s.cpu_percent,70,85);
+      tone(document.getElementById("card-memory"),mem.percent,75,90);
+      tone(document.getElementById("card-disk"),disk.percent,75,90);
+      tone(document.getElementById("card-app"),app.cpu_percent,70,90);
+
+      const load=s.load||{};
+      document.getElementById("load-value").textContent=[load.one,load.five,load.fifteen].map(v=>v==null?"—":v).join(" / ");
+      document.getElementById("db-value").textContent=db.status==="ok" ? "Healthy · "+(db.latency_ms==null?"—":db.latency_ms+" ms") : "Error";
+      document.getElementById("temp-value").textContent=s.temperature_c==null ? "در دسترس نیست" : s.temperature_c.toFixed(1)+" °C";
+      document.getElementById("uptime-value").textContent=uptime(s.uptime_seconds);
+      document.getElementById("network-value").textContent=bytes(net.rx_bytes)+" / "+bytes(net.tx_bytes);
+      document.getElementById("updated-value").textContent=new Date((data.sampled_at||Date.now()/1000)*1000).toLocaleTimeString("fa-IR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+
+      if(typeof s.cpu_percent==="number"){history.push(s.cpu_percent);if(history.length>60)history.shift();renderChart();}
+      state.textContent="زنده · بروزرسانی هر ۵ ثانیه";
+      dot.style.background="#1aa56b";
+      document.getElementById("sh-note").textContent=s.temperature_c==null
+        ? "دمای فیزیکی CPU از داخل VM/Container در دسترس نیست؛ برای آن باید سنسور Host/VMware به‌صورت Read-only متصل شود. سایر اعداد این صفحه زنده هستند."
+        : "سنسور دما در دسترس است. این صفحه فقط خواندنی است و هیچ فرمان Restart یا تغییر تنظیمات سرور اجرا نمی‌کند.";
+    }catch(err){
+      state.textContent="ارتباط با مانیتورینگ قطع شد";
+      dot.style.background="#c94c5d";
+    }finally{
+      busy=false;
+    }
+  }
+  refresh();
+  const timer=setInterval(refresh,5000);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh();});
+  window.addEventListener("pagehide",()=>clearInterval(timer),{once:true});
+})();
+</script>
+{% endblock %}
