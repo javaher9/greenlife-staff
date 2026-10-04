@@ -67,7 +67,7 @@ class Patient360Tests(TestCase):
 
         response=self.client.get(reverse('patient_360',args=[patient.pk]))
         self.assertEqual(response.status_code,200)
-        self.assertContains(response,'2,500,000')
+        self.assertEqual(response.context['approved_paid'],Decimal('2500000'))
         self.assertContains(response,'رژیم تست')
         self.assertContains(response,'پیام تست')
         self.assertContains(response,'81.2')
