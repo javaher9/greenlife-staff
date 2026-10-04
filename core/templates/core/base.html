@@ -394,6 +394,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
         <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>{% gl_t 'shell.guidelines_full' %}</span></a>
       </div>
     </details>
+    <a href="{% url 'server_health' %}" class="gl-executive-nav {% if request.resolver_match.url_name == 'server_health' %}is-active{% endif %}"><span class="nav-ico">◌</span><span>وضعیت سرور</span><b class="gl-private-badge">LIVE</b></a>
     {% endif %}
     {% if executive_access or user.is_superuser or user.profile.role == 'admin' %}
     <a href="{% url 'whatsapp_hub' %}" class="{% if request.resolver_match.url_name == 'whatsapp_hub' %}is-active{% endif %}"><span class="nav-ico">◉</span><span>واتساپ</span><b class="gl-private-badge">WA</b></a>
