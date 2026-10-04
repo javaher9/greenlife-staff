@@ -17,8 +17,8 @@
     }
     *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:"Noto Sans Arabic",Tahoma,sans-serif;scroll-behavior:auto}html{overflow-anchor:none}
     a{text-decoration:none;color:inherit}button,input{font:inherit}
-    .shell{display:grid;grid-template-columns:minmax(0,1fr) 232px;min-height:100vh}
-    .side{grid-column:2;background:#fff;border-right:1px solid var(--line);padding:24px 18px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+    .shell{display:grid;grid-template-columns:minmax(0,1fr) 232px;grid-template-rows:auto;align-items:start;min-height:100vh}
+    .side{grid-column:2;grid-row:1;background:#fff;border-right:1px solid var(--line);padding:24px 18px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
     .side-head{display:flex;align-items:center;gap:12px;padding:2px 6px 20px;border-bottom:1px solid var(--line)}
     .side-mark{width:42px;height:42px;border-radius:15px;background:linear-gradient(145deg,#7860f3,#9a87ff);display:grid;place-items:center;color:white;font-weight:800;box-shadow:0 10px 22px rgba(114,87,232,.24)}
     .side-head strong{display:block;font-size:15px}.side-head span{font-size:11px;color:var(--muted)}
@@ -26,7 +26,7 @@
     .nav a:hover{background:#f6f4ff}.nav a.active{background:var(--purple-soft);color:#5e43db}.nav .disabled{color:#a7adba;cursor:not-allowed}
     .ico{width:29px;height:29px;border-radius:10px;background:#f4f5f9;display:grid;place-items:center;font-size:14px}.active .ico{background:#dfd8ff}
     .side-foot{margin-top:auto;border-top:1px solid var(--line);padding-top:14px;display:grid;gap:6px}.side-foot a{padding:9px 11px;border-radius:11px;font-size:12px}.side-foot a:hover{background:#f6f7fa}
-    .main{grid-column:1;padding:16px 22px 30px;min-width:0;align-self:start;margin:0;transform:none!important}
+    .main{grid-column:1;grid-row:1;padding:16px 22px 30px;min-width:0;align-self:start;margin:0;transform:none!important}
     .top{background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px 16px;display:grid;grid-template-columns:auto minmax(220px,1fr) auto auto;align-items:center;gap:18px;box-shadow:0 7px 24px rgba(34,43,74,.045)}
     .hello h1{font-size:20px;margin:0 0 4px}.hello p{font-size:12px;color:#667187;margin:0;font-weight:650}
     .search{height:44px;border-radius:14px;background:#f6f7fa;border:1px solid #eff1f5;display:flex;align-items:center;gap:10px;padding:0 14px;color:#9aa2b2}
@@ -64,8 +64,8 @@
     .rec-lang button{min-width:34px;height:29px;padding:0;border:0;border-radius:999px;background:transparent;color:#8a93a4;font:900 9px Arial,Tahoma;cursor:pointer}
     .rec-lang button.active{background:#ede8ff;color:#6549d9}
     html[dir="ltr"] .shell{grid-template-columns:232px minmax(0,1fr)}
-    html[dir="ltr"] .side{grid-column:1;border-right:1px solid var(--line)}
-    html[dir="ltr"] .main{grid-column:2}
+    html[dir="ltr"] .side{grid-column:1;grid-row:1;border-right:1px solid var(--line)}
+    html[dir="ltr"] .main{grid-column:2;grid-row:1}
     html[dir="ltr"] .side,html[dir="ltr"] .main,html[dir="ltr"] .top,html[dir="ltr"] .nav{text-align:left;direction:ltr}
     html[dir="ltr"] .payment-amount{text-align:right}
     @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.flow-strip{grid-template-columns:repeat(2,1fr)}.bottom-grid{grid-template-columns:1fr}.grid-main{grid-template-columns:1fr}.side{width:210px}.shell{grid-template-columns:minmax(0,1fr) 210px}html[dir="ltr"] .shell{grid-template-columns:210px minmax(0,1fr)}}
@@ -165,7 +165,7 @@
               {% if item.status == 'booked' %}
               <form method="post" action="{% url 'receptionist_appointment_status' item.pk 'arrived' %}">{% csrf_token %}<button class="row-action arrive" type="submit">✓ {% gl_t 'rec.checkin' %}</button></form>
               {% endif %}
-              <a class="row-action file" href="{% url 'patient_360_from_appointment' item.pk %}">📷 {% gl_t 'rec.patient_360' %} / امتیاز</a>
+              <a class="row-action file" href="{% url 'patient_360_from_appointment' item.pk %}">📷 عکس / امتیاز / {% gl_t 'rec.patient_360' %}</a>
               {% if item.care_stage == 'payment' %}
               <a class="row-action pay" href="{% url 'finance_entry' %}?appointment={{ item.pk }}">ثبت پرداخت</a>
               {% endif %}
