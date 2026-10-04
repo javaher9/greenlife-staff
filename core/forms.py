@@ -630,7 +630,7 @@ class EmployeeEditForm(forms.Form):
                 'country':employee.country,'preferred_language':employee.preferred_language,
                 'branch':employee.branch,'role':employee.role,'shift_group':employee.shift_group,
                 'address':employee.address,'education':employee.education,
-                'is_insured':employee.is_insured,'is_active':employee.is_active,
+                'is_insured':employee.is_insured,'can_register_instagram_dm_lead':employee.can_register_instagram_dm_lead,'is_active':employee.is_active,
             })
 
     def clean_username(self):
@@ -669,7 +669,7 @@ class EmployeeEditForm(forms.Form):
         user.first_name=d['first_name']; user.last_name=d['last_name']; user.username=d['username']; user.email=d['email']; user.is_active=d['is_active']
         if d.get('new_password'): user.set_password(d['new_password'])
         user.save()
-        for field in ('country','preferred_language','branch','role','shift_group','job_title','phone','birth_date','start_date','address','education','is_insured','is_active'):
+        for field in ('country','preferred_language','branch','role','shift_group','job_title','phone','birth_date','start_date','address','education','is_insured','can_register_instagram_dm_lead','is_active'):
             setattr(employee,field,d.get(field))
         if employee.role=='call_center' and not employee.job_title:
             employee.job_title='کارشناس کال‌سنتر'
