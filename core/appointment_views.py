@@ -302,4 +302,6 @@ def receptionist_appointment_status(request,pk,status):
                 status__in=('won','lost')
             ).update(status='visited',updated_at=timezone.now())
     messages.success(request,f'وضعیت نوبت {item.full_name} به «{item.get_status_display()}» تغییر کرد.')
+    if request.POST.get('next')=='dashboard':
+        return redirect('dashboard')
     return redirect(f"{reverse('appointment_schedule')}?date={item.appointment_date.isoformat()}")
