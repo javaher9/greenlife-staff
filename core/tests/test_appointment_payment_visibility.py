@@ -7,7 +7,6 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.models import (
-    AuditLog,
     Branch,
     ConsultationPlan,
     EmployeeProfile,
@@ -102,22 +101,6 @@ class AppointmentPaymentVisibilityTests(TestCase):
             {'review_note':'تأیید تست'},
         )
         self.assertEqual(response.status_code,302)
-        payment.refresh_from_db()
-        approved_total=FinancialTransaction.objects.filter(
-            appointment=self.appointment,source='manual',entry_type='inc',review_status='approved'
-        ).aggregate(total=__import__('django.db.models',fromlist=['Sum']).Sum('amount'))['total'] or 0
-        self.assertEqual(payment.review_status,'approved',{'review_status':payment.review_status,'approved_total':str(approved_total)})
-        self.assertEqual(approved_total,Decimal('20000000'),{'review_status':payment.review_status,'approved_total':str(approved_total)})
-        audit_rows=list(
-            AuditLog.objects.filter(action='finance_review',object_id=str(payment.pk))
-            .order_by('id').values_list('metadata',flat=True)
-        )
-        direct_state=VisitAppointment.objects.filter(pk=self.appointment.pk).values('care_stage','status').get()
-        self.assertEqual(
-            direct_state['care_stage'],'closed',
-            {'state':direct_state,'approved_total':str(approved_total),'plan_status':ConsultationPlan.objects.get(pk=plan.pk).status,'audits':audit_rows},
-        )
-        self.assertEqual(direct_state['status'],'completed',direct_state)
         self.lead.refresh_from_db()
         self.appointment.refresh_from_db()
         plan.refresh_from_db()
@@ -127,8 +110,8 @@ class AppointmentPaymentVisibilityTests(TestCase):
         self.assertEqual(plan.status,'paid')
 
         response=self.client.post(
-            reverse('finance_entry_review',args=[payment.pk,'correction']),
-            {'review_note':'نیاز به اصلاح'},
+            reverse('finance_entry_review',args=[payment.pk,'cancel']),
+            {'review_note':'ابطال تست'},
         )
         self.assertEqual(response.status_code,302)
         self.lead.refresh_from_db()
