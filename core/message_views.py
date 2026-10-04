@@ -16,6 +16,17 @@ from .staff_i18n import translate
 from .models import InternalMessage, StaffNotification
 
 
+def _avatar_url(user):
+    profile=getattr(user,'profile',None)
+    avatar=getattr(profile,'avatar',None) if profile else None
+    if not avatar:
+        return ''
+    try:
+        return avatar.url
+    except Exception:
+        return ''
+
+
 def _staff_users():
     return (
         User.objects.filter(
@@ -84,7 +95,7 @@ def internal_messages(request):
         thread_qs=InternalMessage.objects.filter(
             Q(sender=request.user,recipient=selected) |
             Q(sender=selected,recipient=request.user)
-        ).select_related('sender','recipient').order_by('-created_at')[:200]
+        ).select_related('sender','recipient','sender__profile','recipient__profile').order_by('-created_at')[:200]
         InternalMessage.objects.filter(
             sender=selected,recipient=request.user,read_at__isnull=True
         ).update(read_at=timezone.now())
@@ -93,7 +104,7 @@ def internal_messages(request):
     else:
         thread_qs=InternalMessage.objects.filter(
             recipient__isnull=True
-        ).select_related('sender').order_by('-created_at')[:200]
+        ).select_related('sender','sender__profile').order_by('-created_at')[:200]
         room_title=translate('msg.public_chat',getattr(request,'ui_language','fa'))
         room_subtitle=translate('msg.all_can',getattr(request,'ui_language','fa'))
 
@@ -168,14 +179,14 @@ def internal_message_updates(request):
             Q(sender=request.user,recipient=selected) |
             Q(sender=selected,recipient=request.user),
             pk__gt=after,
-        ).select_related('sender','recipient').order_by('pk')[:100]
+        ).select_related('sender','recipient','sender__profile','recipient__profile').order_by('pk')[:100]
         InternalMessage.objects.filter(
             sender=selected,recipient=request.user,read_at__isnull=True
         ).update(read_at=timezone.now())
     else:
         qs=InternalMessage.objects.filter(
             recipient__isnull=True,pk__gt=after
-        ).select_related('sender').order_by('pk')[:100]
+        ).select_related('sender','sender__profile').order_by('pk')[:100]
 
     data=[]
     for item in qs:
@@ -185,6 +196,7 @@ def internal_message_updates(request):
             'body':item.body,
             'mine':item.sender_id==request.user.pk,
             'time':timezone.localtime(item.created_at).strftime('%H:%M'),
+            'avatar':_avatar_url(item.sender),
         })
     response=JsonResponse({'ok':True,'messages':data})
     response['Cache-Control']='no-store, private'
@@ -272,7 +284,7 @@ def internal_message_live_widget(request):
             'last_body':(last.body[:90] if last else ''),
             'last_time':(timezone.localtime(last.created_at).strftime('%H:%M') if last else ''),
             'last_ts':(last.created_at.timestamp() if last else 0),
-            'avatar':(user.profile.avatar.url if getattr(user.profile,'avatar',None) else ''),
+            'avatar':_avatar_url(user),
         })
     rows.sort(key=lambda row:(1 if row['unread'] else 0,row['last_ts']),reverse=True)
 
@@ -284,7 +296,7 @@ def internal_message_live_widget(request):
                 Q(sender=request.user,recipient=selected) |
                 Q(sender=selected,recipient=request.user)
             )
-            .select_related('sender','recipient')
+            .select_related('sender','recipient','sender__profile','recipient__profile')
             .order_by('-created_at')[:60]
         )
         thread=list(reversed(list(qs)))
@@ -308,12 +320,13 @@ def internal_message_live_widget(request):
             'body':item.body,
             'mine':item.sender_id==request.user.pk,
             'time':timezone.localtime(item.created_at).strftime('%H:%M'),
+            'avatar':_avatar_url(item.sender),
         })
 
     latest_incoming_item=(
         InternalMessage.objects
         .filter(recipient=request.user)
-        .select_related('sender')
+        .select_related('sender','sender__profile')
         .order_by('-pk')
         .first()
     )
@@ -326,6 +339,7 @@ def internal_message_live_widget(request):
             'sender':latest_incoming_item.sender.get_full_name() or latest_incoming_item.sender.username,
             'body':latest_incoming_item.body[:180],
             'time':timezone.localtime(latest_incoming_item.created_at).strftime('%H:%M'),
+            'avatar':_avatar_url(latest_incoming_item.sender),
         }
 
     response=JsonResponse({

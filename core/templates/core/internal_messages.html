@@ -261,6 +261,17 @@
   .msg-compose{grid-template-columns:1fr!important}.msg-compose select,.msg-compose textarea{background:#0b141e!important;color:#fff!important;border-color:#2c4355!important}
   .msg-compose button{min-height:42px!important}
 }
+
+.msg-fav{width:25px!important;height:25px!important;border:0!important;border-radius:8px!important;background:transparent!important;color:#b2bac5!important;font-size:15px!important;display:grid!important;place-items:center!important;cursor:pointer!important}
+.msg-fav.is-fav{background:#fff5d7!important;color:#d2951e!important}
+.msg-contact.is-favorite{border-color:#eadfb9!important;background:linear-gradient(135deg,#fffbef,#fff)!important}
+.msg-contact.is-favorite.active{background:linear-gradient(135deg,#f5effd,#fff9e8)!important}
+.msg-bubble-row{display:flex!important;align-items:flex-end!important;gap:7px!important;max-width:min(75%,780px)!important}
+.msg-bubble-row.mine{align-self:flex-end!important;flex-direction:row-reverse!important}.msg-bubble-row.theirs{align-self:flex-start!important}
+.msg-bubble-row .msg-bubble{max-width:100%!important;align-self:auto!important}
+.msg-message-avatar{width:30px!important;height:30px!important;flex:0 0 30px!important;border-radius:50%!important;overflow:hidden!important;display:grid!important;place-items:center!important;background:linear-gradient(135deg,#e8f5ee,#eee8f8)!important;border:2px solid #fff!important;box-shadow:0 0 0 1px #dce4e1!important;color:#694b97!important;font-size:10px!important;font-weight:900!important}
+.msg-message-avatar img{width:100%!important;height:100%!important;object-fit:cover!important}
+@media(max-width:700px){.msg-bubble-row{max-width:92%!important}.msg-message-avatar{width:28px!important;height:28px!important;flex-basis:28px!important}.msg-fav.is-fav{background:#493d23!important;color:#ffd665!important}.msg-contact.is-favorite{border-color:#5a5136!important;background:#171a20!important}}
 </style>
 
 <section class="msg-shell">
@@ -298,6 +309,7 @@
         {% for row in contact_rows %}
         <a class="msg-contact {% if selected_contact and selected_contact.pk == row.user.pk %}active{% endif %}"
            data-search="{{ row.user.get_full_name }} {{ row.user.username }} {{ row.user.profile.job_title }} {{ row.user.profile.branch }}"
+           data-user-id="{{ row.user.pk }}"
            href="{% url 'internal_messages' %}?with={{ row.user.pk }}">
           <span class="msg-avatar">{% if row.user.profile.avatar %}<img src="{{ row.user.profile.avatar.url }}" alt="">{% else %}{{ row.user.first_name|first|default:row.user.username|first }}{% endif %}</span>
           <span class="msg-contact-copy">
@@ -306,6 +318,7 @@
             {% if row.last_message %}<span class="msg-contact-preview">{{ row.last_message.body|truncatechars:55 }}</span>{% else %}<span class="msg-contact-preview">{% gl_t 'msg.no_chat' %}</span>{% endif %}
           </span>
           <span class="msg-contact-side">
+            <span class="msg-fav" role="button" tabindex="0" data-fav-id="{{ row.user.pk }}" aria-label="Favorite">★</span>
             {% if row.unread %}<b class="msg-unread">{{ row.unread }}</b>{% endif %}
             {% if row.last_message %}<span class="msg-contact-time">{{ row.last_message.created_at|jdatetime }}</span>{% endif %}
           </span>
@@ -335,11 +348,14 @@
       <div class="msg-stream" id="msgStream">
         {% if thread %}<div class="msg-day-hint">{% gl_t 'msg.latest' %}</div>{% endif %}
         {% for item in thread %}
-        <article class="msg-bubble {% if item.sender_id == user.id %}mine{% else %}theirs{% endif %}" data-id="{{ item.pk }}">
-          <strong>{{ item.sender.get_full_name|default:item.sender.username }}</strong>
-          <p>{{ item.body }}</p>
-          <small>{{ item.created_at|jdatetime }}</small>
-        </article>
+        <div class="msg-bubble-row {% if item.sender_id == user.id %}mine{% else %}theirs{% endif %}" data-id="{{ item.pk }}">
+          <span class="msg-message-avatar">{% if item.sender.profile.avatar %}<img src="{{ item.sender.profile.avatar.url }}" alt="">{% else %}{{ item.sender.first_name|first|default:item.sender.username|first }}{% endif %}</span>
+          <article class="msg-bubble {% if item.sender_id == user.id %}mine{% else %}theirs{% endif %}">
+            <strong>{{ item.sender.get_full_name|default:item.sender.username }}</strong>
+            <p>{{ item.body }}</p>
+            <small>{{ item.created_at|jdatetime }}</small>
+          </article>
+        </div>
         {% empty %}
         <div class="msg-empty" id="msgEmpty"><b>✉</b><span>{% gl_t 'msg.no_message' %}</span>{% gl_t 'msg.first' %}</div>
         {% endfor %}
@@ -362,9 +378,42 @@
   const stream=document.getElementById('msgStream');
   const search=document.getElementById('msgContactSearch');
   const contactList=document.getElementById('msgContactList');
+  const favKey='gl_chat_favorites_{{ user.id }}';
+  function loadFavorites(){try{return new Set(JSON.parse(localStorage.getItem(favKey)||'[]').map(String));}catch(e){return new Set();}}
+  function saveFavorites(set){try{localStorage.setItem(favKey,JSON.stringify([...set]));}catch(e){}}
+  let favorites=loadFavorites();
+  function applyFavorites(){
+    if(!contactList)return;
+    const rows=[...contactList.querySelectorAll('.msg-contact[data-user-id]')];
+    rows.forEach(row=>{
+      const id=String(row.dataset.userId||'');
+      const fav=favorites.has(id);
+      row.classList.toggle('is-favorite',fav);
+      const star=row.querySelector('[data-fav-id]');
+      if(star)star.classList.toggle('is-fav',fav);
+    });
+    rows.sort((a,b)=>{
+      const af=favorites.has(String(a.dataset.userId))?1:0,bf=favorites.has(String(b.dataset.userId))?1:0;
+      return bf-af;
+    }).forEach(row=>contactList.appendChild(row));
+  }
 
   if(search&&contactList){
+    applyFavorites();
     const contacts=[...contactList.querySelectorAll('.msg-contact[data-search]')];
+    contactList.addEventListener('click',function(e){
+      const star=e.target.closest('[data-fav-id]');
+      if(!star)return;
+      e.preventDefault();e.stopPropagation();
+      const id=String(star.dataset.favId);
+      favorites.has(id)?favorites.delete(id):favorites.add(id);
+      saveFavorites(favorites);applyFavorites();
+    });
+    contactList.addEventListener('keydown',function(e){
+      const star=e.target.closest('[data-fav-id]');
+      if(!star||(e.key!=='Enter'&&e.key!==' '))return;
+      e.preventDefault();star.click();
+    });
     search.addEventListener('input',function(){
       const q=(this.value||'').trim().toLowerCase();
       contacts.forEach(row=>{
@@ -375,7 +424,7 @@
 
   if(!stream)return;
   stream.scrollTop=stream.scrollHeight;
-  const initial=[...stream.querySelectorAll('.msg-bubble[data-id]')];
+  const initial=[...stream.querySelectorAll('.msg-bubble-row[data-id]')];
   let last=initial.length?Number(initial[initial.length-1].dataset.id):0;
   const selected='{% if selected_contact %}{{ selected_contact.pk }}{% endif %}';
   const base='{% url "internal_message_updates" %}';
@@ -397,10 +446,11 @@
         if(item.id<=last)return;
         const empty=document.getElementById('msgEmpty');
         if(empty)empty.remove();
-        const el=document.createElement('article');
-        el.className='msg-bubble '+(item.mine?'mine':'theirs');
+        const el=document.createElement('div');
+        el.className='msg-bubble-row '+(item.mine?'mine':'theirs');
         el.dataset.id=item.id;
-        el.innerHTML='<strong>'+esc(item.sender)+'</strong><p>'+esc(item.body).replace(/\n/g,'<br>')+'</p><small>'+esc(item.time)+'</small>';
+        const avatar=item.avatar?'<span class="msg-message-avatar"><img src="'+esc(item.avatar)+'" alt=""></span>':'<span class="msg-message-avatar">'+esc((item.sender||'•').slice(0,1))+'</span>';
+        el.innerHTML=avatar+'<article class="msg-bubble '+(item.mine?'mine':'theirs')+'"><strong>'+esc(item.sender)+'</strong><p>'+esc(item.body).replace(/\n/g,'<br>')+'</p><small>'+esc(item.time)+'</small></article>';
         stream.appendChild(el);
         last=item.id;added=true;
       });
