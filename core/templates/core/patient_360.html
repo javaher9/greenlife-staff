@@ -128,6 +128,81 @@ body:has(.p360) .p360-quicknav a:nth-child(3n){background:#f4effb!important;colo
   body:has(.p360) .p360-grid>.p360-col:last-child #p360-notes{grid-column:auto}
 }
 
+/* Unified support panel: six operational cards behave as one premium surface */
+body:has(.p360) .p360-grid>.p360-col:last-child{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:0!important;
+  margin-top:18px!important;
+  padding:0!important;
+  background:#fff!important;
+  border:1px solid #dce7e3!important;
+  border-radius:22px!important;
+  overflow:hidden!important;
+  box-shadow:0 16px 38px rgba(39,73,64,.07)!important;
+  align-items:stretch!important;
+}
+body:has(.p360) .p360-grid>.p360-col:last-child>.p360-card{
+  margin:0!important;
+  min-width:0!important;
+  min-height:285px!important;
+  height:100%!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  background:#fff!important;
+  overflow:hidden!important;
+}
+body:has(.p360) .p360-grid>.p360-col:last-child>.p360-card:nth-child(3n+2),
+body:has(.p360) .p360-grid>.p360-col:last-child>.p360-card:nth-child(3n+3){
+  border-right:1px solid #e6ecea!important;
+}
+body:has(.p360) .p360-grid>.p360-col:last-child>.p360-card:nth-child(n+4){
+  border-top:1px solid #e6ecea!important;
+}
+body:has(.p360) .p360-grid>.p360-col:last-child #p360-rating,
+body:has(.p360) .p360-grid>.p360-col:last-child #p360-notes{
+  grid-column:auto!important;
+}
+body:has(.p360) .p360-grid>.p360-col:last-child .p360-head{
+  min-height:62px!important;
+  padding:16px 18px!important;
+  border-bottom:1px solid #edf1ef!important;
+}
+body:has(.p360) .p360-grid>.p360-col:last-child .p360-head h2{
+  font-size:14px!important;font-weight:950!important;letter-spacing:-.1px;
+}
+body:has(.p360) .p360-grid>.p360-col:last-child .p360-head span{
+  font-size:9px!important;line-height:1.7!important;
+}
+body:has(.p360) .p360-grid>.p360-col:last-child .p360-body{
+  padding:17px 18px 19px!important;
+}
+body:has(.p360) .p360-grid>.p360-col:last-child #p360-rating .p360-head{background:linear-gradient(90deg,#fbf9ff,#f3effb)!important}
+body:has(.p360) .p360-grid>.p360-col:last-child #p360-finance .p360-head{background:linear-gradient(90deg,#fffdf8,#fbf4df)!important}
+body:has(.p360) .p360-grid>.p360-col:last-child #p360-leads .p360-head{background:linear-gradient(90deg,#f8fcfe,#edf7fb)!important}
+body:has(.p360) .p360-grid>.p360-col:last-child #p360-sms .p360-head{background:linear-gradient(90deg,#f8fdfb,#edf8f2)!important}
+body:has(.p360) .p360-grid>.p360-col:last-child>.p360-card:nth-last-child(2) .p360-head{background:linear-gradient(90deg,#fffdf8,#fbf5e8)!important}
+body:has(.p360) .p360-grid>.p360-col:last-child #p360-notes .p360-head{background:linear-gradient(90deg,#fcfaff,#f6f0fb)!important}
+body:has(.p360) .p360-grid>.p360-col:last-child #p360-rating,
+body:has(.p360) .p360-grid>.p360-col:last-child #p360-finance,
+body:has(.p360) .p360-grid>.p360-col:last-child #p360-leads,
+body:has(.p360) .p360-grid>.p360-col:last-child #p360-sms,
+body:has(.p360) .p360-grid>.p360-col:last-child #p360-notes{
+  border-top:0!important;
+}
+@media(max-width:1180px){
+  body:has(.p360) .p360-grid>.p360-col:last-child{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  body:has(.p360) .p360-grid>.p360-col:last-child>.p360-card{border-top:1px solid #e6ecea!important;border-right:0!important}
+  body:has(.p360) .p360-grid>.p360-col:last-child>.p360-card:nth-child(-n+2){border-top:0!important}
+  body:has(.p360) .p360-grid>.p360-col:last-child>.p360-card:nth-child(even){border-right:1px solid #e6ecea!important}
+}
+@media(max-width:760px){
+  body:has(.p360) .p360-grid>.p360-col:last-child{grid-template-columns:1fr!important;border-radius:18px!important}
+  body:has(.p360) .p360-grid>.p360-col:last-child>.p360-card{min-height:0!important;border-right:0!important;border-top:1px solid #e6ecea!important}
+  body:has(.p360) .p360-grid>.p360-col:last-child>.p360-card:first-child{border-top:0!important}
+}
+
 /* Patient 360 light luxury workspace */
 html:has(body.gl-patient360-workspace){background:#f3f7f6!important;background-image:none!important;color-scheme:light!important}
 body.gl-patient360-workspace,
