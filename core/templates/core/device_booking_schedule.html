@@ -987,6 +987,26 @@
   .db-patient-picker-form .db-day-picker{grid-column:1/2!important}
   .db-patient-picker-form>button{grid-column:2/3!important}
 }
+
+/* Clickable consultant patient autocomplete */
+.db-patient-search-wrap{position:relative;min-width:0}
+.db-patient-results{
+  position:absolute;z-index:40;top:calc(100% + 6px);right:0;left:0;
+  max-height:280px;overflow:auto;padding:6px;border:1px solid #cfe0da;border-radius:13px;
+  background:#fff;box-shadow:0 16px 34px rgba(31,72,61,.16)
+}
+.db-patient-results[hidden]{display:none!important}
+.db-patient-result{
+  width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;
+  padding:10px 11px;border:0;border-bottom:1px solid #eef3f1;background:#fff;cursor:pointer;
+  text-align:right;border-radius:9px
+}
+.db-patient-result:last-child{border-bottom:0}
+.db-patient-result:hover,.db-patient-result:focus{background:#f1f8f5;outline:none}
+.db-patient-result strong{display:block;color:#183f36;font-size:10.5px}
+.db-patient-result small{display:block;margin-top:3px;color:#6f837d;font-size:8.5px}
+.db-patient-result span{padding:4px 7px;border-radius:999px;background:#eee8fb;color:#684d9a;font-size:8px;font-weight:900}
+.db-patient-noresult{padding:12px;text-align:center;color:#7b8d88;font-size:9px}
 </style>
 
 <div class="db-shell">
@@ -1007,7 +1027,10 @@
 <form method="get" class="db-form db-patient-picker-form" style="margin-bottom:13px">
   <input type="hidden" name="branch" value="{{ branch.pk }}">
   <label class="db-patient-search-label">جستجوی بیمار
-    <input type="search" id="dbPatientSearch" placeholder="نام یا شماره موبایل..." autocomplete="off">
+    <div class="db-patient-search-wrap">
+      <input type="search" id="dbPatientSearch" placeholder="نام یا شماره موبایل..." autocomplete="off">
+      <div class="db-patient-results" id="dbPatientResults" hidden></div>
+    </div>
   </label>
   <label>پرونده بیمار
     <select name="appointment" id="dbAppointment">
@@ -1244,16 +1267,59 @@
   var patientSelect=document.getElementById('dbAppointment');
   if(patientSearch&&patientSelect){
     var patientOptions=Array.from(patientSelect.options).slice(1);
+    var patientResults=document.getElementById('dbPatientResults');
     function normalizePatientText(v){return (v||'').toString().trim().toLowerCase().replace(/ي/g,'ی').replace(/ك/g,'ک');}
-    patientSearch.addEventListener('input',function(){
-      var q=normalizePatientText(this.value);
-      patientOptions.forEach(function(option){
+    function closePatientResults(){if(patientResults){patientResults.hidden=true;patientResults.innerHTML='';}}
+    function choosePatient(option){
+      if(!option||!option.value)return;
+      patientSelect.value=option.value;
+      patientSearch.value=(option.dataset.search||option.textContent||'').trim();
+      closePatientResults();
+      patientSelect.form.submit();
+    }
+    function renderPatientResults(){
+      if(!patientResults)return;
+      var q=normalizePatientText(patientSearch.value);
+      if(!q){closePatientResults();return;}
+      var matches=patientOptions.filter(function(option){
         var hay=normalizePatientText(option.dataset.search||option.textContent);
-        option.hidden=!!q&&!hay.includes(q);
+        return hay.includes(q);
+      }).slice(0,12);
+      patientResults.innerHTML='';
+      if(!matches.length){
+        var empty=document.createElement('div');
+        empty.className='db-patient-noresult';
+        empty.textContent='بیماری با این نام یا شماره پیدا نشد';
+        patientResults.appendChild(empty);
+        patientResults.hidden=false;
+        return;
+      }
+      matches.forEach(function(option){
+        var btn=document.createElement('button');
+        btn.type='button';
+        btn.className='db-patient-result';
+        var raw=(option.dataset.search||option.textContent||'').trim();
+        var bits=raw.split(' ');
+        var phone=bits.length?bits[bits.length-1]:'';
+        var label=(option.textContent||'').trim();
+        var name=label.split('·')[0].trim();
+        var status=(label.split('·').slice(-1)[0]||'').trim();
+        btn.innerHTML='<div><strong></strong><small></small></div><span></span>';
+        btn.querySelector('strong').textContent=name;
+        btn.querySelector('small').textContent=phone;
+        btn.querySelector('span').textContent=status;
+        btn.addEventListener('click',function(){choosePatient(option);});
+        patientResults.appendChild(btn);
       });
-    });
+      patientResults.hidden=false;
+    }
+    patientSearch.addEventListener('input',renderPatientResults);
+    patientSearch.addEventListener('focus',function(){if(patientSearch.value)renderPatientResults();});
     patientSelect.addEventListener('change',function(){
       if(this.value)this.form.submit();
+    });
+    document.addEventListener('click',function(e){
+      if(!e.target.closest('.db-patient-search-wrap'))closePatientResults();
     });
   }
 
