@@ -9,7 +9,10 @@ def restrict_rad_and_move_leads(apps, schema_editor):
     User=apps.get_model('auth','User')
 
     rad_profiles=EmployeeProfile.objects.filter(role='admin').filter(
-        Q(user__first_name__icontains='راد') | Q(user__last_name__icontains='راد')
+        Q(user__first_name__icontains='راد')
+        | Q(user__last_name__icontains='راد')
+        | Q(user__username__icontains='rad')
+        | Q(user__username__icontains='raad')
     )
     rad_user_ids=list(rad_profiles.values_list('user_id',flat=True))
     if not rad_user_ids:
