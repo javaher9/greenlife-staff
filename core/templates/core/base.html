@@ -484,6 +484,9 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
       <summary><span class="nav-ico">◉</span><span>{% gl_t 'common.leads' %}</span><span class="settings-caret">⌄</span></summary>
       <div class="gl-settings-submenu">
         <a href="/lead-management/" class="{% if request.resolver_match.url_name == 'lead_management_dashboard' %}is-active{% endif %}"><span class="nav-ico">◉</span><span>{% gl_t 'shell.lead_management' %}</span></a>
+        {% if user.is_superuser or user.profile.dm_lead_enabled %}
+        <a href="{% url 'instagram_manual_lead' %}" class="{% if request.resolver_match.url_name == 'instagram_manual_lead' %}is-active{% endif %}"><span class="nav-ico">＋</span><span>{% gl_t 'dash.dm_lead' %}</span></a>
+        {% endif %}
       </div>
     </details>
     {% elif user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}
