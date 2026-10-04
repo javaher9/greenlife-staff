@@ -630,9 +630,7 @@ def dashboard(request):
         receptionist_consultant_queue_count=receptionist_appointments.filter(
             care_stage='consultant'
         ).count()
-        receptionist_closed_count=receptionist_appointments.filter(
-            Q(care_stage='closed') | Q(status='completed')
-        ).count()
+        receptionist_closed_count=receptionist_appointments.filter(care_stage='closed').count()
         receptionist_payment_count=FinancialTransaction.objects.filter(
             source='manual',recorded_by=request.user,created_at__date=today_local,
         ).exclude(review_status='cancelled').count()
