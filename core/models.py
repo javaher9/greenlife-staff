@@ -114,6 +114,10 @@ class EmployeeProfile(models.Model):
         default=False,
         help_text='اجازه ثبت دستی لیدهایی که شماره‌شان از دایرکت اینستاگرام دریافت شده است.',
     )
+    can_use_sales_network=models.BooleanField(
+        default=True,
+        help_text='اجازه دسترسی به شبکه فروش و ثبت لید به نام شبکه شخصی.',
+    )
     is_active=models.BooleanField(default=True)
     def __str__(self): return self.user.get_full_name() or self.user.username
 
