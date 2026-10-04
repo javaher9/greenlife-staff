@@ -203,6 +203,67 @@ body:has(.p360) .p360-grid>.p360-col:last-child #p360-notes{
   body:has(.p360) .p360-grid>.p360-col:last-child>.p360-card:first-child{border-top:0!important}
 }
 
+/* Patient 360 phone direction + separated premium support cards */
+.p360-phone{
+  direction:ltr!important;
+  unicode-bidi:isolate!important;
+  display:inline-block!important;
+  text-align:left!important;
+  font-family:Tahoma,Arial,sans-serif!important;
+  letter-spacing:.2px!important;
+}
+
+body:has(.p360) .p360-grid>.p360-col:last-child{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:14px!important;
+  margin-top:18px!important;
+  padding:0!important;
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  overflow:visible!important;
+  box-shadow:none!important;
+  align-items:stretch!important;
+}
+body:has(.p360) .p360-grid>.p360-col:last-child>.p360-card{
+  margin:0!important;
+  min-width:0!important;
+  min-height:275px!important;
+  height:100%!important;
+  border:1px solid #dfe8e5!important;
+  border-radius:18px!important;
+  box-shadow:0 10px 24px rgba(41,75,65,.055)!important;
+  background:#fff!important;
+  overflow:hidden!important;
+}
+body:has(.p360) .p360-grid>.p360-col:last-child>.p360-card:nth-child(3n+2),
+body:has(.p360) .p360-grid>.p360-col:last-child>.p360-card:nth-child(3n+3),
+body:has(.p360) .p360-grid>.p360-col:last-child>.p360-card:nth-child(n+4){
+  border-right:1px solid #dfe8e5!important;
+  border-top:1px solid #dfe8e5!important;
+}
+body:has(.p360) .p360-grid>.p360-col:last-child #p360-rating,
+body:has(.p360) .p360-grid>.p360-col:last-child #p360-notes{
+  grid-column:auto!important;
+}
+body:has(.p360) .p360-grid>.p360-col:last-child .p360-head{
+  min-height:60px!important;
+  padding:15px 17px!important;
+  border-bottom:1px solid #edf1ef!important;
+}
+body:has(.p360) .p360-grid>.p360-col:last-child .p360-body{
+  padding:16px 17px 18px!important;
+}
+@media(max-width:1180px){
+  body:has(.p360) .p360-grid>.p360-col:last-child{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
+  body:has(.p360) .p360-grid>.p360-col:last-child>.p360-card{min-height:250px!important;border:1px solid #dfe8e5!important}
+}
+@media(max-width:760px){
+  body:has(.p360) .p360-grid>.p360-col:last-child{grid-template-columns:1fr!important;gap:10px!important}
+  body:has(.p360) .p360-grid>.p360-col:last-child>.p360-card{min-height:0!important;border:1px solid #dfe8e5!important;border-radius:16px!important}
+}
+
 /* Patient 360 light luxury workspace */
 html:has(body.gl-patient360-workspace){background:#f3f7f6!important;background-image:none!important;color-scheme:light!important}
 body.gl-patient360-workspace,
@@ -349,7 +410,7 @@ body.gl-patient360-workspace .p360-mini-btn{font-size:9.5px!important;padding:9p
         <div class="p360-avatar">{% if patient.photo %}<img src="{{ patient.photo.url }}" alt="">{% else %}{{ patient.full_name|slice:":1" }}{% endif %}</div>
         <div>
           <h1>{{ patient.full_name }}</h1>
-          <p>{{ patient_phone_display }}{% if patient.home_branch %} · شعبه {{ patient.home_branch.name }}{% endif %} · عضو از {{ customer_since|date:"Y/m/d" }} · {{ appointment_count }} مراجعه ثبت‌شده</p>
+          <p><bdi class="p360-phone" dir="ltr">{{ patient_phone_display }}</bdi>{% if patient.home_branch %} · شعبه {{ patient.home_branch.name }}{% endif %} · عضو از {{ customer_since|date:"Y/m/d" }} · {{ appointment_count }} مراجعه ثبت‌شده</p>
           <div class="p360-tags"><span class="p360-active">● بیمار فعال</span>{% if patient.is_vip %}<span>VIP</span>{% endif %}{% if linked_profile_count > 1 %}<span>اطلاعات موبایل یکپارچه شده</span>{% endif %}</div>
           {% if can_capture_photo %}
           <div class="p360-photo-actions">
@@ -362,7 +423,7 @@ body.gl-patient360-workspace .p360-mini-btn{font-size:9.5px!important;padding:9p
       <a class="p360-back" href="{{ back_url }}">← بازگشت</a>
     </div>
     <div class="p360-facts">
-      <div class="p360-fact"><b>موبایل</b><span>{{ patient_phone_display }}</span></div>
+      <div class="p360-fact"><b>موبایل</b><span class="p360-phone" dir="ltr">{{ patient_phone_display }}</span></div>
       <div class="p360-fact"><b>سن / جنسیت</b><span>{% if age %}{{ age }} سال{% else %}—{% endif %}{% if patient.sex %} · {{ patient.get_sex_display }}{% endif %}</span></div>
       <div class="p360-fact"><b>قد</b><span>{% if patient.height_cm %}{{ patient.height_cm }} cm{% else %}—{% endif %}</span></div>
       <div class="p360-fact"><b>محله</b><span>{{ patient.neighborhood|default:"—" }}</span></div>
