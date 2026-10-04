@@ -43,7 +43,7 @@
         <label class="field"><span>توضیحات</span>{{ form.interested_service }}{% for error in form.interested_service.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <button class="btn" id="manualSubmitBtn" type="submit">ثبت در App</button>
       </form>
-      <div class="hint">نام ثبت‌کننده نیز به‌صورت خودکار در سابقه لید ذخیره می‌شود.</div>
+      <div class="hint">ثبت‌کننده: <strong>{{ request.user.get_full_name|default:request.user.username }}</strong> · نام ثبت‌کننده به‌صورت خودکار در سابقه لید ذخیره می‌شود.</div>
     {% endif %}
   </section>
 </main>
