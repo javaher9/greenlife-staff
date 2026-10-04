@@ -2,6 +2,7 @@ from datetime import time
 from decimal import Decimal
 
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -106,6 +107,23 @@ class DoctorDashboardTests(TestCase):
         self.assertIn('خورشیدی',body)
         self.assertNotIn('بیمار شعبه دیگر',body)
         self.assertNotIn('09121234567',body)
+
+    def test_doctor_queue_shows_patient_avatar_and_light_theme(self):
+        patient=PatientProfile.objects.create(
+            full_name='مریم حسینی',
+            phone='09121234567',
+            home_branch=self.branch,
+        )
+        patient.photo=SimpleUploadedFile(
+            'patient-avatar.png',b'\x89PNG\r\n\x1a\n',content_type='image/png'
+        )
+        patient.save(update_fields=['photo','updated_at'])
+        response=self.client.get(reverse('doctor_dashboard'))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'patient-mini-avatar')
+        self.assertContains(response,patient.photo.url)
+        self.assertContains(response,'Light clinical desktop theme')
+        self.assertContains(response,'#f3f7f5')
 
     def test_patient_profile_is_created_and_analysis_trends_render(self):
         self.client.get(reverse('doctor_dashboard'))
