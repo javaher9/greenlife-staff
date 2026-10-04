@@ -1,49 +1,71 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}
 {% block content %}
 <style>
-.p360{max-width:1740px;margin:12px auto 36px;padding:10px;display:grid;gap:14px;direction:rtl;color:#203f39}
+.p360{max-width:1760px;margin:12px auto 38px;padding:10px;display:grid;gap:13px;direction:rtl;color:#203f39}
 .p360 *{box-sizing:border-box}
-.p360-hero{display:grid;grid-template-columns:minmax(0,1.6fr) auto;gap:16px;align-items:center;padding:22px 24px;border:1px solid #d8e8e2;border-radius:24px;background:linear-gradient(120deg,#e9f8f1,#fff 55%,#f2effd);box-shadow:0 14px 34px rgba(34,82,67,.07)}
-.p360-title{display:flex;gap:14px;align-items:center}.p360-avatar{width:72px;height:72px;border-radius:22px;background:linear-gradient(135deg,#5c4b86,#9a82e7);color:#fff;display:grid;place-items:center;font-size:27px;font-weight:950;overflow:hidden}.p360-avatar img{width:100%;height:100%;object-fit:cover}
-.p360-title h1{margin:0;color:#123e34;font-size:28px}.p360-title p{margin:5px 0 0;color:#607a73;font-size:11px;line-height:1.9}.p360-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.p360-tags span{padding:6px 9px;border-radius:999px;background:#fff;border:1px solid #d9e7e2;font-size:9px;font-weight:850;color:#385c53}
-.p360-back{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 14px;border-radius:12px;text-decoration:none;background:#183f36;color:#fff!important;font-size:10px;font-weight:900}
-.p360-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.p360-kpi{padding:14px 15px;border-radius:17px;background:#fff;border:1px solid #dce9e4;box-shadow:0 8px 20px rgba(38,78,68,.045)}.p360-kpi small{display:block;color:#617872;font-size:9px;font-weight:850}.p360-kpi strong{display:block;margin-top:5px;font-size:20px;color:#173f35}.p360-kpi em{display:block;margin-top:2px;font-style:normal;color:#718781;font-size:8px}
-.p360-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,.75fr);gap:14px}.p360-col{display:grid;gap:14px;align-content:start}.p360-card{background:#fff;border:1px solid #dce9e5;border-radius:20px;box-shadow:0 10px 28px rgba(35,75,65,.045);overflow:hidden}.p360-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:14px 16px;border-bottom:1px solid #e5eeeb;background:linear-gradient(120deg,#fbfefd,#f7f8fd)}.p360-head h2{margin:0;font-size:14px;color:#173f36}.p360-head span{font-size:8px;color:#70857f}
-.p360-body{padding:14px 16px}.p360-info{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.p360-info div{padding:10px;border:1px solid #e1ebe7;border-radius:12px;background:#fbfdfc}.p360-info b{display:block;color:#657b74;font-size:8px}.p360-info span{display:block;margin-top:3px;color:#21483f;font-size:11px;font-weight:850;word-break:break-word}
-.p360-list{display:grid;gap:8px}.p360-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px;border:1px solid #e2ebe8;border-radius:12px;background:#fbfdfc}.p360-row strong{display:block;color:#244940;font-size:10px}.p360-row small{display:block;margin-top:3px;color:#667c76;font-size:8px;line-height:1.7}.p360-row b{font-size:9px;color:#5d4c84}.tone-green{background:#eef9f3!important;border-color:#cae8d9!important}.tone-purple{background:#f6f1fd!important;border-color:#e2d7f3!important}.tone-amber{background:#fff8e8!important;border-color:#eddcae!important}.tone-blue{background:#eef6fd!important;border-color:#d6e5f4!important}
-.p360-empty{padding:18px;text-align:center;color:#82948f;font-size:9px}
-.p360-analysis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:12px}.p360-metric{padding:11px;border-radius:13px;background:linear-gradient(145deg,#f5fbf8,#fff);border:1px solid #dce9e4}.p360-metric span{display:block;color:#687d77;font-size:8px}.p360-metric strong{display:block;margin-top:3px;color:#173f36;font-size:16px}
-.p360-note{padding:10px 0;border-top:1px solid #edf1ef}.p360-note:first-child{border-top:0}.p360-note b{font-size:9px;color:#5d4a80}.p360-note p{margin:4px 0 0;color:#455f58;font-size:9px;line-height:1.9}
-.p360-table{width:100%;border-collapse:collapse;font-size:9px}.p360-table th,.p360-table td{padding:8px 6px;border-bottom:1px solid #edf1ef;text-align:right}.p360-table th{color:#667b74;font-weight:850}.p360-table td{color:#24473f}
-@media(max-width:1200px){.p360-kpis{grid-template-columns:repeat(3,1fr)}.p360-grid{grid-template-columns:1fr}.p360-analysis{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:700px){.p360{padding:5px}.p360-hero{grid-template-columns:1fr}.p360-kpis{grid-template-columns:repeat(2,1fr)}.p360-info{grid-template-columns:1fr}.p360-analysis{grid-template-columns:repeat(2,1fr)}.p360-title h1{font-size:21px}}
+.p360 .p360-hero,.p360 .p360-card,.p360 .p360-kpi,.p360 .p360-body,.p360 .p360-head,
+.p360 .p360-fact,.p360 .p360-row,.p360 .p360-metric,.p360 .p360-table-wrap{
+  background:#fff!important;color:#203f39!important;background-image:none!important
+}
+.p360-hero{position:relative;overflow:hidden;border:1px solid #dfeae6!important;border-radius:24px!important;padding:19px 21px!important;box-shadow:0 14px 34px rgba(38,79,68,.065)!important}
+.p360-hero:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 5% 15%,rgba(151,120,226,.12),transparent 20%),radial-gradient(circle at 90% 0,rgba(44,162,116,.10),transparent 24%);pointer-events:none}
+.p360-hero-top{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.p360-title{display:flex;align-items:center;gap:14px;min-width:0}.p360-avatar{width:68px;height:68px;border-radius:21px;background:linear-gradient(135deg,#7054bb,#a68cf0)!important;color:#fff!important;display:grid;place-items:center;font-size:27px;font-weight:950;overflow:hidden;box-shadow:0 10px 22px rgba(102,76,178,.22)}.p360-avatar img{width:100%;height:100%;object-fit:cover}
+.p360-title h1{margin:0!important;color:#153f36!important;font-size:27px!important}.p360-title p{margin:5px 0 0!important;color:#6a807a!important;font-size:10px!important;line-height:1.8!important}
+.p360-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.p360-tags span{padding:5px 8px;border-radius:999px;background:#f6faf8!important;border:1px solid #dce9e4;color:#3b5d55!important;font-size:8.5px!important;font-weight:850}
+.p360-active{background:#e5f7ec!important;color:#176c4d!important;border-color:#cce9d9!important}
+.p360-back{display:inline-flex;min-height:40px;padding:0 13px;align-items:center;justify-content:center;border-radius:11px;background:#1a684f!important;color:#fff!important;-webkit-text-fill-color:#fff!important;text-decoration:none;font-size:9.5px;font-weight:950}
+.p360-facts{position:relative;z-index:1;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:15px}
+.p360-fact{padding:9px 10px;border:1px solid #e1ebe8!important;border-radius:12px!important;box-shadow:0 5px 14px rgba(42,78,69,.035)!important;min-width:0}
+.p360-fact b{display:block!important;color:#78908a!important;font-size:7.8px!important}.p360-fact span{display:block!important;margin-top:3px;color:#21473f!important;font-size:9.5px!important;font-weight:900!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p360-fact.wide{grid-column:span 2}.p360-fact.wide span{white-space:normal;line-height:1.55;max-height:32px}
+.p360-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}.p360-kpi{position:relative;padding:13px 14px;border-radius:16px!important;border:1px solid #e1ebe8!important;box-shadow:0 8px 18px rgba(36,76,66,.045)!important;overflow:hidden}.p360-kpi:after{content:"";position:absolute;inset:auto 0 0;height:3px;background:#e6f2ed}.p360-kpi:nth-child(2):after{background:#f0dfb6}.p360-kpi:nth-child(3):after{background:#d9d0f7}.p360-kpi:nth-child(4):after{background:#cfe9f6}.p360-kpi:nth-child(5):after{background:#d7efdd}.p360-kpi:nth-child(6):after{background:#dfd3fa}
+.p360-kpi small{display:block!important;color:#728680!important;font-size:8.5px!important;font-weight:850}.p360-kpi strong{display:block!important;margin-top:5px;color:#173f36!important;font-size:19px!important}.p360-kpi em{display:block!important;margin-top:2px;color:#82928e!important;font-size:7.5px!important;font-style:normal!important}
+.p360-grid{display:grid;grid-template-columns:minmax(0,1.52fr) minmax(300px,.72fr);gap:13px;align-items:start}.p360-col{display:grid;gap:13px;align-content:start}
+.p360-card{border:1px solid #dfeae6!important;border-radius:19px!important;box-shadow:0 10px 25px rgba(38,77,67,.045)!important;overflow:hidden!important}
+.p360-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;padding:13px 15px!important;border-bottom:1px solid #e8efed!important;background:linear-gradient(90deg,#fbfefd,#f8f7fd)!important}
+.p360-head h2{margin:0!important;color:#173f36!important;font-size:13px!important}.p360-head span{color:#7a8d88!important;font-size:8px!important}
+.p360-body{padding:13px 15px!important}.p360-empty{padding:17px;text-align:center;color:#84958f!important;font-size:8.5px!important}
+.p360-analysis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-bottom:10px}.p360-metric{padding:10px;border:1px solid #e2ece8!important;border-radius:12px!important}.p360-metric span{display:block!important;color:#71847e!important;font-size:7.5px!important}.p360-metric strong{display:block!important;margin-top:3px;color:#17493c!important;font-size:15px!important}
+.p360-table-wrap{overflow:auto;border:1px solid #e5ecea!important;border-radius:13px!important}.p360-table{width:100%;border-collapse:collapse;font-size:8.5px!important;min-width:620px}.p360-table th{background:#f4f8f6!important;color:#587169!important;font-weight:900!important}.p360-table th,.p360-table td{padding:8px 7px;border-bottom:1px solid #edf2f0;text-align:right;vertical-align:top}.p360-table td{color:#294b43!important;background:#fff!important}
+.p360-visit-card .p360-body{padding:0!important}.p360-visit-scroll{overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;scrollbar-width:thin!important}.p360-visit-table{width:100%;min-width:1040px;border-collapse:separate;border-spacing:0;font-size:8.6px!important}.p360-visit-table th{position:sticky;top:0;z-index:2;padding:9px 8px;background:#f3f8f6!important;color:#49675e!important;border-bottom:1px solid #dfeae6;font-weight:950;text-align:right}.p360-visit-table th:nth-child(3){background:#eef9f2!important;color:#267456!important}.p360-visit-table th:nth-child(4){background:#fff8eb!important;color:#a16622!important}.p360-visit-table th:nth-child(5){background:#f4f0fd!important;color:#684da0!important}.p360-visit-table th:nth-child(6){background:#eef6fd!important;color:#3c6e9c!important}
+.p360-visit-table td{padding:9px 8px!important;border-bottom:1px solid #edf2f0!important;background:#fff!important;color:#2d4e46!important;vertical-align:top;line-height:1.65!important}.p360-visit-table tr:hover td{background:#fbfdfc!important}.p360-visit-no{display:inline-flex;align-items:center;gap:5px;font-weight:950;color:#173f36!important}.p360-visit-no i{width:21px;height:21px;border-radius:8px;background:#ece6fb;display:grid;place-items:center;color:#6e51ad;font-style:normal;font-size:8px}.p360-visit-date{white-space:nowrap}.p360-status{display:inline-flex;margin-top:4px;padding:3px 6px;border-radius:999px;background:#edf7f2!important;color:#277356!important;font-size:7.5px!important;font-weight:900}
+.p360-side-list{display:grid;gap:7px}.p360-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:9px 10px;border:1px solid #e5ecea!important;border-radius:11px!important}.p360-row strong{display:block!important;color:#284b43!important;font-size:9.5px!important}.p360-row small{display:block!important;margin-top:3px;color:#71847e!important;font-size:7.8px!important;line-height:1.65!important}.p360-row b{color:#675095!important;font-size:8px!important}
+.p360-row.green{background:#f3fbf6!important;border-color:#d7eadf!important}.p360-row.amber{background:#fffaf0!important;border-color:#eee0bf!important}.p360-row.blue{background:#f2f8fd!important;border-color:#dce9f4!important}
+.p360-note{padding:9px 0;border-top:1px solid #eef2f0}.p360-note:first-child{border-top:0}.p360-note b{color:#654d96!important;font-size:8.5px!important}.p360-note p{margin:4px 0 0;color:#4f6962!important;font-size:8.2px!important;line-height:1.75!important}
+@media(max-width:1250px){.p360-facts{grid-template-columns:repeat(3,1fr)}.p360-kpis{grid-template-columns:repeat(3,1fr)}.p360-grid{grid-template-columns:1fr}.p360-analysis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.p360{padding:5px}.p360-hero-top{align-items:flex-start}.p360-title h1{font-size:21px!important}.p360-avatar{width:58px;height:58px}.p360-facts{grid-template-columns:repeat(2,1fr)}.p360-fact.wide{grid-column:1/-1}.p360-kpis{grid-template-columns:repeat(2,1fr)}.p360-analysis{grid-template-columns:repeat(2,1fr)}}
 </style>
 
 <div class="p360">
   <section class="p360-hero">
-    <div class="p360-title">
-      <div class="p360-avatar">{% if patient.photo %}<img src="{{ patient.photo.url }}" alt="">{% else %}{{ patient.full_name|slice:":1" }}{% endif %}</div>
-      <div>
-        <h1>{{ patient.full_name }}</h1>
-        <p>{{ patient.phone }}{% if patient.home_branch %} · {{ patient.home_branch.name }}{% endif %} · از {{ customer_since|date:"Y/m/d" }} در گرین‌لایف</p>
-        <div class="p360-tags">
-          {% if patient.is_vip %}<span>VIP</span>{% endif %}
-          {% if age %}<span>{{ age }} سال</span>{% endif %}
-          {% if patient.sex %}<span>{{ patient.get_sex_display }}</span>{% endif %}
-          {% if patient.neighborhood %}<span>{{ patient.neighborhood }}</span>{% endif %}
-          {% if patient.crm_id %}<span>CRM: {{ patient.crm_id }}</span>{% endif %}
+    <div class="p360-hero-top">
+      <div class="p360-title">
+        <div class="p360-avatar">{% if patient.photo %}<img src="{{ patient.photo.url }}" alt="">{% else %}{{ patient.full_name|slice:":1" }}{% endif %}</div>
+        <div>
+          <h1>{{ patient.full_name }}</h1>
+          <p>{{ patient.phone }}{% if patient.home_branch %} · شعبه {{ patient.home_branch.name }}{% endif %} · از {{ customer_since|date:"Y/m/d" }} در گرین‌لایف</p>
+          <div class="p360-tags"><span class="p360-active">● بیمار فعال</span>{% if patient.is_vip %}<span>VIP</span>{% endif %}{% if linked_profile_count > 1 %}<span>اطلاعات موبایل یکپارچه شده</span>{% endif %}</div>
         </div>
       </div>
+      <a class="p360-back" href="{{ back_url }}">بازگشت</a>
     </div>
-    <a class="p360-back" href="{{ back_url }}">بازگشت</a>
+    <div class="p360-facts">
+      <div class="p360-fact"><b>موبایل</b><span>{{ patient.phone }}</span></div>
+      <div class="p360-fact"><b>سن / جنسیت</b><span>{% if age %}{{ age }} سال{% else %}—{% endif %}{% if patient.sex %} · {{ patient.get_sex_display }}{% endif %}</span></div>
+      <div class="p360-fact"><b>قد</b><span>{% if patient.height_cm %}{{ patient.height_cm }} cm{% else %}—{% endif %}</span></div>
+      <div class="p360-fact"><b>محله</b><span>{{ patient.neighborhood|default:"—" }}</span></div>
+      <div class="p360-fact wide"><b>آدرس</b><span>{{ patient.address_summary|default:"—" }}</span></div>
+      <div class="p360-fact wide"><b>سابقه پزشکی / بیماری‌های خاص</b><span>{{ patient.medical_history|default:"—" }}</span></div>
+    </div>
   </section>
 
   <section class="p360-kpis">
     <div class="p360-kpi"><small>کل پرداخت تأییدشده</small><strong>{{ approved_paid|floatformat:0 }}</strong><em>تومان</em></div>
     <div class="p360-kpi"><small>در انتظار تأیید</small><strong>{{ pending_paid|floatformat:0 }}</strong><em>تومان</em></div>
-    <div class="p360-kpi"><small>مراجعه‌ها</small><strong>{{ appointment_count }}</strong><em>کل نوبت‌های ثبت‌شده</em></div>
+    <div class="p360-kpi"><small>مراجعه‌ها</small><strong>{{ appointment_count }}</strong><em>کل مراجعات ثبت‌شده</em></div>
     <div class="p360-kpi"><small>پیامک‌ها</small><strong>{{ sms_count }}</strong><em>ثبت‌شده در Staff App</em></div>
-    <div class="p360-kpi"><small>نتیجه تماس ثبت‌شده</small><strong>{{ recorded_contact_count }}</strong><em>بر اساس لیدها و نتایج ثبت‌شده</em></div>
+    <div class="p360-kpi"><small>نتیجه تماس ثبت‌شده</small><strong>{{ recorded_contact_count }}</strong><em>لیدها و پیگیری‌ها</em></div>
     <div class="p360-kpi"><small>آخرین وزن</small><strong>{% if latest_analysis.weight_kg %}{{ latest_analysis.weight_kg }}{% else %}—{% endif %}</strong><em>{% if weight_delta != None %}تغییر {{ weight_delta }} kg{% else %}بدون داده روند{% endif %}</em></div>
   </section>
 
@@ -60,66 +82,58 @@
             <div class="p360-metric"><span>عضله</span><strong>{{ latest_analysis.skeletal_muscle_kg|default:"—" }}</strong></div>
             <div class="p360-metric"><span>چربی احشایی</span><strong>{{ latest_analysis.visceral_fat|default:"—" }}</strong></div>
           </div>
-          <table class="p360-table"><thead><tr><th>تاریخ</th><th>وزن</th><th>BMI</th><th>چربی %</th><th>عضله</th></tr></thead><tbody>{% for a in analyses %}<tr><td>{{ a.recorded_at|date:"Y/m/d" }}</td><td>{{ a.weight_kg|default:"—" }}</td><td>{{ a.bmi|default:"—" }}</td><td>{{ a.body_fat_percent|default:"—" }}</td><td>{{ a.skeletal_muscle_kg|default:"—" }}</td></tr>{% endfor %}</tbody></table>
+          <div class="p360-table-wrap"><table class="p360-table"><thead><tr><th>تاریخ</th><th>وزن</th><th>BMI</th><th>چربی %</th><th>عضله</th></tr></thead><tbody>{% for a in analyses %}<tr><td>{{ a.recorded_at|date:"Y/m/d" }}</td><td>{{ a.weight_kg|default:"—" }}</td><td>{{ a.bmi|default:"—" }}</td><td>{{ a.body_fat_percent|default:"—" }}</td><td>{{ a.skeletal_muscle_kg|default:"—" }}</td></tr>{% endfor %}</tbody></table></div>
           {% else %}<div class="p360-empty">هنوز آنالیز بدن برای این بیمار ثبت نشده است.</div>{% endif %}
         </div>
       </section>
 
-      <section class="p360-card">
-        <div class="p360-head"><h2>درمان‌ها و برنامه‌ها</h2><span>رژیم، دستگاه، لیپولیتیک</span></div>
+      <section class="p360-card p360-visit-card">
+        <div class="p360-head"><h2>ویزیت‌ها و برنامه‌های اختصاصی</h2><span>ویزیت‌ها در ردیف · برنامه‌ها در ستون</span></div>
         <div class="p360-body">
-          <div class="p360-list">
-            {% for d in diets %}<div class="p360-row tone-green"><div><strong>رژیم · {{ d.diet_name }}</strong><small>{{ d.recommendation_pack }}{% if d.print_template %} · {{ d.print_template }}{% endif %}{% if d.note %}<br>{{ d.note }}{% endif %}</small></div><b>{{ d.get_status_display }}</b></div>{% endfor %}
-            {% for d in devices %}<div class="p360-row tone-blue"><div><strong>دستگاه · {{ d.device_name }}</strong><small>{{ d.area }} · {{ d.sessions_completed }}/{{ d.sessions_prescribed }} جلسه{% if d.note %}<br>{{ d.note }}{% endif %}</small></div><b>{{ d.get_status_display }}</b></div>{% endfor %}
-            {% for l in lipolytics %}<div class="p360-row tone-purple"><div><strong>لیپولیتیک · {{ l.protocol_name }}</strong><small>{{ l.area }} · {{ l.sessions_completed }}/{{ l.sessions_prescribed }} جلسه{% if l.note %}<br>{{ l.note }}{% endif %}</small></div><b>{{ l.get_status_display }}</b></div>{% endfor %}
-            {% if not diets and not devices and not lipolytics %}<div class="p360-empty">هنوز برنامه درمانی ثبت نشده است.</div>{% endif %}
+          {% if visit_rows %}
+          <div class="p360-visit-scroll">
+            <table class="p360-visit-table">
+              <thead><tr><th>ویزیت</th><th>تاریخ / وضعیت</th><th>برنامه غذایی</th><th>توصیه‌ها</th><th>نسخه / داروها</th><th>دستگاه / لیپولیتیک</th></tr></thead>
+              <tbody>
+                {% for v in visit_rows %}
+                <tr>
+                  <td><span class="p360-visit-no"><i>{{ v.number }}</i>ویزیت {{ v.number }}</span></td>
+                  <td class="p360-visit-date">{{ v.appointment.appointment_date|jdate }}<br><span class="p360-status">{{ v.appointment.get_status_display }}</span></td>
+                  <td>{{ v.food }}</td><td>{{ v.recommendations }}</td><td>{{ v.prescriptions }}</td><td>{{ v.treatment }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
           </div>
+          {% else %}<div class="p360-empty">هنوز برای ویزیت‌های این بیمار برنامه اختصاصی ثبت نشده است.</div>{% endif %}
         </div>
       </section>
 
       <section class="p360-card">
         <div class="p360-head"><h2>جلسات دستگاه</h2><span>رزرو، انجام، لغو و جابه‌جایی</span></div>
-        <div class="p360-body"><div class="p360-list">{% for s in device_sessions %}<div class="p360-row"><div><strong>{{ s.device.name }}{% if s.secondary_device %} + {{ s.secondary_device.name }}{% endif %}</strong><small>{{ s.starts_at|date:"Y/m/d H:i" }} · {{ s.plan_item.title }}</small></div><b>{{ s.get_status_display }}</b></div>{% empty %}<div class="p360-empty">جلسه دستگاه ثبت نشده است.</div>{% endfor %}</div></div>
-      </section>
-
-      <section class="p360-card">
-        <div class="p360-head"><h2>مراجعه‌ها و نوبت‌ها</h2><span>{{ appointment_count }} مورد</span></div>
-        <div class="p360-body"><div class="p360-list">{% for a in appointments %}<div class="p360-row"><div><strong>{{ a.branch.name }} · {{ a.service|default:"مراجعه" }}</strong><small>{{ a.appointment_date|date:"Y/m/d" }} · {{ a.appointment_time|time:"H:i" }}{% if a.notes %}<br>{{ a.notes }}{% endif %}</small></div><b>{{ a.get_status_display }}</b></div>{% empty %}<div class="p360-empty">نوبتی یافت نشد.</div>{% endfor %}</div></div>
+        <div class="p360-body"><div class="p360-side-list">{% for s in device_sessions %}<div class="p360-row blue"><div><strong>{{ s.device.name }}{% if s.secondary_device %} + {{ s.secondary_device.name }}{% endif %}</strong><small>{{ s.starts_at|date:"Y/m/d H:i" }} · {{ s.plan_item.title }}</small></div><b>{{ s.get_status_display }}</b></div>{% empty %}<div class="p360-empty">جلسه دستگاهی ثبت نشده است.</div>{% endfor %}</div></div>
       </section>
     </div>
 
     <div class="p360-col">
       <section class="p360-card">
-        <div class="p360-head"><h2>مشخصات و سابقه پزشکی</h2><span>پرونده پایه</span></div>
-        <div class="p360-body"><div class="p360-info">
-          <div><b>موبایل</b><span>{{ patient.phone }}</span></div>
-          <div><b>قد</b><span>{{ patient.height_cm|default:"—" }}</span></div>
-          <div><b>محله</b><span>{{ patient.neighborhood|default:"—" }}</span></div>
-          <div><b>آدرس</b><span>{{ patient.address_summary|default:"—" }}</span></div>
-          <div style="grid-column:1/-1"><b>سابقه پزشکی</b><span>{{ patient.medical_history|default:"—" }}</span></div>
-        </div></div>
-      </section>
-
-      <section class="p360-card">
         <div class="p360-head"><h2>مالی</h2><span>پرداخت‌های مرتبط</span></div>
-        <div class="p360-body"><div class="p360-list">{% for f in finance_rows %}<div class="p360-row {% if f.review_status == 'approved' %}tone-green{% elif f.review_status == 'pending' %}tone-amber{% endif %}"><div><strong>{{ f.amount|floatformat:0 }} تومان</strong><small>{{ f.occurred_at|date:"Y/m/d H:i" }} · {{ f.get_payment_method_display|default:f.payment_method }}{% if f.service %} · {{ f.service }}{% endif %}</small></div><b>{{ f.get_review_status_display }}</b></div>{% empty %}<div class="p360-empty">پرداختی در Staff App پیدا نشد.</div>{% endfor %}</div></div>
+        <div class="p360-body"><div class="p360-side-list">{% for f in finance_rows %}<div class="p360-row {% if f.review_status == 'approved' %}green{% elif f.review_status == 'pending' %}amber{% endif %}"><div><strong>{{ f.amount|floatformat:0 }} تومان</strong><small>{{ f.occurred_at|date:"Y/m/d H:i" }}{% if f.service %} · {{ f.service }}{% endif %}</small></div><b>{{ f.get_review_status_display }}</b></div>{% empty %}<div class="p360-empty">پرداختی در Staff App پیدا نشد.</div>{% endfor %}</div></div>
       </section>
 
       <section class="p360-card">
-        <div class="p360-head"><h2>تماس‌ها و لید</h2><span>نتایج ثبت‌شده، نه شمارش خام تماس تلفنی</span></div>
-        <div class="p360-body"><div class="p360-list">{% for l in leads %}<div class="p360-row"><div><strong>{{ l.get_contact_result_display|default:l.get_status_display }}</strong><small>{{ l.created_at|date:"Y/m/d H:i" }}{% if l.assigned_to %} · {{ l.assigned_to }}{% endif %}{% if l.notes %}<br>{{ l.notes|truncatechars:180 }}{% endif %}</small></div><b>{{ l.get_status_display }}</b></div>{% empty %}<div class="p360-empty">سابقه لید/تماس ثبت‌شده پیدا نشد.</div>{% endfor %}</div></div>
+        <div class="p360-head"><h2>تماس‌ها و لید</h2><span>نتایج ثبت‌شده</span></div>
+        <div class="p360-body"><div class="p360-side-list">{% for l in leads %}<div class="p360-row"><div><strong>{{ l.get_contact_result_display|default:l.get_status_display }}</strong><small>{{ l.created_at|date:"Y/m/d H:i" }}{% if l.notes %}<br>{{ l.notes|truncatechars:150 }}{% endif %}</small></div><b>{{ l.get_status_display }}</b></div>{% empty %}<div class="p360-empty">سابقه تماس ثبت‌شده پیدا نشد.</div>{% endfor %}</div></div>
       </section>
 
       <section class="p360-card">
-        <div class="p360-head"><h2>پیامک‌ها</h2><span>{{ sms_count }} پیام ثبت‌شده</span></div>
-        <div class="p360-body"><div class="p360-list">{% for s in sms_rows %}<div class="p360-row"><div><strong>{{ s.get_purpose_display }} · {{ s.get_status_display }}</strong><small>{{ s.created_at|date:"Y/m/d H:i" }}<br>{{ s.body|truncatechars:180 }}</small></div><b>{{ s.masked_number }}</b></div>{% empty %}<div class="p360-empty">پیامکی در Staff App ثبت نشده است.</div>{% endfor %}</div></div>
+        <div class="p360-head"><h2>پیامک‌ها</h2><span>{{ sms_count }} پیام</span></div>
+        <div class="p360-body"><div class="p360-side-list">{% for s in sms_rows %}<div class="p360-row"><div><strong>{{ s.get_purpose_display }} · {{ s.get_status_display }}</strong><small>{{ s.created_at|date:"Y/m/d H:i" }}<br>{{ s.body|truncatechars:130 }}</small></div><b>{{ s.masked_number }}</b></div>{% empty %}<div class="p360-empty">پیامکی ثبت نشده است.</div>{% endfor %}</div></div>
       </section>
 
       <section class="p360-card">
-        <div class="p360-head"><h2>نسخه، دارو و یادداشت بالینی</h2><span>اطلاعات ثبت‌شده فعلی</span></div>
-        <div class="p360-body">
-          {% for n in notes %}<div class="p360-note"><b>{{ n.get_note_type_display }} · {{ n.created_at|date:"Y/m/d" }}</b><p>{{ n.body }}</p></div>{% empty %}<div class="p360-empty">دارو/یادداشت بالینی مستقل هنوز در این پرونده ثبت نشده است. توصیه‌های رژیمی در بخش درمان‌ها نمایش داده می‌شوند.</div>{% endfor %}
-        </div>
+        <div class="p360-head"><h2>یادداشت‌های بالینی</h2><span>نسخه، توصیه و یادداشت تیم</span></div>
+        <div class="p360-body">{% for n in notes %}<div class="p360-note"><b>{{ n.get_note_type_display }} · {{ n.created_at|date:"Y/m/d" }}</b><p>{{ n.body }}</p></div>{% empty %}<div class="p360-empty">یادداشت بالینی ثبت نشده است.</div>{% endfor %}</div>
       </section>
     </div>
   </div>
