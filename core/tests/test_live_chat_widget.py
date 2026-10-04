@@ -43,6 +43,13 @@ class LiveChatWidgetTests(TestCase):
         self.assertEqual(data['latest_incoming_id'],item.pk)
         self.assertEqual(data['incoming_preview']['sender_id'],self.peer.pk)
 
+    def test_live_widget_exposes_avatar_field(self):
+        response=self.client.get(reverse('internal_message_live_widget'))
+        self.assertEqual(response.status_code,200)
+        data=response.json()
+        peer=next(item for item in data['contacts'] if item['id']==self.peer.pk)
+        self.assertIn('avatar',peer)
+
     def test_live_widget_thread_marks_selected_sender_read(self):
         InternalMessage.objects.create(
             sender=self.peer,
