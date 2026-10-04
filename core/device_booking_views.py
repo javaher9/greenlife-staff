@@ -12,8 +12,8 @@ from .jalali import format_jalali, parse_jalali
 from .models import (
     ApiServerSettings, Branch, ConsultationPlan, ConsultationPlanItem,
     BranchDeviceTypeStatus, DeviceCabin, DeviceSessionBooking, DeviceTypeSchedule,
-    FinancialTransaction, PatientDeviceProgram, PatientProfile, PhysicalDevice, VisitAppointment,
-    lead_phone_variants, normalize_lead_phone,
+    FinancialTransaction, PatientCareNote, PatientDeviceProgram, PatientProfile, PhysicalDevice,
+    StaffNotification, Task, VisitAppointment, lead_phone_variants, normalize_lead_phone,
 )
 from .sms import send_sms
 
@@ -164,12 +164,129 @@ def _sync_device_treatment_progress(plan_item_id):
         )
         program.save(update_fields=['sessions_prescribed','sessions_completed','status'])
 
+    followup=_sync_treatment_followup(item.plan_id)
+
     return {
         'completed':completed,
         'total':total,
         'remaining':max(0,total-completed),
         'status':treatment_status,
+        'followup_task_id':followup.pk if followup else None,
     }
+
+
+def _followup_owner(plan):
+    appointment=plan.appointment
+    lead=getattr(appointment,'lead',None)
+    if lead:
+        owner=getattr(lead,'first_appointment_by',None)
+        if owner and owner.is_active:
+            return owner
+        assigned=getattr(lead,'assigned_to',None)
+        assigned_user=getattr(assigned,'user',None) if assigned else None
+        if assigned_user and assigned_user.is_active:
+            return assigned_user
+    call_center=(
+        User.objects.filter(
+            is_active=True,profile__is_active=True,profile__role='call_center'
+        ).order_by('id').first()
+    )
+    return call_center or plan.consultant or appointment.created_by
+
+
+def _sync_treatment_followup(plan_id):
+    """Create exactly one post-treatment follow-up when all device items are complete."""
+    plan=(
+        ConsultationPlan.objects.select_for_update()
+        .select_related(
+            'appointment','appointment__lead','appointment__lead__assigned_to__user',
+            'appointment__lead__first_appointment_by','consultant','appointment__created_by',
+        )
+        .get(pk=plan_id)
+    )
+    device_items=list(plan.items.filter(kind='device',included=True).order_by('id'))
+    if not device_items:
+        return None
+
+    all_complete=True
+    marker_task_id=None
+    for item in device_items:
+        snapshot=dict(item.doctor_snapshot or {})
+        if snapshot.get('treatment_status')!='completed':
+            all_complete=False
+        if not marker_task_id and snapshot.get('treatment_followup_task_id'):
+            marker_task_id=snapshot.get('treatment_followup_task_id')
+
+    existing=Task.objects.filter(pk=marker_task_id).first() if marker_task_id else None
+
+    if not all_complete:
+        if existing and existing.status!='done':
+            existing.delete()
+        if marker_task_id:
+            for item in device_items:
+                snapshot=dict(item.doctor_snapshot or {})
+                for key in (
+                    'treatment_followup_task_id','treatment_followup_due_date',
+                    'treatment_followup_status','treatment_completed_at',
+                ):
+                    snapshot.pop(key,None)
+                item.doctor_snapshot=snapshot
+                item.save(update_fields=['doctor_snapshot','updated_at'])
+        return None
+
+    if existing:
+        return existing
+
+    owner=_followup_owner(plan)
+    if not owner:
+        return None
+
+    due=timezone.localdate()+timedelta(days=3)
+    appointment=plan.appointment
+    task=Task.objects.create(
+        title=f'پیگیری نتیجه درمان - {appointment.full_name}'[:200],
+        description=(
+            f'جلسات دستگاه این بیمار تکمیل شده است. نتیجه درمان، رضایت بیمار و نیاز به ادامه/ویزیت مجدد '
+            f'پیگیری و در Patient 360 ثبت شود. پرونده: /patients/from-appointment/{appointment.pk}/'
+        ),
+        assigned_to=owner,
+        created_by=plan.consultant or appointment.created_by,
+        due_date=due,
+        priority='high',
+        status='todo',
+    )
+    completed_at=timezone.now()
+    for item in device_items:
+        snapshot=dict(item.doctor_snapshot or {})
+        snapshot.update({
+            'treatment_followup_task_id':task.pk,
+            'treatment_followup_due_date':due.isoformat(),
+            'treatment_followup_status':'pending',
+            'treatment_completed_at':completed_at.isoformat(),
+        })
+        item.doctor_snapshot=snapshot
+        item.save(update_fields=['doctor_snapshot','updated_at'])
+
+    patient=PatientProfile.objects.filter(
+        phone__in=lead_phone_variants(appointment.phone)
+    ).order_by('id').first()
+    if patient:
+        PatientCareNote.objects.create(
+            patient=patient,
+            appointment=appointment,
+            author=plan.consultant or appointment.created_by,
+            note_type='staff',
+            body=f'جلسات دستگاه این پکیج تکمیل شد؛ پیگیری نتیجه برای {due.isoformat()} ایجاد شد.',
+        )
+
+    StaffNotification.objects.create(
+        user=owner,
+        title='پیگیری نتیجه درمان',
+        message=f'جلسات {appointment.full_name} تکمیل شده؛ تا {due.isoformat()} نتیجه درمان را پیگیری کنید.',
+        notification_type='task',
+        related_date=due,
+    )
+    return task
 
 
 def _send_confirmation(pk):
