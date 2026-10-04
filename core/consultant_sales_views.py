@@ -13,6 +13,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .call_center_identity import call_center_display_name
+from .patient_ui import attach_patient_photos, patient_photo_url_for_phone
 from .models import (
     ConsultationPlan, ConsultationPlanItem, DeviceBaseTariff, DeviceSessionBooking, EmployeeProfile, FinancialTransaction,
     PatientProfile, ReferralLead, StaffNotification, Task, TreatmentCatalogItem,
@@ -308,7 +309,9 @@ def consultant_sales_outcomes(request):
         messages.error(request,'اقدام انتخاب‌شده معتبر نیست.')
         return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
 
-    pending=list(appointments[:80])
+    pending=attach_patient_photos(list(appointments[:80]))
+    if selected:
+        attach_patient_photos([selected])
     recent_paid=FinancialTransaction.objects.filter(
         source='manual',recorded_by=request.user,entry_type='inc'
     ).exclude(review_status='cancelled').select_related('appointment').order_by('-created_at')[:12]
