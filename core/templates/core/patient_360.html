@@ -508,7 +508,7 @@ body.gl-patient360-workspace .p360-mini-btn{font-size:9.5px!important;padding:9p
 
       <section class="p360-card" id="p360-devices">
         <div class="p360-head"><h2>جلسات دستگاه</h2><span>رزرو، انجام، لغو و جابه‌جایی</span></div>
-        <div class="p360-body"><div class="p360-side-list">{% for s in device_sessions %}<div class="p360-row blue"><div><strong>{{ s.device.name }}{% if s.secondary_device %} + {{ s.secondary_device.name }}{% endif %}</strong><small>{{ s.starts_at|date:"Y/m/d H:i" }} · {{ s.plan_item.title }}</small></div><b>{{ s.get_status_display }}</b></div>{% empty %}<div class="p360-empty">جلسه دستگاهی ثبت نشده است.</div>{% endfor %}</div></div>
+        <div class="p360-body"><div class="p360-side-list">{% for s in device_sessions %}<div class="p360-row blue"><div><strong>{{ s.device.name }}{% if s.secondary_device %} + {{ s.secondary_device.name }}{% endif %}</strong><small>{{ s.starts_at|date:"Y/m/d H:i" }} · {{ s.plan_item.title }}<br>جلسه {{ s.progress_completed }} از {{ s.progress_total }} انجام شده{% if s.progress_remaining %} · {{ s.progress_remaining }} جلسه باقی‌مانده{% else %} · خدمت تکمیل شده{% endif %}</small></div><b>{% if s.progress_status == 'completed' %}✓ تکمیل پکیج{% else %}{{ s.get_status_display }}{% endif %}</b></div>{% empty %}<div class="p360-empty">جلسه دستگاهی ثبت نشده است.</div>{% endfor %}</div></div>
       </section>
     </div>
 
