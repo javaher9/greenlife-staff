@@ -1770,11 +1770,30 @@ def finance_entry_review(request,pk,action):
                 care_stage=final_stage,
                 updated_at=timezone.now(),
             )
+    debug_meta={'before':before,'after':entry.review_status}
+    if entry.appointment_id:
+        debug_appt=VisitAppointment.objects.filter(pk=entry.appointment_id).select_related('consultation_plan').first()
+        debug_plan=getattr(debug_appt,'consultation_plan',None) if debug_appt else None
+        debug_approved=FinancialTransaction.objects.filter(
+            appointment_id=entry.appointment_id,source='manual',entry_type='inc',review_status='approved'
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        debug_meta.update({
+            'appointment_id':entry.appointment_id,
+            'approved_total':str(debug_approved),
+            'plan_status':getattr(debug_plan,'status',None),
+            'plan_total_toman':str(getattr(debug_plan,'final_amount_toman',0) or 0),
+            'appointment_stage':getattr(debug_appt,'care_stage',None),
+            'appointment_status':getattr(debug_appt,'status',None),
+            'computed_full':bool(
+                debug_plan and (getattr(debug_plan,'final_amount_toman',0) or 0)>0
+                and debug_approved >= (getattr(debug_plan,'final_amount_toman',0) or 0)*10
+            ),
+        })
     AuditLog.objects.create(
         actor=request.user,action='finance_review',path=request.path,method='POST',
         object_type='FinancialTransaction',object_id=str(entry.pk),
         summary=f'وضعیت مالی از {before} به {entry.review_status}'[:250],
-        metadata={'before':before,'after':entry.review_status},ip_address=_request_ip(request),
+        metadata=debug_meta,ip_address=_request_ip(request),
     )
     if entry.recorded_by:
         StaffNotification.objects.create(
