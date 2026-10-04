@@ -4,7 +4,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.db.models import Avg, Min, Q, Sum
+from django.db.models import Avg, Count, Min, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -237,6 +237,20 @@ def patient_360(request, pk):
         .select_related('device','secondary_device','appointment','plan_item')
         .order_by('-starts_at')[:60]
     )
+    plan_item_ids={item.plan_item_id for item in device_sessions if item.plan_item_id}
+    completed_by_item={
+        row['plan_item_id']:row['count']
+        for row in DeviceSessionBooking.objects.filter(
+            plan_item_id__in=plan_item_ids,status='completed'
+        ).values('plan_item_id').annotate(count=Count('id'))
+    }
+    for session in device_sessions:
+        total=max(1,int(session.plan_item.quantity or 1))
+        completed=min(completed_by_item.get(session.plan_item_id,0),total)
+        session.progress_total=total
+        session.progress_completed=completed
+        session.progress_remaining=max(0,total-completed)
+        session.progress_status='completed' if completed>=total else ('active' if completed else 'planned')
 
     # Visit matrix: visits are rows; tailored programs are columns.
     diets_by_appt={}
