@@ -34,6 +34,8 @@
 .p360-row.green{background:#f3fbf6!important;border-color:#d7eadf!important}.p360-row.amber{background:#fffaf0!important;border-color:#eee0bf!important}.p360-row.blue{background:#f2f8fd!important;border-color:#dce9f4!important}
 .p360-sms{display:grid;gap:8px}.p360-sms textarea{width:100%;min-height:86px;resize:vertical;padding:10px 11px;border:1px solid #d8e5e0;border-radius:12px;background:#fbfdfc!important;color:#21473f!important;font-family:inherit;font-size:9px;line-height:1.8}.p360-sms textarea::placeholder{color:#8a9a95}.p360-sms button{justify-self:start;border:0;border-radius:10px;padding:9px 13px;background:linear-gradient(135deg,#1e7a58,#3a9a73);color:#fff;font-family:inherit;font-size:9px;font-weight:950;cursor:pointer}.p360-privacy-note{padding:8px 10px;border:1px solid #e2e8f2;border-radius:10px;background:#f7f5fd!important;color:#675c7a!important;font-size:7.8px;line-height:1.7}
 .p360-note{padding:9px 0;border-top:1px solid #eef2f0}.p360-note:first-child{border-top:0}.p360-note b{color:#654d96!important;font-size:8.5px!important}.p360-note p{margin:4px 0 0;color:#4f6962!important;font-size:8.2px!important;line-height:1.75!important}
+.p360-photo-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.p360-mini-btn{border:0;border-radius:10px;padding:8px 11px;background:#f1edff;color:#6547c6;font:900 9px/1.4 inherit;cursor:pointer}.p360-mini-btn.secondary{background:#eef7f3;color:#247457}.p360-camera{display:none;margin-top:12px;padding:12px;border:1px solid #dfe8e5;border-radius:14px;background:#f8fbfa}.p360-camera.open{display:grid;gap:9px}.p360-camera video{width:100%;max-width:420px;border-radius:14px;background:#111;aspect-ratio:4/3;object-fit:cover}.p360-camera-actions{display:flex;gap:8px;flex-wrap:wrap}
+.p360-rating-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:11px}.p360-score{padding:10px;border:1px solid #e3e9ef;border-radius:12px;background:#fafbfd!important}.p360-score span{display:block;color:#71817d;font-size:8px;font-weight:800}.p360-score strong{display:block;margin-top:3px;color:#5d49a6;font-size:17px}.p360-rating-form{display:grid;gap:9px}.p360-rating-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.p360-rating-form label{display:grid;gap:5px;color:#5c746d;font-size:8.5px;font-weight:850}.p360-rating-form select,.p360-rating-form input,.p360-rating-form textarea{width:100%;border:1px solid #d9e4e0;border-radius:10px;background:#fbfdfc;color:#274a42;padding:9px 10px;font:inherit;font-size:9px}.p360-rating-form textarea{min-height:66px;resize:vertical}.p360-rating-form button{justify-self:start;border:0;border-radius:10px;padding:9px 13px;background:linear-gradient(135deg,#6950b9,#826ed0);color:#fff;font:900 9px inherit;cursor:pointer}.p360-ratings{display:grid;gap:7px;margin-top:12px}.p360-rating-row{padding:9px 10px;border:1px solid #e7e8ef;border-radius:11px;background:#fcfbff!important}.p360-rating-row strong{font-size:9px;color:#4f4670}.p360-rating-row small{display:block;margin-top:3px;font-size:8px;color:#7a7d8b;line-height:1.7}
 @media(max-width:1250px){.p360-facts{grid-template-columns:repeat(3,1fr)}.p360-kpis{grid-template-columns:repeat(3,1fr)}.p360-grid{grid-template-columns:1fr}.p360-analysis{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:700px){.p360{padding:5px}.p360-hero-top{align-items:flex-start}.p360-title h1{font-size:21px!important}.p360-avatar{width:58px;height:58px}.p360-facts{grid-template-columns:repeat(2,1fr)}.p360-fact.wide{grid-column:1/-1}.p360-kpis{grid-template-columns:repeat(2,1fr)}.p360-analysis{grid-template-columns:repeat(2,1fr)}}
 </style>
@@ -47,6 +49,12 @@
           <h1>{{ patient.full_name }}</h1>
           <p>{{ patient_phone_display }}{% if patient.home_branch %} · شعبه {{ patient.home_branch.name }}{% endif %} · از {{ customer_since|date:"Y/m/d" }} در گرین‌لایف</p>
           <div class="p360-tags"><span class="p360-active">● بیمار فعال</span>{% if patient.is_vip %}<span>VIP</span>{% endif %}{% if linked_profile_count > 1 %}<span>اطلاعات موبایل یکپارچه شده</span>{% endif %}</div>
+          {% if can_capture_photo %}
+          <div class="p360-photo-actions">
+            <button type="button" class="p360-mini-btn" id="p360-open-camera">📷 گرفتن عکس با دوربین</button>
+            <label class="p360-mini-btn secondary">انتخاب عکس<input id="p360-file" type="file" accept="image/jpeg,image/png,image/webp" capture="user" hidden></label>
+          </div>
+          {% endif %}
         </div>
       </div>
       <a class="p360-back" href="{{ back_url }}">بازگشت</a>
@@ -59,6 +67,20 @@
       <div class="p360-fact wide"><b>آدرس</b><span>{{ patient.address_summary|default:"—" }}</span></div>
       <div class="p360-fact wide"><b>سابقه پزشکی / بیماری‌های خاص</b><span>{{ patient.medical_history|default:"—" }}</span></div>
     </div>
+    {% if can_capture_photo %}
+    <div class="p360-camera" id="p360-camera">
+      <video id="p360-video" autoplay playsinline muted></video>
+      <canvas id="p360-canvas" hidden></canvas>
+      <div class="p360-camera-actions">
+        <button type="button" class="p360-mini-btn" id="p360-capture">ثبت همین عکس</button>
+        <button type="button" class="p360-mini-btn secondary" id="p360-close-camera">بستن دوربین</button>
+      </div>
+      <small style="color:#738680;font-size:8px">عکس فقط در پرونده بیمار ذخیره می‌شود.</small>
+    </div>
+    <form id="p360-photo-form" method="post" enctype="multipart/form-data" action="{% url 'patient_360_photo' patient.pk %}" hidden>
+      {% csrf_token %}<input id="p360-photo-input" type="file" name="photo" accept="image/jpeg,image/png,image/webp">
+    </form>
+    {% endif %}
   </section>
 
   <section class="p360-kpis">
@@ -117,6 +139,37 @@
     </div>
 
     <div class="p360-col">
+      {% if can_rate_patient %}
+      <section class="p360-card">
+        <div class="p360-head"><h2>ارزیابی تیم از بیمار</h2><span>مشترک بین کال‌سنتر، منشی، مشاور و پزشک</span></div>
+        <div class="p360-body">
+          <div class="p360-rating-summary">
+            <div class="p360-score"><span>امتیاز کلی تیم</span><strong>{{ rating_stats.overall|floatformat:1|default:"—" }}/5</strong></div>
+            <div class="p360-score"><span>همکاری</span><strong>{{ rating_stats.cooperation|floatformat:1|default:"—" }}/5</strong></div>
+            <div class="p360-score"><span>توان خرید / بودجه درمان</span><strong>{{ rating_stats.purchase_capacity|floatformat:1|default:"—" }}/5</strong></div>
+          </div>
+          <form class="p360-rating-form" method="post" action="{% url 'patient_360_rating' patient.pk %}">{% csrf_token %}
+            <div class="p360-rating-grid">
+              <label>امتیاز کلی<select name="overall_score">{% for v in "12345" %}<option value="{{ v }}" {% if my_rating.overall_score|stringformat:"s" == v %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+              <label>همکاری<select name="cooperation_score">{% for v in "12345" %}<option value="{{ v }}" {% if my_rating.cooperation_score|stringformat:"s" == v %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+              <label>توان خرید<select name="purchase_capacity_score">{% for v in "12345" %}<option value="{{ v }}" {% if my_rating.purchase_capacity_score|stringformat:"s" == v %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+            </div>
+            <label>برچسب‌های کوتاه<input name="tags" maxlength="500" value="{{ my_rating.tags|default:'' }}" placeholder="مثلاً خوش‌برخورد، منظم، حساس به معطلی"></label>
+            <label>یادداشت تیمی<textarea name="note" maxlength="1200" placeholder="برداشت کاربردی شما برای همکار بعدی...">{{ my_rating.note|default:'' }}</textarea></label>
+            <button type="submit">ذخیره ارزیابی من</button>
+          </form>
+          <div class="p360-ratings">
+            {% for r in ratings|slice:":6" %}
+            <div class="p360-rating-row">
+              <strong>{{ r.author.get_full_name|default:r.author.username }} · کلی {{ r.overall_score }}/5 · همکاری {{ r.cooperation_score }}/5 · توان خرید {{ r.purchase_capacity_score }}/5</strong>
+              <small>{% if r.tags %}{{ r.tags }}{% endif %}{% if r.note %}<br>{{ r.note|truncatechars:220 }}{% endif %}</small>
+            </div>
+            {% empty %}<div class="p360-empty">هنوز ارزیابی تیمی ثبت نشده است.</div>{% endfor %}
+          </div>
+        </div>
+      </section>
+      {% endif %}
+
       <section class="p360-card">
         <div class="p360-head"><h2>مالی</h2><span>پرداخت‌های مرتبط</span></div>
         <div class="p360-body"><div class="p360-side-list">{% for f in finance_rows %}<div class="p360-row {% if f.review_status == 'approved' %}green{% elif f.review_status == 'pending' %}amber{% endif %}"><div><strong>{{ f.amount|floatformat:0 }} تومان</strong><small>{{ f.occurred_at|date:"Y/m/d H:i" }}{% if f.service %} · {{ f.service }}{% endif %}</small></div><b>{{ f.get_review_status_display }}</b></div>{% empty %}<div class="p360-empty">پرداختی در Staff App پیدا نشد.</div>{% endfor %}</div></div>
@@ -150,4 +203,52 @@
     </div>
   </div>
 </div>
+{% if can_capture_photo %}
+<script>
+(function(){
+  var openBtn=document.getElementById('p360-open-camera');
+  var camera=document.getElementById('p360-camera');
+  var video=document.getElementById('p360-video');
+  var canvas=document.getElementById('p360-canvas');
+  var capture=document.getElementById('p360-capture');
+  var closeBtn=document.getElementById('p360-close-camera');
+  var filePicker=document.getElementById('p360-file');
+  var form=document.getElementById('p360-photo-form');
+  var input=document.getElementById('p360-photo-input');
+  var stream=null;
+
+  function stop(){
+    if(stream){stream.getTracks().forEach(function(t){t.stop();});stream=null;}
+    if(camera)camera.classList.remove('open');
+  }
+  async function start(){
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+      alert('مرورگر به دوربین مستقیم دسترسی ندارد؛ از «انتخاب عکس» استفاده کنید.');
+      return;
+    }
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
+      video.srcObject=stream;camera.classList.add('open');video.play();
+    }catch(e){alert('اجازه دوربین داده نشد. می‌توانید عکس را از فایل/دوربین دستگاه انتخاب کنید.');}
+  }
+  function submitBlob(blob,name){
+    var file=new File([blob],name,{type:blob.type||'image/jpeg'});
+    var dt=new DataTransfer();dt.items.add(file);input.files=dt.files;form.submit();
+  }
+  if(openBtn)openBtn.addEventListener('click',start);
+  if(closeBtn)closeBtn.addEventListener('click',stop);
+  if(capture)capture.addEventListener('click',function(){
+    if(!video.videoWidth)return;
+    canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+    canvas.getContext('2d').drawImage(video,0,0);
+    canvas.toBlob(function(blob){if(blob){stop();submitBlob(blob,'patient-camera.jpg');}},'image/jpeg',0.9);
+  });
+  if(filePicker)filePicker.addEventListener('change',function(){
+    if(!filePicker.files||!filePicker.files[0])return;
+    var dt=new DataTransfer();dt.items.add(filePicker.files[0]);input.files=dt.files;form.submit();
+  });
+  window.addEventListener('beforeunload',stop);
+})();
+</script>
+{% endif %}
 {% endblock %}

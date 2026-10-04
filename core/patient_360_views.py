@@ -4,7 +4,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.db.models import Min, Q, Sum
+from django.db.models import Avg, Min, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -12,13 +12,13 @@ from django.utils import timezone
 from .models import (
     BodyAnalysisRecord, DeviceSessionBooking, FinancialTransaction, PatientCareNote,
     PatientDeviceProgram, PatientDietProgram, PatientLipolyticProgram, PatientProfile,
-    ReferralLead, SmsMessageLog, VisitAppointment, lead_phone_variants,
+    PatientTeamRating, ReferralLead, SmsMessageLog, VisitAppointment, lead_phone_variants,
     normalize_lead_phone,
 )
 from .sms import SmsGatewayError, send_sms
 
 
-ALLOWED_ROLES={'admin','internal_manager','manager','doctor','consultant','receptionist'}
+ALLOWED_ROLES={'admin','internal_manager','manager','doctor','consultant','receptionist','call_center'}
 
 
 def _profile(request):
@@ -30,6 +30,23 @@ def _profile(request):
 
 def _can_view_full_phone(request, profile):
     return bool(request.user.is_superuser or profile.role in {'admin','internal_manager'})
+
+
+def _assert_patient_access(request, patient, profile):
+    variants=lead_phone_variants(patient.phone)
+    if profile.role=='call_center':
+        allowed=ReferralLead.objects.filter(phone__in=variants).filter(
+            Q(assigned_to=profile) | Q(first_appointment_by=request.user) | Q(created_by=request.user)
+        ).exists()
+        if not allowed:
+            raise PermissionDenied('این پرونده در چرخه کاری شما قرار ندارد.')
+        return
+    if profile.role in {'manager','doctor','consultant','receptionist'} and profile.branch_id:
+        if patient.home_branch_id and patient.home_branch_id!=profile.branch_id:
+            if not VisitAppointment.objects.filter(
+                branch_id=profile.branch_id,phone__in=variants,
+            ).exists():
+                raise PermissionDenied('این پرونده برای شعبه شما قابل مشاهده نیست.')
 
 
 def _masked_phone(value):
@@ -141,13 +158,7 @@ def patient_360(request, pk):
     sibling_ids=[item.pk for item in siblings] or [patient.pk]
     _hydrate_from_siblings(patient,siblings)
 
-    if profile.role in {'manager','doctor','consultant','receptionist'} and profile.branch_id:
-        if patient.home_branch_id and patient.home_branch_id!=profile.branch_id:
-            if not VisitAppointment.objects.filter(
-                branch_id=profile.branch_id,
-                phone__in=variants,
-            ).exists():
-                raise PermissionDenied('این پرونده برای شعبه شما قابل مشاهده نیست.')
+    _assert_patient_access(request,patient,profile)
 
     appointment_qs=(
         VisitAppointment.objects
@@ -210,6 +221,17 @@ def patient_360(request, pk):
         .select_related('appointment','author')
         .order_by('-created_at','-id')[:80]
     )
+    ratings=list(
+        PatientTeamRating.objects.filter(patient_id__in=sibling_ids)
+        .select_related('author','author__profile')
+        .order_by('-updated_at','-id')[:30]
+    )
+    rating_stats=PatientTeamRating.objects.filter(patient_id__in=sibling_ids).aggregate(
+        overall=Avg('overall_score'),
+        cooperation=Avg('cooperation_score'),
+        purchase_capacity=Avg('purchase_capacity_score'),
+    )
+    my_rating=PatientTeamRating.objects.filter(patient=patient,author=request.user).first()
     device_sessions=list(
         DeviceSessionBooking.objects.filter(appointment_id__in=appointment_ids)
         .select_related('device','secondary_device','appointment','plan_item')
@@ -309,6 +331,11 @@ def patient_360(request, pk):
         'devices':devices,
         'lipolytics':lipolytics,
         'notes':notes,
+        'ratings':ratings,
+        'rating_stats':rating_stats,
+        'my_rating':my_rating,
+        'can_capture_photo':profile.role in {'receptionist','admin','internal_manager'},
+        'can_rate_patient':profile.role in {'call_center','receptionist','consultant','doctor','admin','internal_manager','manager'},
         'device_sessions':device_sessions,
         'linked_profile_count':len(siblings),
         'back_url':request.META.get('HTTP_REFERER') or reverse('dashboard'),
@@ -325,13 +352,7 @@ def patient_360_send_sms(request, pk):
     if request.method!='POST':
         return redirect('patient_360',pk=pk)
     patient=get_object_or_404(PatientProfile,pk=pk)
-    if profile.role in {'manager','doctor','consultant','receptionist'} and profile.branch_id:
-        if patient.home_branch_id and patient.home_branch_id!=profile.branch_id:
-            if not VisitAppointment.objects.filter(
-                branch_id=profile.branch_id,
-                phone__in=lead_phone_variants(patient.phone),
-            ).exists():
-                raise PermissionDenied('این پرونده برای شعبه شما قابل مشاهده نیست.')
+    _assert_patient_access(request,patient,profile)
     body=(request.POST.get('body') or '').strip()[:1200]
     if not body:
         messages.error(request,'متن پیامک را وارد کنید.')
@@ -343,4 +364,90 @@ def patient_360_send_sms(request, pk):
         messages.error(request,f'ارسال پیامک ناموفق بود: {exc}')
     else:
         messages.success(request,f'پیامک برای {patient.full_name} ارسال شد؛ شماره موبایل نمایش داده نشد.')
+    return redirect('patient_360',pk=patient.pk)
+
+
+@login_required
+def patient_360_photo(request, pk):
+    profile=_profile(request)
+    if profile.role not in {'receptionist','admin','internal_manager'}:
+        raise PermissionDenied('ثبت عکس بیمار برای این نقش فعال نیست.')
+    patient=get_object_or_404(PatientProfile,pk=pk)
+    _assert_patient_access(request,patient,profile)
+    if request.method!='POST':
+        return redirect('patient_360',pk=patient.pk)
+    photo=request.FILES.get('photo')
+    if not photo:
+        messages.error(request,'عکسی دریافت نشد.')
+        return redirect('patient_360',pk=patient.pk)
+    if photo.size>5*1024*1024:
+        messages.error(request,'حجم عکس باید کمتر از ۵ مگابایت باشد.')
+        return redirect('patient_360',pk=patient.pk)
+    content_type=(getattr(photo,'content_type','') or '').lower()
+    if content_type not in {'image/jpeg','image/png','image/webp'}:
+        messages.error(request,'فرمت عکس باید JPG، PNG یا WEBP باشد.')
+        return redirect('patient_360',pk=patient.pk)
+    patient.photo=photo
+    patient.save(update_fields=['photo','updated_at'])
+    messages.success(request,'عکس بیمار در پرونده ذخیره شد.')
+    return redirect('patient_360',pk=patient.pk)
+
+
+@login_required
+def patient_360_rating(request, pk):
+    profile=_profile(request)
+    if profile.role not in {'call_center','receptionist','consultant','doctor','admin','internal_manager','manager'}:
+        raise PermissionDenied('امتیازدهی بیمار برای این نقش فعال نیست.')
+    patient=get_object_or_404(PatientProfile,pk=pk)
+    _assert_patient_access(request,patient,profile)
+    if request.method!='POST':
+        return redirect('patient_360',pk=patient.pk)
+
+    def score(name):
+        try:
+            value=int(request.POST.get(name) or 3)
+        except (TypeError,ValueError):
+            value=3
+        return max(1,min(5,value))
+
+    rating,_created=PatientTeamRating.objects.update_or_create(
+        patient=patient,
+        author=request.user,
+        defaults={
+            'overall_score':score('overall_score'),
+            'cooperation_score':score('cooperation_score'),
+            'purchase_capacity_score':score('purchase_capacity_score'),
+            'tags':(request.POST.get('tags') or '').strip()[:500],
+            'note':(request.POST.get('note') or '').strip()[:1200],
+        },
+    )
+    messages.success(request,'ارزیابی شما برای این بیمار ذخیره شد.')
+    return redirect('patient_360',pk=patient.pk)
+
+
+@login_required
+def patient_360_from_lead(request, lead_id):
+    profile=_profile(request)
+    lead=get_object_or_404(ReferralLead.objects.select_related('assigned_to'),pk=lead_id)
+    if profile.role=='call_center':
+        if not (
+            lead.assigned_to_id==profile.pk
+            or lead.first_appointment_by_id==request.user.pk
+            or lead.created_by_id==request.user.pk
+        ):
+            raise PermissionDenied('این لید در چرخه کاری شما قرار ندارد.')
+    phone=normalize_lead_phone(lead.phone)
+    if not phone:
+        messages.error(request,'این لید شماره موبایل معتبر ندارد.')
+        return redirect('call_center_lead',pk=lead.pk)
+    patient=next(
+        (item for item in _phone_matched_profiles(phone) if normalize_lead_phone(item.phone)==phone),
+        None,
+    )
+    if not patient:
+        patient=PatientProfile.objects.create(
+            phone=phone,
+            full_name=lead.full_name,
+            created_by=request.user,
+        )
     return redirect('patient_360',pk=patient.pk)

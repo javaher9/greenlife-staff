@@ -15,7 +15,7 @@
       --amber:#c98b16;--amber-soft:#fff7df;--red:#d34a68;--red-soft:#fff0f3;
       --shadow:0 12px 36px rgba(34,43,74,.07);--r:22px;
     }
-    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:"Noto Sans Arabic",Tahoma,sans-serif}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:"Noto Sans Arabic",Tahoma,sans-serif;scroll-behavior:auto}html{overflow-anchor:none}
     a{text-decoration:none;color:inherit}button,input{font:inherit}
     .shell{display:grid;grid-template-columns:minmax(0,1fr) 232px;min-height:100vh}
     .side{grid-column:2;background:#fff;border-right:1px solid var(--line);padding:24px 18px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
@@ -26,35 +26,35 @@
     .nav a:hover{background:#f6f4ff}.nav a.active{background:var(--purple-soft);color:#5e43db}.nav .disabled{color:#a7adba;cursor:not-allowed}
     .ico{width:29px;height:29px;border-radius:10px;background:#f4f5f9;display:grid;place-items:center;font-size:14px}.active .ico{background:#dfd8ff}
     .side-foot{margin-top:auto;border-top:1px solid var(--line);padding-top:14px;display:grid;gap:6px}.side-foot a{padding:9px 11px;border-radius:11px;font-size:12px}.side-foot a:hover{background:#f6f7fa}
-    .main{grid-column:1;padding:22px 26px 34px;min-width:0}
+    .main{grid-column:1;padding:16px 22px 30px;min-width:0;align-self:start;margin:0;transform:none!important}
     .top{background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px 16px;display:grid;grid-template-columns:auto minmax(220px,1fr) auto auto;align-items:center;gap:18px;box-shadow:0 7px 24px rgba(34,43,74,.045)}
-    .hello h1{font-size:18px;margin:0 0 4px}.hello p{font-size:11px;color:var(--muted);margin:0}
+    .hello h1{font-size:20px;margin:0 0 4px}.hello p{font-size:12px;color:#667187;margin:0;font-weight:650}
     .search{height:44px;border-radius:14px;background:#f6f7fa;border:1px solid #eff1f5;display:flex;align-items:center;gap:10px;padding:0 14px;color:#9aa2b2}
     .search input{border:0;outline:0;background:transparent;width:100%;color:#949baa}.search input::placeholder{color:#a5acba}
     .userbox{display:flex;align-items:center;gap:10px;white-space:nowrap}.avatar{width:42px;height:42px;border-radius:50%;overflow:hidden;background:#ece8ff;color:#6447db;display:grid;place-items:center;font-weight:800}
     .avatar img{width:100%;height:100%;object-fit:cover}.userbox strong{font-size:13px;display:block}.userbox small{font-size:10px;color:var(--muted)}
     .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:16px 0}
     .kpi{background:#fff;border:1px solid var(--line);border-radius:19px;padding:16px;box-shadow:var(--shadow);min-height:116px;display:flex;justify-content:space-between;gap:12px}
-    .kpi-copy small{font-size:11px;color:var(--muted);font-weight:700}.kpi-copy strong{font-size:28px;display:block;line-height:1.4;margin-top:4px}.kpi-copy p{font-size:10px;color:#9ba3b3;margin:3px 0 0}
+    .kpi-copy small{font-size:12px;color:#5f6b81;font-weight:800}.kpi-copy strong{font-size:30px;display:block;line-height:1.35;margin-top:4px}.kpi-copy p{font-size:11px;color:#7a8498;margin:3px 0 0}
     .kpi-icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-size:19px;background:var(--purple-soft);color:var(--purple)}
     .kpi:nth-child(2) .kpi-icon{background:var(--green-soft);color:var(--green)}.kpi:nth-child(3) .kpi-icon{background:#eef3ff;color:#4c6adf}.kpi:nth-child(4) .kpi-icon{background:var(--red-soft);color:var(--red)}
     .grid-main{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.8fr);gap:14px}
     .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
-    .card-head{padding:15px 17px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}.card-head h2{font-size:14px;margin:0}.card-head span,.card-head a{font-size:10px;color:var(--muted)}
-    .flow-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:0 0 14px}.flow-step{background:#fff;border:1px solid var(--line);border-radius:15px;padding:11px 13px;box-shadow:0 7px 20px rgba(34,43,74,.035);display:flex;align-items:center;justify-content:space-between;gap:8px}.flow-step span{font-size:10px;color:var(--muted);font-weight:800}.flow-step strong{font-size:18px}.flow-step.doctor{background:#f7f8ff}.flow-step.consultant{background:#f8f5ff}.flow-step.payment{background:#fffaf0}.flow-step.done{background:#f1fbf6}
-    .appointments{min-height:326px}.table-head,.appointment-row{display:grid;grid-template-columns:66px minmax(150px,1.35fr) minmax(100px,.8fr) 112px 98px minmax(170px,1fr);gap:9px;padding:10px 14px;align-items:center}.table-head{background:#fafbfc;color:#8c94a5;font-size:10px;font-weight:700}.appointment-row{border-bottom:1px solid #f0f2f6;font-size:10px}.appointment-row:last-child{border-bottom:0}.appointment-row b{direction:ltr}.appointment-row strong{font-size:11px}.appointment-row small{display:block;color:var(--muted);font-size:9px;margin-top:3px}.appointment-status,.care-stage{display:inline-flex;width:max-content;padding:5px 8px;border-radius:999px;font-size:9px;font-weight:900}.appointment-status{background:#eef8f3;color:#277457}.care-stage{background:#f0edff;color:#5e43db}.care-stage.payment{background:#fff4d9;color:#97650b}.care-stage.closed{background:#eaf8f1;color:#157a51}.row-actions{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.row-action{border:0;border-radius:9px;padding:7px 9px;font-size:9px;font-weight:900;cursor:pointer;white-space:nowrap}.row-action.arrive{background:#eaf8f1;color:#16784f}.row-action.file{background:#eef3ff;color:#345fc1}.row-action.pay{background:#6750d9;color:#fff}.row-action.cancel{background:#fff0f3;color:#bb3452}.row-action.done{background:#f0f2f6;color:#6f788a;cursor:default}.row-actions form{margin:0}.appointments-scroll{overflow-x:auto}
+    .card-head{padding:15px 17px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}.card-head h2{font-size:15px;margin:0;font-weight:850}.card-head span,.card-head a{font-size:11px;color:#687388}
+    .flow-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:0 0 14px}.flow-step{background:#fff;border:1px solid var(--line);border-radius:15px;padding:11px 13px;box-shadow:0 7px 20px rgba(34,43,74,.035);display:flex;align-items:center;justify-content:space-between;gap:8px}.flow-step span{font-size:11px;color:#59667b;font-weight:850}.flow-step strong{font-size:20px}.flow-step.doctor{background:#f7f8ff}.flow-step.consultant{background:#f8f5ff}.flow-step.payment{background:#fffaf0}.flow-step.done{background:#f1fbf6}
+    .appointments{min-height:326px}.table-head,.appointment-row{display:grid;grid-template-columns:66px minmax(150px,1.35fr) minmax(100px,.8fr) 112px 98px minmax(170px,1fr);gap:9px;padding:10px 14px;align-items:center}.table-head{background:#f7f9fc;color:#637086;font-size:11px;font-weight:850}.appointment-row{border-bottom:1px solid #f0f2f6;font-size:11px}.appointment-row:last-child{border-bottom:0}.appointment-row b{direction:ltr}.appointment-row strong{font-size:12px}.appointment-row small{display:block;color:#778297;font-size:10px;margin-top:3px}.appointment-status,.care-stage{display:inline-flex;width:max-content;padding:6px 9px;border-radius:999px;font-size:10px;font-weight:900}.appointment-status{background:#eef8f3;color:#277457}.care-stage{background:#f0edff;color:#5e43db}.care-stage.payment{background:#fff4d9;color:#97650b}.care-stage.closed{background:#eaf8f1;color:#157a51}.row-actions{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.row-action{border:0;border-radius:9px;padding:8px 10px;font-size:10px;font-weight:900;cursor:pointer;white-space:nowrap}.row-action.arrive{background:#eaf8f1;color:#16784f}.row-action.file{background:#eef3ff;color:#345fc1}.row-action.pay{background:#6750d9;color:#fff}.row-action.cancel{background:#fff0f3;color:#bb3452}.row-action.done{background:#f0f2f6;color:#6f788a;cursor:default}.row-actions form{margin:0}.appointments-scroll{overflow-x:auto}
     .empty-big{min-height:245px;display:grid;place-items:center;text-align:center;padding:34px}.empty-big .symbol{width:60px;height:60px;border-radius:20px;background:var(--purple-soft);display:grid;place-items:center;margin:0 auto 13px;color:var(--purple);font-size:25px}
     .empty-big strong{display:block;font-size:14px;margin-bottom:6px}.empty-big p{font-size:11px;line-height:2;color:var(--muted);margin:0;max-width:390px}
     .urgent-list{padding:8px 15px 14px}.urgent-row{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid #f0f2f6}.urgent-row:last-child{border-bottom:0}.check{width:20px;height:20px;border:2px solid #cfd5e1;border-radius:6px;flex:0 0 20px;margin-top:2px}
     .urgent-row strong{font-size:11px;display:block}.urgent-row small{display:block;color:var(--muted);font-size:9px;margin-top:3px}.empty-mini{padding:22px;text-align:center;color:var(--muted);font-size:11px}
-    .bottom-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:14px}.profile-card,.cem-card,.messages-card{min-height:300px}
+    .bottom-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:14px}.profile-card,.cem-card,.messages-card{min-height:235px}
     .profile-body{padding:16px}.profile-placeholder{display:flex;align-items:center;gap:12px;padding:12px;border:1px dashed #dfe3eb;border-radius:16px;background:#fbfcfe}.patient-avatar{width:56px;height:56px;border-radius:18px;background:#eeeaff;display:grid;place-items:center;color:var(--purple);font-size:21px}
-    .profile-placeholder strong{font-size:12px;display:block}.profile-placeholder small{font-size:9px;color:var(--muted)}.tier-title{font-size:10px;color:var(--muted);margin:18px 0 9px}
+    .profile-placeholder strong{font-size:13px;display:block}.profile-placeholder small{font-size:10px;color:#69758a}.tier-title{font-size:10px;color:var(--muted);margin:18px 0 9px}
     .tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.tier{padding:7px 3px;text-align:center;border-radius:10px;background:#f5f6f9;font-size:9px;color:#7d8492}.tier.gold{background:#fff4d6;color:#a16a00}.tier.platinum{background:#eef0f4;color:#626b7a}.tier.diamond{background:#eee9ff;color:#6045d7}
     .future-note{margin-top:14px;padding:10px 11px;background:#f8f7ff;border-radius:12px;color:#7d70b2;font-size:9px;line-height:1.9}
-    .cem-body{padding:13px 15px}.insight{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #f0f2f6}.insight:last-of-type{border-bottom:0}.insight-icon{width:31px;height:31px;border-radius:10px;background:#f5f3ff;display:grid;place-items:center;flex:0 0 31px}.insight strong{font-size:10px;display:block}.insight p{font-size:9px;color:var(--muted);line-height:1.7;margin:2px 0 0}
+    .cem-body{padding:13px 15px}.insight{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #f0f2f6}.insight:last-of-type{border-bottom:0}.insight-icon{width:31px;height:31px;border-radius:10px;background:#f5f3ff;display:grid;place-items:center;flex:0 0 31px}.insight strong{font-size:11px;display:block}.insight p{font-size:10px;color:#6f7b8f;line-height:1.8;margin:2px 0 0}
     .disc{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}.disc-title{display:flex;justify-content:space-between;font-size:10px}.disc-title span{color:var(--muted);font-size:9px}.disc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}.disc-grid b{height:38px;border-radius:10px;background:#f4f5f8;display:grid;place-items:center;font-size:14px}.disc-grid b:nth-child(1){color:#15995f}.disc-grid b:nth-child(2){color:#d44364}.disc-grid b:nth-child(3){color:#356ac7}.disc-grid b:nth-child(4){color:#677080}
-    .messages{padding:9px 14px 13px}.msg{padding:10px 0;border-bottom:1px solid #f0f2f6}.msg:last-child{border-bottom:0}.msg strong{font-size:10px;display:block}.msg small{font-size:8px;color:#9aa2b2}.msg p{font-size:9px;line-height:1.8;color:#687187;margin:4px 0 0}
+    .messages{padding:9px 14px 13px}.msg{padding:10px 0;border-bottom:1px solid #f0f2f6}.msg:last-child{border-bottom:0}.msg strong{font-size:11px;display:block}.msg small{font-size:9px;color:#8791a3}.msg p{font-size:10px;line-height:1.8;color:#5e687d;margin:4px 0 0}
     .composer{margin:0 14px 14px;height:40px;border:1px dashed #d7dce7;border-radius:12px;display:flex;align-items:center;padding:0 12px;color:#a1a8b7;font-size:9px}
     .actions{display:flex;align-items:center;justify-content:space-between;margin-top:16px}.primary-action{border:0;border-radius:15px;background:linear-gradient(135deg,#7a5df0,#6448dc);color:#fff;padding:12px 20px;font-weight:800;font-size:12px;box-shadow:0 12px 24px rgba(110,80,226,.23);cursor:pointer}
     .attendance-pill{padding:8px 11px;border-radius:12px;background:var(--green-soft);color:#168456;font-size:10px;font-weight:700}.attendance-pill.off{background:var(--amber-soft);color:#9e7119}
@@ -86,9 +86,9 @@
     </div>
     <nav class="nav">
       <a href="/" class="active"><span class="ico">⌂</span>{% gl_t 'common.dashboard' %}</a>
-      <span class="disabled" title="{% gl_t 'rec.crm_later' %}"><span class="ico">♙</span>{% gl_t 'rec.patients' %}</span>
+      <a href="#today-appointments"><span class="ico">♙</span>{% gl_t 'rec.patients' %}</a>
       <a href="{% url 'appointment_schedule' %}"><span class="ico">▣</span>{% gl_t 'cc.appointment_booking' %}</a>
-      <span class="disabled" title="{% gl_t 'rec.crm_later' %}"><span class="ico">◎</span>{% gl_t 'rec.reception_action' %}</span>
+      <a href="#today-appointments"><span class="ico">◎</span>{% gl_t 'rec.reception_action' %}</a>
       <a href="{% url 'finance_entry' %}"><span class="ico">▤</span>{% gl_t 'common.payment' %}</a>
       <a href="/tasks/"><span class="ico">✓</span>{% gl_t 'common.follow_up' %}</a>
       <span class="disabled" title="{% gl_t 'rec.next_phase' %}"><span class="ico">◈</span>CRM / CEM</span>
@@ -105,7 +105,7 @@
   <main class="main">
     <header class="top">
       <div class="hello"><h1>{% gl_t 'rec.greeting' name=user.first_name|default:user.username %}</h1><p>{% if profile.branch %}{{ profile.branch }}{% else %}{% gl_t "rec.center" %}{% endif %} · {{ jalali_dashboard_date }}</p></div>
-      <label class="search"><span>⌕</span><input disabled placeholder="{% gl_t 'rec.search' %}"></label>
+      <label class="search"><span>⌕</span><input id="rec-live-search" autocomplete="off" placeholder="{% gl_t 'rec.search' %}"></label>
       <form method="post" action="{% url 'language_switch' %}" class="rec-lang" aria-label="{% gl_t 'shell.language_title' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">{% for code,short,label in ui_languages %}<button type="submit" name="language" value="{{ code }}" class="{% if ui_language == code %}active{% endif %}" aria-label="{{ label }}">{{ short }}</button>{% endfor %}</form>
       <div class="userbox">
         <div class="avatar">{% if profile.avatar %}<img src="{{ profile.avatar.url }}" alt="">{% else %}{{ user.first_name|first|default:user.username|first }}{% endif %}</div>
@@ -147,12 +147,12 @@
     {% endif %}
 
     <section class="grid-main">
-      <article class="card appointments">
+      <article class="card appointments" id="today-appointments">
         <div class="card-head"><h2>{% gl_t "rec.today_list" %} · {% gl_t "rec.ops_board" %}</h2><a href="{% url 'appointment_schedule' %}">{% gl_t 'common.full_schedule' %}</a></div>
         <div class="appointments-scroll">
           <div class="table-head"><span>{% gl_t 'common.time' %}</span><span>{% gl_t 'rec.patient_name' %}</span><span>{% gl_t 'common.service' %}</span><span>{% gl_t 'rec.current_stage' %}</span><span>{% gl_t 'common.status' %}</span><span>{% gl_t 'common.actions' %}</span></div>
           {% for item in receptionist_appointments %}
-          <div class="appointment-row">
+          <div class="appointment-row" data-rec-search="{{ item.full_name }} {{ item.service }} {{ item.phone|mask_phone }} {{ item.get_source_display }}">
             <b>{{ item.appointment_time|date:"H:i" }}</b>
             <div><strong>{{ item.full_name }}</strong><small>{{ item.phone|mask_phone }} · {{ item.get_source_display }}</small></div>
             <span>{{ item.service|default:"—" }}</span>
@@ -165,7 +165,7 @@
               {% if item.status == 'booked' %}
               <form method="post" action="{% url 'receptionist_appointment_status' item.pk 'arrived' %}">{% csrf_token %}<button class="row-action arrive" type="submit">✓ {% gl_t 'rec.checkin' %}</button></form>
               {% endif %}
-              <a class="row-action file" href="{% url 'patient_360_from_appointment' item.pk %}">{% gl_t 'rec.patient_360' %}</a>
+              <a class="row-action file" href="{% url 'patient_360_from_appointment' item.pk %}">📷 {% gl_t 'rec.patient_360' %} / امتیاز</a>
               {% if item.care_stage == 'payment' %}
               <a class="row-action pay" href="{% url 'finance_entry' %}?appointment={{ item.pk }}">ثبت پرداخت</a>
               {% endif %}
@@ -198,19 +198,18 @@
       <article class="card profile-card">
         <div class="card-head"><h2>{% gl_t 'rec.patient_profile' %}</h2><span>Customer Tier</span></div>
         <div class="profile-body">
-          <div class="profile-placeholder"><div class="patient-avatar">♙</div><div><strong>{% gl_t 'rec.select_patient' %}</strong><small>{% gl_t 'rec.profile_future' %}</small></div></div>
-          <div class="tier-title">{% gl_t 'rec.customer_level' %}</div>
-          <div class="tiers"><span class="tier">Silver</span><span class="tier gold">Gold</span><span class="tier platinum">Platinum</span><span class="tier diamond">Diamond</span></div>
-          <div class="future-note">{% gl_t 'rec.level_future' %}</div>
+          <div class="profile-placeholder"><div class="patient-avatar">📷</div><div><strong>عکس و پرونده بیمار</strong><small>از ردیف بیمار «پرونده ۳۶۰» را باز کنید؛ عکس دوربین و امتیاز تیمی همان‌جا ثبت می‌شود.</small></div></div>
+          <div class="tier-title">کارهای اصلی روی پرونده</div>
+          <div class="tiers"><span class="tier">عکس</span><span class="tier gold">امتیاز</span><span class="tier platinum">سوابق</span><span class="tier diamond">پیامک</span></div>
+          <div class="future-note">منشی می‌تواند عکس بیمار را با دوربین بگیرد؛ کال‌سنتر، منشی، مشاور و پزشک نیز ارزیابی مشترک بیمار را ثبت می‌کنند.</div>
         </div>
       </article>
 
       <article class="card cem-card">
         <div class="card-head"><h2>{% gl_t 'rec.cem' %}</h2><span>Experience</span></div>
         <div class="cem-body">
-          <div class="insight"><div class="insight-icon">◷</div><div><strong>{% gl_t 'rec.preferences' %}</strong><p>{% gl_t 'rec.preferences_body' %}</p></div></div>
-          <div class="insight"><div class="insight-icon">✎</div><div><strong>{% gl_t 'rec.shared_note' %}</strong><p>{% gl_t 'rec.shared_note_body' %}</p></div></div>
-          <div class="disc"><div class="disc-title"><strong>{% gl_t 'rec.disc' %}</strong><span>{% gl_t 'rec.estimated' %}</span></div><div class="disc-grid"><b>D</b><b>I</b><b>S</b><b>C</b></div></div>
+          <div class="insight"><div class="insight-icon">★</div><div><strong>امتیاز مشترک بیمار</strong><p>کال‌سنتر، منشی، مشاور و پزشک می‌توانند برداشت خود را ثبت کنند؛ میانگین تیم در پرونده ۳۶۰ دیده می‌شود.</p></div></div>
+          <div class="insight"><div class="insight-icon">✎</div><div><strong>یادداشت کاربردی تیم</strong><p>مواردی مثل همکاری، حساسیت به معطلی، ترجیح تماس و بودجه درمان برای همکار بعدی قابل مشاهده است.</p></div></div>
         </div>
       </article>
 
@@ -236,5 +235,28 @@
     </div>
   </main>
 </div>
+<script>
+(function(){
+  if('scrollRestoration' in history)history.scrollRestoration='manual';
+  function top(){
+    if(location.hash)return;
+    window.scrollTo({top:0,left:0,behavior:'auto'});
+    document.documentElement.scrollTop=0;
+    document.body.scrollTop=0;
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',top);else top();
+  window.addEventListener('pageshow',function(e){if(e.persisted||window.scrollY>140)top();});
+  var search=document.getElementById('rec-live-search');
+  if(search){
+    search.addEventListener('input',function(){
+      var q=(search.value||'').trim().toLowerCase();
+      document.querySelectorAll('#today-appointments .appointment-row').forEach(function(row){
+        var hay=(row.getAttribute('data-rec-search')||row.textContent||'').toLowerCase();
+        row.style.display=!q||hay.indexOf(q)!==-1?'grid':'none';
+      });
+    });
+  }
+})();
+</script>
 </body>
 </html>
