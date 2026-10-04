@@ -1165,6 +1165,10 @@ EN.update({
     'att.minutes':'{count} minutes','att.distance':'Distance {count} m',
 })
 
+FA.update({'dash.dm_lead':'ثبت لید از دایرکت'})
+TR.update({'dash.dm_lead':'DM’den Lead Kaydet'})
+EN.update({'dash.dm_lead':'Add Lead from DM'})
+
 
 TRANSLATIONS = {'fa': FA, 'tr': TR, 'en': EN}
 
