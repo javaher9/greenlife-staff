@@ -63,7 +63,7 @@ def _new_code():
 
 def _ensure_profile(user):
     employee=getattr(user,'profile',None)
-    if employee is not None and not getattr(employee,'can_use_sales_network',True):
+    if employee is not None and not getattr(employee,'sales_network_enabled',True):
         raise PermissionDenied('دسترسی شبکه فروش برای این کاربر غیرفعال است.')
     if _role(user)=='referral_supervisor':
         raise PermissionDenied('ناظر شبکه فروش فقط به داشبورد آماری دسترسی دارد.')
