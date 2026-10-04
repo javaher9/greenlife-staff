@@ -286,7 +286,12 @@ def doctor_dashboard(request):
     if branch:
         appointment_qs=(
             VisitAppointment.objects
-            .filter(branch=branch,appointment_date=today)
+            .filter(
+                branch=branch,
+                appointment_date=today,
+                status='arrived',
+                care_stage='doctor',
+            )
             .select_related('lead','lead__assigned_to__user','lead__first_appointment_by','branch')
             .order_by('appointment_time','id')
         )
@@ -301,17 +306,15 @@ def doctor_dashboard(request):
 
         action=(request.POST.get('action') or '').strip()
         if action=='send_to_consultant':
-            if selected.status=='cancelled':
-                messages.error(request,'نوبت لغوشده قابل ارسال به مشاور نیست.')
-                return _redirect_to_appointment(selected.pk,branch.pk if branch else None)
+            if selected.status!='arrived' or selected.care_stage!='doctor':
+                messages.error(request,'بیمار باید ابتدا توسط منشی پذیرش شود و در صف پزشک باشد.')
+                return _redirect_to_appointment(None,branch.pk if branch else None)
 
             selected.care_stage='consultant'
             selected.doctor_completed_at=timezone.now()
             selected.doctor_completed_by=request.user
-            if selected.status=='booked':
-                selected.status='arrived'
             selected.save(update_fields=[
-                'care_stage','doctor_completed_at','doctor_completed_by','status','updated_at'
+                'care_stage','doctor_completed_at','doctor_completed_by','updated_at'
             ])
 
             consultants=User.objects.filter(
