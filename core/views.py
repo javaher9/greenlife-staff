@@ -19,6 +19,7 @@ from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, BlackboardMessageForm, EmployeeCreateForm, EmployeeEditForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm, ConsultantFinanceEntryForm, StaffLoginForm, StaffCredentialUpdateForm
+from .patient_ui import attach_patient_photos
 from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, Branch, Country, BranchWorkSchedule, EmployeeWorkSchedule, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction, MeetingActionUpdate, StaffCredential, VisitAppointment, TreatmentCatalogItem, DeviceBaseTariff
 from .ai import analyze_finance_receipt, process_report
 from .jalali import format_jalali, gregorian_to_jalali, jalali_to_gregorian, parse_jalali
@@ -644,6 +645,9 @@ def dashboard(request):
             )
         else:
             receptionist_payment_queue=VisitAppointment.objects.none()
+        receptionist_payment_waiting_count=receptionist_payment_queue.count()
+        receptionist_appointments=attach_patient_photos(list(receptionist_appointments))
+        receptionist_payment_queue=attach_patient_photos(list(receptionist_payment_queue))
         return render(request,'core/receptionist_dashboard.html',{
             'role':role,
             'profile':profile,
@@ -667,7 +671,7 @@ def dashboard(request):
             'receptionist_closed_count':receptionist_closed_count,
             'receptionist_payment_count':receptionist_payment_count,
             'receptionist_payment_queue':receptionist_payment_queue,
-            'receptionist_payment_waiting_count':receptionist_payment_queue.count(),
+            'receptionist_payment_waiting_count':receptionist_payment_waiting_count,
         })
     if role=='call_center' and not _is_mobile_request(request):
         return redirect('call_center_dashboard')
