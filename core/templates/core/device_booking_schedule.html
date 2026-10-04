@@ -887,6 +887,106 @@
 .db-plan-warning{margin-top:10px;padding:11px 13px;border-radius:12px;background:linear-gradient(135deg,#fff7df,#f6f0ff);border:1px solid #e6d5a2;color:#6f5721;font-size:10px;font-weight:850;line-height:1.8}
 .db-datebar-nav{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.db-datebar-nav form{display:flex;gap:6px;align-items:center}.db-datebar-nav input{width:120px}
 @media(max-width:1180px){.db-patient-picker-form{grid-template-columns:repeat(2,minmax(0,1fr))!important}.db-patient-picker-form>button{grid-column:auto!important}}
+
+/* Final tablet/desktop readability + Patient 360 + horizontal board controls */
+@media(min-width:701px){
+  body.gl-page-device_booking_schedule .db-book-panel .db-patient-picker-form input,
+  body.gl-page-device_booking_schedule .db-book-panel .db-patient-picker-form select,
+  body.gl-page-device_booking_schedule .db-book-panel #dbBookingForm input,
+  body.gl-page-device_booking_schedule .db-book-panel #dbBookingForm select,
+  body.gl-page-device_booking_schedule .db-datebar-nav input{
+    background:#ffffff!important;
+    background-image:none!important;
+    color:#183f36!important;
+    -webkit-text-fill-color:#183f36!important;
+    border:1px solid #bfd7cf!important;
+    box-shadow:0 2px 7px rgba(33,77,65,.045)!important;
+    opacity:1!important;
+  }
+  body.gl-page-device_booking_schedule .db-book-panel input::placeholder{
+    color:#78908a!important;
+    -webkit-text-fill-color:#78908a!important;
+    opacity:1!important;
+  }
+  body.gl-page-device_booking_schedule .db-book-panel select option{
+    background:#fff!important;
+    color:#173c34!important;
+  }
+  .db-selected-patient-tags{align-items:center!important}
+  .db-inline-360{
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    min-height:32px!important;
+    padding:6px 10px!important;
+    border-radius:10px!important;
+    background:linear-gradient(135deg,#7c61cf,#a98ef1)!important;
+    color:#fff!important;
+    -webkit-text-fill-color:#fff!important;
+    border:1px solid rgba(255,255,255,.24)!important;
+    text-decoration:none!important;
+    font-size:9.5px!important;
+    font-weight:950!important;
+    box-shadow:0 6px 15px rgba(111,82,193,.18)!important;
+  }
+  .db-legend-row{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    gap:10px!important;
+    flex-wrap:wrap!important;
+    margin-top:9px!important;
+  }
+  .db-legend-row .db-legend{margin:0!important}
+  .db-board-nav{
+    display:flex!important;
+    align-items:center!important;
+    gap:6px!important;
+    flex:0 0 auto!important;
+  }
+  .db-board-nav span{
+    color:#61766f!important;
+    font-size:8px!important;
+    font-weight:850!important;
+  }
+  .db-board-nav button{
+    width:34px!important;
+    height:34px!important;
+    display:grid!important;
+    place-items:center!important;
+    border:1px solid #d2dfda!important;
+    border-radius:10px!important;
+    background:#fff!important;
+    color:#5b468b!important;
+    font-size:17px!important;
+    font-weight:950!important;
+    cursor:pointer!important;
+    box-shadow:0 4px 10px rgba(36,72,64,.07)!important;
+  }
+  .db-device-board{
+    max-width:100%!important;
+    overflow-x:scroll!important;
+    overflow-y:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-x:contain!important;
+    touch-action:pan-x pan-y!important;
+    scroll-snap-type:none!important;
+    scrollbar-gutter:stable!important;
+    padding:5px 10px 18px!important;
+    scroll-behavior:smooth!important;
+  }
+  .db-device-board::-webkit-scrollbar{height:10px!important}
+  .db-device-board::-webkit-scrollbar-track{background:#edf3f1!important;border-radius:999px!important}
+  .db-device-board::-webkit-scrollbar-thumb{background:#b9abcF!important;border-radius:999px!important;border:2px solid #edf3f1!important}
+  .db-device-plate{scroll-snap-align:none!important}
+}
+@media(max-width:900px) and (min-width:701px){
+  .db-patient-picker-form{
+    grid-template-columns:minmax(0,1fr) minmax(0,1.25fr)!important;
+  }
+  .db-patient-picker-form .db-day-picker{grid-column:1/2!important}
+  .db-patient-picker-form>button{grid-column:2/3!important}
+}
 </style>
 
 <div class="db-shell">
@@ -928,7 +1028,11 @@
 </form>
 
 {% if plan %}
-<div class="db-tags"><span>بیمار: {{ appointment.full_name }}</span><span>وضعیت: {{ plan.get_status_display }}</span></div>
+<div class="db-tags db-selected-patient-tags">
+  <span>بیمار: {{ appointment.full_name }}</span>
+  <span>وضعیت: {{ plan.get_status_display }}</span>
+  <a class="db-inline-360" href="{% url 'patient_360_from_appointment' appointment.pk %}">پرونده Patient 360°</a>
+</div>
 {% if plan_ready %}
 <form method="post" class="db-form" id="dbBookingForm" style="margin-top:12px">{% csrf_token %}
   <input type="hidden" name="branch" value="{{ branch.pk }}">
@@ -974,17 +1078,24 @@
       <a class="db-today-link" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ today_jalali }}">امروز</a>
     </div>
   </div>
-  <div class="db-legend">
-    <span><i class="lg-booked"></i>آبی: رزرو</span>
-    <span><i class="lg-arrived"></i>سبز: حاضر / انجام شد</span>
-    <span><i class="lg-late"></i>زرد: دیرکرد</span>
-    <span><i class="lg-noshow"></i>قرمز: نیامد / لغو</span>
-    <span><i class="lg-moved"></i>بنفش: جابه‌جا شد</span>
-    <span><i class="lg-free"></i>آزاد</span>
-    <span><i class="lg-off"></i>بسته / گذشته</span>
+  <div class="db-legend-row">
+    <div class="db-legend">
+      <span><i class="lg-booked"></i>آبی: رزرو</span>
+      <span><i class="lg-arrived"></i>سبز: حاضر / انجام شد</span>
+      <span><i class="lg-late"></i>زرد: دیرکرد</span>
+      <span><i class="lg-noshow"></i>قرمز: نیامد / لغو</span>
+      <span><i class="lg-moved"></i>بنفش: جابه‌جا شد</span>
+      <span><i class="lg-free"></i>آزاد</span>
+      <span><i class="lg-off"></i>بسته / گذشته</span>
+    </div>
+    <div class="db-board-nav" aria-label="حرکت بین دستگاه‌ها">
+      <button type="button" onclick="scrollDeviceBoard(1)" title="دستگاه‌های قبلی">→</button>
+      <span>حرکت افقی دستگاه‌ها</span>
+      <button type="button" onclick="scrollDeviceBoard(-1)" title="دستگاه‌های بعدی">←</button>
+    </div>
   </div>
 
-  <div class="db-device-board">
+  <div class="db-device-board" id="dbDeviceBoard">
     {% for card in device_cards %}
       <article class="db-device-plate">
         <header class="db-plate-head">
@@ -1193,6 +1304,13 @@
       form.submit();
     });
   });
+
+  window.scrollDeviceBoard=function(direction){
+    var board=document.getElementById('dbDeviceBoard');
+    if(!board)return;
+    var amount=Math.max(280,Math.round(board.clientWidth*.62));
+    board.scrollBy({left:direction*amount,behavior:'smooth'});
+  };
 
   window.pickDeviceSlot=function(btn){
     var form=document.getElementById('dbBookingForm');
