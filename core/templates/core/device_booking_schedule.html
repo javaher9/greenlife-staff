@@ -1007,6 +1007,24 @@
 .db-patient-result small{display:block;margin-top:3px;color:#6f837d;font-size:8.5px}
 .db-patient-result span{padding:4px 7px;border-radius:999px;background:#eee8fb;color:#684d9a;font-size:8px;font-weight:900}
 .db-patient-noresult{padding:12px;text-align:center;color:#7b8d88;font-size:9px}
+
+/* Strong day navigation + temporary quick patient intake */
+.db-day-nav-labeled{grid-template-columns:auto minmax(128px,1fr) auto!important}
+.db-day-step,.db-today-pill{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  min-height:40px!important;padding:0 11px!important;border-radius:11px!important;text-decoration:none!important;
+  font-size:9.5px!important;font-weight:950!important;white-space:nowrap!important
+}
+.db-day-step{background:linear-gradient(135deg,#6b52b4,#9b82e5)!important;color:#fff!important;-webkit-text-fill-color:#fff!important;box-shadow:0 5px 13px rgba(101,78,180,.18)!important}
+.db-today-pill{background:#e7f6ef!important;color:#176249!important;border:1px solid #cce7db!important}
+.db-datebar-nav-strong{gap:8px!important}
+.db-datebar-nav-strong form{display:flex!important;gap:6px!important;align-items:center!important}
+.db-quick-patient{margin-top:12px;padding:11px 12px;border:1px dashed #c8d9d3;border-radius:14px;background:linear-gradient(135deg,#fbfefd,#f7f4ff)}
+.db-quick-patient-head strong{display:block;color:#244b41;font-size:10px}.db-quick-patient-head small{display:block;margin-top:3px;color:#71847e;font-size:8px;line-height:1.7}
+.db-quick-patient-form{display:grid;grid-template-columns:minmax(180px,1fr) minmax(150px,.75fr) auto;gap:8px;margin-top:9px}
+.db-quick-patient-form input{min-width:0;height:40px;padding:0 10px;border:1px solid #c9dbd5;border-radius:10px;background:#fff!important;color:#183f36!important;-webkit-text-fill-color:#183f36!important}
+.db-quick-patient-form button{min-height:40px;border:0;border-radius:10px;padding:0 12px;background:linear-gradient(135deg,#237a5c,#419a79);color:#fff;font-size:9px;font-weight:950;cursor:pointer}
+@media(max-width:900px){.db-quick-patient-form{grid-template-columns:1fr 1fr}.db-quick-patient-form button{grid-column:1/-1}.db-day-nav-labeled{grid-template-columns:1fr}.db-day-step,.db-day-nav-labeled input{width:100%!important}.db-datebar-nav-strong{display:grid!important;grid-template-columns:1fr 1fr 1fr!important}.db-datebar-nav-strong form{grid-column:1/-1!important}.db-datebar-nav-strong form input{flex:1!important;width:auto!important}}
 </style>
 
 <div class="db-shell">
@@ -1035,25 +1053,25 @@
   <label>پرونده بیمار
     <select name="appointment" id="dbAppointment">
       <option value="">انتخاب بیمار</option>
-      {% for p in plans %}<option value="{{ p.appointment_id }}" data-search="{{ p.appointment.full_name }} {{ p.appointment.phone }}" {% if appointment.pk == p.appointment_id %}selected{% endif %}>{{ p.appointment.full_name }} · {{ p.appointment.phone }} · {{ p.get_status_display }}</option>{% endfor %}
+      {% for p in patient_options %}<option value="{{ p.appointment_id }}" data-search="{{ p.full_name }} {{ p.phone }}" {% if appointment.pk == p.appointment_id %}selected{% endif %}>{{ p.full_name }} · {{ p.phone }} · {{ p.status_label }}</option>{% endfor %}
     </select>
   </label>
   <div class="db-day-picker">
     <span>تاریخ</span>
-    <div class="db-day-nav">
-      <a class="db-day-arrow" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ previous_day_jalali }}" title="روز قبل">→</a>
+    <div class="db-day-nav db-day-nav-labeled">
+      <a class="db-day-step prev" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ previous_day_jalali }}">→ روز قبل</a>
       <input name="day" value="{{ day_jalali }}" placeholder="۱۴۰۵/۰۷/۰۶" aria-label="تاریخ شمسی">
-      <a class="db-day-arrow" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ next_day_jalali }}" title="روز بعد">←</a>
+      <a class="db-day-step next" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ next_day_jalali }}">روز بعد ←</a>
     </div>
-    <a class="db-today-link" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ today_jalali }}">امروز</a>
+    <a class="db-today-link db-today-pill" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ today_jalali }}">امروز</a>
   </div>
   <button type="submit">نمایش پرونده</button>
 </form>
 
-{% if plan %}
+{% if appointment %}
 <div class="db-tags db-selected-patient-tags">
   <span>بیمار: {{ appointment.full_name }}</span>
-  <span>وضعیت: {{ plan.get_status_display }}</span>
+  <span>وضعیت: {% if plan %}{{ plan.get_status_display }}{% else %}بدون پکیج{% endif %}</span>
   <a class="db-inline-360" href="{% url 'patient_360_from_appointment' appointment.pk %}">پرونده Patient 360°</a>
 </div>
 {% if plan_ready %}
@@ -1085,20 +1103,35 @@
   <button type="submit" {% if not items or not devices %}disabled{% endif %}>ثبت قطعی یک جلسه + ارسال پیامک</button>
 </form>
 {% else %}
-<div class="db-plan-warning">پکیج این بیمار هنوز برای رزرو دستگاه نهایی نشده است. بیمار قابل انتخاب و مشاهده است، اما رزرو بعد از نهایی‌شدن پکیج فعال می‌شود.</div>
+<div class="db-plan-warning">{% if plan %}پکیج این بیمار هنوز برای رزرو دستگاه نهایی نشده است.{% else %}برای این بیمار هنوز پکیج مشاوره ساخته نشده است.{% endif %} پرونده 360 قابل مشاهده است؛ رزرو دستگاه بعد از نهایی‌شدن پکیج فعال می‌شود.</div>
 {% endif %}
-{% else %}<p class="db-muted">نام یا شماره بیمار را جستجو و پرونده را انتخاب کنید؛ سپس یکی از ردیف‌های آزاد دستگاه را بزنید.</p>{% endif %}
+{% else %}
+<p class="db-muted">نام یا شماره بیمار را جستجو و پرونده را انتخاب کنید. اگر بیمار هنوز در سیستم نیست، از «ثبت سریع بیمار» استفاده کنید.</p>
+{% endif %}
+
+<div class="db-quick-patient">
+  <div class="db-quick-patient-head">
+    <div><strong>ثبت سریع بیمار</strong><small>راه‌حل موقت تا تکمیل اتصال CRM؛ پرونده مستقل 360 ساخته می‌شود و رکورد تکراری با موبایل ایجاد نمی‌کند.</small></div>
+  </div>
+  <form method="post" class="db-quick-patient-form">{% csrf_token %}
+    <input type="hidden" name="action" value="quick_patient">
+    <input type="hidden" name="branch" value="{{ branch.pk }}">
+    <input name="full_name" placeholder="نام و نام خانوادگی بیمار" required>
+    <input name="phone" inputmode="tel" placeholder="شماره موبایل" required>
+    <button type="submit">ثبت بیمار و باز کردن Patient 360°</button>
+  </form>
+</div>
 {% else %}<p class="db-muted">نمایش تقویم برای شما فعال است؛ ثبت نوبت با مشاور یا مدیریت است.</p>{% endif %}
 </section>
 
 <section class="db-panel">
   <div class="db-datebar">
     <div><h2>ظرفیت دستگاه‌ها · {{ day_jalali }}</h2><div class="db-muted">هر پلاک یک دستگاه واقعی است؛ ردیف‌های هر دستگاه بر اساس مدت درمان + آماده‌سازی همان دستگاه ساخته می‌شوند.</div></div>
-    <div class="db-datebar-nav">
-      <a class="db-day-arrow" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ previous_day_jalali }}" title="روز قبل">→</a>
-      <form method="get"><input type="hidden" name="branch" value="{{ branch.pk }}">{% if appointment %}<input type="hidden" name="appointment" value="{{ appointment.pk }}">{% endif %}<input name="day" value="{{ day_jalali }}"><button class="db-action" type="submit">رفتن</button></form>
-      <a class="db-day-arrow" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ next_day_jalali }}" title="روز بعد">←</a>
-      <a class="db-today-link" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ today_jalali }}">امروز</a>
+    <div class="db-datebar-nav db-datebar-nav-strong">
+      <a class="db-day-step prev" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ previous_day_jalali }}">→ روز قبل</a>
+      <a class="db-today-pill" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ today_jalali }}">امروز</a>
+      <a class="db-day-step next" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ next_day_jalali }}">روز بعد ←</a>
+      <form method="get"><input type="hidden" name="branch" value="{{ branch.pk }}">{% if appointment %}<input type="hidden" name="appointment" value="{{ appointment.pk }}">{% endif %}<input name="day" value="{{ day_jalali }}"><button class="db-action" type="submit">رفتن به تاریخ</button></form>
     </div>
   </div>
   <div class="db-legend-row">
