@@ -12,7 +12,8 @@ from .jalali import format_jalali, parse_jalali
 from .models import (
     ApiServerSettings, Branch, ConsultationPlan, ConsultationPlanItem,
     BranchDeviceTypeStatus, DeviceCabin, DeviceSessionBooking, DeviceTypeSchedule,
-    FinancialTransaction, PhysicalDevice, VisitAppointment,
+    FinancialTransaction, PatientProfile, PhysicalDevice, VisitAppointment,
+    normalize_lead_phone,
 )
 from .sms import send_sms
 
@@ -336,6 +337,41 @@ def device_booking_schedule(request):
             branch=allowed_branches.filter(pk=profile.branch_id).first()
             if not branch:
                 raise PermissionDenied('این مرکز برای نوبت‌دهی دستگاه تعریف نشده است.')
+    if request.method=='POST' and (request.POST.get('action') or '').strip()=='quick_patient':
+        if profile.role not in ('consultant','admin','manager','receptionist'):
+            raise PermissionDenied('ثبت سریع بیمار برای این نقش فعال نیست.')
+        full_name=(request.POST.get('full_name') or '').strip()[:140]
+        phone=normalize_lead_phone(request.POST.get('phone') or '')
+        if not full_name:
+            messages.error(request,'نام بیمار را وارد کنید.')
+            return redirect(f'/device-bookings/?branch={branch.pk}')
+        if not phone or len(phone)<10:
+            messages.error(request,'شماره موبایل معتبر وارد کنید.')
+            return redirect(f'/device-bookings/?branch={branch.pk}')
+        patient,created=PatientProfile.objects.get_or_create(
+            phone=phone,
+            defaults={
+                'full_name':full_name,
+                'home_branch':branch,
+                'created_by':request.user,
+            },
+        )
+        changed=[]
+        if not patient.full_name and full_name:
+            patient.full_name=full_name
+            changed.append('full_name')
+        if not patient.home_branch_id:
+            patient.home_branch=branch
+            changed.append('home_branch')
+        if changed:
+            changed.append('updated_at')
+            patient.save(update_fields=changed)
+        messages.success(
+            request,
+            'بیمار به‌صورت سریع ثبت شد.' if created else 'این شماره قبلاً پرونده داشت؛ همان پرونده باز شد.'
+        )
+        return redirect('patient_360',pk=patient.pk)
+
     raw_day=(request.POST.get('day') or request.GET.get('day') or '').strip()
     try:
         day=parse_jalali(raw_day) if raw_day else timezone.localdate()
@@ -547,15 +583,30 @@ def device_booking_schedule(request):
             'off_count':off_count,
         })
 
-    # Patient picker: do not hide patients merely because their package is still
-    # being finalized. The booking POST guard remains strict, but consultants
-    # can always find/select the patient and see the package state.
-    plans=(
-        ConsultationPlan.objects.filter(appointment__branch=branch)
-        .exclude(status='no_sale')
-        .select_related('appointment')
-        .order_by('-updated_at','-id')[:300]
+    # Patient picker is appointment-based, not plan-based. This keeps patients
+    # visible even before a ConsultationPlan exists and prevents the old
+    # "I can type the name but cannot select the patient" dead end.
+    patient_appointments=list(
+        VisitAppointment.objects.filter(branch=branch)
+        .select_related('consultation_plan')
+        .order_by('-appointment_date','-appointment_time','-id')[:500]
     )
+    patient_options=[]
+    seen_phones=set()
+    for item in patient_appointments:
+        canonical=normalize_lead_phone(item.phone)
+        key=canonical or f'appointment:{item.pk}'
+        if key in seen_phones:
+            continue
+        seen_phones.add(key)
+        item_plan=getattr(item,'consultation_plan',None)
+        patient_options.append({
+            'appointment_id':item.pk,
+            'full_name':item.full_name,
+            'phone':item.phone,
+            'status_label':item_plan.get_status_display() if item_plan else 'بدون پکیج',
+        })
+
     bookable_plan_statuses=('finalized','payment_pending','partial_paid','paid')
     plan_ready=bool(plan and plan.status in bookable_plan_statuses)
     previous_day=day-timedelta(days=1)
@@ -567,7 +618,7 @@ def device_booking_schedule(request):
         'today_jalali':format_jalali(timezone.localdate()),
         'appointment':appointment,'plan':plan,'plan_ready':plan_ready,
         'items':plan.items.filter(kind='device',included=True) if plan_ready else [],
-        'plans':plans,'bookings':booking_list,
+        'patient_options':patient_options,'bookings':booking_list,
         'devices':device_lines,'device_lines':device_lines,
         'device_cards':device_cards,
         'can_book':profile.role in ('consultant','admin','manager'),
