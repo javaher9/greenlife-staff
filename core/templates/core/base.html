@@ -752,6 +752,91 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
 })();
 </script>
 
+
+<style>
+.gl-money-unit-note{margin:8px 0 12px;padding:9px 11px;border:1px solid rgba(48,160,116,.28);border-radius:11px;background:linear-gradient(135deg,rgba(48,160,116,.09),rgba(111,87,190,.07));color:inherit;font-size:10px;font-weight:800;line-height:1.8}
+.gl-money-unit-note b{color:#2c9b70}.gl-money-million{direction:ltr!important;text-align:left!important}
+</style>
+<script>
+/* Global money-entry convention: staff type amounts in million tomans; storage remains unchanged. */
+(function(){
+  const MONEY_WORDS=['مبلغ','قیمت','تعرفه','حقوق','دستمزد','فروش','پورسانت','پاداش','مساعده','بیمه','کسری','کسر','هزینه','دریافتی','پرداخت'];
+  const EXEMPT_NAMES=new Set(['cash_amount','cash_exchange_rate','quantity','units_per_session','commission_percent']);
+  function labelText(input){
+    const label=input.closest('label')||document.querySelector('label[for="'+CSS.escape(input.id||'')+'"]');
+    return (label?label.textContent:'').replace(/\s+/g,' ').trim();
+  }
+  function moneyMeta(input){
+    if(!input||input.dataset.moneyExempt==='1'||EXEMPT_NAMES.has(input.name||''))return null;
+    if(!['number','text'].includes((input.type||'text').toLowerCase()))return null;
+    const name=(input.name||'').toLowerCase(), label=labelText(input);
+    const namedToman=/_toman$/.test(name)||name.includes('price_toman')||name.includes('amount_toman');
+    const hasWord=MONEY_WORDS.some(w=>label.includes(w));
+    const explicitToman=label.includes('تومان');
+    const explicitRial=label.includes('ریال');
+    if(!namedToman&&!hasWord&&!explicitToman&&!explicitRial)return null;
+    if(label.includes('ارز')||label.includes('نرخ تبدیل'))return null;
+    return {factor:explicitRial&&!explicitToman?10000000:1000000,label};
+  }
+  function pretty(n){
+    if(!Number.isFinite(n))return '';
+    return String(Math.round(n*1000)/1000).replace(/\.0+$/,'');
+  }
+  function prepare(input,meta){
+    if(input.dataset.moneyMillionReady==='1')return;
+    input.dataset.moneyMillionReady='1';
+    input.dataset.moneyFactor=String(meta.factor);
+    input.classList.add('gl-money-million');
+    input.setAttribute('inputmode','decimal');
+    if(input.type==='number'){input.step='0.001';input.min='0';}
+    input.placeholder='مثال: 5 یعنی ۵ میلیون تومان';
+    if(input.value&&!input.dataset.moneyUserValue){
+      const raw=Number(String(input.value).replace(/,/g,''));
+      if(Number.isFinite(raw)&&raw!==0)input.value=pretty(raw/meta.factor);
+    }
+    const label=input.closest('label')||document.querySelector('label[for="'+CSS.escape(input.id||'')+'"]');
+    if(label&&label.childNodes.length){
+      [...label.childNodes].forEach(node=>{
+        if(node.nodeType===Node.TEXT_NODE){
+          node.textContent=node.textContent.replace(/\(\s*تومان\s*\)/g,'(میلیون تومان)').replace(/\(\s*ریال\s*\)/g,'(میلیون تومان)');
+        }
+      });
+    }
+  }
+  function scan(root=document){
+    const forms=new Set();
+    root.querySelectorAll('input').forEach(input=>{
+      const meta=moneyMeta(input);if(!meta)return;
+      prepare(input,meta);if(input.form)forms.add(input.form);
+    });
+    forms.forEach(form=>{
+      if(!form.querySelector('.gl-money-unit-note')){
+        const note=document.createElement('div');
+        note.className='gl-money-unit-note';
+        note.innerHTML='<b>واحد مبالغ: میلیون تومان</b> — مثال: برای ۵ میلیون تومان فقط عدد <b>5</b> را وارد کنید.';
+        const first=[...form.querySelectorAll('input')].find(x=>x.dataset.moneyMillionReady==='1');
+        if(first){
+          const target=first.closest('.cf,.field,.form-field,.row')||first.closest('label')||first;
+          target.parentNode.insertBefore(note,target);
+        }
+      }
+      if(form.dataset.moneyMillionSubmit!=='1'){
+        form.dataset.moneyMillionSubmit='1';
+        form.addEventListener('submit',()=>{
+          form.querySelectorAll('input[data-money-million-ready="1"]').forEach(input=>{
+            if(input.value==='')return;
+            const value=Number(String(input.value).replace(/,/g,'')),factor=Number(input.dataset.moneyFactor||1000000);
+            if(Number.isFinite(value))input.value=String(Math.round(value*factor));
+          });
+        });
+      }
+    });
+  }
+  document.addEventListener('DOMContentLoaded',()=>scan());
+  new MutationObserver(m=>{for(const x of m){for(const n of x.addedNodes){if(n.nodeType===1)scan(n);}}}).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+
 {% if request.resolver_match.url_name != 'internal_messages' %}
 {% include "core/_live_chat_widget.html" %}
 {% endif %}
