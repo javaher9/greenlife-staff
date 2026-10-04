@@ -1,3 +1,4 @@
+from datetime import datetime, time
 from decimal import Decimal
 
 from django.contrib import messages
@@ -162,7 +163,7 @@ def patient_360(request, pk):
     since_candidates=[patient.created_at]
     if first_appointment:
         since_candidates.append(timezone.make_aware(
-            timezone.datetime.combine(first_appointment,timezone.datetime.min.time()),
+            datetime.combine(first_appointment,time.min),
             timezone.get_current_timezone(),
         ))
     if first_lead:
