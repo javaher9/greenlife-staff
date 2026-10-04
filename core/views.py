@@ -1741,7 +1741,11 @@ def finance_entry_review(request,pk,action):
                 appointment_changed.extend(['care_stage','status'])
 
             if appointment_changed:
-                appointment.save(update_fields=list(dict.fromkeys(appointment_changed+['updated_at'])))
+                VisitAppointment.objects.filter(pk=appointment.pk).update(
+                    care_stage=appointment.care_stage,
+                    status=appointment.status,
+                    updated_at=timezone.now(),
+                )
 
             if appointment.lead_id:
                 if fully_paid:
