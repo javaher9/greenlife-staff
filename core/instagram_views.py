@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db.models import Count, Q
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from .models import Attendance, CallCenterLeadGroup, DuplicateLeadError, EmployeeProfile, LEAD_DUPLICATE_MESSAGE, ReferralLead, ReferralProfile, StaffNotification, normalize_lead_phone
