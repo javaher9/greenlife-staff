@@ -278,12 +278,12 @@
         <header class="cc-v5-section-head"><div><h2>{% gl_t 'cc.my_patients_leads' %}</h2><p>{% gl_t 'cc.patient_avatar_note' %}</p></div><a href="{% url 'appointment_schedule' %}">{% gl_t 'cc.appointment_schedule' %} ←</a></header>
         <div class="cc-v5-patients" id="ccLeadList">
           {% for lead in leads %}
-          <article class="cc-v5-patient" data-source="{{ lead.source }}" data-followup="{{ lead.next_follow_up|date:'Y-m-d' }}" data-search="{{ lead.full_name }} {{ lead.phone }} {{ lead.interested_service }} {{ lead.referrer }} {{ lead.group.name|default:'' }} {% gl_choice 'lead_source' lead.source lead.source_origin_display %}">
+          <article class="cc-v5-patient" data-source="{{ lead.source }}" data-followup="{{ lead.next_follow_up|date:'Y-m-d' }}" data-search="{{ lead.full_name }} {{ lead.phone }} {{ lead.interested_service }} {{ lead.referrer }} {{ lead.group.name|default:'' }} {{ lead.source_origin_display }}">
             <div class="cc-v5-person">
               <div class="cc-v5-person-avatar" title="{% gl_t 'cc.photo_placeholder' %}">{{ lead.full_name|first|default:"؟" }}</div>
               <div class="cc-v5-person-copy">
                 <strong>{{ lead.full_name }}</strong>
-                <div class="cc-v5-person-meta"><b>{{ lead.phone }}</b>{% if lead.country %}<span class="cc-v5-tag source">{{ lead.country.flag_emoji }} {{ lead.country.code }}</span>{% endif %}<span class="cc-v5-tag source">{% gl_choice 'lead_source' lead.source lead.source_origin_display %}</span><span class="cc-v5-tag group">{% if lead.group %}{{ lead.group.name }}{% else %}{% gl_t 'cc.no_group' %}{% endif %}</span><span>{% gl_t 'cc.referrer' name=lead.referrer %}</span></div>
+                <div class="cc-v5-person-meta"><b>{{ lead.phone }}</b>{% if lead.country %}<span class="cc-v5-tag source">{{ lead.country.flag_emoji }} {{ lead.country.code }}</span>{% endif %}<span class="cc-v5-tag source">{{ lead.source_origin_display }}</span><span class="cc-v5-tag group">{% if lead.group %}{{ lead.group.name }}{% else %}{% gl_t 'cc.no_group' %}{% endif %}</span><span>{% gl_t 'cc.referrer' name=lead.referrer %}</span></div>
               </div>
             </div>
             <div class="cc-v5-service">{% if lead.interested_service %}{{ lead.interested_service }}{% else %}{% gl_t 'cc.service_unspecified' %}{% endif %}</div>
