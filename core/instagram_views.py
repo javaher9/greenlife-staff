@@ -252,7 +252,7 @@ def instagram_manual_lead(request):
     if request.method == 'POST' and form.is_valid():
         data = form.cleaned_data
         page_slug, page_label = _instagram_page_source(data.get('instagram_page'))
-        staff_name = 'ادمین'
+        staff_name = request.user.get_full_name() or request.user.username
         try:
             lead = ReferralLead.objects.create(
                 referrer=_instagram_source_profile(),
