@@ -1025,6 +1025,88 @@
 .db-quick-patient-form input{min-width:0;height:40px;padding:0 10px;border:1px solid #c9dbd5;border-radius:10px;background:#fff!important;color:#183f36!important;-webkit-text-fill-color:#183f36!important}
 .db-quick-patient-form button{min-height:40px;border:0;border-radius:10px;padding:0 12px;background:linear-gradient(135deg,#237a5c,#419a79);color:#fff;font-size:9px;font-weight:950;cursor:pointer}
 @media(max-width:900px){.db-quick-patient-form{grid-template-columns:1fr 1fr}.db-quick-patient-form button{grid-column:1/-1}.db-day-nav-labeled{grid-template-columns:1fr}.db-day-step,.db-day-nav-labeled input{width:100%!important}.db-datebar-nav-strong{display:grid!important;grid-template-columns:1fr 1fr 1fr!important}.db-datebar-nav-strong form{grid-column:1/-1!important}.db-datebar-nav-strong form input{flex:1!important;width:auto!important}}
+
+/* Final tablet layout containment + light quick intake controls */
+@media(min-width:701px){
+  body.gl-page-device_booking_schedule .app-main,
+  body.gl-page-device_booking_schedule .content,
+  body.gl-page-device_booking_schedule .db-shell,
+  body.gl-page-device_booking_schedule .db-grid,
+  body.gl-page-device_booking_schedule .db-panel{
+    min-width:0!important;
+    max-width:100%!important;
+  }
+  body.gl-page-device_booking_schedule .db-shell{
+    width:100%!important;
+    padding-inline:10px!important;
+    overflow-x:hidden!important;
+  }
+  body.gl-page-device_booking_schedule .db-panel{
+    overflow:hidden!important;
+  }
+  body.gl-page-device_booking_schedule .db-device-board{
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+  }
+
+  body.gl-page-device_booking_schedule .db-patient-picker-form{
+    grid-template-columns:minmax(0,.9fr) minmax(0,1.2fr) minmax(290px,.9fr) auto!important;
+    width:100%!important;
+    max-width:100%!important;
+  }
+  body.gl-page-device_booking_schedule .db-patient-picker-form>*{
+    min-width:0!important;
+  }
+  body.gl-page-device_booking_schedule .db-day-picker,
+  body.gl-page-device_booking_schedule .db-day-nav-labeled,
+  body.gl-page-device_booking_schedule .db-datebar-nav-strong{
+    min-width:0!important;
+    max-width:100%!important;
+  }
+
+  body.gl-role-consultant.gl-page-device_booking_schedule .db-quick-patient-form input{
+    background:#ffffff!important;
+    background-image:none!important;
+    color:#173f36!important;
+    -webkit-text-fill-color:#173f36!important;
+    border:1px solid #bfd4cc!important;
+    box-shadow:0 2px 7px rgba(32,74,63,.045)!important;
+    opacity:1!important;
+  }
+  body.gl-role-consultant.gl-page-device_booking_schedule .db-quick-patient-form input::placeholder{
+    color:#728780!important;
+    -webkit-text-fill-color:#728780!important;
+    opacity:1!important;
+  }
+  body.gl-role-consultant.gl-page-device_booking_schedule .db-quick-patient-form button{
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+  }
+}
+@media(max-width:1350px) and (min-width:901px){
+  body.gl-page-device_booking_schedule .db-patient-picker-form{
+    grid-template-columns:minmax(0,1fr) minmax(0,1.2fr)!important;
+  }
+  body.gl-page-device_booking_schedule .db-patient-picker-form .db-day-picker{
+    grid-column:1/2!important;
+  }
+  body.gl-page-device_booking_schedule .db-patient-picker-form>button{
+    grid-column:2/3!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+}
+@media(max-width:900px) and (min-width:701px){
+  body.gl-page-device_booking_schedule .db-shell{padding-inline:8px!important}
+  body.gl-page-device_booking_schedule .db-patient-picker-form{
+    grid-template-columns:1fr!important;
+  }
+  body.gl-page-device_booking_schedule .db-patient-picker-form .db-day-picker,
+  body.gl-page-device_booking_schedule .db-patient-picker-form>button{
+    grid-column:1!important;
+    width:100%!important;
+  }
+}
 </style>
 
 <div class="db-shell">
