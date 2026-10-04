@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from .jalali import format_jalali, parse_jalali
+from .patient_ui import attach_patient_photos
 from .models import (
     ApiServerSettings, Branch, ConsultationPlan, ConsultationPlanItem,
     BranchDeviceTypeStatus, DeviceCabin, DeviceSessionBooking, DeviceTypeSchedule,
@@ -583,6 +584,8 @@ def device_booking_schedule(request):
         .select_related('consultation_plan').first()
         if selected_raw.isdigit() else None
     )
+    if appointment:
+        attach_patient_photos([appointment])
     plan=getattr(appointment,'consultation_plan',None) if appointment else None
 
     if request.method=='POST':
@@ -710,6 +713,7 @@ def device_booking_schedule(request):
         .order_by('starts_at','device__name','id')
     )
     booking_list=list(bookings)
+    attach_patient_photos([booking.appointment for booking in booking_list])
     blocking_statuses={'booked','arrived','late','completed'}
     history_statuses={'no_show','cancelled','rescheduled'}
     device_lines=list(
@@ -787,11 +791,11 @@ def device_booking_schedule(request):
     # Patient picker is appointment-based, not plan-based. This keeps patients
     # visible even before a ConsultationPlan exists and prevents the old
     # "I can type the name but cannot select the patient" dead end.
-    patient_appointments=list(
+    patient_appointments=attach_patient_photos(list(
         VisitAppointment.objects.filter(branch=branch)
         .select_related('consultation_plan')
         .order_by('-appointment_date','-appointment_time','-id')[:500]
-    )
+    ))
     patient_options=[]
     seen_phones=set()
     for item in patient_appointments:
@@ -806,6 +810,8 @@ def device_booking_schedule(request):
             'full_name':item.full_name,
             'phone':item.phone,
             'status_label':item_plan.get_status_display() if item_plan else 'بدون پکیج',
+            'photo_url':item.patient_photo_url,
+            'initial':item.patient_initial,
         })
 
     bookable_plan_statuses=('finalized','payment_pending','partial_paid','paid')
