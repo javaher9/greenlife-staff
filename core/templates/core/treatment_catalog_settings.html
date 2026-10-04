@@ -2,10 +2,10 @@
 {% block content %}
 <section style="margin:12px 0 18px;padding:15px;border:1px solid rgba(46,196,143,.45);border-radius:15px;background:rgba(17,61,53,.36);color:#f1fff9">
   <h3 style="margin:0 0 8px;color:#fff">تعرفه پایه مشترک دستگاه‌ها</h3>
-  <p style="font-size:12px">برای خدمات دستگاهی که قیمت اختصاصی ندارند اعمال می‌شود؛ قیمت استثنا در فهرست خدمات اولویت دارد. قیمت بسته‌های نهایی قبلی تغییر نمی‌کند.</p>
+  <p style="font-size:12px">برای خدمات دستگاهی که قیمت اختصاصی ندارند اعمال می‌شود؛ قیمت استثنا در فهرست خدمات اولویت دارد. قیمت بسته‌های نهایی قبلی تغییر نمی‌کند.</p><p style="font-size:12px;font-weight:900;color:#9ff0ce">واحد ورود مبلغ: میلیون تومان — مثال: برای ۵ میلیون تومان فقط عدد 5 را وارد کنید.</p>
   <form method="post" style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">{% csrf_token %}
     <input type="hidden" name="action" value="base_device_tariff">
-    <label>قیمت هر واحد (تومان) <input type="number" name="base_price_toman" min="0" step="1" required value="{{ base_device_tariff|floatformat:0 }}" style="padding:9px;border-radius:8px"></label>
+    <label>قیمت هر واحد (میلیون تومان) <input type="number" name="base_price_toman" min="0" step="0.001" required value="{{ base_device_tariff|floatformat:0 }}" style="padding:9px;border-radius:8px"></label>
     <button type="submit" style="border:0;border-radius:9px;padding:10px 16px;background:#13835e;color:#fff;cursor:pointer">ذخیره تعرفه پایه</button>
   </form>
   <p><a href="{% url 'device_capacity_settings' %}" style="display:inline-block;color:#b0ffe3;font-weight:900;text-decoration:underline">تنظیم کابین‌ها، تعداد دستگاه‌ها و زمان نوبت‌دهی ←</a></p>
@@ -46,7 +46,7 @@
       <div class="cf"><label>دسته</label><select name="category" required>{% for key,label in categories %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></div>
       <div class="cf"><label>عنوان</label><input name="name" placeholder="مثلاً لیپولیتیک گرید ۳" required></div>
       <div class="cf-row">
-        <div class="cf"><label>قیمت (تومان)</label><input name="price_toman" inputmode="numeric" placeholder="اختیاری"></div>
+        <div class="cf"><label>قیمت (میلیون تومان)</label><input name="price_toman" inputmode="numeric" placeholder="اختیاری"></div>
         <div class="cf"><label>واحد</label><input name="unit_label" placeholder="جلسه / ناحیه / نسخه"></div>
       </div>
       <div class="cf"><label>شعبه</label><select name="branch"><option value="">همه شعب</option>{% for branch in branches %}<option value="{{ branch.id }}">{{ branch.name }}</option>{% endfor %}</select></div>
