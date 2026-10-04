@@ -1,5 +1,6 @@
 from datetime import time
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -52,6 +53,32 @@ class Patient360Tests(TestCase):
         self.assertEqual(PatientProfile.objects.count(),1)
         patient.refresh_from_db()
         self.assertEqual(patient.phone,'09121112233')
+
+    def test_consultant_sees_masked_phone_and_not_full_number(self):
+        patient=PatientProfile.objects.create(
+            full_name='بیمار خصوصی',phone='09121112233',home_branch=self.branch,
+        )
+        response=self.client.get(reverse('patient_360',args=[patient.pk]))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'0912***2233')
+        self.assertNotContains(response,'09121112233')
+        self.assertEqual(response['Cache-Control'],'no-store, private')
+
+    @patch('core.patient_360_views.send_sms')
+    def test_consultant_can_send_sms_without_phone_in_request(self,mocked_send):
+        patient=PatientProfile.objects.create(
+            full_name='بیمار خصوصی',phone='09121112233',home_branch=self.branch,
+        )
+        response=self.client.post(
+            reverse('patient_360_send_sms',args=[patient.pk]),
+            {'body':'پیام تست محرمانه'},
+        )
+        self.assertEqual(response.status_code,302)
+        mocked_send.assert_called_once()
+        args,kwargs=mocked_send.call_args
+        self.assertEqual(args[0],'09121112233')
+        self.assertEqual(args[1],'پیام تست محرمانه')
+        self.assertEqual(kwargs['created_by'],self.user)
 
     def test_profile_aggregates_finance_sms_and_clinical_history(self):
         patient=PatientProfile.objects.create(

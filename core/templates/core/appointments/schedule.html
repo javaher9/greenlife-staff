@@ -1,4 +1,4 @@
-{% extends 'core/base.html' %}{% load jalali_tags staff_i18n %}{% block content %}
+{% extends 'core/base.html' %}{% load jalali_tags staff_i18n privacy_filters %}{% block content %}
 <style>
 .schedule-shell{max-width:1200px;margin:0 auto 80px;font-family:Tahoma,sans-serif;color:#1e2a3d}
 .schedule-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;padding:18px 20px;background:#fff;border:1px solid #e3e7ef;border-radius:18px;box-shadow:0 8px 24px rgba(38,50,73,.06);margin-bottom:12px}.schedule-head h1{margin:0 0 5px}.schedule-head p{margin:0;color:#7b8798;font-size:11px}.schedule-actions{display:flex;gap:8px;flex-wrap:wrap}.schedule-actions a{padding:10px 12px;border-radius:10px;text-decoration:none;font-weight:900;font-size:11px}.new-appt{background:#7553a8;color:#fff}.back-appt{border:1px solid #dfe4ec;color:#526077;background:#fff}
@@ -28,7 +28,7 @@
     <div class="slot-row">
       <div class="slot-time">{{ row.time }}</div>
       {% if row.appointment %}
-        <div class="slot-person"><strong>{{ row.appointment.full_name }}</strong><small>{{ row.appointment.phone }}{% if row.appointment.service %} · {{ row.appointment.service }}{% endif %}</small></div>
+        <div class="slot-person"><strong>{{ row.appointment.full_name }}</strong><small>{% if appointment_role == 'call_center' %}{{ row.appointment.phone }}{% else %}{{ row.appointment.phone|mask_phone }}{% endif %}{% if row.appointment.service %} · {{ row.appointment.service }}{% endif %}</small></div>
         <div><span class="slot-status">{% gl_choice 'appointment_status' row.appointment.status row.appointment.get_status_display %}</span><div class="slot-source">{{ row.appointment.get_source_display }}</div><div class="slot-payment">{% gl_t 'appt.payment_confirmed' %}: <b>{{ row.appointment|appointment_paid_million }}</b> {% gl_t 'common.million_toman' %}</div></div>
         {% if appointment_role == 'receptionist' %}
         <div class="slot-buttons">

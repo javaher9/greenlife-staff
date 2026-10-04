@@ -15,6 +15,7 @@ from .models import (
     ReferralLead, SmsMessageLog, VisitAppointment, lead_phone_variants,
     normalize_lead_phone,
 )
+from .sms import SmsGatewayError, send_sms
 
 
 ALLOWED_ROLES={'admin','internal_manager','manager','doctor','consultant','receptionist'}
@@ -25,6 +26,19 @@ def _profile(request):
     if not profile or profile.role not in ALLOWED_ROLES:
         raise PermissionDenied('دسترسی به پرونده ۳۶۰ بیمار برای این نقش فعال نیست.')
     return profile
+
+
+def _can_view_full_phone(request, profile):
+    return bool(request.user.is_superuser or profile.role in {'admin','internal_manager'})
+
+
+def _masked_phone(value):
+    digits=''.join(ch for ch in str(value or '') if ch.isdigit())
+    if not digits:
+        return '—'
+    if len(digits)<=7:
+        return '***'
+    return f'{digits[:4]}***{digits[-4:]}'
 
 
 def _age(birth_date):
@@ -274,6 +288,8 @@ def patient_360(request, pk):
 
     context={
         'patient':patient,
+        'can_view_full_phone':_can_view_full_phone(request,profile),
+        'patient_phone_display':patient.phone if _can_view_full_phone(request,profile) else _masked_phone(patient.phone),
         'age':_age(patient.birth_date),
         'customer_since':customer_since,
         'appointments':appointments,
@@ -297,4 +313,34 @@ def patient_360(request, pk):
         'linked_profile_count':len(siblings),
         'back_url':request.META.get('HTTP_REFERER') or reverse('dashboard'),
     }
-    return render(request,'core/patient_360.html',context)
+    response=render(request,'core/patient_360.html',context)
+    response['Cache-Control']='no-store, private'
+    response['Pragma']='no-cache'
+    return response
+
+
+@login_required
+def patient_360_send_sms(request, pk):
+    profile=_profile(request)
+    if request.method!='POST':
+        return redirect('patient_360',pk=pk)
+    patient=get_object_or_404(PatientProfile,pk=pk)
+    if profile.role in {'manager','doctor','consultant','receptionist'} and profile.branch_id:
+        if patient.home_branch_id and patient.home_branch_id!=profile.branch_id:
+            if not VisitAppointment.objects.filter(
+                branch_id=profile.branch_id,
+                phone__in=lead_phone_variants(patient.phone),
+            ).exists():
+                raise PermissionDenied('این پرونده برای شعبه شما قابل مشاهده نیست.')
+    body=(request.POST.get('body') or '').strip()[:1200]
+    if not body:
+        messages.error(request,'متن پیامک را وارد کنید.')
+        return redirect('patient_360',pk=patient.pk)
+    number=normalize_lead_phone(patient.phone)
+    try:
+        send_sms(number,body,purpose='manual',created_by=request.user)
+    except SmsGatewayError as exc:
+        messages.error(request,f'ارسال پیامک ناموفق بود: {exc}')
+    else:
+        messages.success(request,f'پیامک برای {patient.full_name} ارسال شد؛ شماره موبایل نمایش داده نشد.')
+    return redirect('patient_360',pk=patient.pk)

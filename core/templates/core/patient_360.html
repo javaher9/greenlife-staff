@@ -1,4 +1,4 @@
-{% extends 'core/base.html' %}{% load jalali_tags %}
+{% extends 'core/base.html' %}{% load jalali_tags privacy_filters %}
 {% block content %}
 <style>
 .p360{max-width:1760px;margin:12px auto 38px;padding:10px;display:grid;gap:13px;direction:rtl;color:#203f39}
@@ -32,6 +32,7 @@
 .p360-visit-table td{padding:9px 8px!important;border-bottom:1px solid #edf2f0!important;background:#fff!important;color:#2d4e46!important;vertical-align:top;line-height:1.65!important}.p360-visit-table tr:hover td{background:#fbfdfc!important}.p360-visit-no{display:inline-flex;align-items:center;gap:5px;font-weight:950;color:#173f36!important}.p360-visit-no i{width:21px;height:21px;border-radius:8px;background:#ece6fb;display:grid;place-items:center;color:#6e51ad;font-style:normal;font-size:8px}.p360-visit-date{white-space:nowrap}.p360-status{display:inline-flex;margin-top:4px;padding:3px 6px;border-radius:999px;background:#edf7f2!important;color:#277356!important;font-size:7.5px!important;font-weight:900}
 .p360-side-list{display:grid;gap:7px}.p360-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:9px 10px;border:1px solid #e5ecea!important;border-radius:11px!important}.p360-row strong{display:block!important;color:#284b43!important;font-size:9.5px!important}.p360-row small{display:block!important;margin-top:3px;color:#71847e!important;font-size:7.8px!important;line-height:1.65!important}.p360-row b{color:#675095!important;font-size:8px!important}
 .p360-row.green{background:#f3fbf6!important;border-color:#d7eadf!important}.p360-row.amber{background:#fffaf0!important;border-color:#eee0bf!important}.p360-row.blue{background:#f2f8fd!important;border-color:#dce9f4!important}
+.p360-sms{display:grid;gap:8px}.p360-sms textarea{width:100%;min-height:86px;resize:vertical;padding:10px 11px;border:1px solid #d8e5e0;border-radius:12px;background:#fbfdfc!important;color:#21473f!important;font-family:inherit;font-size:9px;line-height:1.8}.p360-sms textarea::placeholder{color:#8a9a95}.p360-sms button{justify-self:start;border:0;border-radius:10px;padding:9px 13px;background:linear-gradient(135deg,#1e7a58,#3a9a73);color:#fff;font-family:inherit;font-size:9px;font-weight:950;cursor:pointer}.p360-privacy-note{padding:8px 10px;border:1px solid #e2e8f2;border-radius:10px;background:#f7f5fd!important;color:#675c7a!important;font-size:7.8px;line-height:1.7}
 .p360-note{padding:9px 0;border-top:1px solid #eef2f0}.p360-note:first-child{border-top:0}.p360-note b{color:#654d96!important;font-size:8.5px!important}.p360-note p{margin:4px 0 0;color:#4f6962!important;font-size:8.2px!important;line-height:1.75!important}
 @media(max-width:1250px){.p360-facts{grid-template-columns:repeat(3,1fr)}.p360-kpis{grid-template-columns:repeat(3,1fr)}.p360-grid{grid-template-columns:1fr}.p360-analysis{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:700px){.p360{padding:5px}.p360-hero-top{align-items:flex-start}.p360-title h1{font-size:21px!important}.p360-avatar{width:58px;height:58px}.p360-facts{grid-template-columns:repeat(2,1fr)}.p360-fact.wide{grid-column:1/-1}.p360-kpis{grid-template-columns:repeat(2,1fr)}.p360-analysis{grid-template-columns:repeat(2,1fr)}}
@@ -44,14 +45,14 @@
         <div class="p360-avatar">{% if patient.photo %}<img src="{{ patient.photo.url }}" alt="">{% else %}{{ patient.full_name|slice:":1" }}{% endif %}</div>
         <div>
           <h1>{{ patient.full_name }}</h1>
-          <p>{{ patient.phone }}{% if patient.home_branch %} · شعبه {{ patient.home_branch.name }}{% endif %} · از {{ customer_since|date:"Y/m/d" }} در گرین‌لایف</p>
+          <p>{{ patient_phone_display }}{% if patient.home_branch %} · شعبه {{ patient.home_branch.name }}{% endif %} · از {{ customer_since|date:"Y/m/d" }} در گرین‌لایف</p>
           <div class="p360-tags"><span class="p360-active">● بیمار فعال</span>{% if patient.is_vip %}<span>VIP</span>{% endif %}{% if linked_profile_count > 1 %}<span>اطلاعات موبایل یکپارچه شده</span>{% endif %}</div>
         </div>
       </div>
       <a class="p360-back" href="{{ back_url }}">بازگشت</a>
     </div>
     <div class="p360-facts">
-      <div class="p360-fact"><b>موبایل</b><span>{{ patient.phone }}</span></div>
+      <div class="p360-fact"><b>موبایل</b><span>{{ patient_phone_display }}</span></div>
       <div class="p360-fact"><b>سن / جنسیت</b><span>{% if age %}{{ age }} سال{% else %}—{% endif %}{% if patient.sex %} · {{ patient.get_sex_display }}{% endif %}</span></div>
       <div class="p360-fact"><b>قد</b><span>{% if patient.height_cm %}{{ patient.height_cm }} cm{% else %}—{% endif %}</span></div>
       <div class="p360-fact"><b>محله</b><span>{{ patient.neighborhood|default:"—" }}</span></div>
@@ -124,6 +125,17 @@
       <section class="p360-card">
         <div class="p360-head"><h2>تماس‌ها و لید</h2><span>نتایج ثبت‌شده</span></div>
         <div class="p360-body"><div class="p360-side-list">{% for l in leads %}<div class="p360-row"><div><strong>{{ l.get_contact_result_display|default:l.get_status_display }}</strong><small>{{ l.created_at|date:"Y/m/d H:i" }}{% if l.notes %}<br>{{ l.notes|truncatechars:150 }}{% endif %}</small></div><b>{{ l.get_status_display }}</b></div>{% empty %}<div class="p360-empty">سابقه تماس ثبت‌شده پیدا نشد.</div>{% endfor %}</div></div>
+      </section>
+
+      <section class="p360-card">
+        <div class="p360-head"><h2>ارسال پیامک امن</h2><span>بدون نمایش شماره کامل</span></div>
+        <div class="p360-body">
+          <form method="post" action="{% url 'patient_360_send_sms' patient.pk %}" class="p360-sms">{% csrf_token %}
+            <textarea name="body" maxlength="1200" placeholder="متن پیامک را بنویسید..." required></textarea>
+            <div class="p360-privacy-note">پیام مستقیماً برای بیمار ارسال می‌شود. شماره موبایل واقعی برای نقش‌های محدود به مرورگر ارسال نمی‌شود.</div>
+            <button type="submit">ارسال پیامک به بیمار</button>
+          </form>
+        </div>
       </section>
 
       <section class="p360-card">

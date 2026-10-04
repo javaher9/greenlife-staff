@@ -1,4 +1,4 @@
-{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+{% extends 'core/base.html' %}{% load jalali_tags privacy_filters %}{% block content %}
 <style>
 .db-shell{max-width:1720px;margin:12px auto 36px;display:grid;gap:14px;color:#233f46;font-family:"Noto Sans Arabic",Tahoma,sans-serif}
 .db-shell *{box-sizing:border-box}
@@ -1135,7 +1135,7 @@
   <label>پرونده بیمار
     <select name="appointment" id="dbAppointment">
       <option value="">انتخاب بیمار</option>
-      {% for p in patient_options %}<option value="{{ p.appointment_id }}" data-search="{{ p.full_name }} {{ p.phone }}" {% if appointment.pk == p.appointment_id %}selected{% endif %}>{{ p.full_name }} · {{ p.phone }} · {{ p.status_label }}</option>{% endfor %}
+      {% for p in patient_options %}<option value="{{ p.appointment_id }}" data-search="{{ p.full_name }} {{ p.phone|mask_phone }}" {% if appointment.pk == p.appointment_id %}selected{% endif %}>{{ p.full_name }} · {{ p.phone|mask_phone }} · {{ p.status_label }}</option>{% endfor %}
     </select>
   </label>
   <div class="db-day-picker">
@@ -1269,7 +1269,7 @@
                     data-booking="{{ slot.booking.pk }}"
                     data-appointment="{{ slot.booking.appointment_id }}"
                     data-name="{{ slot.booking.appointment.full_name }}"
-                    data-phone="{{ slot.booking.appointment.phone }}"
+                    data-phone="{{ slot.booking.appointment.phone|mask_phone }}"
                     data-service="{{ slot.booking.appointment.service|default:slot.booking.plan_item.title }}"
                     data-plan="{{ slot.booking.plan_item.title }}"
                     data-device="{{ slot.booking.device.name }}{% if slot.booking.secondary_device %} + {{ slot.booking.secondary_device.name }}{% endif %}"
@@ -1290,7 +1290,7 @@
                       data-booking="{{ slot.history_booking.pk }}"
                       data-appointment="{{ slot.history_booking.appointment_id }}"
                       data-name="{{ slot.history_booking.appointment.full_name }}"
-                      data-phone="{{ slot.history_booking.appointment.phone }}"
+                      data-phone="{{ slot.history_booking.appointment.phone|mask_phone }}"
                       data-service="{{ slot.history_booking.appointment.service|default:slot.history_booking.plan_item.title }}"
                       data-plan="{{ slot.history_booking.plan_item.title }}"
                       data-device="{{ slot.history_booking.device.name }}{% if slot.history_booking.secondary_device %} + {{ slot.history_booking.secondary_device.name }}{% endif %}"
@@ -1327,7 +1327,7 @@
         data-booking="{{ booking.pk }}"
         data-appointment="{{ booking.appointment_id }}"
         data-name="{{ booking.appointment.full_name }}"
-        data-phone="{{ booking.appointment.phone }}"
+        data-phone="{{ booking.appointment.phone|mask_phone }}"
         data-service="{{ booking.appointment.service|default:booking.plan_item.title }}"
         data-plan="{{ booking.plan_item.title }}"
         data-device="{{ booking.device.name }}{% if booking.secondary_device %} + {{ booking.secondary_device.name }}{% endif %}"
@@ -1463,7 +1463,7 @@
     var select=document.getElementById('dbPatientSelect');
     var patient360=document.getElementById('dbPatient360');
     if(name)name.textContent=el.dataset.name||'بیمار';
-    if(phone){phone.textContent=el.dataset.phone||'—';phone.href=el.dataset.phone?('tel:'+el.dataset.phone):'#';}
+    if(phone){phone.textContent=el.dataset.phone||'—';phone.removeAttribute('href');}
     if(status)status.textContent=el.dataset.status||'—';
     if(dev)dev.textContent=(el.dataset.device||'—')+' · '+(el.dataset.time||'');
     if(service)service.textContent=el.dataset.service||el.dataset.plan||'—';
