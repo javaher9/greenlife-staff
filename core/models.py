@@ -110,6 +110,10 @@ class EmployeeProfile(models.Model):
     start_date=models.DateField(null=True,blank=True)
     birth_date=models.DateField(null=True,blank=True)
     avatar=models.ImageField(upload_to='avatars/',null=True,blank=True)
+    can_register_instagram_dm_lead=models.BooleanField(
+        default=False,
+        help_text='اجازه ثبت دستی لیدهایی که شماره‌شان از دایرکت اینستاگرام دریافت شده است.',
+    )
     is_active=models.BooleanField(default=True)
     def __str__(self): return self.user.get_full_name() or self.user.username
 
