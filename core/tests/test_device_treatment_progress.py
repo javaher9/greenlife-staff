@@ -7,7 +7,8 @@ from django.utils import timezone
 
 from core.models import (
     Branch, ConsultationPlan, ConsultationPlanItem, DeviceCabin, DeviceSessionBooking,
-    DeviceTypeSchedule, PatientDeviceProgram, PatientProfile, PhysicalDevice, VisitAppointment,
+    DeviceTypeSchedule, PatientCareNote, PatientDeviceProgram, PatientProfile, PhysicalDevice,
+    StaffNotification, Task, VisitAppointment,
 )
 
 
@@ -85,6 +86,63 @@ class DeviceTreatmentProgressTests(TestCase):
         self.assertEqual(self.program.status,'completed')
         self.assertEqual(self.item.doctor_snapshot['treatment_status'],'completed')
         self.assertEqual(self.item.doctor_snapshot['treatment_sessions_remaining'],0)
+
+    def test_last_session_creates_one_followup_and_patient360_can_close_it(self):
+        first=self._booking(60)
+        second=self._booking(120)
+        self.client.post(reverse('device_booking_status',args=[first.pk,'completed']))
+        self.assertEqual(Task.objects.count(),0)
+
+        self.client.post(reverse('device_booking_status',args=[second.pk,'completed']))
+        self.assertEqual(Task.objects.count(),1)
+        task=Task.objects.get()
+        self.assertEqual(task.assigned_to,self.user)
+        self.assertEqual(task.status,'todo')
+        self.assertEqual(task.priority,'high')
+        self.assertEqual(task.due_date,timezone.localdate()+timedelta(days=3))
+        self.assertTrue(
+            StaffNotification.objects.filter(user=self.user,title='پیگیری نتیجه درمان').exists()
+        )
+
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.doctor_snapshot['treatment_followup_task_id'],task.pk)
+        self.assertEqual(self.item.doctor_snapshot['treatment_followup_status'],'pending')
+
+        # Reposting completed is idempotent and never creates a second task.
+        self.client.post(reverse('device_booking_status',args=[second.pk,'completed']))
+        self.assertEqual(Task.objects.count(),1)
+
+        page=self.client.get(reverse('patient_360',args=[self.patient.pk]))
+        self.assertContains(page,'پایان درمان و پیگیری نتیجه')
+        self.assertContains(page,'در انتظار پیگیری')
+
+        response=self.client.post(
+            reverse('patient_360_followup_complete',args=[self.patient.pk,task.pk]),
+            {'result':'بیمار راضی است و نیاز به ادامه درمان فعلاً ندارد.'},
+        )
+        self.assertEqual(response.status_code,302)
+        task.refresh_from_db()
+        self.item.refresh_from_db()
+        self.assertEqual(task.status,'done')
+        self.assertEqual(self.item.doctor_snapshot['treatment_followup_status'],'done')
+        self.assertTrue(
+            PatientCareNote.objects.filter(
+                patient=self.patient,
+                body__contains='بیمار راضی است',
+            ).exists()
+        )
+
+    def test_reopening_last_session_removes_pending_followup(self):
+        first=self._booking(60)
+        second=self._booking(120)
+        self.client.post(reverse('device_booking_status',args=[first.pk,'completed']))
+        self.client.post(reverse('device_booking_status',args=[second.pk,'completed']))
+        task=Task.objects.get()
+
+        self.client.post(reverse('device_booking_status',args=[second.pk,'cancelled']))
+        self.assertFalse(Task.objects.filter(pk=task.pk).exists())
+        self.item.refresh_from_db()
+        self.assertNotIn('treatment_followup_task_id',self.item.doctor_snapshot)
 
     def test_correcting_completed_status_recalculates_without_double_count(self):
         booking=self._booking(60)
