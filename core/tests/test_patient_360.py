@@ -3,13 +3,14 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from core.models import (
     BodyAnalysisRecord, Branch, EmployeeProfile, FinancialTransaction, PatientDietProgram,
-    PatientProfile, ReferralLead, ReferralProfile, SmsMessageLog, VisitAppointment,
+    PatientProfile, PatientTeamRating, ReferralLead, ReferralProfile, SmsMessageLog, VisitAppointment,
 )
 
 
@@ -113,3 +114,72 @@ class Patient360Tests(TestCase):
         self.assertEqual(len(response.context['visit_rows']),1)
         self.assertEqual(response.context['visit_rows'][0]['food'],'رژیم تست')
         self.assertIn('آب و فیبر',response.context['visit_rows'][0]['recommendations'])
+
+    def test_staff_can_save_shared_patient_rating(self):
+        patient=PatientProfile.objects.create(
+            full_name='بیمار امتیاز',phone='09123334455',home_branch=self.branch,
+        )
+        response=self.client.post(
+            reverse('patient_360_rating',args=[patient.pk]),
+            {
+                'overall_score':'5',
+                'cooperation_score':'4',
+                'purchase_capacity_score':'3',
+                'tags':'خوش‌برخورد، منظم',
+                'note':'برای نوبت بعدی صبح تماس شود.',
+            },
+        )
+        self.assertEqual(response.status_code,302)
+        rating=PatientTeamRating.objects.get(patient=patient,author=self.user)
+        self.assertEqual(rating.overall_score,5)
+        self.assertEqual(rating.cooperation_score,4)
+        self.assertEqual(rating.purchase_capacity_score,3)
+        page=self.client.get(reverse('patient_360',args=[patient.pk]))
+        self.assertContains(page,'ارزیابی تیم از بیمار')
+        self.assertContains(page,'خوش‌برخورد')
+
+    def test_receptionist_can_upload_patient_photo(self):
+        receptionist=User.objects.create_user('p360-receptionist',password='pass')
+        profile=receptionist.profile
+        profile.role='receptionist'
+        profile.branch=self.branch
+        profile.save(update_fields=['role','branch'])
+        patient=PatientProfile.objects.create(
+            full_name='بیمار عکس',phone='09125556677',home_branch=self.branch,
+        )
+        self.client.force_login(receptionist)
+        # Minimal PNG signature is sufficient for upload-path behavior; image
+        # decoding is handled by storage/browser display, not this endpoint.
+        photo=SimpleUploadedFile('patient.png',b'\x89PNG\r\n\x1a\n',content_type='image/png')
+        response=self.client.post(
+            reverse('patient_360_photo',args=[patient.pk]),
+            {'photo':photo},
+        )
+        self.assertEqual(response.status_code,302)
+        patient.refresh_from_db()
+        self.assertTrue(bool(patient.photo))
+
+    def test_call_center_can_rate_only_assigned_lead_patient(self):
+        operator=User.objects.create_user('p360-call-center',password='pass')
+        operator_profile=operator.profile
+        operator_profile.role='call_center'
+        operator_profile.branch=None
+        operator_profile.save(update_fields=['role','branch'])
+        self.lead.assigned_to=operator_profile
+        self.lead.save(update_fields=['assigned_to'])
+        self.client.force_login(operator)
+
+        response=self.client.get(reverse('patient_360_from_lead',args=[self.lead.pk]))
+        self.assertEqual(response.status_code,302)
+        patient=PatientProfile.objects.get(phone='09121112233')
+        rating_response=self.client.post(
+            reverse('patient_360_rating',args=[patient.pk]),
+            {'overall_score':'4','cooperation_score':'5','purchase_capacity_score':'2'},
+        )
+        self.assertEqual(rating_response.status_code,302)
+        self.assertTrue(PatientTeamRating.objects.filter(patient=patient,author=operator).exists())
+
+        other=PatientProfile.objects.create(full_name='غریبه',phone='09129998877')
+        denied=self.client.get(reverse('patient_360',args=[other.pk]))
+        self.assertEqual(denied.status_code,403)
+
