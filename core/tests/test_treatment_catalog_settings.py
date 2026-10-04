@@ -34,6 +34,13 @@ class TreatmentCatalogSettingsTests(TestCase):
         self.assertEqual(item.branch,self.branch)
         self.assertTrue(item.is_active)
 
+    def test_money_inputs_use_global_million_toman_convention(self):
+        response=self.client.get(reverse('treatment_catalog_settings'))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'واحد ورود مبلغ: میلیون تومان')
+        self.assertContains(response,'Global money-entry convention')
+        self.assertContains(response,'مثال: 5 یعنی ۵ میلیون تومان')
+
     def test_settings_page_lists_catalog_sections(self):
         TreatmentCatalogItem.objects.create(
             category='device',
