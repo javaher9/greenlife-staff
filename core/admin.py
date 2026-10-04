@@ -16,8 +16,8 @@ class BranchAdmin(admin.ModelAdmin):
 
 @admin.register(EmployeeProfile)
 class EmployeeProfileAdmin(admin.ModelAdmin):
-    list_display=('user','country','branch','role','preferred_language','job_title','shift_group','can_register_instagram_dm_lead','is_active')
-    list_filter=('country','branch','role','preferred_language','shift_group','is_active')
+    list_display=('user','country','branch','role','preferred_language','job_title','shift_group','can_register_instagram_dm_lead','can_use_sales_network','is_active')
+    list_filter=('country','branch','role','preferred_language','shift_group','can_register_instagram_dm_lead','can_use_sales_network','is_active')
     search_fields=('user__username','user__first_name','user__last_name','job_title','employee_code')
     autocomplete_fields=('user',)
 
