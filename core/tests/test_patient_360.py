@@ -43,6 +43,16 @@ class Patient360Tests(TestCase):
         patient=PatientProfile.objects.get(phone='09121112233')
         self.assertEqual(response['Location'],reverse('patient_360',args=[patient.pk]))
 
+    def test_phone_variants_reuse_existing_profile_without_duplicate(self):
+        patient=PatientProfile.objects.create(
+            full_name='بیمار قدیمی',phone='+989121112233',home_branch=self.branch,
+        )
+        response=self.client.get(reverse('patient_360_from_appointment',args=[self.appt.pk]))
+        self.assertEqual(response.status_code,302)
+        self.assertEqual(PatientProfile.objects.count(),1)
+        patient.refresh_from_db()
+        self.assertEqual(patient.phone,'09121112233')
+
     def test_profile_aggregates_finance_sms_and_clinical_history(self):
         patient=PatientProfile.objects.create(
             full_name='بیمار تست',phone='09121112233',home_branch=self.branch,
@@ -73,3 +83,6 @@ class Patient360Tests(TestCase):
         self.assertContains(response,'81.2')
         self.assertEqual(response.context['appointment_count'],1)
         self.assertEqual(response.context['recorded_contact_count'],1)
+        self.assertEqual(len(response.context['visit_rows']),1)
+        self.assertEqual(response.context['visit_rows'][0]['food'],'رژیم تست')
+        self.assertIn('آب و فیبر',response.context['visit_rows'][0]['recommendations'])

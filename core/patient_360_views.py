@@ -4,7 +4,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q, Sum, Min
+from django.db.models import Min, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -34,18 +34,44 @@ def _age(birth_date):
     return today.year-birth_date.year-((today.month,today.day)<(birth_date.month,birth_date.day))
 
 
+def _phone_matched_profiles(phone):
+    variants=lead_phone_variants(phone)
+    return list(PatientProfile.objects.filter(phone__in=variants).select_related('home_branch').order_by('id'))
+
+
+def _hydrate_from_siblings(patient, siblings):
+    """Fill only blank stable demographics from same-mobile records; never overwrite."""
+    fields=('birth_date','sex','height_cm','neighborhood','address_summary','medical_history','crm_id')
+    changed=[]
+    for field in fields:
+        if getattr(patient,field):
+            continue
+        value=next((getattr(item,field) for item in siblings if getattr(item,field)),None)
+        if value:
+            setattr(patient,field,value)
+            changed.append(field)
+    if not patient.is_vip and any(item.is_vip for item in siblings):
+        patient.is_vip=True
+        changed.append('is_vip')
+    if changed:
+        changed.append('updated_at')
+        patient.save(update_fields=changed)
+
+
 def _patient_from_appointment(appointment, user):
     phone=normalize_lead_phone(appointment.phone)
     if not phone:
         return None
-    patient,created=PatientProfile.objects.get_or_create(
-        phone=phone,
-        defaults={
-            'full_name':appointment.full_name,
-            'home_branch':appointment.branch,
-            'created_by':user,
-        },
-    )
+    matches=_phone_matched_profiles(phone)
+    patient=next((item for item in matches if normalize_lead_phone(item.phone)==phone),None)
+    if not patient:
+        patient=PatientProfile.objects.create(
+            phone=phone,
+            full_name=appointment.full_name,
+            home_branch=appointment.branch,
+            created_by=user,
+        )
+        matches=[patient]
     changed=[]
     if appointment.full_name and patient.full_name!=appointment.full_name:
         patient.full_name=appointment.full_name
@@ -53,10 +79,23 @@ def _patient_from_appointment(appointment, user):
     if not patient.home_branch_id and appointment.branch_id:
         patient.home_branch=appointment.branch
         changed.append('home_branch')
+    if patient.phone!=phone and not PatientProfile.objects.filter(phone=phone).exclude(pk=patient.pk).exists():
+        patient.phone=phone
+        changed.append('phone')
     if changed:
         changed.append('updated_at')
         patient.save(update_fields=changed)
+    _hydrate_from_siblings(patient,matches)
     return patient
+
+
+def _join_text(parts):
+    clean=[]
+    for value in parts:
+        value=(value or '').strip()
+        if value and value not in clean:
+            clean.append(value)
+    return ' • '.join(clean)
 
 
 @login_required
@@ -83,24 +122,26 @@ def patient_360(request, pk):
         PatientProfile.objects.select_related('home_branch','created_by'),
         pk=pk,
     )
+    variants=lead_phone_variants(patient.phone)
+    siblings=_phone_matched_profiles(patient.phone)
+    sibling_ids=[item.pk for item in siblings] or [patient.pk]
+    _hydrate_from_siblings(patient,siblings)
+
     if profile.role in {'manager','doctor','consultant','receptionist'} and profile.branch_id:
         if patient.home_branch_id and patient.home_branch_id!=profile.branch_id:
-            # Historical appointments can still prove this patient belongs to the
-            # current branch; avoid blocking valid cross-created profiles.
             if not VisitAppointment.objects.filter(
                 branch_id=profile.branch_id,
-                phone__in=lead_phone_variants(patient.phone),
+                phone__in=variants,
             ).exists():
                 raise PermissionDenied('این پرونده برای شعبه شما قابل مشاهده نیست.')
 
-    variants=lead_phone_variants(patient.phone)
     appointment_qs=(
         VisitAppointment.objects
         .filter(phone__in=variants)
         .select_related('branch','doctor_completed_by','created_by','lead')
         .order_by('-appointment_date','-appointment_time','-id')
     )
-    appointments=list(appointment_qs[:80])
+    appointments=list(appointment_qs[:100])
     appointment_ids=[item.pk for item in appointments]
 
     finance_qs=(
@@ -121,46 +162,99 @@ def patient_360(request, pk):
     leads=list(
         ReferralLead.objects.filter(phone__in=variants)
         .select_related('assigned_to__user','first_appointment_by','referrer')
-        .order_by('-created_at')[:30]
+        .order_by('-created_at')[:40]
     )
     sms=list(
         SmsMessageLog.objects.filter(Q(number__in=variants)|Q(appointment_id__in=appointment_ids))
         .select_related('appointment','created_by')
-        .order_by('-created_at')[:40]
+        .order_by('-created_at')[:50]
     )
-    analyses=list(patient.body_analyses.select_related('recorded_by').order_by('-recorded_at')[:36])
+    analyses=list(
+        BodyAnalysisRecord.objects.filter(patient_id__in=sibling_ids)
+        .select_related('recorded_by').order_by('-recorded_at','-id')[:48]
+    )
     latest_analysis=analyses[0] if analyses else None
     oldest_analysis=analyses[-1] if analyses else None
 
     diets=list(
-        PatientDietProgram.objects.filter(patient=patient)
+        PatientDietProgram.objects.filter(patient_id__in=sibling_ids)
         .select_related('appointment','prescribed_by')
-        .order_by('-prescribed_at')[:30]
+        .order_by('-prescribed_at','-id')[:60]
     )
     devices=list(
-        PatientDeviceProgram.objects.filter(patient=patient)
+        PatientDeviceProgram.objects.filter(patient_id__in=sibling_ids)
         .select_related('appointment','prescribed_by')
-        .order_by('-prescribed_at')[:30]
+        .order_by('-prescribed_at','-id')[:60]
     )
     lipolytics=list(
-        PatientLipolyticProgram.objects.filter(patient=patient)
+        PatientLipolyticProgram.objects.filter(patient_id__in=sibling_ids)
         .select_related('appointment','prescribed_by')
-        .order_by('-prescribed_at')[:30]
+        .order_by('-prescribed_at','-id')[:60]
     )
     notes=list(
-        PatientCareNote.objects.filter(patient=patient)
+        PatientCareNote.objects.filter(patient_id__in=sibling_ids)
         .select_related('appointment','author')
-        .order_by('-created_at')[:40]
+        .order_by('-created_at','-id')[:80]
     )
     device_sessions=list(
         DeviceSessionBooking.objects.filter(appointment_id__in=appointment_ids)
         .select_related('device','secondary_device','appointment','plan_item')
-        .order_by('-starts_at')[:40]
+        .order_by('-starts_at')[:60]
     )
+
+    # Visit matrix: visits are rows; tailored programs are columns.
+    diets_by_appt={}
+    devices_by_appt={}
+    lipolytics_by_appt={}
+    notes_by_appt={}
+    for item in diets:
+        if item.appointment_id:
+            diets_by_appt.setdefault(item.appointment_id,[]).append(item)
+    for item in devices:
+        if item.appointment_id:
+            devices_by_appt.setdefault(item.appointment_id,[]).append(item)
+    for item in lipolytics:
+        if item.appointment_id:
+            lipolytics_by_appt.setdefault(item.appointment_id,[]).append(item)
+    for item in notes:
+        if item.appointment_id:
+            notes_by_appt.setdefault(item.appointment_id,[]).append(item)
+
+    visit_rows=[]
+    chronological=list(reversed(appointments))
+    for number,appt in enumerate(chronological,1):
+        appt_diets=diets_by_appt.get(appt.pk,[])
+        appt_devices=devices_by_appt.get(appt.pk,[])
+        appt_lipos=lipolytics_by_appt.get(appt.pk,[])
+        appt_notes=notes_by_appt.get(appt.pk,[])
+        food=_join_text([item.diet_name for item in appt_diets])
+        recommendations=_join_text(
+            [item.recommendation_pack for item in appt_diets]
+            + [item.note for item in appt_diets if item.note]
+            + [item.body for item in appt_notes if item.note_type=='staff']
+        )
+        prescriptions=_join_text(
+            [item.print_template for item in appt_diets if item.print_template]
+            + [item.body for item in appt_notes if item.note_type in ('clinical','cem')]
+        )
+        treatment=_join_text(
+            [f'{item.device_name}{(" · "+item.area) if item.area else ""}' for item in appt_devices]
+            + [f'{item.protocol_name}{(" · "+item.area) if item.area else ""}' for item in appt_lipos]
+        )
+        if not any((food,recommendations,prescriptions,treatment)) and not appt.notes:
+            continue
+        visit_rows.append({
+            'number':number,
+            'appointment':appt,
+            'food':food or '—',
+            'recommendations':recommendations or '—',
+            'prescriptions':prescriptions or '—',
+            'treatment':treatment or '—',
+        })
 
     first_appointment=appointment_qs.aggregate(v=Min('appointment_date'))['v']
     first_lead=ReferralLead.objects.filter(phone__in=variants).aggregate(v=Min('created_at'))['v']
-    since_candidates=[patient.created_at]
+    since_candidates=[item.created_at for item in siblings if item.created_at]
     if first_appointment:
         since_candidates.append(timezone.make_aware(
             datetime.combine(first_appointment,time.min),
@@ -184,7 +278,8 @@ def patient_360(request, pk):
         'customer_since':customer_since,
         'appointments':appointments,
         'appointment_count':appointment_qs.count(),
-        'finance_rows':list(finance_qs[:40]),
+        'visit_rows':visit_rows,
+        'finance_rows':list(finance_qs[:50]),
         'approved_paid':approved_paid,
         'pending_paid':pending_paid,
         'leads':leads,
@@ -199,6 +294,7 @@ def patient_360(request, pk):
         'lipolytics':lipolytics,
         'notes':notes,
         'device_sessions':device_sessions,
+        'linked_profile_count':len(siblings),
         'back_url':request.META.get('HTTP_REFERER') or reverse('dashboard'),
     }
     return render(request,'core/patient_360.html',context)
