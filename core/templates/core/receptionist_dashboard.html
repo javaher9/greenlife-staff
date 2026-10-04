@@ -41,7 +41,8 @@
     .grid-main{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.8fr);gap:14px}
     .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
     .card-head{padding:15px 17px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px}.card-head h2{font-size:14px;margin:0}.card-head span,.card-head a{font-size:10px;color:var(--muted)}
-    .appointments{min-height:326px}.table-head,.appointment-row{display:grid;grid-template-columns:72px 1.35fr 1fr 96px;gap:10px;padding:10px 17px;align-items:center}.table-head{background:#fafbfc;color:#8c94a5;font-size:10px;font-weight:700}.appointment-row{border-bottom:1px solid #f0f2f6;font-size:10px}.appointment-row:last-child{border-bottom:0}.appointment-row b{direction:ltr}.appointment-row strong{font-size:11px}.appointment-row small{display:block;color:var(--muted);font-size:9px;margin-top:3px}.appointment-status{display:inline-flex;width:max-content;padding:5px 7px;border-radius:999px;background:#eef8f3;color:#277457;font-size:9px;font-weight:900}
+    .flow-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:0 0 14px}.flow-step{background:#fff;border:1px solid var(--line);border-radius:15px;padding:11px 13px;box-shadow:0 7px 20px rgba(34,43,74,.035);display:flex;align-items:center;justify-content:space-between;gap:8px}.flow-step span{font-size:10px;color:var(--muted);font-weight:800}.flow-step strong{font-size:18px}.flow-step.doctor{background:#f7f8ff}.flow-step.consultant{background:#f8f5ff}.flow-step.payment{background:#fffaf0}.flow-step.done{background:#f1fbf6}
+    .appointments{min-height:326px}.table-head,.appointment-row{display:grid;grid-template-columns:66px minmax(150px,1.35fr) minmax(100px,.8fr) 112px 98px minmax(170px,1fr);gap:9px;padding:10px 14px;align-items:center}.table-head{background:#fafbfc;color:#8c94a5;font-size:10px;font-weight:700}.appointment-row{border-bottom:1px solid #f0f2f6;font-size:10px}.appointment-row:last-child{border-bottom:0}.appointment-row b{direction:ltr}.appointment-row strong{font-size:11px}.appointment-row small{display:block;color:var(--muted);font-size:9px;margin-top:3px}.appointment-status,.care-stage{display:inline-flex;width:max-content;padding:5px 8px;border-radius:999px;font-size:9px;font-weight:900}.appointment-status{background:#eef8f3;color:#277457}.care-stage{background:#f0edff;color:#5e43db}.care-stage.payment{background:#fff4d9;color:#97650b}.care-stage.closed{background:#eaf8f1;color:#157a51}.row-actions{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.row-action{border:0;border-radius:9px;padding:7px 9px;font-size:9px;font-weight:900;cursor:pointer;white-space:nowrap}.row-action.arrive{background:#eaf8f1;color:#16784f}.row-action.file{background:#eef3ff;color:#345fc1}.row-action.pay{background:#6750d9;color:#fff}.row-action.cancel{background:#fff0f3;color:#bb3452}.row-action.done{background:#f0f2f6;color:#6f788a;cursor:default}.row-actions form{margin:0}.appointments-scroll{overflow-x:auto}
     .empty-big{min-height:245px;display:grid;place-items:center;text-align:center;padding:34px}.empty-big .symbol{width:60px;height:60px;border-radius:20px;background:var(--purple-soft);display:grid;place-items:center;margin:0 auto 13px;color:var(--purple);font-size:25px}
     .empty-big strong{display:block;font-size:14px;margin-bottom:6px}.empty-big p{font-size:11px;line-height:2;color:var(--muted);margin:0;max-width:390px}
     .urgent-list{padding:8px 15px 14px}.urgent-row{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid #f0f2f6}.urgent-row:last-child{border-bottom:0}.check{width:20px;height:20px;border:2px solid #cfd5e1;border-radius:6px;flex:0 0 20px;margin-top:2px}
@@ -55,7 +56,7 @@
     .disc{margin-top:12px;border-top:1px solid var(--line);padding-top:12px}.disc-title{display:flex;justify-content:space-between;font-size:10px}.disc-title span{color:var(--muted);font-size:9px}.disc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}.disc-grid b{height:38px;border-radius:10px;background:#f4f5f8;display:grid;place-items:center;font-size:14px}.disc-grid b:nth-child(1){color:#15995f}.disc-grid b:nth-child(2){color:#d44364}.disc-grid b:nth-child(3){color:#356ac7}.disc-grid b:nth-child(4){color:#677080}
     .messages{padding:9px 14px 13px}.msg{padding:10px 0;border-bottom:1px solid #f0f2f6}.msg:last-child{border-bottom:0}.msg strong{font-size:10px;display:block}.msg small{font-size:8px;color:#9aa2b2}.msg p{font-size:9px;line-height:1.8;color:#687187;margin:4px 0 0}
     .composer{margin:0 14px 14px;height:40px;border:1px dashed #d7dce7;border-radius:12px;display:flex;align-items:center;padding:0 12px;color:#a1a8b7;font-size:9px}
-    .actions{display:flex;align-items:center;justify-content:space-between;margin-top:16px}.primary-action{border:0;border-radius:15px;background:linear-gradient(135deg,#7a5df0,#6448dc);color:#fff;padding:12px 20px;font-weight:800;font-size:12px;box-shadow:0 12px 24px rgba(110,80,226,.23);opacity:.65;cursor:not-allowed}
+    .actions{display:flex;align-items:center;justify-content:space-between;margin-top:16px}.primary-action{border:0;border-radius:15px;background:linear-gradient(135deg,#7a5df0,#6448dc);color:#fff;padding:12px 20px;font-weight:800;font-size:12px;box-shadow:0 12px 24px rgba(110,80,226,.23);cursor:pointer}
     .attendance-pill{padding:8px 11px;border-radius:12px;background:var(--green-soft);color:#168456;font-size:10px;font-weight:700}.attendance-pill.off{background:var(--amber-soft);color:#9e7119}
     .footnote{font-size:9px;color:#a1a8b5}
     .payment-queue{margin:0 0 14px}.payment-list{padding:8px 14px 14px;display:grid;gap:7px}.payment-row{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:11px 12px;border:1px solid #e4e8ef;border-radius:13px;background:#fbfcfe}.payment-row strong{display:block;font-size:11px}.payment-row small{display:block;margin-top:3px;color:var(--muted);font-size:9px}.payment-amount{font-size:12px;font-weight:900;color:#247153;direction:ltr}.payment-go{padding:8px 11px;border-radius:10px;background:#6750d9;color:#fff;font-size:9px;font-weight:900}.payment-badge{display:inline-flex;margin-right:5px;padding:3px 6px;border-radius:999px;background:#fff0d9;color:#9a6415;font-size:8px;font-weight:900}
@@ -67,7 +68,7 @@
     html[dir="ltr"] .main{grid-column:2}
     html[dir="ltr"] .side,html[dir="ltr"] .main,html[dir="ltr"] .top,html[dir="ltr"] .nav{text-align:left;direction:ltr}
     html[dir="ltr"] .payment-amount{text-align:right}
-    @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.bottom-grid{grid-template-columns:1fr}.grid-main{grid-template-columns:1fr}.side{width:210px}.shell{grid-template-columns:minmax(0,1fr) 210px}html[dir="ltr"] .shell{grid-template-columns:210px minmax(0,1fr)}}
+    @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.flow-strip{grid-template-columns:repeat(2,1fr)}.bottom-grid{grid-template-columns:1fr}.grid-main{grid-template-columns:1fr}.side{width:210px}.shell{grid-template-columns:minmax(0,1fr) 210px}html[dir="ltr"] .shell{grid-template-columns:210px minmax(0,1fr)}}
   </style>
 </head>
 <body>
@@ -119,6 +120,14 @@
       <article class="kpi"><div class="kpi-copy"><small>{% gl_t 'rec.open_followups' %}</small><strong>{{ receptionist_task_count|default:0 }}</strong><p>{% gl_t 'rec.by_real_tasks' %}</p></div><div class="kpi-icon">✓</div></article>
     </section>
 
+    <section class="flow-strip" aria-label="{% gl_t 'rec.ops_board' %}">
+      <div class="flow-step"><span>{% gl_t 'rec.waiting_arrival' %}</span><strong>{{ receptionist_waiting_arrival_count|default:0 }}</strong></div>
+      <div class="flow-step doctor"><span>{% gl_t 'rec.waiting_doctor' %}</span><strong>{{ receptionist_doctor_queue_count|default:0 }}</strong></div>
+      <div class="flow-step consultant"><span>{% gl_t 'rec.with_consultant' %}</span><strong>{{ receptionist_consultant_queue_count|default:0 }}</strong></div>
+      <div class="flow-step payment"><span>{% gl_t 'rec.waiting_payment_short' %}</span><strong>{{ receptionist_payment_waiting_count|default:0 }}</strong></div>
+      <div class="flow-step done"><span>{% gl_t 'rec.completed_flow' %}</span><strong>{{ receptionist_closed_count|default:0 }}</strong></div>
+    </section>
+
     {% if receptionist_payment_queue %}
     <section class="card payment-queue">
       <div class="card-head"><h2>{% gl_t 'rec.waiting_payment' %} <span class="payment-badge">{{ receptionist_payment_waiting_count }}</span></h2><span>{% gl_t 'rec.package_ready' %}</span></div>
@@ -139,18 +148,38 @@
 
     <section class="grid-main">
       <article class="card appointments">
-        <div class="card-head"><h2>{% gl_t "rec.today_list" %}</h2><a href="{% url 'appointment_schedule' %}">{% gl_t 'common.full_schedule' %}</a></div>
-        <div class="table-head"><span>{% gl_t 'common.time' %}</span><span>{% gl_t 'rec.patient_name' %}</span><span>{% gl_t 'common.service' %}</span><span>{% gl_t 'common.status' %}</span></div>
-        {% for item in receptionist_appointments %}
-        <div class="appointment-row">
-          <b>{{ item.appointment_time|date:"H:i" }}</b>
-          <div><strong>{{ item.full_name }}</strong><small>{{ item.phone|mask_phone }} · {{ item.get_source_display }}</small></div>
-          <span>{{ item.service|default:"—" }}</span>
-          <span class="appointment-status">{% gl_choice 'appointment_status' item.status item.get_status_display %}</span>
+        <div class="card-head"><h2>{% gl_t "rec.today_list" %} · {% gl_t "rec.ops_board" %}</h2><a href="{% url 'appointment_schedule' %}">{% gl_t 'common.full_schedule' %}</a></div>
+        <div class="appointments-scroll">
+          <div class="table-head"><span>{% gl_t 'common.time' %}</span><span>{% gl_t 'rec.patient_name' %}</span><span>{% gl_t 'common.service' %}</span><span>{% gl_t 'rec.current_stage' %}</span><span>{% gl_t 'common.status' %}</span><span>{% gl_t 'common.actions' %}</span></div>
+          {% for item in receptionist_appointments %}
+          <div class="appointment-row">
+            <b>{{ item.appointment_time|date:"H:i" }}</b>
+            <div><strong>{{ item.full_name }}</strong><small>{{ item.phone|mask_phone }} · {{ item.get_source_display }}</small></div>
+            <span>{{ item.service|default:"—" }}</span>
+            {% if item.care_stage == 'doctor' %}<span class="care-stage">{% gl_t 'rec.waiting_doctor' %}</span>
+            {% elif item.care_stage == 'consultant' %}<span class="care-stage">{% gl_t 'rec.with_consultant' %}</span>
+            {% elif item.care_stage == 'payment' %}<span class="care-stage payment">{% gl_t 'rec.waiting_payment_short' %}</span>
+            {% else %}<span class="care-stage closed">{% gl_t 'rec.flow_complete' %}</span>{% endif %}
+            <span class="appointment-status">{% gl_choice 'appointment_status' item.status item.get_status_display %}</span>
+            <div class="row-actions">
+              {% if item.status == 'booked' %}
+              <form method="post" action="{% url 'receptionist_appointment_status' item.pk 'arrived' %}">{% csrf_token %}<button class="row-action arrive" type="submit">✓ {% gl_t 'rec.checkin' %}</button></form>
+              {% endif %}
+              <a class="row-action file" href="{% url 'patient_360_from_appointment' item.pk %}">{% gl_t 'rec.patient_360' %}</a>
+              {% if item.care_stage == 'payment' %}
+              <a class="row-action pay" href="{% url 'finance_entry' %}?appointment={{ item.pk }}">ثبت پرداخت</a>
+              {% endif %}
+              {% if item.status == 'booked' %}
+              <form method="post" action="{% url 'receptionist_appointment_status' item.pk 'cancelled' %}" onsubmit="return confirm('{% gl_t 'rec.cancel_confirm' %}');">{% csrf_token %}<button class="row-action cancel" type="submit">لغو</button></form>
+              {% elif item.care_stage == 'closed' %}
+              <span class="row-action done">✓ تکمیل</span>
+              {% endif %}
+            </div>
+          </div>
+          {% empty %}
+          <div class="empty-big"><div><div class="symbol">▣</div><strong>{% gl_t 'rec.no_today_appointment' %}</strong><p>{% gl_t 'rec.no_today_body' %}</p></div></div>
+          {% endfor %}
         </div>
-        {% empty %}
-        <div class="empty-big"><div><div class="symbol">▣</div><strong>{% gl_t 'rec.no_today_appointment' %}</strong><p>{% gl_t 'rec.no_today_body' %}</p></div></div>
-        {% endfor %}
       </article>
 
       <article class="card">

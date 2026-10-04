@@ -151,6 +151,10 @@ FA = {
     'rec.enter_inbox':'ورود به کارتابل پیام داخلی','rec.new_appointment':'نوبت جدید',
     'rec.non_working':'امروز روز غیرکاری شماست','rec.not_checked_in':'ورود امروز هنوز ثبت نشده',
     'rec.desktop_note':'نسخه دسکتاپ منشی · تم سفید',
+    'rec.ops_board':'میز عملیات پذیرش','rec.current_stage':'مرحله فعلی','rec.waiting_arrival':'منتظر ورود',
+    'rec.waiting_doctor':'منتظر پزشک','rec.with_consultant':'نزد مشاور','rec.waiting_payment_short':'منتظر پرداخت',
+    'rec.completed_flow':'تکمیل‌شده','rec.checkin':'پذیرش / ورود','rec.patient_360':'پرونده ۳۶۰',
+    'rec.flow_complete':'چرخه تکمیل','rec.cancel_confirm':'این نوبت لغو شود؟',
 
     # Consultant
     'con.eyebrow':'GREENLIFE · میز کار مشاور','con.title':'پنل مشاوره و چرخه درمان',
@@ -373,6 +377,10 @@ TR = {
     'rec.internal_alert':'İç Bildirim','rec.no_unread':'Okunmamış mesaj veya bildiriminiz yok.','rec.enter_inbox':'İç Mesajlara Git',
     'rec.new_appointment':'Yeni Randevu','rec.non_working':'Bugün çalışma gününüz değil','rec.not_checked_in':'Bugünkü giriş henüz kaydedilmedi',
     'rec.desktop_note':'Resepsiyon masaüstü · açık tema',
+    'rec.ops_board':'Resepsiyon Operasyon Masası','rec.current_stage':'Mevcut Aşama','rec.waiting_arrival':'Giriş Bekliyor',
+    'rec.waiting_doctor':'Doktor Bekliyor','rec.with_consultant':'Danışmanda','rec.waiting_payment_short':'Ödeme Bekliyor',
+    'rec.completed_flow':'Tamamlandı','rec.checkin':'Kabul / Giriş','rec.patient_360':'360 Hasta Dosyası',
+    'rec.flow_complete':'Süreç Tamamlandı','rec.cancel_confirm':'Bu randevu iptal edilsin mi?',
 
     'con.eyebrow':'GREENLIFE · DANIŞMAN ÇALIŞMA ALANI','con.title':'Danışmanlık ve Tedavi Süreci',
     'con.intro':'Hasta kuyruğu, tedavi paketi, cihaz randevusu ve finans işlemleri tek, hızlı ve açık bir çalışma alanında.',
@@ -587,6 +595,10 @@ EN.update({
     'rec.internal_alert':'Internal Alert','rec.no_unread':'No unread messages or alerts.','rec.enter_inbox':'Open Internal Messages',
     'rec.new_appointment':'New Appointment','rec.non_working':'Today is not a working day for you','rec.not_checked_in':'Today’s check-in has not been recorded',
     'rec.desktop_note':'Reception desktop · light theme',
+    'rec.ops_board':'Reception Operations','rec.current_stage':'Current Stage','rec.waiting_arrival':'Waiting to Arrive',
+    'rec.waiting_doctor':'Waiting for Doctor','rec.with_consultant':'With Consultant','rec.waiting_payment_short':'Waiting for Payment',
+    'rec.completed_flow':'Completed','rec.checkin':'Check In','rec.patient_360':'Patient 360',
+    'rec.flow_complete':'Flow Complete','rec.cancel_confirm':'Cancel this appointment?',
 
     'con.eyebrow':'GREENLIFE · CONSULTANT WORKSPACE','con.title':'Consultation & Treatment Workflow',
     'con.intro':'Patient queue, treatment package, device booking, and financial operations in one clear, fast workspace.',
