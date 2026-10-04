@@ -108,12 +108,14 @@ class AppointmentPaymentVisibilityTests(TestCase):
         ).aggregate(total=__import__('django.db.models',fromlist=['Sum']).Sum('amount'))['total'] or 0
         self.assertEqual(payment.review_status,'approved',{'review_status':payment.review_status,'approved_total':str(approved_total)})
         self.assertEqual(approved_total,Decimal('20000000'),{'review_status':payment.review_status,'approved_total':str(approved_total)})
-        audit=AuditLog.objects.filter(action='finance_review',object_id=str(payment.pk)).order_by('-id').first()
-        debug_meta=audit.metadata if audit else {}
+        audit_rows=list(
+            AuditLog.objects.filter(action='finance_review',object_id=str(payment.pk))
+            .order_by('id').values_list('metadata',flat=True)
+        )
         direct_state=VisitAppointment.objects.filter(pk=self.appointment.pk).values('care_stage','status').get()
         self.assertEqual(
             direct_state['care_stage'],'closed',
-            {'state':direct_state,'approved_total':str(approved_total),'plan_status':ConsultationPlan.objects.get(pk=plan.pk).status,'audit':debug_meta},
+            {'state':direct_state,'approved_total':str(approved_total),'plan_status':ConsultationPlan.objects.get(pk=plan.pk).status,'audits':audit_rows},
         )
         self.assertEqual(direct_state['status'],'completed',direct_state)
         self.lead.refresh_from_db()
