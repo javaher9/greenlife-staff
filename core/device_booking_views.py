@@ -581,6 +581,7 @@ def device_booking_schedule(request):
                 preparation_minutes_snapshot=preparation,
                 created_by=request.user,
             )
+            _sync_device_treatment_progress(item.pk)
             transaction.on_commit(lambda pk=created.pk:_send_confirmation(pk))
         messages.success(request,'نوبت تک‌جلسه‌ای ثبت شد؛ ظرفیت دستگاه تا پایان آماده‌سازی اشغال است.')
         return redirect(f'/device-bookings/?appointment={appointment.pk}&day={raw_day}')
