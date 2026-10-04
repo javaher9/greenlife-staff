@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-from core.models import Branch, EmployeeProfile, Task
+from core.models import Branch, EmployeeProfile, Task, VisitAppointment
 
 
 class ReceptionistRoleTests(TestCase):
@@ -45,6 +45,29 @@ class ReceptionistRoleTests(TestCase):
         self.assertContains(response,'تم سفید')
         self.assertNotContains(response,'GreenLife')
         self.assertNotContains(response,'مشتری اول')
+
+    def test_desktop_dashboard_exposes_live_reception_actions(self):
+        VisitAppointment.objects.create(
+            branch=self.branch,
+            full_name='بیمار تست',
+            phone='09120000000',
+            service='مشاوره',
+            appointment_date=__import__('django').utils.timezone.localdate(),
+            appointment_time=__import__('datetime').time(10,0),
+            status='booked',
+            care_stage='doctor',
+            source='call_center',
+        )
+        response=self.client.get(
+            reverse('dashboard'),
+            HTTP_USER_AGENT='Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        )
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'میز عملیات پذیرش')
+        self.assertContains(response,'منتظر پزشک')
+        self.assertContains(response,'پذیرش / ورود')
+        self.assertContains(response,'پرونده ۳۶۰')
+        self.assertContains(response,'بیمار تست')
 
     def test_phone_dashboard_keeps_existing_dark_personnel_experience(self):
         response=self.client.get(
