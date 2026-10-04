@@ -612,6 +612,7 @@ class EmployeeEditForm(forms.Form):
         label='وضعیت بیمه',required=False,coerce=lambda value: {'True':True,'False':False}.get(value),
         empty_value=None,choices=(('', 'نامشخص'),('True', 'بیمه شده'),('False', 'بیمه نشده')),
     )
+    can_register_instagram_dm_lead=forms.BooleanField(label='ثبت لید از دایرکت',required=False)
     is_active=forms.BooleanField(label='فعال',required=False)
     new_password=forms.CharField(label='رمز دسکتاپ جدید',required=False,widget=forms.PasswordInput,help_text='اگر نمی‌خواهید رمز دسکتاپ تغییر کند، خالی بگذارید.')
 
