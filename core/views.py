@@ -617,7 +617,7 @@ def dashboard(request):
         if receptionist_branch:
             receptionist_appointments=VisitAppointment.objects.filter(
                 branch=receptionist_branch,appointment_date=today_local
-            ).exclude(status='cancelled').order_by('appointment_time')
+            ).exclude(status__in=('cancelled','no_show')).order_by('appointment_time')
         else:
             receptionist_appointments=VisitAppointment.objects.none()
         receptionist_appointment_count=receptionist_appointments.count()
@@ -639,7 +639,7 @@ def dashboard(request):
             receptionist_payment_queue=(
                 VisitAppointment.objects
                 .filter(branch=receptionist_branch,care_stage='payment')
-                .exclude(status='cancelled')
+                .exclude(status__in=('cancelled','no_show'))
                 .select_related('doctor_completed_by','consultation_plan','consultation_plan__consultant')
                 .order_by('consultation_plan__sent_to_reception_at','appointment_time','id')[:30]
             )
