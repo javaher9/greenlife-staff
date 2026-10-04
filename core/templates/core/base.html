@@ -546,7 +546,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
         {% else %}
           <a href="/live/"><span>⌘</span>{% gl_t 'shell.whats_new' %}</a>
           {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}<a href="/lead-management/"><span>◉</span>{% gl_t 'common.leads' %}</a>{% endif %}
-          {% if user.profile.role == 'admin' %}<a href="{% url 'instagram_manual_lead' %}"><span>＋</span>{% gl_t 'shell.add_lead' %}</a>{% endif %}
+          {% if user.profile.can_register_instagram_dm_lead %}<a href="{% url 'instagram_manual_lead' %}"><span>＋</span>{% gl_t 'shell.add_lead' %}</a>{% endif %}
           {% if user.profile.role == 'internal_manager' %}<a href="/meeting-minutes/new/"><span>＋</span>{% gl_t 'shell.meeting_new' %}</a><a href="/meeting-minutes/"><span>▤</span>{% gl_t 'shell.meeting_list' %}</a>{% elif user.profile.role == 'admin' %}<a href="/meeting-minutes/"><span>▤</span>{% gl_t 'shell.meetings' %}</a>{% endif %}
           {% if user.profile.role != 'admin' %}<a href="/reports/"><span>▥</span>{% gl_t 'shell.staff_reports' %}</a>{% endif %}
           {% if user.profile.role != 'admin' %}<a href="/employees/"><span>♙</span>{% gl_t 'common.staff' %}</a>{% endif %}
