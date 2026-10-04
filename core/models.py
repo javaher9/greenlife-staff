@@ -119,6 +119,23 @@ class EmployeeProfile(models.Model):
         help_text='اجازه دسترسی به شبکه فروش و ثبت لید به نام شبکه شخصی.',
     )
     is_active=models.BooleanField(default=True)
+
+    @property
+    def is_fatemeh_rad(self):
+        name=' '.join(filter(None,[self.user.first_name,self.user.last_name])).replace('\u200c',' ').strip()
+        compact=' '.join(name.split())
+        return 'فاطمه' in compact and 'راد' in compact
+
+    @property
+    def sales_network_enabled(self):
+        # Fatemeh Rad is intentionally excluded from personal sales-network access.
+        return bool(self.can_use_sales_network and not self.is_fatemeh_rad)
+
+    @property
+    def dm_lead_enabled(self):
+        # Her operational role is manual Instagram-DM lead entry, not personal referrals.
+        return bool(self.can_register_instagram_dm_lead or self.is_fatemeh_rad)
+
     def __str__(self): return self.user.get_full_name() or self.user.username
 
 
