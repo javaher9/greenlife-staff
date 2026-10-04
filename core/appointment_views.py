@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -12,7 +12,7 @@ from django.utils import timezone
 from .forms import AppointmentFromLeadForm, ReceptionistAppointmentForm, visit_appointment_time_choices
 from .jalali import parse_jalali
 from .patient_ui import attach_patient_photos
-from .models import Branch, EmployeeProfile, ReferralLead, StaffNotification, VisitAppointment, SmsAutomationRule, SmsScheduledMessage
+from .models import Branch, EmployeeProfile, ReferralLead, StaffNotification, Task, VisitAppointment, SmsAutomationRule, SmsScheduledMessage
 from .sms_automation import schedule_sms_event
 from .jalali import format_jalali
 from .sms import send_appointment_confirmation
@@ -271,7 +271,7 @@ def receptionist_appointment_create(request):
 def receptionist_appointment_status(request,pk,status):
     if _role(request.user)!='receptionist' or request.method!='POST':
         raise PermissionDenied('این اقدام فقط برای منشی است.')
-    if status not in ('arrived','completed','cancelled'):
+    if status not in ('arrived','completed','no_show','cancelled'):
         raise PermissionDenied('وضعیت نامعتبر است.')
     item=get_object_or_404(
         VisitAppointment,
@@ -281,7 +281,7 @@ def receptionist_appointment_status(request,pk,status):
     with transaction.atomic():
         item.status=status
         item.save(update_fields=['status','updated_at'])
-        if status=='cancelled':
+        if status in ('cancelled','no_show'):
             SmsScheduledMessage.objects.filter(
                 event_key__in=[
                     f'appointment_booked:{item.pk}:patient',
@@ -296,6 +296,35 @@ def receptionist_appointment_status(request,pk,status):
                     f'appointment_reminder:{item.pk}:custom',
                 ],status='pending',
             ).update(status='cancelled')
+        if status=='no_show' and item.lead_id:
+            lead=ReferralLead.objects.select_related('assigned_to__user','first_appointment_by').get(pk=item.lead_id)
+            follow_up_day=timezone.localdate()+timedelta(days=1)
+            if lead.status!='won':
+                lead.status='contacted'
+                lead.contact_result='follow_up'
+                lead.next_follow_up=follow_up_day
+                lead.notes=((lead.notes or '')+f'\n[{timezone.localdate()}] عدم مراجعه به نوبت؛ پیگیری مجدد لازم است.').strip()
+                lead.save(update_fields=['status','contact_result','next_follow_up','notes','updated_at'])
+            operator=lead.first_appointment_by or (lead.assigned_to.user if lead.assigned_to_id else None)
+            if operator:
+                Task.objects.get_or_create(
+                    title=f'پیگیری عدم مراجعه: {item.full_name}',
+                    assigned_to=operator,
+                    due_date=follow_up_day,
+                    defaults={
+                        'description':f'بیمار در نوبت {item.appointment_date} ساعت {item.appointment_time:%H:%M} مراجعه نکرد.\nتلفن: {item.phone}',
+                        'created_by':request.user,
+                        'priority':'high',
+                        'status':'todo',
+                    },
+                )
+                StaffNotification.objects.create(
+                    user=operator,
+                    title='عدم مراجعه بیمار',
+                    message=f'{item.full_name} مراجعه نکرد؛ پیگیری برای فردا ثبت شد.',
+                    notification_type='lead_follow_up',
+                    related_date=follow_up_day,
+                )
         # Close the operational loop back to call center. Arrival/completion means
         # the lead has actually visited, but never downgrade a won/lost lead.
         if item.lead_id and status in ('arrived','completed'):
