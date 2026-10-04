@@ -486,6 +486,35 @@ class PatientProfile(models.Model):
         return self.full_name
 
 
+class PatientTeamRating(models.Model):
+    """Shared internal staff assessment of a patient relationship.
+
+    Ratings are intentionally operational rather than diagnostic. Each staff
+    member owns one current assessment per patient and can revise it later.
+    """
+    SCORE_CHOICES=[(1,'۱'),(2,'۲'),(3,'۳'),(4,'۴'),(5,'۵')]
+    patient=models.ForeignKey(PatientProfile,on_delete=models.CASCADE,related_name='team_ratings')
+    author=models.ForeignKey(
+        User,on_delete=models.CASCADE,related_name='patient_team_ratings'
+    )
+    overall_score=models.PositiveSmallIntegerField(choices=SCORE_CHOICES,default=3)
+    cooperation_score=models.PositiveSmallIntegerField(choices=SCORE_CHOICES,default=3)
+    purchase_capacity_score=models.PositiveSmallIntegerField(choices=SCORE_CHOICES,default=3)
+    tags=models.CharField(max_length=500,blank=True)
+    note=models.TextField(max_length=1200,blank=True)
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering=['-updated_at','-id']
+        constraints=[
+            models.UniqueConstraint(fields=['patient','author'],name='uniq_patient_rating_author'),
+        ]
+
+    def __str__(self):
+        return f'{self.patient} - {self.author} - {self.overall_score}'
+
+
 class BodyAnalysisRecord(models.Model):
     patient=models.ForeignKey(PatientProfile,on_delete=models.CASCADE,related_name='body_analyses')
     recorded_at=models.DateTimeField(default=timezone.now,db_index=True)
