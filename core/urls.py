@@ -16,12 +16,15 @@ from . import doctor_views
 from . import payroll_views
 from . import device_booking_views
 from . import consultant_expense_views
+from . import patient_360_views
 from .mcp import mcp_endpoint
 urlpatterns=[
 path('workspace/language/',views.language_switch,name='language_switch'),
 path('workspace/country/',views.country_switch,name='country_switch'),
 path('settings/device-capacity/',device_booking_views.device_capacity_settings,name='device_capacity_settings'),
 path('device-bookings/',device_booking_views.device_booking_schedule,name='device_booking_schedule'),
+path('patients/<int:pk>/',patient_360_views.patient_360,name='patient_360'),
+path('patients/from-appointment/<int:appointment_id>/',patient_360_views.patient_360_from_appointment,name='patient_360_from_appointment'),
 path('consultant/expenses/',consultant_expense_views.consultant_expense_entry,name='consultant_expense_entry'),
 path('device-bookings/<int:pk>/cancel/',device_booking_views.device_booking_cancel,name='device_booking_cancel'),
 path('device-bookings/<int:pk>/status/<str:status>/',device_booking_views.device_booking_status,name='device_booking_status'),

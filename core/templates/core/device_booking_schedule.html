@@ -1119,7 +1119,10 @@
         </div>
       </form>
       {% endif %}
-      <a class="db-patient-link" id="dbPatientSelect" href="#">باز کردن همین بیمار در رزرو</a>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a class="db-patient-link" id="dbPatient360" href="#">پرونده 360° بیمار</a>
+        <a class="db-patient-link" id="dbPatientSelect" href="#">باز کردن همین بیمار در رزرو</a>
+      </div>
     </div>
   </div>
 </div>
@@ -1166,12 +1169,14 @@
     var dev=document.getElementById('dbPatientDevice');
     var service=document.getElementById('dbPatientService');
     var select=document.getElementById('dbPatientSelect');
+    var patient360=document.getElementById('dbPatient360');
     if(name)name.textContent=el.dataset.name||'بیمار';
     if(phone){phone.textContent=el.dataset.phone||'—';phone.href=el.dataset.phone?('tel:'+el.dataset.phone):'#';}
     if(status)status.textContent=el.dataset.status||'—';
     if(dev)dev.textContent=(el.dataset.device||'—')+' · '+(el.dataset.time||'');
     if(service)service.textContent=el.dataset.service||el.dataset.plan||'—';
     if(select)select.href=window.location.pathname+'?appointment='+(el.dataset.appointment||'')+'&day={{ day_jalali }}&branch={{ branch.pk }}';
+    if(patient360)patient360.href='/patients/from-appointment/'+(el.dataset.appointment||'')+'/';
     patientModal.classList.add('is-open');patientModal.setAttribute('aria-hidden','false');
   };
   window.closePatientCard=function(){
