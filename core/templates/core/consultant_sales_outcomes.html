@@ -515,6 +515,8 @@
   }
 }
 
+
+.patient-mini-avatar{width:34px;height:34px;border-radius:50%;overflow:hidden;display:grid;place-items:center;flex:0 0 34px;background:linear-gradient(135deg,#eaf7f1,#f0ebfb);border:2px solid #fff;box-shadow:0 0 0 1px #dce7e3;color:#6953a8;font-size:11px;font-weight:950}.patient-mini-avatar.large{width:46px;height:46px;flex-basis:46px}.patient-mini-avatar img{width:100%;height:100%;object-fit:cover}.queue-row{grid-template-columns:34px minmax(0,1fr) auto!important;align-items:center}.patient-bar-person{display:flex;align-items:center;gap:11px}
 </style>
 <div class="care">
   <section class="care-hero">
@@ -531,11 +533,11 @@
   </section>
   <div class="care-grid">
     <aside class="queue"><div class="care-head"><h2>{% gl_t 'con.queue' %}</h2><small>{% gl_t 'con.branch_cases_count' count=pending|length %}</small></div><div style="padding:10px 10px 0"><input class="care-filter" type="search" id="careQueueSearch" placeholder="{% gl_t 'con.search_patient' %}" aria-label="{% gl_t 'con.search_case' %}"></div><div class="queue-list" id="careQueueList">
-      {% for a in pending %}<a class="queue-row {% if selected and a.pk == selected.pk %}active{% endif %}" href="?appointment={{ a.pk }}"><div><strong>{{ a.full_name }}</strong><small>{{ a.phone|mask_phone }} · {{ a.branch }}</small></div><time>{% if a.doctor_completed_at %}{{ a.doctor_completed_at|date:"H:i" }}{% else %}—{% endif %}</time></a>{% empty %}<div class="queue-empty"><div class="queue-empty-art" aria-hidden="true"><span></span></div><h4>{% gl_t 'con.empty_queue' %}</h4><p>{% gl_t 'con.empty_queue_body' %}</p></div>{% endfor %}
+      {% for a in pending %}<a class="queue-row {% if selected and a.pk == selected.pk %}active{% endif %}" href="?appointment={{ a.pk }}"><span class="patient-mini-avatar">{% if a.patient_photo_url %}<img src="{{ a.patient_photo_url }}" alt="">{% else %}<b>{{ a.patient_initial }}</b>{% endif %}</span><div><strong>{{ a.full_name }}</strong><small>{{ a.phone|mask_phone }} · {{ a.branch }}</small></div><time>{% if a.doctor_completed_at %}{{ a.doctor_completed_at|date:"H:i" }}{% else %}—{% endif %}</time></a>{% empty %}<div class="queue-empty"><div class="queue-empty-art" aria-hidden="true"><span></span></div><h4>{% gl_t 'con.empty_queue' %}</h4><p>{% gl_t 'con.empty_queue_body' %}</p></div>{% endfor %}
     </div></aside>
     <section class="workspace">
       {% if selected and plan %}
-      <div class="patient-bar"><div><h2><a class="patient-360-link" href="{% url 'patient_360_from_appointment' selected.pk %}">{{ selected.full_name }} <span>360°</span></a></h2><p>{{ selected.phone|mask_phone }} · {% gl_t 'common.doctor' %}: {{ selected.doctor_completed_by.get_full_name|default:selected.doctor_completed_by.username|default:"—" }} · {{ selected.appointment_date|jdate }}</p></div><span class="stage">{{ plan.get_status_display }}</span></div>
+      <div class="patient-bar"><div class="patient-bar-person"><span class="patient-mini-avatar large">{% if selected.patient_photo_url %}<img src="{{ selected.patient_photo_url }}" alt="">{% else %}<b>{{ selected.patient_initial }}</b>{% endif %}</span><div><h2><a class="patient-360-link" href="{% url 'patient_360_from_appointment' selected.pk %}">{{ selected.full_name }} <span>360°</span></a></h2><p>{{ selected.phone|mask_phone }} · {% gl_t 'common.doctor' %}: {{ selected.doctor_completed_by.get_full_name|default:selected.doctor_completed_by.username|default:"—" }} · {{ selected.appointment_date|jdate }}</p></div></div><span class="stage">{{ plan.get_status_display }}</span></div>
       <div class="doctor-box"><h3>{% gl_t 'con.doctor_plan' %}</h3><div class="doctor-chips">
         {% for x in selected.diet_programs.all %}<span>{% gl_t "con.diet_label" name=x.diet_name %}</span>{% endfor %}
         {% for x in selected.device_programs.all %}<span>{{ x.device_name }} · {{ x.area|default:"—" }} · {% gl_t "con.session_count_text" count=x.sessions_prescribed %}</span>{% endfor %}
