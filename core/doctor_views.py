@@ -12,6 +12,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .call_center_identity import call_center_display_name
+from .patient_ui import attach_patient_photos
 from .models import (
     BodyAnalysisRecord,
     InternalMessage,
@@ -289,7 +290,7 @@ def doctor_dashboard(request):
             .select_related('lead','lead__assigned_to__user','lead__first_appointment_by','branch')
             .order_by('appointment_time','id')
         )
-    appointments=list(appointment_qs)
+    appointments=attach_patient_photos(list(appointment_qs))
     selected=_selected_appointment(request,appointments)
     patient=_ensure_patient(selected,request.user) if selected else None
 

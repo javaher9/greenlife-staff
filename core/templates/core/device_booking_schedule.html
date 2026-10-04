@@ -1107,6 +1107,8 @@
     width:100%!important;
   }
 }
+
+.patient-mini-avatar{width:34px;height:34px;flex:0 0 34px;border-radius:50%;overflow:hidden;display:inline-grid;place-items:center;background:linear-gradient(135deg,#eaf7f1,#f0ebfb);border:2px solid #fff;box-shadow:0 0 0 1px #dce6e3;color:#684fad;font-size:11px;font-weight:900;vertical-align:middle}.patient-mini-avatar.tiny{width:24px;height:24px;flex-basis:24px;font-size:8px;margin-left:5px}.patient-mini-avatar img{width:100%;height:100%;object-fit:cover}.db-patient-inline{display:inline-flex!important;align-items:center;gap:7px}.db-busy-person{display:inline-flex!important;align-items:center;gap:5px!important}
 </style>
 
 <div class="db-shell">
@@ -1135,7 +1137,7 @@
   <label>پرونده بیمار
     <select name="appointment" id="dbAppointment">
       <option value="">انتخاب بیمار</option>
-      {% for p in patient_options %}<option value="{{ p.appointment_id }}" data-search="{{ p.full_name }} {{ p.phone|mask_phone }}" {% if appointment.pk == p.appointment_id %}selected{% endif %}>{{ p.full_name }} · {{ p.phone|mask_phone }} · {{ p.status_label }}</option>{% endfor %}
+      {% for p in patient_options %}<option value="{{ p.appointment_id }}" data-search="{{ p.full_name }} {{ p.phone|mask_phone }}" data-photo="{{ p.photo_url }}" data-initial="{{ p.initial }}" {% if appointment.pk == p.appointment_id %}selected{% endif %}>{{ p.full_name }} · {{ p.phone|mask_phone }} · {{ p.status_label }}</option>{% endfor %}
     </select>
   </label>
   <div class="db-day-picker">
@@ -1152,7 +1154,7 @@
 
 {% if appointment %}
 <div class="db-tags db-selected-patient-tags">
-  <span>بیمار: {{ appointment.full_name }}</span>
+  <span class="db-patient-inline"><span class="patient-mini-avatar">{% if appointment.patient_photo_url %}<img src="{{ appointment.patient_photo_url }}" alt="">{% else %}<b>{{ appointment.patient_initial }}</b>{% endif %}</span>بیمار: {{ appointment.full_name }}</span>
   <span>وضعیت: {% if plan %}{{ plan.get_status_display }}{% else %}بدون پکیج{% endif %}</span>
   <a class="db-inline-360" href="{% url 'patient_360_from_appointment' appointment.pk %}">پرونده Patient 360°</a>
 </div>
@@ -1275,7 +1277,7 @@
                     data-device="{{ slot.booking.device.name }}{% if slot.booking.secondary_device %} + {{ slot.booking.secondary_device.name }}{% endif %}"
                     data-status="{{ slot.booking.get_status_display }}"
                     data-time="{{ slot.start_label }} – {{ slot.end_label }}"
-                    onclick="openPatientCard(this)">{{ slot.booking.appointment.full_name }}</button>
+                    data-photo="{{ slot.booking.appointment.patient_photo_url }}" data-initial="{{ slot.booking.appointment.patient_initial }}" onclick="openPatientCard(this)"><span class="patient-mini-avatar tiny">{% if slot.booking.appointment.patient_photo_url %}<img src="{{ slot.booking.appointment.patient_photo_url }}" alt="">{% else %}<b>{{ slot.booking.appointment.patient_initial }}</b>{% endif %}</span>{{ slot.booking.appointment.full_name }}</button>
                   <span class="db-busy-meta">{{ slot.booking.plan_item.title }}</span>
                 </span>
                 <span class="db-slot-state">{{ slot.booking.get_status_display }}</span>
@@ -1296,7 +1298,7 @@
                       data-device="{{ slot.history_booking.device.name }}{% if slot.history_booking.secondary_device %} + {{ slot.history_booking.secondary_device.name }}{% endif %}"
                       data-status="{{ slot.history_booking.get_status_display }}"
                       data-time="{{ slot.start_label }} – {{ slot.end_label }}"
-                      onclick="event.stopPropagation();openPatientCard(this)">{{ slot.history_booking.appointment.full_name }}</span>
+                      data-photo="{{ slot.history_booking.appointment.patient_photo_url }}" data-initial="{{ slot.history_booking.appointment.patient_initial }}" onclick="event.stopPropagation();openPatientCard(this)"><span class="patient-mini-avatar tiny">{% if slot.history_booking.appointment.patient_photo_url %}<img src="{{ slot.history_booking.appointment.patient_photo_url }}" alt="">{% else %}<b>{{ slot.history_booking.appointment.patient_initial }}</b>{% endif %}</span>{{ slot.history_booking.appointment.full_name }}</span>
                     <span class="db-history-free">این ردیف دوباره آزاد است</span>
                   </span>
                   <span class="db-slot-state">{{ slot.history_booking.get_status_display }}</span>
@@ -1419,8 +1421,8 @@
         var label=(option.textContent||'').trim();
         var name=label.split('·')[0].trim();
         var status=(label.split('·').slice(-1)[0]||'').trim();
-        btn.innerHTML='<div><strong></strong><small></small></div><span></span>';
-        btn.querySelector('strong').textContent=name;
+        btn.innerHTML='<span class="patient-mini-avatar"><b></b></span><div><strong></strong><small></small></div><span></span>';
+        var avatar=btn.querySelector('.patient-mini-avatar');var photo=option.dataset.photo||'';if(photo){avatar.innerHTML='<img alt="">';avatar.querySelector('img').src=photo;}else{avatar.querySelector('b').textContent=option.dataset.initial||name.slice(0,1)||'•';}btn.querySelector('strong').textContent=name;
         btn.querySelector('small').textContent=phone;
         btn.querySelector('span').textContent=status;
         btn.addEventListener('click',function(){choosePatient(option);});

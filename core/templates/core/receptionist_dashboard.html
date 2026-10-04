@@ -69,7 +69,9 @@
     html[dir="ltr"] .side,html[dir="ltr"] .main,html[dir="ltr"] .top,html[dir="ltr"] .nav{text-align:left;direction:ltr}
     html[dir="ltr"] .payment-amount{text-align:right}
     @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.flow-strip{grid-template-columns:repeat(2,1fr)}.bottom-grid{grid-template-columns:1fr}.grid-main{grid-template-columns:1fr}.side{width:210px}.shell{grid-template-columns:minmax(0,1fr) 210px}html[dir="ltr"] .shell{grid-template-columns:210px minmax(0,1fr)}}
-  </style>
+  
+    .patient-name-cell{display:flex;align-items:center;gap:9px;min-width:0}.patient-mini-avatar{width:34px;height:34px;flex:0 0 34px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:linear-gradient(135deg,#eaf7f1,#f0ebfb);border:2px solid #fff;box-shadow:0 0 0 1px #dce6e3;color:#684fad;font-size:11px;font-weight:900}.patient-mini-avatar img{width:100%;height:100%;object-fit:cover}
+</style>
 </head>
 <body>
 {% if request.session.impersonator_user_id %}
@@ -134,10 +136,10 @@
       <div class="payment-list">
         {% for item in receptionist_payment_queue %}
         <div class="payment-row">
-          <div><strong>{{ item.full_name }}</strong><small>{{ item.phone|mask_phone }} · {% gl_t "rec.consultant_label" name=item.consultation_plan.consultant.get_full_name|default:item.consultation_plan.consultant.username|default:"—" %}</small>
+          <div class="patient-name-cell"><span class="patient-mini-avatar">{% if item.patient_photo_url %}<img src="{{ item.patient_photo_url }}" alt="">{% else %}<b>{{ item.patient_initial }}</b>{% endif %}</span><div><strong>{{ item.full_name }}</strong><small>{{ item.phone|mask_phone }} · {% gl_t "rec.consultant_label" name=item.consultation_plan.consultant.get_full_name|default:item.consultation_plan.consultant.username|default:"—" %}</small>
             <small style="margin-top:5px;color:#33445e">{% for part in item.consultation_plan.items.all %}{% if part.included %}{{ part.title }}{% if part.area %} ({{ part.area }}){% endif %} · {% gl_t "rec.package_line" qty=part.quantity units=part.units_per_session price=part.unit_price_toman|floatformat:0 %}{% if not forloop.last %} | {% endif %}{% endif %}{% endfor %}</small>
             {% if item.consultation_plan.status == 'partial_paid' %}<small style="color:#a16909">{% gl_t 'rec.deposit_note' %}</small>{% endif %}
-          </div>
+          </div></div>
           <div class="payment-amount">{% gl_t "rec.amount_toman" amount=item.consultation_plan.final_amount_toman|floatformat:0 %} <small style="display:block;text-align:left">{% gl_t 'rec.total_package' %}</small></div>
           <a class="payment-go" href="{% url 'finance_entry' %}?appointment={{ item.pk }}">{% gl_t "rec.record_payment" %}</a>
         </div>
@@ -163,7 +165,7 @@
                data-profile-url="{% url 'patient_360_from_appointment' item.pk %}"
                data-payment-url="{% if item.care_stage == 'payment' %}{% url 'finance_entry' %}?appointment={{ item.pk }}{% endif %}">
             <b>{{ item.appointment_time|date:"H:i" }}</b>
-            <div><strong>{{ item.full_name }}</strong><small>{{ item.phone|mask_phone }} · {{ item.get_source_display }}</small></div>
+            <div class="patient-name-cell"><span class="patient-mini-avatar">{% if item.patient_photo_url %}<img src="{{ item.patient_photo_url }}" alt="">{% else %}<b>{{ item.patient_initial }}</b>{% endif %}</span><div><strong>{{ item.full_name }}</strong><small>{{ item.phone|mask_phone }} · {{ item.get_source_display }}</small></div></div>
             <span>{{ item.service|default:"—" }}</span>
             <div class="care-wrap">
               {% if item.status == 'booked' %}<span class="care-stage">منتظر ورود</span>
