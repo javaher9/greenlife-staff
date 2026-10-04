@@ -313,7 +313,10 @@ def patient_360(request, pk):
         'linked_profile_count':len(siblings),
         'back_url':request.META.get('HTTP_REFERER') or reverse('dashboard'),
     }
-    return render(request,'core/patient_360.html',context)
+    response=render(request,'core/patient_360.html',context)
+    response['Cache-Control']='no-store, private'
+    response['Pragma']='no-cache'
+    return response
 
 
 @login_required
