@@ -12,8 +12,8 @@ from .jalali import format_jalali, parse_jalali
 from .models import (
     ApiServerSettings, Branch, ConsultationPlan, ConsultationPlanItem,
     BranchDeviceTypeStatus, DeviceCabin, DeviceSessionBooking, DeviceTypeSchedule,
-    FinancialTransaction, PatientProfile, PhysicalDevice, VisitAppointment,
-    normalize_lead_phone,
+    FinancialTransaction, PatientDeviceProgram, PatientProfile, PhysicalDevice, VisitAppointment,
+    lead_phone_variants, normalize_lead_phone,
 )
 from .sms import send_sms
 
@@ -88,6 +88,88 @@ def _next_device_type_code():
     while f'{prefix}{i}' in used:
         i+=1
     return f'{prefix}{i}'
+
+
+def _sync_device_treatment_progress(plan_item_id):
+    """Recalculate real treatment progress from completed device bookings.
+
+    This is deliberately derived from booking status rather than incremented so
+    correcting a status never double-counts or leaves stale progress.
+    """
+    item=(
+        ConsultationPlanItem.objects.select_for_update()
+        .select_related('plan__appointment','plan__consultant')
+        .get(pk=plan_item_id)
+    )
+    total=max(1,int(item.quantity or 1))
+    completed=item.device_sessions.filter(status='completed').count()
+    completed=min(completed,total)
+    active=item.device_sessions.filter(status__in=('booked','arrived','late')).exists()
+    treatment_status='completed' if completed>=total else ('active' if completed or active else 'planned')
+
+    snapshot=dict(item.doctor_snapshot or {})
+    snapshot.update({
+        'treatment_sessions_completed':completed,
+        'treatment_sessions_total':total,
+        'treatment_sessions_remaining':max(0,total-completed),
+        'treatment_status':treatment_status,
+        'treatment_progress_updated_at':timezone.now().isoformat(),
+    })
+    if snapshot!=item.doctor_snapshot:
+        item.doctor_snapshot=snapshot
+        item.save(update_fields=['doctor_snapshot','updated_at'])
+
+    appointment=item.plan.appointment
+    patient_ids=list(
+        PatientProfile.objects.filter(
+            phone__in=lead_phone_variants(appointment.phone)
+        ).values_list('id',flat=True)
+    )
+    program=None
+    if item.source=='doctor' and item.source_pk:
+        program=PatientDeviceProgram.objects.filter(
+            pk=item.source_pk,
+            patient_id__in=patient_ids or [-1],
+        ).first()
+    if not program and patient_ids:
+        program=(
+            PatientDeviceProgram.objects.filter(
+                patient_id__in=patient_ids,
+                appointment=appointment,
+                device_name__iexact=item.title,
+            )
+            .filter(Q(area__iexact=item.area)|Q(area='')|Q(area__isnull=True))
+            .order_by('id')
+            .first()
+        )
+    if not program and patient_ids:
+        program=PatientDeviceProgram.objects.create(
+            patient_id=patient_ids[0],
+            appointment=appointment,
+            device_name=item.title[:160],
+            area=(item.area or '')[:120],
+            sessions_prescribed=total,
+            sessions_completed=0,
+            status='planned',
+            note=item.note or '',
+            prescribed_by=item.plan.consultant,
+        )
+    if program:
+        prescribed=max(int(program.sessions_prescribed or 1),total)
+        program.sessions_prescribed=prescribed
+        program.sessions_completed=min(completed,prescribed)
+        program.status=(
+            'completed' if program.sessions_completed>=prescribed
+            else ('active' if program.sessions_completed or active else 'planned')
+        )
+        program.save(update_fields=['sessions_prescribed','sessions_completed','status'])
+
+    return {
+        'completed':completed,
+        'total':total,
+        'remaining':max(0,total-completed),
+        'status':treatment_status,
+    }
 
 
 def _send_confirmation(pk):
@@ -647,7 +729,7 @@ def device_booking_status(request,pk,status):
     if status not in allowed:
         raise PermissionDenied('وضعیت نوبت معتبر نیست.')
 
-    qs=DeviceSessionBooking.objects.select_for_update().select_related('appointment','branch')
+    qs=DeviceSessionBooking.objects.select_for_update().select_related('appointment','branch','plan_item')
     if not (request.user.is_superuser or profile.role=='admin'):
         if not profile.branch_id:
             raise PermissionDenied('شعبه شما مشخص نشده است.')
@@ -655,12 +737,19 @@ def device_booking_status(request,pk,status):
 
     with transaction.atomic():
         booking=get_object_or_404(qs,pk=pk)
+        previous_status=booking.status
         booking.status=status
         booking.save(update_fields=['status','updated_at'])
+        progress=_sync_device_treatment_progress(booking.plan_item_id)
 
     day=format_jalali(timezone.localtime(booking.starts_at).date())
     if status=='rescheduled':
         messages.success(request,f'نوبت {booking.appointment.full_name} به‌عنوان جابجا شده ثبت شد؛ ردیف قبلی آزاد است و می‌توانید زمان جدید را انتخاب کنید.')
+    elif status=='completed':
+        suffix=' · خدمت تکمیل شد' if progress['status']=='completed' else f" · جلسه {progress['completed']} از {progress['total']} · {progress['remaining']} جلسه باقی‌مانده"
+        messages.success(request,f'وضعیت {booking.appointment.full_name}: {allowed[status]}{suffix}')
+    elif previous_status=='completed' and status!='completed':
+        messages.success(request,f"وضعیت اصلاح شد؛ پیشرفت خدمت به {progress['completed']} از {progress['total']} جلسه بازتنظیم شد.")
     else:
         messages.success(request,f'وضعیت {booking.appointment.full_name}: {allowed[status]}')
     return redirect(f'/device-bookings/?appointment={booking.appointment_id}&day={day}')
