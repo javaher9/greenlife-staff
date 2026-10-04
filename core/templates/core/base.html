@@ -504,7 +504,11 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     <a href="/employees/"><span class="nav-ico">♙</span><span>{% gl_t 'common.staff' %}</span></a>
     {% endif %}
     {% if user.profile.role == 'internal_manager' %}<a href="{% url 'shift_today_bulk' %}" class="{% if request.resolver_match.url_name == 'shift_today_bulk' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'shell.work_hours' %}</span></a>{% endif %}
+    {% if user.profile.can_use_sales_network %}
     <a href="/referrals/" class="{% if '/referrals/' in request.path %}is-active{% endif %}"><span class="nav-ico">✦</span><span>{% if user.profile.role == 'employee' %}{% gl_t 'shell.my_sales_network' %}{% else %}{% gl_t 'shell.sales_network_management' %}{% endif %}</span></a>
+    {% elif user.profile.can_register_instagram_dm_lead %}
+    <a href="{% url 'instagram_manual_lead' %}" class="{% if request.resolver_match.url_name == 'instagram_manual_lead' %}is-active{% endif %}"><span class="nav-ico">＋</span><span>{% gl_t 'dash.dm_lead' %}</span></a>
+    {% endif %}
     {% if user.profile.can_register_instagram_dm_lead %}<a href="{% url 'instagram_manual_lead' %}" class="{% if request.resolver_match.url_name == 'instagram_manual_lead' %}is-active{% endif %}"><span class="nav-ico">＋</span><span>ثبت لید از دایرکت</span></a>{% endif %}
     {% if user.profile.role == 'employee' %}<a href="/attendance/" class="attendance-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2h2V2Zm12 7H5v10h14V9Zm-8 2h2v4h3v2h-5v-6Z"/></svg></span><span class="nav-label nav-label-desktop">حضور و غیاب</span><span class="nav-label nav-label-mobile">حضور</span></a>{% elif user.profile.role == 'manager' or user.profile.role == 'internal_manager' %}<a href="/attendance/team/" class="{% if request.path|slice:':17' == '/attendance/team/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'shell.team_attendance' %}</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/kpi/"><span class="nav-ico">◎</span><span>{% gl_t 'shell.performance_kpi' %}</span></a>{% endif %}
@@ -551,7 +555,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
           {% if user.profile.role != 'admin' %}<a href="/reports/"><span>▥</span>{% gl_t 'shell.staff_reports' %}</a>{% endif %}
           {% if user.profile.role != 'admin' %}<a href="/employees/"><span>♙</span>{% gl_t 'common.staff' %}</a>{% endif %}
           {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' %}<a href="{% url 'shift_today_bulk' %}"><span>◷</span>{% gl_t 'shell.work_hours' %}</a>{% endif %}
-          {% if user.profile.role != 'admin' %}<a href="/referrals/"><span>✦</span>{% gl_t 'shell.sales_network_management' %}</a>{% endif %}
+          {% if user.profile.can_use_sales_network and user.profile.role != 'admin' %}<a href="/referrals/"><span>✦</span>{% gl_t 'shell.sales_network_management' %}</a>{% endif %}
           {% if user.profile.role == 'manager' or user.profile.role == 'internal_manager' %}<a href="/attendance/team/"><span>◷</span>{% gl_t 'shell.team_attendance' %}</a>{% endif %}
           {% if user.profile.role != 'admin' %}<a href="/kpi/"><span>◎</span>عملکرد و KPI</span></a>{% endif %}
           <a href="/sop/"><span>◇</span>{% gl_t 'common.training' %}</a>
