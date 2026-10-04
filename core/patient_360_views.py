@@ -10,10 +10,10 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .models import (
-    BodyAnalysisRecord, DeviceSessionBooking, FinancialTransaction, PatientCareNote,
-    PatientDeviceProgram, PatientDietProgram, PatientLipolyticProgram, PatientProfile,
-    PatientTeamRating, ReferralLead, SmsMessageLog, VisitAppointment, lead_phone_variants,
-    normalize_lead_phone,
+    BodyAnalysisRecord, ConsultationPlanItem, DeviceSessionBooking, FinancialTransaction,
+    PatientCareNote, PatientDeviceProgram, PatientDietProgram, PatientLipolyticProgram,
+    PatientProfile, PatientTeamRating, ReferralLead, SmsMessageLog, Task, VisitAppointment,
+    lead_phone_variants, normalize_lead_phone,
 )
 from .sms import SmsGatewayError, send_sms
 
@@ -252,6 +252,44 @@ def patient_360(request, pk):
         session.progress_remaining=max(0,total-completed)
         session.progress_status='completed' if completed>=total else ('active' if completed else 'planned')
 
+    followup_rows=[]
+    followup_task_ids=[]
+    followup_meta={}
+    treatment_items=ConsultationPlanItem.objects.filter(
+        plan__appointment_id__in=appointment_ids,kind='device',included=True
+    ).select_related('plan__appointment').order_by('-updated_at','-id')
+    for item in treatment_items:
+        snapshot=dict(item.doctor_snapshot or {})
+        task_id=snapshot.get('treatment_followup_task_id')
+        if not task_id:
+            continue
+        try:
+            task_id=int(task_id)
+        except (TypeError,ValueError):
+            continue
+        if task_id not in followup_task_ids:
+            followup_task_ids.append(task_id)
+            followup_meta[task_id]={
+                'due':snapshot.get('treatment_followup_due_date'),
+                'completed_at':snapshot.get('treatment_completed_at'),
+                'appointment':item.plan.appointment,
+            }
+    tasks={
+        item.pk:item for item in Task.objects.filter(pk__in=followup_task_ids)
+        .select_related('assigned_to').order_by('-created_at')
+    }
+    for task_id in followup_task_ids:
+        task=tasks.get(task_id)
+        if not task:
+            continue
+        meta=followup_meta.get(task_id,{})
+        followup_rows.append({
+            'task':task,
+            'due':meta.get('due'),
+            'completed_at':meta.get('completed_at'),
+            'appointment':meta.get('appointment'),
+        })
+
     # Visit matrix: visits are rows; tailored programs are columns.
     diets_by_appt={}
     devices_by_appt={}
@@ -351,6 +389,7 @@ def patient_360(request, pk):
         'can_capture_photo':profile.role in {'receptionist','admin','internal_manager'},
         'can_rate_patient':profile.role in {'call_center','receptionist','consultant','doctor','admin','internal_manager','manager'},
         'device_sessions':device_sessions,
+        'followup_rows':followup_rows,
         'linked_profile_count':len(siblings),
         'back_url':request.META.get('HTTP_REFERER') or reverse('dashboard'),
     }
@@ -358,6 +397,65 @@ def patient_360(request, pk):
     response['Cache-Control']='no-store, private'
     response['Pragma']='no-cache'
     return response
+
+
+@login_required
+def patient_360_followup_complete(request, pk, task_id):
+    profile=_profile(request)
+    if request.method!='POST':
+        return redirect('patient_360',pk=pk)
+    patient=get_object_or_404(PatientProfile,pk=pk)
+    _assert_patient_access(request,patient,profile)
+    variants=lead_phone_variants(patient.phone)
+    appointment_ids=list(
+        VisitAppointment.objects.filter(phone__in=variants).values_list('id',flat=True)
+    )
+    item_qs=ConsultationPlanItem.objects.filter(
+        plan__appointment_id__in=appointment_ids,kind='device',included=True
+    )
+    linked=False
+    linked_items=[]
+    for item in item_qs:
+        snapshot=dict(item.doctor_snapshot or {})
+        try:
+            linked_id=int(snapshot.get('treatment_followup_task_id') or 0)
+        except (TypeError,ValueError):
+            linked_id=0
+        if linked_id==task_id:
+            linked=True
+            linked_items.append(item)
+    if not linked:
+        raise PermissionDenied('این پیگیری متعلق به این بیمار نیست.')
+
+    task=get_object_or_404(Task,pk=task_id)
+    if not (request.user.is_superuser or profile.role in {'admin','internal_manager','manager'} or task.assigned_to_id==request.user.id):
+        raise PermissionDenied('ثبت نتیجه این پیگیری برای شما فعال نیست.')
+
+    result=(request.POST.get('result') or '').strip()[:2500]
+    if not result:
+        messages.error(request,'نتیجه پیگیری را وارد کنید.')
+        return redirect('patient_360',pk=patient.pk)
+
+    task.status='done'
+    task.description=(task.description.rstrip()+f'\n\nنتیجه پیگیری: {result}')[:10000]
+    task.save(update_fields=['status','description','updated_at'])
+    PatientCareNote.objects.create(
+        patient=patient,
+        appointment=linked_items[0].plan.appointment if linked_items else None,
+        author=request.user,
+        note_type='staff',
+        body=f'نتیجه پیگیری پس از درمان: {result}',
+    )
+    done_at=timezone.now().isoformat()
+    for item in linked_items:
+        snapshot=dict(item.doctor_snapshot or {})
+        snapshot['treatment_followup_status']='done'
+        snapshot['treatment_followup_done_at']=done_at
+        snapshot['treatment_followup_result']=result
+        item.doctor_snapshot=snapshot
+        item.save(update_fields=['doctor_snapshot','updated_at'])
+    messages.success(request,'نتیجه پیگیری ثبت و کار بسته شد.')
+    return redirect('patient_360',pk=patient.pk)
 
 
 @login_required
