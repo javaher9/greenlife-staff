@@ -16,6 +16,17 @@ from .staff_i18n import translate
 from .models import InternalMessage, StaffNotification
 
 
+def _avatar_url(user):
+    profile=getattr(user,'profile',None)
+    avatar=getattr(profile,'avatar',None) if profile else None
+    if not avatar:
+        return ''
+    try:
+        return avatar.url
+    except Exception:
+        return ''
+
+
 def _staff_users():
     return (
         User.objects.filter(
@@ -185,7 +196,7 @@ def internal_message_updates(request):
             'body':item.body,
             'mine':item.sender_id==request.user.pk,
             'time':timezone.localtime(item.created_at).strftime('%H:%M'),
-            'avatar':(item.sender.profile.avatar.url if getattr(item.sender.profile,'avatar',None) else ''),
+            'avatar':_avatar_url(item.sender),
         })
     response=JsonResponse({'ok':True,'messages':data})
     response['Cache-Control']='no-store, private'
@@ -273,7 +284,7 @@ def internal_message_live_widget(request):
             'last_body':(last.body[:90] if last else ''),
             'last_time':(timezone.localtime(last.created_at).strftime('%H:%M') if last else ''),
             'last_ts':(last.created_at.timestamp() if last else 0),
-            'avatar':(user.profile.avatar.url if getattr(user.profile,'avatar',None) else ''),
+            'avatar':_avatar_url(user),
         })
     rows.sort(key=lambda row:(1 if row['unread'] else 0,row['last_ts']),reverse=True)
 
@@ -309,7 +320,7 @@ def internal_message_live_widget(request):
             'body':item.body,
             'mine':item.sender_id==request.user.pk,
             'time':timezone.localtime(item.created_at).strftime('%H:%M'),
-            'avatar':(item.sender.profile.avatar.url if getattr(item.sender.profile,'avatar',None) else ''),
+            'avatar':_avatar_url(item.sender),
         })
 
     latest_incoming_item=(
@@ -328,7 +339,7 @@ def internal_message_live_widget(request):
             'sender':latest_incoming_item.sender.get_full_name() or latest_incoming_item.sender.username,
             'body':latest_incoming_item.body[:180],
             'time':timezone.localtime(latest_incoming_item.created_at).strftime('%H:%M'),
-            'avatar':(latest_incoming_item.sender.profile.avatar.url if getattr(latest_incoming_item.sender.profile,'avatar',None) else ''),
+            'avatar':_avatar_url(latest_incoming_item.sender),
         }
 
     response=JsonResponse({
