@@ -33,6 +33,7 @@
 .p360-side-list{display:grid;gap:7px}.p360-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:9px 10px;border:1px solid #e5ecea!important;border-radius:11px!important}.p360-row strong{display:block!important;color:#284b43!important;font-size:9.5px!important}.p360-row small{display:block!important;margin-top:3px;color:#71847e!important;font-size:7.8px!important;line-height:1.65!important}.p360-row b{color:#675095!important;font-size:8px!important}
 .p360-row.green{background:#f3fbf6!important;border-color:#d7eadf!important}.p360-row.amber{background:#fffaf0!important;border-color:#eee0bf!important}.p360-row.blue{background:#f2f8fd!important;border-color:#dce9f4!important}
 .p360-sms{display:grid;gap:8px}.p360-sms textarea{width:100%;min-height:86px;resize:vertical;padding:10px 11px;border:1px solid #d8e5e0;border-radius:12px;background:#fbfdfc!important;color:#21473f!important;font-family:inherit;font-size:9px;line-height:1.8}.p360-sms textarea::placeholder{color:#8a9a95}.p360-sms button{justify-self:start;border:0;border-radius:10px;padding:9px 13px;background:linear-gradient(135deg,#1e7a58,#3a9a73);color:#fff;font-family:inherit;font-size:9px;font-weight:950;cursor:pointer}.p360-privacy-note{padding:8px 10px;border:1px solid #e2e8f2;border-radius:10px;background:#f7f5fd!important;color:#675c7a!important;font-size:7.8px;line-height:1.7}
+.p360-followups{display:grid;gap:9px}.p360-followup{padding:12px;border:1px solid #dfe8e5;border-radius:13px;background:linear-gradient(135deg,#f8fcfa,#fbf9ff)!important}.p360-followup.done{background:#f3faf6!important;border-color:#d3e9db!important}.p360-followup-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.p360-followup-head strong{color:#24493f!important;font-size:10px!important}.p360-followup-head span{padding:4px 7px;border-radius:999px;background:#fff4d9!important;color:#976b1f!important;font-size:7.8px!important;font-weight:900}.p360-followup.done .p360-followup-head span{background:#e4f6eb!important;color:#287053!important}.p360-followup small{display:block;margin-top:5px;color:#6f837d!important;font-size:8px!important;line-height:1.7}.p360-followup form{display:grid;gap:7px;margin-top:9px}.p360-followup textarea{width:100%;min-height:68px;resize:vertical;border:1px solid #d8e4df;border-radius:10px;background:#fff!important;color:#24493f!important;padding:9px 10px;font:inherit;font-size:8.5px;line-height:1.8}.p360-followup button{justify-self:start;border:0;border-radius:9px;padding:8px 11px;background:linear-gradient(135deg,#25775b,#7662c4);color:#fff;font:900 8.5px inherit;cursor:pointer}
 .p360-note{padding:9px 0;border-top:1px solid #eef2f0}.p360-note:first-child{border-top:0}.p360-note b{color:#654d96!important;font-size:8.5px!important}.p360-note p{margin:4px 0 0;color:#4f6962!important;font-size:8.2px!important;line-height:1.75!important}
 .p360-photo-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.p360-mini-btn{border:0;border-radius:10px;padding:8px 11px;background:#f1edff;color:#6547c6;font:900 9px/1.4 inherit;cursor:pointer}.p360-mini-btn.secondary{background:#eef7f3;color:#247457}.p360-camera{display:none;margin-top:12px;padding:12px;border:1px solid #dfe8e5;border-radius:14px;background:#f8fbfa}.p360-camera.open{display:grid;gap:9px}.p360-camera video{width:100%;max-width:420px;border-radius:14px;background:#111;aspect-ratio:4/3;object-fit:cover}.p360-camera-actions{display:flex;gap:8px;flex-wrap:wrap}
 .p360-rating-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:11px}.p360-score{padding:10px;border:1px solid #e3e9ef;border-radius:12px;background:#fafbfd!important}.p360-score span{display:block;color:#71817d;font-size:8px;font-weight:800}.p360-score strong{display:block;margin-top:3px;color:#5d49a6;font-size:17px}.p360-rating-form{display:grid;gap:9px}.p360-rating-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.p360-rating-form label{display:grid;gap:5px;color:#5c746d;font-size:8.5px;font-weight:850}.p360-rating-form select,.p360-rating-form input,.p360-rating-form textarea{width:100%;border:1px solid #d9e4e0;border-radius:10px;background:#fbfdfc;color:#274a42;padding:9px 10px;font:inherit;font-size:9px}.p360-rating-form textarea{min-height:66px;resize:vertical}.p360-rating-form button{justify-self:start;border:0;border-radius:10px;padding:9px 13px;background:linear-gradient(135deg,#6950b9,#826ed0);color:#fff;font:900 9px inherit;cursor:pointer}.p360-ratings{display:grid;gap:7px;margin-top:12px}.p360-rating-row{padding:9px 10px;border:1px solid #e7e8ef;border-radius:11px;background:#fcfbff!important}.p360-rating-row strong{font-size:9px;color:#4f4670}.p360-rating-row small{display:block;margin-top:3px;font-size:8px;color:#7a7d8b;line-height:1.7}
@@ -459,6 +460,7 @@ body.gl-patient360-workspace .p360-mini-btn{font-size:9.5px!important;padding:9p
     <a href="#p360-analysis">آنالیز بدن</a>
     <a href="#p360-visits">ویزیت‌ها و برنامه‌ها</a>
     <a href="#p360-devices">جلسات دستگاه</a>
+    {% if followup_rows %}<a href="#p360-followup">پیگیری نتیجه</a>{% endif %}
     {% if can_rate_patient %}<a href="#p360-rating">ارزیابی تیم</a>{% endif %}
     <a href="#p360-finance">مالی</a>
     <a href="#p360-leads">تماس‌ها و لید</a>
@@ -510,6 +512,32 @@ body.gl-patient360-workspace .p360-mini-btn{font-size:9.5px!important;padding:9p
         <div class="p360-head"><h2>جلسات دستگاه</h2><span>رزرو، انجام، لغو و جابه‌جایی</span></div>
         <div class="p360-body"><div class="p360-side-list">{% for s in device_sessions %}<div class="p360-row blue"><div><strong>{{ s.device.name }}{% if s.secondary_device %} + {{ s.secondary_device.name }}{% endif %}</strong><small>{{ s.starts_at|date:"Y/m/d H:i" }} · {{ s.plan_item.title }}<br>جلسه {{ s.progress_completed }} از {{ s.progress_total }} انجام شده{% if s.progress_remaining %} · {{ s.progress_remaining }} جلسه باقی‌مانده{% else %} · خدمت تکمیل شده{% endif %}</small></div><b>{% if s.progress_status == 'completed' %}✓ تکمیل پکیج{% else %}{{ s.get_status_display }}{% endif %}</b></div>{% empty %}<div class="p360-empty">جلسه دستگاهی ثبت نشده است.</div>{% endfor %}</div></div>
       </section>
+
+      {% if followup_rows %}
+      <section class="p360-card" id="p360-followup">
+        <div class="p360-head"><h2>پایان درمان و پیگیری نتیجه</h2><span>پیگیری خودکار پس از تکمیل جلسات</span></div>
+        <div class="p360-body"><div class="p360-followups">
+          {% for f in followup_rows %}
+          <div class="p360-followup {% if f.task.status == 'done' %}done{% endif %}">
+            <div class="p360-followup-head">
+              <div><strong>{{ f.task.title }}</strong><small>مسئول: {{ f.task.assigned_to.get_full_name|default:f.task.assigned_to.username }} · موعد: {{ f.task.due_date|date:"Y/m/d" }}</small></div>
+              <span>{% if f.task.status == 'done' %}✓ پیگیری انجام شد{% else %}در انتظار پیگیری{% endif %}</span>
+            </div>
+            {% if f.task.status == 'done' %}
+              <small>{{ f.task.description|linebreaksbr }}</small>
+            {% elif user.id == f.task.assigned_to_id or user.is_superuser or user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}
+              <form method="post" action="{% url 'patient_360_followup_complete' patient.pk f.task.pk %}">{% csrf_token %}
+                <textarea name="result" maxlength="2500" placeholder="نتیجه تماس، رضایت بیمار، تغییرات مشاهده‌شده و نیاز به ویزیت یا ادامه درمان..." required></textarea>
+                <button type="submit">ثبت نتیجه و بستن پیگیری</button>
+              </form>
+            {% else %}
+              <small>این پیگیری به {{ f.task.assigned_to.get_full_name|default:f.task.assigned_to.username }} واگذار شده است.</small>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div></div>
+      </section>
+      {% endif %}
     </div>
 
     <div class="p360-col">
