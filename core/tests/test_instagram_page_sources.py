@@ -19,6 +19,8 @@ class InstagramPageSourceTests(TestCase):
             check_in=timezone.now(), status='present',
         )
         self.staff = User.objects.create_user(username='ig-page-staff', password='x')
+        self.staff.profile.can_register_instagram_dm_lead=True
+        self.staff.profile.save(update_fields=['can_register_instagram_dm_lead'])
         manager_user = User.objects.create_user(username='ig-page-manager', password='x')
         self.manager, _ = EmployeeProfile.objects.update_or_create(
             user=manager_user,
