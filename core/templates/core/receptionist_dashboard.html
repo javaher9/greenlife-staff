@@ -1,4 +1,4 @@
-{% load static jalali_tags staff_i18n %}
+{% load static jalali_tags staff_i18n privacy_filters %}
 <!doctype html>
 <html lang="{{ ui_language|default:'fa' }}" dir="{{ ui_direction|default:'rtl' }}">
 <head>
@@ -125,7 +125,7 @@
       <div class="payment-list">
         {% for item in receptionist_payment_queue %}
         <div class="payment-row">
-          <div><strong>{{ item.full_name }}</strong><small>{{ item.phone }} · {% gl_t "rec.consultant_label" name=item.consultation_plan.consultant.get_full_name|default:item.consultation_plan.consultant.username|default:"—" %}</small>
+          <div><strong>{{ item.full_name }}</strong><small>{{ item.phone|mask_phone }} · {% gl_t "rec.consultant_label" name=item.consultation_plan.consultant.get_full_name|default:item.consultation_plan.consultant.username|default:"—" %}</small>
             <small style="margin-top:5px;color:#33445e">{% for part in item.consultation_plan.items.all %}{% if part.included %}{{ part.title }}{% if part.area %} ({{ part.area }}){% endif %} · {% gl_t "rec.package_line" qty=part.quantity units=part.units_per_session price=part.unit_price_toman|floatformat:0 %}{% if not forloop.last %} | {% endif %}{% endif %}{% endfor %}</small>
             {% if item.consultation_plan.status == 'partial_paid' %}<small style="color:#a16909">{% gl_t 'rec.deposit_note' %}</small>{% endif %}
           </div>
@@ -144,7 +144,7 @@
         {% for item in receptionist_appointments %}
         <div class="appointment-row">
           <b>{{ item.appointment_time|date:"H:i" }}</b>
-          <div><strong>{{ item.full_name }}</strong><small>{{ item.phone }} · {{ item.get_source_display }}</small></div>
+          <div><strong>{{ item.full_name }}</strong><small>{{ item.phone|mask_phone }} · {{ item.get_source_display }}</small></div>
           <span>{{ item.service|default:"—" }}</span>
           <span class="appointment-status">{% gl_choice 'appointment_status' item.status item.get_status_display %}</span>
         </div>
