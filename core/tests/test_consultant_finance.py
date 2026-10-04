@@ -162,12 +162,15 @@ class ConsultantFinanceEntryTests(TestCase):
         )
         self.client.force_login(self.consultant)
         response=self.client.get('/')
-        self.assertEqual(response.status_code,200)
-        self.assertContains(response,'ثبت مالی جدید')
-        self.assertContains(response,'class="gl-finance-launch-main"')
-        self.assertContains(response,'در انتظار تأیید')
-        self.assertContains(response,'نیازمند اصلاح')
-        self.assertContains(response,'consultant-finance-nav')
+        self.assertRedirects(
+            response,
+            reverse('consultant_sales_outcomes'),
+            fetch_redirect_response=False,
+        )
+        workspace=self.client.get(reverse('consultant_sales_outcomes'))
+        self.assertEqual(workspace.status_code,200)
+        self.assertContains(workspace,'/finance/entry/')
+        self.assertContains(workspace,'/consultant/expenses/')
 
     def test_finance_dashboard_has_consistent_premium_actions_and_aligned_ledger(self):
         occurred=timezone.make_aware(datetime.combine(timezone.localdate(),time(10,0)))
@@ -295,8 +298,9 @@ class ConsultantFinanceEntryTests(TestCase):
         self.assertEqual(entry.raw_data['call_center_user_id'],call_center.pk)
         self.assertEqual(entry.call_center_owner,call_center)
         appointment.refresh_from_db(); lead.refresh_from_db()
-        self.assertEqual(appointment.status,'completed')
-        self.assertEqual(lead.status,'won')
+        self.assertEqual(appointment.status,'booked')
+        self.assertEqual(appointment.care_stage,'payment')
+        self.assertEqual(lead.status,'appointment')
 
     def test_first_call_center_appointment_owner_never_changes(self):
         first=self.make_user('flower-first','call_center',None,'گل','رز')
