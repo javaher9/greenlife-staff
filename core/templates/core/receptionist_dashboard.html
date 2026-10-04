@@ -47,7 +47,7 @@
     .empty-big strong{display:block;font-size:14px;margin-bottom:6px}.empty-big p{font-size:11px;line-height:2;color:var(--muted);margin:0;max-width:390px}
     .urgent-list{padding:8px 15px 14px}.urgent-row{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid #f0f2f6}.urgent-row:last-child{border-bottom:0}.check{width:20px;height:20px;border:2px solid #cfd5e1;border-radius:6px;flex:0 0 20px;margin-top:2px}
     .urgent-row strong{font-size:11px;display:block}.urgent-row small{display:block;color:var(--muted);font-size:9px;margin-top:3px}.empty-mini{padding:22px;text-align:center;color:var(--muted);font-size:11px}
-    .bottom-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:14px}.profile-card,.cem-card,.messages-card{min-height:300px}
+    .bottom-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:14px}.profile-card,.cem-card,.messages-card{min-height:235px}
     .profile-body{padding:16px}.profile-placeholder{display:flex;align-items:center;gap:12px;padding:12px;border:1px dashed #dfe3eb;border-radius:16px;background:#fbfcfe}.patient-avatar{width:56px;height:56px;border-radius:18px;background:#eeeaff;display:grid;place-items:center;color:var(--purple);font-size:21px}
     .profile-placeholder strong{font-size:13px;display:block}.profile-placeholder small{font-size:10px;color:#69758a}.tier-title{font-size:10px;color:var(--muted);margin:18px 0 9px}
     .tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.tier{padding:7px 3px;text-align:center;border-radius:10px;background:#f5f6f9;font-size:9px;color:#7d8492}.tier.gold{background:#fff4d6;color:#a16a00}.tier.platinum{background:#eef0f4;color:#626b7a}.tier.diamond{background:#eee9ff;color:#6045d7}
@@ -86,9 +86,9 @@
     </div>
     <nav class="nav">
       <a href="/" class="active"><span class="ico">⌂</span>{% gl_t 'common.dashboard' %}</a>
-      <span class="disabled" title="{% gl_t 'rec.crm_later' %}"><span class="ico">♙</span>{% gl_t 'rec.patients' %}</span>
+      <a href="#today-appointments"><span class="ico">♙</span>{% gl_t 'rec.patients' %}</a>
       <a href="{% url 'appointment_schedule' %}"><span class="ico">▣</span>{% gl_t 'cc.appointment_booking' %}</a>
-      <span class="disabled" title="{% gl_t 'rec.crm_later' %}"><span class="ico">◎</span>{% gl_t 'rec.reception_action' %}</span>
+      <a href="#today-appointments"><span class="ico">◎</span>{% gl_t 'rec.reception_action' %}</a>
       <a href="{% url 'finance_entry' %}"><span class="ico">▤</span>{% gl_t 'common.payment' %}</a>
       <a href="/tasks/"><span class="ico">✓</span>{% gl_t 'common.follow_up' %}</a>
       <span class="disabled" title="{% gl_t 'rec.next_phase' %}"><span class="ico">◈</span>CRM / CEM</span>
@@ -105,7 +105,7 @@
   <main class="main">
     <header class="top">
       <div class="hello"><h1>{% gl_t 'rec.greeting' name=user.first_name|default:user.username %}</h1><p>{% if profile.branch %}{{ profile.branch }}{% else %}{% gl_t "rec.center" %}{% endif %} · {{ jalali_dashboard_date }}</p></div>
-      <label class="search"><span>⌕</span><input disabled placeholder="{% gl_t 'rec.search' %}"></label>
+      <label class="search"><span>⌕</span><input id="rec-live-search" autocomplete="off" placeholder="{% gl_t 'rec.search' %}"></label>
       <form method="post" action="{% url 'language_switch' %}" class="rec-lang" aria-label="{% gl_t 'shell.language_title' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">{% for code,short,label in ui_languages %}<button type="submit" name="language" value="{{ code }}" class="{% if ui_language == code %}active{% endif %}" aria-label="{{ label }}">{{ short }}</button>{% endfor %}</form>
       <div class="userbox">
         <div class="avatar">{% if profile.avatar %}<img src="{{ profile.avatar.url }}" alt="">{% else %}{{ user.first_name|first|default:user.username|first }}{% endif %}</div>
@@ -147,12 +147,12 @@
     {% endif %}
 
     <section class="grid-main">
-      <article class="card appointments">
+      <article class="card appointments" id="today-appointments">
         <div class="card-head"><h2>{% gl_t "rec.today_list" %} · {% gl_t "rec.ops_board" %}</h2><a href="{% url 'appointment_schedule' %}">{% gl_t 'common.full_schedule' %}</a></div>
         <div class="appointments-scroll">
           <div class="table-head"><span>{% gl_t 'common.time' %}</span><span>{% gl_t 'rec.patient_name' %}</span><span>{% gl_t 'common.service' %}</span><span>{% gl_t 'rec.current_stage' %}</span><span>{% gl_t 'common.status' %}</span><span>{% gl_t 'common.actions' %}</span></div>
           {% for item in receptionist_appointments %}
-          <div class="appointment-row">
+          <div class="appointment-row" data-rec-search="{{ item.full_name }} {{ item.service }} {{ item.phone|mask_phone }} {{ item.get_source_display }}">
             <b>{{ item.appointment_time|date:"H:i" }}</b>
             <div><strong>{{ item.full_name }}</strong><small>{{ item.phone|mask_phone }} · {{ item.get_source_display }}</small></div>
             <span>{{ item.service|default:"—" }}</span>
@@ -199,8 +199,8 @@
         <div class="card-head"><h2>{% gl_t 'rec.patient_profile' %}</h2><span>Customer Tier</span></div>
         <div class="profile-body">
           <div class="profile-placeholder"><div class="patient-avatar">📷</div><div><strong>عکس و پرونده بیمار</strong><small>از ردیف بیمار «پرونده ۳۶۰» را باز کنید؛ عکس دوربین و امتیاز تیمی همان‌جا ثبت می‌شود.</small></div></div>
-          <div class="tier-title">{% gl_t 'rec.customer_level' %}</div>
-          <div class="tiers"><span class="tier">Silver</span><span class="tier gold">Gold</span><span class="tier platinum">Platinum</span><span class="tier diamond">Diamond</span></div>
+          <div class="tier-title">کارهای اصلی روی پرونده</div>
+          <div class="tiers"><span class="tier">عکس</span><span class="tier gold">امتیاز</span><span class="tier platinum">سوابق</span><span class="tier diamond">پیامک</span></div>
           <div class="future-note">منشی می‌تواند عکس بیمار را با دوربین بگیرد؛ کال‌سنتر، منشی، مشاور و پزشک نیز ارزیابی مشترک بیمار را ثبت می‌کنند.</div>
         </div>
       </article>
@@ -208,9 +208,8 @@
       <article class="card cem-card">
         <div class="card-head"><h2>{% gl_t 'rec.cem' %}</h2><span>Experience</span></div>
         <div class="cem-body">
-          <div class="insight"><div class="insight-icon">◷</div><div><strong>{% gl_t 'rec.preferences' %}</strong><p>{% gl_t 'rec.preferences_body' %}</p></div></div>
-          <div class="insight"><div class="insight-icon">✎</div><div><strong>{% gl_t 'rec.shared_note' %}</strong><p>{% gl_t 'rec.shared_note_body' %}</p></div></div>
-          <div class="disc"><div class="disc-title"><strong>{% gl_t 'rec.disc' %}</strong><span>{% gl_t 'rec.estimated' %}</span></div><div class="disc-grid"><b>D</b><b>I</b><b>S</b><b>C</b></div></div>
+          <div class="insight"><div class="insight-icon">★</div><div><strong>امتیاز مشترک بیمار</strong><p>کال‌سنتر، منشی، مشاور و پزشک می‌توانند برداشت خود را ثبت کنند؛ میانگین تیم در پرونده ۳۶۰ دیده می‌شود.</p></div></div>
+          <div class="insight"><div class="insight-icon">✎</div><div><strong>یادداشت کاربردی تیم</strong><p>مواردی مثل همکاری، حساسیت به معطلی، ترجیح تماس و بودجه درمان برای همکار بعدی قابل مشاهده است.</p></div></div>
         </div>
       </article>
 
@@ -247,6 +246,16 @@
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',top);else top();
   window.addEventListener('pageshow',function(e){if(e.persisted||window.scrollY>140)top();});
+  var search=document.getElementById('rec-live-search');
+  if(search){
+    search.addEventListener('input',function(){
+      var q=(search.value||'').trim().toLowerCase();
+      document.querySelectorAll('#today-appointments .appointment-row').forEach(function(row){
+        var hay=(row.getAttribute('data-rec-search')||row.textContent||'').toLowerCase();
+        row.style.display=!q||hay.indexOf(q)!==-1?'grid':'none';
+      });
+    });
+  }
 })();
 </script>
 </body>
