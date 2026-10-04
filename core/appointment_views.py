@@ -115,7 +115,7 @@ def appointment_availability(request):
     booked=set(
         VisitAppointment.objects.filter(
             branch=branch,appointment_date=day
-        ).exclude(status='cancelled').values_list('appointment_time',flat=True)
+        ).exclude(status__in=('cancelled','no_show')).values_list('appointment_time',flat=True)
     )
     slots=[]
     for value,label in visit_appointment_time_choices():
@@ -150,7 +150,7 @@ def appointment_schedule(request):
         appointments=attach_patient_photos(list(
             VisitAppointment.objects.filter(
                 branch=branch,appointment_date=day
-            ).exclude(status='cancelled').select_related('lead','created_by').order_by('appointment_time')
+            ).exclude(status__in=('cancelled','no_show')).select_related('lead','created_by').order_by('appointment_time')
         ))
     by_time={a.appointment_time.strftime('%H:%M'):a for a in appointments}
     schedule_rows=[
