@@ -1583,32 +1583,46 @@ def finance_entry(request):
                             return redirect(f"{reverse('finance_entry')}?appointment={appointment.pk}")
                 obj.save()
                 if appointment:
+                    # A newly-entered receipt is still pending review. Do not mark
+                    # the visit completed or the lead won until finance approves it.
+                    approved_total=FinancialTransaction.objects.filter(
+                        appointment=appointment,source='manual',entry_type='inc',
+                        review_status='approved',
+                    ).aggregate(total=Sum('amount'))['total'] or 0
                     appointment_changed=[]
-                    if appointment.status!='completed':
-                        appointment.status='completed'
-                        appointment_changed.append('status')
                     if plan:
-                        paid_total=previous+obj.amount
-                        full=paid_total>=plan.final_amount_toman*10
-                        if full and appointment.care_stage!='closed':
-                            appointment.care_stage='closed'
-                            appointment_changed.append('care_stage')
-                        elif not full and appointment.care_stage!='payment':
+                        total=plan.final_amount_toman*10
+                        full=approved_total>=total and total>0
+                        if full:
+                            plan.status='paid'
+                            plan.paid_at=plan.paid_at or timezone.now()
+                            if appointment.care_stage!='closed':
+                                appointment.care_stage='closed'
+                                appointment_changed.append('care_stage')
+                            if appointment.status!='completed':
+                                appointment.status='completed'
+                                appointment_changed.append('status')
+                        else:
+                            plan.status='partial_paid' if approved_total>0 else 'payment_pending'
+                            plan.paid_at=None
+                            plan.paid_by=None
+                            if appointment.care_stage!='payment':
+                                appointment.care_stage='payment'
+                                appointment_changed.append('care_stage')
+                            if appointment.status=='completed':
+                                appointment.status='arrived'
+                                appointment_changed.append('status')
+                        plan.save(update_fields=['status','paid_at','paid_by','updated_at'])
+                    else:
+                        if appointment.care_stage!='payment':
                             appointment.care_stage='payment'
                             appointment_changed.append('care_stage')
-                        plan.status='paid' if full else 'partial_paid'
-                        plan.paid_at=timezone.now() if full else None
-                        plan.paid_by=request.user if full else None
-                        plan.save(update_fields=['status','paid_at','paid_by','updated_at'])
-                    elif appointment.care_stage!='closed':
-                        appointment.care_stage='closed'
-                        appointment_changed.append('care_stage')
+                        if appointment.status=='completed':
+                            appointment.status='arrived'
+                            appointment_changed.append('status')
                     if appointment_changed:
                         appointment_changed.append('updated_at')
                         appointment.save(update_fields=appointment_changed)
-                    if appointment.lead_id and appointment.lead.status!='won':
-                        appointment.lead.status='won'
-                        appointment.lead.save(update_fields=['status','updated_at'])
                 AuditLog.objects.create(
                     actor=request.user,action='finance_entry',path=request.path,method='POST',
                     object_type='FinancialTransaction',object_id=str(obj.pk),
@@ -1678,31 +1692,67 @@ def finance_entry_review(request,pk,action):
     entry.review_note=(request.POST.get('review_note') or '').strip()[:300]
     entry.save(update_fields=['review_status','reviewed_by','reviewed_at','review_note'])
     if entry.appointment_id:
-        appointment=VisitAppointment.objects.filter(pk=entry.appointment_id).select_related('consultation_plan').first()
+        appointment=VisitAppointment.objects.filter(
+            pk=entry.appointment_id
+        ).select_related('consultation_plan','lead').first()
         if appointment:
             plan=getattr(appointment,'consultation_plan',None)
+            approved=FinancialTransaction.objects.filter(
+                appointment=appointment,source='manual',entry_type='inc',
+                review_status='approved',
+            ).aggregate(total=Sum('amount'))['total'] or 0
+            appointment_changed=[]
+            fully_paid=False
+
             if plan and plan.status in ('partial_paid','paid','payment_pending','finalized'):
-                accepted=FinancialTransaction.objects.filter(
-                    appointment=appointment,source='manual',entry_type='inc',
-                    review_status__in=('pending','approved'),
-                ).aggregate(total=Sum('amount'))['total'] or 0
                 total=plan.final_amount_toman*10
-                if accepted>=total and total>0:
+                fully_paid=approved>=total and total>0
+                if fully_paid:
                     plan.status='paid'
-                    appointment.care_stage='closed'
                     plan.paid_at=plan.paid_at or timezone.now()
-                elif accepted>0:
+                    plan.paid_by=entry.reviewed_by
+                    appointment.care_stage='closed'
+                    appointment.status='completed'
+                elif approved>0:
                     plan.status='partial_paid'
-                    appointment.care_stage='payment'
                     plan.paid_at=None
                     plan.paid_by=None
+                    appointment.care_stage='payment'
+                    if appointment.status=='completed':
+                        appointment.status='arrived'
                 else:
                     plan.status='payment_pending'
-                    appointment.care_stage='payment'
                     plan.paid_at=None
                     plan.paid_by=None
+                    appointment.care_stage='payment'
+                    if appointment.status=='completed':
+                        appointment.status='arrived'
                 plan.save(update_fields=['status','paid_at','paid_by','updated_at'])
-                appointment.save(update_fields=['care_stage','updated_at'])
+                appointment_changed.extend(['care_stage','status'])
+            elif not plan:
+                fully_paid=approved>0
+                if fully_paid:
+                    appointment.care_stage='closed'
+                    appointment.status='completed'
+                else:
+                    appointment.care_stage='payment'
+                    if appointment.status=='completed':
+                        appointment.status='arrived'
+                appointment_changed.extend(['care_stage','status'])
+
+            if appointment_changed:
+                appointment.save(update_fields=list(dict.fromkeys(appointment_changed+['updated_at'])))
+
+            if appointment.lead_id:
+                if fully_paid:
+                    if appointment.lead.status!='won':
+                        appointment.lead.status='won'
+                        appointment.lead.contact_result='won'
+                        appointment.lead.save(update_fields=['status','contact_result','updated_at'])
+                elif appointment.lead.status=='won':
+                    appointment.lead.status='visited'
+                    appointment.lead.contact_result='follow_up'
+                    appointment.lead.save(update_fields=['status','contact_result','updated_at'])
     AuditLog.objects.create(
         actor=request.user,action='finance_review',path=request.path,method='POST',
         object_type='FinancialTransaction',object_id=str(entry.pk),
