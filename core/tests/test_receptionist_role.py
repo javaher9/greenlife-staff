@@ -1,6 +1,8 @@
+from datetime import time
 from core.tests.test_dual_credentials import DualCredentialTests as DualCredentialRegressionTests
 from django.contrib.auth.models import User
 from django.test import TestCase
+from django.utils import timezone
 from django.urls import reverse
 
 from core.models import Branch, EmployeeProfile, Task, VisitAppointment
@@ -52,8 +54,8 @@ class ReceptionistRoleTests(TestCase):
             full_name='بیمار تست',
             phone='09120000000',
             service='مشاوره',
-            appointment_date=__import__('django').utils.timezone.localdate(),
-            appointment_time=__import__('datetime').time(10,0),
+            appointment_date=timezone.localdate(),
+            appointment_time=time(10,0),
             status='booked',
             care_stage='doctor',
             source='call_center',
