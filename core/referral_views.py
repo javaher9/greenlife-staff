@@ -711,7 +711,7 @@ def call_center_dashboard(request):
     default_group=_default_call_center_group(operator)
     ReferralLead.objects.filter(assigned_to=operator,group__isnull=True).update(group=default_group)
     all_leads=ReferralLead.objects.filter(assigned_to=operator)
-    leads=all_leads.select_related('country','assigned_to','group','referrer__user')
+    leads=all_leads.select_related('country','assigned_to','group','referrer__user','created_by')
     status=request.GET.get('status','')
     if status in dict(ReferralLead.STATUS):
         leads=leads.filter(status=status)
