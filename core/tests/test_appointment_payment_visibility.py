@@ -101,8 +101,14 @@ class AppointmentPaymentVisibilityTests(TestCase):
             {'review_note':'تأیید تست'},
         )
         self.assertEqual(response.status_code,302)
+        payment.refresh_from_db()
+        approved_total=FinancialTransaction.objects.filter(
+            appointment=self.appointment,source='manual',entry_type='inc',review_status='approved'
+        ).aggregate(total=__import__('django.db.models',fromlist=['Sum']).Sum('amount'))['total'] or 0
+        self.assertEqual(payment.review_status,'approved',{'review_status':payment.review_status,'approved_total':str(approved_total)})
+        self.assertEqual(approved_total,Decimal('20000000'),{'review_status':payment.review_status,'approved_total':str(approved_total)})
         direct_state=VisitAppointment.objects.filter(pk=self.appointment.pk).values('care_stage','status').get()
-        self.assertEqual(direct_state['care_stage'],'closed',direct_state)
+        self.assertEqual(direct_state['care_stage'],'closed',{'state':direct_state,'approved_total':str(approved_total),'plan_status':ConsultationPlan.objects.get(pk=plan.pk).status})
         self.assertEqual(direct_state['status'],'completed',direct_state)
         self.lead.refresh_from_db()
         self.appointment.refresh_from_db()
