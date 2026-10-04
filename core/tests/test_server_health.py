@@ -22,6 +22,13 @@ class ServerHealthTests(TestCase):
         self.assertIn("disk", payload["server"])
         self.assertEqual(response["Cache-Control"], "no-store, private, max-age=0")
 
+    def test_executive_can_render_server_health_page(self):
+        self.client.force_login(self.owner)
+        response = self.client.get(reverse("server_health"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "وضعیت زنده سرور")
+        self.assertContains(response, "فقط‌خواندنی")
+
     def test_regular_user_is_denied(self):
         self.client.force_login(self.regular)
         response = self.client.get(reverse("server_health_api"))
