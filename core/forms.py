@@ -613,6 +613,7 @@ class EmployeeEditForm(forms.Form):
         empty_value=None,choices=(('', 'نامشخص'),('True', 'بیمه شده'),('False', 'بیمه نشده')),
     )
     can_register_instagram_dm_lead=forms.BooleanField(label='ثبت لید از دایرکت',required=False)
+    can_use_sales_network=forms.BooleanField(label='دسترسی به شبکه فروش',required=False)
     is_active=forms.BooleanField(label='فعال',required=False)
     new_password=forms.CharField(label='رمز دسکتاپ جدید',required=False,widget=forms.PasswordInput,help_text='اگر نمی‌خواهید رمز دسکتاپ تغییر کند، خالی بگذارید.')
 
@@ -630,7 +631,8 @@ class EmployeeEditForm(forms.Form):
                 'country':employee.country,'preferred_language':employee.preferred_language,
                 'branch':employee.branch,'role':employee.role,'shift_group':employee.shift_group,
                 'address':employee.address,'education':employee.education,
-                'is_insured':employee.is_insured,'can_register_instagram_dm_lead':employee.can_register_instagram_dm_lead,'is_active':employee.is_active,
+                'is_insured':employee.is_insured,'can_register_instagram_dm_lead':employee.can_register_instagram_dm_lead,
+                'can_use_sales_network':employee.can_use_sales_network,'is_active':employee.is_active,
             })
 
     def clean_username(self):
@@ -669,7 +671,7 @@ class EmployeeEditForm(forms.Form):
         user.first_name=d['first_name']; user.last_name=d['last_name']; user.username=d['username']; user.email=d['email']; user.is_active=d['is_active']
         if d.get('new_password'): user.set_password(d['new_password'])
         user.save()
-        for field in ('country','preferred_language','branch','role','shift_group','job_title','phone','birth_date','start_date','address','education','is_insured','can_register_instagram_dm_lead','is_active'):
+        for field in ('country','preferred_language','branch','role','shift_group','job_title','phone','birth_date','start_date','address','education','is_insured','can_register_instagram_dm_lead','can_use_sales_network','is_active'):
             setattr(employee,field,d.get(field))
         if employee.role=='call_center' and not employee.job_title:
             employee.job_title='کارشناس کال‌سنتر'
