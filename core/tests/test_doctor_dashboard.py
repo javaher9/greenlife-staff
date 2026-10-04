@@ -138,6 +138,38 @@ class DoctorDashboardTests(TestCase):
         self.assertIn('31.2',body)
         self.assertIn('نیاوران',body)
 
+    def test_repeat_visit_reuses_same_patient_360_and_tracks_visit_number(self):
+        first_patient=PatientProfile.objects.create(
+            full_name='مریم حسینی',
+            phone='+989121234567',
+            home_branch=self.branch,
+        )
+        previous=VisitAppointment.objects.create(
+            branch=self.branch,
+            full_name='مریم حسینی',
+            phone='09121234567',
+            service='ویزیت قبلی',
+            appointment_date=timezone.localdate()-timezone.timedelta(days=30),
+            appointment_time=time(9,30),
+            status='completed',
+            source='receptionist',
+            created_by=self.operator_user,
+        )
+        response=self.client.get(
+            reverse('doctor_dashboard'),
+            {'appointment':self.appointment.pk},
+        )
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(PatientProfile.objects.count(),1)
+        first_patient.refresh_from_db()
+        self.assertEqual(first_patient.phone,'09121234567')
+        self.assertEqual(response.context['selected_visit_number'],2)
+        visit_ids=[row['appointment'].pk for row in response.context['patient_visit_rows']]
+        self.assertIn(previous.pk,visit_ids)
+        self.assertIn(self.appointment.pk,visit_ids)
+        self.assertContains(response,'ویزیت 2')
+        self.assertContains(response,'پرونده یکپارچه 360°')
+
     def test_doctor_can_add_device_program_from_same_page(self):
         self.client.get(reverse('doctor_dashboard'))
         response=self.client.post(reverse('doctor_dashboard'),{

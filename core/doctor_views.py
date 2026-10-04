@@ -25,7 +25,7 @@ from .models import (
     TreatmentCatalogItem,
     VisitAppointment,
     Branch, DeviceBaseTariff,
-    normalize_lead_phone,
+    lead_phone_variants, normalize_lead_phone,
 )
 
 
@@ -119,15 +119,22 @@ def _age_on(birth_date):
 
 
 def _ensure_patient(appointment, doctor):
+    """Resolve every repeat visit to the same longitudinal patient by mobile."""
     phone=normalize_lead_phone(appointment.phone)
     if not phone:
         return None
-    defaults={
-        'full_name':appointment.full_name,
-        'home_branch':appointment.branch,
-        'created_by':doctor,
-    }
-    patient,created=PatientProfile.objects.get_or_create(phone=phone,defaults=defaults)
+    variants=lead_phone_variants(phone)
+    matches=list(
+        PatientProfile.objects.filter(phone__in=variants)
+        .select_related('home_branch')
+        .order_by('id')
+    )
+    patient=matches[0] if matches else PatientProfile.objects.create(
+        phone=phone,
+        full_name=appointment.full_name,
+        home_branch=appointment.branch,
+        created_by=doctor,
+    )
     changed=[]
     if appointment.full_name and patient.full_name!=appointment.full_name:
         patient.full_name=appointment.full_name
@@ -135,9 +142,23 @@ def _ensure_patient(appointment, doctor):
     if not patient.home_branch_id and appointment.branch_id:
         patient.home_branch=appointment.branch
         changed.append('home_branch')
+    if patient.phone!=phone and not PatientProfile.objects.filter(phone=phone).exclude(pk=patient.pk).exists():
+        patient.phone=phone
+        changed.append('phone')
+    stable_fields=('birth_date','sex','height_cm','neighborhood','address_summary','medical_history','crm_id')
+    for field in stable_fields:
+        if getattr(patient,field):
+            continue
+        value=next((getattr(item,field) for item in matches if getattr(item,field)),None)
+        if value:
+            setattr(patient,field,value)
+            changed.append(field)
+    if not patient.is_vip and any(item.is_vip for item in matches):
+        patient.is_vip=True
+        changed.append('is_vip')
     if changed:
         changed.append('updated_at')
-        patient.save(update_fields=changed)
+        patient.save(update_fields=list(dict.fromkeys(changed)))
     return patient
 
 
@@ -405,8 +426,17 @@ def doctor_dashboard(request):
     device_history=[]
     lipolytic_history=[]
     care_notes=[]
+    patient_visit_rows=[]
+    selected_visit_number=None
     if patient:
-        analyses=list(patient.body_analyses.order_by('recorded_at','id')[:36])
+        variants=lead_phone_variants(patient.phone)
+        sibling_ids=list(PatientProfile.objects.filter(phone__in=variants).values_list('id',flat=True))
+        if not sibling_ids:
+            sibling_ids=[patient.pk]
+        analyses=list(
+            BodyAnalysisRecord.objects.filter(patient_id__in=sibling_ids)
+            .order_by('recorded_at','id')[:36]
+        )
         metric_cards=[
             _metric_card(analyses,'weight_kg','وزن','kg','violet'),
             _metric_card(analyses,'visceral_fat','چربی احشایی','','rose'),
@@ -414,10 +444,53 @@ def doctor_dashboard(request):
             _metric_card(analyses,'skeletal_muscle_kg','عضله','kg','green'),
             _metric_card(analyses,'body_fat_percent','درصد چربی','%','amber'),
         ]
-        diet_history=list(patient.diet_programs.all()[:6])
-        device_history=list(patient.device_programs.all()[:6])
-        lipolytic_history=list(patient.lipolytic_programs.all()[:6])
-        care_notes=list(patient.care_notes.select_related('author')[:5])
+        diet_history=list(
+            PatientDietProgram.objects.filter(patient_id__in=sibling_ids)
+            .select_related('appointment').order_by('-prescribed_at','-id')[:8]
+        )
+        device_history=list(
+            PatientDeviceProgram.objects.filter(patient_id__in=sibling_ids)
+            .select_related('appointment').order_by('-prescribed_at','-id')[:8]
+        )
+        lipolytic_history=list(
+            PatientLipolyticProgram.objects.filter(patient_id__in=sibling_ids)
+            .select_related('appointment').order_by('-prescribed_at','-id')[:8]
+        )
+        care_notes=list(
+            PatientCareNote.objects.filter(patient_id__in=sibling_ids)
+            .select_related('author','appointment').order_by('-created_at','-id')[:8]
+        )
+
+        longitudinal_visits=list(
+            VisitAppointment.objects.filter(phone__in=variants)
+            .exclude(status='cancelled')
+            .prefetch_related('diet_programs','device_programs','lipolytic_programs','care_notes')
+            .order_by('appointment_date','appointment_time','id')
+        )
+        for index,item in enumerate(longitudinal_visits,1):
+            if selected and item.pk==selected.pk:
+                selected_visit_number=index
+            diets_for_visit=list(item.diet_programs.all())
+            devices_for_visit=list(item.device_programs.all())
+            lipos_for_visit=list(item.lipolytic_programs.all())
+            notes_for_visit=list(item.care_notes.all())
+            patient_visit_rows.append({
+                'number':index,
+                'appointment':item,
+                'diet':'، '.join(x.diet_name for x in diets_for_visit) or '—',
+                'recommendations':'، '.join(
+                    x.recommendation_pack for x in diets_for_visit if x.recommendation_pack
+                ) or '—',
+                'prescription':'، '.join(
+                    [x.print_template for x in diets_for_visit if x.print_template]
+                    + [x.body for x in notes_for_visit if x.note_type=='clinical']
+                ) or '—',
+                'treatment':'، '.join(
+                    [f'{x.device_name}{(" · "+x.area) if x.area else ""}' for x in devices_for_visit]
+                    + [f'{x.protocol_name}{(" · "+x.area) if x.area else ""}' for x in lipos_for_visit]
+                ) or '—',
+            })
+        patient_visit_rows=list(reversed(patient_visit_rows[-6:]))
 
     direct_messages=list(
         InternalMessage.objects.filter(
@@ -469,4 +542,6 @@ def doctor_dashboard(request):
         'current_visit_device_count':selected.device_programs.count() if selected else 0,
         'current_visit_lipolytic_count':selected.lipolytic_programs.count() if selected else 0,
         'current_visit_note_count':selected.care_notes.count() if selected else 0,
+        'selected_visit_number':selected_visit_number,
+        'patient_visit_rows':patient_visit_rows,
     })
