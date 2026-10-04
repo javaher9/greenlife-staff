@@ -188,6 +188,7 @@
                 <div class="row-menu">
                   <a href="{% url 'patient_360_from_appointment' item.pk %}">📷 عکس / امتیاز / پرونده</a>
                   {% if item.status == 'booked' %}
+                  <form method="post" action="{% url 'receptionist_appointment_status' item.pk 'no_show' %}" onsubmit="return confirm('عدم مراجعه ثبت شود و پیگیری به کال‌سنتر برگردد؟');">{% csrf_token %}<input type="hidden" name="next" value="dashboard"><button type="submit">عدم مراجعه</button></form>
                   <form method="post" action="{% url 'receptionist_appointment_status' item.pk 'cancelled' %}" onsubmit="return confirm('{% gl_t 'rec.cancel_confirm' %}');">{% csrf_token %}<input type="hidden" name="next" value="dashboard"><button class="danger" type="submit">لغو نوبت</button></form>
                   {% endif %}
                 </div>
