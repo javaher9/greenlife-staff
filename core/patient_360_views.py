@@ -109,7 +109,7 @@ def patient_360(request, pk):
         .filter(
             Q(appointment_id__in=appointment_ids)
             | Q(patient_ref__in=variants)
-            | Q(person_name__iexact=patient.full_name)
+            | (Q(patient_ref=patient.crm_id) if patient.crm_id else Q(pk__in=[]))
         )
         .exclude(review_status='cancelled')
         .select_related('branch','appointment','recorded_by')
@@ -174,7 +174,9 @@ def patient_360(request, pk):
     if latest_analysis and oldest_analysis and latest_analysis.weight_kg is not None and oldest_analysis.weight_kg is not None:
         weight_delta=latest_analysis.weight_kg-oldest_analysis.weight_kg
 
-    call_outcomes=[lead for lead in leads if lead.contact_result or lead.status!='new']
+    recorded_contact_count=ReferralLead.objects.filter(phone__in=variants).filter(
+        Q(contact_result__gt='') | ~Q(status='new')
+    ).count()
 
     context={
         'patient':patient,
@@ -186,7 +188,7 @@ def patient_360(request, pk):
         'approved_paid':approved_paid,
         'pending_paid':pending_paid,
         'leads':leads,
-        'recorded_contact_count':len(call_outcomes),
+        'recorded_contact_count':recorded_contact_count,
         'sms_rows':sms,
         'sms_count':SmsMessageLog.objects.filter(Q(number__in=variants)|Q(appointment_id__in=appointment_ids)).count(),
         'analyses':analyses,
