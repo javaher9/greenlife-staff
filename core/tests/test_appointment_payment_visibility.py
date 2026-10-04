@@ -101,6 +101,9 @@ class AppointmentPaymentVisibilityTests(TestCase):
             {'review_note':'تأیید تست'},
         )
         self.assertEqual(response.status_code,302)
+        direct_state=VisitAppointment.objects.filter(pk=self.appointment.pk).values('care_stage','status').get()
+        self.assertEqual(direct_state['care_stage'],'closed',direct_state)
+        self.assertEqual(direct_state['status'],'completed',direct_state)
         self.lead.refresh_from_db()
         self.appointment.refresh_from_db()
         plan.refresh_from_db()
