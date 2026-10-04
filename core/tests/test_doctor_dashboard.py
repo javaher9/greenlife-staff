@@ -261,7 +261,13 @@ class DoctorDashboardTests(TestCase):
         self.client.logout()
         self.client.login(username='consultant-doctor-test',password='StrongPass123')
         dashboard=self.client.get(reverse('dashboard'))
-        body=dashboard.content.decode('utf-8')
-        self.assertIn('بیماران منتظر مشاوره',body)
+        self.assertRedirects(
+            dashboard,
+            reverse('consultant_sales_outcomes'),
+            fetch_redirect_response=False,
+        )
+        workspace=self.client.get(reverse('consultant_sales_outcomes'))
+        self.assertEqual(workspace.status_code,200)
+        body=workspace.content.decode('utf-8')
         self.assertIn('مریم حسینی',body)
-        self.assertIn('1 دستگاه',body)
+        self.assertIn('Double Define',body)
