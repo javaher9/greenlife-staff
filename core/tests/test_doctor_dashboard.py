@@ -108,6 +108,33 @@ class DoctorDashboardTests(TestCase):
         self.assertNotIn('بیمار شعبه دیگر',body)
         self.assertNotIn('09121234567',body)
 
+    def test_doctor_only_sees_checked_in_patients(self):
+        waiting=VisitAppointment.objects.create(
+            branch=self.branch,
+            full_name='بیمار هنوز پذیرش نشده',
+            phone='09127778888',
+            service='کنترل وزن',
+            appointment_date=timezone.localdate(),
+            appointment_time=time(11,0),
+            status='booked',
+            care_stage='doctor',
+            source='call_center',
+            created_by=self.operator_user,
+        )
+        response=self.client.get(reverse('doctor_dashboard'))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'مریم حسینی')
+        self.assertNotContains(response,'بیمار هنوز پذیرش نشده')
+
+        blocked=self.client.post(reverse('doctor_dashboard'),{
+            'appointment_id':waiting.pk,
+            'action':'send_to_consultant',
+        })
+        self.assertEqual(blocked.status_code,302)
+        waiting.refresh_from_db()
+        self.assertEqual(waiting.status,'booked')
+        self.assertEqual(waiting.care_stage,'doctor')
+
     def test_doctor_queue_shows_patient_avatar_and_light_theme(self):
         patient=PatientProfile.objects.create(
             full_name='مریم حسینی',
