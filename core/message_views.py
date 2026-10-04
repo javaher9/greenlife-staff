@@ -84,7 +84,7 @@ def internal_messages(request):
         thread_qs=InternalMessage.objects.filter(
             Q(sender=request.user,recipient=selected) |
             Q(sender=selected,recipient=request.user)
-        ).select_related('sender','recipient').order_by('-created_at')[:200]
+        ).select_related('sender','recipient','sender__profile','recipient__profile').order_by('-created_at')[:200]
         InternalMessage.objects.filter(
             sender=selected,recipient=request.user,read_at__isnull=True
         ).update(read_at=timezone.now())
@@ -93,7 +93,7 @@ def internal_messages(request):
     else:
         thread_qs=InternalMessage.objects.filter(
             recipient__isnull=True
-        ).select_related('sender').order_by('-created_at')[:200]
+        ).select_related('sender','sender__profile').order_by('-created_at')[:200]
         room_title=translate('msg.public_chat',getattr(request,'ui_language','fa'))
         room_subtitle=translate('msg.all_can',getattr(request,'ui_language','fa'))
 
@@ -168,14 +168,14 @@ def internal_message_updates(request):
             Q(sender=request.user,recipient=selected) |
             Q(sender=selected,recipient=request.user),
             pk__gt=after,
-        ).select_related('sender','recipient').order_by('pk')[:100]
+        ).select_related('sender','recipient','sender__profile','recipient__profile').order_by('pk')[:100]
         InternalMessage.objects.filter(
             sender=selected,recipient=request.user,read_at__isnull=True
         ).update(read_at=timezone.now())
     else:
         qs=InternalMessage.objects.filter(
             recipient__isnull=True,pk__gt=after
-        ).select_related('sender').order_by('pk')[:100]
+        ).select_related('sender','sender__profile').order_by('pk')[:100]
 
     data=[]
     for item in qs:
@@ -185,6 +185,7 @@ def internal_message_updates(request):
             'body':item.body,
             'mine':item.sender_id==request.user.pk,
             'time':timezone.localtime(item.created_at).strftime('%H:%M'),
+            'avatar':(item.sender.profile.avatar.url if getattr(item.sender.profile,'avatar',None) else ''),
         })
     response=JsonResponse({'ok':True,'messages':data})
     response['Cache-Control']='no-store, private'
@@ -284,7 +285,7 @@ def internal_message_live_widget(request):
                 Q(sender=request.user,recipient=selected) |
                 Q(sender=selected,recipient=request.user)
             )
-            .select_related('sender','recipient')
+            .select_related('sender','recipient','sender__profile','recipient__profile')
             .order_by('-created_at')[:60]
         )
         thread=list(reversed(list(qs)))
@@ -308,12 +309,13 @@ def internal_message_live_widget(request):
             'body':item.body,
             'mine':item.sender_id==request.user.pk,
             'time':timezone.localtime(item.created_at).strftime('%H:%M'),
+            'avatar':(item.sender.profile.avatar.url if getattr(item.sender.profile,'avatar',None) else ''),
         })
 
     latest_incoming_item=(
         InternalMessage.objects
         .filter(recipient=request.user)
-        .select_related('sender')
+        .select_related('sender','sender__profile')
         .order_by('-pk')
         .first()
     )
@@ -326,6 +328,7 @@ def internal_message_live_widget(request):
             'sender':latest_incoming_item.sender.get_full_name() or latest_incoming_item.sender.username,
             'body':latest_incoming_item.body[:180],
             'time':timezone.localtime(latest_incoming_item.created_at).strftime('%H:%M'),
+            'avatar':(latest_incoming_item.sender.profile.avatar.url if getattr(latest_incoming_item.sender.profile,'avatar',None) else ''),
         }
 
     response=JsonResponse({
