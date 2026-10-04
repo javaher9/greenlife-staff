@@ -1692,108 +1692,36 @@ def finance_entry_review(request,pk,action):
     entry.review_note=(request.POST.get('review_note') or '').strip()[:300]
     entry.save(update_fields=['review_status','reviewed_by','reviewed_at','review_note'])
     if entry.appointment_id:
-        appointment=VisitAppointment.objects.filter(
-            pk=entry.appointment_id
-        ).select_related('consultation_plan','lead').first()
+        appointment=VisitAppointment.objects.filter(pk=entry.appointment_id).select_related('consultation_plan').first()
         if appointment:
             plan=getattr(appointment,'consultation_plan',None)
-            approved=FinancialTransaction.objects.filter(
-                appointment=appointment,source='manual',entry_type='inc',
-                review_status='approved',
-            ).aggregate(total=Sum('amount'))['total'] or 0
-            appointment_changed=[]
-            fully_paid=False
-
             if plan and plan.status in ('partial_paid','paid','payment_pending','finalized'):
+                accepted=FinancialTransaction.objects.filter(
+                    appointment=appointment,source='manual',entry_type='inc',
+                    review_status__in=('pending','approved'),
+                ).aggregate(total=Sum('amount'))['total'] or 0
                 total=plan.final_amount_toman*10
-                fully_paid=approved>=total and total>0
-                if fully_paid:
+                if accepted>=total and total>0:
                     plan.status='paid'
-                    plan.paid_at=plan.paid_at or timezone.now()
-                    plan.paid_by=entry.reviewed_by
                     appointment.care_stage='closed'
-                    appointment.status='completed'
-                elif approved>0:
+                    plan.paid_at=plan.paid_at or timezone.now()
+                elif accepted>0:
                     plan.status='partial_paid'
+                    appointment.care_stage='payment'
                     plan.paid_at=None
                     plan.paid_by=None
-                    appointment.care_stage='payment'
-                    if appointment.status=='completed':
-                        appointment.status='arrived'
                 else:
                     plan.status='payment_pending'
+                    appointment.care_stage='payment'
                     plan.paid_at=None
                     plan.paid_by=None
-                    appointment.care_stage='payment'
-                    if appointment.status=='completed':
-                        appointment.status='arrived'
                 plan.save(update_fields=['status','paid_at','paid_by','updated_at'])
-                appointment_changed.extend(['care_stage','status'])
-            elif not plan:
-                fully_paid=approved>0
-                if fully_paid:
-                    appointment.care_stage='closed'
-                    appointment.status='completed'
-                else:
-                    appointment.care_stage='payment'
-                    if appointment.status=='completed':
-                        appointment.status='arrived'
-                appointment_changed.extend(['care_stage','status'])
-
-            if appointment_changed:
-                VisitAppointment.objects.filter(pk=appointment.pk).update(
-                    care_stage=appointment.care_stage,
-                    status=appointment.status,
-                    updated_at=timezone.now(),
-                )
-
-            if appointment.lead_id:
-                if fully_paid:
-                    if appointment.lead.status!='won':
-                        appointment.lead.status='won'
-                        appointment.lead.contact_result='won'
-                        appointment.lead.save(update_fields=['status','contact_result','updated_at'])
-                elif appointment.lead.status=='won':
-                    appointment.lead.status='visited'
-                    appointment.lead.contact_result='follow_up'
-                    appointment.lead.save(update_fields=['status','contact_result','updated_at'])
-
-            # Final authoritative write after every related-model update. This
-            # prevents any stale in-memory appointment state from surviving a
-            # finance review and makes the lifecycle deterministic.
-            final_status='completed' if fully_paid else (
-                'arrived' if appointment.status=='completed' else appointment.status
-            )
-            final_stage='closed' if fully_paid else 'payment'
-            VisitAppointment.objects.filter(pk=appointment.pk).update(
-                status=final_status,
-                care_stage=final_stage,
-                updated_at=timezone.now(),
-            )
-    debug_meta={'before':before,'after':entry.review_status}
-    if entry.appointment_id:
-        debug_appt=VisitAppointment.objects.filter(pk=entry.appointment_id).select_related('consultation_plan').first()
-        debug_plan=getattr(debug_appt,'consultation_plan',None) if debug_appt else None
-        debug_approved=FinancialTransaction.objects.filter(
-            appointment_id=entry.appointment_id,source='manual',entry_type='inc',review_status='approved'
-        ).aggregate(total=Sum('amount'))['total'] or 0
-        debug_meta.update({
-            'appointment_id':entry.appointment_id,
-            'approved_total':str(debug_approved),
-            'plan_status':getattr(debug_plan,'status',None),
-            'plan_total_toman':str(getattr(debug_plan,'final_amount_toman',0) or 0),
-            'appointment_stage':getattr(debug_appt,'care_stage',None),
-            'appointment_status':getattr(debug_appt,'status',None),
-            'computed_full':bool(
-                debug_plan and (getattr(debug_plan,'final_amount_toman',0) or 0)>0
-                and debug_approved >= (getattr(debug_plan,'final_amount_toman',0) or 0)*10
-            ),
-        })
+                appointment.save(update_fields=['care_stage','updated_at'])
     AuditLog.objects.create(
         actor=request.user,action='finance_review',path=request.path,method='POST',
         object_type='FinancialTransaction',object_id=str(entry.pk),
         summary=f'وضعیت مالی از {before} به {entry.review_status}'[:250],
-        metadata=debug_meta,ip_address=_request_ip(request),
+        metadata={'before':before,'after':entry.review_status},ip_address=_request_ip(request),
     )
     if entry.recorded_by:
         StaffNotification.objects.create(
@@ -1801,70 +1729,6 @@ def finance_entry_review(request,pk,action):
             message=f'تراکنش {entry.person_name} به وضعیت «{entry.get_review_status_display()}» تغییر کرد.',
             notification_type='finance_review',related_date=timezone.localdate(),
         )
-
-    # Reconcile the visit one final time as the last business write in this
-    # request. Finance approval/correction is the authority for payment stage.
-    if entry.appointment_id:
-        final_appointment=VisitAppointment.objects.filter(
-            pk=entry.appointment_id
-        ).select_related('consultation_plan').first()
-        if final_appointment:
-            final_plan=getattr(final_appointment,'consultation_plan',None)
-            approved_total=FinancialTransaction.objects.filter(
-                appointment_id=entry.appointment_id,
-                source='manual',
-                entry_type='inc',
-                review_status='approved',
-            ).aggregate(total=Sum('amount'))['total'] or 0
-            if final_plan:
-                required=(final_plan.final_amount_toman or 0)*10
-                final_paid=required>0 and approved_total>=required
-                VisitAppointment.objects.filter(pk=entry.appointment_id).update(
-                    care_stage='closed' if final_paid else 'payment',
-                    status='completed' if final_paid else (
-                        'arrived' if final_appointment.status=='completed' else final_appointment.status
-                    ),
-                    updated_at=timezone.now(),
-                )
-    # Reconcile appointment/lead one final time after audit/notification side effects.
-    # Finance approval is the source of truth for closing a visit and winning a lead.
-    if entry.appointment_id:
-        final_appointment=VisitAppointment.objects.filter(
-            pk=entry.appointment_id
-        ).select_related('consultation_plan','lead').first()
-        if final_appointment:
-            final_plan=getattr(final_appointment,'consultation_plan',None)
-            final_approved=FinancialTransaction.objects.filter(
-                appointment=final_appointment,
-                source='manual',
-                entry_type='inc',
-                review_status='approved',
-            ).aggregate(total=Sum('amount'))['total'] or 0
-            if final_plan:
-                final_total=final_plan.final_amount_toman*10
-                final_paid=final_total>0 and final_approved>=final_total
-            else:
-                final_paid=final_approved>0
-
-            VisitAppointment.objects.filter(pk=final_appointment.pk).update(
-                status='completed' if final_paid else (
-                    'arrived' if final_appointment.status=='completed' else final_appointment.status
-                ),
-                care_stage='closed' if final_paid else 'payment',
-                updated_at=timezone.now(),
-            )
-            if final_appointment.lead_id:
-                if final_paid:
-                    ReferralLead.objects.filter(pk=final_appointment.lead_id).update(
-                        status='won',contact_result='won',updated_at=timezone.now()
-                    )
-                else:
-                    ReferralLead.objects.filter(
-                        pk=final_appointment.lead_id,status='won'
-                    ).update(
-                        status='visited',contact_result='follow_up',updated_at=timezone.now()
-                    )
-
     messages.success(request,'وضعیت تراکنش به‌روزرسانی شد.')
     return redirect('finance_dashboard')
 
