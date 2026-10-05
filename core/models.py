@@ -373,6 +373,7 @@ class VisitAppointment(models.Model):
         ('booked','رزرو شده'),
         ('arrived','مراجعه کرده'),
         ('completed','انجام شد'),
+        ('no_show','عدم مراجعه'),
         ('cancelled','لغو شده'),
     ]
     CARE_STAGE=[
@@ -416,7 +417,7 @@ class VisitAppointment(models.Model):
         constraints=[
             models.UniqueConstraint(
                 fields=['branch','appointment_date','appointment_time'],
-                condition=~models.Q(status='cancelled'),
+                condition=~models.Q(status__in=('cancelled','no_show')),
                 name='uniq_active_visit_appointment_slot',
             ),
         ]

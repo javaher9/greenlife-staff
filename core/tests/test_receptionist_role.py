@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.utils import timezone
 from django.urls import reverse
 
-from core.models import Branch, EmployeeProfile, Task, VisitAppointment
+from core.models import Branch, EmployeeProfile, ReferralLead, ReferralProfile, Task, VisitAppointment
 
 
 class ReceptionistRoleTests(TestCase):
@@ -93,6 +93,59 @@ class ReceptionistRoleTests(TestCase):
         self.assertRedirects(response,reverse('dashboard'))
         appointment.refresh_from_db()
         self.assertEqual(appointment.status,'arrived')
+
+    def test_no_show_returns_lead_to_call_center_follow_up(self):
+        operator=User.objects.create_user(
+            username='no-show-operator',password='pass',first_name='اپراتور',
+        )
+        operator_profile=operator.profile
+        operator_profile.role='call_center'
+        operator_profile.branch=self.branch
+        operator_profile.save(update_fields=['role','branch'])
+
+        ref_user=User.objects.create_user(username='no-show-ref',password='pass')
+        referrer=ReferralProfile.objects.create(
+            user=ref_user,referral_code='NOSHOW-REF',
+        )
+        lead=ReferralLead.objects.create(
+            referrer=referrer,
+            full_name='بیمار عدم مراجعه',
+            phone='09124445566',
+            status='appointment',
+            assigned_to=operator_profile,
+            first_appointment_by=operator,
+        )
+        appointment=VisitAppointment.objects.create(
+            lead=lead,
+            branch=self.branch,
+            full_name=lead.full_name,
+            phone=lead.phone,
+            service='مشاوره',
+            appointment_date=timezone.localdate(),
+            appointment_time=time(12,0),
+            status='booked',
+            care_stage='doctor',
+            source='call_center',
+            created_by=operator,
+        )
+
+        response=self.client.post(
+            reverse('receptionist_appointment_status',args=[appointment.pk,'no_show']),
+            {'next':'dashboard'},
+        )
+        self.assertRedirects(response,reverse('dashboard'))
+        appointment.refresh_from_db()
+        lead.refresh_from_db()
+        self.assertEqual(appointment.status,'no_show')
+        self.assertEqual(lead.status,'contacted')
+        self.assertEqual(lead.contact_result,'follow_up')
+        self.assertEqual(lead.next_follow_up,timezone.localdate()+timezone.timedelta(days=1))
+        self.assertTrue(
+            Task.objects.filter(
+                assigned_to=operator,
+                title__startswith='پیگیری عدم مراجعه',
+            ).exists()
+        )
 
     def test_phone_dashboard_keeps_existing_dark_personnel_experience(self):
         response=self.client.get(

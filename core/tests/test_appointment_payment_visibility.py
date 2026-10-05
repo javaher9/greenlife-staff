@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from core.models import (
     Branch,
+    ConsultationPlan,
     EmployeeProfile,
     FinancialTransaction,
     ReferralLead,
@@ -74,6 +75,52 @@ class AppointmentPaymentVisibilityTests(TestCase):
             recorded_by=self.receptionist,
             appointment=self.appointment,
         )
+
+    def test_pending_payment_does_not_win_lead_until_finance_approval(self):
+        manager=self._user('payment-manager','manager',self.branch,'مدیر')
+        self.appointment.status='arrived'
+        self.appointment.care_stage='payment'
+        self.appointment.save(update_fields=['status','care_stage','updated_at'])
+        self.lead.status='visited'
+        self.lead.save(update_fields=['status','updated_at'])
+        plan=ConsultationPlan.objects.create(
+            appointment=self.appointment,
+            status='payment_pending',
+            final_amount_toman=Decimal('2000000'),
+        )
+        payment=self._payment(20_000_000,'pending')
+
+        self.lead.refresh_from_db()
+        self.appointment.refresh_from_db()
+        self.assertEqual(self.lead.status,'visited')
+        self.assertEqual(self.appointment.care_stage,'payment')
+
+        self.client.force_login(manager)
+        response=self.client.post(
+            reverse('finance_entry_review',args=[payment.pk,'approve']),
+            {'review_note':'تأیید تست'},
+        )
+        self.assertEqual(response.status_code,302)
+        self.lead.refresh_from_db()
+        self.appointment.refresh_from_db()
+        plan.refresh_from_db()
+        self.assertEqual(self.lead.status,'won')
+        self.assertEqual(self.appointment.care_stage,'closed')
+        self.assertEqual(self.appointment.status,'completed')
+        self.assertEqual(plan.status,'paid')
+
+        response=self.client.post(
+            reverse('finance_entry_review',args=[payment.pk,'cancel']),
+            {'review_note':'ابطال تست'},
+        )
+        self.assertEqual(response.status_code,302)
+        self.lead.refresh_from_db()
+        self.appointment.refresh_from_db()
+        plan.refresh_from_db()
+        self.assertEqual(self.lead.status,'visited')
+        self.assertEqual(self.appointment.care_stage,'payment')
+        self.assertEqual(self.appointment.status,'arrived')
+        self.assertEqual(plan.status,'payment_pending')
 
     def test_only_approved_income_is_shown_as_appointment_payment(self):
         payment = self._payment(30_000_000, 'pending')

@@ -617,7 +617,7 @@ def dashboard(request):
         if receptionist_branch:
             receptionist_appointments=VisitAppointment.objects.filter(
                 branch=receptionist_branch,appointment_date=today_local
-            ).exclude(status='cancelled').order_by('appointment_time')
+            ).exclude(status__in=('cancelled','no_show')).order_by('appointment_time')
         else:
             receptionist_appointments=VisitAppointment.objects.none()
         receptionist_appointment_count=receptionist_appointments.count()
@@ -639,7 +639,7 @@ def dashboard(request):
             receptionist_payment_queue=(
                 VisitAppointment.objects
                 .filter(branch=receptionist_branch,care_stage='payment')
-                .exclude(status='cancelled')
+                .exclude(status__in=('cancelled','no_show'))
                 .select_related('doctor_completed_by','consultation_plan','consultation_plan__consultant')
                 .order_by('consultation_plan__sent_to_reception_at','appointment_time','id')[:30]
             )
@@ -1583,32 +1583,46 @@ def finance_entry(request):
                             return redirect(f"{reverse('finance_entry')}?appointment={appointment.pk}")
                 obj.save()
                 if appointment:
+                    # A newly-entered receipt is still pending review. Do not mark
+                    # the visit completed or the lead won until finance approves it.
+                    approved_total=FinancialTransaction.objects.filter(
+                        appointment=appointment,source='manual',entry_type='inc',
+                        review_status='approved',
+                    ).aggregate(total=Sum('amount'))['total'] or 0
                     appointment_changed=[]
-                    if appointment.status!='completed':
-                        appointment.status='completed'
-                        appointment_changed.append('status')
                     if plan:
-                        paid_total=previous+obj.amount
-                        full=paid_total>=plan.final_amount_toman*10
-                        if full and appointment.care_stage!='closed':
-                            appointment.care_stage='closed'
-                            appointment_changed.append('care_stage')
-                        elif not full and appointment.care_stage!='payment':
+                        total=plan.final_amount_toman*10
+                        full=approved_total>=total and total>0
+                        if full:
+                            plan.status='paid'
+                            plan.paid_at=plan.paid_at or timezone.now()
+                            if appointment.care_stage!='closed':
+                                appointment.care_stage='closed'
+                                appointment_changed.append('care_stage')
+                            if appointment.status!='completed':
+                                appointment.status='completed'
+                                appointment_changed.append('status')
+                        else:
+                            plan.status='partial_paid' if approved_total>0 else 'payment_pending'
+                            plan.paid_at=None
+                            plan.paid_by=None
+                            if appointment.care_stage!='payment':
+                                appointment.care_stage='payment'
+                                appointment_changed.append('care_stage')
+                            if appointment.status=='completed':
+                                appointment.status='arrived'
+                                appointment_changed.append('status')
+                        plan.save(update_fields=['status','paid_at','paid_by','updated_at'])
+                    else:
+                        if appointment.care_stage!='payment':
                             appointment.care_stage='payment'
                             appointment_changed.append('care_stage')
-                        plan.status='paid' if full else 'partial_paid'
-                        plan.paid_at=timezone.now() if full else None
-                        plan.paid_by=request.user if full else None
-                        plan.save(update_fields=['status','paid_at','paid_by','updated_at'])
-                    elif appointment.care_stage!='closed':
-                        appointment.care_stage='closed'
-                        appointment_changed.append('care_stage')
+                        if appointment.status=='completed':
+                            appointment.status='arrived'
+                            appointment_changed.append('status')
                     if appointment_changed:
                         appointment_changed.append('updated_at')
                         appointment.save(update_fields=appointment_changed)
-                    if appointment.lead_id and appointment.lead.status!='won':
-                        appointment.lead.status='won'
-                        appointment.lead.save(update_fields=['status','updated_at'])
                 AuditLog.objects.create(
                     actor=request.user,action='finance_entry',path=request.path,method='POST',
                     object_type='FinancialTransaction',object_id=str(obj.pk),

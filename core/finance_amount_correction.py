@@ -3,10 +3,11 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from .models import AuditLog, Branch, FinancialTransaction, StaffNotification
+from .models import AuditLog, Branch, FinancialTransaction, ReferralLead, StaffNotification, VisitAppointment
 
 MILLION_TOMAN_IN_RIAL = Decimal('10000000')
 
@@ -23,6 +24,80 @@ def _request_ip(request):
 
 def _million_toman(amount):
     return Decimal(amount or 0) / MILLION_TOMAN_IN_RIAL
+
+
+def _reconcile_appointment_finance(entry, reviewer=None):
+    """Keep appointment, consultation plan and lead aligned with approved income.
+
+    Approved manual income is the only source of truth for closing the visit
+    and marking the lead as won. Pending/cancelled payments must not do either.
+    """
+    if not entry.appointment_id:
+        return
+
+    appointment=(
+        VisitAppointment.objects
+        .filter(pk=entry.appointment_id)
+        .select_related('consultation_plan','lead')
+        .first()
+    )
+    if not appointment:
+        return
+
+    approved=(
+        FinancialTransaction.objects
+        .filter(
+            appointment_id=appointment.pk,
+            source='manual',
+            entry_type='inc',
+            review_status='approved',
+        )
+        .aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    )
+    plan=getattr(appointment,'consultation_plan',None)
+    if plan:
+        required=(plan.final_amount_toman or Decimal('0'))*Decimal('10')
+        fully_paid=bool(required>0 and approved>=required)
+        if fully_paid:
+            plan.status='paid'
+            plan.paid_at=plan.paid_at or timezone.now()
+            plan.paid_by=reviewer
+        elif approved>0:
+            plan.status='partial_paid'
+            plan.paid_at=None
+            plan.paid_by=None
+        else:
+            plan.status='payment_pending'
+            plan.paid_at=None
+            plan.paid_by=None
+        plan.save(update_fields=['status','paid_at','paid_by','updated_at'])
+    else:
+        fully_paid=approved>0
+
+    VisitAppointment.objects.filter(pk=appointment.pk).update(
+        care_stage='closed' if fully_paid else 'payment',
+        status='completed' if fully_paid else (
+            'arrived' if appointment.status=='completed' else appointment.status
+        ),
+        updated_at=timezone.now(),
+    )
+
+    if appointment.lead_id:
+        if fully_paid:
+            ReferralLead.objects.filter(pk=appointment.lead_id).update(
+                status='won',
+                contact_result='won',
+                updated_at=timezone.now(),
+            )
+        else:
+            ReferralLead.objects.filter(
+                pk=appointment.lead_id,
+                status='won',
+            ).update(
+                status='visited',
+                contact_result='follow_up',
+                updated_at=timezone.now(),
+            )
 
 
 def finance_entry_review_with_amount(request, pk, action):
@@ -217,6 +292,7 @@ def finance_entry_review_with_amount(request, pk, action):
                     notification_type='finance_review',
                     related_date=timezone.localdate(),
                 )
+            _reconcile_appointment_finance(entry,request.user)
         messages.success(request,'اطلاعات تراکنش اصلاح و تأیید شد؛ مقادیر قبلی در سابقه حسابرسی محفوظ است.')
         return redirect('finance_dashboard')
 
@@ -250,6 +326,7 @@ def finance_entry_review_with_amount(request, pk, action):
             notification_type='finance_review',
             related_date=timezone.localdate(),
         )
+    _reconcile_appointment_finance(entry,request.user)
     messages.success(request, 'وضعیت تراکنش به‌روزرسانی شد.')
     return redirect('finance_dashboard')
 

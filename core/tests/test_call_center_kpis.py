@@ -54,7 +54,7 @@ class CallCenterKpiPanelTests(TestCase):
         # Existing cards and navigation must remain so operators are not disoriented.
         for old_label in (
             'لیدهای امروز', 'کل مراجعین من', 'پیگیری باز',
-            'نوبت امروز', 'نوبت‌های آینده', 'مراجعین و لیدهای من',
+            'نوبت‌های امروز', 'نوبت‌های آینده', 'مراجعین و لیدهای من',
         ):
             self.assertContains(response, old_label)
 
