@@ -10,7 +10,7 @@ from .credential_security import encrypt_secret
 from .forms import ApiServerSettingsForm, SmsTestForm
 from .finance import fetch_crm_finance_payload
 from .integration_api import ApiServerError
-from .models import ApiServerSettings, AuditLog, SmsMessageLog, SmsAutomationRule, SmsScheduledMessage
+from .models import ApiServerSettings, AuditLog, Branch, SmsMessageLog, SmsAutomationRule, SmsScheduledMessage
 from .sms_automation import OFFSET_LIMIT, validate_template
 from .sms import SmsGatewayError, send_sms
 from .views import _is_executive_user
@@ -122,6 +122,12 @@ SMS_CONNECTED_EVENTS=set(dict(SmsAutomationRule.EVENT_CHOICES))
 @_api_admin_required
 @require_http_methods(['GET','POST'])
 def sms_management(request):
+    if request.method=='POST' and request.POST.get('action')=='branch_addresses':
+        for branch in Branch.objects.filter(is_active=True):
+            branch.address=(request.POST.get(f'branch_address_{branch.pk}') or '').strip()[:300]
+            branch.save(update_fields=['address'])
+        messages.success(request,'آدرس شعب برای متغیر {address} ذخیره شد.')
+        return redirect('sms_management')
     if request.method=='POST':
         event=(request.POST.get('event') or '').strip()
         if event not in dict(SmsAutomationRule.EVENT_CHOICES):
@@ -203,6 +209,7 @@ def sms_management(request):
         'pending_count':SmsScheduledMessage.objects.filter(status='pending').count(),
         'recent_queue':latest,'api_config':ApiServerSettings.load(),
         'sms_callback_url':__import__('core.sms_center_views',fromlist=['callback_url']).callback_url(request),
+        'sms_branches':Branch.objects.filter(is_active=True).order_by('name'),
     })
     response['Cache-Control']='no-store, private'
     return response
