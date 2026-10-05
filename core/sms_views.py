@@ -116,8 +116,7 @@ SMS_EVENT_GROUPS=(
 )
 # Only events with an actual backend trigger may be enabled.
 # Enabling other rules saves configuration but cannot imply a live trigger.
-SMS_CONNECTED_EVENTS={'appointment_booked','appointment_reminder','payment_approved',
-                      'call_no_answer','call_not_interested','call_follow_up','call_appointment'}
+SMS_CONNECTED_EVENTS=set(dict(SmsAutomationRule.EVENT_CHOICES))
 
 
 @_api_admin_required
@@ -203,6 +202,7 @@ def sms_management(request):
         'timing_choices':SmsAutomationRule.TIMING_CHOICES,'unit_choices':SmsAutomationRule.UNIT_CHOICES,
         'pending_count':SmsScheduledMessage.objects.filter(status='pending').count(),
         'recent_queue':latest,'api_config':ApiServerSettings.load(),
+        'sms_callback_url':__import__('core.sms_center_views',fromlist=['callback_url']).callback_url(request),
     })
     response['Cache-Control']='no-store, private'
     return response
