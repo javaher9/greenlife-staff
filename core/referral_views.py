@@ -291,6 +291,20 @@ def _auto_assign_call_center(lead):
             user__is_active=True,
             handles_turkey_leads=True,
         ).select_related('user').order_by('id').first()
+        if not operator:
+            # Backward-compatible fallback for the current Türkiye operator:
+            # Narges = Fatemeh Babaei. Never fall back to the general pool.
+            operator=EmployeeProfile.objects.filter(
+                role='call_center',
+                is_active=True,
+                user__is_active=True,
+            ).filter(
+                Q(user__first_name__icontains='نرگس')
+                | (Q(user__first_name__icontains='فاطمه') & Q(user__last_name__icontains='بابایی'))
+                | (Q(user__first_name__icontains='fatemeh') & Q(user__last_name__icontains='babaei'))
+                | Q(user__username__icontains='narges')
+                | Q(user__username__icontains='babaei')
+            ).select_related('user').order_by('id').first()
         if operator:
             group,_=CallCenterLeadGroup.objects.get_or_create(
                 owner=operator,
