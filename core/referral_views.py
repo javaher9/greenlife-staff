@@ -269,7 +269,7 @@ def _call_center_direct_referrer():
 
 
 def _auto_assign_call_center(lead):
-    """Assign new referral leads; Türkiye is routed only to its dedicated handler."""
+    """Assign new referral leads; Türkiye is routed only to Narges (Fatemeh Babaei)."""
     if lead.assigned_to_id:
         if not lead.group_id:
             if getattr(getattr(lead,'country',None),'code','') == 'TR':
