@@ -10,7 +10,7 @@ from .models import (
 )
 from .device_booking_models import DeviceSessionBooking
 from .jalali import format_jalali
-from .sms_automation import schedule_sms_event
+from .sms_automation import schedule_sms_event, sms_staff_display_name
 
 
 def _aware(day, clock=time(9,0)):
@@ -23,6 +23,7 @@ def _appointment_context(a, event):
         'address':getattr(a.branch,'address','') or '',
         'service':a.service,'date':format_jalali(a.appointment_date),
         'time':a.appointment_time.strftime('%H:%M'),'event':event,
+        'staff':sms_staff_display_name(getattr(a,'created_by',None)),
         'notes':a.notes,
     }
 
