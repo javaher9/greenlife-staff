@@ -289,9 +289,8 @@ def doctor_dashboard(request):
             .filter(
                 branch=branch,
                 appointment_date=today,
-                status='arrived',
-                care_stage='doctor',
             )
+            .exclude(status__in=('booked','cancelled','no_show'))
             .select_related('lead','lead__assigned_to__user','lead__first_appointment_by','branch')
             .order_by('appointment_time','id')
         )
