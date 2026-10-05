@@ -99,6 +99,23 @@ class DoctorDashboardTests(TestCase):
         )
         self.client.login(username='doctor-test',password='StrongPass123')
 
+    def test_doctor_dashboard_routes_by_device(self):
+        desktop=self.client.get(
+            reverse('dashboard'),
+            HTTP_USER_AGENT='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        )
+        self.assertEqual(desktop.status_code,302)
+        self.assertEqual(desktop.url,reverse('doctor_dashboard'))
+
+        mobile=self.client.get(
+            reverse('dashboard'),
+            HTTP_USER_AGENT='Mozilla/5.0 (Linux; Android 16; Mobile) AppleWebKit/537.36',
+        )
+        self.assertEqual(mobile.status_code,200)
+        self.assertTemplateUsed(mobile,'core/dashboard.html')
+        self.assertEqual(mobile.context['role'],'doctor')
+        self.assertContains(mobile,'حضور')
+
     def test_doctor_sees_only_own_branch_and_phone_is_hidden(self):
         response=self.client.get(reverse('doctor_dashboard'))
         self.assertEqual(response.status_code,200)

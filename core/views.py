@@ -589,7 +589,10 @@ def dashboard(request):
         return redirect('executive_workspace')
     if role=='referral_supervisor':
         return redirect('referral_supervisor_dashboard')
-    if role=='doctor':
+    # Doctors use the clinical workspace on desktop, but keep the normal
+    # personnel home on phones so attendance, tasks and daily staff tools
+    # remain immediately available.
+    if role=='doctor' and not _is_mobile_request(request):
         return redirect('doctor_dashboard')
     # Consultants have a dedicated desktop treatment/sales workspace. Their
     # mobile home remains the existing personnel dashboard.
