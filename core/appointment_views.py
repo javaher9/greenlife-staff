@@ -31,6 +31,7 @@ def _queue_appointment_messages(appointment_id):
         'name':appointment.full_name,
         'phone':appointment.phone,
         'branch':appointment.branch.name,
+        'address':getattr(appointment.branch,'address','') or '',
         'service':appointment.service,
         'date':format_jalali(appointment.appointment_date),
         'time':appointment.appointment_time.strftime('%H:%M'),
