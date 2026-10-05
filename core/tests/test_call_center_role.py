@@ -12,6 +12,12 @@ from core.referral_views import _auto_assign_call_center
 
 class CallCenterRoleTests(TestCase):
     def setUp(self):
+        # Keep routing tests deterministic; Friday production routing is covered separately.
+        from unittest.mock import patch
+        import datetime
+        self._localdate_patch = patch('core.referral_views.timezone.localdate', return_value=datetime.date(2026, 9, 17))
+        self._localdate_patch.start()
+        self.addCleanup(self._localdate_patch.stop)
         self.branch=Branch.objects.create(name='کال‌سنتر')
         self.operator_one=self.make_user('operator-one','call_center','نرگس')
         self.operator_two=self.make_user('operator-two','call_center','بنفشه')
