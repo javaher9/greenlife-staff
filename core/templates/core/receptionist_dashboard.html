@@ -177,7 +177,7 @@
             </div>
             <div class="row-actions" onclick="event.stopPropagation()">
               {% if item.status == 'booked' %}
-              <form method="post" action="{% url 'receptionist_appointment_status' item.pk 'arrived' %}">{% csrf_token %}<input type="hidden" name="next" value="dashboard"><button class="row-action arrive" type="submit">✓ پذیرش</button></form>
+              <a class="row-action arrive" href="{% url 'receptionist_appointment_intake' item.pk %}">✓ پذیرش و آنالیز</a>
               {% elif item.care_stage == 'payment' %}
               <a class="row-action pay" href="{% url 'finance_entry' %}?appointment={{ item.pk }}">ثبت پرداخت</a>
               {% else %}
