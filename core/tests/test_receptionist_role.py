@@ -73,7 +73,7 @@ class ReceptionistRoleTests(TestCase):
         self.assertContains(response,'data-wait-chip')
         self.assertContains(response,'بیمار تست')
 
-    def test_receptionist_checkin_can_return_to_dashboard(self):
+    def test_receptionist_checkin_requires_analysis_before_doctor(self):
         appointment=VisitAppointment.objects.create(
             branch=self.branch,
             full_name='مراجعه سریع',
@@ -90,9 +90,11 @@ class ReceptionistRoleTests(TestCase):
             {'next':'dashboard'},
             HTTP_USER_AGENT='Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
         )
-        self.assertRedirects(response,reverse('dashboard'))
+        self.assertRedirects(
+            response,reverse('receptionist_appointment_intake',args=[appointment.pk])
+        )
         appointment.refresh_from_db()
-        self.assertEqual(appointment.status,'arrived')
+        self.assertEqual(appointment.status,'booked')
 
     def test_no_show_returns_lead_to_call_center_follow_up(self):
         operator=User.objects.create_user(
