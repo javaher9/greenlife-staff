@@ -1,6 +1,6 @@
 from datetime import datetime, time
 
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 
@@ -27,13 +27,29 @@ def _appointment_context(a, event):
     }
 
 
+@receiver(pre_save,sender=VisitAppointment)
+def remember_appointment_sms_state(sender,instance,**kwargs):
+    if not instance.pk:
+        instance._sms_previous=None
+        return
+    instance._sms_previous=VisitAppointment.objects.filter(pk=instance.pk).values(
+        'appointment_date','appointment_time','status'
+    ).first()
+
+
 @receiver(post_save,sender=VisitAppointment)
 def appointment_sms_events(sender,instance,created,**kwargs):
     if created:
         return  # booking/reminder are already queued by the existing appointment workflow
+    previous=getattr(instance,'_sms_previous',None) or {}
+    if previous and (previous.get('appointment_date'),previous.get('appointment_time')) != (instance.appointment_date,instance.appointment_time):
+        event_at=_aware(instance.appointment_date,instance.appointment_time)
+        schedule_sms_event('appointment_changed',f'{instance.pk}-{instance.updated_at:%Y%m%d%H%M%S%f}',
+            event_at=event_at,patient_number=instance.phone,
+            context=_appointment_context(instance,'تغییر نوبت'))
     mapping={'arrived':'patient_arrived','cancelled':'appointment_cancelled'}
     event=mapping.get(instance.status)
-    if event:
+    if event and previous.get('status')!=instance.status:
         schedule_sms_event(event,f'{instance.pk}-{instance.status}',patient_number=instance.phone,
             context=_appointment_context(instance,instance.get_status_display()))
 
