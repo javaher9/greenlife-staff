@@ -13,6 +13,22 @@ TEMPLATE_FIELDS={'name','branch','address','date','time','amount','service','sta
 OFFSET_LIMIT=30*24*60
 
 
+def sms_staff_display_name(user):
+    """Patient-facing staff name.
+
+    Call-center staff must always be identified by their configured flower name.
+    Other roles keep their normal staff name.
+    """
+    if not user:
+        return ''
+    profile=getattr(user,'profile',None)
+    if profile and getattr(profile,'role','')=='call_center':
+        from .call_center_identity import call_center_display_name
+        return call_center_display_name(user)
+    return user.get_full_name() or user.username
+
+
+
 def validate_template(value):
     fields={field for _,field,_,_ in Formatter().parse(value) if field}
     if not fields.issubset(TEMPLATE_FIELDS):
@@ -117,7 +133,7 @@ def queue_call_result_sms(lead_id):
         context={
             'name':lead.full_name,'phone':lead.phone,
             'service':lead.interested_service,
-            'staff':(user.get_full_name() or user.username) if user else '',
+            'staff':sms_staff_display_name(user),
             'branch':assigned.branch.name if assigned and assigned.branch else '',
             'notes':lead.notes,'event':lead.get_contact_result_display(),
         },
