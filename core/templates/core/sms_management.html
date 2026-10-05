@@ -36,6 +36,7 @@
     <div class="sms-badges"><span class="sms-badge {% if api_config.is_enabled and api_config.is_configured %}ok{% else %}warn{% endif %}">درگاه: {% if api_config.is_enabled and api_config.is_configured %}فعال{% else %}نیازمند بررسی{% endif %}</span><span class="sms-badge">صف انتظار: {{ pending_count }}</span></div>
   </header>
   <div class="sms-info"><strong>وضعیت راه‌اندازی:</strong> تنظیمات رویدادها آماده است؛ ارسال‌های جدید زمان‌دار تا راه‌اندازی سرویس مستقل صف پیامک روی سرور، در صف انتظار می‌مانند. پیامک تأیید نوبت قدیمی تا زمان فعال‌شدن قالب جدید طبق تنظیمات قبلی کار می‌کند.</div>
+  <div class="sms-info"><strong>SMS Center — آدرس دریافت پاسخ:</strong><br><input value="{{ sms_callback_url }}" readonly onclick="this.select()" style="width:100%;margin-top:8px;background:#07141d;color:#fff;border:1px solid #335365;border-radius:9px;padding:10px;font-family:monospace;direction:ltr;text-align:left"><div style="margin-top:7px"><a href="{% url 'sms_leads' %}">مشاهده لیدها و پاسخ‌های پیامکی ↗</a></div></div>
   <div class="sms-info"><strong>راهنما:</strong> هر کارت را باز کن و گزینه‌هایش را انتخاب کن. فقط رویدادهای دارای نشان «متصل» امکان ارسال دارند؛ بقیه فعلاً برای آماده‌سازی تنظیمات هستند و با ذخیره‌کردن پیامکی ارسال نمی‌کنند. تنظیمات جدید به‌صورت پیش‌فرض خاموش است. شماره گیرنده «مدیریت» و «مدیر داخلی» از پروفایل پرسنل خوانده می‌شود؛ در صورت نیاز شماره جایگزین همان کارت را وارد کن. <a href="{% url 'api_server_settings' %}">تنظیمات اتصال و تست درگاه ↗</a></div>
   {% for group in groups %}
   <section class="sms-section">
@@ -55,7 +56,7 @@
             </select></div>
             <div class="sms-field"><label>فاصله زمانی</label><div class="sms-inline"><span class="sms-muted">نسبت به زمان رویداد</span><input type="number" name="offset" min="0" max="43200" value="{{ item.rule.offset|default:0 }}"><select name="offset_unit">{% for key,label in unit_choices %}<option value="{{ key }}" {% if item.rule and item.rule.offset_unit == key or not item.rule and key == 'minutes' %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div></div>
           </div>
-          <div class="sms-field" style="margin-top:12px"><label>متن پیامک</label><textarea name="message_template" maxlength="1600" placeholder="گرین لایف&#10;{name} عزیز، ...">{{ item.rule.message_template|default:'' }}</textarea><small>متغیرها: {name}، {branch}، {date}، {time}، {amount}، {service}، {staff}، {phone}، {notes}، {event}</small></div>
+          <div class="sms-field" style="margin-top:12px"><label>متن پیامک</label><textarea name="message_template" maxlength="1600" placeholder="گرین لایف&#10;{name} عزیز، ...">{{ item.rule.message_template|default:'' }}</textarea><small>متغیرها: {name}، {branch}، {address}، {date}، {time}، {amount}، {service}، {staff}، {phone}، {notes}، {event}</small></div>
           <label class="sms-switch"><input type="checkbox" name="is_enabled" {% if item.rule and item.rule.is_enabled %}checked{% endif %} {% if not item.connected %}disabled{% endif %}> فعال‌سازی ارسال خودکار {% if not item.connected %}(پس از اتصال رویداد قابل انتخاب است){% endif %}</label>
           <button class="sms-save" type="submit">ذخیره تنظیمات</button>{% if item.rule %}<span class="sms-saved">آخرین ویرایش: {{ item.rule.updated_at|date:'Y/m/d H:i' }}</span>{% endif %}
         </form>
