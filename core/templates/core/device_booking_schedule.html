@@ -1335,12 +1335,12 @@
 
 <section class="db-panel">
   <div class="db-datebar">
-    <div class="db-capacity-copy"><h2>ظرفیت دستگاه‌ها <span class="db-title-sep">—</span> <span class="db-latin">{{ day_jalali|latin_digits }}</span></h2><div class="db-muted">هر پلاک یک دستگاه واقعی است؛ ردیف‌های هر دستگاه بر اساس مدت درمان + آماده‌سازی همان دستگاه ساخته می‌شوند.</div></div>
+    <div class="db-capacity-copy"><h2>ظرفیت دستگاه‌ها <span class="db-title-sep">—</span> <span class="db-latin" dir="ltr">{{ day_jalali|latin_digits }}</span></h2><div class="db-muted">هر پلاک یک دستگاه واقعی است؛ ردیف‌های هر دستگاه بر اساس مدت درمان + آماده‌سازی همان دستگاه ساخته می‌شوند.</div></div>
     <div class="db-datebar-nav db-datebar-nav-strong">
-      <a class="db-day-step prev" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ previous_day_jalali }}">→ روز قبل</a>
+      <a class="db-day-step prev" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ previous_day_jalali }}"><span class="db-nav-arrow">→</span><span>روز قبل</span></a>
       <a class="db-today-pill" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ today_jalali }}">امروز</a>
-      <a class="db-day-step next" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ next_day_jalali }}">روز بعد ←</a>
-      <form method="get" class="db-date-jump"><input type="hidden" name="branch" value="{{ branch.pk }}">{% if appointment %}<input type="hidden" name="appointment" value="{{ appointment.pk }}">{% endif %}<input class="db-latin" name="day" value="{{ day_jalali|latin_digits }}" aria-label="تاریخ"><button class="db-action" type="submit">رفتن به تاریخ</button></form>
+      <a class="db-day-step next" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ next_day_jalali }}"><span>روز بعد</span><span class="db-nav-arrow">←</span></a>
+      <form method="get" class="db-date-jump"><input type="hidden" name="branch" value="{{ branch.pk }}">{% if appointment %}<input type="hidden" name="appointment" value="{{ appointment.pk }}">{% endif %}<input class="db-latin" dir="ltr" name="day" value="{{ day_jalali|latin_digits }}" aria-label="تاریخ"><button class="db-action" type="submit">رفتن به تاریخ</button></form>
     </div>
   </div>
   {% if device_cards %}
@@ -1451,7 +1451,7 @@
     <p>ابتدا دستگاه‌های فیزیکی این مرکز را فعال کنید؛ سپس ظرفیت روزانه و ردیف‌های نوبت در همین بخش نمایش داده می‌شوند.</p>
     {% if can_manage %}<a href="{% url 'device_capacity_settings' %}?branch={{ branch.pk }}">تعریف دستگاه برای {{ branch.name }}</a>{% endif %}
   </div>
-  {% endif %}>
+  {% endif %}
 
   <div class="db-list">
   {% for booking in bookings %}<div class="db-row db-status-{{ booking.status }}">
