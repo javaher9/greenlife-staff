@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from core.models import (SmsAutomationRule, SmsScheduledMessage, ReferralProfile,
                          ReferralLead, EmployeeProfile)
-from core.sms_automation import process_due_sms, schedule_sms_event
+from core.sms_automation import sms_staff_display_name, process_due_sms, schedule_sms_event
 
 
 @override_settings(ROOT_URLCONF='greenlife.urls', EXECUTIVE_USERNAMES=('sms-exec',))
@@ -168,3 +168,25 @@ class SmsManagementTests(TestCase):
                 rule__event='call_not_interested',status='pending',
             ).count(),1,
         )
+
+
+class SmsFlowerNameTests(TestCase):
+    def test_call_center_staff_uses_flower_name_in_sms(self):
+        user=User.objects.create_user(
+            username='sms-salehi',
+            first_name='محمد',
+            last_name='صالحی',
+            password='test-pass',
+        )
+        EmployeeProfile.objects.create(user=user,role='call_center',is_active=True)
+        self.assertEqual(sms_staff_display_name(user),'خورشیدی')
+
+    def test_non_call_center_staff_keeps_real_name(self):
+        user=User.objects.create_user(
+            username='sms-reception',
+            first_name='مریم',
+            last_name='احمدی',
+            password='test-pass',
+        )
+        EmployeeProfile.objects.create(user=user,role='receptionist',is_active=True)
+        self.assertEqual(sms_staff_display_name(user),'مریم احمدی')
