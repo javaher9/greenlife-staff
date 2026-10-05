@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.contrib.auth.models import User
 from django.test import SimpleTestCase, TestCase, override_settings
 
-from core.models import AuditLog, EmployeeProfile
+from core.models import AuditLog, EmployeeProfile, ReferralLead, ReferralProfile
 from core.reporting import answer_query
 
 
@@ -50,7 +50,7 @@ class MCPServerTests(SimpleTestCase):
                 key=token,
             )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["result"]["serverInfo"]["version"], "1.3.2")
+        self.assertEqual(response.json()["result"]["serverInfo"]["version"], "1.4.0")
 
     @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
     def test_initialize(self):
@@ -77,13 +77,15 @@ class MCPServerTests(SimpleTestCase):
             [
                 "get_attendance_summary",
                 "get_daily_reports",
+                "get_referral_network_summary",
                 "ask_management",
                 "find_staff",
                 "set_operational_role",
             ],
         )
-        self.assertTrue(tools[3]["annotations"]["readOnlyHint"])
-        self.assertFalse(tools[4]["annotations"]["readOnlyHint"])
+        self.assertTrue(tools[2]["annotations"]["readOnlyHint"])
+        self.assertTrue(tools[4]["annotations"]["readOnlyHint"])
+        self.assertFalse(tools[5]["annotations"]["readOnlyHint"])
 
     @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
     @patch("core.mcp._attendance_summary")
@@ -166,6 +168,76 @@ class MCPServerTests(SimpleTestCase):
         )
         self.assertEqual(response.status_code, 202)
         self.assertEqual(response.content, b"")
+
+
+@override_settings(ROOT_URLCONF="greenlife.urls")
+class MCPReferralNetworkTests(TestCase):
+    key = "test-private-mcp-key"
+
+    def make_referrer(self, username, first_name, sponsor=None, *, role="employee"):
+        user = User.objects.create_user(username, first_name=first_name, is_active=True)
+        user.profile.role = role
+        user.profile.is_active = True
+        user.profile.save(update_fields=["role", "is_active"])
+        return ReferralProfile.objects.create(
+            user=user,
+            sponsor=sponsor,
+            referral_code=f"ref-{username}",
+        )
+
+    @patch.dict("os.environ", {"STAFF_REPORT_API_KEY": key}, clear=False)
+    def test_returns_all_time_member_and_lead_rankings(self):
+        root = self.make_referrer("root", "ریشه")
+        child = self.make_referrer("child", "عضو یک", root)
+        grandchild = self.make_referrer("grandchild", "عضو دو", child)
+        other = self.make_referrer("other", "مستقل")
+        self.make_referrer("operator", "اپراتور", role="call_center")
+
+        for index in range(3):
+            ReferralLead.objects.create(
+                referrer=child,
+                full_name=f"لید {index}",
+                phone=f"0912000000{index}",
+                status="won" if index == 0 else "new",
+            )
+        ReferralLead.objects.create(
+            referrer=grandchild,
+            full_name="لید زیرشبکه",
+            phone="09121111111",
+        )
+        ReferralLead.objects.create(
+            referrer=other,
+            full_name="لید مستقل",
+            phone="09122222222",
+        )
+
+        response = self.client.post(
+            "/mcp/",
+            data=json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 30,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "get_referral_network_summary",
+                        "arguments": {},
+                    },
+                }
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.key}",
+        )
+
+        result = response.json()["result"]["structuredContent"]
+        by_name = {row["username"]: row for row in result["rows"]}
+        self.assertEqual(result["totals"]["active_profiles"], 4)
+        self.assertEqual(result["totals"]["all_leads"], 5)
+        self.assertEqual(by_name["root"]["direct_members"], 1)
+        self.assertEqual(by_name["root"]["total_members"], 2)
+        self.assertEqual(by_name["root"]["network_leads"], 4)
+        self.assertEqual(by_name["child"]["direct_leads"], 3)
+        self.assertEqual(by_name["child"]["lead_rank"], 1)
+        self.assertEqual(result["excluded_profiles"][0]["reason"], "call_center")
 
 
 @override_settings(ROOT_URLCONF="greenlife.urls")

@@ -13,7 +13,7 @@ from datetime import date, timedelta
 
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
@@ -21,12 +21,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from .jalali import parse_jalali
-from .models import AuditLog, EmployeeProfile
+from .models import AuditLog, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale
 from .reporting import answer_query, daily_reports_summary, day_summary
 
 
 PROTOCOL_VERSION = "2025-06-18"
-SERVER_INFO = {"name": "greenlife-staff", "version": "1.3.2"}
+SERVER_INFO = {"name": "greenlife-staff", "version": "1.4.0"}
 DEFAULT_WORK_TOKEN_SHA256 = "e9affd40ddff8a5d22ab70a5720a856e95d64853bc3e552484abf219518c4ae5"
 
 TOOLS = [
@@ -87,6 +87,26 @@ TOOLS = [
                     ),
                 },
             },
+            "additionalProperties": False,
+        },
+        "annotations": {
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": False,
+        },
+    },
+    {
+        "name": "get_referral_network_summary",
+        "title": "GreenLife sales network all-time summary",
+        "description": (
+            "Read the internal GreenLife sales/referral network for all time, including "
+            "member and lead rankings, direct and total network member counts, direct and "
+            "network lead counts, won leads and approved sales."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {},
             "additionalProperties": False,
         },
         "annotations": {
@@ -274,6 +294,143 @@ def _daily_reports(raw_date=None, branch=None, include_raw=False):
         branch=branch,
         include_raw=include_raw,
     )
+
+
+def _referral_network_summary():
+    """Return an all-time, read-only snapshot of the internal sales network."""
+    profiles = list(
+        ReferralProfile.objects.select_related("user", "user__profile", "sponsor").all()
+    )
+    included = []
+    excluded = []
+    for profile in profiles:
+        employee = getattr(profile.user, "profile", None)
+        reason = None
+        if not profile.is_active or not profile.user.is_active:
+            reason = "inactive"
+        elif profile.user.username.startswith("lead-source-"):
+            reason = "synthetic_lead_source"
+        elif employee and employee.role == "call_center":
+            reason = "call_center"
+        if reason:
+            excluded.append(
+                {
+                    "profile_id": profile.id,
+                    "name": profile.user.get_full_name() or profile.user.username,
+                    "reason": reason,
+                }
+            )
+        else:
+            included.append(profile)
+
+    profile_ids = {profile.id for profile in included}
+    children = {profile_id: [] for profile_id in profile_ids}
+    for profile in included:
+        if profile.sponsor_id in profile_ids:
+            children[profile.sponsor_id].append(profile.id)
+
+    def descendant_ids(profile_id):
+        found = set()
+        pending = list(children.get(profile_id, []))
+        while pending:
+            child_id = pending.pop()
+            if child_id in found:
+                continue
+            found.add(child_id)
+            pending.extend(children.get(child_id, []))
+        return found
+
+    lead_stats = {
+        item["referrer_id"]: item
+        for item in ReferralLead.objects.filter(referrer_id__in=profile_ids)
+        .values("referrer_id")
+        .annotate(total=Count("id"), won=Count("id", filter=Q(status="won")))
+    }
+    sale_stats = {
+        item["lead__referrer_id"]: item
+        for item in ReferralSale.objects.filter(
+            lead__referrer_id__in=profile_ids,
+            status__in=("approved", "paid"),
+        )
+        .values("lead__referrer_id")
+        .annotate(total=Count("id"), amount=Sum("amount"))
+    }
+
+    rows = []
+    for profile in included:
+        descendants = descendant_ids(profile.id)
+        network_ids = descendants | {profile.id}
+        rows.append(
+            {
+                "profile_id": profile.id,
+                "name": profile.user.get_full_name() or profile.user.username,
+                "username": profile.user.username,
+                "level": profile.level,
+                "sponsor": (
+                    profile.sponsor.user.get_full_name() or profile.sponsor.user.username
+                    if profile.sponsor_id and profile.sponsor_id in profile_ids
+                    else None
+                ),
+                "direct_members": len(children.get(profile.id, [])),
+                "total_members": len(descendants),
+                "direct_leads": lead_stats.get(profile.id, {}).get("total", 0),
+                "network_leads": sum(
+                    lead_stats.get(item_id, {}).get("total", 0) for item_id in network_ids
+                ),
+                "won_leads": lead_stats.get(profile.id, {}).get("won", 0),
+                "approved_sales": sale_stats.get(profile.id, {}).get("total", 0),
+                "approved_sales_amount": int(
+                    sale_stats.get(profile.id, {}).get("amount") or 0
+                ),
+            }
+        )
+
+    member_order = sorted(
+        rows,
+        key=lambda row: (
+            -row["total_members"],
+            -row["direct_leads"],
+            row["name"],
+            row["profile_id"],
+        ),
+    )
+    lead_order = sorted(
+        rows,
+        key=lambda row: (
+            -row["direct_leads"],
+            -row["total_members"],
+            row["name"],
+            row["profile_id"],
+        ),
+    )
+    member_rank = {row["profile_id"]: rank for rank, row in enumerate(member_order, 1)}
+    lead_rank = {row["profile_id"]: rank for rank, row in enumerate(lead_order, 1)}
+    for row in rows:
+        row["member_rank"] = member_rank[row["profile_id"]]
+        row["lead_rank"] = lead_rank[row["profile_id"]]
+    rows.sort(key=lambda row: (row["member_rank"], row["lead_rank"]))
+
+    return {
+        "scope": "internal_sales_network_all_time",
+        "generated_at": timezone.now().isoformat(),
+        "ranking_note": (
+            "member_rank sorts by total_members, then direct_leads; "
+            "lead_rank sorts by direct_leads, then total_members."
+        ),
+        "totals": {
+            "active_profiles": len(rows),
+            "root_profiles": sum(
+                1 for profile in included if profile.sponsor_id not in profile_ids
+            ),
+            "all_leads": sum(row["direct_leads"] for row in rows),
+            "won_leads": sum(row["won_leads"] for row in rows),
+            "approved_sales": sum(row["approved_sales"] for row in rows),
+            "approved_sales_amount": sum(row["approved_sales_amount"] for row in rows),
+            "excluded_profiles": len(excluded),
+        },
+        "rows": rows,
+        "excluded_profiles": excluded,
+    }
 
 
 def _staff_row(profile):
@@ -476,6 +633,8 @@ def mcp_endpoint(request):
                 arguments.get("branch"),
                 arguments.get("include_raw", False),
             )
+        elif tool_name == "get_referral_network_summary":
+            data = _referral_network_summary()
         elif tool_name == "ask_management":
             data = _management_answer(arguments.get("question"))
         elif tool_name == "find_staff":
