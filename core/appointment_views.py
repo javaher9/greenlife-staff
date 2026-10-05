@@ -13,7 +13,7 @@ from .forms import AppointmentFromLeadForm, ReceptionistAppointmentForm, visit_a
 from .jalali import parse_jalali
 from .patient_ui import attach_patient_photos
 from .models import Branch, EmployeeProfile, ReferralLead, StaffNotification, Task, VisitAppointment, SmsAutomationRule, SmsScheduledMessage
-from .sms_automation import schedule_sms_event
+from .sms_automation import schedule_sms_event, sms_staff_display_name
 from .jalali import format_jalali
 from .sms import send_appointment_confirmation
 
@@ -22,7 +22,7 @@ ALLOWED_APPOINTMENT_ROLES={'admin','internal_manager','manager','call_center','r
 
 def _queue_appointment_messages(appointment_id):
     """Honor configurable SMS rules without changing legacy booking delivery."""
-    appointment=VisitAppointment.objects.select_related('branch').get(pk=appointment_id)
+    appointment=VisitAppointment.objects.select_related('branch','created_by','created_by__profile').get(pk=appointment_id)
     event_at=timezone.make_aware(
         datetime.combine(appointment.appointment_date,appointment.appointment_time),
         timezone.get_current_timezone(),
@@ -35,6 +35,7 @@ def _queue_appointment_messages(appointment_id):
         'service':appointment.service,
         'date':format_jalali(appointment.appointment_date),
         'time':appointment.appointment_time.strftime('%H:%M'),
+        'staff':sms_staff_display_name(appointment.created_by),
         'event':'نوبت',
     }
     # Preserve existing appointment confirmation while the new rule is only
