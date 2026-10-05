@@ -1109,12 +1109,133 @@
 }
 
 .patient-mini-avatar{width:34px;height:34px;flex:0 0 34px;border-radius:50%;overflow:hidden;display:inline-grid;place-items:center;background:linear-gradient(135deg,#eaf7f1,#f0ebfb);border:2px solid #fff;box-shadow:0 0 0 1px #dce6e3;color:#684fad;font-size:11px;font-weight:900;vertical-align:middle}.patient-mini-avatar.tiny{width:24px;height:24px;flex-basis:24px;font-size:8px;margin-left:5px}.patient-mini-avatar img{width:100%;height:100%;object-fit:cover}.db-patient-inline{display:inline-flex!important;align-items:center;gap:7px}.db-busy-person{display:inline-flex!important;align-items:center;gap:5px!important}
+
+/* Device calendar final polish v9 */
+.db-title-sep{display:inline-block;margin:0 8px;color:#8aa49c;font-weight:700}
+.db-latin,.db-shell input,.db-shell .db-created-date{font-variant-numeric:tabular-nums}
+@media(min-width:701px){
+  body.gl-page-device_booking_schedule .db-hero{
+    min-height:92px!important;
+    padding:17px 22px!important;
+  }
+  body.gl-page-device_booking_schedule .db-hero:after{display:none!important;content:none!important}
+  body.gl-page-device_booking_schedule .db-hero:before{opacity:.38!important}
+  body.gl-page-device_booking_schedule .db-hero h1{font-size:24px!important;margin-bottom:5px!important}
+  body.gl-page-device_booking_schedule .db-hero .db-muted{font-size:10.5px!important;line-height:1.75!important}
+  body.gl-page-device_booking_schedule .db-back{
+    min-height:38px!important;padding:0 13px!important;background:#eef8f3!important;
+    border-color:#cfe5dc!important;color:#1c684f!important;box-shadow:none!important;
+  }
+
+  body.gl-page-device_booking_schedule .db-book-panel{padding:15px 16px!important}
+  body.gl-page-device_booking_schedule .db-book-panel:before{margin-bottom:7px!important}
+  body.gl-page-device_booking_schedule .db-book-panel h2{margin:0 0 10px!important;font-size:18px!important}
+  body.gl-page-device_booking_schedule .db-patient-picker-form{
+    display:grid!important;
+    grid-template-columns:minmax(220px,1.05fr) minmax(220px,1.05fr) minmax(360px,1.55fr) 132px!important;
+    align-items:end!important;gap:9px!important;margin-bottom:8px!important;
+  }
+  body.gl-page-device_booking_schedule .db-patient-picker-form>button{
+    grid-column:auto!important;width:100%!important;min-height:42px!important;
+  }
+  body.gl-page-device_booking_schedule .db-day-picker{gap:4px!important}
+  body.gl-page-device_booking_schedule .db-day-nav{
+    grid-template-columns:auto minmax(120px,1fr) auto!important;gap:6px!important;
+  }
+  body.gl-page-device_booking_schedule .db-day-step{
+    min-height:42px!important;padding:0 12px!important;
+    background:linear-gradient(135deg,#7158ca,#9b82ef)!important;
+    border:1px solid #7f67cf!important;color:#fff!important;-webkit-text-fill-color:#fff!important;
+    box-shadow:0 7px 16px rgba(107,82,180,.22)!important;
+  }
+  body.gl-page-device_booking_schedule .db-day-step:hover{filter:brightness(1.08)!important;transform:translateY(-1px)}
+  body.gl-page-device_booking_schedule .db-nav-arrow{
+    width:24px;height:24px;display:inline-grid;place-items:center;margin:0 3px;border-radius:8px;
+    background:rgba(255,255,255,.18);font-size:16px;line-height:1;
+  }
+  body.gl-page-device_booking_schedule .db-today-pill{
+    min-height:34px!important;margin-top:1px!important;background:#e8f6ef!important;color:#17664b!important;
+  }
+
+  body.gl-page-device_booking_schedule .db-quick-patient{
+    margin-top:9px!important;padding:0!important;border-style:solid!important;background:#fbfdfc!important;overflow:hidden;
+  }
+  body.gl-page-device_booking_schedule .db-quick-patient-head{
+    list-style:none;display:flex!important;align-items:center;justify-content:space-between;gap:12px;
+    padding:10px 12px;cursor:pointer;background:linear-gradient(135deg,#fbfefd,#f6f2fc);
+  }
+  body.gl-page-device_booking_schedule .db-quick-patient-head::-webkit-details-marker{display:none}
+  body.gl-page-device_booking_schedule .db-quick-patient-head strong{font-size:10.5px!important}
+  body.gl-page-device_booking_schedule .db-quick-patient-head small{font-size:8.5px!important}
+  body.gl-page-device_booking_schedule .db-quick-chevron{
+    width:28px;height:28px;display:grid;place-items:center;border-radius:9px;background:#eee8fa;color:#6c51a9;font-size:16px;font-weight:900;
+  }
+  body.gl-page-device_booking_schedule .db-quick-patient[open] .db-quick-chevron{transform:rotate(180deg)}
+  body.gl-page-device_booking_schedule .db-quick-patient-body{padding:0 12px 12px}
+  body.gl-page-device_booking_schedule .db-quick-note{display:block;color:#70837e;margin:7px 0 0;font-size:8.5px}
+
+  body.gl-page-device_booking_schedule .db-datebar{
+    display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;
+    gap:18px!important;padding:3px 0 10px!important;border-bottom:1px solid #edf2f0;
+  }
+  body.gl-page-device_booking_schedule .db-capacity-copy h2{font-size:19px!important;line-height:1.4!important}
+  body.gl-page-device_booking_schedule .db-datebar-nav-strong{
+    display:grid!important;grid-template-columns:auto auto auto minmax(260px,auto)!important;align-items:center!important;gap:7px!important;
+  }
+  body.gl-page-device_booking_schedule .db-date-jump{
+    display:grid!important;grid-template-columns:128px auto!important;gap:6px!important;align-items:center!important;
+    padding:5px!important;border:1px solid #d7e6e0!important;border-radius:13px!important;background:#f7fbf9!important;
+  }
+  body.gl-page-device_booking_schedule .db-date-jump input{
+    width:128px!important;height:38px!important;background:#fff!important;border:1px solid #bcd6cd!important;
+    color:#173f36!important;-webkit-text-fill-color:#173f36!important;font-weight:900!important;text-align:center!important;
+  }
+  body.gl-page-device_booking_schedule .db-date-jump .db-action{
+    min-height:38px!important;padding:0 13px!important;background:linear-gradient(135deg,#165f49,#238667)!important;
+    color:#fff!important;-webkit-text-fill-color:#fff!important;box-shadow:0 6px 14px rgba(31,116,87,.18)!important;
+  }
+
+  body.gl-page-device_booking_schedule .db-legend-row{margin-top:10px!important}
+  body.gl-page-device_booking_schedule .db-legend{gap:7px!important}
+  body.gl-page-device_booking_schedule .db-legend span{
+    display:inline-flex;align-items:center;min-height:30px;padding:0 9px!important;border-radius:10px!important;
+    font-size:9.5px!important;font-weight:850!important;
+  }
+  body.gl-page-device_booking_schedule .db-board-nav button{
+    width:38px!important;height:38px!important;border-color:#8068cf!important;border-radius:11px!important;
+    background:linear-gradient(135deg,#745acc,#9e86ea)!important;color:#fff!important;-webkit-text-fill-color:#fff!important;
+    box-shadow:0 7px 15px rgba(107,82,180,.2)!important;
+  }
+  body.gl-page-device_booking_schedule .db-board-nav span{font-size:9px!important;color:#536c65!important}
+
+  body.gl-page-device_booking_schedule .db-empty-devices{
+    min-height:165px!important;margin-top:12px!important;border:1px dashed #d1e2dc!important;border-radius:17px!important;
+    padding:22px 18px!important;background:linear-gradient(180deg,#fbfefd,#f7fbf9)!important;
+  }
+  body.gl-page-device_booking_schedule .db-empty-devices .icon{
+    width:52px!important;height:52px!important;border-radius:16px!important;font-size:23px!important;margin-bottom:8px!important;
+  }
+  body.gl-page-device_booking_schedule .db-empty-devices strong{font-size:13px!important}
+  body.gl-page-device_booking_schedule .db-empty-devices p{margin-top:5px!important;font-size:9.5px!important}
+  body.gl-page-device_booking_schedule .db-empty-devices a{
+    margin-top:9px!important;background:linear-gradient(135deg,#e5f5ed,#eee9fb)!important;border:1px solid #d4e6de!important;
+  }
+}
+@media(max-width:1350px) and (min-width:701px){
+  body.gl-page-device_booking_schedule .db-patient-picker-form{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  }
+  body.gl-page-device_booking_schedule .db-patient-picker-form .db-day-picker{grid-column:1/2!important}
+  body.gl-page-device_booking_schedule .db-patient-picker-form>button{grid-column:2/3!important}
+  body.gl-page-device_booking_schedule .db-datebar{grid-template-columns:1fr!important}
+  body.gl-page-device_booking_schedule .db-datebar-nav-strong{grid-template-columns:auto auto auto minmax(260px,1fr)!important}
+}
 </style>
 
 <div class="db-shell">
 <section class="db-hero">
   <div class="db-hero-copy">
-    <h1>تقویم دستگاه‌ها · {{ branch.name }}</h1>
+    <h1>تقویم دستگاه‌ها <span class="db-title-sep">—</span> {{ branch.name }}</h1>
     {% if is_admin %}<form method="get" style="display:flex;gap:8px;align-items:center;margin:8px 0"><select name="branch" style="padding:8px;border:1px solid #cadcd6;border-radius:9px;background:#fff;color:#25443f">{% for b in branches %}<option value="{{ b.pk }}" {% if branch.pk == b.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select><button style="padding:8px;border:0;border-radius:8px;background:#138568;color:#fff">انتخاب شعبه</button></form>{% endif %}
     <div class="db-muted">هر پلاک یک دستگاه واقعی است. ظرفیت روز بر اساس ساعت کاری و مدت درمان + آماده‌سازی همان دستگاه، به ردیف‌های شماره‌دار و مشخص تبدیل می‌شود.</div>
     {% if can_manage %}<p><a class="db-action" href="{% url 'device_capacity_settings' %}">تنظیم دستگاه‌ها و ساعت کاری</a></p>{% endif %}
@@ -1143,9 +1264,9 @@
   <div class="db-day-picker">
     <span>تاریخ</span>
     <div class="db-day-nav db-day-nav-labeled">
-      <a class="db-day-step prev" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ previous_day_jalali }}">→ روز قبل</a>
-      <input name="day" value="{{ day_jalali }}" placeholder="۱۴۰۵/۰۷/۰۶" aria-label="تاریخ شمسی">
-      <a class="db-day-step next" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ next_day_jalali }}">روز بعد ←</a>
+      <a class="db-day-step prev" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ previous_day_jalali }}"><span class="db-nav-arrow">→</span><span>روز قبل</span></a>
+      <input name="day" value="{{ day_jalali|latin_digits }}" placeholder="1405/07/06" aria-label="تاریخ شمسی">
+      <a class="db-day-step next" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ next_day_jalali }}"><span>روز بعد</span><span class="db-nav-arrow">←</span></a>
     </div>
     <a class="db-today-link db-today-pill" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ today_jalali }}">امروز</a>
   </div>
@@ -1163,9 +1284,9 @@
   <input type="hidden" name="branch" value="{{ branch.pk }}">
   <input type="hidden" name="appointment" value="{{ appointment.pk }}">
   <label>خدمت پکیج
-    <select name="plan_item" required>{% for item in items %}<option value="{{ item.pk }}">{{ item.title }} · {{ item.quantity }} جلسه</option>{% empty %}<option value="">خدمت دستگاهی در پکیج نیست</option>{% endfor %}</select>
+    <select name="plan_item" required>{% for item in items %}<option value="{{ item.pk }}">{{ item.title }} · {{ item.quantity|latin_digits }} جلسه</option>{% empty %}<option value="">خدمت دستگاهی در پکیج نیست</option>{% endfor %}</select>
   </label>
-  <label>تاریخ شمسی<input name="day" value="{{ day_jalali }}" required></label>
+  <label>تاریخ شمسی<input class="db-latin" name="day" value="{{ day_jalali|latin_digits }}" required></label>
   <label style="grid-column:1/-1">دستگاه
     <select name="device" id="dbDevice" required>
       <option value="">انتخاب دستگاه</option>
@@ -1193,31 +1314,36 @@
 <p class="db-muted">نام یا شماره بیمار را جستجو و پرونده را انتخاب کنید. اگر بیمار هنوز در سیستم نیست، از «ثبت سریع بیمار» استفاده کنید.</p>
 {% endif %}
 
-<div class="db-quick-patient">
-  <div class="db-quick-patient-head">
-    <div><strong>ثبت سریع بیمار</strong><small>راه‌حل موقت تا تکمیل اتصال CRM؛ پرونده مستقل 360 ساخته می‌شود و رکورد تکراری با موبایل ایجاد نمی‌کند.</small></div>
+<details class="db-quick-patient">
+  <summary class="db-quick-patient-head">
+    <div><strong>+ ثبت سریع بیمار</strong><small>فقط وقتی بیمار در جستجو پیدا نشد، این بخش را باز کنید.</small></div>
+    <span class="db-quick-chevron">⌄</span>
+  </summary>
+  <div class="db-quick-patient-body">
+    <small class="db-quick-note">پرونده مستقل Patient 360° ساخته می‌شود و رکورد تکراری با موبایل ایجاد نمی‌کند.</small>
+    <form method="post" class="db-quick-patient-form">{% csrf_token %}
+      <input type="hidden" name="action" value="quick_patient">
+      <input type="hidden" name="branch" value="{{ branch.pk }}">
+      <input name="full_name" placeholder="نام و نام خانوادگی بیمار" required>
+      <input class="db-latin" name="phone" inputmode="tel" placeholder="شماره موبایل" required>
+      <button type="submit">ثبت بیمار و باز کردن Patient 360°</button>
+    </form>
   </div>
-  <form method="post" class="db-quick-patient-form">{% csrf_token %}
-    <input type="hidden" name="action" value="quick_patient">
-    <input type="hidden" name="branch" value="{{ branch.pk }}">
-    <input name="full_name" placeholder="نام و نام خانوادگی بیمار" required>
-    <input name="phone" inputmode="tel" placeholder="شماره موبایل" required>
-    <button type="submit">ثبت بیمار و باز کردن Patient 360°</button>
-  </form>
-</div>
+</details>
 {% else %}<p class="db-muted">نمایش تقویم برای شما فعال است؛ ثبت نوبت با مشاور یا مدیریت است.</p>{% endif %}
 </section>
 
 <section class="db-panel">
   <div class="db-datebar">
-    <div><h2>ظرفیت دستگاه‌ها · {{ day_jalali }}</h2><div class="db-muted">هر پلاک یک دستگاه واقعی است؛ ردیف‌های هر دستگاه بر اساس مدت درمان + آماده‌سازی همان دستگاه ساخته می‌شوند.</div></div>
+    <div class="db-capacity-copy"><h2>ظرفیت دستگاه‌ها <span class="db-title-sep">—</span> <span class="db-latin">{{ day_jalali|latin_digits }}</span></h2><div class="db-muted">هر پلاک یک دستگاه واقعی است؛ ردیف‌های هر دستگاه بر اساس مدت درمان + آماده‌سازی همان دستگاه ساخته می‌شوند.</div></div>
     <div class="db-datebar-nav db-datebar-nav-strong">
       <a class="db-day-step prev" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ previous_day_jalali }}">→ روز قبل</a>
       <a class="db-today-pill" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ today_jalali }}">امروز</a>
       <a class="db-day-step next" href="?branch={{ branch.pk }}{% if appointment %}&appointment={{ appointment.pk }}{% endif %}&day={{ next_day_jalali }}">روز بعد ←</a>
-      <form method="get"><input type="hidden" name="branch" value="{{ branch.pk }}">{% if appointment %}<input type="hidden" name="appointment" value="{{ appointment.pk }}">{% endif %}<input name="day" value="{{ day_jalali }}"><button class="db-action" type="submit">رفتن به تاریخ</button></form>
+      <form method="get" class="db-date-jump"><input type="hidden" name="branch" value="{{ branch.pk }}">{% if appointment %}<input type="hidden" name="appointment" value="{{ appointment.pk }}">{% endif %}<input class="db-latin" name="day" value="{{ day_jalali|latin_digits }}" aria-label="تاریخ"><button class="db-action" type="submit">رفتن به تاریخ</button></form>
     </div>
   </div>
+  {% if device_cards %}
   <div class="db-legend-row">
     <div class="db-legend">
       <span><i class="lg-booked"></i>آبی: رزرو</span>
@@ -1247,26 +1373,26 @@
 
           </div>
           <div class="db-plate-stats">
-            <div class="db-stat"><b>{{ card.free_count }}</b><span>آزاد</span></div>
-            <div class="db-stat"><b>{{ card.busy_count }}</b><span>رزرو</span></div>
-            <div class="db-stat"><b>{{ card.total_count }}</b><span>ظرفیت</span></div>
+            <div class="db-stat"><b>{{ card.free_count|latin_digits }}</b><span>آزاد</span></div>
+            <div class="db-stat"><b>{{ card.busy_count|latin_digits }}</b><span>رزرو</span></div>
+            <div class="db-stat"><b>{{ card.total_count|latin_digits }}</b><span>ظرفیت</span></div>
           </div>
         </header>
         <div class="db-slots">
           {% for slot in card.slots %}
             {% if slot.state == 'free' %}
-              <button type="button" class="db-slot-button db-free-slot" data-device="{{ slot.device.pk }}" data-device-name="{{ slot.device.name }}" data-time="{{ slot.start_value }}" data-end="{{ slot.end_label }}" data-row="{{ slot.number }}" onclick="pickDeviceSlot(this)">
+              <button type="button" class="db-slot-button db-free-slot" data-device="{{ slot.device.pk }}" data-device-name="{{ slot.device.name }}" data-time="{{ slot.start_value }}" data-end="{{ slot.end_label|latin_digits }}" data-row="{{ slot.number|latin_digits }}" onclick="pickDeviceSlot(this)">
                 <span class="db-slot is-free">
-                  <span class="db-slot-no"><span><b>{{ slot.number }}</b></span></span>
-                  <span class="db-slot-time"><strong>{{ slot.start_label }} – {{ slot.end_label }}</strong><small class="db-empty-mark">—</small></span>
+                  <span class="db-slot-no"><span><b>{{ slot.number|latin_digits }}</b></span></span>
+                  <span class="db-slot-time"><strong>{{ slot.start_label|latin_digits }} – {{ slot.end_label|latin_digits }}</strong><small class="db-empty-mark">—</small></span>
                   <span class="db-slot-state">آزاد</span>
                 </span>
               </button>
             {% elif slot.state == 'busy' %}
               <div class="db-slot is-busy db-status-{{ slot.booking.status }}" title="{{ slot.booking.appointment.full_name }} · {{ slot.booking.plan_item.title }}">
-                <span class="db-slot-no"><span><b>{{ slot.number }}</b></span></span>
+                <span class="db-slot-no"><span><b>{{ slot.number|latin_digits }}</b></span></span>
                 <span class="db-slot-time">
-                  <strong>{{ slot.start_label }} – {{ slot.end_label }}</strong>
+                  <strong>{{ slot.start_label|latin_digits }} – {{ slot.end_label|latin_digits }}</strong>
                   <button type="button" class="db-busy-person"
                     data-booking="{{ slot.booking.pk }}"
                     data-appointment="{{ slot.booking.appointment_id }}"
@@ -1276,18 +1402,18 @@
                     data-plan="{{ slot.booking.plan_item.title }}"
                     data-device="{{ slot.booking.device.name }}{% if slot.booking.secondary_device %} + {{ slot.booking.secondary_device.name }}{% endif %}"
                     data-status="{{ slot.booking.get_status_display }}"
-                    data-time="{{ slot.start_label }} – {{ slot.end_label }}"
+                    data-time="{{ slot.start_label|latin_digits }} – {{ slot.end_label|latin_digits }}"
                     data-photo="{{ slot.booking.appointment.patient_photo_url }}" data-initial="{{ slot.booking.appointment.patient_initial }}" onclick="openPatientCard(this)"><span class="patient-mini-avatar tiny">{% if slot.booking.appointment.patient_photo_url %}<img src="{{ slot.booking.appointment.patient_photo_url }}" alt="">{% else %}<b>{{ slot.booking.appointment.patient_initial }}</b>{% endif %}</span>{{ slot.booking.appointment.full_name }}</button>
                   <span class="db-busy-meta">{{ slot.booking.plan_item.title }}</span>
                 </span>
                 <span class="db-slot-state">{{ slot.booking.get_status_display }}</span>
               </div>
             {% elif slot.state == 'history' %}
-              <button type="button" class="db-history-button" data-device="{{ slot.device.pk }}" data-device-name="{{ slot.device.name }}" data-time="{{ slot.start_value }}" data-end="{{ slot.end_label }}" data-row="{{ slot.number }}" onclick="pickDeviceSlot(this)">
+              <button type="button" class="db-history-button" data-device="{{ slot.device.pk }}" data-device-name="{{ slot.device.name }}" data-time="{{ slot.start_value }}" data-end="{{ slot.end_label|latin_digits }}" data-row="{{ slot.number|latin_digits }}" onclick="pickDeviceSlot(this)">
                 <span class="db-slot is-history db-status-{{ slot.history_booking.status }}">
-                  <span class="db-slot-no"><span><b>{{ slot.number }}</b></span></span>
+                  <span class="db-slot-no"><span><b>{{ slot.number|latin_digits }}</b></span></span>
                   <span class="db-slot-time">
-                    <strong>{{ slot.start_label }} – {{ slot.end_label }}</strong>
+                    <strong>{{ slot.start_label|latin_digits }} – {{ slot.end_label|latin_digits }}</strong>
                     <span class="db-busy-person"
                       data-booking="{{ slot.history_booking.pk }}"
                       data-appointment="{{ slot.history_booking.appointment_id }}"
@@ -1297,7 +1423,7 @@
                       data-plan="{{ slot.history_booking.plan_item.title }}"
                       data-device="{{ slot.history_booking.device.name }}{% if slot.history_booking.secondary_device %} + {{ slot.history_booking.secondary_device.name }}{% endif %}"
                       data-status="{{ slot.history_booking.get_status_display }}"
-                      data-time="{{ slot.start_label }} – {{ slot.end_label }}"
+                      data-time="{{ slot.start_label|latin_digits }} – {{ slot.end_label|latin_digits }}"
                       data-photo="{{ slot.history_booking.appointment.patient_photo_url }}" data-initial="{{ slot.history_booking.appointment.patient_initial }}" onclick="event.stopPropagation();openPatientCard(this)"><span class="patient-mini-avatar tiny">{% if slot.history_booking.appointment.patient_photo_url %}<img src="{{ slot.history_booking.appointment.patient_photo_url }}" alt="">{% else %}<b>{{ slot.history_booking.appointment.patient_initial }}</b>{% endif %}</span>{{ slot.history_booking.appointment.full_name }}</span>
                     <span class="db-history-free">این ردیف دوباره آزاد است</span>
                   </span>
@@ -1306,8 +1432,8 @@
               </button>
             {% else %}
               <div class="db-slot is-off">
-                <span class="db-slot-no"><span><b>{{ slot.number }}</b></span></span>
-                <span class="db-slot-time"><strong>{{ slot.start_label }} – {{ slot.end_label }}</strong><small class="db-off-mark">—</small></span>
+                <span class="db-slot-no"><span><b>{{ slot.number|latin_digits }}</b></span></span>
+                <span class="db-slot-time"><strong>{{ slot.start_label|latin_digits }} – {{ slot.end_label|latin_digits }}</strong><small class="db-off-mark">—</small></span>
                 <span class="db-slot-state">بسته</span>
               </div>
             {% endif %}
@@ -1316,14 +1442,20 @@
           {% endfor %}
         </div>
       </article>
-    {% empty %}
-      <div class="db-empty-devices" style="grid-column:1/-1"><div class="icon">▣</div><strong>برای {{ branch.name }} هنوز دستگاه فعالی در تقویم تعریف نشده است</strong><p>از تنظیمات، دستگاه‌های فیزیکی این مرکز را با کدهایی مثل RSA1، CRYO1 یا DF1 اضافه و روشن کنید.</p>{% if can_manage %}<a href="{% url 'device_capacity_settings' %}?branch={{ branch.pk }}">رفتن به تنظیمات دستگاه‌ها</a>{% endif %}</div>
     {% endfor %}
+  </div
+  {% else %}
+  <div class="db-empty-devices">
+    <div class="icon">▣</div>
+    <strong>برای {{ branch.name }} هنوز دستگاه فعالی در تقویم تعریف نشده است</strong>
+    <p>ابتدا دستگاه‌های فیزیکی این مرکز را فعال کنید؛ سپس ظرفیت روزانه و ردیف‌های نوبت در همین بخش نمایش داده می‌شوند.</p>
+    {% if can_manage %}<a href="{% url 'device_capacity_settings' %}?branch={{ branch.pk }}">تعریف دستگاه برای {{ branch.name }}</a>{% endif %}
   </div>
+  {% endif %}>
 
   <div class="db-list">
   {% for booking in bookings %}<div class="db-row db-status-{{ booking.status }}">
-    <b>{{ booking.starts_at|date:'H:i' }}</b>
+    <b>{{ booking.starts_at|date:'H:i'|latin_digits }}</b>
     <div>
       <button type="button" class="db-busy-person"
         data-booking="{{ booking.pk }}"
@@ -1334,10 +1466,10 @@
         data-plan="{{ booking.plan_item.title }}"
         data-device="{{ booking.device.name }}{% if booking.secondary_device %} + {{ booking.secondary_device.name }}{% endif %}"
         data-status="{{ booking.get_status_display }}"
-        data-time="{{ booking.starts_at|date:'H:i' }}"
+        data-time="{{ booking.starts_at|date:'H:i'|latin_digits }}"
         onclick="openPatientCard(this)">{{ booking.appointment.full_name }}</button>
       <small>{{ booking.device.name }}{% if booking.secondary_device %} + {{ booking.secondary_device.name }}{% endif %} · {{ booking.plan_item.title }}</small>
-      <small>درمان {{ booking.treatment_minutes_snapshot }} دقیقه · آماده‌سازی {{ booking.preparation_minutes_snapshot }} دقیقه · آزاد از {{ booking.blocked_until|date:'H:i' }}</small>
+      <small>درمان {{ booking.treatment_minutes_snapshot|latin_digits }} دقیقه · آماده‌سازی {{ booking.preparation_minutes_snapshot|latin_digits }} دقیقه · آزاد از {{ booking.blocked_until|date:'H:i'|latin_digits }}</small>
     </div>
     <b>{{ booking.get_status_display }}</b>
     <span></span>
@@ -1378,6 +1510,21 @@
   </div>
 </div>
 
+<script id="db-latin-digits">
+(function(){
+  function latin(v){return String(v == null ? '' : v).replace(/[۰-۹]/g,function(d){return '0123456789'['۰۱۲۳۴۵۶۷۸۹'.indexOf(d)]}).replace(/[٠-٩]/g,function(d){return '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)]})}
+  function normalize(root){
+    var walker=document.createTreeWalker(root||document.body,NodeFilter.SHOW_TEXT);
+    var nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
+    nodes.forEach(function(node){if(node.nodeValue)node.nodeValue=latin(node.nodeValue)});
+    document.querySelectorAll('input,textarea,option').forEach(function(el){
+      if('value' in el && el.value)el.value=latin(el.value);
+      if(el.placeholder)el.placeholder=latin(el.placeholder);
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){normalize(document.body)});else normalize(document.body);
+})();
+</script>
 <script>
 (function(){
   var patientSearch=document.getElementById('dbPatientSearch');
