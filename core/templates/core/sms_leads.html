@@ -1,0 +1,14 @@
+{% extends 'core/base.html' %}{% block content %}
+<style>
+.sms-leads{direction:rtl;max-width:1450px;margin:auto;padding:16px;font-family:Tahoma,Arial,sans-serif}.sms-leads h1{margin:0 0 14px}.sms-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}.sms-kpi{padding:14px;border:1px solid #dce5ea;border-radius:14px;background:#fff;color:#18303f;text-decoration:none}.sms-kpi b{display:block;font-size:22px}.sms-kpi small{font-size:11px}.sms-table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden}.sms-table th,.sms-table td{padding:11px;border-bottom:1px solid #edf1f4;text-align:right;font-size:11px;color:#203744}.sms-table th{background:#f4f7f9}.sms-pill{padding:5px 8px;border-radius:999px;background:#eef6f3;font-size:10px}.sms-link{color:#087a5a;font-weight:800}@media(max-width:800px){.sms-kpis{grid-template-columns:1fr 1fr}.sms-table{min-width:850px}.sms-wrap{overflow:auto}}
+</style>
+<section class="sms-leads"><h1>لیدهای پیامکی</h1>
+<div class="sms-kpis">
+<a class="sms-kpi" href="?category=consultation"><b>{{ counts.consultation }}</b><small>درخواست مشاوره</small></a>
+<a class="sms-kpi" href="?category=campaign"><b>{{ counts.campaign }}</b><small>پیامک تبلیغاتی</small></a>
+<a class="sms-kpi" href="?category=cancel"><b>{{ counts.cancel }}</b><small>درخواست لغو</small></a>
+<a class="sms-kpi" href="?category=other"><b>{{ counts.other }}</b><small>غیره</small></a>
+<a class="sms-kpi" href="?category=all"><b>{{ counts.all }}</b><small>همه پاسخ‌ها</small></a>
+</div><div class="sms-wrap"><table class="sms-table"><thead><tr><th>زمان دریافت</th><th>موبایل</th><th>پیام</th><th>مقصد</th><th>دسته</th><th>زمان SMS Center</th><th>لید / اپراتور</th></tr></thead><tbody>
+{% for item in items %}<tr><td>{{ item.row.created_at|date:'Y/m/d H:i' }}</td><td dir="ltr">{{ item.meta.from }}</td><td>{{ item.meta.text }}</td><td dir="ltr">{{ item.meta.to }}</td><td><span class="sms-pill">{{ item.meta.category_label }}</span></td><td>{{ item.meta.time }}</td><td>{% if item.lead %}<a class="sms-link" href="{% url 'management_lead_follow_up' item.lead.pk %}">لید #{{ item.lead.pk }}</a>{% if item.lead.assigned_to %} · {{ item.lead.assigned_to }}{% endif %}{% else %}—{% endif %}</td></tr>{% empty %}<tr><td colspan="7">هنوز پاسخی از SMS Center دریافت نشده است.</td></tr>{% endfor %}
+</tbody></table></div></section>{% endblock %}

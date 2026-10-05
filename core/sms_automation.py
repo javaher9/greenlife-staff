@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from .models import SmsAutomationRule, SmsScheduledMessage
 
-TEMPLATE_FIELDS={'name','branch','date','time','amount','service','staff','phone','notes','event'}
+TEMPLATE_FIELDS={'name','branch','address','date','time','amount','service','staff','phone','notes','event'}
 OFFSET_LIMIT=30*24*60
 
 

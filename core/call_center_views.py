@@ -84,6 +84,15 @@ def _lead_delay_alerts_for_user(user, now=None):
             notification_type=notification_type,
             related_date=today,
         )
+        from .sms_automation import schedule_sms_event
+        schedule_sms_event(
+            'lead_overdue',f'{lead.pk}-{notification_type}-{today}',
+            patient_number=lead.phone,
+            staff_number=getattr(getattr(user,'profile',None),'phone',''),
+            context={'name':lead.full_name,'phone':lead.phone,'service':lead.interested_service,
+                     'staff':user.get_full_name() or user.username,'notes':lead.notes,
+                     'event':title},
+        )
         created+=1
         latest=message
     return {'created':created,'urgent':urgent,'latest_message':latest}

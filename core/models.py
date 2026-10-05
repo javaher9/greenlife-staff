@@ -67,6 +67,7 @@ class Branch(models.Model):
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     attendance_radius_m = models.PositiveIntegerField(default=150)
+    address = models.CharField(max_length=300, blank=True, help_text='آدرس قابل استفاده در پیامک نوبت')
     geofence_enabled = models.BooleanField(default=False)
     def __str__(self): return self.name
 
