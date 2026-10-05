@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>پذیرش و آنالیز بیمار</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#17213d;font-family:Tahoma,Arial,sans-serif}.wrap{max-width:920px;margin:28px auto;padding:0 18px}.card{background:#fff;border:1px solid #e5e9f1;border-radius:22px;box-shadow:0 16px 42px rgba(34,43,74,.08);overflow:hidden}.head{padding:22px 24px;border-bottom:1px solid #edf0f5}.head h1{margin:0 0 8px;font-size:22px}.head p{margin:0;color:#69758a;font-size:13px}.notice{margin:18px 24px 0;padding:12px 14px;border-radius:13px;background:#fff8e8;color:#855f16;font-size:12px;line-height:1.9}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:22px 24px}.field{display:grid;gap:7px}.field label{font-size:12px;font-weight:800}.field input{height:46px;border:1px solid #dfe4ed;border-radius:12px;padding:0 12px;font:14px Tahoma;background:#fbfcfe;direction:ltr;text-align:left}.field input:focus{outline:2px solid #e5e0ff;border-color:#7257e8}.actions{padding:0 24px 24px;display:flex;gap:10px}.actions button,.actions a{border:0;border-radius:12px;padding:12px 18px;font:800 12px Tahoma;text-decoration:none;cursor:pointer}.actions button{background:#6750d9;color:#fff}.actions a{background:#eef1f6;color:#4f5d73}.msg{margin:14px 24px 0;padding:10px 12px;border-radius:10px;background:#fff0f3;color:#a73752;font-size:12px}@media(max-width:650px){.grid{grid-template-columns:1fr}.wrap{margin:14px auto}.head{padding:18px}.grid{padding:18px}.actions{padding:0 18px 18px}}</style>
+</head>
+<body><div class="wrap"><div class="card">
+<div class="head"><h1>پذیرش و ثبت اسکن / آنالیز</h1><p>{{ appointment.full_name }} · {{ appointment.appointment_time|date:"H:i" }} · {{ appointment.branch }}</p></div>
+<div class="notice">ثبت هر 7 مورد زیر الزامی است. بیمار فقط پس از ذخیره کامل این اطلاعات وارد صف پزشک می‌شود.</div>
+{% if messages %}{% for message in messages %}<div class="msg">{{ message }}</div>{% endfor %}{% endif %}
+<form method="post">{% csrf_token %}<div class="grid">
+<div class="field"><label>قد (cm)</label><input type="number" step="0.1" min="1" name="height_cm" required value="{{ request.POST.height_cm }}"></div>
+<div class="field"><label>وزن (kg)</label><input type="number" step="0.01" min="1" name="weight_kg" required value="{{ request.POST.weight_kg }}"></div>
+<div class="field"><label>امتیاز آنالیز</label><input type="number" step="0.1" min="0" name="inbody_score" required value="{{ request.POST.inbody_score }}"></div>
+<div class="field"><label>چربی احشایی</label><input type="number" step="0.1" min="0" name="visceral_fat" required value="{{ request.POST.visceral_fat }}"></div>
+<div class="field"><label>چربی بدن (%)</label><input type="number" step="0.01" min="0" name="body_fat_percent" required value="{{ request.POST.body_fat_percent }}"></div>
+<div class="field"><label>عضله (kg)</label><input type="number" step="0.01" min="0" name="skeletal_muscle_kg" required value="{{ request.POST.skeletal_muscle_kg }}"></div>
+<div class="field"><label>سایز دور شکم (cm)</label><input type="number" step="0.1" min="0" name="waist_cm" required value="{{ request.POST.waist_cm }}"></div>
+</div><div class="actions"><button type="submit">ثبت و ارسال به پزشک</button><a href="/">بازگشت</a></div></form>
+</div></div></body></html>

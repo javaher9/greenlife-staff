@@ -149,10 +149,24 @@ class AppointmentPaymentVisibilityTests(TestCase):
         self.assertContains(call_center_page, 'پرداخت تأییدشده:')
         self.assertContains(call_center_page, '>2</b> میلیون تومان')
 
-    def test_receptionist_arrival_moves_lead_to_visited_but_never_downgrades_won(self):
+    def test_receptionist_arrival_requires_analysis_and_then_moves_lead_to_visited(self):
         self.client.force_login(self.receptionist)
         response = self.client.post(
             reverse('receptionist_appointment_status', args=[self.appointment.pk, 'arrived'])
+        )
+        self.assertRedirects(
+            response, reverse('receptionist_appointment_intake', args=[self.appointment.pk])
+        )
+        self.lead.refresh_from_db()
+        self.assertEqual(self.lead.status, 'appointment')
+
+        response = self.client.post(
+            reverse('receptionist_appointment_intake', args=[self.appointment.pk]),
+            {
+                'height_cm':'170','weight_kg':'80','inbody_score':'72',
+                'visceral_fat':'11','body_fat_percent':'31.5',
+                'skeletal_muscle_kg':'29.4','waist_cm':'98',
+            },
         )
         self.assertEqual(response.status_code, 302)
         self.lead.refresh_from_db()

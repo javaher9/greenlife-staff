@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta
+from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -12,7 +13,7 @@ from django.utils import timezone
 from .forms import AppointmentFromLeadForm, ReceptionistAppointmentForm, visit_appointment_time_choices
 from .jalali import parse_jalali
 from .patient_ui import attach_patient_photos
-from .models import Branch, EmployeeProfile, ReferralLead, StaffNotification, Task, VisitAppointment, SmsAutomationRule, SmsScheduledMessage
+from .models import (Branch, EmployeeProfile, ReferralLead, StaffNotification, Task, VisitAppointment, SmsAutomationRule, SmsScheduledMessage, PatientProfile, BodyAnalysisRecord, normalize_lead_phone, lead_phone_variants)
 from .sms_automation import schedule_sms_event
 from .jalali import format_jalali
 from .sms import send_appointment_confirmation
@@ -268,12 +269,95 @@ def receptionist_appointment_create(request):
     })
 
 
+def _decimal_field(request, name, label):
+    raw=(request.POST.get(name) or '').strip().replace(',', '.')
+    if not raw:
+        raise ValidationError(f'{label} الزامی است.')
+    try:
+        value=Decimal(raw)
+    except InvalidOperation:
+        raise ValidationError(f'{label} باید عدد باشد.')
+    if value < 0:
+        raise ValidationError(f'{label} نمی‌تواند منفی باشد.')
+    return value
+
+
+def _patient_for_intake(appointment, user):
+    phone=normalize_lead_phone(appointment.phone)
+    variants=lead_phone_variants(phone)
+    patient=PatientProfile.objects.filter(phone__in=variants).order_by('id').first()
+    if not patient:
+        patient=PatientProfile.objects.create(
+            phone=phone,full_name=appointment.full_name,
+            home_branch=appointment.branch,created_by=user,
+        )
+    return patient
+
+
+@login_required
+def receptionist_appointment_intake(request,pk):
+    if _role(request.user)!='receptionist':
+        raise PermissionDenied('این بخش فقط برای منشی است.')
+    item=get_object_or_404(
+        VisitAppointment,pk=pk,branch=request.user.profile.branch,
+        appointment_date=timezone.localdate(),
+    )
+    if item.status!='booked':
+        messages.info(request,'پذیرش این مراجعه قبلاً انجام شده است.')
+        return redirect('dashboard')
+
+    if request.method=='POST':
+        try:
+            height=_decimal_field(request,'height_cm','قد')
+            weight=_decimal_field(request,'weight_kg','وزن')
+            score=_decimal_field(request,'inbody_score','امتیاز')
+            visceral=_decimal_field(request,'visceral_fat','چربی احشایی')
+            fat=_decimal_field(request,'body_fat_percent','چربی')
+            muscle=_decimal_field(request,'skeletal_muscle_kg','عضله')
+            waist=_decimal_field(request,'waist_cm','سایز دور شکم')
+            if height <= 0 or weight <= 0:
+                raise ValidationError('قد و وزن باید بیشتر از صفر باشند.')
+        except ValidationError as exc:
+            messages.error(request,exc.messages[0])
+        else:
+            with transaction.atomic():
+                patient=_patient_for_intake(item,request.user)
+                patient.height_cm=height
+                if not patient.home_branch_id:
+                    patient.home_branch=item.branch
+                if item.full_name and patient.full_name!=item.full_name:
+                    patient.full_name=item.full_name
+                patient.save(update_fields=['height_cm','home_branch','full_name','updated_at'])
+                height_m=height/Decimal('100')
+                bmi=(weight/(height_m*height_m)).quantize(Decimal('0.01'))
+                BodyAnalysisRecord.objects.create(
+                    patient=patient,weight_kg=weight,visceral_fat=visceral,
+                    inbody_score=score,skeletal_muscle_kg=muscle,
+                    body_fat_percent=fat,bmi=bmi,
+                    measurements={'waist_cm':float(waist)},recorded_by=request.user,
+                )
+                item.status='arrived'
+                item.care_stage='doctor'
+                item.save(update_fields=['status','care_stage','updated_at'])
+                if item.lead_id:
+                    ReferralLead.objects.filter(pk=item.lead_id).exclude(
+                        status__in=('won','lost')
+                    ).update(status='visited',updated_at=timezone.now())
+            messages.success(request,f'اسکن و آنالیز {item.full_name} ثبت شد و بیمار به پزشک ارجاع شد.')
+            return redirect('dashboard')
+
+    return render(request,'core/appointments/intake.html',{'appointment':item})
+
+
 @login_required
 def receptionist_appointment_status(request,pk,status):
     if _role(request.user)!='receptionist' or request.method!='POST':
         raise PermissionDenied('این اقدام فقط برای منشی است.')
     if status not in ('arrived','completed','no_show','cancelled'):
         raise PermissionDenied('وضعیت نامعتبر است.')
+    if status=='arrived':
+        messages.info(request,'قبل از ارجاع به پزشک، اطلاعات اسکن و آنالیز بیمار باید کامل ثبت شود.')
+        return redirect('receptionist_appointment_intake',pk=pk)
     item=get_object_or_404(
         VisitAppointment,
         pk=pk,
