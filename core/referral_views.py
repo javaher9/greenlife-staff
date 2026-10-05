@@ -269,12 +269,41 @@ def _call_center_direct_referrer():
 
 
 def _auto_assign_call_center(lead):
-    """Assign new referral leads to the lightest queue and make their destination explicit."""
+    """Assign new referral leads; Türkiye is routed only to its dedicated handler."""
     if lead.assigned_to_id:
         if not lead.group_id:
-            lead.group=_default_call_center_group(lead.assigned_to)
+            if getattr(getattr(lead,'country',None),'code','') == 'TR':
+                group,_=CallCenterLeadGroup.objects.get_or_create(
+                    owner=lead.assigned_to,
+                    name='Türkiye | Turkey',
+                    defaults={'is_default':False},
+                )
+                lead.group=group
+            else:
+                lead.group=_default_call_center_group(lead.assigned_to)
             lead.save(update_fields=['group','updated_at'])
         return lead.assigned_to
+
+    if getattr(getattr(lead,'country',None),'code','') == 'TR':
+        operator=EmployeeProfile.objects.filter(
+            role='call_center',
+            is_active=True,
+            user__is_active=True,
+            handles_turkey_leads=True,
+        ).select_related('user').order_by('id').first()
+        if operator:
+            group,_=CallCenterLeadGroup.objects.get_or_create(
+                owner=operator,
+                name='Türkiye | Turkey',
+                defaults={'is_default':False},
+            )
+            lead.assigned_to=operator
+            lead.group=group
+            lead.assigned_at=timezone.now()
+            lead.save(update_fields=['assigned_to','group','assigned_at','updated_at'])
+            _notify_call_center_assignment(lead)
+        return operator
+
     candidates=EmployeeProfile.objects.filter(role='call_center',is_active=True,user__is_active=True)
     today=timezone.localdate()
     # Friday is an on-duty day: only call-center staff who actually checked in
