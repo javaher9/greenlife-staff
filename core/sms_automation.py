@@ -144,8 +144,20 @@ def _current_call_outcome(item):
 
 
 def process_due_sms(batch_size=25):
-    """Claim and process due messages; caller must run periodically."""
+    """Claim and process due messages; caller must run periodically.
+
+    A worker can be terminated after claiming an item. Reclaim old "sending"
+    leases so those messages cannot remain stuck forever.
+    """
     from .sms import SmsGatewayError,send_sms
+
+    lease_cutoff=timezone.now()-timedelta(minutes=5)
+    SmsScheduledMessage.objects.filter(
+        status='sending',updated_at__lt=lease_cutoff,attempt_count__lt=4,
+    ).update(status='pending',error='بازیابی خودکار پس از توقف worker')
+    SmsScheduledMessage.objects.filter(
+        status='sending',updated_at__lt=lease_cutoff,attempt_count__gte=4,
+    ).update(status='failed',error='توقف worker پس از چند تلاش')
 
     processed=0
     for _ in range(batch_size):

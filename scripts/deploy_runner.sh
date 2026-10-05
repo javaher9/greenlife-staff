@@ -343,7 +343,31 @@ fi
 if "${COMPOSE[@]}" config --services | grep -qx sms_worker; then
   echo "Refreshing SMS worker after successful cutover..."
   "${COMPOSE[@]}" up -d --no-deps --no-build --force-recreate sms_worker
+else
+  echo "Production compose has no sms_worker; creating managed SMS worker..."
+  SMS_WORKER="greenlife-sms-worker"
+  docker rm -f "$SMS_WORKER" >/dev/null 2>&1 || true
+  docker run -d --name "$SMS_WORKER" --restart unless-stopped --network "$NETWORK" --env-file "$ENV_FILE" --entrypoint python greenlife-staff-runtime-web:latest manage.py process_sms_queue --loop --interval 15 --batch-size 50 >/dev/null
 fi
+
+echo "Verifying SMS worker health..."
+if "${COMPOSE[@]}" config --services | grep -qx sms_worker; then
+  SMS_WORKER_NAME="$("${COMPOSE[@]}" ps -q sms_worker)"
+else
+  SMS_WORKER_NAME="greenlife-sms-worker"
+fi
+for i in {1..12}; do
+  if [[ -n "$SMS_WORKER_NAME" ]] && docker inspect -f '{{.State.Running}}' "$SMS_WORKER_NAME" 2>/dev/null | grep -qx true; then
+    echo "SMS worker is running."
+    break
+  fi
+  if [[ "$i" == "12" ]]; then
+    echo "ERROR: SMS worker did not stay running." >&2
+    docker logs --tail=120 "$SMS_WORKER_NAME" >&2 || true
+    exit 1
+  fi
+  sleep 2
+done
 
 cleanup_candidates
 trap - EXIT
