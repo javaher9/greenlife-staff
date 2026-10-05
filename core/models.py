@@ -118,10 +118,6 @@ class EmployeeProfile(models.Model):
         default=True,
         help_text='اجازه دسترسی به شبکه فروش و ثبت لید به نام شبکه شخصی.',
     )
-    handles_turkey_leads=models.BooleanField(
-        default=False,
-        help_text='این کاربر مقصد اختصاصی لیدهای Türkiye است.',
-    )
     is_active=models.BooleanField(default=True)
 
     @property
