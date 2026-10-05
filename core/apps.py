@@ -8,6 +8,7 @@ class CoreConfig(AppConfig):
     def ready(self):
         # Register account-integrity hooks after Django has loaded the app.
         from . import signals  # noqa: F401
+        from . import sms_event_hooks  # noqa: F401
 
         # Attribute approved appointment payments to the call-center owner/lead.
         from . import finance_attribution  # noqa: F401
