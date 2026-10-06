@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+  # Fallback for commits created by integrations whose GitHub token does not
+  # emit a push-triggered Actions event. Scheduled runs always use latest main.
+  schedule:
+    - cron: '*/5 * * * *'
 
 concurrency:
   group: greenlife-staff-production
