@@ -314,23 +314,54 @@ def _rotation_order(operators, day):
     return operators[start:]+operators[:start]
 
 
+def _reduced_operator_can_receive(operator, operators, stats):
+    """Apply explicit management reductions without creating catch-up bursts.
+
+    Reduced operators receive roughly their configured fraction of a regular
+    operator's share. If they are the only eligible staff member, routing still
+    continues so leads are not lost.
+    """
+    rule_weight=None
+    for aliases, weight in REDUCED_OPERATOR_WEIGHT_RULES:
+        if _identity_matches(operator, aliases):
+            rule_weight=weight
+            break
+    if rule_weight is None:
+        return True
+
+    regular=[
+        op for op in operators
+        if not any(_identity_matches(op, aliases) for aliases,_weight in REDUCED_OPERATOR_WEIGHT_RULES)
+    ]
+    if not regular:
+        return True
+
+    min_regular=min(stats.get(op.id,{}).get('count',0) for op in regular)
+    allowed_count=int(min_regular * rule_weight)
+    current=stats.get(operator.id,{}).get('count',0)
+    return current < allowed_count
+
+
+def _next_no_burst_operator(operators, day):
+    """Pick the next operator in rotation, never by daily catch-up deficit."""
+    operators=list(operators)
+    if not operators:
+        return None
+    stats=_assignment_stats(operators,day)
+    for operator in _rotation_order(operators,day):
+        if _reduced_operator_can_receive(operator,operators,stats):
+            return operator
+    # If the only remaining candidates are reduced, do not strand the lead.
+    return _rotation_order(operators,day)[0]
+
+
 def _locked_round_robin_operator(now=None, channel=None):
     local_now=timezone.localtime(now or timezone.now())
     day=local_now.date()
     operators=_operators_for_channel(_locked_present_operators(day),channel)
     if not operators:
         return None
-    stats=_assignment_stats(operators,day)
-    # Weighted fair routing: the operator with the lowest assigned/weight score
-    # receives the next lead. Better contact rate => higher weight => more share.
-    return min(
-        operators,
-        key=lambda op: (
-            (stats.get(op.id,{}).get('count',0)+1) / operator_weight(op, now=local_now),
-            stats.get(op.id,{}).get('last_at') or (local_now - timedelta(days=3650)),
-            op.id,
-        ),
-    )
+    return _next_no_burst_operator(operators,day)
 
 
 def _group_for(operator, name, *, is_default=False):
@@ -439,8 +470,8 @@ def release_pending_leads_if_ready(*, force=False, now=None):
     """Distribute queued leads in a smooth round-robin among present operators.
 
     The queue starts with the operator immediately after the most recent
-    recipient and then rotates one-by-one. This prevents a catch-up rule from
-    sending a visible burst of consecutive leads to one person.
+    recipient and then rotates one-by-one. A late arrival never receives a
+    catch-up burst; explicit management reductions are applied as a quota.
     """
     local_now = timezone.localtime(now or timezone.now())
     day = local_now.date()
@@ -470,15 +501,6 @@ def release_pending_leads_if_ready(*, force=False, now=None):
     if not operators:
         return 0
 
-    generic_counts={
-        op.id:_assignment_stats(operators,day).get(op.id,{}).get('count',0)
-        for op in operators
-    }
-    website_counts={
-        op.id:_assignment_stats(website_operators,day).get(op.id,{}).get('count',0)
-        for op in website_operators
-    } if website_operators else {}
-
     assigned = 0
     for lead in pending:
         if _is_turkey_lead(lead):
@@ -493,18 +515,12 @@ def release_pending_leads_if_ready(*, force=False, now=None):
             continue
         channel=_pending_channel(lead)
         pool=website_operators if channel=='website' else operators
-        counts=website_counts if channel=='website' else generic_counts
         if not pool:
             # Never fall back to disallowed operators for a restricted channel.
             continue
-        operator=min(
-            pool,
-            key=lambda op: (
-                (counts.get(op.id,0)+1) / operator_weight(op, now=local_now),
-                op.id,
-            ),
-        )
-        counts[operator.id]=counts.get(operator.id,0)+1
+        operator=_next_no_burst_operator(pool,day)
+        if not operator:
+            continue
         group_name, title = _pending_destination(lead)
         _assign_to_operator(
             lead,
