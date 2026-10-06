@@ -3157,10 +3157,12 @@ def _job_duties_for_user(user):
     profile=getattr(user,'profile',None)
     if not profile: return JobDutyTemplate.objects.none()
     qs=JobDutyTemplate.objects.filter(is_active=True)
-    return qs.filter(
+    generic_scope=(
+        Q(target_user__isnull=True) &
         (Q(branch__isnull=True)|Q(branch=profile.branch)) &
         (Q(job_title='')|Q(job_title=profile.job_title))
-    ).order_by('title')
+    )
+    return qs.filter(Q(target_user=user)|generic_scope).distinct().order_by('title')
 
 @login_required
 def my_guidelines(request):
@@ -3181,10 +3183,14 @@ def guideline_ack(request,pk):
 def guidelines_manage(request):
     profile=getattr(request.user,'profile',None)
     guidelines=Guideline.objects.all().order_by('-published_at')
-    duties=JobDutyTemplate.objects.all().order_by('title')
+    duties=JobDutyTemplate.objects.select_related('target_user','target_user__profile','branch').all().order_by('title')
     if role_of(request.user)=='manager':
         guidelines=guidelines.filter(Q(branch=profile.branch)|Q(branch__isnull=True))
-        duties=duties.filter(Q(branch=profile.branch)|Q(branch__isnull=True))
+        duties=duties.filter(
+            Q(target_user__profile__branch=profile.branch) |
+            Q(target_user__isnull=True,branch=profile.branch) |
+            Q(target_user__isnull=True,branch__isnull=True)
+        ).distinct()
     return render(request,'core/guidelines_manage.html',{'guidelines':guidelines,'duties':duties})
 
 @manager_required
@@ -3198,16 +3204,46 @@ def guideline_create(request):
         obj.save(); messages.success(request,'دستورالعمل منتشر شد.'); return redirect('guidelines_manage')
     return render(request,'core/generic_form.html',{'form':form,'title':'دستورالعمل جدید','button':'انتشار'})
 
+def _scope_job_duty_form(form,user):
+    if role_of(user)=='manager':
+        branch_id=user.profile.branch_id
+        form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=branch_id)
+        form.fields['target_user'].queryset=form.fields['target_user'].queryset.filter(profile__branch_id=branch_id)
+    return form
+
+def _apply_job_duty_target(obj):
+    if obj.target_user_id:
+        target_profile=getattr(obj.target_user,'profile',None)
+        if target_profile:
+            obj.branch=target_profile.branch
+            obj.job_title=target_profile.job_title or ''
+    return obj
+
 @manager_required
 def job_duty_create(request):
-    form=JobDutyTemplateForm(request.POST or None)
-    if role_of(request.user)=='manager':
-        form.fields['branch'].queryset=form.fields['branch'].queryset.filter(pk=request.user.profile.branch_id)
+    form=_scope_job_duty_form(JobDutyTemplateForm(request.POST or None),request.user)
     if request.method=='POST' and form.is_valid():
         obj=form.save(commit=False); obj.created_by=request.user
+        obj=_apply_job_duty_target(obj)
         if role_of(request.user)=='manager' and not obj.branch: obj.branch=request.user.profile.branch
-        obj.save(); messages.success(request,'شرح وظایف ثبت شد.'); return redirect('guidelines_manage')
-    return render(request,'core/generic_form.html',{'form':form,'title':'شرح وظایف جدید','button':'ذخیره'})
+        obj.save(); messages.success(request,'شرح وظایف ثبت و برای پرسنل مربوطه منتشر شد.'); return redirect('guidelines_manage')
+    return render(request,'core/generic_form.html',{'form':form,'title':'ثبت شرح وظایف پرسنل','button':'ذخیره و انتشار'})
+
+@manager_required
+def job_duty_edit(request,pk):
+    duty=get_object_or_404(JobDutyTemplate.objects.select_related('target_user','target_user__profile','branch'),pk=pk)
+    if role_of(request.user)=='manager':
+        allowed_branch=request.user.profile.branch_id
+        target_branch=getattr(getattr(duty.target_user,'profile',None),'branch_id',None) if duty.target_user_id else duty.branch_id
+        if target_branch not in (None,allowed_branch):
+            raise PermissionDenied('این شرح وظایف مربوط به شعبه شما نیست.')
+    form=_scope_job_duty_form(JobDutyTemplateForm(request.POST or None,instance=duty),request.user)
+    if request.method=='POST' and form.is_valid():
+        obj=form.save(commit=False)
+        obj=_apply_job_duty_target(obj)
+        if role_of(request.user)=='manager' and not obj.branch: obj.branch=request.user.profile.branch
+        obj.save(); messages.success(request,'شرح وظایف جایگزین و به‌روزرسانی شد.'); return redirect('guidelines_manage')
+    return render(request,'core/generic_form.html',{'form':form,'title':'ویرایش / جایگزینی شرح وظایف','button':'ذخیره تغییرات'})
 
 
 DEVICE_ISSUE_RECIPIENT_USERNAMES=('admin','manager1','sadeghi')
