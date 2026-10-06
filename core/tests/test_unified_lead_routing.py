@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from core.lead_routing import assign_external_lead, assign_referral_lead, operator_policy_notice, operator_weight, release_pending_leads_if_ready
-from core.models import Attendance, EmployeeProfile, ReferralLead, ReferralProfile
+from core.models import Attendance, Country, EmployeeProfile, ReferralLead, ReferralProfile
 
 
 class UnifiedLeadRoutingTests(TestCase):
@@ -234,6 +234,22 @@ class UnifiedLeadRoutingTests(TestCase):
             lead.refresh_from_db()
             self.assertIsNotNone(lead.assigned_to_id)
             self.assertNotIn(lead.assigned_to_id,blocked)
+
+    def test_turkiye_lead_goes_only_to_narges(self):
+        turkey=Country.objects.get(code='TR')
+        self._check_in(*range(6))
+        lead=self._new_lead(95)
+        lead.country=turkey
+        lead.preferred_language='tr'
+        lead.save(update_fields=['country','preferred_language'])
+
+        operator=assign_referral_lead(lead)
+
+        self.assertIsNotNone(operator)
+        self.assertEqual(operator.id,self.operators[0].id)
+        lead.refresh_from_db()
+        self.assertEqual(lead.assigned_to_id,self.operators[0].id)
+        self.assertEqual(lead.group.name,'Türkiye | Turkey')
 
     def test_inactive_operator_is_never_selected(self):
         self.operators[3].is_active = False
