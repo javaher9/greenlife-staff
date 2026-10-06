@@ -269,76 +269,9 @@ def _call_center_direct_referrer():
 
 
 def _auto_assign_call_center(lead):
-    """Assign new referral leads; Türkiye is routed only to Narges (Fatemeh Babaei)."""
-    if lead.assigned_to_id:
-        if not lead.group_id:
-            if getattr(getattr(lead,'country',None),'code','') == 'TR':
-                group,_=CallCenterLeadGroup.objects.get_or_create(
-                    owner=lead.assigned_to,
-                    name='Türkiye | Turkey',
-                    defaults={'is_default':False},
-                )
-                lead.group=group
-            else:
-                lead.group=_default_call_center_group(lead.assigned_to)
-            lead.save(update_fields=['group','updated_at'])
-        return lead.assigned_to
-
-    if getattr(getattr(lead,'country',None),'code','') == 'TR':
-        # Türkiye has a single dedicated operator for now:
-        # Narges = Fatemeh Babaei. Never fall back to the general pool.
-        operator=EmployeeProfile.objects.filter(
-            role='call_center',
-            is_active=True,
-            user__is_active=True,
-        ).filter(
-            Q(user__first_name__icontains='نرگس')
-            | (Q(user__first_name__icontains='فاطمه') & Q(user__last_name__icontains='بابایی'))
-            | (Q(user__first_name__icontains='fatemeh') & Q(user__last_name__icontains='babaei'))
-            | Q(user__username__icontains='narges')
-            | Q(user__username__icontains='babaei')
-        ).select_related('user').order_by('id').first()
-        if operator:
-            group,_=CallCenterLeadGroup.objects.get_or_create(
-                owner=operator,
-                name='Türkiye | Turkey',
-                defaults={'is_default':False},
-            )
-            lead.assigned_to=operator
-            lead.group=group
-            lead.assigned_at=timezone.now()
-            lead.save(update_fields=['assigned_to','group','assigned_at','updated_at'])
-            _notify_call_center_assignment(lead)
-        return operator
-
-    candidates=EmployeeProfile.objects.filter(role='call_center',is_active=True,user__is_active=True)
-    today=timezone.localdate()
-    # Friday is an on-duty day: only call-center staff who actually checked in
-    # today may receive new leads. On other days the normal distribution stays unchanged.
-    if today.weekday() == 4:
-        present_user_ids=Attendance.objects.filter(
-            date=today,
-            status__in=('present','late'),
-            check_in__isnull=False,
-            check_out__isnull=True,
-            user__profile__role='call_center',
-            user__profile__is_active=True,
-            user__is_active=True,
-        ).values_list('user_id',flat=True)
-        candidates=candidates.filter(user_id__in=present_user_ids)
-    operator=(candidates
-              .annotate(open_leads=Count(
-                  'assigned_referral_leads',
-                  filter=Q(assigned_referral_leads__status__in=('new','contacted','appointment')),
-              ))
-              .order_by('open_leads','id').first())
-    if operator:
-        lead.assigned_to=operator
-        lead.group=_default_call_center_group(operator)
-        lead.save(update_fields=['assigned_to','group','updated_at'])
-        _notify_call_center_assignment(lead)
-    return operator
-
+    """Route referral leads through the single production lead-routing policy."""
+    from .lead_routing import assign_referral_lead
+    return assign_referral_lead(lead)
 
 def _notify_call_center_assignment(lead):
     if not lead.assigned_to_id:
