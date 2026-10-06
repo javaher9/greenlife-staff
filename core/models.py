@@ -1065,6 +1065,10 @@ class JobDutyTemplate(models.Model):
     title=models.CharField(max_length=140)
     branch=models.ForeignKey(Branch,on_delete=models.SET_NULL,null=True,blank=True,related_name='job_duties')
     job_title=models.CharField(max_length=120,blank=True,help_text='اگر خالی باشد برای همه سمت‌ها قابل استفاده است.')
+    target_user=models.ForeignKey(
+        User,on_delete=models.CASCADE,null=True,blank=True,related_name='assigned_job_duties',
+        help_text='اگر انتخاب شود، این شرح وظایف فقط برای همین پرسنل نمایش داده می‌شود.',
+    )
     description=models.TextField()
     is_active=models.BooleanField(default=True)
     created_by=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='created_job_duties')
