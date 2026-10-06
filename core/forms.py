@@ -1060,8 +1060,34 @@ class ManagerReportCommentForm(forms.ModelForm):
 class JobDutyTemplateForm(forms.ModelForm):
     class Meta:
         model=JobDutyTemplate
-        fields=['title','branch','job_title','description','is_active']
-        widgets={'description':forms.Textarea(attrs={'rows':6})}
+        fields=['target_user','title','branch','job_title','description','is_active']
+        labels={
+            'target_user':'پرسنل مشخص',
+            'title':'عنوان',
+            'branch':'شعبه',
+            'job_title':'سمت شغلی',
+            'description':'شرح وظایف',
+            'is_active':'فعال',
+        }
+        help_texts={
+            'target_user':'اگر یک نفر را انتخاب کنید، متن فقط برای همان شخص نمایش داده می‌شود. برای شرح وظایف عمومی این قسمت را خالی بگذارید.',
+            'job_title':'برای شرح وظایف عمومیِ یک سمت استفاده شود؛ در حالت فردی می‌تواند خالی باشد.',
+        }
+        widgets={'description':forms.Textarea(attrs={'rows':10,'placeholder':'شرح وظایف را کامل وارد کنید...'})}
+
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.fields['target_user'].required=False
+        self.fields['target_user'].queryset=User.objects.filter(
+            is_active=True,profile__is_active=True,
+        ).select_related('profile','profile__branch').order_by(
+            'profile__branch__name','first_name','last_name','username'
+        )
+        self.fields['target_user'].label_from_instance=lambda u: (
+            f"{u.get_full_name() or u.username} — "
+            f"{getattr(getattr(u,'profile',None),'job_title','') or 'بدون سمت'}"
+            f"{' — '+str(u.profile.branch) if getattr(getattr(u,'profile',None),'branch_id',None) else ''}"
+        )
 
 class GuidelineForm(forms.ModelForm):
     class Meta:
