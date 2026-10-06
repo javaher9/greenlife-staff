@@ -92,7 +92,7 @@ class UnifiedLeadRoutingTests(TestCase):
             [4, 4, 4],
         )
 
-    def test_late_operator_catches_up_instead_of_first_arrival_keeping_all_leads(self):
+    def test_late_operator_joins_rotation_without_catchup_burst(self):
         self._keep_only(0, 2)
         self._check_in(0)
 
@@ -101,15 +101,40 @@ class UnifiedLeadRoutingTests(TestCase):
             self.assertEqual(assign_referral_lead(lead).id, self.operators[0].id)
 
         self._check_in(2)
+        assigned=[]
         for index in range(5, 9):
             lead = self._new_lead(index)
-            self.assertEqual(assign_referral_lead(lead).id, self.operators[2].id)
+            assigned.append(assign_referral_lead(lead).id)
 
+        self.assertEqual(
+            assigned,
+            [
+                self.operators[2].id,
+                self.operators[0].id,
+                self.operators[2].id,
+                self.operators[0].id,
+            ],
+        )
         counts = Counter(
             ReferralLead.objects.values_list('assigned_to_id', flat=True)
         )
-        self.assertEqual(counts[self.operators[0].id], 4)
-        self.assertEqual(counts[self.operators[2].id], 4)
+        self.assertEqual(counts[self.operators[0].id], 6)
+        self.assertEqual(counts[self.operators[2].id], 2)
+
+    def test_pending_batch_rotates_and_never_dumps_on_one_operator(self):
+        self._keep_only(0, 2, 4)
+        self._check_in(0, 2, 4)
+        for index in range(101, 124):
+            self._new_lead(index)
+
+        released=release_pending_leads_if_ready(force=True)
+        self.assertEqual(released,23)
+
+        counts=Counter(
+            ReferralLead.objects.values_list('assigned_to_id',flat=True)
+        )
+        shares=[counts[self.operators[index].id] for index in (0,2,4)]
+        self.assertLessEqual(max(shares)-min(shares),1)
 
     def test_overnight_backlog_waits_for_more_staff_before_11(self):
         self._keep_only(0, 2)
