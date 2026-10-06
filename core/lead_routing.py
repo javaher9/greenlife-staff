@@ -46,6 +46,43 @@ KHORSHIDI_POLICY_NOTICE = (
     'تا اطلاع ثانوی لیدهای کمتری به شما تعلق می‌گیرد.'
 )
 
+
+TURKEY_OPERATOR_IDENTITIES = (
+    'فاطمه بابایی', 'بابایی', 'fatemeh babaei', 'babaei', 'babayi', 'نرگس', 'narges',
+)
+
+
+def _is_turkey_lead(lead):
+    country=getattr(lead,'country',None)
+    return bool(country and getattr(country,'code','') == 'TR')
+
+
+def _turkey_operator(*, lock=False):
+    qs=EmployeeProfile.objects.filter(
+        role='call_center',
+        is_active=True,
+        user__is_active=True,
+    ).select_related('user')
+    if lock:
+        qs=qs.select_for_update()
+    for operator in qs.order_by('id'):
+        if _identity_matches(operator,TURKEY_OPERATOR_IDENTITIES):
+            return operator
+    return None
+
+
+def _assign_turkey_lead(lead, *, notify=True):
+    operator=_turkey_operator(lock=True)
+    if not operator:
+        return None
+    return _assign_to_operator(
+        lead,
+        operator,
+        'Türkiye | Turkey',
+        'لید جدید ترکیه',
+        notify=notify,
+    )
+
 # Recent performance metrics still fine-tune unrestricted operators. Manual
 # management blocks and reductions above take precedence over this calculation.
 CONTACT_RATE_WINDOW_DAYS = 7
@@ -444,6 +481,16 @@ def release_pending_leads_if_ready(*, force=False, now=None):
 
     assigned = 0
     for lead in pending:
+        if _is_turkey_lead(lead):
+            operator=_turkey_operator(lock=True)
+            if not operator:
+                continue
+            _assign_to_operator(
+                lead,operator,'Türkiye | Turkey','لید جدید ترکیه',
+                notify=True,assigned_at=timezone.now(),
+            )
+            assigned += 1
+            continue
         channel=_pending_channel(lead)
         pool=website_operators if channel=='website' else operators
         counts=website_counts if channel=='website' else generic_counts
@@ -481,9 +528,11 @@ def _release_before_live_assignment():
 @transaction.atomic
 def assign_external_lead(lead, channel):
     _release_before_live_assignment()
-    lead.refresh_from_db(fields=['assigned_to', 'group', 'assigned_at'])
+    lead.refresh_from_db(fields=['assigned_to', 'group', 'assigned_at', 'country'])
     if lead.assigned_to_id:
         return lead.assigned_to
+    if _is_turkey_lead(lead):
+        return _assign_turkey_lead(lead)
 
     operator = _locked_round_robin_operator(channel=channel)
     if not operator:
@@ -516,9 +565,11 @@ def assign_referral_lead(lead):
         return lead.assigned_to
 
     _release_before_live_assignment()
-    lead.refresh_from_db(fields=['assigned_to', 'group', 'assigned_at'])
+    lead.refresh_from_db(fields=['assigned_to', 'group', 'assigned_at', 'country'])
     if lead.assigned_to_id:
         return lead.assigned_to
+    if _is_turkey_lead(lead):
+        return _assign_turkey_lead(lead)
 
     operator = _locked_round_robin_operator()
     if not operator:
@@ -535,9 +586,11 @@ def assign_referral_lead(lead):
 @transaction.atomic
 def assign_social_lead(lead, group_name='اینستاگرام - لینک', notification_title='لید جدید اینستاگرام'):
     _release_before_live_assignment()
-    lead.refresh_from_db(fields=['assigned_to', 'group', 'assigned_at'])
+    lead.refresh_from_db(fields=['assigned_to', 'group', 'assigned_at', 'country'])
     if lead.assigned_to_id:
         return lead.assigned_to
+    if _is_turkey_lead(lead):
+        return _assign_turkey_lead(lead)
 
     operator = _locked_round_robin_operator()
     if not operator:
