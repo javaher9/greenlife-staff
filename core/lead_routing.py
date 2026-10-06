@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from django.db import transaction
 from django.db.models import Count, Max, Q
@@ -18,12 +18,24 @@ CHANNEL_LABELS = {
 
 OPEN_ROUTING_STATUSES = ('new', 'contacted', 'appointment')
 
-# Night/no-staff leads stay in a pending queue. On normal workdays that queue is
-# released at 11:00 (or earlier only if every expected operator has checked in).
-# This prevents the first person arriving at 09:00 from receiving the whole
-# overnight backlog. Friday keeps the existing duty-day behaviour and releases
-# as soon as the on-duty operator is present.
+# Overnight/no-staff leads stay in a pending queue. On normal workdays the
+# backlog is released progressively so the first person arriving in the morning
+# cannot receive the whole queue. At 11:15 the remaining backlog is released in
+# full among whoever is present. Friday is a duty day: as soon as the first
+# eligible operator checks in, the whole pending queue may be released to them.
 PENDING_MORNING_RELEASE_HOUR = 11
+PENDING_MORNING_RELEASE_MINUTE = 15
+
+# Fixed equal-weight rotation requested by management. The order itself is the
+# policy: Narges -> Banafsha -> Yasaman -> Khorshidi -> repeat. Absent operators
+# are skipped; when they later check in they join the same rotation without any
+# catch-up burst.
+ROTATION_OPERATOR_IDENTITIES = (
+    ('فاطمه بابایی', 'بابایی', 'fatemeh babaei', 'babaei', 'babayi', 'نرگس', 'narges'),
+    ('حدیث توانا', 'توانا', 'hadis tavana', 'tavana', 'بنفشه', 'banafsha', 'banafsheh'),
+    ('زهرا آزادی', 'آزادی', 'zahra azadi', 'azadi', 'یاسمن', 'yasaman'),
+    ('محمد صالحی', 'صالحی', 'mohammad salehi', 'salehi', 'خورشیدی', 'khorshidi'),
+)
 
 # Management routing policy (2026-10-03): Kamelya and Laleh must not receive
 # any new lead until further notice. Existing ownership is deliberately kept.
@@ -34,17 +46,9 @@ BLOCKED_OPERATOR_IDENTITIES = (
     'شیما عباسی', 'عباسی', 'abbasi', 'لاله',
 )
 
-# Mohammad Salehi / Khorshidi receives a very small share until his recorded
-# daily calling activity reaches the management target again. 0.20 means
-# roughly one fifth of a regular operator's routing weight.
-REDUCED_OPERATOR_WEIGHT_RULES = (
-    (('محمد صالحی', 'mohammad salehi', 'mohammad-salehi', 'khorshidi', 'خورشیدی'), 0.20),
-)
-
-KHORSHIDI_POLICY_NOTICE = (
-    'به‌دلیل اینکه تعداد تماس‌های روزانه شما به ۱۰۰ تماس نمی‌رسد، '
-    'تا اطلاع ثانوی لیدهای کمتری به شما تعلق می‌گیرد.'
-)
+# All four rotation operators now have exactly the same routing weight.
+REDUCED_OPERATOR_WEIGHT_RULES = ()
+KHORSHIDI_POLICY_NOTICE = ''
 
 
 TURKEY_OPERATOR_IDENTITIES = (
@@ -118,10 +122,26 @@ def _operator_is_blocked(operator):
     return _identity_matches(operator, BLOCKED_OPERATOR_IDENTITIES)
 
 
+def _rotation_rank(operator):
+    for index, aliases in enumerate(ROTATION_OPERATOR_IDENTITIES):
+        if _identity_matches(operator, aliases):
+            return index
+    return None
+
+
 def _operators_for_channel(operators, channel):
     # The block is channel-agnostic: website, Instagram, WhatsApp, campaigns,
-    # referral network and pending-queue releases all use this same pool.
-    return [operator for operator in operators if not _operator_is_blocked(operator)]
+    # referral network and pending-queue releases all use the same fixed pool.
+    ranked=[]
+    for operator in operators:
+        if _operator_is_blocked(operator):
+            continue
+        rank=_rotation_rank(operator)
+        if rank is None:
+            continue
+        ranked.append((rank,operator.id,operator))
+    ranked.sort(key=lambda row:(row[0],row[1]))
+    return [operator for _rank,_id,operator in ranked]
 
 
 def _recent_operator_metrics(operator, now=None):
@@ -166,38 +186,26 @@ def _recent_operator_metrics(operator, now=None):
 
 
 def operator_weight(operator, now=None):
-    """Modest (0.8–1.2) lead-allocation adjustment based on recorded activity.
-
-    Completed call outcomes 45%, meaningful engagement 25%, call volume 20%,
-    punctual recorded attendance 10%. Daily workload balancing is applied
-    separately, and only staff currently checked in can receive new leads.
-    """
-    for aliases, weight in REDUCED_OPERATOR_WEIGHT_RULES:
-        if _identity_matches(operator, aliases):
-            return weight
-    contact,engagement,volume,punctuality=_recent_operator_metrics(operator,now=now)
-    score=0.45*contact+0.25*engagement+0.20*volume+0.10*punctuality
-    return max(0.8,min(1.2,0.8+0.4*score))
+    """All four active rotation operators have identical lead weight."""
+    return 1.0
 
 
 def operator_policy_notice(operator):
-    """Return the persistent dashboard warning for a manually limited operator."""
-    for aliases, _weight in REDUCED_OPERATOR_WEIGHT_RULES:
-        if _identity_matches(operator, aliases):
-            return KHORSHIDI_POLICY_NOTICE
+    """No operator is currently under a reduced-weight warning."""
     return ''
 
 
 def expected_operator_user_ids(day=None):
     """Active call-center users expected to work today, excluding approved leave."""
     day = day or timezone.localdate()
-    user_ids = set(
+    active=list(
         EmployeeProfile.objects.filter(
             role='call_center',
             is_active=True,
             user__is_active=True,
-        ).values_list('user_id', flat=True)
+        ).select_related('user')
     )
+    user_ids={operator.user_id for operator in _operators_for_channel(active,None)}
     if not user_ids:
         return set()
     leave_ids = set(
@@ -454,24 +462,68 @@ def _assign_to_operator(lead, operator, group_name, notification_title, *, notif
 
 
 def _pending_release_ready(local_now, eligible_user_ids):
-    if not eligible_user_ids:
-        return False
-    # Friday is a duty day: do not wait for the normal team.
-    if local_now.weekday() == 4:
-        return True
-    expected = expected_operator_user_ids(local_now.date())
-    if expected and expected.issubset(eligible_user_ids):
-        return True
-    return local_now.hour >= PENDING_MORNING_RELEASE_HOUR
+    # Any present eligible operator can start receiving part of the morning
+    # backlog. Friday is intentionally immediate/full; normal days are capped
+    # progressively until the 11:15 hard release point.
+    return bool(eligible_user_ids)
 
+
+def _morning_release_fraction(local_now):
+    """Cumulative share of the overnight backlog allowed out before 11:15."""
+    if local_now.weekday() == 4:
+        return 1.0
+    current=local_now.time()
+    if current >= time(PENDING_MORNING_RELEASE_HOUR, PENDING_MORNING_RELEASE_MINUTE):
+        return 1.0
+    if current >= time(11, 0):
+        return 0.75
+    if current >= time(10, 0):
+        return 0.50
+    return 0.25
+
+
+def _pending_release_quota(local_now, pending):
+    """How many queued leads may be released in this pass.
+
+    The calculation is cumulative for leads that were already waiting before
+    the current local day. This keeps repeated live arrivals from draining the
+    entire overnight queue early.
+    """
+    if not pending:
+        return 0
+    if local_now.weekday() == 4:
+        return len(pending)
+    if local_now.time() >= time(PENDING_MORNING_RELEASE_HOUR, PENDING_MORNING_RELEASE_MINUTE):
+        return len(pending)
+
+    tz=timezone.get_current_timezone()
+    day_start=timezone.make_aware(datetime.combine(local_now.date(), time.min), tz)
+    overnight_pending=[lead for lead in pending if lead.created_at < day_start]
+    if not overnight_pending:
+        # Daytime leads that arrived while nobody was present may be released
+        # normally once staff are available.
+        return len(pending)
+
+    already_released=ReferralLead.objects.filter(
+        created_at__lt=day_start,
+        assigned_at__date=local_now.date(),
+        status__in=OPEN_ROUTING_STATUSES,
+    ).count()
+    total_backlog=already_released+len(overnight_pending)
+    target=int((total_backlog*_morning_release_fraction(local_now))+0.999999)
+    overnight_quota=max(0,target-already_released)
+
+    # Do not hold today's newly queued leads behind the overnight quota.
+    daytime_count=len(pending)-len(overnight_pending)
+    return min(len(pending),overnight_quota+daytime_count)
 
 @transaction.atomic
 def release_pending_leads_if_ready(*, force=False, now=None):
-    """Distribute queued leads in a smooth round-robin among present operators.
+    """Distribute queued leads using the fixed equal-weight rotation.
 
-    The queue starts with the operator immediately after the most recent
-    recipient and then rotates one-by-one. A late arrival never receives a
-    catch-up burst; explicit management reductions are applied as a quota.
+    Normal days release the overnight queue progressively (25% before 10:00,
+    50% by 10:00, 75% by 11:00) and release everything still waiting at 11:15.
+    Friday releases the full queue as soon as the first eligible operator is in.
     """
     local_now = timezone.localtime(now or timezone.now())
     day = local_now.date()
@@ -501,8 +553,14 @@ def release_pending_leads_if_ready(*, force=False, now=None):
     if not operators:
         return 0
 
+    release_quota=_pending_release_quota(local_now,pending)
+    if release_quota <= 0:
+        return 0
+
     assigned = 0
     for lead in pending:
+        if assigned >= release_quota:
+            break
         if _is_turkey_lead(lead):
             operator=_turkey_operator(lock=True)
             if not operator:
