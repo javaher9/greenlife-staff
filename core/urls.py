@@ -121,4 +121,5 @@ path('guidelines/',views.my_guidelines,name='my_guidelines'),
 path('guidelines/<int:pk>/ack/',views.guideline_ack,name='guideline_ack'),
 path('guidelines/manage/',views.guidelines_manage,name='guidelines_manage'),
 path('guidelines/manage/new/',views.guideline_create,name='guideline_create'),
-path('job-duties/new/',views.job_duty_create,name='job_duty_create')]
+path('job-duties/new/',views.job_duty_create,name='job_duty_create'),
+path('job-duties/<int:pk>/edit/',views.job_duty_edit,name='job_duty_edit')]
