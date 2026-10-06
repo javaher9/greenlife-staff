@@ -543,12 +543,21 @@ def lead_management_dashboard(request):
     market_filter=(request.GET.get('market') or '').strip().upper()
     leads=_apply_market_filter(leads,market_filter)
     source_filter=(request.GET.get('source') or '').strip(); status_filter=(request.GET.get('status') or '').strip(); operator_filter=(request.GET.get('operator') or '').strip()
+    search_query=(request.GET.get('q') or '').strip()
     filtered=leads
     if source_filter in ('instagram','website','crm','whatsapp','campaign','telegram','bale'): filtered=filtered.filter(_channel_q(source_filter))
     elif source_filter in ('panel','qr','link'): filtered=filtered.filter(source=source_filter)
     if status_filter=='follow_up': filtered=filtered.filter(status='contacted',next_follow_up__isnull=False)
     elif status_filter: filtered=filtered.filter(status=status_filter)
     if operator_filter.isdigit(): filtered=filtered.filter(assigned_to_id=int(operator_filter))
+    if search_query:
+        digits=''.join(ch for ch in search_query if ch.isdigit())
+        search_q=Q(full_name__icontains=search_query)
+        if digits:
+            search_q |= Q(phone__icontains=digits)
+            if digits.startswith('98') and len(digits)>10: search_q |= Q(phone__icontains='0'+digits[2:])
+            elif digits.startswith('0'): search_q |= Q(phone__icontains=digits[1:])
+        filtered=filtered.filter(search_q)
 
     total=leads.count(); today_count=leads.filter(created_at__date=today).count(); week_count=leads.filter(created_at__date__gte=start_week).count(); month_count=leads.filter(created_at__date__gte=start_month).count()
     contacted_count=leads.filter(status__in=('contacted','appointment','visited','won','lost')).count(); appointment_count=leads.filter(status__in=('appointment','visited','won')).count()
@@ -601,4 +610,4 @@ def lead_management_dashboard(request):
     attention_backlog=list(attention_backlog_qs.order_by('-created_at')[:15])
     for lead in recent: _enrich_referral_group_label(lead)
     integration_rows=[{'name':'Instagram Form','state':'connected','detail':'فرم فعلی مستقیماً وارد ReferralLead می‌شود.'},{'name':'Website','state':'ready','detail':'برای اتصال فرم سایت به ورودی یکپارچه آماده است.'},{'name':'CRM','state':'ready','detail':'وب‌هوک/API ورودی برای اتصال CRM طراحی شده است.'},{'name':'WhatsApp / Campaigns','state':'ready','detail':'قابل اتصال با source و UTM مستقل.'}]
-    return render(request,'core/lead_management_dashboard.html',{'lead_kpis':{'total':total,'today':today_count,'week':week_count,'month':month_count,'contacted':contacted_count,'appointments':appointment_count,'won':won_count,'conversion':conversion,'contact_rate':contact_rate,'unassigned':unassigned_count,'overdue':overdue_count,'untouched':untouched_count,'duplicates':duplicate_phones,'sales_amount':sales_amount,'instagram_sales_amount':instagram_sales_amount,'website_sales_amount':website_sales_amount},'status_rows':status_rows,'source_rows':source_rows,'instagram_page_rows':instagram_page_rows,'group_rows':group_rows,'operator_rows':operator_rows,'recent_leads':[FlowerLeadProxy(lead) for lead in recent],'attention_current':[AttentionLeadProxy(lead, now, today) for lead in attention_current],'attention_backlog':[AttentionLeadProxy(lead, now, today) for lead in attention_backlog],'attention_backlog_count':attention_backlog_count,'attention_total_count':len(attention_current)+attention_backlog_count,'integration_rows':integration_rows,'operators':[FlowerProfileProxy(op) for op in operators],'source_filter':source_filter,'status_filter':status_filter,'operator_filter':operator_filter,'market_filter':market_filter,'status_choices':STATUS_FILTER_CHOICES,'market_counts':{'all':ReferralLead.objects.count(),'IR':ReferralLead.objects.filter(country__code='IR').count(),'TR':ReferralLead.objects.filter(country__code='TR').count()}})
+    return render(request,'core/lead_management_dashboard.html',{'lead_kpis':{'total':total,'today':today_count,'week':week_count,'month':month_count,'contacted':contacted_count,'appointments':appointment_count,'won':won_count,'conversion':conversion,'contact_rate':contact_rate,'unassigned':unassigned_count,'overdue':overdue_count,'untouched':untouched_count,'duplicates':duplicate_phones,'sales_amount':sales_amount,'instagram_sales_amount':instagram_sales_amount,'website_sales_amount':website_sales_amount},'status_rows':status_rows,'source_rows':source_rows,'instagram_page_rows':instagram_page_rows,'group_rows':group_rows,'operator_rows':operator_rows,'recent_leads':[FlowerLeadProxy(lead) for lead in recent],'attention_current':[AttentionLeadProxy(lead, now, today) for lead in attention_current],'attention_backlog':[AttentionLeadProxy(lead, now, today) for lead in attention_backlog],'attention_backlog_count':attention_backlog_count,'attention_total_count':len(attention_current)+attention_backlog_count,'integration_rows':integration_rows,'operators':[FlowerProfileProxy(op) for op in operators],'source_filter':source_filter,'status_filter':status_filter,'operator_filter':operator_filter,'market_filter':market_filter,'search_query':search_query,'status_choices':STATUS_FILTER_CHOICES,'market_counts':{'all':ReferralLead.objects.count(),'IR':ReferralLead.objects.filter(country__code='IR').count(),'TR':ReferralLead.objects.filter(country__code='TR').count()}})
