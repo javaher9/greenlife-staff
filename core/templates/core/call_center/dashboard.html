@@ -3,8 +3,8 @@
 .ccx{--ink:#1d2d3f;--muted:#667587;--line:#dfe7eb;--page:#f4f7f8;--card:#fff;--green:#18865f;--green2:#e9f7f0;--amber:#a96d12;--amber2:#fff5df;--red:#b5415b;--red2:#fff0f3;--purple:#684995;--purple2:#f4eefb;--blue:#3e6fae;--blue2:#edf4ff;max-width:1880px;margin:0 auto 70px;direction:rtl;color:var(--ink);font-family:Tahoma,"Noto Sans Arabic",sans-serif;display:grid;gap:12px}
 .ccx *{box-sizing:border-box}.ccx a{text-decoration:none}.ccx-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 26px rgba(31,52,67,.05)}
 .ccx-desk{display:grid;grid-template-columns:minmax(280px,1.2fr) minmax(520px,2.8fr);gap:16px;align-items:center;padding:17px 19px;background:linear-gradient(110deg,#fff 0%,#f9fcfb 58%,#f5f1fb 100%);height:auto!important;min-height:116px!important;position:relative!important;top:auto!important;z-index:auto!important;margin:0!important;overflow:visible!important}
-.ccx-person{display:flex;align-items:center;gap:12px;min-width:0}.ccx-avatar{width:58px;height:58px;flex:0 0 58px;border-radius:17px;overflow:hidden;display:grid;place-items:center;background:linear-gradient(145deg,#eaf8f1,#efe8f9);border:1px solid #dce7e3;color:#62458c;font-size:20px;font-weight:900}.ccx-avatar img{width:100%;height:100%;object-fit:cover}.ccx-person small{display:block;color:#6c7b8b;font-size:9px;font-weight:800}.ccx-person h1{margin:3px 0 0;font-size:21px;color:#1c3040}.ccx-person p{margin:4px 0 0;color:#74818e;font-size:9px}
-.ccx-presence{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:7px}.ccx-state{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;font-size:9px;font-weight:900}.ccx-state.active{background:#e7f7ef;color:#176f4f}.ccx-state.out{background:#fff0f2;color:#a83e56}.ccx-state:before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}.ccx-start{font-size:9px;color:#526579;font-weight:800}
+.ccx-person{display:flex;align-items:center;gap:16px;min-width:0;padding:5px 4px}.ccx-avatar{width:86px;height:86px;flex:0 0 86px;border-radius:24px;overflow:hidden;display:grid;place-items:center;background:linear-gradient(145deg,#eaf8f1,#f3eef9);border:3px solid #fff;box-shadow:0 0 0 1px #d7e5df,0 10px 26px rgba(42,77,63,.10);color:#62458c;font-size:28px;font-weight:900}.ccx-avatar img{width:100%;height:100%;object-fit:cover}.ccx-person-copy{min-width:0;display:grid;gap:2px}.ccx-eyebrow{display:block;color:#5c7b6f;font-size:9px;font-weight:900;letter-spacing:.15px}.ccx-person h1{margin:1px 0 0;font-size:26px;line-height:1.25;color:#1c3040}.ccx-role-line{margin-top:3px;color:#72808c;font-size:9px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ccx-role-line b{color:#405567;font-weight:900}
+.ccx-presence{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:9px}.ccx-state{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;font-size:9px;font-weight:900;border:1px solid transparent}.ccx-state.active{background:#eaf7f0;color:#176f4f;border-color:#d0eadd}.ccx-state.out{background:#fff1f3;color:#a83e56;border-color:#f1d9df}.ccx-state:before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}.ccx-start{font-size:9px;color:#526579;font-weight:800;padding:0 2px}
 .ccx-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px}.ccx-kpi{padding:11px 12px;border:1px solid #e2e9ec;border-radius:14px;background:rgba(255,255,255,.88);min-width:0}.ccx-kpi span{display:block;color:#6c7b89;font-size:8px;font-weight:900;white-space:nowrap}.ccx-kpi strong{display:block;margin-top:5px;color:#203548;font-size:21px;line-height:1}.ccx-kpi small{display:block;margin-top:5px;color:#8a96a0;font-size:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ccx-kpi.alert strong{color:#b23e58}.ccx-kpi.good strong{color:#187552}
 .ccx-performance{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;background:#fff;border:1px solid var(--line);border-radius:14px}.ccx-performance-main{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.ccx-perf{display:inline-flex;align-items:center;gap:6px;padding:7px 9px;border-radius:10px;background:#f7fafb;color:#536578;font-size:9px}.ccx-perf b{color:#1f3446;font-size:11px}.ccx-detail-toggle{border:0;background:#f2ecfa;color:#664790;border-radius:9px;padding:8px 11px;font:900 9px Tahoma;cursor:pointer}
 .ccx-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.ccx-tool{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 12px;border:1px solid #dfe7e9;border-radius:10px;background:#fff;color:#4c5f72;font-size:9px;font-weight:900}.ccx-tool.primary{background:#18865f;color:#fff;border-color:#18865f}.ccx-tool.chat{background:#f2ecfa;color:#65458f;border-color:#ded2ec}
@@ -30,7 +30,7 @@
   .cc-work-row{grid-template-columns:minmax(170px,1.3fr) 58px 82px minmax(95px,.75fr) 82px minmax(205px,1.2fr)}
   .ccx-next-action{font-size:8px}
 }
-@media(max-width:1180px){.ccx-layout{grid-template-columns:1fr}.ccx-main,.ccx-side{grid-column:1}.ccx-main{overflow:visible}.ccx-side{position:static!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.ccx-desk{grid-template-columns:1fr;min-height:0!important}.cc-work-row{grid-template-columns:1fr 90px 115px 1fr}.ccx-actions{grid-column:1/-1}.ccx-next-action{display:none}.ccx-secondary{grid-template-columns:1fr}.ccx-filters{grid-template-columns:1fr}}
+@media(max-width:1180px){.ccx-layout{grid-template-columns:1fr}.ccx-main,.ccx-side{grid-column:1}.ccx-main{overflow:visible}.ccx-side{position:static!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.ccx-desk{grid-template-columns:1fr;min-height:0!important}.ccx-person{padding:7px 2px}.ccx-avatar{width:78px;height:78px;flex-basis:78px;border-radius:22px}.ccx-person h1{font-size:24px}.cc-work-row{grid-template-columns:1fr 90px 115px 1fr}.ccx-actions{grid-column:1/-1}.ccx-next-action{display:none}.ccx-secondary{grid-template-columns:1fr}.ccx-filters{grid-template-columns:1fr}}
 @media(max-width:760px){.ccx{padding:8px;margin-bottom:90px;background:#0d1822;color:#eef5f7}.ccx-card,.ccx-desk,.ccx-performance,.ccx-filters{background:#111f2b;border-color:#293b49}.ccx-person h1,.ccx-head h2,.ccx-head h3{color:#fff}.ccx-person p,.ccx-person small,.ccx-head p{color:#b8c4cc}.ccx-kpis{grid-template-columns:repeat(2,1fr)}.ccx-kpi{background:#162733;border-color:#304553}.ccx-kpi span,.ccx-kpi small{color:#b9c6ce}.ccx-kpi strong{color:#fff}.ccx-side{grid-template-columns:1fr}.cc-work-row{grid-template-columns:1fr;gap:6px;background:#101e29;border-color:#2b3e4c}.ccx-personcell strong,.ccx-time b,.ccx-last strong{color:#fff}.ccx-phone,.ccx-time,.ccx-last,.ccx-next-action{color:#c3ced5}.ccx-actions{grid-column:auto}.ccx-secondary{display:none}.ccx-filter{background:#172733;border-color:#304453;color:#cbd4da}.ccx-search input{background:#13232f;border-color:#304553;color:#fff}.ccx-side-item{background:#13232f;border-color:#2d414f}.ccx-side-item strong{color:#fff}.ccx-drawer{background:#10202b;color:#fff}.ccx-drawer-head{border-color:#2b3e4c}.ccx-drawer-head strong{color:#fff}.ccx-chat-msg{border-color:#2c3d49}.ccx-chat-msg strong{color:#fff}.ccx-chat-msg p{color:#c2ccd2}}
 
 /* Cockpit v2: larger light stats, page-native navigation plaques and richer personal chat drawer. */
@@ -51,10 +51,11 @@ body.gl-page-call_center_dashboard .cc-direct-side-entry{display:none!important}
   <header class="ccx-desk ccx-card">
     <div class="ccx-person">
       <div class="ccx-avatar">{% if user.profile.avatar %}<img src="{{ user.profile.avatar.url }}" alt="">{% else %}{{ user.first_name|first|default:user.username|first }}{% endif %}</div>
-      <div>
-        <small>میز کار امروز · {{ today|jdate }}</small>
-        <h1>{{ user.first_name|default:user.username }}</h1>
-        <div class="ccx-presence"><span class="ccx-state {{ cockpit.routing_state }}">{{ cockpit.routing_state_label }}</span><span class="ccx-start">شروع: {{ cockpit.shift_started_at }} · {{ cockpit.routing_state_reason }}</span></div>
+      <div class="ccx-person-copy">
+        <span class="ccx-eyebrow">میز کار امروز · {{ today|jdate }}</span>
+        <h1>{{ user.get_full_name|default:user.username }}</h1>
+        <div class="ccx-role-line"><b>{{ user.profile.job_title|default:user.profile.get_role_display }}</b>{% if user.profile.branch %} · {{ user.profile.branch }}{% endif %}</div>
+        <div class="ccx-presence"><span class="ccx-state {{ cockpit.routing_state }}">{{ cockpit.routing_state_label }}</span><span class="ccx-start">شروع {{ cockpit.shift_started_at }} · {{ cockpit.routing_state_reason }}</span></div>
       </div>
     </div>
     <div class="ccx-kpis">
@@ -66,15 +67,6 @@ body.gl-page-call_center_dashboard .cc-direct-side-entry{display:none!important}
       <div class="ccx-kpi"><span>نرخ پاسخ</span><strong>{{ cockpit.response_rate }}%</strong><small>از تماس‌های نتیجه‌دار امروز</small></div>
     </div>
   </header>
-
-  <section class="ccx-performance">
-    <div class="ccx-performance-main">
-      <span class="ccx-perf">تماس امروز <b>{{ cockpit.calls_today }}</b></span>
-      <span class="ccx-perf">نرخ پاسخ <b>{{ cockpit.response_rate }}%</b></span>
-      <span class="ccx-perf">نوبت <b>{{ cockpit.appointments_created_today }}</b></span>
-      <span class="ccx-perf">فروش <b>{{ cockpit.today_sales_count }}</b></span>
-    </div>
-  </section>
 
   <nav class="ccx-quick-plaque" aria-label="دسترسی‌های سریع کال‌سنتر">
     <a class="ccx-quick-link" href="{% url 'call_center_dashboard' %}"><b>☎</b><span>میز کار</span></a>
