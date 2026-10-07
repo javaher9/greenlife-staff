@@ -612,6 +612,144 @@ body.gl-page-call_center_dashboard .ccx .ccx-name-editor .ccx-name-cancel{
 body.gl-page-call_center_dashboard .ccx .ccx-time{
   position:relative!important;z-index:2!important;min-width:0!important
 }
+
+/* ===== Compact lead rows + larger readable typography ===== */
+body.gl-page-call_center_dashboard .ccx .ccx-queue{
+  gap:5px!important;
+  padding:6px!important;
+}
+body.gl-page-call_center_dashboard .ccx .cc-work-row{
+  min-height:70px!important;
+  padding:8px 10px!important;
+  gap:7px!important;
+  border-radius:13px!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-personcell strong[data-lead-name]{
+  flex:0 1 auto!important;
+  max-width:calc(100% - 30px)!important;
+  font-size:13.5px!important;
+  line-height:1.4!important;
+  cursor:pointer!important;
+  color:#1d3244!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-personcell strong[data-lead-name]:hover,
+body.gl-page-call_center_dashboard .ccx .ccx-personcell strong[data-lead-name]:focus{
+  color:#65468e!important;
+  outline:none!important;
+  text-decoration:underline!important;
+  text-underline-offset:3px!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-name-line{
+  justify-content:flex-start!important;
+  gap:4px!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-name-edit{
+  width:22px!important;
+  height:22px!important;
+  flex:0 0 22px!important;
+  border-radius:7px!important;
+  font-size:10px!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-phone{
+  margin-top:2px!important;
+  font-size:10.5px!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-meta{
+  margin-top:3px!important;
+  gap:4px!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-source,
+body.gl-page-call_center_dashboard .ccx .ccx-group{
+  font-size:9px!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-source{
+  padding:3px 6px!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-time,
+body.gl-page-call_center_dashboard .ccx .ccx-last,
+body.gl-page-call_center_dashboard .ccx .ccx-next-action{
+  font-size:10.8px!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-time b,
+body.gl-page-call_center_dashboard .ccx .ccx-last strong{
+  font-size:11px!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-sla{
+  min-height:29px!important;
+  padding:0 7px!important;
+  font-size:9px!important;
+  border-radius:9px!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-actions{
+  gap:4px!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-action{
+  height:33px!important;
+  min-height:33px!important;
+  font-size:8.5px!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-action.result{
+  font-size:7.6px!important;
+}
+/* "More" no longer consumes an entire extra grid row. */
+body.gl-page-call_center_dashboard .ccx .ccx-more{
+  position:absolute!important;
+  left:9px!important;
+  bottom:6px!important;
+  z-index:12!important;
+  grid-column:auto!important;
+  margin:0!important;
+  text-align:left!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-more summary{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-width:34px!important;
+  height:22px!important;
+  padding:0 5px!important;
+  border-radius:7px!important;
+  background:#f7f9fa!important;
+  color:#75838f!important;
+  border:1px solid #e2e8ea!important;
+  font-size:0!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-more summary:after{
+  content:"•••"!important;
+  font-size:10px!important;
+  letter-spacing:1px!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-more-body{
+  position:absolute!important;
+  left:0!important;
+  bottom:27px!important;
+  min-width:125px!important;
+  margin:0!important;
+  padding:6px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  gap:4px!important;
+  background:#fff!important;
+  border:1px solid #dfe7e9!important;
+  border-radius:9px!important;
+  box-shadow:0 10px 28px rgba(31,47,61,.14)!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-more:not([open]) .ccx-more-body{
+  display:none!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-more-body a{
+  padding:6px 7px!important;
+  font-size:8.5px!important;
+}
+@media(max-width:1180px){
+  body.gl-page-call_center_dashboard .ccx .cc-work-row{
+    min-height:0!important;
+    padding:9px!important;
+  }
+  body.gl-page-call_center_dashboard .ccx .ccx-personcell strong[data-lead-name]{
+    font-size:13px!important;
+  }
+}
 </style>
 
 <div class="ccx" lang="fa" dir="rtl" translate="no">
@@ -668,7 +806,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-time{
         {% for row in work_queue %}
         <article class="cc-work-row" data-lead-id="{{ row.lead.pk }}" data-categories="{{ row.categories }}" data-search="{{ row.lead.full_name }} {{ row.lead.phone }} {{ row.source_label }} {{ row.lead.interested_service }} {{ row.lead.group.name|default:'' }}" data-call-url="{% url 'call_center_mark_call_started' row.lead.pk %}" data-result-url="{% url 'call_center_save_call_result' row.lead.pk %}">
           <div class="ccx-personcell">
-            <div class="ccx-name-line"><strong data-lead-name>{{ row.lead.full_name }}</strong><span class="ccx-name-edit" role="button" tabindex="0" data-name-edit data-name-url="{% url 'call_center_lead_name_update' row.lead.pk %}" title="ویرایش نام">✎</span></div>
+            <div class="ccx-name-line"><strong data-lead-name data-name-label role="button" tabindex="0" title="برای ویرایش نام کلیک کنید">{{ row.lead.full_name }}</strong><span class="ccx-name-edit" role="button" tabindex="0" data-name-edit data-name-url="{% url 'call_center_lead_name_update' row.lead.pk %}" title="ویرایش نام">✎</span></div>
             <div class="ccx-name-editor"><input type="text" maxlength="140" value="{{ row.lead.full_name }}" aria-label="نام مراجع"><button class="ccx-name-save" type="button">ذخیره</button><button class="ccx-name-cancel" type="button">لغو</button></div>
             <span class="ccx-phone">{{ row.lead.phone }}</span>
             <div class="ccx-meta"><span class="ccx-source {{ row.source_key }}">{{ row.source_label }}</span>{% if row.lead.group %}<span class="ccx-group">{{ row.lead.group.name }}</span>{% endif %}</div>
@@ -849,8 +987,13 @@ body.gl-page-call_center_dashboard .ccx .ccx-time{
       document.querySelectorAll('.ccx-name-editor.open').forEach(function(other){if(other!==editor)other.classList.remove('open')});
       editor.classList.add('open');input.focus();input.select();
     }
-    edit.addEventListener('click',function(e){e.stopPropagation();openEditor()});
-    edit.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();openEditor()}});
+    function wireOpen(target){
+      if(!target)return;
+      target.addEventListener('click',function(e){e.stopPropagation();openEditor()});
+      target.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();openEditor()}});
+    }
+    wireOpen(edit);
+    wireOpen(label);
     editor.addEventListener('click',function(e){e.stopPropagation()});
     cancel.addEventListener('click',close);
     input.addEventListener('keydown',function(e){if(e.key==='Escape')close();if(e.key==='Enter'){e.preventDefault();save.click()}});
