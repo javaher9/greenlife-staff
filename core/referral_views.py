@@ -894,15 +894,18 @@ def call_center_lead_create(request):
     if form.is_valid():
         lead=form.save(commit=False)
         lead.referrer=_call_center_direct_referrer()
-        lead.assigned_to=operator
+        lead.assigned_to=None
+        lead.group=None
         lead.created_by=request.user
         lead.source='panel'
         lead.save()
-        messages.success(
-            request,
-            f'شماره {lead.phone} با نام «{lead.full_name}» در گروه «{lead.group.name}» ثبت شد.'
-        )
-        return redirect(f"{reverse('call_center_dashboard')}?group={lead.group_id}")
+        assigned=_auto_assign_call_center(lead)
+        if assigned:
+            operator_name=assigned.user.get_full_name() or assigned.user.username
+            messages.success(request,f'لید «{lead.full_name}» ثبت شد و طبق توزیع عادی به «{operator_name}» رسید.')
+        else:
+            messages.warning(request,'لید ثبت شد، اما فعلاً اپراتور واجد شرایطی برای توزیع پیدا نشد.')
+        return redirect('call_center_dashboard')
     error=' '.join(message for messages_list in form.errors.values() for message in messages_list)
     messages.error(request,error or 'اطلاعات ثبت شماره کامل یا معتبر نیست.')
     group_id=(request.POST.get('group') or '').strip()
@@ -918,10 +921,10 @@ def call_center_direct_lead_create(request):
     if request.method=='POST' and form.is_valid():
         lead=form.save(commit=False)
         lead.referrer=_call_center_direct_referrer()
-        lead.assigned_to=operator
-        lead.assigned_at=timezone.now()
+        lead.assigned_to=None
+        lead.assigned_at=None
         lead.created_by=request.user
-        lead.group=_default_call_center_group(operator)
+        lead.group=None
         lead.source='panel'
         direct_marker='[channel:instagram] [entry:direct]'
         lead.notes=f"{direct_marker}\n{lead.notes}".strip()
@@ -938,10 +941,18 @@ def call_center_direct_lead_create(request):
             else:
                 messages.warning(request,'این شماره اخیراً به‌عنوان لید ثبت شده است.')
         else:
-            messages.success(
-                request,
-                f'لید دایرکت «{lead.full_name}» به نام خودتان ثبت و به صف شما اضافه شد.'
-            )
+            assigned=_auto_assign_call_center(lead)
+            if assigned:
+                operator_name=assigned.user.get_full_name() or assigned.user.username
+                messages.success(
+                    request,
+                    f'لید دایرکت «{lead.full_name}» ثبت شد و طبق توزیع عادی به «{operator_name}» رسید.'
+                )
+            else:
+                messages.warning(
+                    request,
+                    'لید دایرکت ثبت شد، اما فعلاً اپراتور واجد شرایطی برای توزیع پیدا نشد.'
+                )
             return redirect('call_center_dashboard')
     return render(request,'core/call_center/direct_lead_form.html',{'form':form})
 
