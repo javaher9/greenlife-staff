@@ -402,6 +402,100 @@ body.gl-patient360-workspace .p360-mini-btn{font-size:9.5px!important;padding:9p
   body.gl-patient360-workspace .p360-grid{grid-template-columns:1fr}
   body.gl-patient360-workspace .p360-facts{grid-template-columns:repeat(2,1fr)}
 }
+
+/* ===== Patient 360 final light luxury guard ===== */
+html:has(body.gl-patient360-workspace),
+body.gl-patient360-workspace,
+body.gl-patient360-workspace .app-shell,
+body.gl-patient360-workspace .app-main{
+  background:#f3f7f6!important;
+  background-image:none!important;
+  color-scheme:light!important;
+}
+body.gl-patient360-workspace .p360{
+  background:linear-gradient(180deg,#f7faf9 0%,#f3f7f6 100%)!important;
+  border:1px solid #e0e9e6!important;
+  border-radius:28px!important;
+  padding:14px 18px 24px!important;
+  box-shadow:0 18px 44px rgba(39,74,64,.045)!important;
+}
+body.gl-patient360-workspace .p360-hero,
+body.gl-patient360-workspace .p360-card,
+body.gl-patient360-workspace .p360-kpi,
+body.gl-patient360-workspace .p360-quicknav,
+body.gl-patient360-workspace .p360-fact,
+body.gl-patient360-workspace .p360-row,
+body.gl-patient360-workspace .p360-metric,
+body.gl-patient360-workspace .p360-table-wrap,
+body.gl-patient360-workspace .p360-score,
+body.gl-patient360-workspace .p360-rating-row{
+  background-color:#fff!important;
+  background-image:none!important;
+  color:#23443c!important;
+}
+body.gl-patient360-workspace .p360-head{
+  background:linear-gradient(90deg,#fbfefd,#f7faf9)!important;
+  color:#23443c!important;
+}
+body.gl-patient360-workspace .p360 input,
+body.gl-patient360-workspace .p360 select,
+body.gl-patient360-workspace .p360 textarea{
+  background:#fff!important;
+  background-image:none!important;
+  color:#26473f!important;
+  -webkit-text-fill-color:#26473f!important;
+  border:1px solid #d8e4e0!important;
+  box-shadow:none!important;
+  color-scheme:light!important;
+}
+body.gl-patient360-workspace .p360 input::placeholder,
+body.gl-patient360-workspace .p360 textarea::placeholder{
+  color:#91a09b!important;
+  opacity:1!important;
+}
+body.gl-patient360-workspace .p360 input:focus,
+body.gl-patient360-workspace .p360 select:focus,
+body.gl-patient360-workspace .p360 textarea:focus{
+  outline:none!important;
+  border-color:#bfaed6!important;
+  box-shadow:0 0 0 3px rgba(108,78,150,.065)!important;
+}
+body.gl-patient360-workspace .p360 button{
+  box-shadow:none!important;
+}
+body.gl-patient360-workspace .p360-rating-form button{
+  background:#eee6f7!important;
+  color:#604287!important;
+  border:1px solid #d0bde2!important;
+}
+body.gl-patient360-workspace .p360-sms button,
+body.gl-patient360-workspace .p360-followup button{
+  background:#e5f5ed!important;
+  color:#176e4f!important;
+  border:1px solid #c3e0d1!important;
+}
+body.gl-patient360-workspace .p360-back{
+  background:#e7f5ee!important;
+  color:#1d6f50!important;
+  -webkit-text-fill-color:#1d6f50!important;
+  border:1px solid #c9e3d7!important;
+}
+body.gl-patient360-workspace .p360-mini-btn{
+  background:#f1eafa!important;
+  color:#65478d!important;
+  border:1px solid #d9cae7!important;
+}
+body.gl-patient360-workspace .p360-mini-btn.secondary{
+  background:#eaf7f1!important;
+  color:#247457!important;
+  border-color:#cee6dc!important;
+}
+@media(max-width:700px){
+  body.gl-patient360-workspace .p360{
+    border-radius:18px!important;
+    padding:8px!important;
+  }
+}
 </style>
 
 <div class="p360">
@@ -653,4 +747,24 @@ body.gl-patient360-workspace .p360-mini-btn{font-size:9.5px!important;padding:9p
 })();
 </script>
 {% endif %}
+
+<script>
+(function(){
+  function imp(el,p,v){if(el)el.style.setProperty(p,v,'important')}
+  function forceP360Light(){
+    imp(document.documentElement,'background','#f3f7f6');
+    imp(document.body,'background','#f3f7f6');
+    document.body.classList.add('gl-patient360-workspace');
+    var main=document.querySelector('.app-main');if(main){imp(main,'background','#f3f7f6');imp(main,'background-image','none')}
+    var shell=document.querySelector('.app-shell');if(shell){imp(shell,'background','#f3f7f6');imp(shell,'background-image','none')}
+    var root=document.querySelector('.p360');if(root){imp(root,'background','#f3f7f6')}
+    document.querySelectorAll('.p360 input,.p360 select,.p360 textarea').forEach(function(el){
+      imp(el,'background','#fff');imp(el,'color','#26473f');imp(el,'border','1px solid #d8e4e0');imp(el,'box-shadow','none');
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',forceP360Light);else forceP360Light();
+  setTimeout(forceP360Light,80);
+  setTimeout(forceP360Light,700);
+})();
+</script>
 {% endblock %}
