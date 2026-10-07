@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 
 from .models import Attendance, LeaveRequest, ReferralLead, StaffNotification
 from .operations import shift_rule
+from .jalali import parse_jalali
 
 
 def _call_center_is_on_duty(user, now=None):
@@ -159,9 +160,14 @@ def save_call_result(request, pk):
         raw_date=(request.POST.get('next_follow_up') or '').strip()
         follow_up_time=(request.POST.get('follow_up_time') or '').strip()
         try:
-            follow_date=datetime.strptime(raw_date,'%Y-%m-%d').date()
+            # Cockpit sends Jalali dates (e.g. 1405/07/16). Keep ISO support
+            # for older clients during the transition.
+            if '/' in raw_date or (raw_date[:4].isdigit() and int(raw_date[:4]) < 1700):
+                follow_date=parse_jalali(raw_date)
+            else:
+                follow_date=datetime.strptime(raw_date,'%Y-%m-%d').date()
         except (TypeError,ValueError):
-            return JsonResponse({'ok':False,'error':'تاریخ پیگیری معتبر نیست.'},status=400)
+            return JsonResponse({'ok':False,'error':'تاریخ پیگیری شمسی معتبر نیست.'},status=400)
         if follow_date<timezone.localdate():
             return JsonResponse({'ok':False,'error':'تاریخ پیگیری نمی‌تواند گذشته باشد.'},status=400)
         if follow_up_time:
