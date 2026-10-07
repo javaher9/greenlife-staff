@@ -97,6 +97,105 @@ body.gl-page-appointment_schedule .schedule7 .s7-slot .s7-free.s7-book-slot:focu
   color:#176f4f!important;
   box-shadow:inset 0 0 0 1px #d4e9de!important;
 }
+
+/* ===== Final light guard for 7-day booking controls/modal ===== */
+body.gl-page-appointment_schedule .schedule7 .s7-filter input{
+  background:#f7f2fc!important;
+  color:#5f4385!important;
+  border:1.4px solid #d6c6e5!important;
+  box-shadow:none!important;
+}
+body.gl-page-appointment_schedule .schedule7 .s7-filter select{
+  background:#eef8f3!important;
+  color:#24684e!important;
+  border:1.4px solid #cde4d7!important;
+  box-shadow:none!important;
+}
+body.gl-page-appointment_schedule .schedule7 .s7-filter button{
+  background:#e7f6ee!important;
+  color:#176e4f!important;
+  border:1px solid #c6e3d4!important;
+  box-shadow:0 4px 12px rgba(31,117,85,.06)!important;
+}
+body.gl-page-appointment_schedule .s7-book-modal{
+  background:#fff!important;
+  color:#24394a!important;
+}
+body.gl-page-appointment_schedule .s7-book-modal .s7-book-modal-head{
+  background:linear-gradient(135deg,#faf7fd,#f2faf6)!important;
+  border-bottom:1px solid #e2e9eb!important;
+}
+body.gl-page-appointment_schedule .s7-book-modal .s7-book-modal-close{
+  background:#f3ecfa!important;
+  color:#684995!important;
+  border:1px solid #d6c5e6!important;
+  box-shadow:none!important;
+}
+body.gl-page-appointment_schedule .s7-book-modal .s7-book-summary div:nth-child(1),
+body.gl-page-appointment_schedule .s7-book-modal .s7-book-summary div:nth-child(4){
+  background:#f3f8fb!important;
+  border-color:#dae6ec!important;
+}
+body.gl-page-appointment_schedule .s7-book-modal .s7-book-summary div:nth-child(2),
+body.gl-page-appointment_schedule .s7-book-modal .s7-book-summary div:nth-child(3){
+  background:#f7f3fb!important;
+  border-color:#e1d5eb!important;
+}
+body.gl-page-appointment_schedule .s7-book-modal .s7-book-summary span{
+  color:#7a8894!important;
+}
+body.gl-page-appointment_schedule .s7-book-modal .s7-book-summary b{
+  color:#2b4253!important;
+}
+body.gl-page-appointment_schedule .s7-book-modal .s7-book-notes{
+  color:#5c6d7a!important;
+}
+body.gl-page-appointment_schedule .s7-book-modal .s7-book-notes textarea{
+  width:100%!important;
+  height:84px!important;
+  min-height:84px!important;
+  max-height:120px!important;
+  padding:10px 11px!important;
+  background:#fff!important;
+  color:#293f50!important;
+  border:1.3px solid #d8e2e5!important;
+  border-radius:11px!important;
+  box-shadow:inset 0 1px 2px rgba(35,53,70,.025)!important;
+  resize:vertical!important;
+}
+body.gl-page-appointment_schedule .s7-book-modal .s7-book-notes textarea::placeholder{
+  color:#97a3ac!important;
+  opacity:1!important;
+}
+body.gl-page-appointment_schedule .s7-book-modal .s7-book-notes textarea:focus{
+  outline:none!important;
+  border-color:#c9b5dc!important;
+  box-shadow:0 0 0 3px rgba(104,73,149,.07)!important;
+}
+body.gl-page-appointment_schedule .s7-book-modal .s7-book-confirm{
+  background:#e5f5ed!important;
+  color:#176e4f!important;
+  border:1px solid #c2dfd0!important;
+  box-shadow:0 5px 13px rgba(30,112,79,.07)!important;
+}
+body.gl-page-appointment_schedule .s7-book-modal .s7-book-abort{
+  background:#f3eef8!important;
+  color:#624889!important;
+  border:1px solid #d7c9e5!important;
+  box-shadow:none!important;
+}
+body.gl-page-appointment_schedule .s7-book-modal .s7-book-confirm:hover{
+  background:#dff1e8!important;
+}
+body.gl-page-appointment_schedule .s7-book-modal .s7-book-abort:hover{
+  background:#eee6f6!important;
+}
+body.gl-page-appointment_schedule .s7-book-modal .s7-book-modal-body{
+  padding:13px!important;
+}
+body.gl-page-appointment_schedule .s7-book-modal .s7-book-modal-actions{
+  margin-top:9px!important;
+}
 </style>
 <section class="schedule7">
   <header class="s7-head">
@@ -272,6 +371,36 @@ body.gl-page-appointment_schedule .schedule7 .s7-slot .s7-free.s7-book-slot:focu
   });
   if(panel&&panel.parentNode!==document.body)document.body.appendChild(panel);
   if(back&&back.parentNode!==document.body)document.body.appendChild(back);
+})();
+
+(function(){
+  function imp(el,p,v){if(el)el.style.setProperty(p,v,'important')}
+  function paintScheduleLight(){
+    document.querySelectorAll('.s7-filter input').forEach(function(el){
+      imp(el,'background','#f7f2fc');imp(el,'color','#5f4385');imp(el,'border','1.4px solid #d6c6e5');imp(el,'box-shadow','none');
+    });
+    document.querySelectorAll('.s7-filter select').forEach(function(el){
+      imp(el,'background','#eef8f3');imp(el,'color','#24684e');imp(el,'border','1.4px solid #cde4d7');imp(el,'box-shadow','none');
+    });
+    document.querySelectorAll('.s7-filter button').forEach(function(el){
+      imp(el,'background','#e7f6ee');imp(el,'color','#176e4f');imp(el,'border','1px solid #c6e3d4');
+    });
+    document.querySelectorAll('.s7-book-modal-close').forEach(function(el){
+      imp(el,'background','#f3ecfa');imp(el,'color','#684995');imp(el,'border','1px solid #d6c5e6');imp(el,'box-shadow','none');
+    });
+    document.querySelectorAll('.s7-book-notes textarea').forEach(function(el){
+      imp(el,'background','#fff');imp(el,'color','#293f50');imp(el,'border','1.3px solid #d8e2e5');imp(el,'height','84px');imp(el,'min-height','84px');imp(el,'box-shadow','inset 0 1px 2px rgba(35,53,70,.025)');
+    });
+    document.querySelectorAll('.s7-book-confirm').forEach(function(el){
+      imp(el,'background','#e5f5ed');imp(el,'color','#176e4f');imp(el,'border','1px solid #c2dfd0');
+    });
+    document.querySelectorAll('.s7-book-abort').forEach(function(el){
+      imp(el,'background','#f3eef8');imp(el,'color','#624889');imp(el,'border','1px solid #d7c9e5');imp(el,'box-shadow','none');
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paintScheduleLight);else paintScheduleLight();
+  setTimeout(paintScheduleLight,50);
+  setTimeout(paintScheduleLight,500);
 })();
 </script>
 {% endblock %}
