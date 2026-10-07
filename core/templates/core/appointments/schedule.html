@@ -59,6 +59,24 @@ body.gl-page-appointment_schedule .s7-arrow{
 .s7-profile-visits{display:grid;gap:5px}.s7-profile-visit{display:grid;grid-template-columns:auto 1fr auto;gap:6px;align-items:center;padding:7px;border-radius:9px;background:#f8fafb;border:1px solid #edf0f2;font-size:8px;color:#536778}.s7-profile-visit b{color:#2b4253;font-size:8.5px}.s7-profile-visit em{font-style:normal;color:#65468e;font-weight:900}
 .s7-profile-actions{display:flex;gap:7px;margin-top:10px}.s7-profile-actions a{flex:1;min-height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;text-decoration:none;font-size:9px;font-weight:900}.s7-profile-full{background:#eee6f7;color:#604287;border:1px solid #cfbce1}.s7-profile-call{background:#e8f6ef;color:#176e4f;border:1px solid #c7e4d5}
 @media(max-width:760px){.s7-profile-stats{grid-template-columns:repeat(2,1fr)}}
+
+/* 7-day direct booking mode for a selected call-center lead. */
+.s7-booking-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;padding:12px 14px;border:1px solid #d6c5e5;border-radius:15px;background:linear-gradient(135deg,#f5effb,#edf8f3);box-shadow:0 6px 18px rgba(70,54,93,.045)}
+.s7-booking-person{display:flex;align-items:center;gap:10px;min-width:0}.s7-booking-icon{width:38px;height:38px;flex:0 0 38px;border-radius:12px;background:#fff;color:#684995;border:1px solid #ddcfea;display:grid;place-items:center;font-size:17px;font-weight:900}.s7-booking-copy{min-width:0}.s7-booking-copy strong{display:block;color:#263d4e;font-size:12px}.s7-booking-copy span{display:block;margin-top:4px;color:#71808c;font-size:8px}.s7-booking-copy b{color:#1e7555}
+.s7-booking-actions{display:flex;align-items:center;gap:6px}.s7-booking-cancel{min-height:35px;display:inline-flex;align-items:center;justify-content:center;padding:0 10px;border:1px solid #dce3e6;border-radius:9px;background:#fff;color:#677784;text-decoration:none;font-size:8px;font-weight:900}
+.s7-booking-success{display:none;min-height:35px;align-items:center;padding:0 10px;border-radius:9px;background:#e7f6ee;color:#176f4f;border:1px solid #c5e3d4;font-size:8px;font-weight:900}.s7-booking-success.show{display:inline-flex}
+button.s7-free.s7-book-slot{width:100%;min-height:48px;border:0!important;background:transparent!important;padding:0!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:6px!important;color:#768690!important;font:800 8px Tahoma!important;cursor:pointer!important;text-align:inherit!important;box-shadow:none!important}
+button.s7-free.s7-book-slot:hover{margin:-3px;padding:3px!important;width:calc(100% + 6px);border-radius:9px!important;background:#edf8f3!important;color:#176f4f!important;box-shadow:inset 0 0 0 1px #cce5d8!important}
+button.s7-free.s7-book-slot:after{content:"＋ انتخاب";font-size:7px;font-weight:1000;color:#2c8966;opacity:.8}
+button.s7-free.s7-book-slot.is-disabled{pointer-events:none;opacity:.45}
+.s7-slot.just-booked{background:#edf8f3!important;box-shadow:inset 0 0 0 1px #c9e3d5}.s7-just-booked{padding:7px}.s7-just-booked strong{display:block;color:#176f4f;font-size:9px}.s7-just-booked small{display:block;margin-top:4px;color:#63786e;font-size:7px}.s7-just-booked b{display:inline-block;margin-top:5px;padding:3px 6px;border-radius:999px;background:#dff2e8;color:#176f4f;font-size:7px}
+
+.s7-book-modal-backdrop{position:fixed;inset:0;z-index:190;background:rgba(18,31,41,.28);display:none}.s7-book-modal-backdrop.open{display:block}
+.s7-book-modal{position:fixed;z-index:191;left:50%;top:50%;width:min(440px,92vw);transform:translate(-50%,-46%) scale(.98);opacity:0;pointer-events:none;transition:.16s;background:#fff;border:1px solid #dce5e8;border-radius:18px;box-shadow:0 24px 70px rgba(18,31,41,.22);overflow:hidden}.s7-book-modal.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+.s7-book-modal-head{height:auto!important;min-height:62px!important;position:relative!important;top:auto!important;margin:0!important;padding:13px 15px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;background:linear-gradient(135deg,#f7f2fc,#f0f8f4)!important;border-bottom:1px solid #e3eaec!important}.s7-book-modal-head strong{font-size:13px;color:#293f50}.s7-book-modal-close{width:32px;height:32px;border:1px solid #d7e1e4!important;border-radius:9px!important;background:#fff!important;color:#677985!important;font-size:17px!important;cursor:pointer!important}
+.s7-book-modal-body{padding:14px}.s7-book-summary{display:grid;grid-template-columns:1fr 1fr;gap:7px}.s7-book-summary div{padding:9px;border:1px solid #e1e8ea;border-radius:10px;background:#fafcfc}.s7-book-summary span{display:block;color:#81909a;font-size:7px}.s7-book-summary b{display:block;margin-top:4px;color:#30495a;font-size:9px}.s7-book-notes{display:block;margin-top:10px;color:#5c6d7a;font-size:8px;font-weight:900}.s7-book-notes textarea{width:100%;min-height:68px;margin-top:5px;padding:9px;border:1px solid #d7e2e5;border-radius:10px;background:#fff;color:#2b4051;font:800 9px/1.8 Tahoma;resize:vertical;outline:none}.s7-book-notes textarea:focus{border-color:#cbb7dd;box-shadow:0 0 0 3px rgba(104,73,149,.06)}
+.s7-book-modal-actions{display:flex;gap:7px;margin-top:11px}.s7-book-confirm,.s7-book-abort{flex:1;min-height:39px;border-radius:10px!important;font:900 9px Tahoma!important;cursor:pointer!important}.s7-book-confirm{background:#e6f5ed!important;color:#176e4f!important;border:1px solid #c4e2d2!important}.s7-book-abort{background:#f4f6f7!important;color:#687884!important;border:1px solid #dce3e6!important}.s7-book-status{min-height:18px;margin-top:7px;color:#257554;font-size:8px;font-weight:900;text-align:center}
+@media(max-width:760px){.s7-booking-banner{align-items:flex-start;flex-direction:column}.s7-booking-actions{width:100%}.s7-booking-cancel{flex:1}.s7-book-summary{grid-template-columns:1fr}}
 </style>
 <section class="schedule7">
   <header class="s7-head">
@@ -69,16 +87,24 @@ body.gl-page-appointment_schedule .s7-arrow{
     </div>
   </header>
 
+  {% if booking_lead %}
+  <section class="s7-booking-banner" id="s7BookingBanner">
+    <div class="s7-booking-person"><span class="s7-booking-icon">＋</span><div class="s7-booking-copy"><strong>در حال ثبت نوبت برای {{ booking_lead.full_name }}</strong><span>{{ booking_lead.phone }}{% if booking_lead.interested_service %} · {{ booking_lead.interested_service }}{% endif %} · <b>روی یک ساعت آزاد کلیک کنید</b></span></div></div>
+    <div class="s7-booking-actions"><span class="s7-booking-success" id="s7BookingSuccess">✓ نوبت ثبت شد</span><a class="s7-booking-cancel" href="{% url 'appointment_schedule' %}{% if schedule_branch %}?branch={{ schedule_branch.pk }}{% endif %}">لغو انتخاب بیمار</a></div>
+  </section>
+  {% endif %}
+
   <div class="s7-controls">
-    <a class="s7-arrow" href="?{% if schedule_branch %}branch={{ schedule_branch.pk }}&{% endif %}date={{ schedule_prev|date:'Y-m-d' }}" aria-label="۷ روز قبل">‹</a>
+    <a class="s7-arrow" href="?{% if schedule_branch %}branch={{ schedule_branch.pk }}&{% endif %}date={{ schedule_prev|date:'Y-m-d' }}{% if booking_lead %}&lead={{ booking_lead.pk }}{% endif %}" aria-label="۷ روز قبل">‹</a>
     <form class="s7-filter" method="get">
+      {% if booking_lead %}<input type="hidden" name="lead" value="{{ booking_lead.pk }}">{% endif %}
       {% if appointment_role != 'receptionist' %}
       <label>شعبه<select name="branch">{% for b in appointment_branches %}<option value="{{ b.pk }}" {% if schedule_branch and b.pk == schedule_branch.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></label>
       {% endif %}
       <label>شروع بازه - تاریخ شمسی<input type="text" name="date" value="{{ schedule_start_jalali }}" inputmode="numeric" placeholder="1405/07/15"></label>
       <button type="submit">نمایش بازه</button>
     </form>
-    <a class="s7-arrow" href="?{% if schedule_branch %}branch={{ schedule_branch.pk }}&{% endif %}date={{ schedule_next|date:'Y-m-d' }}" aria-label="۷ روز بعد">›</a>
+    <a class="s7-arrow" href="?{% if schedule_branch %}branch={{ schedule_branch.pk }}&{% endif %}date={{ schedule_next|date:'Y-m-d' }}{% if booking_lead %}&lead={{ booking_lead.pk }}{% endif %}" aria-label="۷ روز بعد">›</a>
   </div>
 
   <div class="s7-week">
@@ -107,7 +133,11 @@ body.gl-page-appointment_schedule .s7-arrow{
               {% endif %}
             </div>
             {% else %}
+            {% if booking_lead and appointment_role == 'call_center' %}
+            <button type="button" class="s7-free s7-book-slot" data-book-slot data-date="{{ day.date_iso }}" data-jalali="{{ day.jalali }}" data-time="{{ row.time }}"><span>آزاد</span><span class="s7-time">{{ row.time }}</span></button>
+            {% else %}
             <div class="s7-free"><span>آزاد</span><span class="s7-time">{{ row.time }}</span></div>
+            {% endif %}
             {% endif %}
           </div>
           {% endfor %}
@@ -119,6 +149,24 @@ body.gl-page-appointment_schedule .s7-arrow{
   <div class="s7-note">جمعه‌ها فعلاً از تقویم حذف شده‌اند و ثبت نوبت جدید برای جمعه غیرفعال است.</div>
 </section>
 
+{% if booking_lead %}
+<div class="s7-book-modal-backdrop" data-book-close></div>
+<aside class="s7-book-modal" id="s7BookModal" data-book-url="{% url 'call_center_appointment_slot_create' booking_lead.pk %}" data-branch="{% if schedule_branch %}{{ schedule_branch.pk }}{% endif %}" aria-hidden="true">
+  <header class="s7-book-modal-head"><strong>تأیید نوبت {{ booking_lead.full_name }}</strong><button class="s7-book-modal-close" type="button" data-book-close>×</button></header>
+  <div class="s7-book-modal-body">
+    <div class="s7-book-summary">
+      <div><span>شعبه</span><b>{% if schedule_branch %}{{ schedule_branch.name }}{% else %}—{% endif %}</b></div>
+      <div><span>بیمار</span><b>{{ booking_lead.full_name }}</b></div>
+      <div><span>تاریخ</span><b id="s7BookDate">—</b></div>
+      <div><span>ساعت</span><b id="s7BookTime">—</b></div>
+    </div>
+    <label class="s7-book-notes">یادداشت برای منشی — اختیاری<textarea id="s7BookNotes" maxlength="2000" placeholder="در صورت نیاز توضیح کوتاه بنویسید"></textarea></label>
+    <div class="s7-book-modal-actions"><button class="s7-book-confirm" id="s7BookConfirm" type="button">ثبت قطعی نوبت</button><button class="s7-book-abort" type="button" data-book-close>انصراف</button></div>
+    <div class="s7-book-status" id="s7BookStatus"></div>
+  </div>
+</aside>
+{% endif %}
+
 <div class="s7-profile-backdrop" data-profile-close></div>
 <aside class="s7-profile-panel" id="s7ProfilePanel" aria-hidden="true">
   <header class="s7-profile-head"><div><h2 id="s7ProfileTitle">پروفایل سریع بیمار</h2><p>خلاصه پرونده بدون خروج از تقویم</p></div><button class="s7-profile-close" type="button" data-profile-close>×</button></header>
@@ -126,6 +174,41 @@ body.gl-page-appointment_schedule .s7-arrow{
 </aside>
 
 <script>
+(function(){
+  var modal=document.getElementById('s7BookModal');
+  if(!modal)return;
+  var back=document.querySelector('.s7-book-modal-backdrop'),dateEl=document.getElementById('s7BookDate'),timeEl=document.getElementById('s7BookTime'),notes=document.getElementById('s7BookNotes'),confirmBtn=document.getElementById('s7BookConfirm'),status=document.getElementById('s7BookStatus'),success=document.getElementById('s7BookingSuccess'),selected=null,busy=false;
+  function csrf(){var x=document.querySelector('input[name="csrfmiddlewaretoken"]');if(x&&x.value)return x.value;var m=document.cookie.match(/(?:^|;\s*)(?:csrftoken|greenlife_lan_csrftoken)=([^;]+)/);return m?decodeURIComponent(m[1]):''}
+  function open(slot){selected=slot;dateEl.textContent=slot.dataset.jalali||slot.dataset.date;timeEl.textContent=slot.dataset.time;status.textContent='';notes.value='';modal.classList.add('open');back.classList.add('open');modal.setAttribute('aria-hidden','false')}
+  function close(){if(busy)return;modal.classList.remove('open');back.classList.remove('open');modal.setAttribute('aria-hidden','true');selected=null}
+  document.querySelectorAll('[data-book-slot]').forEach(function(slot){slot.addEventListener('click',function(){if(!slot.classList.contains('is-disabled'))open(slot)})});
+  document.querySelectorAll('[data-book-close]').forEach(function(x){x.addEventListener('click',close)});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close()});
+  confirmBtn.addEventListener('click',function(){
+    if(!selected||busy)return;
+    var branch=modal.dataset.branch||'';
+    if(!branch){status.textContent='اول شعبه را انتخاب کنید.';return}
+    var fd=new FormData(),token=csrf();if(token)fd.append('csrfmiddlewaretoken',token);
+    fd.append('branch',branch);fd.append('appointment_date',selected.dataset.date);fd.append('appointment_time',selected.dataset.time);fd.append('notes',notes.value||'');
+    busy=true;confirmBtn.disabled=true;confirmBtn.textContent='در حال ثبت…';status.textContent='در حال بررسی ساعت و ثبت نوبت…';
+    fetch(modal.dataset.bookUrl,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}})
+      .then(function(r){return r.json().then(function(d){if(!r.ok||!d.ok)throw new Error(d.error||'ثبت نوبت انجام نشد');return d})})
+      .then(function(d){
+        var slotWrap=selected.closest('.s7-slot'),a=d.appointment;
+        slotWrap.classList.add('just-booked');
+        slotWrap.innerHTML='<div class="s7-just-booked"><strong>'+escapeHtml(a.name)+'</strong><small>'+escapeHtml(a.jalali)+' · '+escapeHtml(a.time)+' · '+escapeHtml(a.branch)+'</small><b>✓ نوبت ثبت شد</b></div>';
+        document.querySelectorAll('[data-book-slot]').forEach(function(x){x.classList.add('is-disabled')});
+        if(success)success.classList.add('show');
+        status.textContent='نوبت با موفقیت ثبت شد ✓';
+        setTimeout(function(){busy=false;confirmBtn.disabled=false;confirmBtn.textContent='ثبت قطعی نوبت';modal.classList.remove('open');back.classList.remove('open');modal.setAttribute('aria-hidden','true');selected=null},650);
+      })
+      .catch(function(e){status.textContent=e.message||'خطا در ثبت نوبت';busy=false;confirmBtn.disabled=false;confirmBtn.textContent='ثبت قطعی نوبت'});
+  });
+  function escapeHtml(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  if(modal.parentNode!==document.body)document.body.appendChild(modal);
+  if(back&&back.parentNode!==document.body)document.body.appendChild(back);
+})();
+
 (function(){
   var panel=document.getElementById('s7ProfilePanel'),body=document.getElementById('s7ProfileBody'),back=document.querySelector('.s7-profile-backdrop'),title=document.getElementById('s7ProfileTitle');
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}

@@ -654,7 +654,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-filter.active b{
             <a class="ccx-action call" href="tel:{{ row.lead.phone }}">☎ تماس</a>
             {% if row.wa_url %}<a class="ccx-action wa" href="{{ row.wa_url }}" target="_blank" rel="noopener">واتساپ</a>{% else %}<span class="ccx-action wa" style="opacity:.45">واتساپ</span>{% endif %}
             <button class="ccx-action result" type="button" data-result-toggle>نتیجه تماس</button>
-            <a class="ccx-action appt" href="{% url 'call_center_appointment_create' row.lead.pk %}">نوبت</a>
+            <a class="ccx-action appt" href="{% url 'appointment_schedule' %}?lead={{ row.lead.pk }}">نوبت</a>
           </div>
           <details class="ccx-more"><summary>بیشتر ▾</summary><div class="ccx-more-body"><a href="{% url 'call_center_lead' row.lead.pk %}">پرونده کامل</a>{% if row.lead.notes %}<a href="{% url 'call_center_lead' row.lead.pk %}">یادداشت‌ها</a>{% endif %}</div></details>
           <div class="ccx-result-panel">
@@ -662,7 +662,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-filter.active b{
               <button type="button" data-quick-result="no_answer">پاسخ نداد</button>
               <button type="button" data-follow-open>پیگیری</button>
               <button type="button" class="danger" data-quick-result="not_interested">تمایل ندارد</button>
-              <a class="good" href="{% url 'call_center_appointment_create' row.lead.pk %}">نوبت</a>
+              <a class="good" href="{% url 'appointment_schedule' %}?lead={{ row.lead.pk }}">نوبت</a>
             </div>
             <div class="ccx-follow-form">
               <label>تاریخ پیگیری شمسی<input type="text" name="next_follow_up" inputmode="numeric" autocomplete="off" value="{{ tomorrow|jdate_en }}" placeholder="1405/07/16" pattern="[0-9۰-۹٠-٩]{4}[/.-][0-9۰-۹٠-٩]{1,2}[/.-][0-9۰-۹٠-٩]{1,2}" title="تاریخ را به شکل 1405/07/16 وارد کنید"></label>

@@ -167,6 +167,15 @@ def appointment_schedule(request):
     branches=_clinic_branches()
     profile=getattr(request.user,'profile',None)
 
+    booking_lead=None
+    booking_lead_id=(request.GET.get('lead') or '').strip()
+    if role=='call_center' and booking_lead_id.isdigit():
+        booking_lead=get_object_or_404(
+            ReferralLead.objects.select_related('assigned_to','referrer__user'),
+            pk=int(booking_lead_id),
+            assigned_to=profile,
+        )
+
     if role=='receptionist':
         branch=getattr(profile,'branch',None)
         if not branch:
@@ -238,6 +247,7 @@ def appointment_schedule(request):
         'schedule_days':schedule_days,
         'schedule_prev':prev_start,
         'schedule_next':next_start,
+        'booking_lead':booking_lead,
     })
 
 
@@ -251,6 +261,12 @@ def call_center_appointment_create(request,pk):
         pk=pk,
         assigned_to=request.user.profile,
     )
+
+    # The 7-day calendar is now the canonical booking surface. Keep POST support
+    # for stale browser tabs, but never send new GET requests to the legacy form.
+    if request.method=='GET':
+        return redirect(f"{reverse('appointment_schedule')}?lead={lead.pk}")
+
     initial={'appointment_date':timezone.localdate()}
     form=AppointmentFromLeadForm(request.POST or None,initial=initial)
 
@@ -297,6 +313,106 @@ def call_center_appointment_create(request,pk):
         'title':'ثبت نوبت واقعی',
         'subtitle':f'{lead.full_name} · {lead.phone}',
     })
+
+
+@login_required
+def call_center_appointment_slot_create(request,pk):
+    """Book a selected lead directly into a free slot on the 7-day calendar."""
+    if _role(request.user)!='call_center':
+        raise PermissionDenied('این بخش فقط برای کال‌سنتر است.')
+    if request.method!='POST':
+        return JsonResponse({'ok':False,'error':'method not allowed'},status=405)
+
+    lead=get_object_or_404(
+        ReferralLead.objects.select_related('assigned_to','referrer__user'),
+        pk=pk,
+        assigned_to=request.user.profile,
+    )
+
+    branch_id=(request.POST.get('branch') or '').strip()
+    raw_date=(request.POST.get('appointment_date') or '').strip()
+    raw_time=(request.POST.get('appointment_time') or '').strip()
+    notes=(request.POST.get('notes') or '').strip()[:2000]
+
+    if not branch_id.isdigit():
+        return JsonResponse({'ok':False,'error':'شعبه را انتخاب کنید.'},status=400)
+    branch=get_object_or_404(_clinic_branches(),pk=int(branch_id))
+
+    try:
+        appointment_date=date.fromisoformat(raw_date)
+    except (TypeError,ValueError):
+        return JsonResponse({'ok':False,'error':'تاریخ نوبت معتبر نیست.'},status=400)
+    if appointment_date<timezone.localdate():
+        return JsonResponse({'ok':False,'error':'تاریخ نوبت نمی‌تواند قبل از امروز باشد.'},status=400)
+    if appointment_date.weekday()==4:
+        return JsonResponse({'ok':False,'error':'فعلاً برای جمعه نوبت‌گیری فعال نیست.'},status=400)
+
+    valid_times={value for value,_label in visit_appointment_time_choices()}
+    if raw_time not in valid_times:
+        return JsonResponse({'ok':False,'error':'ساعت نوبت معتبر نیست.'},status=400)
+    appointment_time=datetime.strptime(raw_time,'%H:%M').time()
+
+    try:
+        with transaction.atomic():
+            # Fast explicit check gives a friendly error; the DB conditional unique
+            # constraint remains the final protection against simultaneous clicks.
+            if VisitAppointment.objects.filter(
+                branch=branch,
+                appointment_date=appointment_date,
+                appointment_time=appointment_time,
+            ).exclude(status__in=('cancelled','no_show')).exists():
+                return JsonResponse({
+                    'ok':False,
+                    'error':'این ساعت همین الان رزرو شده است؛ یک ساعت خالی دیگر را انتخاب کنید.',
+                    'conflict':True,
+                },status=409)
+
+            appointment=VisitAppointment(
+                lead=lead,
+                branch=branch,
+                full_name=lead.full_name,
+                phone=lead.phone,
+                service=lead.interested_service,
+                appointment_date=appointment_date,
+                appointment_time=appointment_time,
+                notes=notes,
+                source='call_center',
+                created_by=request.user,
+            )
+            appointment.save()
+
+            if lead.status!='appointment' or lead.contact_result!='appointment' or lead.next_follow_up:
+                lead.status='appointment'
+                lead.contact_result='appointment'
+                lead.next_follow_up=None
+                lead.save(update_fields=['status','contact_result','next_follow_up','updated_at'])
+
+            _notify_branch_receptionists(appointment)
+            transaction.on_commit(
+                lambda appointment_id=appointment.pk: _queue_appointment_messages(appointment_id)
+            )
+    except (IntegrityError,ValidationError):
+        return JsonResponse({
+            'ok':False,
+            'error':'این ساعت همین الان رزرو شده است؛ یک ساعت خالی دیگر را انتخاب کنید.',
+            'conflict':True,
+        },status=409)
+
+    return JsonResponse({
+        'ok':True,
+        'appointment':{
+            'id':appointment.pk,
+            'name':appointment.full_name,
+            'phone':appointment.phone,
+            'branch':appointment.branch.name,
+            'date':appointment.appointment_date.isoformat(),
+            'jalali':format_jalali(appointment.appointment_date,persian_digits=False),
+            'time':appointment.appointment_time.strftime('%H:%M'),
+            'service':appointment.service or '',
+            'booking_by':call_center_display_name(request.user),
+        },
+        'message':f'نوبت {appointment.full_name} با موفقیت ثبت شد.',
+    },json_dumps_params={'ensure_ascii':False})
 
 
 @login_required
