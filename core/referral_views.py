@@ -3,6 +3,7 @@ import io
 import os
 import uuid
 from collections import Counter
+from datetime import timedelta
 from functools import wraps
 from urllib.parse import quote
 
@@ -86,6 +87,31 @@ def _ensure_profile(user):
 def referral_supervisor_dashboard(request):
     """PII-free, read-only oversight for the referral-network supervisor."""
     today=timezone.localdate()
+    tomorrow=today+timedelta(days=1)
+
+    # Daily work agenda: follow-ups are surfaced by due date rather than by
+    # original lead creation order, so an older lead never disappears below
+    # newer records when its callback day arrives.
+    agenda_due_qs=(
+        all_leads
+        .filter(next_follow_up__lte=today)
+        .exclude(status__in=('won','lost'))
+        .select_related('country','assigned_to','group','referrer__user','created_by')
+        .order_by('-next_follow_up','updated_at','id')
+    )
+    agenda_due=list(agenda_due_qs)
+    agenda_today_count=sum(1 for lead in agenda_due if lead.next_follow_up==today)
+    agenda_overdue_count=len(agenda_due)-agenda_today_count
+
+    tomorrow_appointments=(
+        VisitAppointment.objects.filter(appointment_date=tomorrow)
+        .filter(Q(lead__assigned_to=operator) | Q(created_by=request.user,source='call_center'))
+        .exclude(status='cancelled')
+        .select_related('branch','lead')
+        .order_by('appointment_time','id')
+        .distinct()
+    )
+
     month_start=today.replace(day=1)
     profiles=ReferralProfile.objects.filter(is_active=True).select_related(
         'user','user__profile','sponsor__user',
@@ -814,7 +840,10 @@ def call_center_dashboard(request):
     return render(request,'core/call_center/dashboard.html',{
         'leads':[FlowerLeadProxy(lead) for lead in leads],'statuses':ReferralLead.STATUS,'status_filter':status,
         'group_filter':group_filter,'groups':groups,
-        'stats':stats,'performance':performance,'today':today,
+        'stats':stats,'performance':performance,'today':today,'tomorrow':tomorrow,
+        'agenda_due':[FlowerLeadProxy(lead) for lead in agenda_due],
+        'agenda_today_count':agenda_today_count,'agenda_overdue_count':agenda_overdue_count,
+        'tomorrow_appointments':tomorrow_appointments,
         'today_appointments':today_appointments,
         'appointment_slots':appointment_slots,
         'recent_internal_messages':recent_internal_messages,
