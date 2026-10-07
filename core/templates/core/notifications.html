@@ -1,3 +1,14 @@
 {% extends 'core/base.html' %}{% load jalali_tags staff_i18n %}{% block content %}
-<section class="hero"><div><h1>{% gl_t 'notif.title' %}</h1><p>{% gl_t 'notif.intro' %}</p></div><form method="post">{% csrf_token %}<button class="primary">{% gl_t 'notif.mark_all' %}</button></form></section>
-<section class="panel">{% for n in notifications %}<article class="notice"><strong>{% if not n.is_read %}● {% endif %}{{ n.title }}</strong><p>{{ n.message }}</p><small>{{ n.created_at|jdatetime }}</small></article>{% empty %}<p class="muted">{% gl_t 'notif.empty' %}</p>{% endfor %}</section>{% endblock %}
+<style>
+body.gl-page-notifications .app-main{background:#f5f8fa!important;background-image:none!important;color:#223649!important}
+.notif-page{max-width:1420px;margin:0 auto 70px;font-family:Tahoma,"Noto Sans Arabic",sans-serif;color:#223649}
+.notif-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;margin-bottom:10px;border:1px solid #dfe7ea;border-radius:18px;background:linear-gradient(125deg,#eef8f3,#fff 62%,#f4effa);box-shadow:0 8px 24px rgba(37,58,76,.045)}
+.notif-head h1{margin:0;color:#1e3343;font-size:23px}.notif-head p{margin:5px 0 0;color:#6e7e8c;font-size:9px}.notif-head button{border:0;border-radius:10px;background:#21865f;color:#fff;min-height:39px;padding:0 14px;font:900 9px Tahoma;cursor:pointer}
+.notif-list{display:grid;gap:8px}.notif-item{padding:14px 16px;border:1px solid #e0e8eb;border-radius:14px;background:#fff;box-shadow:0 5px 16px rgba(42,58,74,.025)}.notif-item.unread{border-color:#cfe6da;background:#fbfefc}.notif-item strong{display:block;color:#263b4d;font-size:11px}.notif-item.unread strong{color:#176d4d}.notif-item p{margin:7px 0;color:#536679;font-size:10px;line-height:1.9}.notif-item small{display:block;color:#87939d;font-size:8px}.notif-empty{padding:35px;text-align:center;border:1px solid #e1e8eb;border-radius:16px;background:#fff;color:#758491;font-size:10px}
+@media(max-width:700px){.notif-head{align-items:flex-start;flex-direction:column}.notif-head h1{font-size:20px}}
+</style>
+<section class="notif-page">
+  <header class="notif-head"><div><h1>{% gl_t 'notif.title' %}</h1><p>{% gl_t 'notif.intro' %}</p></div><form method="post">{% csrf_token %}<button>{% gl_t 'notif.mark_all' %}</button></form></header>
+  <div class="notif-list">{% for n in notifications %}<article class="notif-item {% if not n.is_read %}unread{% endif %}"><strong>{% if not n.is_read %}● {% endif %}{{ n.title }}</strong><p>{{ n.message }}</p><small>{{ n.created_at|jdatetime }}</small></article>{% empty %}<div class="notif-empty">{% gl_t 'notif.empty' %}</div>{% endfor %}</div>
+</section>
+{% endblock %}

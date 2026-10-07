@@ -22,6 +22,15 @@
 @media(max-width:1450px){.ccx-kpis{grid-template-columns:repeat(3,1fr)}.cc-work-row{grid-template-columns:minmax(240px,1.4fr) 82px 110px minmax(130px,.8fr) 110px 260px}.ccx-layout{grid-template-columns:minmax(0,1fr) 310px}}
 @media(max-width:1100px){.ccx-layout{grid-template-columns:1fr}.ccx-side{position:static;grid-template-columns:repeat(2,1fr)}.ccx-desk{grid-template-columns:1fr}.cc-work-row{grid-template-columns:1fr 90px 115px 1fr}.ccx-actions{grid-column:1/-1}.ccx-next-action{display:none}.ccx-secondary{grid-template-columns:1fr}.ccx-filters{grid-template-columns:1fr}}
 @media(max-width:760px){.ccx{padding:8px;margin-bottom:90px;background:#0d1822;color:#eef5f7}.ccx-card,.ccx-desk,.ccx-performance,.ccx-filters{background:#111f2b;border-color:#293b49}.ccx-person h1,.ccx-head h2,.ccx-head h3{color:#fff}.ccx-person p,.ccx-person small,.ccx-head p{color:#b8c4cc}.ccx-kpis{grid-template-columns:repeat(2,1fr)}.ccx-kpi{background:#162733;border-color:#304553}.ccx-kpi span,.ccx-kpi small{color:#b9c6ce}.ccx-kpi strong{color:#fff}.ccx-side{grid-template-columns:1fr}.cc-work-row{grid-template-columns:1fr;gap:6px;background:#101e29;border-color:#2b3e4c}.ccx-personcell strong,.ccx-time b,.ccx-last strong{color:#fff}.ccx-phone,.ccx-time,.ccx-last,.ccx-next-action{color:#c3ced5}.ccx-actions{grid-column:auto}.ccx-secondary{display:none}.ccx-filter{background:#172733;border-color:#304453;color:#cbd4da}.ccx-search input{background:#13232f;border-color:#304553;color:#fff}.ccx-side-item{background:#13232f;border-color:#2d414f}.ccx-side-item strong{color:#fff}.ccx-drawer{background:#10202b;color:#fff}.ccx-drawer-head{border-color:#2b3e4c}.ccx-drawer-head strong{color:#fff}.ccx-chat-msg{border-color:#2c3d49}.ccx-chat-msg strong{color:#fff}.ccx-chat-msg p{color:#c2ccd2}}
+
+/* Cockpit v2: larger light stats, page-native navigation plaques and richer personal chat drawer. */
+body.gl-page-call_center_dashboard .cc-desktop-dock,
+body.gl-page-call_center_dashboard .cc-direct-side-entry{display:none!important}
+.ccx-kpi{min-height:78px!important;padding:13px 14px!important}.ccx-kpi span{font-size:9px!important}.ccx-kpi strong{font-size:29px!important;margin-top:7px!important}.ccx-kpi small{font-size:8px!important}
+.ccx-quick-plaque{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px}.ccx-quick-link{min-height:70px;padding:10px 8px;border:1px solid #dfe7ea;border-radius:14px;background:#fff;color:#4a5e71;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-decoration:none;font-size:9px;font-weight:900;box-shadow:0 5px 16px rgba(37,55,72,.035);transition:.15s}.ccx-quick-link:hover{transform:translateY(-1px);border-color:#cbdcd5;box-shadow:0 9px 20px rgba(37,55,72,.06)}.ccx-quick-link b{font-size:18px;line-height:1;color:#2f765c}.ccx-quick-link.purple b{color:#6b4b97}.ccx-quick-link.blue b{color:#4874ae}.ccx-quick-link.amber b{color:#a36e1c}
+.ccx-drawer{width:min(520px,96vw)!important}.ccx-drawer-head{padding:17px 18px!important}.ccx-drawer-head strong{font-size:15px!important}.ccx-favs{padding:12px 14px;border-bottom:1px solid #e7edef;background:#fbfdfc}.ccx-favs-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}.ccx-favs-head strong{font-size:10px;color:#31495b}.ccx-favs-head small{font-size:8px;color:#7d8b96}.ccx-fav-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.ccx-fav-contact{min-height:50px;border:1px solid #dfe8e5;border-radius:11px;background:#fff;color:#405467;display:flex;align-items:center;gap:7px;padding:7px 8px;cursor:pointer;text-align:right}.ccx-fav-contact:hover{background:#eef8f3;border-color:#cce5d8}.ccx-fav-avatar{width:31px;height:31px;flex:0 0 31px;border-radius:9px;background:#edf5f2;color:#226e53;display:grid;place-items:center;font-size:10px;font-weight:900;overflow:hidden}.ccx-fav-avatar img{width:100%;height:100%;object-fit:cover}.ccx-fav-contact span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:8px;font-weight:900}.ccx-fav-empty{grid-column:1/-1;padding:9px;color:#7b8994;font-size:8px;text-align:center;background:#f7fafb;border-radius:9px}.ccx-chat-form{grid-template-columns:155px 1fr 66px!important}.ccx-chat-fav-toggle{grid-column:1/-1;justify-self:start;border:1px solid #dfd4ec;background:#f4eefb;color:#674790;border-radius:8px;padding:6px 9px;font:900 8px Tahoma;cursor:pointer}
+@media(max-width:1380px){.ccx-quick-plaque{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:760px){.ccx-quick-plaque{grid-template-columns:repeat(2,1fr)}.ccx-kpi{min-height:68px!important}.ccx-kpi strong{font-size:25px!important}.ccx-fav-list{grid-template-columns:repeat(2,1fr)}.ccx-chat-form{grid-template-columns:1fr!important}}
 </style>
 
 <div class="ccx">
@@ -58,6 +67,17 @@
       <button class="ccx-tool chat" type="button" data-chat-open>✉ چت پرسنل {% if internal_unread %}({{ internal_unread }}){% endif %}</button>
     </div>
   </section>
+
+  <nav class="ccx-quick-plaque" aria-label="دسترسی‌های سریع کال‌سنتر">
+    <a class="ccx-quick-link" href="{% url 'call_center_dashboard' %}"><b>☎</b><span>میز کار</span></a>
+    <a class="ccx-quick-link" href="{% url 'call_center_direct_lead_create' %}"><b>＋</b><span>ثبت لید دایرکت</span></a>
+    <a class="ccx-quick-link purple" href="{% url 'appointment_schedule' %}"><b>▣</b><span>نوبت‌دهی ۷ روزه</span></a>
+    <button class="ccx-quick-link purple" type="button" data-chat-open style="cursor:pointer"><b>✉</b><span>چت پرسنل</span></button>
+    <a class="ccx-quick-link blue" href="{% url 'internal_messages' %}"><b>◎</b><span>پیام‌های داخلی</span></a>
+    <a class="ccx-quick-link amber" href="{% url 'notifications' %}"><b>♢</b><span>اعلان‌ها</span></a>
+    <a class="ccx-quick-link" href="{% url 'attendance' %}"><b>◷</b><span>حضور و غیاب</span></a>
+    <a class="ccx-quick-link" href="{% url 'report_list' %}"><b>▥</b><span>گزارش روزانه</span></a>
+  </nav>
 
   <section class="ccx-filters ccx-card">
     <div class="ccx-search"><input id="ccxSearch" type="search" placeholder="جستجو در نام، موبایل، منبع یا خدمت…"></div>
@@ -157,13 +177,19 @@
 <div class="ccx-drawer-backdrop" data-chat-close></div>
 <aside class="ccx-drawer" id="ccxChatDrawer">
   <header class="ccx-drawer-head"><strong>چت پرسنل</strong><button class="ccx-drawer-close" type="button" data-chat-close>×</button></header>
+  <section class="ccx-favs">
+    <div class="ccx-favs-head"><strong>★ پرسنل منتخب و پرکاربرد من</strong><small>برای همین نام کاربری</small></div>
+    <div class="ccx-fav-list" id="ccxFavList"></div>
+  </section>
   <div class="ccx-chat-feed" id="ccxChatFeed">
     {% for item in recent_internal_messages %}<div class="ccx-chat-msg"><strong>{{ item.sender.get_full_name|default:item.sender.username }}</strong><p>{{ item.body|truncatechars:130 }}</p><small>{{ item.created_at|jdatetime }}</small></div>{% empty %}<div class="ccx-side-empty">پیامی نیست.</div>{% endfor %}
   </div>
   <form class="ccx-chat-form" id="ccxChatForm">{% csrf_token %}
-    <select name="recipient" required><option value="">گیرنده</option>{% for person in chat_contacts %}<option value="{{ person.pk }}">{{ person.get_full_name|default:person.username }}</option>{% endfor %}</select>
+    <select name="recipient" required><option value="">گیرنده</option>{% for person in chat_contacts %}<option value="{{ person.pk }}" data-avatar="{% if person.profile.avatar %}{{ person.profile.avatar.url }}{% endif %}">{{ person.get_full_name|default:person.username }}</option>{% endfor %}</select>
     <textarea name="body" maxlength="1200" required placeholder="پیام کوتاه…"></textarea>
-    <button type="submit">ارسال</button><div class="ccx-chat-status" id="ccxChatStatus"></div>
+    <button type="submit">ارسال</button>
+    <button class="ccx-chat-fav-toggle" type="button" id="ccxFavToggle">☆ افزودن/حذف منتخب</button>
+    <div class="ccx-chat-status" id="ccxChatStatus"></div>
   </form>
 </aside>
 
@@ -216,6 +242,17 @@
   function closeChat(){drawer.classList.remove('open');back.classList.remove('open')}
   document.querySelectorAll('[data-chat-open]').forEach(function(b){b.addEventListener('click',openChat)});document.querySelectorAll('[data-chat-close]').forEach(function(b){b.addEventListener('click',closeChat)});
   var chatForm=document.getElementById('ccxChatForm'),chatStatus=document.getElementById('ccxChatStatus'),chatFeed=document.getElementById('ccxChatFeed');
+  var favKey='gl_chat_favorites_{{ user.id }}',favList=document.getElementById('ccxFavList'),favToggle=document.getElementById('ccxFavToggle'),recipientSelect=chatForm?chatForm.querySelector('select[name="recipient"]'):null;
+  function loadFavs(){try{var x=JSON.parse(localStorage.getItem(favKey)||'[]');return Array.isArray(x)?x.map(String):[]}catch(e){return []}}
+  function saveFavs(x){try{localStorage.setItem(favKey,JSON.stringify(x.slice(0,8)))}catch(e){}}
+  function optionFor(id){if(!recipientSelect)return null;return [].slice.call(recipientSelect.options).find(function(o){return String(o.value)===String(id)})||null}
+  function renderFavs(){
+    if(!favList)return;var ids=loadFavs().filter(function(id){return !!optionFor(id)});saveFavs(ids);favList.innerHTML='';
+    if(!ids.length){favList.innerHTML='<div class="ccx-fav-empty">یک همکار را از فهرست گیرنده انتخاب کنید و دکمه «منتخب» را بزنید.</div>';return}
+    ids.forEach(function(id){var o=optionFor(id),btn=document.createElement('button');btn.type='button';btn.className='ccx-fav-contact';var av=o.dataset.avatar||'',name=(o.textContent||'').trim();btn.innerHTML='<span class="ccx-fav-avatar">'+(av?'<img src="'+esc(av)+'" alt="">':esc(name.slice(0,1)))+'</span><span>'+esc(name)+'</span>';btn.addEventListener('click',function(){recipientSelect.value=id;recipientSelect.dispatchEvent(new Event('change',{bubbles:true}));var ta=chatForm.querySelector('textarea');if(ta)ta.focus()});favList.appendChild(btn)})
+  }
+  if(favToggle)favToggle.addEventListener('click',function(){var id=String(recipientSelect&&recipientSelect.value||'');if(!id){chatStatus.textContent='اول یک نفر را انتخاب کنید.';return}var ids=loadFavs(),i=ids.indexOf(id);if(i>=0){ids.splice(i,1);chatStatus.textContent='از منتخب‌ها حذف شد.'}else{ids.unshift(id);chatStatus.textContent='به منتخب‌ها اضافه شد.'}saveFavs(ids);renderFavs()});
+  renderFavs();
   if(chatForm)chatForm.addEventListener('submit',function(e){e.preventDefault();chatStatus.textContent='در حال ارسال…';fetch('{% url "call_center_quick_message" %}',{method:'POST',body:new FormData(chatForm),credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(r){return r.json().then(function(d){if(!r.ok||!d.ok)throw new Error(d.error||'ارسال نشد');return d})}).then(function(d){var x=document.createElement('div');x.className='ccx-chat-msg';x.innerHTML='<strong>'+esc(d.message.sender)+'</strong><p>'+esc(d.message.body)+'</p><small>الان · به '+esc(d.message.recipient)+'</small>';chatFeed.prepend(x);chatForm.querySelector('textarea').value='';chatStatus.textContent='پیام ارسال شد ✓'}).catch(function(err){chatStatus.textContent=err.message||'خطا در ارسال'})});
   function esc(v){return String(v||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 })();

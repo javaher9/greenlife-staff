@@ -448,25 +448,39 @@ class CallCenterLeadForm(forms.ModelForm):
 class CallCenterDirectLeadForm(forms.ModelForm):
     class Meta:
         model=ReferralLead
-        fields=['full_name','phone','interested_service','notes']
+        fields=['full_name','phone','notes']
         labels={
             'full_name':'نام و نام خانوادگی',
             'phone':'شماره موبایل',
-            'interested_service':'خدمت موردنظر',
-            'notes':'توضیحات',
+            'notes':'توضیحات دایرکت',
         }
         widgets={
             'full_name':forms.TextInput(attrs={'placeholder':'نام و نام خانوادگی'}),
-            'phone':forms.TextInput(attrs={'placeholder':'مثلاً 09121234567','inputmode':'tel','autocomplete':'tel','dir':'ltr'}),
-            'interested_service':forms.TextInput(attrs={'placeholder':'اختیاری'}),
-            'notes':forms.Textarea(attrs={'rows':4,'placeholder':'توضیح کوتاه از دایرکت (اختیاری)'}),
+            'phone':forms.TextInput(attrs={
+                'placeholder':'مثلاً 09121234567','inputmode':'tel',
+                'autocomplete':'tel','dir':'ltr',
+            }),
+            'notes':forms.Textarea(attrs={
+                'rows':5,
+                'placeholder':'خلاصه مکالمه دایرکت، درخواست مراجعه‌کننده و نکته‌ای که اپراتور بعدی باید بداند…',
+            }),
         }
+
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.fields['notes'].required=True
 
     def clean_phone(self):
         raw=self.cleaned_data.get('phone') or ''
         value=''.join(ch for ch in raw if ch.isdigit() or ch=='+')
         if len(value)<10:
             raise forms.ValidationError('شماره موبایل معتبر وارد کنید.')
+        return value
+
+    def clean_notes(self):
+        value=(self.cleaned_data.get('notes') or '').strip()
+        if not value:
+            raise forms.ValidationError('توضیحات دایرکت الزامی است.')
         return value
 
 
@@ -537,6 +551,8 @@ class AppointmentFromLeadForm(forms.ModelForm):
         value=self.cleaned_data['appointment_date']
         if value<timezone.localdate():
             raise forms.ValidationError('تاریخ نوبت نمی‌تواند قبل از امروز باشد.')
+        if value.weekday()==4:
+            raise forms.ValidationError('فعلاً برای روز جمعه نوبت‌گیری فعال نیست.')
         return value
 
     def clean(self):
@@ -575,6 +591,8 @@ class ReceptionistAppointmentForm(forms.ModelForm):
         value=self.cleaned_data['appointment_date']
         if value<timezone.localdate():
             raise forms.ValidationError('تاریخ نوبت نمی‌تواند قبل از امروز باشد.')
+        if value.weekday()==4:
+            raise forms.ValidationError('فعلاً برای روز جمعه نوبت‌گیری فعال نیست.')
         return value
 
     def clean_phone(self):

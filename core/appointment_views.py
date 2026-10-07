@@ -83,6 +83,28 @@ def _parse_requested_date(raw):
         return timezone.localdate()
 
 
+def _next_open_appointment_day(day, direction=1):
+    """Move Friday to the nearest enabled clinic day."""
+    step=1 if direction >= 0 else -1
+    while day.weekday()==4:
+        day += timedelta(days=step)
+    return day
+
+
+def _shift_open_appointment_days(day, count):
+    """Shift by clinic days while Fridays stay out of the appointment calendar."""
+    if not count:
+        return _next_open_appointment_day(day)
+    step=1 if count > 0 else -1
+    current=_next_open_appointment_day(day, step)
+    moved=0
+    while moved < abs(count):
+        current += timedelta(days=step)
+        if current.weekday()!=4:
+            moved += 1
+    return current
+
+
 def _notify_branch_receptionists(appointment):
     recipients=EmployeeProfile.objects.filter(
         role='receptionist',
@@ -114,6 +136,11 @@ def appointment_availability(request):
     if _role(request.user)=='receptionist' and getattr(request.user.profile,'branch_id',None)!=branch.pk:
         raise PermissionDenied('منشی فقط به نوبت‌های شعبه خودش دسترسی دارد.')
     day=_parse_requested_date(raw_date)
+    if day.weekday()==4:
+        return JsonResponse({
+            'ok':True,'branch':branch.pk,'date':day.isoformat(),
+            'closed':True,'slots':[],
+        })
     booked=set(
         VisitAppointment.objects.filter(
             branch=branch,appointment_date=day
@@ -135,7 +162,7 @@ def appointment_availability(request):
 @_appointment_access_required
 def appointment_schedule(request):
     role=_role(request.user)
-    day=_parse_requested_date(request.GET.get('date'))
+    start=_next_open_appointment_day(_parse_requested_date(request.GET.get('date')))
     branches=_clinic_branches()
     profile=getattr(request.user,'profile',None)
 
@@ -147,25 +174,56 @@ def appointment_schedule(request):
         branch_id=(request.GET.get('branch') or '').strip()
         branch=branches.filter(pk=int(branch_id)).first() if branch_id.isdigit() else branches.first()
 
+    # Seven visible clinic days; Fridays are deliberately not rendered.
+    display_days=[]
+    cursor=start
+    while len(display_days)<7:
+        if cursor.weekday()!=4:
+            display_days.append(cursor)
+        cursor += timedelta(days=1)
+
     appointments=[]
     if branch:
         appointments=attach_patient_photos(list(
             VisitAppointment.objects.filter(
-                branch=branch,appointment_date=day
-            ).exclude(status__in=('cancelled','no_show')).select_related('lead','created_by').order_by('appointment_time')
+                branch=branch,appointment_date__in=display_days
+            ).exclude(status__in=('cancelled','no_show')).select_related(
+                'lead','created_by'
+            ).order_by('appointment_date','appointment_time')
         ))
-    by_time={a.appointment_time.strftime('%H:%M'):a for a in appointments}
-    schedule_rows=[
-        {'time':value,'appointment':by_time.get(value)}
-        for value,_label in visit_appointment_time_choices()
-    ]
 
+    by_day_time={
+        (item.appointment_date,item.appointment_time.strftime('%H:%M')):item
+        for item in appointments
+    }
+    weekday_names=('دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه','شنبه','یکشنبه')
+    schedule_days=[]
+    for day in display_days:
+        rows=[
+            {'time':value,'appointment':by_day_time.get((day,value))}
+            for value,_label in visit_appointment_time_choices()
+        ]
+        schedule_days.append({
+            'date':day,
+            'date_iso':day.isoformat(),
+            'jalali':format_jalali(day,persian_digits=False),
+            'weekday':weekday_names[day.weekday()],
+            'is_today':day==timezone.localdate(),
+            'rows':rows,
+            'booked_count':sum(1 for row in rows if row['appointment']),
+        })
+
+    prev_start=_shift_open_appointment_days(start,-7)
+    next_start=_shift_open_appointment_days(start,7)
     return render(request,'core/appointments/schedule.html',{
         'appointment_role':role,
-        'schedule_date':day,
+        'schedule_date':start,
+        'schedule_start_jalali':format_jalali(start,persian_digits=False),
         'schedule_branch':branch,
         'appointment_branches':branches,
-        'schedule_rows':schedule_rows,
+        'schedule_days':schedule_days,
+        'schedule_prev':prev_start,
+        'schedule_next':next_start,
     })
 
 

@@ -1,49 +1,78 @@
 {% extends 'core/base.html' %}{% load jalali_tags staff_i18n privacy_filters %}{% block content %}
 <style>
-.schedule-shell{max-width:1200px;margin:0 auto 80px;font-family:Tahoma,sans-serif;color:#1e2a3d}
-.schedule-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;padding:18px 20px;background:#fff;border:1px solid #e3e7ef;border-radius:18px;box-shadow:0 8px 24px rgba(38,50,73,.06);margin-bottom:12px}.schedule-head h1{margin:0 0 5px}.schedule-head p{margin:0;color:#7b8798;font-size:11px}.schedule-actions{display:flex;gap:8px;flex-wrap:wrap}.schedule-actions a{padding:10px 12px;border-radius:10px;text-decoration:none;font-weight:900;font-size:11px}.new-appt{background:#7553a8;color:#fff}.back-appt{border:1px solid #dfe4ec;color:#526077;background:#fff}
-.schedule-filter{display:flex;gap:8px;align-items:end;padding:12px;background:#fff;border:1px solid #e3e7ef;border-radius:15px;margin-bottom:12px}.schedule-filter label{font-size:10px;font-weight:900;color:#667388}.schedule-filter input,.schedule-filter select{display:block;margin-top:5px;height:38px;border:1px solid #dce2ea;border-radius:9px;padding:0 10px;background:#fbfcfe;font-family:inherit}.schedule-filter button{height:38px;border:0;border-radius:9px;padding:0 14px;background:#263d52;color:#fff;font-family:inherit;font-weight:900}
-.schedule-card{background:#fff;border:1px solid #e3e7ef;border-radius:18px;overflow:hidden;box-shadow:0 8px 24px rgba(38,50,73,.05)}.slot-row{display:grid;grid-template-columns:90px 1fr 190px 160px;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid #edf0f4;min-height:48px}.slot-row:last-child{border-bottom:0}.slot-time{font-weight:900;direction:ltr;text-align:center;color:#5f438b}.slot-empty{color:#a0a9b7;font-size:11px}.slot-person strong{display:block}.slot-person small{display:block;margin-top:3px;color:#7b8798;font-size:10px}.slot-status{display:inline-flex;width:max-content;padding:5px 8px;border-radius:999px;background:#eff7f3;color:#237653;font-size:10px;font-weight:900}.slot-source{font-size:10px;color:#68758a}.slot-payment{margin-top:5px;font-size:10px;color:#277457;font-weight:900;direction:rtl}.slot-payment b{direction:ltr;display:inline-block}.slot-buttons{display:flex;gap:4px;flex-wrap:wrap}.slot-buttons button{border:0;border-radius:7px;padding:6px 7px;font-family:inherit;font-size:9px;font-weight:900;cursor:pointer}.arrive{background:#eaf7f1;color:#176d4c}.complete{background:#eef1fb;color:#4259a1}.cancel{background:#fff0f3;color:#a8324b}
-@media(max-width:760px){.schedule-head{align-items:flex-start;flex-direction:column}.schedule-filter{align-items:stretch;flex-direction:column}.slot-row{grid-template-columns:65px 1fr}.slot-status,.slot-source,.slot-buttons{grid-column:2}.schedule-actions{width:100%}}
-
-.patient-name-cell{display:flex;align-items:center;gap:9px;min-width:0}.patient-mini-avatar{width:34px;height:34px;flex:0 0 34px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:linear-gradient(135deg,#eaf7f1,#f0ebfb);border:2px solid #fff;box-shadow:0 0 0 1px #dce6e3;color:#684fad;font-size:11px;font-weight:900}.patient-mini-avatar img{width:100%;height:100%;object-fit:cover}
+body.gl-page-appointment_schedule .app-main{background:#f5f8fa!important;background-image:none!important;color:#223649!important}
+body.gl-page-appointment_schedule .cc-desktop-dock{display:none!important}
+.schedule7{max-width:1760px;margin:0 auto 54px;padding:0 6px;font-family:Tahoma,"Noto Sans Arabic",sans-serif;color:#223649}
+.schedule7 *{box-sizing:border-box}
+.s7-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px;margin-bottom:10px;background:#fff;border:1px solid #e1e8eb;border-radius:18px;box-shadow:0 8px 24px rgba(36,55,74,.05)}
+.s7-head h1{margin:0;color:#1c3142;font-size:22px}.s7-head p{margin:4px 0 0;color:#6e7e8d;font-size:9px;line-height:1.8}
+.s7-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.s7-actions a{min-height:38px;display:inline-flex;align-items:center;justify-content:center;padding:0 12px;border-radius:10px;border:1px solid #dce5e8;background:#fff;color:#4b6071;font-size:9px;font-weight:900;text-decoration:none}.s7-actions a.primary{background:#e9f7f0;border-color:#cce8da;color:#1d7353}
+.s7-controls{display:grid;grid-template-columns:auto minmax(320px,1fr) auto;gap:10px;align-items:center;padding:10px;margin-bottom:10px;background:#fff;border:1px solid #e1e8eb;border-radius:16px}
+.s7-arrow{width:44px;height:44px;border-radius:12px;border:1px solid #dce5e8;background:#f8fbfc;color:#31566b;font-size:22px;font-weight:900;display:grid;place-items:center;text-decoration:none}
+.s7-filter{display:flex;gap:8px;align-items:end;justify-content:center;flex-wrap:wrap}.s7-filter label{display:grid;gap:4px;color:#637586;font-size:8px;font-weight:900}.s7-filter input,.s7-filter select{height:40px;min-width:170px;border:1px solid #d8e3e6;border-radius:10px;background:#f9fbfc!important;color:#23394b!important;padding:0 10px;font:800 10px Tahoma!important;outline:none!important}.s7-filter input{direction:ltr;text-align:center}.s7-filter button{height:40px;border:0;border-radius:10px;background:#1f7656;color:#fff;padding:0 15px;font:900 9px Tahoma;cursor:pointer}
+.s7-week{overflow-x:auto;padding-bottom:8px}.s7-grid{display:grid;grid-template-columns:repeat(7,minmax(178px,1fr));gap:8px;min-width:1260px}
+.s7-day{background:#fff;border:1px solid #e0e8eb;border-radius:16px;overflow:hidden;box-shadow:0 6px 18px rgba(40,57,74,.035)}.s7-day.today{border-color:#94cfb4;box-shadow:0 0 0 2px rgba(49,153,108,.09),0 8px 22px rgba(40,57,74,.05)}
+.s7-day-head{position:sticky;top:0;z-index:2;padding:11px 10px;background:linear-gradient(145deg,#fbfdfd,#f6faf8);border-bottom:1px solid #e6edef;text-align:center}.s7-day.today .s7-day-head{background:linear-gradient(145deg,#eaf7f0,#f8fcfa)}.s7-day-head strong{display:block;color:#253b4c;font-size:11px}.s7-day-head b{display:block;margin-top:4px;color:#1f7656;font-size:12px;direction:ltr}.s7-day-head small{display:block;margin-top:4px;color:#82909b;font-size:7px}.s7-day-head em{display:inline-block;margin-top:5px;padding:3px 6px;border-radius:999px;background:#eef3f5;color:#607181;font-size:7px;font-style:normal;font-weight:900}
+.s7-slots{max-height:650px;overflow:auto}.s7-slot{min-height:48px;padding:7px;border-bottom:1px solid #edf1f2}.s7-slot:last-child{border-bottom:0}.s7-free{display:flex;align-items:center;justify-content:space-between;gap:6px;color:#9aa5ad;font-size:8px}.s7-time{direction:ltr;color:#62468d;font-size:9px;font-weight:900}.s7-free .s7-time{color:#667988}.s7-booked{padding:7px;border-radius:10px;background:#f7fbf9;border:1px solid #e0eee7}.s7-booked-top{display:flex;align-items:center;justify-content:space-between;gap:5px}.s7-booked-top strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#21384a;font-size:9px}.s7-booked .s7-time{color:#1d7755}.s7-booked small{display:block;margin-top:4px;color:#657788;font-size:7px;line-height:1.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.s7-status{display:inline-block;margin-top:5px;padding:3px 6px;border-radius:999px;background:#e9f7f0;color:#1d7353;font-size:7px;font-weight:900}.s7-buttons{display:flex;gap:3px;flex-wrap:wrap;margin-top:6px}.s7-buttons form{margin:0}.s7-buttons button{border:0;border-radius:7px;padding:5px 6px;font:900 7px Tahoma;cursor:pointer}.s7-arrive{background:#e8f7ef;color:#1d7353}.s7-complete{background:#edf2fb;color:#4968a2}.s7-cancel{background:#fff0f3;color:#a94359}
+.s7-note{margin-top:8px;padding:9px 12px;border-radius:12px;background:#fff8e9;border:1px solid #f1e3c5;color:#805d22;font-size:8px;font-weight:800}
+@media(max-width:900px){.schedule7{padding:0}.s7-head{align-items:flex-start}.s7-controls{grid-template-columns:40px minmax(0,1fr) 40px}.s7-filter{justify-content:flex-start}.s7-filter label{flex:1}.s7-filter input,.s7-filter select{width:100%;min-width:0}}
 </style>
-<section class="schedule-shell">
-  <header class="schedule-head">
-    <div><h1>{% gl_t 'appt.schedule' %}</h1><p>{{ schedule_branch|default:'—' }} · {% gl_t 'cc.schedule_hours' %}</p></div>
-    <div class="schedule-actions">
-      {% if appointment_role == 'receptionist' %}<a class="new-appt" href="{% url 'receptionist_appointment_create' %}">＋ {% gl_t 'appt.new' %}</a>{% endif %}
-      {% if appointment_role == 'call_center' %}<a class="back-appt" href="{% url 'call_center_dashboard' %}">{% gl_t 'appt.back_cc' %}</a>{% else %}<a class="back-appt" href="/">{% gl_t 'appt.back_dashboard' %}</a>{% endif %}
+<section class="schedule7">
+  <header class="s7-head">
+    <div><h1>برنامه نوبت‌دهی ۷ روزه</h1><p>{{ schedule_branch|default:'—' }} · جمعه در تقویم نمایش داده نمی‌شود · ساعت‌های 09:00 تا 18:00</p></div>
+    <div class="s7-actions">
+      {% if appointment_role == 'receptionist' %}<a class="primary" href="{% url 'receptionist_appointment_create' %}">＋ نوبت جدید</a>{% endif %}
+      {% if appointment_role == 'call_center' %}<a href="{% url 'call_center_dashboard' %}">بازگشت به میز کار</a>{% else %}<a href="/">بازگشت</a>{% endif %}
     </div>
   </header>
 
-  <form class="schedule-filter" method="get">
-    {% if appointment_role != 'receptionist' %}
-    <label>{% gl_t 'common.branch' %}<select name="branch">{% for b in appointment_branches %}<option value="{{ b.pk }}" {% if schedule_branch and b.pk == schedule_branch.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></label>
-    {% endif %}
-    <label>{% gl_t 'common.date' %}<input type="date" name="date" value="{{ schedule_date|date:'Y-m-d' }}"></label>
-    <button type="submit">{% gl_t 'appt.show' %}</button>
-  </form>
-
-  <div class="schedule-card">
-    {% for row in schedule_rows %}
-    <div class="slot-row">
-      <div class="slot-time">{{ row.time }}</div>
-      {% if row.appointment %}
-        <div class="slot-person patient-name-cell"><span class="patient-mini-avatar">{% if row.appointment.patient_photo_url %}<img src="{{ row.appointment.patient_photo_url }}" alt="">{% else %}<b>{{ row.appointment.patient_initial }}</b>{% endif %}</span><div><strong>{{ row.appointment.full_name }}</strong><small>{% if appointment_role == 'call_center' %}{{ row.appointment.phone }}{% else %}{{ row.appointment.phone|mask_phone }}{% endif %}{% if row.appointment.service %} · {{ row.appointment.service }}{% endif %}</small></div></div>
-        <div><span class="slot-status">{% gl_choice 'appointment_status' row.appointment.status row.appointment.get_status_display %}</span><div class="slot-source">{{ row.appointment.get_source_display }}</div><div class="slot-payment">{% gl_t 'appt.payment_confirmed' %}: <b>{{ row.appointment|appointment_paid_million }}</b> {% gl_t 'common.million_toman' %}</div></div>
-        {% if appointment_role == 'receptionist' %}
-        <div class="slot-buttons">
-          {% if row.appointment.status == 'booked' %}<form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'arrived' %}">{% csrf_token %}<button class="arrive">{% gl_t 'appt.arrived' %}</button></form>{% endif %}
-          {% if row.appointment.status != 'completed' %}<form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'completed' %}">{% csrf_token %}<button class="complete">{% gl_t 'appt.completed' %}</button></form>{% endif %}
-          <form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'cancelled' %}">{% csrf_token %}<button class="cancel">{% gl_t 'appt.cancelled' %}</button></form>
-        </div>
-        {% else %}<div class="slot-source">{% gl_t 'appt.booked' %}</div>{% endif %}
-      {% else %}
-        <div class="slot-empty">{% gl_t 'appt.free' %}</div><div></div><div></div>
+  <div class="s7-controls">
+    <a class="s7-arrow" href="?{% if schedule_branch %}branch={{ schedule_branch.pk }}&{% endif %}date={{ schedule_prev|date:'Y-m-d' }}" aria-label="۷ روز قبل">›</a>
+    <form class="s7-filter" method="get">
+      {% if appointment_role != 'receptionist' %}
+      <label>شعبه<select name="branch">{% for b in appointment_branches %}<option value="{{ b.pk }}" {% if schedule_branch and b.pk == schedule_branch.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></label>
       {% endif %}
-    </div>
-    {% endfor %}
+      <label>شروع بازه - تاریخ شمسی<input type="text" name="date" value="{{ schedule_start_jalali }}" inputmode="numeric" placeholder="1405/07/15"></label>
+      <button type="submit">نمایش بازه</button>
+    </form>
+    <a class="s7-arrow" href="?{% if schedule_branch %}branch={{ schedule_branch.pk }}&{% endif %}date={{ schedule_next|date:'Y-m-d' }}" aria-label="۷ روز بعد">‹</a>
   </div>
+
+  <div class="s7-week">
+    <div class="s7-grid">
+      {% for day in schedule_days %}
+      <section class="s7-day {% if day.is_today %}today{% endif %}">
+        <header class="s7-day-head">
+          <strong>{{ day.weekday }}</strong><b>{{ day.jalali }}</b>
+          <small>{% if day.is_today %}امروز{% else %}&nbsp;{% endif %}</small>
+          <em>{{ day.booked_count }} نوبت</em>
+        </header>
+        <div class="s7-slots">
+          {% for row in day.rows %}
+          <div class="s7-slot">
+            {% if row.appointment %}
+            <div class="s7-booked">
+              <div class="s7-booked-top"><strong>{{ row.appointment.full_name }}</strong><span class="s7-time">{{ row.time }}</span></div>
+              <small>{% if appointment_role == 'call_center' %}{{ row.appointment.phone }}{% else %}{{ row.appointment.phone|mask_phone }}{% endif %}{% if row.appointment.service %} · {{ row.appointment.service }}{% endif %}</small>
+              <span class="s7-status">{% gl_choice 'appointment_status' row.appointment.status row.appointment.get_status_display %}</span>
+              {% if appointment_role == 'receptionist' %}
+              <div class="s7-buttons">
+                {% if row.appointment.status == 'booked' %}<form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'arrived' %}">{% csrf_token %}<button class="s7-arrive">مراجعه کرد</button></form>{% endif %}
+                {% if row.appointment.status != 'completed' %}<form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'completed' %}">{% csrf_token %}<button class="s7-complete">انجام شد</button></form>{% endif %}
+                <form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'cancelled' %}">{% csrf_token %}<button class="s7-cancel">لغو</button></form>
+              </div>
+              {% endif %}
+            </div>
+            {% else %}
+            <div class="s7-free"><span>آزاد</span><span class="s7-time">{{ row.time }}</span></div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="s7-note">جمعه‌ها فعلاً از تقویم حذف شده‌اند و ثبت نوبت جدید برای جمعه غیرفعال است.</div>
 </section>
 {% endblock %}
