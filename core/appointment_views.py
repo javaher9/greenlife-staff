@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -60,7 +61,24 @@ def _role(user):
 
 
 def _clinic_branches():
-    return Branch.objects.filter(is_active=True).exclude(name__in=('کال‌سنتر','کال سنتر','Call Center')).order_by('name')
+    return (
+        Branch.objects.filter(is_active=True)
+        .exclude(name__in=('کال‌سنتر','کال سنتر','Call Center'))
+        .exclude(Q(name__icontains='ارومیه') | Q(name__icontains='urmia'))
+        .order_by('name')
+    )
+
+
+def _default_appointment_branch(branches):
+    """Prefer Niavaran as the shared booking default without deleting other branch data."""
+    return (
+        branches.filter(
+            Q(name__icontains='نیاوران')
+            | Q(name__icontains='نياوران')
+            | Q(name__icontains='niavaran')
+        ).first()
+        or branches.first()
+    )
 
 
 def _appointment_access_required(view):
@@ -182,7 +200,9 @@ def appointment_schedule(request):
             raise PermissionDenied('برای منشی شعبه مشخص نشده است.')
     else:
         branch_id=(request.GET.get('branch') or '').strip()
-        branch=branches.filter(pk=int(branch_id)).first() if branch_id.isdigit() else branches.first()
+        branch=branches.filter(pk=int(branch_id)).first() if branch_id.isdigit() else None
+        if not branch:
+            branch=_default_appointment_branch(branches)
 
     # Seven visible clinic days; Fridays are deliberately not rendered.
     display_days=[]
@@ -265,7 +285,11 @@ def call_center_appointment_create(request,pk):
     # The 7-day calendar is now the canonical booking surface. Keep POST support
     # for stale browser tabs, but never send new GET requests to the legacy form.
     if request.method=='GET':
-        return redirect(f"{reverse('appointment_schedule')}?lead={lead.pk}")
+        default_branch=_default_appointment_branch(_clinic_branches())
+        query=f"lead={lead.pk}"
+        if default_branch:
+            query=f"branch={default_branch.pk}&{query}"
+        return redirect(f"{reverse('appointment_schedule')}?{query}")
 
     initial={'appointment_date':timezone.localdate()}
     form=AppointmentFromLeadForm(request.POST or None,initial=initial)

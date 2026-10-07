@@ -65,10 +65,10 @@ body.gl-page-appointment_schedule .s7-arrow{
 .s7-booking-person{display:flex;align-items:center;gap:10px;min-width:0}.s7-booking-icon{width:38px;height:38px;flex:0 0 38px;border-radius:12px;background:#fff;color:#684995;border:1px solid #ddcfea;display:grid;place-items:center;font-size:17px;font-weight:900}.s7-booking-copy{min-width:0}.s7-booking-copy strong{display:block;color:#263d4e;font-size:12px}.s7-booking-copy span{display:block;margin-top:4px;color:#71808c;font-size:8px}.s7-booking-copy b{color:#1e7555}
 .s7-booking-actions{display:flex;align-items:center;gap:6px}.s7-booking-cancel{min-height:35px;display:inline-flex;align-items:center;justify-content:center;padding:0 10px;border:1px solid #dce3e6;border-radius:9px;background:#fff;color:#677784;text-decoration:none;font-size:8px;font-weight:900}
 .s7-booking-success{display:none;min-height:35px;align-items:center;padding:0 10px;border-radius:9px;background:#e7f6ee;color:#176f4f;border:1px solid #c5e3d4;font-size:8px;font-weight:900}.s7-booking-success.show{display:inline-flex}
-button.s7-free.s7-book-slot{width:100%;min-height:48px;border:0!important;background:transparent!important;padding:0!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:6px!important;color:#768690!important;font:800 8px Tahoma!important;cursor:pointer!important;text-align:inherit!important;box-shadow:none!important}
-button.s7-free.s7-book-slot:hover{margin:-3px;padding:3px!important;width:calc(100% + 6px);border-radius:9px!important;background:#edf8f3!important;color:#176f4f!important;box-shadow:inset 0 0 0 1px #cce5d8!important}
-button.s7-free.s7-book-slot:after{content:"＋ انتخاب";font-size:7px;font-weight:1000;color:#2c8966;opacity:.8}
-button.s7-free.s7-book-slot.is-disabled{pointer-events:none;opacity:.45}
+.s7-free.s7-book-slot{width:100%;min-height:32px;padding:0;display:flex;align-items:center;justify-content:space-between;gap:6px;color:#87959f;font:800 8px Tahoma;cursor:pointer;text-align:inherit;background:transparent;border:0;border-radius:8px;box-shadow:none;transition:.12s}
+.s7-free.s7-book-slot:hover,.s7-free.s7-book-slot:focus{margin:-3px;padding:3px;width:calc(100% + 6px);background:#f2faf6;color:#176f4f;box-shadow:inset 0 0 0 1px #d4e9de;outline:none}
+.s7-free.s7-book-slot:after{content:"＋ انتخاب";font-size:7px;font-weight:1000;color:#2c8966;opacity:.72}
+.s7-free.s7-book-slot.is-disabled{pointer-events:none;opacity:.45}
 .s7-slot.just-booked{background:#edf8f3!important;box-shadow:inset 0 0 0 1px #c9e3d5}.s7-just-booked{padding:7px}.s7-just-booked strong{display:block;color:#176f4f;font-size:9px}.s7-just-booked small{display:block;margin-top:4px;color:#63786e;font-size:7px}.s7-just-booked b{display:inline-block;margin-top:5px;padding:3px 6px;border-radius:999px;background:#dff2e8;color:#176f4f;font-size:7px}
 
 .s7-book-modal-backdrop{position:fixed;inset:0;z-index:190;background:rgba(18,31,41,.28);display:none}.s7-book-modal-backdrop.open{display:block}
@@ -77,6 +77,26 @@ button.s7-free.s7-book-slot.is-disabled{pointer-events:none;opacity:.45}
 .s7-book-modal-body{padding:14px}.s7-book-summary{display:grid;grid-template-columns:1fr 1fr;gap:7px}.s7-book-summary div{padding:9px;border:1px solid #e1e8ea;border-radius:10px;background:#fafcfc}.s7-book-summary span{display:block;color:#81909a;font-size:7px}.s7-book-summary b{display:block;margin-top:4px;color:#30495a;font-size:9px}.s7-book-notes{display:block;margin-top:10px;color:#5c6d7a;font-size:8px;font-weight:900}.s7-book-notes textarea{width:100%;min-height:68px;margin-top:5px;padding:9px;border:1px solid #d7e2e5;border-radius:10px;background:#fff;color:#2b4051;font:800 9px/1.8 Tahoma;resize:vertical;outline:none}.s7-book-notes textarea:focus{border-color:#cbb7dd;box-shadow:0 0 0 3px rgba(104,73,149,.06)}
 .s7-book-modal-actions{display:flex;gap:7px;margin-top:11px}.s7-book-confirm,.s7-book-abort{flex:1;min-height:39px;border-radius:10px!important;font:900 9px Tahoma!important;cursor:pointer!important}.s7-book-confirm{background:#e6f5ed!important;color:#176e4f!important;border:1px solid #c4e2d2!important}.s7-book-abort{background:#f4f6f7!important;color:#687884!important;border:1px solid #dce3e6!important}.s7-book-status{min-height:18px;margin-top:7px;color:#257554;font-size:8px;font-weight:900;text-align:center}
 @media(max-width:760px){.s7-booking-banner{align-items:flex-start;flex-direction:column}.s7-booking-actions{width:100%}.s7-booking-cancel{flex:1}.s7-book-summary{grid-template-columns:1fr}}
+
+/* Keep booking-mode free slots visually identical to the original light calendar. */
+body.gl-page-appointment_schedule .schedule7 .s7-slot{
+  background:#fff!important;
+}
+body.gl-page-appointment_schedule .schedule7 .s7-slot .s7-free.s7-book-slot{
+  background:transparent!important;
+  color:#87959f!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+body.gl-page-appointment_schedule .schedule7 .s7-slot .s7-free.s7-book-slot .s7-time{
+  color:#50697a!important;
+}
+body.gl-page-appointment_schedule .schedule7 .s7-slot .s7-free.s7-book-slot:hover,
+body.gl-page-appointment_schedule .schedule7 .s7-slot .s7-free.s7-book-slot:focus{
+  background:#f2faf6!important;
+  color:#176f4f!important;
+  box-shadow:inset 0 0 0 1px #d4e9de!important;
+}
 </style>
 <section class="schedule7">
   <header class="s7-head">
@@ -134,7 +154,7 @@ button.s7-free.s7-book-slot.is-disabled{pointer-events:none;opacity:.45}
             </div>
             {% else %}
             {% if booking_lead and appointment_role == 'call_center' %}
-            <button type="button" class="s7-free s7-book-slot" data-book-slot data-date="{{ day.date_iso }}" data-jalali="{{ day.jalali }}" data-time="{{ row.time }}"><span>آزاد</span><span class="s7-time">{{ row.time }}</span></button>
+            <div class="s7-free s7-book-slot" role="button" tabindex="0" data-book-slot data-date="{{ day.date_iso }}" data-jalali="{{ day.jalali }}" data-time="{{ row.time }}"><span>آزاد</span><span class="s7-time">{{ row.time }}</span></div>
             {% else %}
             <div class="s7-free"><span>آزاد</span><span class="s7-time">{{ row.time }}</span></div>
             {% endif %}
@@ -181,7 +201,10 @@ button.s7-free.s7-book-slot.is-disabled{pointer-events:none;opacity:.45}
   function csrf(){var x=document.querySelector('input[name="csrfmiddlewaretoken"]');if(x&&x.value)return x.value;var m=document.cookie.match(/(?:^|;\s*)(?:csrftoken|greenlife_lan_csrftoken)=([^;]+)/);return m?decodeURIComponent(m[1]):''}
   function open(slot){selected=slot;dateEl.textContent=slot.dataset.jalali||slot.dataset.date;timeEl.textContent=slot.dataset.time;status.textContent='';notes.value='';modal.classList.add('open');back.classList.add('open');modal.setAttribute('aria-hidden','false')}
   function close(){if(busy)return;modal.classList.remove('open');back.classList.remove('open');modal.setAttribute('aria-hidden','true');selected=null}
-  document.querySelectorAll('[data-book-slot]').forEach(function(slot){slot.addEventListener('click',function(){if(!slot.classList.contains('is-disabled'))open(slot)})});
+  document.querySelectorAll('[data-book-slot]').forEach(function(slot){
+    slot.addEventListener('click',function(){if(!slot.classList.contains('is-disabled'))open(slot)});
+    slot.addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&!slot.classList.contains('is-disabled')){e.preventDefault();open(slot)}});
+  });
   document.querySelectorAll('[data-book-close]').forEach(function(x){x.addEventListener('click',close)});
   document.addEventListener('keydown',function(e){if(e.key==='Escape')close()});
   confirmBtn.addEventListener('click',function(){
