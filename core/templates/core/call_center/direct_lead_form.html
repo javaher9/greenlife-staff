@@ -26,10 +26,10 @@
     <div class="cc-direct-head">
       <small>CALL CENTER · INSTAGRAM DIRECT</small>
       <h1>ثبت لید از دایرکت</h1>
-      <p>این لید مستقیماً به نام شما ثبت می‌شود و وارد توزیع عمومی لیدها نمی‌شود.</p>
+      <p>این لید با نام شما به‌عنوان ثبت‌کننده ذخیره می‌شود و سپس وارد توزیع عادی کال‌سنتر می‌شود.</p>
     </div>
     <div class="cc-direct-body">
-      <div class="cc-direct-note">ثبت‌کننده و مسئول پیگیری این لید، خود شما خواهید بود.</div>
+      <div class="cc-direct-note">ثبت‌کننده شما هستید؛ مسئول پیگیری طبق توزیع عادی کال‌سنتر تعیین می‌شود.</div>
       <form method="post" novalidate>
         {% csrf_token %}
         <div class="cc-direct-grid">
@@ -41,7 +41,7 @@
         {% if form.non_field_errors %}<div class="cc-direct-errors">{{ form.non_field_errors }}</div>{% endif %}
         <div class="cc-direct-actions">
           <a href="{% url 'call_center_dashboard' %}">انصراف</a>
-          <button type="submit">ثبت لید به نام من</button>
+          <button type="submit">ثبت و ارسال به توزیع عادی</button>
         </div>
       </form>
     </div>
