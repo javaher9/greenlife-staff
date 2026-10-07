@@ -821,7 +821,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-more-body a{
             <button class="ccx-action result" type="button" data-result-toggle>نتیجه تماس</button>
             <a class="ccx-action appt" href="{% url 'appointment_schedule' %}?lead={{ row.lead.pk }}">نوبت</a>
           </div>
-          <details class="ccx-more"><summary>بیشتر ▾</summary><div class="ccx-more-body"><a href="{% url 'call_center_lead' row.lead.pk %}">پرونده کامل</a>{% if row.lead.notes %}<a href="{% url 'call_center_lead' row.lead.pk %}">یادداشت‌ها</a>{% endif %}</div></details>
+          <details class="ccx-more"><summary>بیشتر ▾</summary><div class="ccx-more-body"><a href="{% url 'patient_360_from_lead' row.lead.pk %}">پرونده کامل</a><a href="{% url 'call_center_lead' row.lead.pk %}#ccLeadFollowup">یادداشت‌ها و پیگیری</a></div></details>
           <div class="ccx-result-panel">
             <div class="ccx-result-options">
               <button type="button" data-quick-result="no_answer">پاسخ نداد</button>

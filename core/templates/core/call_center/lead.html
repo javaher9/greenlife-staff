@@ -8,6 +8,90 @@ body.gl-page-call_center_lead .app-main{background:#f5f7fb!important}
 .cc-patient360{display:inline-flex;align-items:center;justify-content:center;margin:12px 8px 0 0;padding:11px 14px;border-radius:11px;background:#eaf6f1;color:#236c54!important;text-decoration:none;font-weight:900;border:1px solid #d2e8df}
 }
 @media(max-width:820px){.cc-detail{grid-template-columns:1fr}.cc-form{position:static}.cc-meta{grid-template-columns:1fr}.cc-detail-top{align-items:flex-start}.cc-phone{align-items:flex-start;flex-direction:column}.cc-phone a{width:100%;text-align:center}}
+
+/* Final light form guard for call-center lead detail. */
+body.gl-page-call_center_lead .cc-detail-shell{
+  color:#1f3445!important;
+}
+body.gl-page-call_center_lead .cc-detail .cc-card{
+  background:#fff!important;
+  color:#1f3445!important;
+  border:1px solid #e0e7eb!important;
+  box-shadow:0 8px 24px rgba(40,51,75,.055)!important;
+}
+body.gl-page-call_center_lead .cc-detail .cc-card h1,
+body.gl-page-call_center_lead .cc-detail .cc-card h2{
+  color:#1d3041!important;
+}
+body.gl-page-call_center_lead .cc-detail .cc-form{
+  scroll-margin-top:18px!important;
+}
+body.gl-page-call_center_lead .cc-detail .cc-form form{
+  gap:10px!important;
+}
+body.gl-page-call_center_lead .cc-detail .cc-form label{
+  color:#45596b!important;
+  font-size:10.5px!important;
+}
+body.gl-page-call_center_lead .cc-detail .cc-form input,
+body.gl-page-call_center_lead .cc-detail .cc-form select,
+body.gl-page-call_center_lead .cc-detail .cc-form textarea{
+  width:100%!important;
+  background:#fff!important;
+  background-image:none!important;
+  color:#24394b!important;
+  border:1.3px solid #d6e1e5!important;
+  border-radius:10px!important;
+  padding:10px 11px!important;
+  box-shadow:none!important;
+  color-scheme:light!important;
+}
+body.gl-page-call_center_lead .cc-detail .cc-form select{
+  background:#f4f8f7!important;
+  color:#2f5f51!important;
+}
+body.gl-page-call_center_lead .cc-detail .cc-form textarea{
+  min-height:112px!important;
+  max-height:180px!important;
+  resize:vertical!important;
+}
+body.gl-page-call_center_lead .cc-detail .cc-form input:focus,
+body.gl-page-call_center_lead .cc-detail .cc-form select:focus,
+body.gl-page-call_center_lead .cc-detail .cc-form textarea:focus{
+  outline:none!important;
+  border-color:#c5b2d9!important;
+  box-shadow:0 0 0 3px rgba(104,73,149,.065)!important;
+}
+body.gl-page-call_center_lead .cc-detail .cc-form button[type="submit"]{
+  background:#e6f5ed!important;
+  color:#176e4f!important;
+  border:1px solid #c3e0d1!important;
+  box-shadow:0 5px 14px rgba(30,112,79,.07)!important;
+  min-height:41px!important;
+}
+body.gl-page-call_center_lead .cc-detail .cc-book{
+  background:#eee6f7!important;
+  color:#604287!important;
+  border:1px solid #d0bde2!important;
+}
+body.gl-page-call_center_lead .cc-detail .cc-patient360{
+  background:#e9f6f0!important;
+  color:#236c54!important;
+  border:1px solid #cfe6dc!important;
+}
+body.gl-page-call_center_lead .cc-detail .cc-phone{
+  background:#f8fafb!important;
+  border-color:#dfe7ea!important;
+}
+body.gl-page-call_center_lead .cc-detail .cc-phone b{
+  color:#1f3445!important;
+}
+body.gl-page-call_center_lead .cc-detail .cc-phone a{
+  background:#e5f5ed!important;
+  color:#176e4f!important;
+  border:1px solid #c4e2d2!important;
+  box-shadow:none!important;
+}
 </style>
 <div class="cc-detail-shell">
   <div class="cc-detail-top"><div><span class="eyebrow">{% gl_t 'cc.lead_case_title' %}</span></div><a class="cc-back" href="{% url 'call_center_dashboard' %}">{% gl_t 'cc.back_to_desk' %} ←</a></div>
@@ -23,7 +107,7 @@ body.gl-page-call_center_lead .app-main{background:#f5f7fb!important}
         <div><span>{% gl_t 'cc.alt_phone' %}</span><b dir="ltr">{{ lead.alternate_phone|default:'—' }}</b></div>
       </div>
       {% if lead.notes %}<div class="cc-notes"><strong>{% gl_t 'cc.last_note' %}</strong><br>{{ lead.notes|linebreaksbr }}</div>{% endif %}
-      <a class="cc-book" href="{% url 'call_center_appointment_create' lead.pk %}">＋ {% gl_t 'cc.real_appointment' %}</a>
+      <a class="cc-book" href="{% url 'appointment_schedule' %}?lead={{ lead.pk }}">＋ {% gl_t 'cc.real_appointment' %}</a>
       <a class="cc-patient360" href="{% url 'patient_360_from_lead' lead.pk %}">★ پرونده ۳۶۰ / امتیاز بیمار</a>
       {% if real_appointments %}
       <div class="cc-appts">
@@ -33,7 +117,30 @@ body.gl-page-call_center_lead .app-main{background:#f5f7fb!important}
       </div>
       {% endif %}
     </article>
-    <article class="cc-card cc-form"><h2>{% gl_t 'cc.save_followup_title' %}</h2><p class="cc-sub">{% gl_t 'cc.keep_in_queue' %}</p><form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">{% gl_t 'cc.save_back_queue' %}</button></form></article>
+    <article class="cc-card cc-form" id="ccLeadFollowup"><h2>{% gl_t 'cc.save_followup_title' %}</h2><p class="cc-sub">{% gl_t 'cc.keep_in_queue' %}</p><form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">{% gl_t 'cc.save_back_queue' %}</button></form></article>
   </section>
 </div>
+
+<script>
+(function(){
+  function imp(el,p,v){if(el)el.style.setProperty(p,v,'important')}
+  function paintLeadForm(){
+    document.querySelectorAll('.cc-form input,.cc-form select,.cc-form textarea').forEach(function(el){
+      imp(el,'background','#fff');imp(el,'color','#24394b');imp(el,'border','1.3px solid #d6e1e5');imp(el,'box-shadow','none');
+    });
+    document.querySelectorAll('.cc-form select').forEach(function(el){
+      imp(el,'background','#f4f8f7');imp(el,'color','#2f5f51');
+    });
+    document.querySelectorAll('.cc-form button[type="submit"]').forEach(function(el){
+      imp(el,'background','#e6f5ed');imp(el,'color','#176e4f');imp(el,'border','1px solid #c3e0d1');imp(el,'box-shadow','none');
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paintLeadForm);else paintLeadForm();
+  setTimeout(paintLeadForm,100);
+  setTimeout(paintLeadForm,700);
+  if(location.hash==='#ccLeadFollowup'){
+    setTimeout(function(){var el=document.getElementById('ccLeadFollowup');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})},150);
+  }
+})();
+</script>
 {% endblock %}
