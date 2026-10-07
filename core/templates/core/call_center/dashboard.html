@@ -181,6 +181,263 @@ body.gl-page-call_center_dashboard .ccx-secondary{width:100%!important;max-width
   body.gl-page-call_center_dashboard .ccx-last,
   body.gl-page-call_center_dashboard .ccx-next-action{color:#53697b!important}
 }
+
+/* ===== Operator Cockpit v3 — final physical layout + fully light controls ===== */
+body.gl-page-call_center_dashboard .ccx,
+.ccx{
+  width:100%!important;
+  max-width:calc(100vw - 36px)!important;
+  margin-inline:auto!important;
+  gap:10px!important;
+}
+body.gl-page-call_center_dashboard .ccx-layout,
+.ccx-layout{
+  display:grid!important;
+  direction:ltr!important;
+  grid-template-columns:250px minmax(0,1fr)!important;
+  grid-template-areas:"rail main"!important;
+  gap:10px!important;
+  width:100%!important;
+  align-items:start!important;
+}
+body.gl-page-call_center_dashboard .ccx-main,
+.ccx-main{
+  grid-area:main!important;
+  direction:rtl!important;
+  width:100%!important;
+  min-width:0!important;
+  overflow:hidden!important;
+}
+body.gl-page-call_center_dashboard .ccx-side,
+.ccx-side{
+  grid-area:rail!important;
+  direction:rtl!important;
+  width:250px!important;
+  min-width:250px!important;
+  display:grid!important;
+  gap:8px!important;
+  position:static!important;
+  z-index:auto!important;
+}
+body.gl-page-call_center_dashboard .ccx-side .ccx-card,
+.ccx-side .ccx-card{
+  width:100%!important;
+  border:1px solid #dbe5e7!important;
+  box-shadow:0 5px 16px rgba(35,53,70,.035)!important;
+}
+body.gl-page-call_center_dashboard .ccx-side .ccx-head,
+.ccx-side .ccx-head{padding:11px 12px!important}
+body.gl-page-call_center_dashboard .ccx-side .ccx-head h3,
+.ccx-side .ccx-head h3{font-size:12px!important}
+body.gl-page-call_center_dashboard .ccx-side .ccx-head p,
+.ccx-side .ccx-head p{font-size:8px!important}
+body.gl-page-call_center_dashboard .ccx-side-list,
+.ccx-side-list{padding:6px!important;gap:4px!important}
+body.gl-page-call_center_dashboard .ccx-side-item,
+.ccx-side-item{
+  padding:8px!important;
+  min-height:58px!important;
+  background:#fbfdfc!important;
+  border:1px solid #dfe8e6!important;
+  border-radius:10px!important;
+}
+body.gl-page-call_center_dashboard .ccx-side-item strong,
+.ccx-side-item strong{font-size:9.5px!important;color:#263b4d!important}
+body.gl-page-call_center_dashboard .ccx-side-item small,
+.ccx-side-item small{font-size:8px!important;color:#6e7d89!important}
+
+/* Larger, clearer work queue. */
+body.gl-page-call_center_dashboard .ccx-head h2,
+.ccx-head h2{font-size:15px!important;color:#1f3445!important}
+body.gl-page-call_center_dashboard .ccx-head p,
+.ccx-head p{font-size:9px!important;color:#697987!important}
+body.gl-page-call_center_dashboard .cc-work-row,
+.cc-work-row{
+  min-height:88px!important;
+  padding:12px 13px!important;
+  border:1px solid #dfe7e9!important;
+  border-radius:14px!important;
+  background:#fff!important;
+  box-shadow:0 2px 9px rgba(35,53,70,.02)!important;
+}
+body.gl-page-call_center_dashboard .ccx-personcell strong,
+.ccx-personcell strong{font-size:12.5px!important;color:#1d3244!important}
+body.gl-page-call_center_dashboard .ccx-phone,
+.ccx-phone{font-size:10px!important;color:#4c6274!important}
+body.gl-page-call_center_dashboard .ccx-time,
+body.gl-page-call_center_dashboard .ccx-last,
+body.gl-page-call_center_dashboard .ccx-next-action,
+.ccx-time,.ccx-last,.ccx-next-action{font-size:10px!important;color:#40596b!important}
+body.gl-page-call_center_dashboard .ccx-time b,
+body.gl-page-call_center_dashboard .ccx-last strong,
+.ccx-time b,.ccx-last strong{font-size:10.5px!important;color:#21384a!important}
+body.gl-page-call_center_dashboard .ccx-sla,
+.ccx-sla{font-size:8.5px!important;min-height:32px!important}
+body.gl-page-call_center_dashboard .ccx-source,
+body.gl-page-call_center_dashboard .ccx-group,
+.ccx-source,.ccx-group{font-size:8.5px!important}
+
+/* All primary cockpit navigation plaques: light, equal, aligned. */
+body.gl-page-call_center_dashboard .ccx-quick-plaque,
+.ccx-quick-plaque{
+  width:100%!important;
+  grid-template-columns:repeat(8,minmax(0,1fr))!important;
+  gap:6px!important;
+}
+body.gl-page-call_center_dashboard .ccx-quick-link,
+body.gl-page-call_center_dashboard .ccx-quick-link[type="button"],
+.ccx-quick-link,.ccx-quick-link[type="button"]{
+  min-height:72px!important;
+  background:#fff!important;
+  color:#405769!important;
+  border:1px solid #d6e2e5!important;
+  box-shadow:0 4px 14px rgba(35,53,70,.035)!important;
+  border-radius:13px!important;
+}
+body.gl-page-call_center_dashboard .ccx-quick-link:nth-child(4),
+body.gl-page-call_center_dashboard .ccx-quick-link:nth-child(5),
+body.gl-page-call_center_dashboard .ccx-quick-link[type="button"],
+.ccx-quick-link:nth-child(4),.ccx-quick-link:nth-child(5),.ccx-quick-link[type="button"]{
+  background:#f3ecfa!important;
+  color:#604387!important;
+  border-color:#d3c1e3!important;
+}
+
+/* Search + all filters: no dark fills. */
+body.gl-page-call_center_dashboard .ccx-filters,
+.ccx-filters{
+  width:100%!important;
+  background:#fff!important;
+  border:1px solid #dbe5e7!important;
+  box-shadow:0 4px 14px rgba(35,53,70,.03)!important;
+}
+body.gl-page-call_center_dashboard .ccx-search input,
+.ccx-search input{
+  background:#fff!important;
+  color:#263a4b!important;
+  border:1.4px solid #cfdde1!important;
+  box-shadow:none!important;
+}
+body.gl-page-call_center_dashboard .ccx-filter,
+.ccx-filter{
+  background:#f5f9f7!important;
+  color:#40596a!important;
+  border:1px solid #d2e0dc!important;
+  box-shadow:none!important;
+}
+body.gl-page-call_center_dashboard .ccx-filter b,
+.ccx-filter b{background:#e5efeb!important;color:#405c54!important}
+body.gl-page-call_center_dashboard .ccx-filter.active,
+.ccx-filter.active{
+  background:#eee5f7!important;
+  color:#5d4085!important;
+  border-color:#c5b0da!important;
+  box-shadow:0 3px 10px rgba(104,73,149,.08)!important;
+}
+body.gl-page-call_center_dashboard .ccx-filter.active b,
+.ccx-filter.active b{background:#73509d!important;color:#fff!important}
+
+/* Four lead actions: equal size, fully light, color-coded. */
+body.gl-page-call_center_dashboard .ccx-actions,
+.ccx-actions{
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:5px!important;
+}
+body.gl-page-call_center_dashboard .ccx-action,
+.ccx-action{
+  height:36px!important;
+  min-height:36px!important;
+  padding:0 6px!important;
+  border-radius:9px!important;
+  box-shadow:none!important;
+  font-size:8px!important;
+  font-weight:900!important;
+}
+body.gl-page-call_center_dashboard .ccx-action.call,
+.ccx-action.call{background:#e5f5ed!important;color:#126c4a!important;border:1px solid #bfdfcf!important}
+body.gl-page-call_center_dashboard .ccx-action.wa,
+.ccx-action.wa{background:#edf9f3!important;color:#227452!important;border:1px solid #cfe8db!important}
+body.gl-page-call_center_dashboard .ccx-action.result,
+.ccx-action.result{background:#eee5f7!important;color:#5d4085!important;border:1px solid #cdb8df!important;font-size:7.2px!important}
+body.gl-page-call_center_dashboard .ccx-action.appt,
+.ccx-action.appt{background:#eaf3fb!important;color:#3b679d!important;border:1px solid #cfdfef!important}
+
+/* Next/result panels: light, with purple secondary accent. */
+body.gl-page-call_center_dashboard .ccx-next-btn,
+.ccx-next-btn{
+  background:#f0e8f8!important;
+  color:#604287!important;
+  border:1px solid #ccb8df!important;
+  box-shadow:0 4px 12px rgba(104,73,149,.08)!important;
+}
+body.gl-page-call_center_dashboard .ccx-result-panel,
+.ccx-result-panel{background:#fbfdfc!important;border-top-color:#d9e4e6!important}
+body.gl-page-call_center_dashboard .ccx-result-options button,
+body.gl-page-call_center_dashboard .ccx-result-options a,
+.ccx-result-options button,.ccx-result-options a{
+  background:#f8fbfa!important;color:#42596a!important;border:1px solid #d4e1e4!important;
+  box-shadow:none!important;
+}
+body.gl-page-call_center_dashboard .ccx-result-options button[data-follow-open],
+.ccx-result-options button[data-follow-open]{background:#eee5f7!important;color:#5d4085!important;border-color:#cbb6de!important}
+body.gl-page-call_center_dashboard .ccx-result-options .danger,
+.ccx-result-options .danger{background:#fff0f3!important;color:#a03d56!important;border-color:#edcfd7!important}
+body.gl-page-call_center_dashboard .ccx-result-options .good,
+.ccx-result-options .good{background:#e9f7f0!important;color:#1e714f!important;border-color:#c9e4d6!important}
+body.gl-page-call_center_dashboard .ccx-follow-form input,
+.ccx-follow-form input{background:#fff!important;color:#263a4b!important;border:1px solid #d1dfe3!important}
+body.gl-page-call_center_dashboard .ccx-follow-form button,
+.ccx-follow-form button{background:#eee5f7!important;color:#5d4085!important;border:1px solid #cbb6de!important}
+
+/* Chat surfaces: no dark green block in cockpit. */
+body.gl-page-call_center_dashboard .ccx-chat-toggle,
+.ccx-chat-toggle{
+  background:#f0e7f8!important;color:#684995!important;border:1px solid #cdb9df!important;
+  box-shadow:0 10px 24px rgba(104,73,149,.13)!important;
+}
+body.gl-page-call_center_dashboard .ccx-drawer,
+.ccx-drawer{background:#fff!important;color:#23394b!important}
+body.gl-page-call_center_dashboard .ccx-chat-form select,
+body.gl-page-call_center_dashboard .ccx-chat-form textarea,
+.ccx-chat-form select,.ccx-chat-form textarea{
+  background:#fff!important;color:#263a4b!important;border:1px solid #d5e1e4!important
+}
+body.gl-page-call_center_dashboard .ccx-chat-form button,
+.ccx-chat-form button{
+  background:#efe6f8!important;color:#604287!important;border:1px solid #cdb9df!important
+}
+
+/* Secondary panels below: equal, full-width, neat. */
+body.gl-page-call_center_dashboard .ccx-secondary,
+.ccx-secondary{
+  width:100%!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:8px!important;
+}
+body.gl-page-call_center_dashboard .ccx-details,
+.ccx-details{height:100%!important;border:1px solid #dbe5e7!important}
+body.gl-page-call_center_dashboard .ccx-details>summary,
+.ccx-details>summary{background:#fff!important;color:#344a5b!important}
+
+/* On S9-class widths keep rail left and queue right; only stack when truly narrow. */
+@media(max-width:1180px){
+  body.gl-page-call_center_dashboard .ccx-layout,.ccx-layout{
+    grid-template-columns:1fr!important;
+    grid-template-areas:"main" "rail"!important;
+    direction:rtl!important;
+  }
+  body.gl-page-call_center_dashboard .ccx-side,.ccx-side{
+    width:100%!important;min-width:0!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+@media(max-width:760px){
+  body.gl-page-call_center_dashboard .ccx,
+  .ccx{background:#f5f8fa!important;color:#203446!important}
+  body.gl-page-call_center_dashboard .ccx-quick-plaque,
+  .ccx-quick-plaque{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  body.gl-page-call_center_dashboard .ccx-side,.ccx-side{grid-template-columns:1fr!important}
+}
 </style>
 
 <div class="ccx" lang="fa" dir="rtl" translate="no">
@@ -404,6 +661,33 @@ body.gl-page-call_center_dashboard .ccx-secondary{width:100%!important;max-width
   renderFavs();
   if(chatForm)chatForm.addEventListener('submit',function(e){e.preventDefault();chatStatus.textContent='در حال ارسال…';fetch('{% url "call_center_quick_message" %}',{method:'POST',body:new FormData(chatForm),credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(r){return r.json().then(function(d){if(!r.ok||!d.ok)throw new Error(d.error||'ارسال نشد');return d})}).then(function(d){var x=document.createElement('div');x.className='ccx-chat-msg';x.innerHTML='<span class="ccx-chat-avatar">'+esc((d.message.sender||'•').slice(0,1))+'</span><div class="ccx-chat-copy"><strong>'+esc(d.message.sender)+'</strong><p>'+esc(d.message.body)+'</p><small>الان · به '+esc(d.message.recipient)+'</small></div>';chatFeed.prepend(x);chatForm.querySelector('textarea').value='';chatStatus.textContent='پیام ارسال شد ✓'}).catch(function(err){chatStatus.textContent=err.message||'خطا در ارسال'})});
   function esc(v){return String(v||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+})();
+
+(function(){
+  function imp(el,prop,val){if(el)el.style.setProperty(prop,val,'important')}
+  function paintCockpit(root){
+    root=root||document;
+    root.querySelectorAll('.ccx-search input').forEach(function(el){imp(el,'background','#fff');imp(el,'color','#263a4b');imp(el,'border','1.4px solid #cfdde1')});
+    root.querySelectorAll('.ccx-filter').forEach(function(el){
+      if(el.classList.contains('active')){imp(el,'background','#eee5f7');imp(el,'color','#5d4085');imp(el,'border-color','#c5b0da')}
+      else{imp(el,'background','#f5f9f7');imp(el,'color','#40596a');imp(el,'border-color','#d2e0dc')}
+    });
+    root.querySelectorAll('.ccx-quick-link').forEach(function(el){imp(el,'background','#fff');imp(el,'color','#405769');imp(el,'border-color','#d6e2e5')});
+    root.querySelectorAll('.ccx-quick-link[type="button"], .ccx-quick-link:nth-child(4), .ccx-quick-link:nth-child(5)').forEach(function(el){imp(el,'background','#f3ecfa');imp(el,'color','#604387');imp(el,'border-color','#d3c1e3')});
+    root.querySelectorAll('.ccx-next-btn').forEach(function(el){imp(el,'background','#f0e8f8');imp(el,'color','#604287');imp(el,'border-color','#ccb8df')});
+    root.querySelectorAll('.ccx-action.call').forEach(function(el){imp(el,'background','#e5f5ed');imp(el,'color','#126c4a');imp(el,'border-color','#bfdfcf')});
+    root.querySelectorAll('.ccx-action.wa').forEach(function(el){imp(el,'background','#edf9f3');imp(el,'color','#227452');imp(el,'border-color','#cfe8db')});
+    root.querySelectorAll('.ccx-action.result').forEach(function(el){imp(el,'background','#eee5f7');imp(el,'color','#5d4085');imp(el,'border-color','#cdb8df')});
+    root.querySelectorAll('.ccx-action.appt').forEach(function(el){imp(el,'background','#eaf3fb');imp(el,'color','#3b679d');imp(el,'border-color','#cfdfef')});
+    root.querySelectorAll('.ccx-result-options button,.ccx-result-options a').forEach(function(el){imp(el,'box-shadow','none')});
+    root.querySelectorAll('.ccx-chat-toggle').forEach(function(el){imp(el,'background','#f0e7f8');imp(el,'color','#684995');imp(el,'border','1px solid #cdb9df')});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){paintCockpit(document)});
+  else paintCockpit(document);
+  var target=document.querySelector('.ccx');
+  if(target){
+    new MutationObserver(function(){paintCockpit(target)}).observe(target,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  }
 })();
 </script>
 {% endblock %}
