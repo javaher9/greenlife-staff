@@ -1601,6 +1601,27 @@ class InternalMessage(models.Model):
         return f'{self.sender} → {target}'
 
 
+class PersonalNotebookEntry(models.Model):
+    """Private staff notebook entry; visible only to its owner."""
+    user=models.ForeignKey(
+        User,on_delete=models.CASCADE,related_name='personal_notebook_entries'
+    )
+    body=models.TextField(max_length=2000)
+    reminder_date=models.DateField(null=True,blank=True,db_index=True)
+    is_pinned=models.BooleanField(default=False,db_index=True)
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering=['-is_pinned','-updated_at','-id']
+        indexes=[
+            models.Index(fields=['user','-updated_at'],name='pnote_user_updated_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.user} - {self.body[:40]}'
+
+
 class AuditLog(models.Model):
     actor=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='audit_logs')
     action=models.CharField(max_length=40)

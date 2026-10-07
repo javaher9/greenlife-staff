@@ -12,6 +12,7 @@ from django.utils import timezone
 from .forms import AppointmentFromLeadForm, ReceptionistAppointmentForm, visit_appointment_time_choices
 from .jalali import parse_jalali
 from .patient_ui import attach_patient_photos
+from .call_center_identity import call_center_display_name
 from .models import Branch, EmployeeProfile, ReferralLead, StaffNotification, Task, VisitAppointment, SmsAutomationRule, SmsScheduledMessage
 from .sms_automation import schedule_sms_event, sms_staff_display_name
 from .jalali import format_jalali
@@ -188,9 +189,22 @@ def appointment_schedule(request):
             VisitAppointment.objects.filter(
                 branch=branch,appointment_date__in=display_days
             ).exclude(status__in=('cancelled','no_show')).select_related(
-                'lead','created_by'
+                'lead','created_by','created_by__profile'
             ).order_by('appointment_date','appointment_time')
         ))
+
+    for item in appointments:
+        creator=item.created_by
+        item.booking_by_label=''
+        item.booking_by_prefix='ثبت'
+        item.booking_created_time=timezone.localtime(item.created_at).strftime('%H:%M')
+        if creator:
+            creator_role=getattr(getattr(creator,'profile',None),'role','')
+            if creator_role=='call_center':
+                item.booking_by_label=call_center_display_name(creator)
+                item.booking_by_prefix='گل'
+            else:
+                item.booking_by_label=creator.get_full_name() or creator.username
 
     by_day_time={
         (item.appointment_date,item.appointment_time.strftime('%H:%M')):item

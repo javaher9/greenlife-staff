@@ -23,8 +23,9 @@ from .forms import (
     PublicReferralLeadForm, BeytootePublicLeadForm, PersianBeautyPublicLeadForm, ReferralLeadForm, ReferralLeadManageForm,
     ReferralMemberForm, ReferralSaleForm, CallCenterLeadForm, CallCenterLeadCreateForm, CallCenterDirectLeadForm,
 )
-from .models import Attendance, CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification, VisitAppointment, InternalMessage, DuplicateLeadError
+from .models import Attendance, AuditLog, CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification, VisitAppointment, InternalMessage, DuplicateLeadError, PatientProfile, PersonalNotebookEntry
 from .call_center_identity import FlowerLeadProxy
+from .jalali import format_jalali, parse_jalali
 # Production rebuild marker after the previous deployment hit the workflow timeout.
 
 
@@ -1051,6 +1052,130 @@ def call_center_dashboard(request):
         'routing_policy_notice':routing_policy_notice,
         'cockpit':cockpit,'work_queue':work_queue,'next_queue':next_queue,
         'queue_category_counts':category_counts,'upcoming_followups':upcoming_followups,
+    })
+
+
+@call_center_required
+def call_center_notebook(request):
+    """Private, database-backed notebook for the signed-in call-center operator."""
+    def serialize(entry):
+        return {
+            'id':entry.pk,
+            'body':entry.body,
+            'is_pinned':entry.is_pinned,
+            'reminder_date':format_jalali(entry.reminder_date,persian_digits=False) if entry.reminder_date else '',
+            'updated_at':timezone.localtime(entry.updated_at).strftime('%H:%M'),
+        }
+
+    if request.method=='GET':
+        entries=PersonalNotebookEntry.objects.filter(user=request.user).order_by(
+            '-is_pinned','-updated_at','-id'
+        )[:80]
+        response=JsonResponse({'ok':True,'entries':[serialize(item) for item in entries]})
+        response['Cache-Control']='no-store, private'
+        return response
+
+    if request.method!='POST':
+        return JsonResponse({'ok':False,'error':'method not allowed'},status=405)
+
+    action=(request.POST.get('action') or 'save').strip()
+    if action=='save':
+        body=' '.join((request.POST.get('body') or '').strip().split())
+        if not body:
+            return JsonResponse({'ok':False,'error':'متن یادداشت خالی است.'},status=400)
+        if len(body)>2000:
+            return JsonResponse({'ok':False,'error':'یادداشت حداکثر ۲۰۰۰ کاراکتر می‌تواند باشد.'},status=400)
+
+        raw_reminder=(request.POST.get('reminder_date') or '').strip()
+        reminder_date=None
+        if raw_reminder:
+            try:
+                reminder_date=parse_jalali(raw_reminder)
+            except (TypeError,ValueError):
+                return JsonResponse({'ok':False,'error':'تاریخ یادآوری شمسی معتبر نیست.'},status=400)
+
+        pinned=(request.POST.get('is_pinned') or '').lower() in ('1','true','yes','on')
+        entry_id=(request.POST.get('entry_id') or '').strip()
+        if entry_id:
+            if not entry_id.isdigit():
+                return JsonResponse({'ok':False,'error':'یادداشت معتبر نیست.'},status=400)
+            entry=get_object_or_404(PersonalNotebookEntry,pk=int(entry_id),user=request.user)
+            entry.body=body
+            entry.reminder_date=reminder_date
+            entry.is_pinned=pinned
+            entry.save(update_fields=['body','reminder_date','is_pinned','updated_at'])
+        else:
+            entry=PersonalNotebookEntry.objects.create(
+                user=request.user,body=body,reminder_date=reminder_date,is_pinned=pinned
+            )
+        return JsonResponse({'ok':True,'entry':serialize(entry)})
+
+    entry_id=(request.POST.get('entry_id') or '').strip()
+    if not entry_id.isdigit():
+        return JsonResponse({'ok':False,'error':'یادداشت معتبر نیست.'},status=400)
+    entry=get_object_or_404(PersonalNotebookEntry,pk=int(entry_id),user=request.user)
+
+    if action=='toggle_pin':
+        entry.is_pinned=not entry.is_pinned
+        entry.save(update_fields=['is_pinned','updated_at'])
+        return JsonResponse({'ok':True,'entry':serialize(entry)})
+    if action=='delete':
+        entry.delete()
+        return JsonResponse({'ok':True,'deleted':True})
+
+    return JsonResponse({'ok':False,'error':'اقدام نامعتبر است.'},status=400)
+
+
+@call_center_required
+def call_center_lead_name_update(request,pk):
+    """Edit a lead name safely and keep linked appointment/patient displays in sync."""
+    if request.method!='POST':
+        return JsonResponse({'ok':False,'error':'method not allowed'},status=405)
+
+    new_name=' '.join((request.POST.get('full_name') or '').strip().split())
+    if len(new_name)<2:
+        return JsonResponse({'ok':False,'error':'نام مراجع را کامل‌تر وارد کنید.'},status=400)
+    if len(new_name)>140:
+        return JsonResponse({'ok':False,'error':'نام مراجع حداکثر ۱۴۰ کاراکتر می‌تواند باشد.'},status=400)
+
+    lead=get_object_or_404(
+        ReferralLead.objects.select_related('assigned_to'),
+        pk=pk,assigned_to=request.user.profile,
+    )
+    old_name=lead.full_name
+    if new_name==old_name:
+        return JsonResponse({'ok':True,'full_name':new_name,'unchanged':True})
+
+    with transaction.atomic():
+        lead.full_name=new_name
+        lead.save(update_fields=['full_name','updated_at'])
+        appointment_count=VisitAppointment.objects.filter(lead=lead).update(
+            full_name=new_name,updated_at=timezone.now()
+        )
+        patient_count=PatientProfile.objects.filter(phone=lead.phone).update(
+            full_name=new_name,updated_at=timezone.now()
+        )
+        AuditLog.objects.create(
+            actor=request.user,
+            action='lead_name_edit',
+            path=request.path,
+            method='POST',
+            object_type='ReferralLead',
+            object_id=str(lead.pk),
+            summary='ویرایش نام مراجع در کال‌سنتر',
+            metadata={
+                'old_name':old_name,
+                'new_name':new_name,
+                'phone':lead.phone,
+                'appointments_updated':appointment_count,
+                'patient_profiles_updated':patient_count,
+            },
+        )
+
+    return JsonResponse({
+        'ok':True,'full_name':new_name,
+        'appointments_updated':appointment_count,
+        'patient_profiles_updated':patient_count,
     })
 
 

@@ -438,6 +438,47 @@ body.gl-page-call_center_dashboard .ccx-details>summary,
   .ccx-quick-plaque{grid-template-columns:repeat(2,minmax(0,1fr))!important}
   body.gl-page-call_center_dashboard .ccx-side,.ccx-side{grid-template-columns:1fr!important}
 }
+
+/* Call-center requested tools: audited inline name editing + private notebook. */
+.ccx-name-line{display:flex;align-items:center;gap:6px;min-width:0}
+.ccx-name-line strong{min-width:0;flex:1}
+.ccx-name-edit{width:25px;height:25px;flex:0 0 25px;border:1px solid #d8c8e7!important;border-radius:8px!important;background:#f5effb!important;color:#684995!important;font:900 11px Tahoma!important;display:grid!important;place-items:center!important;cursor:pointer!important;padding:0!important;box-shadow:none!important}
+.ccx-name-editor{display:none;grid-template-columns:minmax(130px,1fr) auto auto;gap:4px;margin-top:5px}
+.ccx-name-editor.open{display:grid}
+.ccx-name-editor input{height:32px!important;border:1px solid #d7e1e4!important;border-radius:8px!important;background:#fff!important;color:#24394b!important;padding:0 8px!important;font:800 9px Tahoma!important;min-width:0}
+.ccx-name-editor button{height:32px!important;border-radius:8px!important;padding:0 8px!important;font:900 8px Tahoma!important;cursor:pointer!important}
+.ccx-name-save{background:#e8f6ef!important;color:#176e4f!important;border:1px solid #c6e3d4!important}
+.ccx-name-cancel{background:#f4f6f7!important;color:#637381!important;border:1px solid #dfe5e8!important}
+
+.ccx-notebook-backdrop{position:fixed;inset:0;background:rgba(22,34,44,.22);z-index:151;display:none}
+.ccx-notebook-backdrop.open{display:block}
+.ccx-notebook{position:fixed;top:0;right:0;bottom:0;width:min(470px,94vw);z-index:152;background:#fff;box-shadow:-18px 0 50px rgba(21,35,48,.18);transform:translateX(105%);transition:.2s;display:grid;grid-template-rows:auto auto 1fr;color:#263b4c}
+.ccx-notebook.open{transform:translateX(0)}
+.ccx-notebook-head{height:auto!important;min-height:64px!important;position:relative!important;top:auto!important;display:flex!important;align-items:center!important;justify-content:space-between!important;padding:14px 16px!important;margin:0!important;border-bottom:1px solid #e4eaec!important;background:linear-gradient(135deg,#faf7fd,#f5fbf8)!important}
+.ccx-notebook-head strong{font-size:15px;color:#2a3e50}.ccx-notebook-head small{display:block;margin-top:4px;font-size:8px;color:#7a8792}
+.ccx-notebook-close{width:34px;height:34px;border:1px solid #d9e1e4!important;border-radius:9px!important;background:#fff!important;color:#607180!important;font-size:18px!important;cursor:pointer!important}
+.ccx-note-form{padding:12px;border-bottom:1px solid #e5ebed;background:#fbfdfc}
+.ccx-note-form textarea{width:100%;min-height:92px;resize:vertical;border:1px solid #d5e1e4;border-radius:11px;background:#fff;color:#263b4c;padding:10px;font:800 9px/1.9 Tahoma;outline:none}
+.ccx-note-form textarea:focus{border-color:#c5b0da;box-shadow:0 0 0 3px rgba(104,73,149,.07)}
+.ccx-note-tools{display:grid;grid-template-columns:minmax(150px,1fr) auto auto;gap:6px;align-items:center;margin-top:7px}
+.ccx-note-tools input[type="text"]{height:36px;border:1px solid #d8c8e7;border-radius:9px;background:#f7f2fc;color:#604287;padding:0 8px;font:800 9px Tahoma;direction:ltr;text-align:center}
+.ccx-note-pin{display:flex;align-items:center;gap:4px;color:#586b7c;font-size:8px;font-weight:900;white-space:nowrap}
+.ccx-note-save{height:36px;border:1px solid #c6e3d4!important;border-radius:9px!important;background:#e8f6ef!important;color:#176e4f!important;padding:0 12px!important;font:900 9px Tahoma!important;cursor:pointer!important}
+.ccx-note-status{min-height:17px;margin-top:5px;color:#2b7457;font-size:8px;font-weight:900}
+.ccx-note-list{padding:10px;overflow:auto;display:grid;align-content:start;gap:7px;background:#f8fafb}
+.ccx-note-item{padding:11px;border:1px solid #dfe7e9;border-radius:12px;background:#fff;box-shadow:0 4px 13px rgba(36,55,72,.025)}
+.ccx-note-item.pinned{border-color:#d2bee4;background:#fbf8fe}
+.ccx-note-item p{margin:0;color:#33495a;font-size:9px;line-height:1.9;white-space:pre-wrap}
+.ccx-note-meta{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:8px}
+.ccx-note-meta small{color:#7a8792;font-size:7.5px}.ccx-note-actions{display:flex;gap:4px}
+.ccx-note-actions button{min-height:28px;border-radius:8px!important;padding:0 7px!important;font:900 7.5px Tahoma!important;cursor:pointer!important;box-shadow:none!important}
+.ccx-note-edit{background:#f1eafa!important;color:#65458f!important;border:1px solid #d8cae8!important}
+.ccx-note-pin-btn{background:#fff6e3!important;color:#8b601d!important;border:1px solid #ecd9aa!important}
+.ccx-note-delete{background:#fff1f4!important;color:#a3425d!important;border:1px solid #edcbd5!important}
+.ccx-note-empty{padding:30px 15px;text-align:center;color:#7b8994;font-size:9px}
+.ccx-quick-plaque{grid-template-columns:repeat(9,minmax(0,1fr))!important}
+@media(max-width:1380px){.ccx-quick-plaque{grid-template-columns:repeat(5,minmax(0,1fr))!important}}
+@media(max-width:760px){.ccx-quick-plaque{grid-template-columns:repeat(2,minmax(0,1fr))!important}.ccx-note-tools{grid-template-columns:1fr 1fr}.ccx-note-save{grid-column:1/-1}}
 </style>
 
 <div class="ccx" lang="fa" dir="rtl" translate="no">
@@ -470,6 +511,7 @@ body.gl-page-call_center_dashboard .ccx-details>summary,
     <a class="ccx-quick-link blue" href="{% url 'internal_messages' %}"><b>◎</b><span>پیام‌های داخلی</span></a>
     <a class="ccx-quick-link amber" href="{% url 'notifications' %}"><b>♢</b><span>اعلان‌ها</span></a>
     <a class="ccx-quick-link" href="{% url 'attendance' %}"><b>◷</b><span>حضور و غیاب</span></a>
+    <button class="ccx-quick-link purple" type="button" data-notebook-open style="cursor:pointer"><b>✎</b><span>دفترچه من</span></button>
     <a class="ccx-quick-link" href="{% url 'report_list' %}"><b>▥</b><span>گزارش روزانه</span></a>
   </nav>
 
@@ -493,7 +535,8 @@ body.gl-page-call_center_dashboard .ccx-details>summary,
         {% for row in work_queue %}
         <article class="cc-work-row" data-lead-id="{{ row.lead.pk }}" data-categories="{{ row.categories }}" data-search="{{ row.lead.full_name }} {{ row.lead.phone }} {{ row.source_label }} {{ row.lead.interested_service }} {{ row.lead.group.name|default:'' }}" data-call-url="{% url 'call_center_mark_call_started' row.lead.pk %}" data-result-url="{% url 'call_center_save_call_result' row.lead.pk %}">
           <div class="ccx-personcell">
-            <strong>{{ row.lead.full_name }}</strong>
+            <div class="ccx-name-line"><strong data-lead-name>{{ row.lead.full_name }}</strong><button class="ccx-name-edit" type="button" data-name-edit data-name-url="{% url 'call_center_lead_name_update' row.lead.pk %}" title="ویرایش نام">✎</button></div>
+            <div class="ccx-name-editor"><input type="text" maxlength="140" value="{{ row.lead.full_name }}" aria-label="نام مراجع"><button class="ccx-name-save" type="button">ذخیره</button><button class="ccx-name-cancel" type="button">لغو</button></div>
             <span class="ccx-phone">{{ row.lead.phone }}</span>
             <div class="ccx-meta"><span class="ccx-source {{ row.source_key }}">{{ row.source_label }}</span>{% if row.lead.group %}<span class="ccx-group">{{ row.lead.group.name }}</span>{% endif %}</div>
           </div>
@@ -587,6 +630,22 @@ body.gl-page-call_center_dashboard .ccx-details>summary,
   </form>
 </aside>
 
+<div class="ccx-notebook-backdrop" data-notebook-close></div>
+<aside class="ccx-notebook" id="ccxNotebook">
+  <header class="ccx-notebook-head"><div><strong>دفترچه من</strong><small>یادداشت‌های شخصی همین نام کاربری</small></div><button class="ccx-notebook-close" type="button" data-notebook-close>×</button></header>
+  <form class="ccx-note-form" id="ccxNoteForm">{% csrf_token %}
+    <input type="hidden" name="entry_id" value="">
+    <textarea name="body" maxlength="2000" required placeholder="یادداشت شخصی، نکته تماس، کاری که باید یادت بماند…"></textarea>
+    <div class="ccx-note-tools">
+      <input type="text" name="reminder_date" inputmode="numeric" autocomplete="off" placeholder="یادآوری شمسی 1405/07/20">
+      <label class="ccx-note-pin"><input type="checkbox" name="is_pinned"> سنجاق شود</label>
+      <button class="ccx-note-save" type="submit">ذخیره یادداشت</button>
+    </div>
+    <div class="ccx-note-status" id="ccxNoteStatus"></div>
+  </form>
+  <div class="ccx-note-list" id="ccxNoteList"><div class="ccx-note-empty">در حال بارگذاری…</div></div>
+</aside>
+
 <script>
 (function(){
   function csrf(){var x=document.querySelector('input[name="csrfmiddlewaretoken"]');if(x&&x.value)return x.value;var m=document.cookie.match(/(?:^|;\s*)(?:csrftoken|greenlife_lan_csrftoken)=([^;]+)/);return m?decodeURIComponent(m[1]):''}
@@ -609,6 +668,24 @@ body.gl-page-call_center_dashboard .ccx-details>summary,
   }
   var next=document.getElementById('ccxNextLead');if(next)next.addEventListener('click',function(){focusNext(document.querySelector('.cc-work-row.ccx-focus'))});
   document.querySelectorAll('[data-focus-lead]').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();var r=document.querySelector('.cc-work-row[data-lead-id="'+a.dataset.focusLead+'"]');focusRow(r)})});
+
+  document.querySelectorAll('[data-name-edit]').forEach(function(edit){
+    var row=edit.closest('.cc-work-row'),editor=row.querySelector('.ccx-name-editor'),input=editor.querySelector('input'),save=editor.querySelector('.ccx-name-save'),cancel=editor.querySelector('.ccx-name-cancel'),label=row.querySelector('[data-lead-name]');
+    function close(){editor.classList.remove('open');input.value=(label.textContent||'').trim()}
+    edit.addEventListener('click',function(){editor.classList.add('open');input.focus();input.select()});
+    cancel.addEventListener('click',close);
+    input.addEventListener('keydown',function(e){if(e.key==='Escape')close();if(e.key==='Enter'){e.preventDefault();save.click()}});
+    save.addEventListener('click',function(){
+      var name=(input.value||'').trim();if(name.length<2){input.focus();return}
+      var fd=new FormData(),token=csrf();if(token)fd.append('csrfmiddlewaretoken',token);fd.append('full_name',name);
+      save.disabled=true;save.textContent='…';
+      fetch(edit.dataset.nameUrl,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){return r.json().then(function(d){if(!r.ok||!d.ok)throw new Error(d.error||'ویرایش انجام نشد');return d})})
+        .then(function(d){label.textContent=d.full_name;input.value=d.full_name;row.dataset.search=(row.dataset.search||'')+' '+d.full_name;editor.classList.remove('open')})
+        .catch(function(e){alert(e.message||'خطا در ویرایش نام')})
+        .finally(function(){save.disabled=false;save.textContent='ذخیره'});
+    });
+  });
 
   function postResult(row,result,extra){
     var fd=new FormData(),token=csrf();if(token)fd.append('csrfmiddlewaretoken',token);fd.append('result',result);
@@ -660,7 +737,51 @@ body.gl-page-call_center_dashboard .ccx-details>summary,
   if(favToggle)favToggle.addEventListener('click',function(){var id=String(recipientSelect&&recipientSelect.value||'');if(!id){chatStatus.textContent='اول یک نفر را انتخاب کنید.';return}var ids=loadFavs(),i=ids.indexOf(id);if(i>=0){ids.splice(i,1);chatStatus.textContent='از منتخب‌ها حذف شد.'}else{ids.unshift(id);chatStatus.textContent='به منتخب‌ها اضافه شد.'}saveFavs(ids);renderFavs()});
   renderFavs();
   if(chatForm)chatForm.addEventListener('submit',function(e){e.preventDefault();chatStatus.textContent='در حال ارسال…';fetch('{% url "call_center_quick_message" %}',{method:'POST',body:new FormData(chatForm),credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(r){return r.json().then(function(d){if(!r.ok||!d.ok)throw new Error(d.error||'ارسال نشد');return d})}).then(function(d){var x=document.createElement('div');x.className='ccx-chat-msg';x.innerHTML='<span class="ccx-chat-avatar">'+esc((d.message.sender||'•').slice(0,1))+'</span><div class="ccx-chat-copy"><strong>'+esc(d.message.sender)+'</strong><p>'+esc(d.message.body)+'</p><small>الان · به '+esc(d.message.recipient)+'</small></div>';chatFeed.prepend(x);chatForm.querySelector('textarea').value='';chatStatus.textContent='پیام ارسال شد ✓'}).catch(function(err){chatStatus.textContent=err.message||'خطا در ارسال'})});
-  function esc(v){return String(v||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  var noteDrawer=document.getElementById('ccxNotebook'),noteBack=document.querySelector('.ccx-notebook-backdrop'),noteForm=document.getElementById('ccxNoteForm'),noteList=document.getElementById('ccxNoteList'),noteStatus=document.getElementById('ccxNoteStatus'),noteUrl='{% url "call_center_notebook" %}';
+  function formatJalaliInput(input){
+    if(!input)return;
+    input.addEventListener('input',function(){
+      var v=input.value.replace(/[۰-۹]/g,function(x){return '۰۱۲۳۴۵۶۷۸۹'.indexOf(x)}).replace(/[٠-٩]/g,function(x){return '٠١٢٣٤٥٦٧٨٩'.indexOf(x)}).replace(/[^0-9]/g,'').slice(0,8);
+      if(v.length>6)v=v.slice(0,4)+'/'+v.slice(4,6)+'/'+v.slice(6);else if(v.length>4)v=v.slice(0,4)+'/'+v.slice(4);
+      input.value=v;
+    });
+  }
+  formatJalaliInput(noteForm&&noteForm.querySelector('[name="reminder_date"]'));
+  function resetNoteForm(){if(!noteForm)return;noteForm.reset();noteForm.querySelector('[name="entry_id"]').value='';noteForm.querySelector('.ccx-note-save').textContent='ذخیره یادداشت';noteStatus.textContent=''}
+  function renderNotes(entries){
+    if(!noteList)return;noteList.innerHTML='';
+    if(!entries||!entries.length){noteList.innerHTML='<div class="ccx-note-empty">هنوز یادداشتی نداری.</div>';return}
+    entries.forEach(function(n){
+      var item=document.createElement('article');item.className='ccx-note-item'+(n.is_pinned?' pinned':'');
+      item.dataset.note=JSON.stringify(n);
+      item.innerHTML='<p>'+esc(n.body)+'</p><div class="ccx-note-meta"><small>'+(n.is_pinned?'★ سنجاق‌شده · ':'')+(n.reminder_date?'یادآوری '+esc(n.reminder_date)+' · ':'')+'ویرایش '+esc(n.updated_at)+'</small><div class="ccx-note-actions"><button class="ccx-note-edit" type="button">ویرایش</button><button class="ccx-note-pin-btn" type="button">'+(n.is_pinned?'برداشتن سنجاق':'سنجاق')+'</button><button class="ccx-note-delete" type="button">حذف</button></div></div>';
+      item.querySelector('.ccx-note-edit').addEventListener('click',function(){var x=JSON.parse(item.dataset.note);noteForm.querySelector('[name="entry_id"]').value=x.id;noteForm.querySelector('[name="body"]').value=x.body;noteForm.querySelector('[name="reminder_date"]').value=x.reminder_date||'';noteForm.querySelector('[name="is_pinned"]').checked=!!x.is_pinned;noteForm.querySelector('.ccx-note-save').textContent='ذخیره تغییرات';noteForm.querySelector('[name="body"]').focus()});
+      item.querySelector('.ccx-note-pin-btn').addEventListener('click',function(){noteAction('toggle_pin',n.id)});
+      item.querySelector('.ccx-note-delete').addEventListener('click',function(){if(confirm('این یادداشت حذف شود؟'))noteAction('delete',n.id)});
+      noteList.appendChild(item);
+    });
+  }
+  function loadNotes(){
+    noteList.innerHTML='<div class="ccx-note-empty">در حال بارگذاری…</div>';
+    fetch(noteUrl,{credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(r){return r.json()}).then(function(d){if(!d.ok)throw new Error(d.error||'بارگذاری نشد');renderNotes(d.entries)}).catch(function(e){noteList.innerHTML='<div class="ccx-note-empty">'+esc(e.message||'خطا')+'</div>'});
+  }
+  function noteAction(action,id){
+    var fd=new FormData(),token=csrf();if(token)fd.append('csrfmiddlewaretoken',token);fd.append('action',action);fd.append('entry_id',id);
+    fetch(noteUrl,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(r){return r.json().then(function(d){if(!r.ok||!d.ok)throw new Error(d.error||'انجام نشد');return d})}).then(loadNotes).catch(function(e){noteStatus.textContent=e.message||'خطا'});
+  }
+  function openNotebook(){noteDrawer.classList.add('open');noteBack.classList.add('open');loadNotes()}
+  function closeNotebook(){noteDrawer.classList.remove('open');noteBack.classList.remove('open');resetNoteForm()}
+  document.querySelectorAll('[data-notebook-open]').forEach(function(b){b.addEventListener('click',openNotebook)});
+  document.querySelectorAll('[data-notebook-close]').forEach(function(b){b.addEventListener('click',closeNotebook)});
+  if(noteDrawer&&noteDrawer.parentNode!==document.body)document.body.appendChild(noteDrawer);
+  if(noteBack&&noteBack.parentNode!==document.body)document.body.appendChild(noteBack);
+  if(noteForm)noteForm.addEventListener('submit',function(e){
+    e.preventDefault();var fd=new FormData(noteForm),token=csrf();if(token)fd.append('csrfmiddlewaretoken',token);fd.append('action','save');
+    var save=noteForm.querySelector('.ccx-note-save');save.disabled=true;noteStatus.textContent='در حال ذخیره…';
+    fetch(noteUrl,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(r){return r.json().then(function(d){if(!r.ok||!d.ok)throw new Error(d.error||'ذخیره نشد');return d})}).then(function(){resetNoteForm();noteStatus.textContent='ذخیره شد ✓';loadNotes()}).catch(function(e){noteStatus.textContent=e.message||'خطا در ذخیره'}).finally(function(){save.disabled=false});
+  });
+
+    function esc(v){return String(v||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 })();
 
 (function(){
