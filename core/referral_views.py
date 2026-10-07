@@ -87,31 +87,6 @@ def _ensure_profile(user):
 def referral_supervisor_dashboard(request):
     """PII-free, read-only oversight for the referral-network supervisor."""
     today=timezone.localdate()
-    tomorrow=today+timedelta(days=1)
-
-    # Daily work agenda: follow-ups are surfaced by due date rather than by
-    # original lead creation order, so an older lead never disappears below
-    # newer records when its callback day arrives.
-    agenda_due_qs=(
-        all_leads
-        .filter(next_follow_up__lte=today)
-        .exclude(status__in=('won','lost'))
-        .select_related('country','assigned_to','group','referrer__user','created_by')
-        .order_by('-next_follow_up','updated_at','id')
-    )
-    agenda_due=list(agenda_due_qs)
-    agenda_today_count=sum(1 for lead in agenda_due if lead.next_follow_up==today)
-    agenda_overdue_count=len(agenda_due)-agenda_today_count
-
-    tomorrow_appointments=(
-        VisitAppointment.objects.filter(appointment_date=tomorrow)
-        .filter(Q(lead__assigned_to=operator) | Q(created_by=request.user,source='call_center'))
-        .exclude(status='cancelled')
-        .select_related('branch','lead')
-        .order_by('appointment_time','id')
-        .distinct()
-    )
-
     month_start=today.replace(day=1)
     profiles=ReferralProfile.objects.filter(is_active=True).select_related(
         'user','user__profile','sponsor__user',
@@ -721,6 +696,29 @@ def call_center_dashboard(request):
         leads=leads.filter(group_id=int(group_filter),group__owner=operator)
 
     today=timezone.localdate()
+    tomorrow=today+timedelta(days=1)
+
+    # Date-driven daily agenda keeps scheduled callbacks visible on the day
+    # they are due, regardless of how old the original lead is.
+    agenda_due=list(
+        all_leads
+        .filter(next_follow_up__lte=today)
+        .exclude(status__in=('won','lost'))
+        .select_related('country','assigned_to','group','referrer__user','created_by')
+        .order_by('-next_follow_up','updated_at','id')
+    )
+    agenda_today_count=sum(1 for lead in agenda_due if lead.next_follow_up==today)
+    agenda_overdue_count=len(agenda_due)-agenda_today_count
+
+    tomorrow_appointments=(
+        VisitAppointment.objects.filter(appointment_date=tomorrow)
+        .filter(Q(lead__assigned_to=operator) | Q(created_by=request.user,source='call_center'))
+        .exclude(status='cancelled')
+        .select_related('branch','lead')
+        .order_by('appointment_time','id')
+        .distinct()
+    )
+
     month_start=today.replace(day=1)
     today_leads=all_leads.filter(created_at__date=today)
     month_leads=all_leads.filter(created_at__date__gte=month_start)
