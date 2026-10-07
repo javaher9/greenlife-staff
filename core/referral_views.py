@@ -679,7 +679,7 @@ def call_center_required(view):
 @call_center_required
 def call_center_dashboard(request):
     operator=request.user.profile
-    from .lead_routing import operator_policy_notice
+    from .lead_routing import operator_policy_notice, eligible_operator_user_ids
     routing_policy_notice=operator_policy_notice(operator)
     default_group=_default_call_center_group(operator)
     ReferralLead.objects.filter(assigned_to=operator,group__isnull=True).update(group=default_group)
@@ -718,6 +718,207 @@ def call_center_dashboard(request):
         .order_by('appointment_time','id')
         .distinct()
     )
+
+    # Operator Cockpit is intentionally computed from existing records only:
+    # no migration and no change to the lead-distribution engine is required.
+    local_now=timezone.localtime()
+    attendance=Attendance.objects.filter(user=request.user,date=today).first()
+    eligible_today=request.user.pk in eligible_operator_user_ids(today)
+    if attendance and attendance.check_in and not attendance.check_out and eligible_today:
+        routing_state='active'
+        routing_state_label='در چرخه دریافت لید هستید'
+        routing_state_reason='حضور فعال'
+    elif attendance and attendance.check_out:
+        routing_state='out'
+        routing_state_label='خارج از چرخه دریافت لید'
+        routing_state_reason='خروج ثبت شده'
+    elif attendance and attendance.check_in:
+        routing_state='out'
+        routing_state_label='خارج از چرخه دریافت لید'
+        routing_state_reason='امروز برای توزیع لید فعال نیستید'
+    else:
+        routing_state='out'
+        routing_state_label='خارج از چرخه دریافت لید'
+        routing_state_reason='حضور ثبت نشده'
+    shift_started_at=(
+        timezone.localtime(attendance.check_in).strftime('%H:%M')
+        if attendance and attendance.check_in else '—'
+    )
+
+    result_today=all_leads.filter(updated_at__date=today).exclude(contact_result='')
+    calls_today=result_today.count()
+    answered_today=result_today.exclude(contact_result='no_answer').count()
+    response_rate=round(answered_today*100/max(1,calls_today))
+    appointments_created_today=(
+        VisitAppointment.objects.filter(
+            source='call_center',created_by=request.user,created_at__date=today,
+        )
+        .exclude(status='cancelled')
+        .exclude(lead__isnull=True)
+        .values('lead_id').distinct().count()
+    )
+    today_sales_qs=ReferralSale.objects.filter(
+        lead__assigned_to=operator,sale_date=today,status__in=('approved','paid')
+    )
+    today_sales_count=today_sales_qs.count()
+    today_sales_amount=today_sales_qs.aggregate(x=Sum('amount'))['x'] or 0
+
+    queue_scope=all_leads
+    if group_filter=='ungrouped':
+        queue_scope=queue_scope.filter(group__isnull=True)
+    elif group_filter.isdigit():
+        queue_scope=queue_scope.filter(group_id=int(group_filter),group__owner=operator)
+
+    queue_candidates=list(
+        queue_scope
+        .exclude(status__in=('won','lost'))
+        .filter(
+            Q(status='new') |
+            Q(next_follow_up__lte=today) |
+            Q(contact_result='no_answer') |
+            Q(status='appointment')
+        )
+        .select_related('country','assigned_to','group','referrer__user','created_by')
+        .order_by('assigned_at','created_at','id')[:250]
+    )
+
+    def _wa_url(phone):
+        digits=''.join(ch for ch in str(phone or '') if ch.isdigit())
+        if digits.startswith('0098'):
+            digits=digits[2:]
+        if digits.startswith('09') and len(digits)==11:
+            digits='98'+digits[1:]
+        elif digits.startswith('9') and len(digits)==10:
+            digits='98'+digits
+        elif digits.startswith('0') and len(digits)>10:
+            digits=digits[1:]
+        return f'https://wa.me/{digits}' if 10 <= len(digits) <= 15 else ''
+
+    def _source_key(label,lead):
+        text=(str(label or '')+' '+str(getattr(lead,'source_url','') or '')+' '+str(getattr(lead,'notes','') or '')).lower()
+        if 'instagram' in text or 'اینستاگرام' in text:
+            return 'instagram'
+        if 'beytoote' in text or 'بیتوته' in text:
+            return 'beytoote'
+        if 'whatsapp' in text or 'واتس' in text or 'wa.me' in text:
+            return 'whatsapp'
+        if 'greenlifeclinics.com' in text or 'website' in text or 'وب' in text:
+            return 'website'
+        group_name=str(getattr(getattr(lead,'group',None),'name','') or '')
+        if 'شبکه فروش' in group_name or 'معرف' in group_name:
+            return 'network'
+        return 'other'
+
+    work_queue=[]
+    category_counts={key:0 for key in ('all','new','todaycall','followup','appointment','noanswer','overdue')}
+    for lead in queue_candidates:
+        proxy=FlowerLeadProxy(lead)
+        assigned_at=lead.assigned_at or lead.created_at
+        assigned_local=timezone.localtime(assigned_at)
+        age_minutes=max(0,int((local_now-assigned_local).total_seconds()//60))
+        categories=[]
+        is_overdue=bool(lead.next_follow_up and lead.next_follow_up<today)
+        if lead.status=='new':
+            categories.append('new')
+        if lead.next_follow_up==today:
+            categories.extend(['todaycall','followup'])
+        elif lead.contact_result=='follow_up':
+            categories.append('followup')
+        if lead.status=='appointment' or lead.contact_result=='appointment':
+            categories.append('appointment')
+        if lead.contact_result=='no_answer':
+            categories.append('noanswer')
+        if is_overdue or (lead.status=='new' and not lead.contact_result and age_minutes>=60):
+            categories.append('overdue')
+        categories=list(dict.fromkeys(categories))
+
+        if is_overdue:
+            sla_label='پیگیری عقب‌افتاده'
+            sla_class='red'
+            priority=0
+        elif lead.next_follow_up==today:
+            sla_label='موعد امروز'
+            sla_class='amber'
+            priority=1
+        elif lead.status=='new' and not lead.contact_result:
+            if age_minutes<30:
+                sla_label=f'{age_minutes} دقیقه'
+                sla_class='green'
+                priority=2
+            elif age_minutes<60:
+                sla_label=f'{age_minutes} دقیقه'
+                sla_class='amber'
+                priority=2
+            else:
+                hours,minutes=divmod(age_minutes,60)
+                sla_label=(f'{hours}س {minutes}د عقب‌افتاده' if hours else f'{minutes} دقیقه عقب‌افتاده')
+                sla_class='red'
+                priority=0
+        else:
+            sla_label='اقدام ثبت شده'
+            sla_class='neutral'
+            priority=4
+
+        if lead.next_follow_up and lead.next_follow_up<=today:
+            next_action='تماس پیگیری'
+        elif lead.status=='new':
+            next_action='تماس اولیه'
+        elif lead.contact_result=='no_answer':
+            next_action='تماس مجدد'
+        elif lead.status=='appointment':
+            next_action='پیگیری نوبت'
+        else:
+            next_action='بررسی پرونده'
+
+        if lead.contact_result:
+            last_action=lead.get_contact_result_display()
+        elif lead.status=='new':
+            last_action='هنوز نتیجه‌ای ثبت نشده'
+        else:
+            last_action=lead.get_status_display()
+
+        source_label=proxy.source_page_display or proxy.source_origin_display
+        work_queue.append({
+            'lead':proxy,
+            'categories':' '.join(categories),
+            'source_label':source_label,
+            'source_key':_source_key(source_label,lead),
+            'received_at':assigned_local,
+            'received_day':assigned_local.date(),
+            'sla_label':sla_label,
+            'sla_class':sla_class,
+            'last_action':last_action,
+            'last_action_at':timezone.localtime(lead.updated_at),
+            'next_action':next_action,
+            'wa_url':_wa_url(lead.phone),
+            '_sort':(priority,assigned_local),
+        })
+        category_counts['all']+=1
+        for key in categories:
+            if key in category_counts:
+                category_counts[key]+=1
+    work_queue.sort(key=lambda item:item['_sort'])
+    for item in work_queue:
+        item.pop('_sort',None)
+
+    next_queue=work_queue[:5]
+    upcoming_followups=list(
+        all_leads.filter(next_follow_up__gt=today,next_follow_up__lte=today+timedelta(days=3))
+        .exclude(status__in=('won','lost'))
+        .select_related('group')
+        .order_by('next_follow_up','updated_at')[:5]
+    )
+    cockpit={
+        'routing_state':routing_state,
+        'routing_state_label':routing_state_label,
+        'routing_state_reason':routing_state_reason,
+        'shift_started_at':shift_started_at,
+        'calls_today':calls_today,
+        'response_rate':response_rate,
+        'appointments_created_today':appointments_created_today,
+        'today_sales_count':today_sales_count,
+        'today_sales_million':round(float(today_sales_amount)/1_000_000,1),
+    }
 
     month_start=today.replace(day=1)
     today_leads=all_leads.filter(created_at__date=today)
@@ -848,6 +1049,8 @@ def call_center_dashboard(request):
         'internal_unread':internal_unread,
         'chat_contacts':chat_contacts,
         'routing_policy_notice':routing_policy_notice,
+        'cockpit':cockpit,'work_queue':work_queue,'next_queue':next_queue,
+        'queue_category_counts':category_counts,'upcoming_followups':upcoming_followups,
     })
 
 

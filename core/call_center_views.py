@@ -150,14 +150,40 @@ def save_call_result(request, pk):
         return JsonResponse({'ok':False,'error':'forbidden'},status=403)
     lead=get_object_or_404(ReferralLead,pk=pk,assigned_to=profile)
     result=(request.POST.get('result') or '').strip()
-    if result not in ('no_answer','not_interested'):
+    if result not in ('no_answer','not_interested','follow_up'):
         return JsonResponse({'ok':False,'error':'invalid_result'},status=400)
     previous_result=lead.contact_result
     previous_status=lead.status
-    lead.contact_result=result
-    lead.status='contacted' if result=='no_answer' else 'lost'
-    lead.next_follow_up=None
-    lead.save(update_fields=['contact_result','status','next_follow_up','updated_at'])
+    follow_up_time=''
+    if result=='follow_up':
+        raw_date=(request.POST.get('next_follow_up') or '').strip()
+        follow_up_time=(request.POST.get('follow_up_time') or '').strip()
+        try:
+            follow_date=datetime.strptime(raw_date,'%Y-%m-%d').date()
+        except (TypeError,ValueError):
+            return JsonResponse({'ok':False,'error':'تاریخ پیگیری معتبر نیست.'},status=400)
+        if follow_date<timezone.localdate():
+            return JsonResponse({'ok':False,'error':'تاریخ پیگیری نمی‌تواند گذشته باشد.'},status=400)
+        if follow_up_time:
+            try:
+                datetime.strptime(follow_up_time,'%H:%M')
+            except ValueError:
+                return JsonResponse({'ok':False,'error':'ساعت پیگیری معتبر نیست.'},status=400)
+        lead.contact_result='follow_up'
+        lead.status='contacted'
+        lead.next_follow_up=follow_date
+        if follow_up_time:
+            stamp=f'[followup_time:{follow_date.isoformat()} {follow_up_time}]'
+            notes=(lead.notes or '').rstrip()
+            lead.notes=(notes+'\n'+stamp).strip()
+            lead.save(update_fields=['contact_result','status','next_follow_up','notes','updated_at'])
+        else:
+            lead.save(update_fields=['contact_result','status','next_follow_up','updated_at'])
+    else:
+        lead.contact_result=result
+        lead.status='contacted' if result=='no_answer' else 'lost'
+        lead.next_follow_up=None
+        lead.save(update_fields=['contact_result','status','next_follow_up','updated_at'])
     from .sms_automation import queue_call_result_sms
     if (previous_result,previous_status)!=(lead.contact_result,lead.status):
         transaction.on_commit(lambda lead_id=lead.pk: queue_call_result_sms(lead_id))
@@ -167,6 +193,8 @@ def save_call_result(request, pk):
         'result_label':lead.get_contact_result_display(),
         'status':lead.status,
         'label':lead.get_status_display(),
+        'next_follow_up':lead.next_follow_up.isoformat() if lead.next_follow_up else None,
+        'follow_up_time':follow_up_time,
     })
 
 
