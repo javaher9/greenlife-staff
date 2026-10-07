@@ -445,6 +445,31 @@ class CallCenterLeadForm(forms.ModelForm):
         return self.cleaned_data.get('group')
 
 
+class CallCenterDirectLeadForm(forms.ModelForm):
+    class Meta:
+        model=ReferralLead
+        fields=['full_name','phone','interested_service','notes']
+        labels={
+            'full_name':'نام و نام خانوادگی',
+            'phone':'شماره موبایل',
+            'interested_service':'خدمت موردنظر',
+            'notes':'توضیحات',
+        }
+        widgets={
+            'full_name':forms.TextInput(attrs={'placeholder':'نام و نام خانوادگی'}),
+            'phone':forms.TextInput(attrs={'placeholder':'مثلاً 09121234567','inputmode':'tel','autocomplete':'tel','dir':'ltr'}),
+            'interested_service':forms.TextInput(attrs={'placeholder':'اختیاری'}),
+            'notes':forms.Textarea(attrs={'rows':4,'placeholder':'توضیح کوتاه از دایرکت (اختیاری)'}),
+        }
+
+    def clean_phone(self):
+        raw=self.cleaned_data.get('phone') or ''
+        value=''.join(ch for ch in raw if ch.isdigit() or ch=='+')
+        if len(value)<10:
+            raise forms.ValidationError('شماره موبایل معتبر وارد کنید.')
+        return value
+
+
 class CallCenterLeadCreateForm(forms.ModelForm):
     class Meta:
         model=ReferralLead
