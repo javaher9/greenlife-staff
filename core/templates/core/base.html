@@ -73,6 +73,15 @@ html.gl-call-center-html{background:#f5f7fb!important;background-image:none!impo
   body.gl-role-call-center .cc-desktop-dock a.is-active{background:#f1eafa!important;color:#684793!important}
   body.gl-role-call-center .cc-desktop-dock a.dock-primary{background:#eaf8f1!important;color:#23805a!important}
   body.gl-role-call-center .cc-desktop-dock .dock-ico{font-size:16px;line-height:1}
+  body.gl-role-call-center .cc-direct-side-entry{
+    position:fixed;right:12px;top:50%;transform:translateY(-50%);z-index:96;
+    width:92px;min-height:82px;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+    padding:10px 8px;border:1px solid #d9e9e1;border-radius:16px;background:#fff;color:#23805a!important;
+    box-shadow:0 12px 28px rgba(42,54,78,.10);text-decoration:none!important;font-size:9px!important;font-weight:900!important;text-align:center;
+  }
+  body.gl-role-call-center .cc-direct-side-entry:hover,
+  body.gl-role-call-center .cc-direct-side-entry.is-active{background:#eaf8f1!important;border-color:#9fd2ba!important}
+  body.gl-role-call-center .cc-direct-side-entry .cc-direct-side-ico{font-size:20px;line-height:1}
 }
 @media(min-width:821px) and (max-width:1180px){
   body.gl-premium-dark.gl-role-call-center .app-main{padding:0 12px 88px!important}
@@ -639,6 +648,10 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
   {% block content %}{% endblock %}
 </main>
 {% if user.is_authenticated and user.profile.role == 'call_center' %}
+<a class="cc-direct-side-entry {% if request.resolver_match.url_name == 'call_center_direct_lead_create' %}is-active{% endif %}" href="{% url 'call_center_direct_lead_create' %}" aria-label="ثبت لید از دایرکت">
+  <span class="cc-direct-side-ico">＋</span>
+  <span>ثبت لید<br>از دایرکت</span>
+</a>
 <nav class="cc-desktop-dock" aria-label="{% gl_t 'shell.call_center_tools' %}">
   <a class="dock-primary {% if request.path|slice:':13' == '/call-center/' %}is-active{% endif %}" href="/call-center/"><span class="dock-ico">☎</span><span>{% gl_t 'shell.patients_leads' %}</span></a>
   <a class="{% if request.path|slice:':14' == '/appointments/' %}is-active{% endif %}" href="/appointments/"><span class="dock-ico">▣</span><span>{% gl_t 'common.appointments' %}</span></a>
