@@ -5,17 +5,19 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Avg, Count, Min, Q, Sum
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
 from .models import (
-    BodyAnalysisRecord, ConsultationPlanItem, DeviceSessionBooking, FinancialTransaction,
+    BodyAnalysisRecord, ConsultationPlan, ConsultationPlanItem, DeviceSessionBooking, FinancialTransaction,
     PatientCareNote, PatientDeviceProgram, PatientDietProgram, PatientLipolyticProgram,
     PatientProfile, PatientTeamRating, ReferralLead, SmsMessageLog, Task, VisitAppointment,
     lead_phone_variants, normalize_lead_phone,
 )
 from .sms import SmsGatewayError, send_sms
+from .jalali import format_jalali
 
 
 ALLOWED_ROLES={'admin','internal_manager','manager','doctor','consultant','receptionist','call_center'}
@@ -127,6 +129,135 @@ def _join_text(parts):
         if value and value not in clean:
             clean.append(value)
     return ' • '.join(clean)
+
+
+@login_required
+def patient_360_quick_from_appointment(request, appointment_id):
+    """Compact patient profile for the appointment calendar without leaving the page."""
+    profile=_profile(request)
+    appointment=get_object_or_404(
+        VisitAppointment.objects.select_related(
+            'branch','lead','lead__assigned_to','lead__first_appointment_by','lead__created_by','created_by'
+        ),
+        pk=appointment_id,
+    )
+
+    # Keep the exact Patient 360 access boundaries; the popup must never widen access.
+    if profile.role in {'manager','doctor','consultant','receptionist'} and profile.branch_id:
+        if appointment.branch_id!=profile.branch_id:
+            raise PermissionDenied('این بیمار متعلق به شعبه شما نیست.')
+    if profile.role=='call_center':
+        lead=appointment.lead
+        allowed=bool(
+            appointment.created_by_id==request.user.id
+            or (
+                lead and (
+                    lead.assigned_to_id==profile.id
+                    or lead.first_appointment_by_id==request.user.id
+                    or lead.created_by_id==request.user.id
+                )
+            )
+        )
+        if not allowed:
+            raise PermissionDenied('این پرونده در چرخه کاری شما قرار ندارد.')
+
+    patient=_patient_from_appointment(appointment,request.user)
+    if not patient:
+        return JsonResponse({'ok':False,'error':'شماره موبایل معتبر برای این پرونده وجود ندارد.'},status=400)
+    _assert_patient_access(request,patient,profile)
+
+    variants=lead_phone_variants(patient.phone)
+    siblings=_phone_matched_profiles(patient.phone)
+    sibling_ids=[item.pk for item in siblings] or [patient.pk]
+
+    appointment_qs=(
+        VisitAppointment.objects.filter(phone__in=variants)
+        .select_related('branch','created_by')
+        .order_by('-appointment_date','-appointment_time','-id')
+    )
+    appointment_ids=list(appointment_qs.values_list('id',flat=True)[:120])
+    recent_appointments=list(appointment_qs[:3])
+
+    rating_stats=PatientTeamRating.objects.filter(patient_id__in=sibling_ids).aggregate(
+        overall=Avg('overall_score'),
+    )
+    latest_staff_note=(
+        PatientCareNote.objects.filter(patient_id__in=sibling_ids,note_type='staff')
+        .select_related('author').order_by('-created_at','-id').first()
+    )
+    latest_lead=(
+        ReferralLead.objects.filter(phone__in=variants)
+        .select_related('assigned_to__user').order_by('-updated_at','-id').first()
+    )
+    latest_payment=(
+        FinancialTransaction.objects.filter(entry_type='inc',review_status='approved')
+        .filter(
+            Q(appointment_id__in=appointment_ids)
+            | Q(patient_ref__in=variants)
+            | (Q(patient_ref=patient.crm_id) if patient.crm_id else Q(pk__in=[]))
+        )
+        .order_by('-occurred_at','-id').first()
+    )
+    approved_total=(
+        FinancialTransaction.objects.filter(entry_type='inc',review_status='approved')
+        .filter(
+            Q(appointment_id__in=appointment_ids)
+            | Q(patient_ref__in=variants)
+            | (Q(patient_ref=patient.crm_id) if patient.crm_id else Q(pk__in=[]))
+        )
+        .aggregate(v=Sum('amount'))['v'] or Decimal('0')
+    )
+    latest_plan=(
+        ConsultationPlan.objects.filter(appointment_id__in=appointment_ids)
+        .select_related('appointment').order_by('-updated_at','-id').first()
+    )
+
+    if profile.role=='call_center' or _can_view_full_phone(request,profile):
+        phone_display=patient.phone
+    else:
+        phone_display=_masked_phone(patient.phone)
+
+    def appt_row(item):
+        return {
+            'date':format_jalali(item.appointment_date,persian_digits=False),
+            'time':item.appointment_time.strftime('%H:%M'),
+            'branch':item.branch.name if item.branch_id else '—',
+            'status':item.get_status_display(),
+            'service':item.service or '',
+        }
+
+    last_call=''
+    if latest_lead:
+        last_call=latest_lead.get_contact_result_display() if latest_lead.contact_result else latest_lead.get_status_display()
+
+    payload={
+        'ok':True,
+        'patient':{
+            'id':patient.pk,
+            'name':patient.full_name,
+            'phone':phone_display,
+            'branch':patient.home_branch.name if patient.home_branch_id else appointment.branch.name,
+            'is_vip':patient.is_vip,
+            'appointment_count':appointment_qs.count(),
+            'rating':round(float(rating_stats['overall']),1) if rating_stats['overall'] is not None else None,
+            'approved_total':str(approved_total),
+            'last_call':last_call or '—',
+            'latest_note':latest_staff_note.body[:260] if latest_staff_note else '',
+            'latest_payment':{
+                'amount':str(latest_payment.amount),
+                'date':format_jalali(timezone.localdate(latest_payment.occurred_at),persian_digits=False),
+            } if latest_payment else None,
+            'package':{
+                'status':latest_plan.get_status_display(),
+                'amount':str(latest_plan.final_amount_toman or 0),
+            } if latest_plan else None,
+            'recent_appointments':[appt_row(item) for item in recent_appointments],
+            'full_profile_url':reverse('patient_360',args=[patient.pk]),
+        },
+    }
+    response=JsonResponse(payload,json_dumps_params={'ensure_ascii':False})
+    response['Cache-Control']='no-store, private'
+    return response
 
 
 @login_required

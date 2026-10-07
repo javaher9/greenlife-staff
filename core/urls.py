@@ -30,6 +30,7 @@ path('patients/<int:pk>/sms/',patient_360_views.patient_360_send_sms,name='patie
 path('patients/<int:pk>/photo/',patient_360_views.patient_360_photo,name='patient_360_photo'),
 path('patients/<int:pk>/rating/',patient_360_views.patient_360_rating,name='patient_360_rating'),
 path('patients/<int:pk>/follow-up/<int:task_id>/complete/',patient_360_views.patient_360_followup_complete,name='patient_360_followup_complete'),
+path('patients/from-appointment/<int:appointment_id>/quick/',patient_360_views.patient_360_quick_from_appointment,name='patient_360_quick_from_appointment'),
 path('patients/from-appointment/<int:appointment_id>/',patient_360_views.patient_360_from_appointment,name='patient_360_from_appointment'),
 path('patients/from-lead/<int:lead_id>/',patient_360_views.patient_360_from_lead,name='patient_360_from_lead'),
 path('consultant/expenses/',consultant_expense_views.consultant_expense_entry,name='consultant_expense_entry'),

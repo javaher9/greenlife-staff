@@ -37,6 +37,28 @@ body.gl-page-appointment_schedule .s7-filter button{
 body.gl-page-appointment_schedule .s7-arrow{
   background:#f2ebf9!important;color:#65468e!important;border-color:#cbb9df!important
 }
+
+/* Quick patient profile from appointment name. */
+.s7-patient-open{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0!important;background:transparent!important;color:#20384a!important;padding:0!important;margin:0!important;font:1000 9px Tahoma!important;text-align:right!important;cursor:pointer!important;box-shadow:none!important;text-decoration:none!important}
+.s7-patient-open:hover{color:#65468e!important;text-decoration:underline!important;text-underline-offset:3px!important}
+.s7-profile-backdrop{position:fixed;inset:0;z-index:180;background:rgba(18,31,41,.24);display:none}
+.s7-profile-backdrop.open{display:block}
+.s7-profile-panel{position:fixed;top:0;right:0;bottom:0;z-index:181;width:min(500px,94vw);background:#fff;color:#24394a;box-shadow:-20px 0 55px rgba(20,34,46,.2);transform:translateX(105%);transition:.2s;display:grid;grid-template-rows:auto 1fr}
+.s7-profile-panel.open{transform:translateX(0)}
+.s7-profile-head{height:auto!important;min-height:76px!important;position:relative!important;top:auto!important;margin:0!important;padding:15px 17px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;border-bottom:1px solid #e4eaec!important;background:linear-gradient(135deg,#f7f2fc,#f2faf6)!important}
+.s7-profile-head h2{margin:0;font-size:16px;color:#24394a}.s7-profile-head p{margin:5px 0 0;font-size:8px;color:#71808c}
+.s7-profile-close{width:36px;height:36px;border:1px solid #d8e1e4!important;border-radius:10px!important;background:#fff!important;color:#667784!important;font-size:19px!important;cursor:pointer!important}
+.s7-profile-body{overflow:auto;padding:13px;background:#f7f9fa}
+.s7-profile-loading,.s7-profile-error{padding:34px 16px;text-align:center;border:1px solid #e0e7e9;border-radius:14px;background:#fff;color:#74828d;font-size:10px}
+.s7-profile-error{color:#a04359;background:#fff5f7;border-color:#eed5dc}
+.s7-profile-identity{padding:14px;border:1px solid #dce6e8;border-radius:14px;background:#fff;box-shadow:0 5px 16px rgba(35,53,70,.03)}
+.s7-profile-name{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.s7-profile-name strong{font-size:17px;color:#1e3445}.s7-vip{padding:4px 7px;border-radius:999px;background:#fff1cc;color:#8a611e;font-size:7px;font-weight:900}
+.s7-profile-contact{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;color:#657687;font-size:9px}.s7-profile-contact span{padding:5px 7px;border-radius:8px;background:#f5f8f9}
+.s7-profile-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:9px}.s7-profile-stat{padding:9px 6px;border:1px solid #e0e7e9;border-radius:11px;background:#fff;text-align:center}.s7-profile-stat span{display:block;color:#7a8893;font-size:7px}.s7-profile-stat b{display:block;margin-top:4px;color:#2a4152;font-size:12px}.s7-profile-stat.purple{background:#f7f2fc;border-color:#ded0eb}.s7-profile-stat.green{background:#eef8f3;border-color:#d4e9de}.s7-profile-stat.blue{background:#eef5fb;border-color:#d6e3ef}.s7-profile-stat.amber{background:#fff7e7;border-color:#eeddbb}
+.s7-profile-section{margin-top:9px;padding:12px;border:1px solid #dfe7e9;border-radius:13px;background:#fff}.s7-profile-section h3{margin:0 0 8px;font-size:10px;color:#31495a}.s7-profile-note{color:#5c6e7d;font-size:9px;line-height:1.9}
+.s7-profile-visits{display:grid;gap:5px}.s7-profile-visit{display:grid;grid-template-columns:auto 1fr auto;gap:6px;align-items:center;padding:7px;border-radius:9px;background:#f8fafb;border:1px solid #edf0f2;font-size:8px;color:#536778}.s7-profile-visit b{color:#2b4253;font-size:8.5px}.s7-profile-visit em{font-style:normal;color:#65468e;font-weight:900}
+.s7-profile-actions{display:flex;gap:7px;margin-top:10px}.s7-profile-actions a{flex:1;min-height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;text-decoration:none;font-size:9px;font-weight:900}.s7-profile-full{background:#eee6f7;color:#604287;border:1px solid #cfbce1}.s7-profile-call{background:#e8f6ef;color:#176e4f;border:1px solid #c7e4d5}
+@media(max-width:760px){.s7-profile-stats{grid-template-columns:repeat(2,1fr)}}
 </style>
 <section class="schedule7">
   <header class="s7-head">
@@ -73,7 +95,7 @@ body.gl-page-appointment_schedule .s7-arrow{
           <div class="s7-slot">
             {% if row.appointment %}
             <div class="s7-booked">
-              <div class="s7-booked-top"><strong>{{ row.appointment.full_name }}</strong><span class="s7-time">{{ row.time }}</span></div>
+              <div class="s7-booked-top"><button type="button" class="s7-patient-open" data-patient-quick="{% url 'patient_360_quick_from_appointment' row.appointment.pk %}" title="نمایش پروفایل بیمار">{{ row.appointment.full_name }}</button><span class="s7-time">{{ row.time }}</span></div>
               <small>{% if appointment_role == 'call_center' %}{{ row.appointment.phone }}{% else %}{{ row.appointment.phone|mask_phone }}{% endif %}{% if row.appointment.service %} · {{ row.appointment.service }}{% endif %}</small>
               <div class="s7-booked-meta"><span class="s7-status">{% gl_choice 'appointment_status' row.appointment.status row.appointment.get_status_display %}</span>{% if row.appointment.booking_by_label %}<span class="s7-booker">{{ row.appointment.booking_by_prefix }}: {{ row.appointment.booking_by_label }} · {{ row.appointment.booking_created_time }}</span>{% endif %}</div>
               {% if appointment_role == 'receptionist' %}
@@ -96,4 +118,54 @@ body.gl-page-appointment_schedule .s7-arrow{
   </div>
   <div class="s7-note">جمعه‌ها فعلاً از تقویم حذف شده‌اند و ثبت نوبت جدید برای جمعه غیرفعال است.</div>
 </section>
+
+<div class="s7-profile-backdrop" data-profile-close></div>
+<aside class="s7-profile-panel" id="s7ProfilePanel" aria-hidden="true">
+  <header class="s7-profile-head"><div><h2 id="s7ProfileTitle">پروفایل سریع بیمار</h2><p>خلاصه پرونده بدون خروج از تقویم</p></div><button class="s7-profile-close" type="button" data-profile-close>×</button></header>
+  <div class="s7-profile-body" id="s7ProfileBody"><div class="s7-profile-loading">یک بیمار را انتخاب کنید.</div></div>
+</aside>
+
+<script>
+(function(){
+  var panel=document.getElementById('s7ProfilePanel'),body=document.getElementById('s7ProfileBody'),back=document.querySelector('.s7-profile-backdrop'),title=document.getElementById('s7ProfileTitle');
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function money(v){var n=Number(v||0);return isFinite(n)?new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(n):'0'}
+  function openPanel(){panel.classList.add('open');back.classList.add('open');panel.setAttribute('aria-hidden','false')}
+  function closePanel(){panel.classList.remove('open');back.classList.remove('open');panel.setAttribute('aria-hidden','true')}
+  document.querySelectorAll('[data-profile-close]').forEach(function(x){x.addEventListener('click',closePanel)});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closePanel()});
+  function render(p){
+    title.textContent=p.name||'پروفایل سریع بیمار';
+    var visits=(p.recent_appointments||[]).map(function(v){return '<div class="s7-profile-visit"><em>'+esc(v.date)+' · '+esc(v.time)+'</em><b>'+esc(v.branch)+(v.service?' · '+esc(v.service):'')+'</b><span>'+esc(v.status)+'</span></div>'}).join('');
+    var packageText=p.package?(esc(p.package.status)+' · '+money(p.package.amount)+' تومان'):'پکیجی ثبت نشده';
+    var paymentText=p.latest_payment?(money(p.latest_payment.amount)+' · '+esc(p.latest_payment.date)):'—';
+    body.innerHTML=
+      '<section class="s7-profile-identity">'+
+        '<div class="s7-profile-name"><strong>'+esc(p.name)+'</strong>'+(p.is_vip?'<span class="s7-vip">VIP</span>':'')+'</div>'+
+        '<div class="s7-profile-contact"><span>☎ '+esc(p.phone)+'</span><span>⌂ '+esc(p.branch||'—')+'</span></div>'+
+        '<div class="s7-profile-stats">'+
+          '<div class="s7-profile-stat green"><span>تعداد نوبت</span><b>'+esc(p.appointment_count)+'</b></div>'+
+          '<div class="s7-profile-stat purple"><span>امتیاز تیم</span><b>'+(p.rating==null?'—':esc(p.rating)+'/5')+'</b></div>'+
+          '<div class="s7-profile-stat blue"><span>آخرین تماس</span><b>'+esc(p.last_call||'—')+'</b></div>'+
+          '<div class="s7-profile-stat amber"><span>مجموع پرداخت تأییدشده</span><b>'+money(p.approved_total)+'</b></div>'+
+        '</div>'+
+      '</section>'+
+      '<section class="s7-profile-section"><h3>پکیج و آخرین پرداخت</h3><div class="s7-profile-note">پکیج: '+packageText+'<br>آخرین پرداخت: '+paymentText+'</div></section>'+
+      '<section class="s7-profile-section"><h3>آخرین نوبت‌ها</h3><div class="s7-profile-visits">'+(visits||'<div class="s7-profile-note">نوبت قبلی ثبت نشده.</div>')+'</div></section>'+
+      '<section class="s7-profile-section"><h3>یادداشت تیم</h3><div class="s7-profile-note">'+(p.latest_note?esc(p.latest_note):'یادداشت تیمی ثبت نشده.')+'</div></section>'+
+      '<div class="s7-profile-actions"><a class="s7-profile-call" href="tel:'+esc((p.phone||'').replace(/[^0-9+]/g,''))+'">☎ تماس</a><a class="s7-profile-full" href="'+esc(p.full_profile_url)+'">پروفایل کامل بیمار ←</a></div>';
+  }
+  document.querySelectorAll('[data-patient-quick]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      openPanel();title.textContent=(btn.textContent||'').trim();body.innerHTML='<div class="s7-profile-loading">در حال بارگذاری پرونده…</div>';
+      fetch(btn.dataset.patientQuick,{credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){return r.json().then(function(d){if(!r.ok||!d.ok)throw new Error(d.error||'دسترسی به پرونده ممکن نیست');return d})})
+        .then(function(d){render(d.patient)})
+        .catch(function(e){body.innerHTML='<div class="s7-profile-error">'+esc(e.message||'خطا در دریافت پرونده')+'</div>'});
+    });
+  });
+  if(panel&&panel.parentNode!==document.body)document.body.appendChild(panel);
+  if(back&&back.parentNode!==document.body)document.body.appendChild(back);
+})();
+</script>
 {% endblock %}
