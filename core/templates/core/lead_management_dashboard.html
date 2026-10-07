@@ -74,109 +74,75 @@ body.gl-premium-dark .app-main .lead-page .badge.ig{border-color:#7a355c!importa
     <div>
       <span class="action-eyebrow">ACTION INBOX</span>
       <h3>صندوق اقدام <b id="attention-count">{{ attention_total_count }}</b></h3>
-      <p>فقط موارد جاری اینجا دیده می‌شوند؛ لیدهای قدیمی پایین صفحه جمع شده‌اند تا صفحه شلوغ نشود.</p>
+      <p>لیدهایی که پیگیری‌شان عقب افتاده یا بدون اقدام مانده‌اند. از همین‌جا پرونده را ببینید یا مستقیم به گل دیگری واگذار کنید.</p>
     </div>
     <div class="action-inbox-stats">
-      <span><b>{{ attention_current|length }}</b> جاری</span>
-      <span><b>{{ lead_kpis.unassigned }}</b> بدون مسئول</span>
-      <span><b>{{ attention_backlog_count }}</b> قدیمی</span>
+      <span><b>{{ attention_current|length }}</b> جاری</span><span><b>{{ lead_kpis.unassigned }}</b> بدون مسئول</span><span><b>{{ attention_backlog_count }}</b> قدیمی</span>
     </div>
   </div>
-
-  <form id="attention-reassign-form" method="post" action="{% url 'lead_attention_bulk_action' %}">
-    {% csrf_token %}
-    <div class="action-stream" id="attention-current">
-      {% for lead in attention_current %}
-      <article class="action-item tone-{{ lead.attention_kind }}" data-attention-row="{{ lead.id }}">
-        <div class="action-item-main">
-          <div class="action-person">
-            <strong>{{ lead.full_name }}</strong>
-            <a href="{{ lead.call_url }}" class="action-phone" dir="ltr">{{ lead.phone|latin_digits }}</a>
-          </div>
-          <span class="action-reason">{{ lead.attention_short_reason }}</span>
-        </div>
-        <div class="action-item-meta">
-          <span>مسئول: <b>{% if lead.assigned_to %}{{ lead.assigned_to.user.get_full_name|default:lead.assigned_to.user.username }}{% else %}تعیین نشده{% endif %}</b></span>
-          <span>از آخرین ارجاع: <b>{{ lead.attention_age_label }}</b></span>
-          {% if lead.next_follow_up %}<span>پیگیری: <b dir="ltr">{{ lead.next_follow_up|jdate_en }}</b></span>{% endif %}
-        </div>
-        <div class="action-item-controls">
-          <a class="action-primary" href="{{ lead.manage_url }}">{{ lead.manage_label }}</a>
-          <a class="action-icon" href="{{ lead.call_url }}" title="تماس">☎</a>
-          {% if lead.assigned_to %}
-          <button type="submit" class="action-icon lead-action-reassign" name="same_owner_lead_id" value="{{ lead.id }}" title="ارجاع مجدد به همان مسئول">↻</button>
-          {% endif %}
-        </div>
-      </article>
-      {% empty %}
-      <div class="action-empty">مورد جاری برای اقدام ندارید.</div>
-      {% endfor %}
-    </div>
-
-    {% if attention_backlog_count %}
-    <details class="action-backlog">
-      <summary>
-        <span><b>انباشت قدیمی</b><small>لیدهایی که بیش از ۷ روز از آخرین فعالیتشان گذشته است</small></span>
-        <span class="backlog-count">{{ attention_backlog_count }}</span>
-      </summary>
-      <div class="backlog-list">
-        {% for lead in attention_backlog %}
-        <article class="backlog-item" data-attention-row="{{ lead.id }}">
-          <div>
-            <strong>{{ lead.full_name }}</strong>
-            <small>{{ lead.attention_short_reason }} · {% if lead.assigned_to %}{{ lead.assigned_to.user.get_full_name|default:lead.assigned_to.user.username }}{% else %}بدون مسئول{% endif %} · {{ lead.attention_age_label }}</small>
-          </div>
-          <div class="backlog-actions">
-            <a href="{{ lead.manage_url }}">باز کردن</a>
-            {% if lead.assigned_to %}<button type="submit" class="lead-action-reassign" name="same_owner_lead_id" value="{{ lead.id }}">↻ ارجاع</button>{% endif %}
-          </div>
-        </article>
-        {% endfor %}
-        {% if attention_backlog_count > 15 %}
-        <div class="backlog-note">۱۵ مورد آخر نمایش داده شده؛ بقیه همچنان در سیستم محفوظ‌اند.</div>
-        {% endif %}
+  <div class="action-stream" id="attention-current">
+    {% for lead in attention_current %}
+    <article class="action-item tone-{{ lead.attention_kind }}" data-attention-row="{{ lead.id }}">
+      <div class="action-person">
+        <strong>{{ lead.full_name }}</strong>
+        <a href="{{ lead.call_url }}" class="action-phone" dir="ltr">{{ lead.phone|latin_digits }}</a>
       </div>
-    </details>
-    {% endif %}
-  </form>
+      <div class="action-state">
+        <span class="action-reason">{{ lead.attention_short_reason }}</span>
+        <span class="action-age">بدون اقدام / از آخرین ارجاع: <b>{{ lead.attention_age_label }}</b></span>
+      </div>
+      <div class="action-owner">مسئول فعلی: <b>{% if lead.assigned_to %}{{ lead.assigned_to.user.get_full_name|default:lead.assigned_to.user.username }}{% else %}تعیین نشده{% endif %}</b>{% if lead.next_follow_up %}<small>پیگیری: <span dir="ltr">{{ lead.next_follow_up|jdate_en }}</span></small>{% endif %}</div>
+      <div class="action-transfer">
+        <form method="post" action="{% url 'lead_reassign_operator' lead.id %}" class="attention-owner-form">{% csrf_token %}
+          <select name="operator_id" class="attention-owner-select" aria-label="واگذاری به گل دیگر">
+            <option value="">واگذاری به گل دیگر…</option>
+            {% for op in operators %}<option value="{{ op.id }}" {% if lead.assigned_to_id == op.id %}disabled{% endif %}>{{ op.user.get_full_name|default:op.user.username }}</option>{% endfor %}
+          </select>
+        </form>
+      </div>
+      <div class="action-item-controls"><a class="action-primary" href="{{ lead.manage_url }}">باز کردن پرونده</a><a class="action-icon" href="{{ lead.call_url }}" title="تماس">☎</a></div>
+    </article>
+    {% empty %}<div class="action-empty">مورد جاری برای اقدام ندارید.</div>{% endfor %}
+  </div>
+  {% if attention_backlog_count %}
+  <details class="action-backlog"><summary><span><b>انباشت قدیمی</b><small>مواردی که بیش از ۷ روز بدون تعیین تکلیف مانده‌اند</small></span><span class="backlog-count">{{ attention_backlog_count }}</span></summary>
+    <div class="backlog-list">{% for lead in attention_backlog %}
+      <article class="backlog-item" data-attention-row="{{ lead.id }}">
+        <div class="backlog-person"><strong>{{ lead.full_name }}</strong><small>{{ lead.attention_short_reason }} · {{ lead.attention_age_label }} · {% if lead.assigned_to %}{{ lead.assigned_to.user.get_full_name|default:lead.assigned_to.user.username }}{% else %}بدون مسئول{% endif %}</small></div>
+        <form method="post" action="{% url 'lead_reassign_operator' lead.id %}" class="attention-owner-form backlog-transfer">{% csrf_token %}<select name="operator_id" class="attention-owner-select"><option value="">واگذاری به گل دیگر…</option>{% for op in operators %}<option value="{{ op.id }}" {% if lead.assigned_to_id == op.id %}disabled{% endif %}>{{ op.user.get_full_name|default:op.user.username }}</option>{% endfor %}</select></form>
+        <a class="backlog-open" href="{{ lead.manage_url }}">باز کردن</a>
+      </article>
+    {% endfor %}{% if attention_backlog_count > 15 %}<div class="backlog-note">۱۵ مورد آخر نمایش داده شده؛ بقیه همچنان در سیستم محفوظ‌اند.</div>{% endif %}</div>
+  </details>{% endif %}
 </section>
-
 <style id="lead-action-inbox-style">
-.lead-action-inbox{background:linear-gradient(145deg,#111b24,#0c141d);border:1px solid #2c3d4b;border-radius:18px;padding:15px;box-shadow:0 10px 28px rgba(0,0,0,.16)}
-.action-inbox-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:12px}
-.action-eyebrow{display:block;color:#79caa8;font-size:8px;font-weight:900;letter-spacing:1.5px;margin-bottom:4px}
-.action-inbox-head h3{margin:0;color:#fff;font-size:17px}.action-inbox-head h3 b{display:inline-grid;place-items:center;min-width:26px;height:26px;margin-right:5px;padding:0 7px;border-radius:9px;background:#1d3b32;color:#9be3bd;font-size:11px}
-.action-inbox-head p{margin:5px 0 0;color:#93a4b1;font-size:9px;line-height:1.8}
-.action-inbox-stats{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.action-inbox-stats span{padding:7px 9px;border:1px solid #2d414f;border-radius:10px;background:#0f1b24;color:#9fb0bd;font-size:8px;font-weight:800;white-space:nowrap}.action-inbox-stats b{color:#eef7f3;font-size:10px}
-.action-stream{display:grid;gap:7px}.action-item{display:grid;grid-template-columns:minmax(220px,1.4fr) minmax(260px,1.5fr) auto;gap:10px;align-items:center;padding:10px 11px;border:1px solid #273a47;border-radius:13px;background:#0e1821}
-.action-item:hover{border-color:#3c5362;background:#111d27}.action-item.tone-unassigned{border-right:3px solid #e0a63a}.action-item.tone-overdue{border-right:3px solid #a970d8}.action-item.tone-untouched{border-right:3px solid #3e9f7a}.action-item-main{display:flex;align-items:center;gap:9px;min-width:0}.action-person{min-width:0}.action-person strong{display:block;color:#f5f9fb;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.action-phone{display:inline-block;margin-top:2px;color:#8fa3b2;font-size:8.5px;text-decoration:none}.action-reason{padding:4px 7px;border:1px solid #334b5a;border-radius:999px;color:#c6d2da;background:#15232d;font-size:7.5px;font-weight:900;white-space:nowrap}
-.action-item-meta{display:flex;gap:12px;flex-wrap:wrap;color:#8498a6;font-size:8px}.action-item-meta b{color:#c8d5dd;font-weight:850}
-.action-item-controls{display:flex;gap:5px;align-items:center;justify-content:flex-end}.action-primary{min-width:96px;height:34px;display:grid;place-items:center;padding:0 11px;border-radius:9px;background:linear-gradient(135deg,#205e49,#174334);border:1px solid #337a60;color:#fff;text-decoration:none;font-size:8px;font-weight:900}.action-icon{width:34px;height:34px;display:grid;place-items:center;border:1px solid #354b59;border-radius:9px;background:#14222c;color:#d6e0e6;text-decoration:none;font:900 13px/1 inherit;cursor:pointer}.action-icon:hover,.action-primary:hover{filter:brightness(1.12)}
-.action-empty{padding:22px;text-align:center;border:1px dashed #2f414e;border-radius:12px;color:#82939f;font-size:9px}
-.action-backlog{margin-top:10px;border-top:1px solid #243540;padding-top:10px}.action-backlog>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 11px;border-radius:11px;background:#0b151d;border:1px solid #253640;color:#c2cdd4}.action-backlog>summary::-webkit-details-marker{display:none}.action-backlog>summary span:first-child{display:grid;gap:2px}.action-backlog>summary b{font-size:10px;color:#dbe5ea}.action-backlog>summary small{font-size:7.5px;color:#758995}.backlog-count{min-width:31px;height:26px;display:grid;place-items:center;border-radius:8px;background:#2a2638;color:#c4a8e4;font-size:9px;font-weight:900}
-.backlog-list{display:grid;gap:5px;margin-top:7px}.backlog-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:#0d171f;border:1px solid #21323d}.backlog-item strong{display:block;color:#dce4e9;font-size:9px}.backlog-item small{display:block;margin-top:2px;color:#758994;font-size:7.5px}.backlog-actions{display:flex;gap:5px}.backlog-actions a,.backlog-actions button{height:29px;padding:0 9px;border-radius:8px;border:1px solid #344a59;background:#13222c;color:#cfd9df;text-decoration:none;font:800 7.5px/1 inherit;cursor:pointer}.backlog-note{text-align:center;padding:7px;color:#738794;font-size:7.5px}
-@media(max-width:900px){.action-item{grid-template-columns:1fr auto}.action-item-meta{grid-column:1/-1}.action-inbox-head{flex-direction:column}.action-inbox-stats{justify-content:flex-start}}
-@media(max-width:620px){.action-item{grid-template-columns:1fr}.action-item-controls{justify-content:flex-start}.action-item-meta{grid-column:auto}.action-inbox-stats{display:grid;grid-template-columns:repeat(3,1fr);width:100%}.action-inbox-stats span{text-align:center}.backlog-item{align-items:flex-start;flex-direction:column}}
+.lead-action-inbox{background:linear-gradient(145deg,#111b24,#0c141d);border:1px solid #2c3d4b;border-radius:18px;padding:18px;box-shadow:0 10px 28px rgba(0,0,0,.16)}
+.action-inbox-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:16px}.action-eyebrow{display:block;color:#8ed9b9;font-size:9px;font-weight:900;letter-spacing:1.5px;margin-bottom:5px}.action-inbox-head h3{margin:0;color:#fff;font-size:20px}.action-inbox-head h3 b{display:inline-grid;place-items:center;min-width:30px;height:30px;margin-right:6px;padding:0 8px;border-radius:9px;background:#1d3b32;color:#a9e9c8;font-size:13px}.action-inbox-head p{margin:7px 0 0;color:#b5c1cb;font-size:11px;line-height:1.9}.action-inbox-stats{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.action-inbox-stats span{padding:8px 11px;border:1px solid #344957;border-radius:10px;background:#0f1b24;color:#c0cbd3;font-size:9.5px;font-weight:800;white-space:nowrap}.action-inbox-stats b{color:#fff;font-size:12px}
+.action-stream{display:grid;gap:8px}.action-item{display:grid;grid-template-columns:minmax(150px,.9fr) minmax(190px,1.05fr) minmax(180px,1fr) minmax(190px,1.05fr) auto;gap:12px;align-items:center;padding:13px 14px;border:1px solid #2b3d49;border-radius:13px;background:#0e1821}.action-item:hover{border-color:#486170;background:#111d27}.action-item.tone-unassigned{border-right:3px solid #e0a63a}.action-item.tone-overdue{border-right:3px solid #b27be0}.action-item.tone-untouched{border-right:3px solid #4cb38b}
+.action-person strong{display:block;color:#fff;font-size:13px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.action-phone{display:inline-block;margin-top:4px;color:#b3c3ce;font-size:10px;text-decoration:none}.action-state{display:grid;gap:6px;justify-items:start}.action-reason{padding:5px 9px;border:1px solid #3a5261;border-radius:999px;color:#e0e8ed;background:#172731;font-size:9px;font-weight:900;white-space:nowrap}.action-age{color:#aab8c2;font-size:9px;white-space:nowrap}.action-age b{color:#fff;font-size:11px}.action-owner{display:grid;gap:4px;color:#aab8c2;font-size:9px}.action-owner b{color:#eaf1f4;font-size:11px}.action-owner small{color:#91a4b1;font-size:8.5px}
+.action-transfer{min-width:0}.attention-owner-form{margin:0}.attention-owner-select{width:100%;min-width:175px;height:38px;border:1px solid #416071;border-radius:10px;background:#142630;color:#eef5f2;padding:0 9px;font:900 9px Tahoma;outline:none;cursor:pointer}.attention-owner-select:focus{border-color:#62ad8c;box-shadow:0 0 0 3px rgba(98,173,140,.13)}.action-item-controls{display:flex;gap:6px;align-items:center}.action-primary{height:38px;display:grid;place-items:center;padding:0 13px;border-radius:9px;background:linear-gradient(135deg,#23664f,#194936);border:1px solid #3a876a;color:#fff;text-decoration:none;font-size:9px;font-weight:900;white-space:nowrap}.action-icon{width:38px;height:38px;display:grid;place-items:center;border:1px solid #405765;border-radius:9px;background:#14222c;color:#e1e8ec;text-decoration:none;font-size:14px}
+.action-empty{padding:24px;text-align:center;border:1px dashed #364b58;border-radius:12px;color:#a4b2bc;font-size:10px}.action-backlog{margin-top:12px;border-top:1px solid #2a3c47;padding-top:12px}.action-backlog>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 13px;border-radius:11px;background:#0b151d;border:1px solid #2c404c;color:#d5dde2}.action-backlog>summary::-webkit-details-marker{display:none}.action-backlog>summary span:first-child{display:grid;gap:3px}.action-backlog>summary b{font-size:11px;color:#eef3f5}.action-backlog>summary small{font-size:9px;color:#9aacb7}.backlog-count{min-width:34px;height:28px;display:grid;place-items:center;border-radius:8px;background:#302942;color:#d3b8ef;font-size:10px;font-weight:900}
+.backlog-list{display:grid;gap:6px;margin-top:8px}.backlog-item{display:grid;grid-template-columns:minmax(230px,1fr) minmax(190px,260px) auto;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:#0d171f;border:1px solid #263945}.backlog-person strong{display:block;color:#e8eef1;font-size:10.5px}.backlog-person small{display:block;margin-top:3px;color:#96a8b3;font-size:9px}.backlog-open{height:34px;display:grid;place-items:center;padding:0 10px;border-radius:8px;border:1px solid #3d5665;background:#14232d;color:#dce5ea;text-decoration:none;font-size:8.5px;font-weight:900}.backlog-note{text-align:center;padding:8px;color:#91a3ae;font-size:8.5px}
+.attention-owner-form.is-saving .attention-owner-select{opacity:.55;pointer-events:none}
+@media(max-width:1100px){.action-item{grid-template-columns:1fr 1fr 1fr}.action-transfer{grid-column:1/3}.action-item-controls{justify-content:flex-end}.action-inbox-head{flex-direction:column}.action-inbox-stats{justify-content:flex-start}}
+@media(max-width:700px){.action-item{grid-template-columns:1fr}.action-transfer{grid-column:auto}.action-item-controls{justify-content:flex-start}.attention-owner-select{min-width:100%}.action-inbox-stats{display:grid;grid-template-columns:repeat(3,1fr);width:100%}.action-inbox-stats span{text-align:center}.backlog-item{grid-template-columns:1fr}.action-inbox-head h3{font-size:18px}}
 </style>
-
-<script id="attention-one-click-reassign">
+<script id="attention-direct-transfer">
 (function(){
-  var form=document.getElementById('attention-reassign-form');if(!form)return;
-  form.addEventListener('submit',function(event){
-    var button=event.submitter;
-    if(!button||!button.classList.contains('lead-action-reassign'))return;
-    event.preventDefault();if(button.disabled)return;
-    var original=button.textContent;button.disabled=true;button.textContent='…';
-    var data=new FormData(),csrf=form.querySelector('input[name="csrfmiddlewaretoken"]');
-    if(csrf)data.append('csrfmiddlewaretoken',csrf.value);
-    data.append('same_owner_lead_id',button.value);
+  document.addEventListener('change',function(event){
+    var select=event.target;if(!select.classList.contains('attention-owner-select')||!select.value)return;
+    var form=select.closest('.attention-owner-form');if(!form||form.classList.contains('is-saving'))return;
+    var selectedText=select.options[select.selectedIndex].text;
+    if(!window.confirm('این لید به «'+selectedText+'» واگذار شود؟')){select.value='';return}
+    form.classList.add('is-saving');
+    var data=new FormData(form);
     fetch(form.action,{method:'POST',body:data,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}})
-      .then(function(response){return response.json().then(function(payload){if(!response.ok||!payload.ok)throw new Error(payload.message||'خطا در ارجاع');return payload})})
-      .then(function(){
-        var row=button.closest('[data-attention-row]');
+      .then(function(response){return response.json().then(function(payload){if(!response.ok||!payload.ok)throw new Error(payload.message||'خطا در واگذاری');return payload})})
+      .then(function(payload){
+        var row=form.closest('[data-attention-row]');
         if(row){row.style.transition='opacity .18s ease,transform .18s ease';row.style.opacity='0';row.style.transform='translateX(-8px)';setTimeout(function(){row.remove()},180)}
       })
-      .catch(function(error){button.disabled=false;button.textContent=original;button.title=error.message||'خطا در ارجاع'})
+      .catch(function(error){form.classList.remove('is-saving');select.value='';window.alert(error.message||'واگذاری انجام نشد')});
   });
 })();
 </script>
