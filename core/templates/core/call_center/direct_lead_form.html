@@ -1,0 +1,50 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<style>
+.cc-direct-page{max-width:760px;margin:30px auto 100px;padding:0 14px;direction:rtl;font-family:Tahoma,"Noto Sans Arabic",sans-serif}
+.cc-direct-card{background:#fff;border:1px solid #e3e8ef;border-radius:22px;box-shadow:0 14px 34px rgba(40,54,78,.06);overflow:hidden}
+.cc-direct-head{padding:20px 22px 16px;border-bottom:1px solid #edf0f4;background:linear-gradient(135deg,#f4fbf7,#fbf8ff)}
+.cc-direct-head small{display:block;color:#2c8a64;font-size:9px;font-weight:900;margin-bottom:5px}
+.cc-direct-head h1{margin:0;color:#1e2b42;font-size:22px}
+.cc-direct-head p{margin:7px 0 0;color:#7d8999;font-size:10px;line-height:1.8}
+.cc-direct-body{padding:20px 22px}
+.cc-direct-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cc-direct-field{display:grid;gap:6px}.cc-direct-field.full{grid-column:1/-1}
+.cc-direct-field label{font-size:10px;font-weight:900;color:#3d4b60}
+.cc-direct-field input,.cc-direct-field textarea{width:100%;border:1px solid #dfe5ec;border-radius:12px;background:#fafbfd;color:#26354c;font:800 11px Tahoma;padding:10px 12px;outline:none;box-sizing:border-box}
+.cc-direct-field input{height:42px}.cc-direct-field textarea{min-height:92px;resize:vertical}
+.cc-direct-field input:focus,.cc-direct-field textarea:focus{border-color:#5bb58e;box-shadow:0 0 0 3px rgba(91,181,142,.12)}
+.cc-direct-errors{margin-top:5px;color:#b63e58;font-size:9px;font-weight:800}
+.cc-direct-note{margin:0 0 16px;padding:10px 12px;border-radius:12px;background:#eef8f3;color:#2a7658;font-size:9px;font-weight:800;line-height:1.8}
+.cc-direct-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+.cc-direct-actions button,.cc-direct-actions a{min-height:40px;display:inline-flex;align-items:center;justify-content:center;padding:0 16px;border-radius:11px;font:900 10px Tahoma;text-decoration:none}
+.cc-direct-actions button{border:0;background:#239b68;color:#fff;cursor:pointer}.cc-direct-actions a{border:1px solid #dfe5ec;background:#fff;color:#5a677a}
+@media(max-width:700px){.cc-direct-page{margin-top:16px}.cc-direct-grid{grid-template-columns:1fr}.cc-direct-field.full{grid-column:auto}.cc-direct-head h1{font-size:18px}}
+</style>
+<div class="cc-direct-page">
+  <section class="cc-direct-card">
+    <div class="cc-direct-head">
+      <small>CALL CENTER · INSTAGRAM DIRECT</small>
+      <h1>ثبت لید از دایرکت</h1>
+      <p>این لید مستقیماً به نام شما ثبت می‌شود و وارد توزیع عمومی لیدها نمی‌شود.</p>
+    </div>
+    <div class="cc-direct-body">
+      <div class="cc-direct-note">ثبت‌کننده و مسئول پیگیری این لید، خود شما خواهید بود.</div>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="cc-direct-grid">
+          <div class="cc-direct-field"><label>{{ form.full_name.label }}</label>{{ form.full_name }}{% if form.full_name.errors %}<div class="cc-direct-errors">{{ form.full_name.errors }}</div>{% endif %}</div>
+          <div class="cc-direct-field"><label>{{ form.phone.label }}</label>{{ form.phone }}{% if form.phone.errors %}<div class="cc-direct-errors">{{ form.phone.errors }}</div>{% endif %}</div>
+          <div class="cc-direct-field full"><label>{{ form.interested_service.label }}</label>{{ form.interested_service }}{% if form.interested_service.errors %}<div class="cc-direct-errors">{{ form.interested_service.errors }}</div>{% endif %}</div>
+          <div class="cc-direct-field full"><label>{{ form.notes.label }}</label>{{ form.notes }}{% if form.notes.errors %}<div class="cc-direct-errors">{{ form.notes.errors }}</div>{% endif %}</div>
+        </div>
+        {% if form.non_field_errors %}<div class="cc-direct-errors">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="cc-direct-actions">
+          <a href="{% url 'call_center_dashboard' %}">انصراف</a>
+          <button type="submit">ثبت لید به نام من</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}
