@@ -279,6 +279,46 @@ _CALL_CENTER_STAFF_STYLE = r'''<style id="greenlife-call-center-staff-ui-v8">
   .cc-v5 small{font-size:9px!important}
   .cc-v5 .cc-v5-action{font-size:10px!important}
 }
+
+/* Final Operator Cockpit guard — injected after all template/global CSS. */
+body.gl-role-call-center.gl-page-call_center_dashboard .ccx-performance{
+  display:none!important;height:0!important;min-height:0!important;margin:0!important;
+  padding:0!important;border:0!important;overflow:hidden!important
+}
+body.gl-role-call-center.gl-page-call_center_dashboard .ccx-desk{
+  height:auto!important;min-height:148px!important;overflow:visible!important;
+  padding:20px 22px!important
+}
+body.gl-role-call-center.gl-page-call_center_dashboard .ccx-person{
+  gap:18px!important;align-items:center!important
+}
+body.gl-role-call-center.gl-page-call_center_dashboard .ccx-avatar{
+  width:102px!important;height:102px!important;min-width:102px!important;
+  flex:0 0 102px!important;border-radius:27px!important;border:3px solid #fff!important;
+  box-shadow:0 0 0 1px #d3e3dc,0 12px 30px rgba(37,78,61,.13)!important
+}
+body.gl-role-call-center.gl-page-call_center_dashboard .ccx-person h1{
+  font-size:28px!important;line-height:1.25!important;margin:2px 0 0!important
+}
+body.gl-role-call-center.gl-page-call_center_dashboard .ccx-person-copy{
+  display:grid!important;gap:3px!important;min-width:0!important
+}
+body.gl-role-call-center.gl-page-call_center_dashboard .ccx-eyebrow{
+  font-size:10px!important;color:#607b70!important;font-weight:900!important
+}
+body.gl-role-call-center.gl-page-call_center_dashboard .ccx-role-line{
+  font-size:10px!important;color:#667b86!important;margin-top:3px!important
+}
+body.gl-role-call-center.gl-page-call_center_dashboard .ccx-presence{
+  margin-top:10px!important;gap:8px!important
+}
+@media (max-width:1180px) and (min-width:761px){
+  body.gl-role-call-center.gl-page-call_center_dashboard .ccx-desk{min-height:138px!important}
+  body.gl-role-call-center.gl-page-call_center_dashboard .ccx-avatar{
+    width:92px!important;height:92px!important;min-width:92px!important;flex-basis:92px!important
+  }
+  body.gl-role-call-center.gl-page-call_center_dashboard .ccx-person h1{font-size:26px!important}
+}
 </style>'''
 
 
@@ -406,6 +446,10 @@ _CALL_TRACKING_SCRIPT = r'''<script>
   function enhanceDashboard(){
     if(location.pathname!='/call-center/'&&location.pathname!='/call-center')return;
 
+    // Remove the superseded compact performance strip even if an older
+    // template fragment survives in a cached/rendered response.
+    document.querySelectorAll('.ccx-performance').forEach(function(el){el.remove();});
+
     markWorkQueue();
 
     var actions=document.querySelectorAll('a.cc-v5-action[href*="status=contacted"]');
@@ -515,6 +559,12 @@ class CallCenterCallTrackingMiddleware:
             or not str(response.get('Content-Type', '')).startswith('text/html')
         ):
             return response
+
+        # Call-center is an operational live workspace. Never let a browser/proxy
+        # retain an older dashboard after a zero-downtime deploy.
+        response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
 
         content = response.content
         marker = b'</body>'
