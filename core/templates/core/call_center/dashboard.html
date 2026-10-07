@@ -479,6 +479,15 @@ body.gl-page-call_center_dashboard .ccx-details>summary,
 .ccx-quick-plaque{grid-template-columns:repeat(9,minmax(0,1fr))!important}
 @media(max-width:1380px){.ccx-quick-plaque{grid-template-columns:repeat(5,minmax(0,1fr))!important}}
 @media(max-width:760px){.ccx-quick-plaque{grid-template-columns:repeat(2,minmax(0,1fr))!important}.ccx-note-tools{grid-template-columns:1fr 1fr}.ccx-note-save{grid-column:1/-1}}
+
+/* Live patient journey — today's appointments. */
+.ccx-today-live-head{display:flex;align-items:center;gap:7px}.ccx-live-dot{display:inline-flex;align-items:center;gap:4px;padding:3px 6px;border-radius:999px;background:#e9f7ef;color:#1c7653;font-size:7px;font-weight:900}.ccx-live-dot:before{content:"";width:6px;height:6px;border-radius:50%;background:#2b9d70;box-shadow:0 0 0 3px rgba(43,157,112,.12)}
+.ccx-today-live-list{padding:7px!important;display:grid;gap:6px}.ccx-today-card{padding:9px;border:1px solid #e0e8ea;border-radius:11px;background:#fff;box-shadow:0 3px 11px rgba(34,52,69,.025)}
+.ccx-today-top{display:flex;align-items:center;justify-content:space-between;gap:6px}.ccx-today-name{min-width:0;color:#273d4f;font-size:9.5px;font-weight:1000;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ccx-today-name:hover{color:#65468e;text-decoration:underline;text-underline-offset:2px}.ccx-today-time{color:#455d6f;font-size:8px;font-weight:900;direction:ltr;white-space:nowrap}
+.ccx-today-meta{margin-top:4px;color:#778590;font-size:7.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ccx-journey-line{display:flex;align-items:center;justify-content:space-between;gap:5px;flex-wrap:wrap;margin-top:7px}.ccx-journey-badge{display:inline-flex;align-items:center;min-height:24px;padding:0 7px;border-radius:999px;border:1px solid #dce5e8;background:#f5f8f9;color:#506678;font-size:7.4px;font-weight:1000;white-space:nowrap}
+.ccx-journey-badge.booked{background:#f2f4f6;color:#5f6e79;border-color:#dfe5e8}.ccx-journey-badge.arrived,.ccx-journey-badge.doctor{background:#edf5fb;color:#3e6a9c;border-color:#d3e2ef}.ccx-journey-badge.consultant{background:#f2ebf9;color:#65458e;border-color:#d7c6e6}.ccx-journey-badge.payment,.ccx-journey-badge.partial_paid{background:#fff5df;color:#8a611d;border-color:#ecd8ac}.ccx-journey-badge.sale_success,.ccx-journey-badge.completed{background:#e7f6ee;color:#176f4f;border-color:#c5e3d4}.ccx-journey-badge.sale_lost,.ccx-journey-badge.no_show{background:#fff0f3;color:#a23f58;border-color:#edcdd6}.ccx-journey-badge.cancelled{background:#f2f3f4;color:#7a838a;border-color:#e0e3e5}
+.ccx-journey-meta{color:#87939c;font-size:7px;white-space:nowrap}.ccx-live-call{display:inline-flex;align-items:center;justify-content:center;min-height:29px;margin-top:6px;padding:0 9px;border:1px solid #ecc6d0;border-radius:8px;background:#fff0f3;color:#a23f58;font-size:7.5px;font-weight:1000;text-decoration:none}.ccx-live-call:hover{background:#ffe8ed}.ccx-live-empty{padding:17px;text-align:center;color:#82909a;font-size:8px;background:#fbfcfd;border-radius:10px}
+.ccx-live-refresh{margin-right:auto;color:#87949e;font-size:6.8px;font-weight:800}
 </style>
 
 <div class="ccx" lang="fa" dir="rtl" translate="no">
@@ -580,8 +589,17 @@ body.gl-page-call_center_dashboard .ccx-details>summary,
         <div class="ccx-side-list">{% for lead in upcoming_followups %}<div class="ccx-side-item"><div><strong>{{ lead.full_name }}</strong><small>{{ lead.phone }}</small></div><b>{{ lead.next_follow_up|jdate }}</b></div>{% empty %}<div class="ccx-side-empty">پیگیری آینده‌ای ثبت نشده.</div>{% endfor %}</div>
       </section>
       <section class="ccx-card">
-        <header class="ccx-head"><div><h3>نوبت‌های امروز</h3><p>یادآوری و مراجعه</p></div></header>
-        <div class="ccx-side-list">{% for item in today_appointments|slice:":5" %}<div class="ccx-side-item"><div><strong>{{ item.full_name }}</strong><small>{{ item.branch.name }}{% if item.service %} · {{ item.service }}{% endif %}</small></div><b>{{ item.appointment_time|time:"H:i" }}</b></div>{% empty %}<div class="ccx-side-empty">نوبتی برای امروز ندارید.</div>{% endfor %}</div>
+        <header class="ccx-head"><div><div class="ccx-today-live-head"><h3>نوبت‌های امروز</h3><span class="ccx-live-dot">زنده</span></div><p>وضعیت لحظه‌ای مسیر مراجعه</p></div><small class="ccx-live-refresh" id="ccxTodayLiveTime"></small></header>
+        <div class="ccx-today-live-list" id="ccxTodayAppointments" data-live-url="{% url 'call_center_today_appointments_live' %}">
+          {% for item in today_appointments|slice:":5" %}
+          <article class="ccx-today-card" data-appointment-id="{{ item.pk }}">
+            <div class="ccx-today-top"><a class="ccx-today-name" href="{% url 'patient_360_from_appointment' item.pk %}">{{ item.full_name }}</a><b class="ccx-today-time">{{ item.appointment_time|time:"H:i" }}</b></div>
+            <div class="ccx-today-meta">{{ item.branch.name }}{% if item.service %} · {{ item.service }}{% endif %}</div>
+            <div class="ccx-journey-line"><span class="ccx-journey-badge {{ item.journey_key }}">{{ item.journey_label }}</span><small class="ccx-journey-meta">{{ item.journey_changed_time }} · {{ item.journey_source }}</small></div>
+            {% if item.journey_needs_call %}<a class="ccx-live-call" href="tel:{{ item.phone }}">☎ تماس فوری</a>{% endif %}
+          </article>
+          {% empty %}<div class="ccx-live-empty">نوبتی برای امروز ندارید.</div>{% endfor %}
+        </div>
       </section>
       <section class="ccx-card">
         <header class="ccx-head"><div><h3>نوبت‌های فردا</h3><p>تماس یادآوری</p></div></header>
@@ -660,6 +678,37 @@ body.gl-page-call_center_dashboard .ccx-details>summary,
     });
   }
   if(search)search.addEventListener('input',applyFilters);
+
+  var liveToday=document.getElementById('ccxTodayAppointments'),liveTime=document.getElementById('ccxTodayLiveTime'),liveBusy=false;
+  function liveEsc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function livePhone(v){return String(v||'').replace(/[^0-9+]/g,'')}
+  function renderTodayAppointments(items){
+    if(!liveToday)return;
+    var list=(items||[]).slice(0,5);
+    if(!list.length){liveToday.innerHTML='<div class="ccx-live-empty">نوبتی برای امروز ندارید.</div>';return}
+    liveToday.innerHTML=list.map(function(x){
+      var call=x.needs_call?'<a class="ccx-live-call" href="tel:'+liveEsc(livePhone(x.phone))+'">☎ تماس فوری</a>':'';
+      return '<article class="ccx-today-card" data-appointment-id="'+liveEsc(x.id)+'">'+
+        '<div class="ccx-today-top"><a class="ccx-today-name" href="'+liveEsc(x.patient_url)+'">'+liveEsc(x.name)+'</a><b class="ccx-today-time">'+liveEsc(x.time)+'</b></div>'+
+        '<div class="ccx-today-meta">'+liveEsc(x.branch)+(x.service?' · '+liveEsc(x.service):'')+'</div>'+
+        '<div class="ccx-journey-line"><span class="ccx-journey-badge '+liveEsc(x.status_key)+'">'+liveEsc(x.status_label)+'</span><small class="ccx-journey-meta">'+liveEsc(x.changed_time)+' · '+liveEsc(x.status_source)+'</small></div>'+
+        call+'</article>';
+    }).join('');
+  }
+  function refreshTodayAppointments(){
+    if(!liveToday||liveBusy||document.hidden)return;
+    liveBusy=true;
+    fetch(liveToday.dataset.liveUrl,{credentials:'same-origin',cache:'no-store',headers:{'X-Requested-With':'XMLHttpRequest'}})
+      .then(function(r){return r.json().then(function(d){if(!r.ok||!d.ok)throw new Error();return d})})
+      .then(function(d){renderTodayAppointments(d.appointments);if(liveTime)liveTime.textContent='به‌روزرسانی '+d.refreshed_at})
+      .catch(function(){if(liveTime)liveTime.textContent='اتصال مجدد…'})
+      .finally(function(){liveBusy=false});
+  }
+  if(liveToday){
+    setTimeout(refreshTodayAppointments,2500);
+    setInterval(refreshTodayAppointments,20000);
+    document.addEventListener('visibilitychange',function(){if(!document.hidden)refreshTodayAppointments()});
+  }
   filters.forEach(function(b){b.addEventListener('click',function(){filters.forEach(function(x){x.classList.remove('active')});b.classList.add('active');activeFilter=b.dataset.filter;applyFilters()})});
   function focusRow(row){if(!row)return;rows().forEach(function(x){x.classList.remove('ccx-focus')});row.classList.add('ccx-focus');row.scrollIntoView({behavior:'smooth',block:'center'});var call=row.querySelector('.ccx-action.call');if(call)setTimeout(function(){call.focus()},350)}
   function focusNext(current){

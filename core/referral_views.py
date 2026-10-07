@@ -23,7 +23,7 @@ from .forms import (
     PublicReferralLeadForm, BeytootePublicLeadForm, PersianBeautyPublicLeadForm, ReferralLeadForm, ReferralLeadManageForm,
     ReferralMemberForm, ReferralSaleForm, CallCenterLeadForm, CallCenterLeadCreateForm, CallCenterDirectLeadForm,
 )
-from .models import Attendance, AuditLog, CallCenterLeadGroup, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification, VisitAppointment, InternalMessage, DuplicateLeadError, PatientProfile, PersonalNotebookEntry
+from .models import Attendance, AuditLog, CallCenterLeadGroup, ConsultationPlan, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification, VisitAppointment, InternalMessage, DuplicateLeadError, PatientProfile, PersonalNotebookEntry
 from .call_center_identity import FlowerLeadProxy
 from .jalali import format_jalali, parse_jalali
 # Production rebuild marker after the previous deployment hit the workflow timeout.
@@ -666,6 +666,68 @@ def referral_lead_manage(request,pk):
     })
 
 
+def _call_center_appointment_journey(item):
+    """Derive the live patient journey from the existing receptionist/doctor/consultant/payment state."""
+    plan=None
+    try:
+        plan=item.consultation_plan
+    except ConsultationPlan.DoesNotExist:
+        plan=None
+
+    changed_at=item.updated_at
+    source='سیستم'
+    key='booked'
+    label='نوبت ثبت شده'
+    needs_call=False
+
+    if item.status=='cancelled':
+        key,label,source='cancelled','لغو شده','منشی'
+    elif item.status=='no_show':
+        key,label,source,needs_call='no_show','عدم مراجعه','منشی',True
+    elif plan and plan.status=='paid':
+        key,label,source='sale_success','فروش موفق','مالی / منشی'
+        changed_at=plan.paid_at or plan.updated_at
+    elif plan and plan.status=='no_sale':
+        key,label,source,needs_call='sale_lost','خرید نکرد · پیگیری لازم','مشاور',True
+        changed_at=plan.updated_at
+    elif item.lead_id and item.lead.status=='won':
+        key,label,source='sale_success','فروش موفق','فروش'
+        changed_at=item.lead.updated_at
+    elif plan and plan.status=='partial_paid':
+        key,label,source='partial_paid','بیعانه ثبت شد · در انتظار تسویه','مالی / منشی'
+        changed_at=plan.updated_at
+    elif item.lead_id and item.lead.status=='lost':
+        key,label,source,needs_call='sale_lost','فروش ناموفق · پیگیری لازم','کال‌سنتر / مشاور',True
+        changed_at=item.lead.updated_at
+    elif item.status=='completed' or item.care_stage=='closed':
+        key,label,source='completed','مراجعه تکمیل شد','منشی'
+    elif (plan and plan.status in ('payment_pending','finalized')) or item.care_stage=='payment':
+        key,label,source='payment','مشاوره انجام شد · در انتظار پرداخت','مشاور'
+        if plan:
+            changed_at=plan.updated_at
+    elif item.status=='arrived' and item.care_stage=='consultant':
+        key,label,source='consultant','ویزیت پزشک انجام شد · نزد مشاور','پزشک'
+        changed_at=item.doctor_completed_at or item.updated_at
+    elif item.status=='arrived' and item.care_stage=='doctor':
+        key,label,source='doctor','پذیرش منشی · در انتظار پزشک','منشی'
+    elif item.status=='arrived':
+        key,label,source='arrived','مراجعه کرد · پذیرش شد','منشی'
+    elif item.status=='booked':
+        key,label='booked','نوبت ثبت شده'
+        source='کال‌سنتر' if item.source=='call_center' else ('منشی' if item.source=='receptionist' else 'مدیریت')
+        changed_at=item.created_at
+
+    local_changed=timezone.localtime(changed_at) if changed_at else None
+    return {
+        'key':key,
+        'label':label,
+        'source':source,
+        'changed_at':local_changed,
+        'changed_time':local_changed.strftime('%H:%M') if local_changed else '—',
+        'needs_call':needs_call,
+    }
+
+
 def call_center_required(view):
     @wraps(view)
     @login_required
@@ -999,15 +1061,22 @@ def call_center_dashboard(request):
         ).exclude(status='cancelled').count(),
         'ungrouped':all_leads.filter(group__isnull=True).count(),
     }
-    today_appointments=(
+    today_appointments=list(
         VisitAppointment.objects.filter(
             appointment_date=today,
             lead__assigned_to=operator,
         )
-        .exclude(status='cancelled')
-        .select_related('branch','lead')
-        .order_by('appointment_time')[:12]
+        .select_related('branch','lead','consultation_plan','consultation_plan__consultant')
+        .order_by('appointment_time','id')[:12]
     )
+    for item in today_appointments:
+        journey=_call_center_appointment_journey(item)
+        item.journey_key=journey['key']
+        item.journey_label=journey['label']
+        item.journey_source=journey['source']
+        item.journey_changed_time=journey['changed_time']
+        item.journey_needs_call=journey['needs_call']
+
     appointment_by_time={
         item.appointment_time.strftime('%H:%M'):item for item in today_appointments
     }
@@ -1053,6 +1122,48 @@ def call_center_dashboard(request):
         'cockpit':cockpit,'work_queue':work_queue,'next_queue':next_queue,
         'queue_category_counts':category_counts,'upcoming_followups':upcoming_followups,
     })
+
+
+@call_center_required
+def call_center_today_appointments_live(request):
+    """Read-only live journey for today's appointments owned by this call-center operator."""
+    if request.method!='GET':
+        return JsonResponse({'ok':False,'error':'method not allowed'},status=405)
+
+    today=timezone.localdate()
+    items=list(
+        VisitAppointment.objects.filter(
+            appointment_date=today,
+            lead__assigned_to=request.user.profile,
+        )
+        .select_related('branch','lead','consultation_plan','consultation_plan__consultant')
+        .order_by('appointment_time','id')[:20]
+    )
+    rows=[]
+    for item in items:
+        journey=_call_center_appointment_journey(item)
+        rows.append({
+            'id':item.pk,
+            'name':item.full_name,
+            'phone':item.phone,
+            'branch':item.branch.name if item.branch_id else '—',
+            'service':item.service or '',
+            'time':item.appointment_time.strftime('%H:%M'),
+            'status_key':journey['key'],
+            'status_label':journey['label'],
+            'status_source':journey['source'],
+            'changed_time':journey['changed_time'],
+            'needs_call':journey['needs_call'],
+            'patient_url':reverse('patient_360_from_appointment',args=[item.pk]),
+        })
+    response=JsonResponse({
+        'ok':True,
+        'appointments':rows,
+        'count':len(rows),
+        'refreshed_at':timezone.localtime().strftime('%H:%M:%S'),
+    },json_dumps_params={'ensure_ascii':False})
+    response['Cache-Control']='no-store, private'
+    return response
 
 
 @call_center_required

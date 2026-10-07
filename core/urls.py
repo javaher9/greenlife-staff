@@ -40,7 +40,7 @@ path('lead-management/attention/assign/',lead_management_views.lead_attention_bu
 path('doctor/',doctor_views.doctor_dashboard,name='doctor_dashboard'),
 path('payroll/',payroll_views.payroll_dashboard,name='payroll_dashboard'),
 path('call-center/',referral_views.call_center_dashboard,name='call_center_dashboard'),
-path('call-center/groups/new/',referral_views.call_center_group_create,name='call_center_group_create'),path('call-center/quick-message/',referral_views.call_center_quick_message,name='call_center_quick_message'),path('call-center/notebook/',referral_views.call_center_notebook,name='call_center_notebook'),
+path('call-center/groups/new/',referral_views.call_center_group_create,name='call_center_group_create'),path('call-center/quick-message/',referral_views.call_center_quick_message,name='call_center_quick_message'),path('call-center/notebook/',referral_views.call_center_notebook,name='call_center_notebook'),path('call-center/today-appointments/live/',referral_views.call_center_today_appointments_live,name='call_center_today_appointments_live'),
 path('call-center/leads/new/',referral_views.call_center_lead_create,name='call_center_lead_create'),path('call-center/leads/direct/new/',referral_views.call_center_direct_lead_create,name='call_center_direct_lead_create'),
 path('call-center/leads/<int:pk>/',referral_views.call_center_lead,name='call_center_lead'),
 path('call-center/leads/<int:pk>/name/',referral_views.call_center_lead_name_update,name='call_center_lead_name_update'),
