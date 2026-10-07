@@ -196,6 +196,37 @@ body.gl-page-appointment_schedule .s7-book-modal .s7-book-modal-body{
 body.gl-page-appointment_schedule .s7-book-modal .s7-book-modal-actions{
   margin-top:9px!important;
 }
+
+/* Patient names inside booked slots must remain text-like, never dark pills. */
+body.gl-page-appointment_schedule .schedule7 .s7-patient-open{
+  display:block!important;
+  min-width:0!important;
+  max-width:100%!important;
+  padding:0!important;
+  margin:0!important;
+  background:transparent!important;
+  background-image:none!important;
+  color:#20384a!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  text-shadow:none!important;
+  font:1000 9px Tahoma!important;
+  line-height:1.5!important;
+  cursor:pointer!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+body.gl-page-appointment_schedule .schedule7 .s7-patient-open:hover,
+body.gl-page-appointment_schedule .schedule7 .s7-patient-open:focus{
+  background:transparent!important;
+  color:#65468e!important;
+  box-shadow:none!important;
+  outline:none!important;
+  text-decoration:underline!important;
+  text-underline-offset:3px!important;
+}
 </style>
 <section class="schedule7">
   <header class="s7-head">
@@ -240,7 +271,7 @@ body.gl-page-appointment_schedule .s7-book-modal .s7-book-modal-actions{
           <div class="s7-slot">
             {% if row.appointment %}
             <div class="s7-booked">
-              <div class="s7-booked-top"><button type="button" class="s7-patient-open" data-patient-quick="{% url 'patient_360_quick_from_appointment' row.appointment.pk %}" title="نمایش پروفایل بیمار">{{ row.appointment.full_name }}</button><span class="s7-time">{{ row.time }}</span></div>
+              <div class="s7-booked-top"><span role="button" tabindex="0" class="s7-patient-open" data-patient-quick="{% url 'patient_360_quick_from_appointment' row.appointment.pk %}" title="نمایش پروفایل بیمار">{{ row.appointment.full_name }}</span><span class="s7-time">{{ row.time }}</span></div>
               <small>{% if appointment_role == 'call_center' %}{{ row.appointment.phone }}{% else %}{{ row.appointment.phone|mask_phone }}{% endif %}{% if row.appointment.service %} · {{ row.appointment.service }}{% endif %}</small>
               <div class="s7-booked-meta"><span class="s7-status">{% gl_choice 'appointment_status' row.appointment.status row.appointment.get_status_display %}</span>{% if row.appointment.booking_by_label %}<span class="s7-booker">{{ row.appointment.booking_by_prefix }}: {{ row.appointment.booking_by_label }} · {{ row.appointment.booking_created_time }}</span>{% endif %}</div>
               {% if appointment_role == 'receptionist' %}
@@ -361,13 +392,15 @@ body.gl-page-appointment_schedule .s7-book-modal .s7-book-modal-actions{
       '<div class="s7-profile-actions"><a class="s7-profile-call" href="tel:'+esc((p.phone||'').replace(/[^0-9+]/g,''))+'">☎ تماس</a><a class="s7-profile-full" href="'+esc(p.full_profile_url)+'">پروفایل کامل بیمار ←</a></div>';
   }
   document.querySelectorAll('[data-patient-quick]').forEach(function(btn){
-    btn.addEventListener('click',function(){
+    function showPatient(){
       openPanel();title.textContent=(btn.textContent||'').trim();body.innerHTML='<div class="s7-profile-loading">در حال بارگذاری پرونده…</div>';
       fetch(btn.dataset.patientQuick,{credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}})
         .then(function(r){return r.json().then(function(d){if(!r.ok||!d.ok)throw new Error(d.error||'دسترسی به پرونده ممکن نیست');return d})})
         .then(function(d){render(d.patient)})
         .catch(function(e){body.innerHTML='<div class="s7-profile-error">'+esc(e.message||'خطا در دریافت پرونده')+'</div>'});
-    });
+    }
+    btn.addEventListener('click',showPatient);
+    btn.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();showPatient()}});
   });
   if(panel&&panel.parentNode!==document.body)document.body.appendChild(panel);
   if(back&&back.parentNode!==document.body)document.body.appendChild(back);
