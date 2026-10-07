@@ -440,15 +440,18 @@ body.gl-page-call_center_dashboard .ccx-details>summary,
 }
 
 /* Call-center requested tools: audited inline name editing + private notebook. */
+.ccx-personcell{position:relative!important;overflow:visible!important}
 .ccx-name-line{display:flex;align-items:center;gap:6px;min-width:0}
 .ccx-name-line strong{min-width:0;flex:1}
-.ccx-name-edit{width:25px;height:25px;flex:0 0 25px;border:1px solid #d8c8e7!important;border-radius:8px!important;background:#f5effb!important;color:#684995!important;font:900 11px Tahoma!important;display:grid!important;place-items:center!important;cursor:pointer!important;padding:0!important;box-shadow:none!important}
-.ccx-name-editor{display:none;grid-template-columns:minmax(130px,1fr) auto auto;gap:4px;margin-top:5px}
-.ccx-name-editor.open{display:grid}
-.ccx-name-editor input{height:32px!important;border:1px solid #d7e1e4!important;border-radius:8px!important;background:#fff!important;color:#24394b!important;padding:0 8px!important;font:800 9px Tahoma!important;min-width:0}
-.ccx-name-editor button{height:32px!important;border-radius:8px!important;padding:0 8px!important;font:900 8px Tahoma!important;cursor:pointer!important}
+.ccx-name-edit{width:24px;height:24px;flex:0 0 24px;border:1px solid #d8c8e7!important;border-radius:8px!important;background:#f5effb!important;color:#684995!important;font:900 11px Tahoma!important;display:grid!important;place-items:center!important;cursor:pointer!important;padding:0!important;box-shadow:none!important;line-height:1!important;user-select:none}
+.ccx-name-edit:hover,.ccx-name-edit:focus{background:#eee5f7!important;color:#5d4085!important;border-color:#c7b5db!important;outline:none!important}
+.ccx-name-editor{display:none;position:absolute;z-index:80;top:30px;right:0;width:min(260px,calc(100vw - 40px));grid-template-columns:minmax(0,1fr) auto auto;gap:5px;padding:7px;background:#fff;border:1px solid #d9e3e6;border-radius:11px;box-shadow:0 14px 34px rgba(32,48,63,.16)}
+.ccx-name-editor.open{display:grid!important}
+.ccx-name-editor input{height:34px!important;min-width:0!important;border:1px solid #d7e1e4!important;border-radius:8px!important;background:#fff!important;color:#24394b!important;padding:0 8px!important;font:800 9px Tahoma!important;box-shadow:none!important}
+.ccx-name-editor input:focus{outline:none!important;border-color:#c7b3dc!important;box-shadow:0 0 0 3px rgba(104,73,149,.06)!important}
+.ccx-name-editor button{height:34px!important;min-height:34px!important;border-radius:8px!important;padding:0 9px!important;font:900 8px Tahoma!important;cursor:pointer!important;box-shadow:none!important;transform:none!important}
 .ccx-name-save{background:#e8f6ef!important;color:#176e4f!important;border:1px solid #c6e3d4!important}
-.ccx-name-cancel{background:#f4f6f7!important;color:#637381!important;border:1px solid #dfe5e8!important}
+.ccx-name-cancel{background:#f3eef8!important;color:#65478d!important;border:1px solid #d9cce6!important}
 
 .ccx-notebook-backdrop{position:fixed;inset:0;background:rgba(22,34,44,.22);z-index:151;display:none}
 .ccx-notebook-backdrop.open{display:block}
@@ -585,6 +588,30 @@ body.gl-page-call_center_dashboard .ccx .ccx-filter.active b{
     height:56px!important;min-height:56px!important;
   }
 }
+
+/* Final guard: keep inline patient-name editor light and prevent row/date displacement. */
+body.gl-page-call_center_dashboard .ccx .ccx-personcell{position:relative!important;overflow:visible!important}
+body.gl-page-call_center_dashboard .ccx .ccx-name-edit{
+  background:#f5effb!important;color:#684995!important;border:1px solid #d8c8e7!important;
+  box-shadow:none!important;transform:none!important
+}
+body.gl-page-call_center_dashboard .ccx .ccx-name-editor{
+  position:absolute!important;top:30px!important;right:0!important;width:min(260px,calc(100vw - 40px))!important;
+  background:#fff!important;border:1px solid #d9e3e6!important;box-shadow:0 14px 34px rgba(32,48,63,.16)!important;
+  margin:0!important
+}
+body.gl-page-call_center_dashboard .ccx .ccx-name-editor input{
+  background:#fff!important;color:#24394b!important;border:1px solid #d7e1e4!important;box-shadow:none!important
+}
+body.gl-page-call_center_dashboard .ccx .ccx-name-editor .ccx-name-save{
+  background:#e8f6ef!important;color:#176e4f!important;border:1px solid #c6e3d4!important;box-shadow:none!important
+}
+body.gl-page-call_center_dashboard .ccx .ccx-name-editor .ccx-name-cancel{
+  background:#f3eef8!important;color:#65478d!important;border:1px solid #d9cce6!important;box-shadow:none!important
+}
+body.gl-page-call_center_dashboard .ccx .ccx-time{
+  position:relative!important;z-index:2!important;min-width:0!important
+}
 </style>
 
 <div class="ccx" lang="fa" dir="rtl" translate="no">
@@ -641,7 +668,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-filter.active b{
         {% for row in work_queue %}
         <article class="cc-work-row" data-lead-id="{{ row.lead.pk }}" data-categories="{{ row.categories }}" data-search="{{ row.lead.full_name }} {{ row.lead.phone }} {{ row.source_label }} {{ row.lead.interested_service }} {{ row.lead.group.name|default:'' }}" data-call-url="{% url 'call_center_mark_call_started' row.lead.pk %}" data-result-url="{% url 'call_center_save_call_result' row.lead.pk %}">
           <div class="ccx-personcell">
-            <div class="ccx-name-line"><strong data-lead-name>{{ row.lead.full_name }}</strong><button class="ccx-name-edit" type="button" data-name-edit data-name-url="{% url 'call_center_lead_name_update' row.lead.pk %}" title="ویرایش نام">✎</button></div>
+            <div class="ccx-name-line"><strong data-lead-name>{{ row.lead.full_name }}</strong><span class="ccx-name-edit" role="button" tabindex="0" data-name-edit data-name-url="{% url 'call_center_lead_name_update' row.lead.pk %}" title="ویرایش نام">✎</span></div>
             <div class="ccx-name-editor"><input type="text" maxlength="140" value="{{ row.lead.full_name }}" aria-label="نام مراجع"><button class="ccx-name-save" type="button">ذخیره</button><button class="ccx-name-cancel" type="button">لغو</button></div>
             <span class="ccx-phone">{{ row.lead.phone }}</span>
             <div class="ccx-meta"><span class="ccx-source {{ row.source_key }}">{{ row.source_label }}</span>{% if row.lead.group %}<span class="ccx-group">{{ row.lead.group.name }}</span>{% endif %}</div>
@@ -818,7 +845,13 @@ body.gl-page-call_center_dashboard .ccx .ccx-filter.active b{
   document.querySelectorAll('[data-name-edit]').forEach(function(edit){
     var row=edit.closest('.cc-work-row'),editor=row.querySelector('.ccx-name-editor'),input=editor.querySelector('input'),save=editor.querySelector('.ccx-name-save'),cancel=editor.querySelector('.ccx-name-cancel'),label=row.querySelector('[data-lead-name]');
     function close(){editor.classList.remove('open');input.value=(label.textContent||'').trim()}
-    edit.addEventListener('click',function(){editor.classList.add('open');input.focus();input.select()});
+    function openEditor(){
+      document.querySelectorAll('.ccx-name-editor.open').forEach(function(other){if(other!==editor)other.classList.remove('open')});
+      editor.classList.add('open');input.focus();input.select();
+    }
+    edit.addEventListener('click',function(e){e.stopPropagation();openEditor()});
+    edit.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();openEditor()}});
+    editor.addEventListener('click',function(e){e.stopPropagation()});
     cancel.addEventListener('click',close);
     input.addEventListener('keydown',function(e){if(e.key==='Escape')close();if(e.key==='Enter'){e.preventDefault();save.click()}});
     save.addEventListener('click',function(){
@@ -832,6 +865,8 @@ body.gl-page-call_center_dashboard .ccx .ccx-filter.active b{
         .finally(function(){save.disabled=false;save.textContent='ذخیره'});
     });
   });
+
+  document.addEventListener('click',function(){document.querySelectorAll('.ccx-name-editor.open').forEach(function(x){x.classList.remove('open')})});
 
   function postResult(row,result,extra){
     var fd=new FormData(),token=csrf();if(token)fd.append('csrfmiddlewaretoken',token);fd.append('result',result);
@@ -955,6 +990,20 @@ body.gl-page-call_center_dashboard .ccx .ccx-filter.active b{
   if(target){
     new MutationObserver(function(){paintCockpit(target)}).observe(target,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
   }
+})();
+
+(function(){
+  function imp(el,p,v){if(el)el.style.setProperty(p,v,'important')}
+  function paintNameEditor(){
+    document.querySelectorAll('.ccx-name-edit').forEach(function(el){imp(el,'background','#f5effb');imp(el,'color','#684995');imp(el,'border','1px solid #d8c8e7');imp(el,'box-shadow','none')});
+    document.querySelectorAll('.ccx-name-editor').forEach(function(el){imp(el,'background','#fff');imp(el,'width','260px');imp(el,'max-width','calc(100vw - 40px)')});
+    document.querySelectorAll('.ccx-name-editor input').forEach(function(el){imp(el,'background','#fff');imp(el,'color','#24394b');imp(el,'border','1px solid #d7e1e4');imp(el,'box-shadow','none')});
+    document.querySelectorAll('.ccx-name-save').forEach(function(el){imp(el,'background','#e8f6ef');imp(el,'color','#176e4f');imp(el,'border','1px solid #c6e3d4');imp(el,'box-shadow','none')});
+    document.querySelectorAll('.ccx-name-cancel').forEach(function(el){imp(el,'background','#f3eef8');imp(el,'color','#65478d');imp(el,'border','1px solid #d9cce6');imp(el,'box-shadow','none')});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paintNameEditor);else paintNameEditor();
+  setTimeout(paintNameEditor,100);
+  setTimeout(paintNameEditor,800);
 })();
 </script>
 {% endblock %}
