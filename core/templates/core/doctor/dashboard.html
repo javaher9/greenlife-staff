@@ -278,6 +278,122 @@ html,body{background:#0a1520!important}
 .doctor-api-status{display:none;position:fixed;bottom:20px;left:20px;z-index:999;background:#eaf7ef;color:#215b41;border:1px solid #8bc7a2;border-radius:14px;padding:13px 16px;font-size:13px}.doctor-api-status.error{background:#fff1f1;color:#983b3b;border-color:#e8b2b2}
 @media(max-width:1100px){.doctor-intro{flex-wrap:wrap}.doctor-quick{margin-right:0}}@media(max-width:820px){.doctor-intro{padding:14px!important}.doctor-intro-avatar{height:64px;width:64px;flex-basis:64px}.doctor-intro h1{font-size:18px}}
 
+
+/* GL clinical UI | unified airy palette; intentionally last to beat legacy dark overrides. */
+.doctor-workspace{
+ --gl-mint:#e5f8ee;--gl-lavender:#f1ebff;--gl-sky:#e9f5ff;--gl-peach:#fff2e9;
+ --d-text:#264a40!important;--d-muted:#5c766d!important;--d-line:#dce9e2!important;
+ color:#24493e!important;color-scheme:light!important;
+ background:linear-gradient(155deg,#f7fdf9 0%,#f4f9ff 52%,#fcf8ff 100%)!important
+}
+.doctor-canvas{background:transparent!important}
+.doctor-workspace .doctor-side{
+ width:210px!important;background:linear-gradient(180deg,#ffffff 0%,#f3fbf6 58%,#f6f3ff 100%)!important;
+ border-left:1px solid #d6e7dd!important;box-shadow:-6px 0 20px rgba(45,90,69,.045)!important;color:#275346!important
+}
+.doctor-workspace .doctor-canvas{margin-right:210px}
+.doctor-workspace .doctor-side a{
+ min-height:45px!important;padding:10px!important;border:1px solid transparent!important;
+ color:#315d50!important;background:transparent!important;line-height:1.7!important;
+ font-size:12px!important;font-weight:800!important;white-space:normal!important;overflow-wrap:anywhere
+}
+.doctor-workspace .doctor-side a:hover{background:#e9f8f0!important;border-color:#cce8d9!important;color:#1d7753!important}
+.doctor-workspace .doctor-side a.active{
+ background:linear-gradient(100deg,#ddf6e9,#ebe8ff)!important;
+ color:#295f4d!important;border-color:#bce2d0!important;box-shadow:0 7px 16px #2869480c!important
+}
+.doctor-workspace .doctor-side-ico{background:#e7f3ff!important;color:#4e66a3!important;text-shadow:none!important}
+.doctor-workspace .doctor-side-foot a{background:#fff!important;border-color:#dbe9e2!important;color:#376254!important}
+.doctor-workspace .doctor-brand{border-bottom-color:#e0eee6!important}
+.doctor-workspace .doctor-brand b{color:#265345!important}.doctor-workspace .doctor-brand small{color:#6c8179!important;font-size:10px!important}
+.doctor-workspace .doctor-shellbar{background:linear-gradient(105deg,#fff,#eafaf1 57%,#f1edff)!important;border-color:#d3e8df!important}
+.doctor-workspace .doctor-shell-title strong{color:#235344!important}.doctor-workspace .doctor-shell-title small{color:#5f7e72!important;font-size:12px!important}
+.doctor-workspace .doctor-shell-actions a{background:#fff!important;color:#326951!important;border-color:#cae4d8!important;font-size:12px!important}
+.doctor-workspace .doctor-shell-actions a.neon{background:#eee9ff!important;color:#6248a8!important;border-color:#d5c9ef!important}
+.doctor-workspace .doctor-branch-form label{color:#466c5e!important;font-size:12px!important}
+.doctor-workspace .doctor-branch-form select{background:#fff!important;color:#294b41!important;border-color:#cfe2d9!important;font-size:12px!important}
+.doctor-workspace .doctor-lang{background:#fff!important;border-color:#dce7e2!important}
+.doctor-workspace .doctor-lang button{color:#536e63!important;font-size:11px!important}
+.doctor-workspace .doctor-lang button.active{background:#eae5ff!important;color:#664baa!important}
+.doctor-workspace .doctor-card,.doctor-workspace .analysis-card,.doctor-workspace .care-panel,.doctor-workspace .visit-continuity{
+ background:#fff!important;border:1px solid #dce9e2!important;color:#24493e!important;
+ box-shadow:0 10px 30px rgba(35,85,60,.055)!important
+}
+.doctor-workspace .doctor-card-head{border-bottom-color:#e5eee9!important}
+.doctor-workspace .doctor-card-head h2,.doctor-workspace .doctor-card-head h3{color:#285548!important}
+.doctor-workspace .doctor-card-head small,.doctor-workspace .doctor-card small{color:#5b796e!important;font-size:12px!important}
+.doctor-workspace .appt-link{background:#fafffc!important;border-color:#dae9e1!important;color:#2d5146!important}
+.doctor-workspace .appt-link:hover{background:#eefaf3!important;border-color:#99cfb4!important}
+.doctor-workspace .appt-link.active{background:linear-gradient(120deg,#e6f8ed,#f0ecff)!important;border-color:#bdc9e9!important}
+.doctor-workspace .appt-name,.doctor-workspace .appt-meta{color:#2d5546!important;font-size:12px!important}
+.doctor-workspace .appt-owner{color:#56796b!important}
+.doctor-workspace .appt-flower{background:#eeeaff!important;color:#654bb1!important;border-color:#d6cbf3!important}
+.doctor-workspace .sum-box{border:1px solid #dce7e3!important}
+.doctor-workspace .sum-box b,.doctor-workspace .sum-box small{color:#285847!important}
+.doctor-workspace .patient-hero{background:linear-gradient(115deg,#fff,#edf9f1,#f3eeff)!important;border-color:#d7e8e0!important}
+.doctor-workspace .patient-name-row h1{color:#214f40!important}
+.doctor-workspace .patient-facts,.doctor-workspace .patient-history{color:#4f7164!important}
+.doctor-workspace .patient-photo{background:#eef8f3!important;border-color:#d0e5d8!important}
+.doctor-workspace .analysis-card{background:#fff!important}
+.doctor-workspace .analysis-top h2,.doctor-workspace .care-head h3{color:#265446!important;text-shadow:none!important}
+.doctor-workspace .analysis-top span,.doctor-workspace .care-head span{color:#5d7e70!important}
+.doctor-workspace .metric{background:linear-gradient(160deg,#fafefd,#f3fbf7)!important;border-color:#d9e9e1!important}
+.doctor-workspace .metric-title,.doctor-workspace .metric-delta{color:#58796d!important}
+.doctor-workspace .metric-value strong{color:#245845!important}
+.doctor-workspace .metric-value small{color:#5d766d!important}
+.doctor-workspace .care-head{background:linear-gradient(95deg,#eaf8f0,#f7f4ff)!important;border-bottom:1px solid #ddeae2!important}
+.doctor-workspace .history-box,.doctor-workspace .new-box{background:#fcfefd!important;border-color:#dce8e2!important;color:#2a5145!important}
+.doctor-workspace .box-title,.doctor-workspace .box-title span,.doctor-workspace .history-row strong{color:#2b5748!important;font-size:12px!important}
+.doctor-workspace .history-row{background:#f7fcf9!important;border-color:#deebe4!important}
+.doctor-workspace .history-row small,.doctor-workspace .history-empty{color:#5d7d6e!important;font-size:12px!important}
+body.gl-page-doctor_dashboard .doctor-workspace .doctor-field label,
+.doctor-workspace .doctor-field label{color:#466e5d!important;font-size:12px!important}
+body.gl-page-doctor_dashboard .doctor-workspace .doctor-field select,
+body.gl-page-doctor_dashboard .doctor-workspace .doctor-field input,
+body.gl-page-doctor_dashboard .doctor-workspace .doctor-field textarea,
+.doctor-workspace .doctor-field select,.doctor-workspace .doctor-field input,.doctor-workspace .doctor-field textarea,
+.doctor-workspace .clinical-form input{
+ background:#fff!important;border-color:#cfdfd8!important;color:#234c3e!important;font-size:13px!important;
+ min-height:44px!important;line-height:1.6!important
+}
+.doctor-workspace .visit-handoff{background:linear-gradient(105deg,#e7f8ee,#f3efff)!important;border-color:#cce6da!important}
+.doctor-workspace .visit-handoff.sent{background:linear-gradient(105deg,#def8e9,#f2fbf6)!important}
+.doctor-workspace .handoff-copy h3,.doctor-workspace .handoff-copy p{color:#346450!important}
+.doctor-workspace .handoff-chip{background:#fff!important;color:#366952!important;border-color:#cee4d7!important}
+.doctor-workspace .handoff-done{background:#def7e8!important;color:#176744!important}
+.doctor-workspace .note-item,.doctor-workspace .chat-item,.doctor-workspace .doctor-recent-row{
+ background:#fafdfb!important;border-color:#dceae2!important;color:#295447!important
+}
+.doctor-workspace .note-item p,.doctor-workspace .chat-item p,.doctor-workspace .doctor-recent-row p{color:#426b5c!important}
+.doctor-workspace .note-item small,.doctor-workspace .chat-item small{color:#607e72!important;font-size:11px!important}
+.doctor-workspace .doctor-empty-primary{background:linear-gradient(145deg,#fff,#edfaef,#f5f0ff)!important}
+.doctor-workspace .doctor-empty-primary h2{color:#2b634e!important}
+.doctor-workspace .doctor-empty-primary p{color:#59756a!important}
+.doctor-workspace .doctor-intro{background:linear-gradient(105deg,#fff,#eafaf0,#f1edff)!important}
+.doctor-workspace .doctor-intro h1{color:#255c47!important}
+.doctor-workspace .doctor-intro p{color:#527669!important}
+.doctor-flash{background:#fff!important;color:#325746!important;border-color:#b4dfc7!important;font-size:12px!important}
+.doctor-workspace .doctor-card button,.doctor-workspace .doctor-card input,.doctor-workspace .doctor-card select,
+.doctor-workspace .doctor-card textarea{max-width:100%;min-width:0}
+.doctor-workspace .doctor-card h1,.doctor-workspace .doctor-card h2,.doctor-workspace .doctor-card h3,
+.doctor-workspace .doctor-card p{overflow-wrap:anywhere}
+.doctor-workspace .visit-continuity-wrap{overflow-x:auto}
+@media(min-width:821px) and (max-width:1100px){
+ .doctor-workspace .doctor-side{width:195px!important}
+ .doctor-workspace .doctor-canvas{margin-right:195px!important}
+ .doctor-workspace .doctor-grid{grid-template-columns:minmax(225px,.75fr) minmax(0,1.8fr)!important}
+}
+@media(max-width:820px){
+ .doctor-workspace .doctor-side{display:none!important}
+ .doctor-workspace .doctor-canvas{margin-right:0!important}
+ .doctor-workspace .doctor-grid{grid-template-columns:minmax(0,1fr)!important}
+ .doctor-workspace .doctor-shell-actions{flex-wrap:wrap!important}
+ .doctor-workspace .doctor-quick{width:100%}
+}
+html[dir="ltr"] .doctor-workspace .doctor-canvas{margin-right:0!important;margin-left:210px!important}
+@media(max-width:1100px) and (min-width:821px){html[dir="ltr"] .doctor-workspace .doctor-canvas{margin-left:195px!important}}
+@media(max-width:820px){html[dir="ltr"] .doctor-workspace .doctor-canvas{margin-left:0!important}}
+
 </style>
 </head>
 <body>
