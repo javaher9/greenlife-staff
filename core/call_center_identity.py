@@ -48,7 +48,7 @@ def call_center_lead_stage(lead):
     labels = {
         'new': 'جدید',
         'contacted': 'تماس گرفته شد',
-        'appointment': 'نوبت داده شد',
+        'appointment': 'نوبت ثبت شد',
         'visited': 'مراجعه کرد',
         'won': 'فروش موفق',
         'lost': 'تمایل به پیگیری ندارد',

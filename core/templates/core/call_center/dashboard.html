@@ -910,6 +910,41 @@ body.gl-page-call_center_dashboard .ccx .ccx-transfer-mini:hover{
 @media(max-width:760px){
   body.gl-page-call_center_dashboard .ccx .ccx-transfer-mini{font-size:6.5px!important;padding:0 5px!important}
 }
+
+/* Appointment = canonical fluorescent-purple success marker. */
+body.gl-page-call_center_dashboard .ccx .ccx-filter[data-filter="appointment"]{
+  background:linear-gradient(180deg,#f2e8ff,#e7d5ff)!important;
+  color:#6527b5!important;
+  border:1px solid #b86cff!important;
+  box-shadow:0 0 0 2px rgba(184,108,255,.10),0 0 15px rgba(165,73,255,.22)!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-filter[data-filter="appointment"] b{
+  background:#8d35e8!important;
+  color:#fff!important;
+  box-shadow:0 0 10px rgba(141,53,232,.30)!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-filter[data-filter="appointment"].active{
+  background:linear-gradient(180deg,#dcaeff,#c982ff)!important;
+  color:#471070!important;
+  border-color:#9f37f2!important;
+  box-shadow:0 0 0 3px rgba(192,103,255,.15),0 0 22px rgba(153,51,255,.36)!important;
+}
+body.gl-page-call_center_dashboard .ccx .cc-work-row[data-categories~="appointment"] .ccx-last strong{
+  display:inline-flex!important;
+  align-items:center!important;
+  min-height:27px!important;
+  padding:0 8px!important;
+  border-radius:9px!important;
+  background:linear-gradient(135deg,#e9c8ff,#d397ff)!important;
+  color:#50107f!important;
+  border:1px solid #b85dff!important;
+  box-shadow:0 0 0 2px rgba(184,93,255,.10),0 0 16px rgba(160,65,255,.28)!important;
+  font-weight:1000!important;
+}
+body.gl-page-call_center_dashboard .ccx .cc-work-row[data-categories~="appointment"]{
+  border-color:#dfc5f4!important;
+  box-shadow:0 4px 18px rgba(142,67,190,.07)!important;
+}
 </style>
 
 <div class="ccx" lang="fa" dir="rtl" translate="no">
@@ -953,7 +988,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-transfer-mini:hover{
       <button class="ccx-filter" data-filter="new">جدید <b>{{ queue_category_counts.new }}</b></button>
       <button class="ccx-filter" data-filter="todaycall">باید امروز تماس بگیرم <b>{{ queue_category_counts.todaycall }}</b></button>
       <button class="ccx-filter" data-filter="followup">پیگیری <b>{{ queue_category_counts.followup }}</b></button>
-      <button class="ccx-filter" data-filter="appointment">نوبت داده شد <b>{{ queue_category_counts.appointment }}</b></button>
+      <button class="ccx-filter" data-filter="appointment">نوبت ثبت شد <b>{{ queue_category_counts.appointment }}</b></button>
       <button class="ccx-filter" data-filter="noanswer">بدون پاسخ <b>{{ queue_category_counts.noanswer }}</b></button>
       <button class="ccx-filter" data-filter="overdue">عقب‌افتاده <b>{{ queue_category_counts.overdue }}</b></button>
     </div>

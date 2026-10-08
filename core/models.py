@@ -270,7 +270,7 @@ class DuplicateLeadError(ValidationError):
 
 
 class ReferralLead(models.Model):
-    CONTACT_RESULT=[('follow_up','نیاز به پیگیری'),('appointment','نوبت داده شد'),('no_answer','پاسخ نداد'),('won','فروش موفق'),('sale_lost','فروش ناموفق'),('not_interested','تمایل ندارد')]
+    CONTACT_RESULT=[('follow_up','نیاز به پیگیری'),('appointment','نوبت ثبت شد'),('no_answer','پاسخ نداد'),('won','فروش موفق'),('sale_lost','فروش ناموفق'),('not_interested','تمایل ندارد')]
     STATUS=[
         ('new','جدید'),('contacted','تماس گرفته شد'),('appointment','نوبت ثبت شد'),
         ('visited','مراجعه کرد'),('won','فروش موفق'),('lost','ناموفق'),
