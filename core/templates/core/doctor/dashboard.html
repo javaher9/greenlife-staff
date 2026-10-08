@@ -266,6 +266,18 @@ html,body{background:#0a1520!important}
   .visit-continuity-table{font-size:10.5px!important}.visit-continuity-table th,.visit-continuity-table td{padding:11px 12px!important}
   .doctor-side a{font-size:11px!important;min-height:44px!important}.doctor-side{background:linear-gradient(180deg,#123044,#0d2535)!important}.doctor-side-foot a{background:#17384b!important;border-color:#31536a!important}
   @media (max-width:1100px){.sum-box{min-height:82px!important}.sum-box b{font-size:27px!important}.patient-mini-avatar{width:38px!important;height:38px!important;flex-basis:38px!important}}
+/* Doctor workspace refresh */ 
+.doctor-shellbar{background:linear-gradient(100deg,#fff,#f0faf5,#f3effb)!important;border-color:#dce9e4!important;box-shadow:0 10px 25px #244b3b11!important}.doctor-shell-title strong{color:#21463c!important}.doctor-shell-title small,.doctor-branch-form label{color:#55776b!important}
+.doctor-workspace .doctor-field label{font-size:12px!important}.doctor-workspace .doctor-field select,.doctor-workspace .doctor-field input{font-size:13px!important;min-height:44px!important}.doctor-workspace .appt-meta,.doctor-workspace .appt-flower,.doctor-workspace .visit-continuity-table{font-size:12px!important}.doctor-workspace .doctor-card small{font-size:11px!important}
+.doctor-intro{display:flex;gap:16px;align-items:center;padding:20px 24px!important;background:linear-gradient(100deg,#fff,#eef9f4 65%,#f4effd)!important;margin-bottom:15px;border-color:#dce9e4!important}
+.doctor-intro-avatar{width:84px;height:84px;flex:0 0 84px;border-radius:21px;background:#dff4e7;border:3px solid #fff;box-shadow:0 7px 20px #24574422;display:grid;place-items:center;color:#297957;font-size:32px;overflow:hidden}
+.doctor-intro-avatar img{height:100%;width:100%;object-fit:cover}.doctor-intro h1{font-size:23px;color:#1e503e;margin:0}.doctor-intro p{font-size:13px;color:#5d756b;margin:5px 0}.doctor-intro-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.doctor-intro-tags span{padding:6px 11px;background:#fff;border:1px solid #d9e8df;border-radius:999px;color:#32654e;font-size:11px;font-weight:800}
+.doctor-quick{display:flex;gap:8px;flex-wrap:wrap;margin-right:auto}.doctor-quick a,.doctor-quick button{border:1px solid #cee2d7;border-radius:11px;background:#fff;color:#28634d;text-decoration:none;font:800 12px inherit;padding:10px;cursor:pointer}.doctor-quick a:first-child{background:#288264;color:white}
+.doctor-empty-primary{background:linear-gradient(135deg,#fff,#f0faf5,#f8f5ff)!important}.doctor-empty-primary h2{color:#23533e!important}.doctor-empty-primary p{font-size:13px!important;color:#61786e!important}
+.doctor-zero-text{font-size:12px;color:#5e796f;line-height:1.9;margin:12px 0 0}
+.doctor-api-status{display:none;position:fixed;bottom:20px;left:20px;z-index:999;background:#eaf7ef;color:#215b41;border:1px solid #8bc7a2;border-radius:14px;padding:13px 16px;font-size:13px}.doctor-api-status.error{background:#fff1f1;color:#983b3b;border-color:#e8b2b2}
+@media(max-width:1100px){.doctor-intro{flex-wrap:wrap}.doctor-quick{margin-right:0}}@media(max-width:820px){.doctor-intro{padding:14px!important}.doctor-intro-avatar{height:64px;width:64px;flex-basis:64px}.doctor-intro h1{font-size:18px}}
+
 </style>
 </head>
 <body>
@@ -285,10 +297,15 @@ html,body{background:#0a1520!important}
     </div>
   </aside>
   <div class="doctor-canvas">
+    <section class="doctor-card doctor-intro">
+      <div class="doctor-intro-avatar">{% if doctor_profile.avatar %}<img src="{{ doctor_profile.avatar.url }}" alt="عکس پزشک">{% else %}✚{% endif %}</div>
+      <div><h1>سلام دکتر {{ doctor_name }}</h1><p>به پنل تخصصی پزشکی گرین‌لایف خوش آمدید.</p><div class="doctor-intro-tags"><span>شعبه: {{ doctor_branch|default:"انتخاب نشده" }}</span><span>{{ today|jdate_en }}</span><span>نوبت‌های امروز: {{ appointment_stats.total }}</span></div></div>
+      <div class="doctor-quick"><a href="#appointments">نوبت‌ها</a><a href="#diet-panel">پرونده و درمان</a><button type="button" data-open-live-chat>چت پرسنل</button></div>
+    </section>
     <header class="doctor-shellbar">
       <div class="doctor-shell-title">
         <span class="doctor-brand-mark" style="width:30px;height:30px;border-radius:9px;font-size:15px">✚</span>
-        <div><strong>{% gl_t 'doc.dashboard' %}</strong><small>{% if doctor_branch %}{{ doctor_branch }}{% else %}{% gl_t 'doc.visit_center_missing' %}{% endif %} · {% gl_t 'doc.header_meta' date=today|jdate count=appointment_stats.total %}</small></div>
+        <div><strong>{% gl_t 'doc.dashboard' %}</strong><small>{% if doctor_branch %}{{ doctor_branch }}{% else %}{% gl_t 'doc.visit_center_missing' %}{% endif %} · {% gl_t 'doc.header_meta' date=today|jdate_en count=appointment_stats.total %}</small></div>
       </div>
       {% if executive_doctor_mode %}
       <form method="get" class="doctor-branch-form">
@@ -343,7 +360,10 @@ html,body{background:#0a1520!important}
           <div class="sum-box"><b>{{ appointment_stats.arrived }}</b><small>{% gl_t 'doc.arrived' %}</small></div>
           <div class="sum-box"><b>{{ appointment_stats.late }}</b><small>{% gl_t 'doc.past_time' %}</small></div>
           <div class="sum-box"><b>{{ appointment_stats.cancelled }}</b><small>{% gl_t 'doc.cancelled' %}</small></div>
+          <div class="sum-box"><b>{{ appointment_stats.sent }}</b><small>ارسال به مشاور</small></div>
+          <div class="sum-box"><b>{{ appointment_stats.completed }}</b><small>تکمیل‌شده</small></div>
         </div>
+        {% if not appointment_stats.total %}<p class="doctor-zero-text">هنوز نوبتی ثبت نشده است؛ با پذیرش بیمار اطلاعات این قسمت به‌روز می‌شود.</p>{% endif %}
       </section>
     </aside>
 
@@ -382,7 +402,7 @@ html,body{background:#0a1520!important}
               {% for visit in patient_visit_rows %}
               <tr class="{% if selected_appointment and visit.appointment.id == selected_appointment.id %}current{% endif %}">
                 <td><span class="visit-no"><b>{{ visit.number }}</b>ویزیت {{ visit.number }}</span>{% if selected_appointment and visit.appointment.id == selected_appointment.id %}<br><span class="visit-current">ویزیت جاری</span>{% endif %}</td>
-                <td>{{ visit.appointment.appointment_date|jdate }}</td>
+                <td>{{ visit.appointment.appointment_date|jdate_en }}</td>
                 <td>{{ visit.diet }}</td><td>{{ visit.recommendations }}</td><td>{{ visit.prescription }}</td><td>{{ visit.treatment }}</td>
               </tr>
               {% empty %}<tr><td colspan="6">هنوز سابقه ویزیت برای این بیمار ثبت نشده است.</td></tr>{% endfor %}
@@ -419,7 +439,7 @@ html,body{background:#0a1520!important}
             <div class="box-title"><span>{% gl_t 'doc.previous' %}</span><small>{% gl_t 'doc.latest' %}</small></div>
             <div class="history-list">
               {% for item in diet_history %}
-              <div class="history-row"><div><strong>{{ item.diet_name }}</strong><small>{{ item.prescribed_at|jdate }}{% if item.recommendation_pack %} · {{ item.recommendation_pack }}{% endif %}</small></div><span class="status-pill {% if item.status == 'active' %}waiting{% else %}done{% endif %}">{{ item.get_status_display }}</span></div>
+              <div class="history-row"><div><strong>{{ item.diet_name }}</strong><small>{{ item.prescribed_at|jdate_en }}{% if item.recommendation_pack %} · {{ item.recommendation_pack }}{% endif %}</small></div><span class="status-pill {% if item.status == 'active' %}waiting{% else %}done{% endif %}">{{ item.get_status_display }}</span></div>
               {% empty %}<div class="history-empty">{% gl_t 'doc.no_diet' %}</div>{% endfor %}
             </div>
           </div>
@@ -517,7 +537,7 @@ html,body{background:#0a1520!important}
           <div class="doctor-card-head"><h3>{% gl_t 'doc.cem_notes' %}</h3><small>{% gl_t 'doc.shared_team_info' %}</small></div>
           <div class="note-list">
             {% for note in care_notes %}
-            <div class="note-item"><div><b>{{ note.get_note_type_display }} · {{ note.author.get_full_name|default:"{% gl_t 'doc.system' %}" }}</b> <small>{{ note.created_at|jdate }}</small></div><p>{{ note.body }}</p></div>
+            <div class="note-item"><div><b>{{ note.get_note_type_display }} · {{ note.author.get_full_name|default:"{% gl_t 'doc.system' %}" }}</b> <small>{{ note.created_at|jdate_en }}</small></div><p>{{ note.body }}</p></div>
             {% empty %}<div class="history-empty">{% gl_t 'doc.no_notes' %}</div>{% endfor %}
           </div>
           <form method="post" class="clinical-form">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}">{% if doctor_branch %}<input type="hidden" name="branch_id" value="{{ doctor_branch.id }}">{% endif %}<input type="hidden" name="action" value="clinical_note"><input name="body" placeholder="{% gl_t 'doc.short_note' %}"><button type="submit">{% gl_t 'common.record' %}</button></form>
@@ -526,7 +546,7 @@ html,body{background:#0a1520!important}
           <div class="doctor-card-head"><h3>{% gl_t 'doc.staff_chat_title' %}</h3><a class="chat-open" href="#" data-open-live-chat>{% gl_t 'doc.open_live_chat' %} ←</a></div>
           <div class="chat-list">
             {% for msg in direct_messages %}
-            <div class="chat-item"><div><b>{% if msg.sender_id == user.id %}{% gl_t 'msg.to' name=msg.recipient.get_full_name|default:msg.recipient.username %}{% else %}{{ msg.sender.get_full_name|default:msg.sender.username }}{% endif %}</b> <small>{{ msg.created_at|jdate }}</small></div><p>{{ msg.body|truncatechars:120 }}</p></div>
+            <div class="chat-item"><div><b>{% if msg.sender_id == user.id %}{% gl_t 'msg.to' name=msg.recipient.get_full_name|default:msg.recipient.username %}{% else %}{{ msg.sender.get_full_name|default:msg.sender.username }}{% endif %}</b> <small>{{ msg.created_at|jdate_en }}</small></div><p>{{ msg.body|truncatechars:120 }}</p></div>
             {% empty %}<div class="history-empty">{% gl_t 'doc.no_direct_messages' %}</div>{% endfor %}
           </div>
         </section>
@@ -536,7 +556,7 @@ html,body{background:#0a1520!important}
         <section class="doctor-card doctor-empty-primary">
           <div class="doctor-empty-icon">✚</div>
           <h2>{% if appointment_stats.total %}{% gl_t 'doc.select_patient' %}{% else %}{% gl_t 'doc.no_today' %}{% endif %}</h2>
-          <p>{% if appointment_stats.total %}{% gl_t 'doc.select_patient_help' %}{% else %}{% gl_t 'doc.no_today_help' branch=doctor_branch|default:'' %}{% endif %}</p>
+          <p>{% if appointment_stats.total %}برای شروع ویزیت، بیمار پذیرش‌شده را از فهرست انتخاب کنید.{% else %}با پذیرش توسط منشی، پرونده بیمار در صف ویزیت ظاهر می‌شود. در این فاصله می‌توانید پیام‌های تیم را بررسی کنید.{% endif %}</p>
           <div class="doctor-empty-actions">
             <button class="primary" type="button" data-open-live-chat>✉ {% gl_t 'doc.open_live_chat' %}</button>
             {% if executive_doctor_mode %}<a href="/my-office/">{% gl_t 'doc.back_management' %}</a>{% endif %}
@@ -546,7 +566,7 @@ html,body{background:#0a1520!important}
           <div class="doctor-card-head"><h3>{% gl_t 'doc.latest_staff_messages' %}</h3><button type="button" class="chat-open" data-open-live-chat style="border:0;background:transparent;cursor:pointer">{% gl_t 'doc.open_live_chat' %} ←</button></div>
           <div class="doctor-recent-list">
             {% for msg in direct_messages %}
-            <div class="doctor-recent-row"><b>{% if msg.sender_id == user.id %}{% gl_t 'msg.to' name=msg.recipient.get_full_name|default:msg.recipient.username %}{% else %}{{ msg.sender.get_full_name|default:msg.sender.username }}{% endif %}</b><p>{{ msg.body|truncatechars:105 }}</p><small>{{ msg.created_at|jdatetime }}</small></div>
+            <div class="doctor-recent-row"><b>{% if msg.sender_id == user.id %}{% gl_t 'msg.to' name=msg.recipient.get_full_name|default:msg.recipient.username %}{% else %}{{ msg.sender.get_full_name|default:msg.sender.username }}{% endif %}</b><p>{{ msg.body|truncatechars:105 }}</p><small>{{ msg.created_at|jdatetime_en }}</small></div>
             {% empty %}<div class="history-empty">{% gl_t 'doc.no_direct_messages' %}</div>{% endfor %}
           </div>
         </section>
@@ -556,6 +576,21 @@ html,body{background:#0a1520!important}
     </div>
   </div>
 </div>
+<div id="doctor-api-status" class="doctor-api-status" role="status" aria-live="polite"></div>
+<script>
+(function(){
+ const map={'۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9','٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9'};
+ function latin(n){if(n.nodeType===3){n.nodeValue=n.nodeValue.replace(/[۰-۹٠-٩]/g,c=>map[c]);return}if(n.nodeType!==1||['SCRIPT','STYLE','TEXTAREA'].includes(n.tagName))return;Array.from(n.childNodes).forEach(latin)}
+ latin(document.querySelector('.doctor-workspace'));
+ const status=document.getElementById('doctor-api-status');
+ document.querySelectorAll('.doctor-workspace form.new-box,.doctor-workspace form.clinical-form,.doctor-workspace .handoff-actions form').forEach(form=>form.addEventListener('submit',async e=>{
+  e.preventDefault();const button=form.querySelector('[type=submit]');if(button)button.disabled=true;
+  try{const response=await fetch('/api/doctor/actions/',{method:'POST',credentials:'same-origin',headers:{Accept:'application/json','X-Requested-With':'XMLHttpRequest'},body:new FormData(form)});const result=await response.json();if(!response.ok||!result.ok){status.className='doctor-api-status error';status.textContent=(result.messages||[]).map(m=>m.text).join(' ')||'ثبت انجام نشد';status.style.display='block';return}location.assign(result.redirect||location.href)}
+  catch(err){status.className='doctor-api-status error';status.textContent='خطای ارتباط؛ لطفاً مجدداً تلاش کنید.';status.style.display='block'}
+  finally{if(button)button.disabled=false}
+ }));
+})();
+</script>
 {% include "core/_live_chat_widget.html" %}
 </body>
 </html>

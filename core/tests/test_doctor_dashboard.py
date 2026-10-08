@@ -288,3 +288,46 @@ class DoctorDashboardTests(TestCase):
         body=workspace.content.decode('utf-8')
         self.assertIn('مریم حسینی',body)
         self.assertIn('Double Define',body)
+
+    def test_doctor_rejects_missing_or_unknown_patient_id(self):
+        before=PatientDeviceProgram.objects.count()
+        for appointment_id in ('', '99999999'):
+            response=self.client.post(reverse('doctor_action_api'), {
+                'action':'device', 'appointment_id':appointment_id,
+                'device_name':'Double Define','sessions':'4',
+            })
+            self.assertEqual(response.status_code,400)
+            self.assertFalse(response.json()['ok'])
+        self.assertEqual(PatientDeviceProgram.objects.count(),before)
+
+    def test_doctor_daily_stats_count_booked_and_cancelled(self):
+        VisitAppointment.objects.create(
+            branch=self.branch, full_name='لغو شده',phone='09121239991',
+            appointment_date=timezone.localdate(),appointment_time=time(11,0),
+            status='cancelled',source='receptionist',
+        )
+        VisitAppointment.objects.create(
+            branch=self.branch, full_name='رزرو جدید',phone='09121239992',
+            appointment_date=timezone.localdate(),appointment_time=time(11,15),
+            status='booked',source='receptionist',
+        )
+        response=self.client.get(reverse('doctor_dashboard'))
+        stats=response.context['appointment_stats']
+        self.assertEqual(stats['total'],2)
+        self.assertEqual(stats['arrived'],1)
+        self.assertEqual(stats['cancelled'],1)
+
+    def test_doctor_api_creates_plan_and_keeps_handoff_visible(self):
+        response=self.client.post(reverse('doctor_action_api'), {
+            'action':'device','appointment_id':self.appointment.pk,
+            'device_name':'Double Define','sessions':'4',
+        })
+        self.assertEqual(response.status_code,200)
+        self.assertTrue(response.json()['ok'])
+        finish=self.client.post(reverse('doctor_action_api'),{
+            'action':'send_to_consultant','appointment_id':self.appointment.pk,
+        })
+        self.assertEqual(finish.status_code,200)
+        response=self.client.get(reverse('doctor_dashboard'))
+        self.assertIn(self.appointment.pk,[x['item'].pk for x in response.context['appointment_rows']])
+        self.assertEqual(response.context['appointment_stats']['sent'],1)

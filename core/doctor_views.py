@@ -2,12 +2,15 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
+from django.contrib.messages import get_messages
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.shortcuts import redirect, render
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 from django.urls import reverse
 from django.utils import timezone
 
@@ -244,7 +247,9 @@ def _selected_appointment(request, appointments):
         for item in appointments:
             if item.pk==int(raw):
                 return item
-    arrived=next((item for item in appointments if item.status=='arrived'),None)
+    if request.method=='POST':
+        return None  # Never fall back to a different patient when writing clinical data.
+    arrived=next((item for item in appointments if item.status=='arrived' and item.care_stage=='doctor'),None)
     waiting=next((item for item in appointments if item.status=='booked'),None)
     return arrived or waiting or (appointments[0] if appointments else None)
 
@@ -289,9 +294,9 @@ def doctor_dashboard(request):
             .filter(
                 branch=branch,
                 appointment_date=today,
-                status='arrived',
-                care_stage='doctor',
             )
+            .filter(Q(status='arrived',care_stage='doctor')|Q(doctor_completed_by=request.user))
+            .exclude(status='cancelled')
             .select_related('lead','lead__assigned_to__user','lead__first_appointment_by','branch')
             .order_by('appointment_time','id')
         )
@@ -300,7 +305,7 @@ def doctor_dashboard(request):
     patient=_ensure_patient(selected,request.user) if selected else None
 
     if request.method=='POST':
-        if not selected or not patient:
+        if not selected or not patient or selected.status not in ('arrived','completed') or selected.care_stage!='doctor':
             messages.error(request,'ابتدا یکی از بیماران امروز را انتخاب کنید.')
             return _redirect_to_appointment(None,branch.pk if branch else None)
 
@@ -310,6 +315,9 @@ def doctor_dashboard(request):
                 messages.error(request,'بیمار باید ابتدا توسط منشی پذیرش شود و در صف پزشک باشد.')
                 return _redirect_to_appointment(None,branch.pk if branch else None)
 
+            if not (selected.diet_programs.exists() or selected.device_programs.exists() or selected.lipolytic_programs.exists() or selected.care_notes.exists()):
+                messages.error(request,'ابتدا حداقل یک برنامه یا یادداشت پزشکی ثبت کنید.')
+                return _redirect_to_appointment(selected.pk,branch.pk if branch else None)
             selected.care_stage='consultant'
             selected.doctor_completed_at=timezone.now()
             selected.doctor_completed_by=request.user
@@ -417,11 +425,14 @@ def doctor_dashboard(request):
             return _redirect_to_appointment(selected.pk,branch.pk if branch else None)
 
     rows=[_appointment_row(item,now) for item in appointments]
+    all_today=VisitAppointment.objects.filter(branch=branch,appointment_date=today) if branch else VisitAppointment.objects.none()
     stats={
-        'total':len(appointments),
-        'arrived':sum(1 for item in appointments if item.status in ('arrived','completed')),
-        'late':sum(1 for row in rows if row['status_tone']=='late'),
-        'cancelled':sum(1 for item in appointments if item.status=='cancelled'),
+        'total':all_today.exclude(status='cancelled').count(),
+        'arrived':all_today.filter(status='arrived').count(),
+        'late':sum(1 for a in all_today.filter(status='booked') if timezone.make_aware(datetime.combine(a.appointment_date,a.appointment_time),timezone.get_current_timezone())<now),
+        'cancelled':all_today.filter(status='cancelled').count(),
+        'sent':all_today.filter(doctor_completed_by=request.user,care_stage__in=('consultant','payment','closed')).count(),
+        'completed':all_today.filter(Q(status='completed')|Q(care_stage='closed')).distinct().count(),
     }
 
     analyses=[]
@@ -439,8 +450,9 @@ def doctor_dashboard(request):
             sibling_ids=[patient.pk]
         analyses=list(
             BodyAnalysisRecord.objects.filter(patient_id__in=sibling_ids)
-            .order_by('recorded_at','id')[:36]
+            .order_by('-recorded_at','-id')[:36]
         )
+        analyses.reverse()
         metric_cards=[
             _metric_card(analyses,'weight_kg','وزن','kg','violet'),
             _metric_card(analyses,'visceral_fat','چربی احشایی','','rose'),
@@ -519,6 +531,7 @@ def doctor_dashboard(request):
 
     return render(request,'core/doctor/dashboard.html',{
         'doctor_profile':profile,
+        'doctor_name':request.user.get_full_name() or request.user.username,
         'doctor_branch':branch,
         'doctor_branch_choices':branch_choices,
         'executive_doctor_mode':executive_doctor,
@@ -549,3 +562,15 @@ def doctor_dashboard(request):
         'selected_visit_number':selected_visit_number,
         'patient_visit_rows':patient_visit_rows,
     })
+
+
+@_doctor_required
+@require_POST
+def doctor_action_api(request):
+    """REST JSON responses for doctor actions, sharing server-side clinical validation."""
+    response=doctor_dashboard(request)
+    feedback=[{'level':m.level_tag,'text':str(m)} for m in get_messages(request)]
+    ok=not any(m['level']=='error' for m in feedback)
+    if response.status_code not in (200,302):
+        return JsonResponse({'ok':False,'messages':feedback},status=response.status_code)
+    return JsonResponse({'ok':ok,'messages':feedback,'redirect':response.get('Location',reverse('doctor_dashboard'))},status=200 if ok else 400)
