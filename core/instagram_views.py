@@ -63,6 +63,19 @@ class InstagramLeadForm(forms.Form):
 
 
 class InstagramManualLeadForm(InstagramLeadForm):
+    # Required for every staff user, including admins/superusers. Keeping this
+    # validation in the form prevents bypassing the requirement by posting
+    # directly to the endpoint.
+    interested_service = forms.CharField(
+        label='توضیحات',
+        max_length=160,
+        required=True,
+        error_messages={'required': 'وارد کردن توضیحات برای ثبت لید الزامی است.'},
+        widget=forms.Textarea(attrs={
+            'rows': 3,
+            'placeholder': 'توضیحی راجع به قد، وزن، محل سکونت، اندام چاق یا سابقه دنبال کردن ما بدهید',
+        }),
+    )
     instagram_page = forms.ChoiceField(
         label='پیج مبدا',
         choices=tuple(INSTAGRAM_PAGE_SOURCES.items()),
