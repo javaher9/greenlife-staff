@@ -24,7 +24,7 @@ from .forms import (
     ReferralMemberForm, ReferralSaleForm, CallCenterLeadForm, CallCenterLeadCreateForm, CallCenterDirectLeadForm,
 )
 from .models import Attendance, AuditLog, CallCenterLeadGroup, ConsultationPlan, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification, VisitAppointment, InternalMessage, DuplicateLeadError, PatientProfile, PersonalNotebookEntry
-from .call_center_identity import FlowerLeadProxy
+from .call_center_identity import FlowerLeadProxy, call_center_display_name
 from .jalali import format_jalali, parse_jalali
 # Production rebuild marker after the previous deployment hit the workflow timeout.
 
@@ -1106,6 +1106,13 @@ def call_center_dashboard(request):
         .select_related('profile','profile__branch')
         .order_by('profile__branch__name','first_name','last_name','username')
     )
+    transfer_operators=[
+        {'id':profile.pk,'name':call_center_display_name(profile)}
+        for profile in EmployeeProfile.objects.filter(
+            role='call_center',is_active=True,user__is_active=True,
+        ).exclude(pk=operator.pk).select_related('user')
+    ]
+    transfer_operators.sort(key=lambda item:item['name'])
     return render(request,'core/call_center/dashboard.html',{
         'leads':[FlowerLeadProxy(lead) for lead in leads],'statuses':ReferralLead.STATUS,'status_filter':status,
         'group_filter':group_filter,'groups':groups,
@@ -1118,6 +1125,7 @@ def call_center_dashboard(request):
         'recent_internal_messages':recent_internal_messages,
         'internal_unread':internal_unread,
         'chat_contacts':chat_contacts,
+        'transfer_operators':transfer_operators,
         'routing_policy_notice':routing_policy_notice,
         'cockpit':cockpit,'work_queue':work_queue,'next_queue':next_queue,
         'queue_category_counts':category_counts,'upcoming_followups':upcoming_followups,
@@ -1235,6 +1243,86 @@ def call_center_notebook(request):
         return JsonResponse({'ok':True,'deleted':True})
 
     return JsonResponse({'ok':False,'error':'اقدام نامعتبر است.'},status=400)
+
+
+@call_center_required
+def call_center_lead_transfer(request,pk):
+    """Manual temporary reassignment between active call-center flowers."""
+    if request.method!='POST':
+        return JsonResponse({'ok':False,'error':'method not allowed'},status=405)
+
+    current=request.user.profile
+    lead=get_object_or_404(
+        ReferralLead.objects.select_related('assigned_to__user','group'),
+        pk=pk,assigned_to=current,
+    )
+    if lead.status in ('won','lost'):
+        return JsonResponse({'ok':False,'error':'لید بسته‌شده قابل انتقال نیست.'},status=400)
+
+    target_id=(request.POST.get('target') or '').strip()
+    if not target_id.isdigit():
+        return JsonResponse({'ok':False,'error':'گل مقصد را انتخاب کنید.'},status=400)
+
+    target=get_object_or_404(
+        EmployeeProfile.objects.select_related('user'),
+        pk=int(target_id),role='call_center',is_active=True,user__is_active=True,
+    )
+    if target.pk==current.pk:
+        return JsonResponse({'ok':False,'error':'این لید همین حالا در صف شماست.'},status=400)
+
+    old_group=lead.group
+    group_name=(old_group.name if old_group else 'شبکه فروش پرسنل')
+    target_group,_=CallCenterLeadGroup.objects.get_or_create(
+        owner=target,name=group_name,
+        defaults={'is_default':bool(old_group and old_group.is_default)},
+    )
+    if group_name=='شبکه فروش پرسنل' and not target_group.is_default:
+        target_group.is_default=True
+        target_group.save(update_fields=['is_default'])
+
+    old_name=call_center_display_name(current)
+    target_name=call_center_display_name(target)
+    now=timezone.now()
+
+    with transaction.atomic():
+        lead.assigned_to=target
+        lead.assigned_at=now
+        lead.group=target_group
+        lead.save(update_fields=['assigned_to','assigned_at','group','updated_at'])
+
+        AuditLog.objects.create(
+            actor=request.user,
+            action='lead_transfer',
+            path=request.path,
+            method='POST',
+            object_type='ReferralLead',
+            object_id=str(lead.pk),
+            summary='انتقال موقت لید به گل دیگر',
+            metadata={
+                'lead_name':lead.full_name,
+                'phone':lead.phone,
+                'from_profile_id':current.pk,
+                'from_flower':old_name,
+                'to_profile_id':target.pk,
+                'to_flower':target_name,
+                'first_appointment_by_id':lead.first_appointment_by_id,
+                'group':target_group.name,
+            },
+        )
+        StaffNotification.objects.create(
+            user=target.user,
+            title='لید منتقل‌شده از گل دیگر',
+            message=f'{lead.full_name} از {old_name} به صف شما منتقل شد.',
+            notification_type='call_center_lead',
+            related_date=timezone.localdate(),
+        )
+
+    return JsonResponse({
+        'ok':True,
+        'message':f'لید به {target_name} منتقل شد.',
+        'target_name':target_name,
+        'lead_id':lead.pk,
+    },json_dumps_params={'ensure_ascii':False})
 
 
 @call_center_required

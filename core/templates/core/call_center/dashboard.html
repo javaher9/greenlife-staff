@@ -848,6 +848,68 @@ body.gl-page-call_center_dashboard .ccx .ccx-more{display:none!important}
   }
   body.gl-page-call_center_dashboard .ccx .ccx-time b{text-align:right!important}
 }
+
+/* Compact temporary lead transfer between call-center flowers. */
+body.gl-page-call_center_dashboard .ccx .ccx-name-line{
+  flex-wrap:nowrap!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-transfer-mini{
+  flex:0 0 auto!important;
+  height:22px!important;
+  min-height:22px!important;
+  padding:0 6px!important;
+  border-radius:7px!important;
+  background:#eef5fb!important;
+  color:#426b98!important;
+  border:1px solid #d2e0ee!important;
+  box-shadow:none!important;
+  font:900 7px Tahoma!important;
+  white-space:nowrap!important;
+  cursor:pointer!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-transfer-mini:hover{
+  background:#e6f0f9!important;
+  border-color:#bfd3e7!important;
+}
+.ccx-transfer-backdrop{position:fixed;inset:0;z-index:165;background:rgba(22,35,45,.22);display:none}
+.ccx-transfer-backdrop.open{display:block}
+.ccx-transfer-modal{
+  position:fixed;z-index:166;left:50%;top:50%;width:min(390px,92vw);
+  transform:translate(-50%,-46%) scale(.98);opacity:0;pointer-events:none;transition:.16s;
+  background:#fff;color:#263e4f;border:1px solid #dce5e8;border-radius:16px;
+  box-shadow:0 24px 64px rgba(22,36,48,.19);overflow:hidden
+}
+.ccx-transfer-modal.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+.ccx-transfer-head{
+  height:auto!important;min-height:60px!important;margin:0!important;padding:12px 14px!important;
+  display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;
+  background:linear-gradient(135deg,#f2f7fb,#f8f3fb)!important;border-bottom:1px solid #e3eaed!important
+}
+.ccx-transfer-head strong{font-size:12px;color:#263e4f}.ccx-transfer-head small{display:block;margin-top:3px;color:#7c8993;font-size:7.5px}
+.ccx-transfer-close{
+  width:31px!important;height:31px!important;min-height:31px!important;padding:0!important;
+  border-radius:9px!important;background:#f4eef9!important;color:#66498a!important;
+  border:1px solid #dacbe7!important;box-shadow:none!important;font-size:17px!important;cursor:pointer!important
+}
+.ccx-transfer-body{padding:13px}
+.ccx-transfer-field{display:grid;gap:6px;color:#526879;font-size:8px;font-weight:900}
+.ccx-transfer-field select{
+  width:100%!important;height:40px!important;padding:0 10px!important;border-radius:10px!important;
+  background:#eef8f3!important;color:#24684e!important;border:1.3px solid #cee5d9!important;
+  box-shadow:none!important;font:800 9px Tahoma!important;color-scheme:light!important
+}
+.ccx-transfer-note{margin-top:8px;padding:8px 9px;border-radius:9px;background:#fff8e9;color:#7b642e;border:1px solid #eee0bb;font-size:7.5px;line-height:1.8}
+.ccx-transfer-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:11px}
+.ccx-transfer-save,.ccx-transfer-cancel{
+  min-height:38px!important;border-radius:9px!important;font:900 8.5px Tahoma!important;cursor:pointer!important;box-shadow:none!important
+}
+.ccx-transfer-save{background:#e7f3fb!important;color:#3e6c9e!important;border:1px solid #cee0ef!important}
+.ccx-transfer-cancel{background:#f4f6f7!important;color:#687884!important;border:1px solid #dde4e7!important}
+.ccx-transfer-status{min-height:17px;margin-top:7px;text-align:center;color:#287355;font-size:8px;font-weight:900}
+.ccx-transfer-status.error{color:#a33f58}
+@media(max-width:760px){
+  body.gl-page-call_center_dashboard .ccx .ccx-transfer-mini{font-size:6.5px!important;padding:0 5px!important}
+}
 </style>
 
 <div class="ccx" lang="fa" dir="rtl" translate="no">
@@ -904,7 +966,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-more{display:none!important}
         {% for row in work_queue %}
         <article class="cc-work-row" data-lead-id="{{ row.lead.pk }}" data-categories="{{ row.categories }}" data-search="{{ row.lead.full_name }} {{ row.lead.phone }} {{ row.source_label }} {{ row.lead.interested_service }} {{ row.lead.group.name|default:'' }}" data-call-url="{% url 'call_center_mark_call_started' row.lead.pk %}" data-result-url="{% url 'call_center_save_call_result' row.lead.pk %}">
           <div class="ccx-personcell">
-            <div class="ccx-name-line"><strong data-lead-name data-name-label role="button" tabindex="0" title="برای ویرایش نام کلیک کنید">{{ row.lead.full_name }}</strong><span class="ccx-name-edit" role="button" tabindex="0" data-name-edit data-name-url="{% url 'call_center_lead_name_update' row.lead.pk %}" title="ویرایش نام">✎</span></div>
+            <div class="ccx-name-line"><strong data-lead-name data-name-label role="button" tabindex="0" title="برای ویرایش نام کلیک کنید">{{ row.lead.full_name }}</strong><span class="ccx-name-edit" role="button" tabindex="0" data-name-edit data-name-url="{% url 'call_center_lead_name_update' row.lead.pk %}" title="ویرایش نام">✎</span>{% if transfer_operators %}<button type="button" class="ccx-transfer-mini" data-transfer-open data-transfer-url="{% url 'call_center_lead_transfer' row.lead.pk %}" data-transfer-name="{{ row.lead.full_name|escape }}">⇄ انتقال گل</button>{% endif %}</div>
             <div class="ccx-name-editor"><input type="text" maxlength="140" value="{{ row.lead.full_name }}" aria-label="نام مراجع"><button class="ccx-name-save" type="button">ذخیره</button><button class="ccx-name-cancel" type="button">لغو</button></div>
             <span class="ccx-phone">{{ row.lead.phone }}</span>
             <div class="ccx-meta"><span class="ccx-source {{ row.source_key }}">{{ row.source_label }}</span>{% if row.lead.group %}<span class="ccx-group">{{ row.lead.group.name }}</span>{% endif %}</div>
@@ -1025,10 +1087,56 @@ body.gl-page-call_center_dashboard .ccx .ccx-more{display:none!important}
   <div class="ccx-note-list" id="ccxNoteList"><div class="ccx-note-empty">در حال بارگذاری…</div></div>
 </aside>
 
+{% if transfer_operators %}
+<div class="ccx-transfer-backdrop" data-transfer-close></div>
+<aside class="ccx-transfer-modal" id="ccxTransferModal" aria-hidden="true">
+  <header class="ccx-transfer-head"><div><strong id="ccxTransferTitle">انتقال به گل دیگر</strong><small>فقط مسئول فعلی صف عوض می‌شود</small></div><button type="button" class="ccx-transfer-close" data-transfer-close>×</button></header>
+  <div class="ccx-transfer-body">
+    <label class="ccx-transfer-field">گل مقصد
+      <select id="ccxTransferTarget"><option value="">انتخاب گل…</option>{% for person in transfer_operators %}<option value="{{ person.id }}">{{ person.name }}</option>{% endfor %}</select>
+    </label>
+    <div class="ccx-transfer-note">این انتقال موقت است؛ سابقه لید و اولین ثبت‌کننده نوبت تغییر نمی‌کند.</div>
+    <div class="ccx-transfer-actions"><button type="button" class="ccx-transfer-save" id="ccxTransferSave">انتقال لید</button><button type="button" class="ccx-transfer-cancel" data-transfer-close>انصراف</button></div>
+    <div class="ccx-transfer-status" id="ccxTransferStatus"></div>
+  </div>
+</aside>
+{% endif %}
+
 <script>
 (function(){
   function csrf(){var x=document.querySelector('input[name="csrfmiddlewaretoken"]');if(x&&x.value)return x.value;var m=document.cookie.match(/(?:^|;\s*)(?:csrftoken|greenlife_lan_csrftoken)=([^;]+)/);return m?decodeURIComponent(m[1]):''}
   var queue=document.getElementById('ccxQueue'),search=document.getElementById('ccxSearch'),filters=[].slice.call(document.querySelectorAll('.ccx-filter')),activeFilter='all';
+  var transferModal=document.getElementById('ccxTransferModal'),transferBack=document.querySelector('.ccx-transfer-backdrop'),transferTarget=document.getElementById('ccxTransferTarget'),transferTitle=document.getElementById('ccxTransferTitle'),transferSave=document.getElementById('ccxTransferSave'),transferStatus=document.getElementById('ccxTransferStatus'),transferCurrent=null,transferBusy=false;
+  function openTransfer(btn){
+    if(!transferModal)return;
+    transferCurrent=btn;transferTarget.value='';transferStatus.textContent='';transferStatus.classList.remove('error');
+    transferTitle.textContent='انتقال '+(btn.dataset.transferName||'لید')+' به گل دیگر';
+    transferModal.classList.add('open');transferBack.classList.add('open');transferModal.setAttribute('aria-hidden','false');
+  }
+  function closeTransfer(){
+    if(transferBusy||!transferModal)return;
+    transferModal.classList.remove('open');transferBack.classList.remove('open');transferModal.setAttribute('aria-hidden','true');transferCurrent=null;
+  }
+  document.querySelectorAll('[data-transfer-open]').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();openTransfer(btn)})});
+  document.querySelectorAll('[data-transfer-close]').forEach(function(btn){btn.addEventListener('click',closeTransfer)});
+  if(transferSave)transferSave.addEventListener('click',function(){
+    if(!transferCurrent||transferBusy)return;
+    if(!transferTarget.value){transferStatus.textContent='گل مقصد را انتخاب کنید.';transferStatus.classList.add('error');return}
+    var fd=new FormData(),token=csrf();if(token)fd.append('csrfmiddlewaretoken',token);fd.append('target',transferTarget.value);
+    transferBusy=true;transferSave.disabled=true;transferSave.textContent='در حال انتقال…';transferStatus.textContent='';transferStatus.classList.remove('error');
+    fetch(transferCurrent.dataset.transferUrl,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}})
+      .then(function(r){return r.json().then(function(d){if(!r.ok||!d.ok)throw new Error(d.error||'انتقال انجام نشد');return d})})
+      .then(function(d){
+        transferStatus.textContent=d.message||'منتقل شد ✓';
+        var row=transferCurrent.closest('.cc-work-row');
+        if(row){row.style.transition='opacity .18s,transform .18s';row.style.opacity='0';row.style.transform='translateX(-10px)'}
+        setTimeout(function(){window.location.reload()},420);
+      })
+      .catch(function(e){transferStatus.textContent=e.message||'خطا در انتقال';transferStatus.classList.add('error');transferBusy=false;transferSave.disabled=false;transferSave.textContent='انتقال لید'});
+  });
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeTransfer()});
+  if(transferModal&&transferModal.parentNode!==document.body)document.body.appendChild(transferModal);
+  if(transferBack&&transferBack.parentNode!==document.body)document.body.appendChild(transferBack);
   function rows(){return queue?[].slice.call(queue.querySelectorAll('.cc-work-row')):[]}
   function visibleRows(){return rows().filter(function(r){return r.style.display!=='none'&&r.dataset.done!=='1'})}
   function applyFilters(){
@@ -1246,6 +1354,18 @@ body.gl-page-call_center_dashboard .ccx .ccx-more{display:none!important}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paintNameEditor);else paintNameEditor();
   setTimeout(paintNameEditor,100);
   setTimeout(paintNameEditor,800);
+})();
+
+(function(){
+  function imp(el,p,v){if(el)el.style.setProperty(p,v,'important')}
+  function paintTransfer(){
+    document.querySelectorAll('.ccx-transfer-mini').forEach(function(el){imp(el,'background','#eef5fb');imp(el,'color','#426b98');imp(el,'border','1px solid #d2e0ee');imp(el,'box-shadow','none')});
+    document.querySelectorAll('.ccx-transfer-modal select').forEach(function(el){imp(el,'background','#eef8f3');imp(el,'color','#24684e');imp(el,'border','1.3px solid #cee5d9');imp(el,'box-shadow','none')});
+    document.querySelectorAll('.ccx-transfer-save').forEach(function(el){imp(el,'background','#e7f3fb');imp(el,'color','#3e6c9e');imp(el,'border','1px solid #cee0ef');imp(el,'box-shadow','none')});
+    document.querySelectorAll('.ccx-transfer-cancel,.ccx-transfer-close').forEach(function(el){imp(el,'background','#f4f1f8');imp(el,'color','#66517f');imp(el,'box-shadow','none')});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paintTransfer);else paintTransfer();
+  setTimeout(paintTransfer,100);setTimeout(paintTransfer,700);
 })();
 </script>
 {% endblock %}

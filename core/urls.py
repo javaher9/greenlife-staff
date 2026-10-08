@@ -45,6 +45,7 @@ path('call-center/groups/new/',referral_views.call_center_group_create,name='cal
 path('call-center/leads/new/',referral_views.call_center_lead_create,name='call_center_lead_create'),path('call-center/leads/direct/new/',referral_views.call_center_direct_lead_create,name='call_center_direct_lead_create'),
 path('call-center/leads/<int:pk>/',referral_views.call_center_lead,name='call_center_lead'),
 path('call-center/leads/<int:pk>/name/',referral_views.call_center_lead_name_update,name='call_center_lead_name_update'),
+path('call-center/leads/<int:pk>/transfer/',referral_views.call_center_lead_transfer,name='call_center_lead_transfer'),
 path('call-center/leads/<int:pk>/appointment/',appointment_views.call_center_appointment_create,name='call_center_appointment_create'),
 path('call-center/leads/<int:pk>/appointment/slot/',appointment_views.call_center_appointment_slot_create,name='call_center_appointment_slot_create'),
 path('appointments/',appointment_views.appointment_schedule,name='appointment_schedule'),
