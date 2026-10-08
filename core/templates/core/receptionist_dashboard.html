@@ -80,6 +80,71 @@
     @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.flow-strip{grid-template-columns:repeat(2,1fr)}.bottom-grid{grid-template-columns:1fr}.grid-main{grid-template-columns:1fr}.side{width:210px}.shell{grid-template-columns:minmax(0,1fr) 210px}html[dir="ltr"] .shell{grid-template-columns:210px minmax(0,1fr)}}
   
     .patient-name-cell{display:flex;align-items:center;gap:9px;min-width:0}.patient-mini-avatar{width:34px;height:34px;flex:0 0 34px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:linear-gradient(135deg,#eaf7f1,#f0ebfb);border:2px solid #fff;box-shadow:0 0 0 1px #dce6e3;color:#684fad;font-size:11px;font-weight:900}.patient-mini-avatar img{width:100%;height:100%;object-fit:cover}
+
+/* Clinical light system — receptionist visual and text-flow consistency. */
+:root{--bg:#f7fcf9;--card:#fff;--line:#dcebe3;--ink:#254b3e;--muted:#567669;--purple:#715ac0;--purple-soft:#f0eaff;--green:#269c6a;--green-soft:#e1f8eb;--amber:#b47722;--amber-soft:#fff3dc;--red:#c45d73;--red-soft:#fff0f2;--shadow:0 11px 26px rgba(39,95,63,.06)}
+html,body{background:#f7fcf9!important;color:#274e40!important;color-scheme:light}
+.side{background:linear-gradient(180deg,#fff,#f5fcf8)!important;border-color:#dcebe1!important}
+.side .nav a{color:#355f4f!important}
+.side .nav a.active{background:linear-gradient(110deg,#e4f8ed,#eeeaff)!important;color:#436a57!important}
+.side .nav a:hover{background:#eaf9f1!important}
+.top{background:linear-gradient(105deg,#fff,#ecfaf2,#f2efff)!important;border:1px solid #d8e9df!important}
+.hello h1{color:#255b44!important;font-size:21px!important}
+.hello p{color:#56776a!important;font-size:12px!important}
+.userbox strong{color:#285840!important;font-size:14px!important}
+.userbox small{font-size:12px!important;color:#58776a!important}
+.search{background:#fff!important;border-color:#d1e5d9!important}
+.search input{color:#2c5847!important;font-size:13px!important;min-width:0!important}
+.search input::placeholder{color:#668575!important}
+.kpi{background:linear-gradient(145deg,#fff,#f3fbf7)!important;border-color:#dcece2!important}
+.kpi:nth-child(2){background:linear-gradient(145deg,#fff,#f1edff)!important}
+.kpi:nth-child(3){background:linear-gradient(145deg,#fff,#eaf5ff)!important}
+.kpi:nth-child(4){background:linear-gradient(145deg,#fff,#fff3e8)!important}
+.kpi-copy small,.kpi-copy p{color:#547365!important;font-size:12px!important}
+.kpi-copy strong{color:#24583f!important}
+.card,.flow-step{border-color:#dcebe2!important;background:#fff!important;color:#285040!important}
+.flow-step span{font-size:12px!important;color:#4f7061!important}
+.card-head{background:linear-gradient(100deg,#f2fbf6,#fbf9ff)!important;border-color:#e0eee5!important;flex-wrap:wrap}
+.card-head h2{color:#245a44!important;font-size:16px!important;line-height:1.7}
+.card-head a,.card-head span{font-size:12px!important;color:#4c7564!important}
+.table-head{background:#eef9f3!important;color:#3c6855!important;font-size:12px!important}
+.appointment-row{font-size:12px!important;color:#284f40!important}
+.appointment-row>*,.table-head>*{min-width:0;overflow-wrap:anywhere}
+.payment-row{background:#fbfffc!important;border-color:#dcebe2!important;min-width:0}
+.payment-row strong{font-size:12px!important;color:#2a5a47!important}
+.payment-row small,.urgent-row small,.msg small{font-size:11px!important;color:#59776a!important}
+.urgent-row strong,.msg strong,.insight strong{font-size:12px!important;color:#325844!important}
+.msg p,.insight p{font-size:12px!important;color:#567467!important}
+.selected-empty,.empty-mini,.empty-big p{font-size:12px!important;color:#5a786b!important}
+.rec-lang{background:#fff!important;border-color:#d6e7df!important}
+.rec-lang button{color:#436e58!important;font-size:10px!important}
+.rec-lang button.active{background:#eeeaff!important;color:#6956a7!important}
+.side-foot a{color:#315c4b!important;font-size:12px!important}
+button,select,input,textarea{max-width:100%}
+h1,h2,h3,p,strong,small{overflow-wrap:anywhere}
+@media(min-width:851px) and (max-width:1360px){
+ .top{display:flex!important;flex-wrap:wrap!important;gap:12px!important}
+ html[dir="rtl"] .top .userbox{order:-2;margin-left:auto}
+ html[dir="rtl"] .top .hello{order:-1}
+ .top .search{flex:1 1 270px;min-width:180px}
+ .top .rec-lang{flex:0 0 auto}
+}
+@media(max-width:1100px){
+ .appointments{overflow-x:auto!important}
+ .appointments .table-head,.appointments .appointment-row{min-width:770px!important}
+ .payment-list{overflow-x:auto}
+ .payment-list .payment-row{min-width:460px}
+ .flow-strip{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .flow-step{min-width:0}
+}
+@media(max-width:850px){
+ .top{display:flex;flex-wrap:wrap!important;gap:11px!important}
+ html[dir="rtl"] .top .userbox{order:-2}
+ html[dir="rtl"] .top .hello{order:-1}
+ .top .search{flex:1 1 220px}
+ .kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+
 </style>
 </head>
 <body>
