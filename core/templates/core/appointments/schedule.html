@@ -257,6 +257,18 @@ body.gl-page-appointment_schedule .schedule7 .s7-patient-open:focus{
   text-decoration:underline!important;
   text-underline-offset:3px!important;
 }
+
+/* Receptionist calendar: use the same minimal navigation as the receptionist dashboard. */
+@media(min-width:901px){
+body.gl-role-receptionist.gl-page-appointment_schedule .app-sidebar{background:#fff!important;border-left:1px solid #e8ebf2!important;width:210px!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .app-sidebar :where(.sidebar-brand,.brand,.logo-text){color:#17213d!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .app-sidebar :where(a,button){color:#344258!important;background:transparent!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .app-sidebar :where(a:hover,a.active,a.is-active){background:#f0edff!important;color:#5e43db!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .app-main{background:#f5f7fb!important}
+}
+body.gl-role-receptionist.gl-page-appointment_schedule .s7-buttons button{background:#eaf8f1!important;color:#176e4f!important;border:1px solid #cfe9dd!important;box-shadow:none!important;font-size:9px!important;padding:7px 8px!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .s7-buttons .s7-cancel{background:#fff0f3!important;color:#a94359!important;border-color:#f2d8df!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .s7-buttons .s7-complete{background:#eef3fb!important;color:#4968a2!important;border-color:#dce6f5!important}
 </style>
 <section class="schedule7">
   <header class="s7-head">
