@@ -938,7 +938,9 @@ def call_center_dashboard(request):
         elif lead.status=='new':
             last_action='هنوز نتیجه‌ای ثبت نشده'
         else:
-            last_action=lead.get_status_display()
+            # Use the call-center wording layer so identical business states
+            # never appear with two different labels (e.g. appointment).
+            last_action=proxy.get_status_display()
 
         source_label=proxy.source_page_display or proxy.source_origin_display
         work_queue.append({
