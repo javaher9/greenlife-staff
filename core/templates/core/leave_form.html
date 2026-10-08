@@ -1,0 +1,41 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<style>
+.leave-form-page{max-width:620px;margin:18px auto 100px;padding:0 12px}
+.leave-form-card{background:#fff;border:1px solid #dfe7ea;border-radius:20px;box-shadow:0 12px 30px rgba(35,54,68,.07);overflow:hidden}
+.leave-form-head{padding:17px 18px;background:linear-gradient(135deg,#f4faf7,#faf7fd);border-bottom:1px solid #e3eaec}.leave-form-head h1{margin:0;color:#263e4f;font-size:20px}.leave-form-head p{margin:5px 0 0;color:#758590;font-size:9px}
+.leave-form-body{padding:16px;display:grid;gap:12px}.leave-field{display:grid;gap:6px}.leave-field label{font-size:9px;font-weight:900;color:#4c6272}
+.leave-field select,.leave-field input,.leave-field textarea{width:100%!important;background:#fff!important;color:#263e4f!important;border:1.3px solid #d7e2e5!important;border-radius:10px!important;box-shadow:none!important;font:800 10px Tahoma!important}
+.leave-field select,.leave-field input{height:42px!important;padding:0 10px!important}.leave-field textarea{min-height:100px!important;padding:10px!important;resize:vertical}
+.leave-field input[name$="_date"]{background:#f7f2fc!important;color:#614489!important;border-color:#d9cbe6!important;text-align:center;direction:ltr}
+.leave-errors{color:#a33f58;font-size:8px;font-weight:800}.leave-actions{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:2px}
+.leave-submit{min-height:42px;border-radius:10px!important;background:#e5f5ed!important;color:#176e4f!important;border:1px solid #c3dfd0!important;box-shadow:none!important;font-weight:900!important}
+.leave-back{min-height:42px;padding:0 13px;border-radius:10px;background:#f3eef8;color:#65478d;border:1px solid #d9cce6;text-decoration:none;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900}
+.leave-tip{padding:9px 10px;border-radius:10px;background:#fff8e9;border:1px solid #eee0bb;color:#7b642e;font-size:8px;line-height:1.8}
+@media(max-width:640px){.leave-form-page{margin-top:10px;padding:0 8px}.leave-form-card{border-radius:16px}.leave-form-body{padding:13px}.leave-actions{grid-template-columns:1fr}.leave-back{order:2}}
+</style>
+<section class="leave-form-page">
+  <div class="leave-form-card">
+    <header class="leave-form-head"><h1>ثبت درخواست مرخصی</h1><p>{{ user.get_full_name|default:user.username }}{% if profile.branch %} · {{ profile.branch }}{% endif %}</p></header>
+    <form method="post" class="leave-form-body" autocomplete="off">{% csrf_token %}
+      <div class="leave-field"><label>{{ form.request_type.label }}</label>{{ form.request_type }}<div class="leave-errors">{{ form.request_type.errors }}</div></div>
+      <div class="leave-field"><label>{{ form.start_date.label }}</label>{{ form.start_date }}<div class="leave-errors">{{ form.start_date.errors }}</div></div>
+      <div class="leave-field"><label>{{ form.end_date.label }}</label>{{ form.end_date }}<div class="leave-errors">{{ form.end_date.errors }}</div></div>
+      <div class="leave-field"><label>{{ form.reason.label }}</label>{{ form.reason }}<div class="leave-errors">{{ form.reason.errors }}</div></div>
+      {% if form.non_field_errors %}<div class="leave-errors">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="leave-tip">تاریخ‌ها را شمسی وارد کنید. درخواست پس از ارسال در وضعیت «در انتظار بررسی» قرار می‌گیرد.</div>
+      <div class="leave-actions"><button class="leave-submit" type="submit">ارسال درخواست</button><a class="leave-back" href="{% url 'leave_list' %}">درخواست‌های من</a></div>
+    </form>
+  </div>
+</section>
+<script>
+(function(){
+  function normalize(input){
+    var v=String(input.value||'').replace(/[۰-۹]/g,function(x){return '۰۱۲۳۴۵۶۷۸۹'.indexOf(x)}).replace(/[٠-٩]/g,function(x){return '٠١٢٣٤٥٦٧٨٩'.indexOf(x)}).replace(/[^0-9]/g,'').slice(0,8);
+    if(v.length>6)v=v.slice(0,4)+'/'+v.slice(4,6)+'/'+v.slice(6);
+    else if(v.length>4)v=v.slice(0,4)+'/'+v.slice(4);
+    input.value=v;
+  }
+  document.querySelectorAll('input[name$="_date"]').forEach(function(el){el.addEventListener('input',function(){normalize(el)})});
+})();
+</script>
+{% endblock %}

@@ -47,6 +47,18 @@
     .glp-item{align-items:flex-start}
     .glp-icon{width:48px;height:48px;flex-basis:48px}
   }
+
+  .glp-self-service{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+  .glp-self-card{min-height:86px;padding:14px 15px;border-radius:18px;text-decoration:none;display:flex;align-items:center;gap:12px;background:#131c2b;border:1px solid #354158;color:#fff;box-shadow:0 8px 22px rgba(0,0,0,.14);cursor:pointer}
+  .glp-self-card .ico{width:44px;height:44px;flex:0 0 44px;border-radius:14px;display:grid;place-items:center;font-size:19px;background:#262747;color:#dbc9ff}
+  .glp-self-card strong{display:block;font-size:13px;color:#fff}.glp-self-card small{display:block;margin-top:4px;color:#aebcca;font-size:9px;line-height:1.6}
+  .glp-self-card.photo .ico{background:#203b34;color:#9ee0c1}.glp-self-card.security .ico{background:#33284a;color:#d8baff}.glp-self-card.leave .ico{background:#3d3422;color:#f4d994}
+  @media(max-width:640px){
+    .glp-self-service{grid-template-columns:1fr;gap:8px;margin:10px 0 12px}
+    .glp-self-card{min-height:70px;padding:10px 12px;border-radius:15px}
+    .glp-self-card .ico{width:40px;height:40px;flex-basis:40px;border-radius:12px}
+    .glp-self-card strong{font-size:12px}.glp-self-card small{font-size:8.5px}
+  }
 </style>
 
 <div class="glp-page">
@@ -113,6 +125,12 @@
     </div>
   </section>
 
+  <section class="glp-self-service" aria-label="خدمات حساب من">
+    {% if avatar_form %}<button type="button" class="glp-self-card photo" id="profilePhotoShortcut"><span class="ico">📷</span><span><strong>تغییر عکس پروفایل</strong><small>انتخاب عکس جدید از موبایل</small></span></button>{% endif %}
+    <a class="glp-self-card security" href="{% url 'staff_security' %}"><span class="ico">⚿</span><span><strong>تغییر رمز و PIN</strong><small>مدیریت رمز ورود و PIN موبایل</small></span></a>
+    <a class="glp-self-card leave" href="{% url 'leave_create' %}"><span class="ico">◷</span><span><strong>ثبت درخواست مرخصی</strong><small>استحقاقی، استعلاجی، ساعتی یا مأموریت</small></span></a>
+  </section>
+
   {% if avatar_form %}
   <form method="post" enctype="multipart/form-data" id="profilePhotoForm" class="glp-actions">
     {% csrf_token %}
@@ -155,6 +173,8 @@
   function pick(e){if(e)e.preventDefault();if(fileInput)fileInput.click();}
   if(select1)select1.addEventListener('click',pick);
   if(select2)select2.addEventListener('click',pick);
+  const shortcut=document.getElementById('profilePhotoShortcut');
+  if(shortcut)shortcut.addEventListener('click',pick);
   if(fileInput){
     fileInput.addEventListener('change',function(){
       const file=this.files&&this.files[0];

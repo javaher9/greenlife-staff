@@ -418,12 +418,6 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     <a href="/attendance/" class="attendance-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'common.attendance' %}</span></a>
     <a href="/requests/" class="{% if request.path|slice:':10' == '/requests/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'common.leave' %}</span></a>
     <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>{% gl_t 'shell.change_password' %}</span></a>
-    <a href="/requests/" class="{% if request.path|slice:':10' == '/requests/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'common.leave' %}</span></a>
-    <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>{% gl_t 'shell.change_password' %}</span></a>
-    <a href="/requests/" class="{% if request.path|slice:':10' == '/requests/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'common.leave' %}</span></a>
-    <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>{% gl_t 'shell.change_password' %}</span></a>
-    <a href="/requests/" class="{% if request.path|slice:':10' == '/requests/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'common.leave' %}</span></a>
-    <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>{% gl_t 'shell.change_password' %}</span></a>
     <a href="/profile/"><span class="nav-ico">◉</span><span>{% gl_t 'common.profile' %}</span></a>
     <a href="/logout/"><span class="nav-ico">↪</span><span>{% gl_t 'common.logout' %}</span></a>
     {% elif user.profile.role == 'consultant' %}
@@ -437,6 +431,8 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     {% if user.profile.role != 'admin' %}<a href="/service-requests/"><span class="nav-ico">✓</span><span>{% gl_t 'common.requests' %}</span></a>{% endif %}
     <a href="/device-issues/mine/"><span class="nav-ico">⚒</span><span>{% gl_t 'common.device_issue' %}</span></a>
     <a href="/notifications/" class="{% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico">♢</span><span>{% gl_t 'common.notifications' %}</span></a>
+    <a href="/requests/" class="{% if request.path|slice:':10' == '/requests/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'common.leave' %}</span></a>
+    <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>{% gl_t 'shell.change_password' %}</span></a>
     <a href="/profile/"><span class="nav-ico">◉</span><span>{% gl_t 'common.profile' %}</span></a>
     <a href="/logout/"><span class="nav-ico">↪</span><span>{% gl_t 'common.logout' %}</span></a>
     {% elif user.profile.role == 'call_center' %}
@@ -446,6 +442,8 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     <a href="/reports/" class="employee-bottom-nav cc-mobile-reports {% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>{% gl_t 'common.daily_report' %}</span></a>
     <a href="/guidelines/" class="{% if request.path|slice:':12' == '/guidelines/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>{% gl_t 'common.guidelines' %}</span></a>
     <a href="/notifications/" class="employee-bottom-nav cc-mobile-notifications {% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico">♢</span><span>{% gl_t 'common.notifications' %}</span></a>
+    <a href="/requests/" class="{% if request.path|slice:':10' == '/requests/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'common.leave' %}</span></a>
+    <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>{% gl_t 'shell.change_password' %}</span></a>
     <a href="/profile/"><span class="nav-ico">◉</span><span>{% gl_t 'common.profile' %}</span></a>
     <a href="/logout/"><span class="nav-ico">↪</span><span>{% gl_t 'common.logout' %}</span></a>
     {% elif user.profile.role == 'receptionist' %}
@@ -457,6 +455,8 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     <a href="/service-requests/"><span class="nav-ico">✓</span><span>{% gl_t 'common.requests' %}</span></a>
     <a href="/device-issues/mine/"><span class="nav-ico">⚒</span><span>{% gl_t 'common.device_issue' %}</span></a>
     <a href="/notifications/" class="employee-bottom-nav {% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico">♢</span><span>{% gl_t 'common.notifications' %}</span></a>
+    <a href="/requests/" class="{% if request.path|slice:':10' == '/requests/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'common.leave' %}</span></a>
+    <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>{% gl_t 'shell.change_password' %}</span></a>
     <a href="/profile/"><span class="nav-ico">◉</span><span>{% gl_t 'common.profile' %}</span></a>
     <a href="/logout/"><span class="nav-ico">↪</span><span>{% gl_t 'common.logout' %}</span></a>
     {% elif user.profile.role == 'referral_supervisor' %}

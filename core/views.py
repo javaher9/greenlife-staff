@@ -987,10 +987,43 @@ def leave_list(request):
 
 @login_required
 def leave_create(request):
+    profile=getattr(request.user,'profile',None)
+    if not profile or role_of(request.user) not in PERSONNEL_ROLES:
+        messages.error(request,'ثبت مرخصی برای حساب پرسنلی فعال است.')
+        return redirect('dashboard')
     form=LeaveRequestForm(request.POST or None)
+    form.fields['request_type'].label='نوع درخواست'
+    form.fields['reason'].label='توضیحات / دلیل'
+    form.fields['reason'].widget.attrs.update({
+        'placeholder':'در صورت نیاز توضیح کوتاهی برای مدیر بنویسید.',
+        'rows':4,
+    })
+    for field_name in ('start_date','end_date'):
+        form.fields[field_name].widget.attrs.update({
+            'inputmode':'numeric',
+            'autocomplete':'off',
+            'placeholder':'1405/07/20',
+        })
     if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False); obj.user=request.user; obj.save(); messages.success(request,'درخواست ثبت شد.'); return redirect('leave_list')
-    return render(request,'core/generic_form.html',{'form':form,'title':'درخواست جدید','button':'ارسال درخواست'})
+        obj=form.save(commit=False)
+        obj.user=request.user
+        obj.save()
+        AuditLog.objects.create(
+            actor=request.user,action='leave_request_create',path=request.path,method='POST',
+            object_type='LeaveRequest',object_id=str(obj.pk),
+            summary='Staff submitted leave request',
+            metadata={
+                'request_type':obj.request_type,
+                'start_date':obj.start_date.isoformat(),
+                'end_date':obj.end_date.isoformat(),
+            },
+            ip_address=_request_ip(request),
+        )
+        messages.success(request,'درخواست شما ثبت شد و در انتظار بررسی است.')
+        return redirect('leave_list')
+    return render(request,'core/leave_form.html',{
+        'form':form,'profile':profile,'title':'ثبت درخواست مرخصی',
+    })
 
 @manager_required
 def leave_review(request,pk):
@@ -1085,7 +1118,14 @@ def profile_view(request):
     profile=getattr(request.user,'profile',None)
     form=EmployeeAvatarForm(request.POST or None,request.FILES or None,instance=profile) if profile else None
     if request.method=='POST' and form and form.is_valid():
-        form.save()
+        updated=form.save()
+        AuditLog.objects.create(
+            actor=request.user,action='self_avatar_update',path=request.path,method='POST',
+            object_type='EmployeeProfile',object_id=str(updated.pk),
+            summary='Staff updated own profile photo',
+            metadata={},
+            ip_address=_request_ip(request),
+        )
         messages.success(request,'عکس پروفایل به‌روزرسانی شد.')
         return redirect('profile')
     today_shift=shift_rule(request.user,timezone.localdate()) if profile else None

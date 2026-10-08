@@ -1,1 +1,31 @@
-{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}<section class="panel"><div class="sectionhead"><h1>درخواست‌ها</h1><a class="primary" href="/requests/new/">درخواست جدید</a></div>{% for r in requests %}<article class="row"><div><strong>{{ r.user.get_full_name|default:r.user.username }} · {{ r.get_request_type_display }}</strong><small>{{ r.start_date|jdate }} تا {{ r.end_date|jdate }}{% if r.reason %} · {{ r.reason|truncatechars:70 }}{% endif %}</small></div><div><span class="badge {{ r.status }}">{{ r.get_status_display }}</span>{% if can_review and r.status == 'pending' %}<a class="mini" href="/requests/{{ r.id }}/review/">بررسی</a>{% endif %}</div></article>{% empty %}<p class="muted">درخواستی وجود ندارد.</p>{% endfor %}</section>{% endblock %}
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<style>
+.leave-page{max-width:920px;margin:18px auto 90px;padding:0 12px;display:grid;gap:12px}
+.leave-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;border-radius:20px;background:#fff;border:1px solid #dfe7ea;box-shadow:0 10px 28px rgba(35,54,68,.06)}
+.leave-head h1{margin:0;color:#263e4f;font-size:22px}.leave-head p{margin:5px 0 0;color:#7a8994;font-size:10px}
+.leave-new{min-height:40px;padding:0 14px;border-radius:11px;background:#e8f6ef;color:#176e4f;border:1px solid #c6e2d3;text-decoration:none;font-weight:900;display:inline-flex;align-items:center;justify-content:center}
+.leave-list{display:grid;gap:8px}
+.leave-item{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;border-radius:16px;background:#fff;border:1px solid #e1e8eb}
+.leave-main{min-width:0}.leave-main strong{display:block;color:#263e4f;font-size:12px}.leave-main small{display:block;margin-top:5px;color:#71828e;font-size:9px;line-height:1.75}
+.leave-side{display:flex;align-items:center;gap:7px;flex:0 0 auto}
+.leave-status{padding:6px 9px;border-radius:999px;font-size:8px;font-weight:900;background:#f3f5f6;color:#697984}
+.leave-status.pending{background:#fff5df;color:#8b651f}.leave-status.approved{background:#e7f6ee;color:#1f7654}.leave-status.rejected{background:#fff0f3;color:#a13f56}
+.leave-review{padding:6px 9px;border-radius:8px;background:#f2ebf8;color:#684995;text-decoration:none;font-size:8px;font-weight:900}
+.leave-empty{padding:38px 18px;text-align:center;border-radius:16px;background:#fff;border:1px dashed #dce5e8;color:#7b8993}
+@media(max-width:640px){
+  .leave-page{margin:10px auto 105px;padding:0 8px}.leave-head{padding:13px;border-radius:16px}.leave-head h1{font-size:18px}.leave-head p{font-size:9px}
+  .leave-new{min-height:38px;padding:0 10px;font-size:9px}.leave-item{align-items:flex-start;padding:12px;border-radius:14px}.leave-side{flex-direction:column;align-items:flex-end}.leave-main strong{font-size:11px}
+}
+</style>
+<section class="leave-page">
+  <header class="leave-head"><div><h1>درخواست‌های من</h1><p>مرخصی و مأموریت‌های ثبت‌شده</p></div><a class="leave-new" href="{% url 'leave_create' %}">＋ درخواست جدید</a></header>
+  <div class="leave-list">
+    {% for r in requests %}
+    <article class="leave-item">
+      <div class="leave-main"><strong>{{ r.get_request_type_display }}</strong><small>{{ r.start_date|jdate }} تا {{ r.end_date|jdate }}{% if r.reason %}<br>{{ r.reason|truncatechars:100 }}{% endif %}{% if r.manager_note %}<br>پاسخ مدیر: {{ r.manager_note|truncatechars:100 }}{% endif %}</small></div>
+      <div class="leave-side"><span class="leave-status {{ r.status }}">{{ r.get_status_display }}</span>{% if can_review and r.status == 'pending' %}<a class="leave-review" href="/requests/{{ r.id }}/review/">بررسی</a>{% endif %}</div>
+    </article>
+    {% empty %}<div class="leave-empty">هنوز درخواستی ثبت نکرده‌اید.</div>{% endfor %}
+  </div>
+</section>
+{% endblock %}
