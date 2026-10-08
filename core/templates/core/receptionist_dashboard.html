@@ -80,6 +80,34 @@
     @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.flow-strip{grid-template-columns:repeat(2,1fr)}.bottom-grid{grid-template-columns:1fr}.grid-main{grid-template-columns:1fr}.side{width:210px}.shell{grid-template-columns:minmax(0,1fr) 210px}html[dir="ltr"] .shell{grid-template-columns:210px minmax(0,1fr)}}
   
     .patient-name-cell{display:flex;align-items:center;gap:9px;min-width:0}.patient-mini-avatar{width:34px;height:34px;flex:0 0 34px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:linear-gradient(135deg,#eaf7f1,#f0ebfb);border:2px solid #fff;box-shadow:0 0 0 1px #dce6e3;color:#684fad;font-size:11px;font-weight:900}.patient-mini-avatar img{width:100%;height:100%;object-fit:cover}
+
+    /* Receptionist visual refresh: call-center-inspired pastel tiles and crisp colored outlines. */
+    .kpi{border-width:1.5px;box-shadow:0 9px 22px rgba(42,57,89,.055);transition:transform .18s ease,box-shadow .18s ease}
+    .kpi:nth-child(1){background:#f1ecff;border-color:#d5c5fa}
+    .kpi:nth-child(2){background:#e9f8f1;border-color:#bde4d1}
+    .kpi:nth-child(3){background:#eaf3ff;border-color:#bfd7f5}
+    .kpi:nth-child(4){background:#fff0f3;border-color:#f0c7d2}
+    .kpi:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(42,57,89,.09)}
+    .kpi-copy strong{color:#202d3d}.kpi-copy small{color:#34425b}
+    .flow-step{border-width:1.5px;background:#f5f7fb;border-color:#dce3ef}
+    .flow-step:nth-child(1){background:#f3efff;border-color:#d7caf7}
+    .flow-step:nth-child(2){background:#eef5ff;border-color:#cbdcf7}
+    .flow-step.consultant{background:#f3edff;border-color:#d9c9f5}
+    .flow-step.doctor{background:#eaf4ff;border-color:#c5dcf4}
+    .flow-step.payment{background:#fff7e8;border-color:#f0dcaf}
+    .flow-step.done{background:#eaf8f1;border-color:#bfe5d2}
+    .card{border:1.5px solid #e0e6f0;box-shadow:0 10px 28px rgba(42,57,89,.055)}
+    .appointments{border-color:#cdddf4}
+    .appointments .card-head{background:#f2f6ff;border-bottom-color:#d9e5f6}
+    .appointment-row{border-bottom-color:#e8edf5}
+    .appointment-row:nth-child(even){background:#fafbff}
+    .appointment-row:hover{background:#f1f0ff}
+    .row-action.arrive{border:1px solid #bfe5d2}
+    .row-action.file{border:1px solid #cbdcf7}
+    .selected-card{border-color:#d7caf7}
+    .messages-card{border-color:#c4e2d5}
+    .selected-fact{border:1px solid #e1e8f3}
+    @media(prefers-reduced-motion:reduce){.kpi{transition:none}.kpi:hover{transform:none}}
 </style>
 </head>
 <body>
