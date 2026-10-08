@@ -14,7 +14,7 @@ from .forms import AppointmentFromLeadForm, ReceptionistAppointmentForm, visit_a
 from .jalali import parse_jalali
 from .patient_ui import attach_patient_photos
 from .call_center_identity import call_center_display_name
-from .models import Branch, EmployeeProfile, ReferralLead, StaffNotification, Task, VisitAppointment, SmsAutomationRule, SmsScheduledMessage
+from .models import AuditLog, Branch, EmployeeProfile, ReferralLead, StaffNotification, Task, VisitAppointment, SmsAutomationRule, SmsScheduledMessage
 from .sms_automation import schedule_sms_event, sms_staff_display_name
 from .jalali import format_jalali
 from .sms import send_appointment_confirmation
@@ -144,6 +144,91 @@ def _notify_branch_receptionists(appointment):
         )
 
 
+def _can_edit_appointment(request, appointment):
+    role=_role(request.user)
+    profile=getattr(request.user,'profile',None)
+    if role in {'admin','internal_manager','manager'} or request.user.is_superuser:
+        return True
+    if role=='receptionist':
+        return bool(profile and profile.branch_id==appointment.branch_id)
+    if role=='call_center':
+        lead=appointment.lead
+        return bool(
+            appointment.created_by_id==request.user.id
+            or (
+                lead and (
+                    lead.assigned_to_id==getattr(profile,'id',None)
+                    or lead.first_appointment_by_id==request.user.id
+                    or lead.created_by_id==request.user.id
+                )
+            )
+        )
+    return False
+
+
+def _reschedule_pending_appointment_sms(appointment):
+    """Replace only unsent appointment SMS rows so reminders follow the edited slot."""
+    prefix_events=('appointment_booked','appointment_reminder')
+    SmsScheduledMessage.objects.filter(
+        event_key__regex=rf'^({"|".join(prefix_events)}):{appointment.pk}:',
+        status__in=('pending','cancelled','failed'),
+    ).delete()
+
+    event_at=timezone.make_aware(
+        datetime.combine(appointment.appointment_date,appointment.appointment_time),
+        timezone.get_current_timezone(),
+    )
+    context={
+        'name':appointment.full_name,
+        'phone':appointment.phone,
+        'branch':appointment.branch.name,
+        'address':getattr(appointment.branch,'address','') or '',
+        'service':appointment.service,
+        'date':format_jalali(appointment.appointment_date),
+        'time':appointment.appointment_time.strftime('%H:%M'),
+        'staff':sms_staff_display_name(appointment.created_by),
+        'event':'نوبت',
+    }
+    if SmsAutomationRule.objects.filter(event='appointment_booked',is_enabled=True).exists():
+        schedule_sms_event(
+            'appointment_booked',appointment.pk,event_at=event_at,
+            patient_number=appointment.phone,context=context,
+        )
+    schedule_sms_event(
+        'appointment_reminder',appointment.pk,event_at=event_at,
+        patient_number=appointment.phone,context=context,
+    )
+
+
+def _notify_appointment_edit(appointment, *, old_branch=None, old_date=None, old_time=None):
+    new_profiles=EmployeeProfile.objects.filter(
+        role='receptionist',branch=appointment.branch,is_active=True,user__is_active=True,
+    ).select_related('user')
+    detail=(
+        f'{appointment.full_name} → {format_jalali(appointment.appointment_date,persian_digits=False)} '
+        f'ساعت {appointment.appointment_time:%H:%M} · {appointment.branch.name}'
+    )
+    for profile in new_profiles:
+        StaffNotification.objects.create(
+            user=profile.user,title='نوبت ویرایش شد',message=detail,
+            notification_type='appointment',related_date=appointment.appointment_date,
+        )
+    if old_branch and old_branch.pk!=appointment.branch_id:
+        old_profiles=EmployeeProfile.objects.filter(
+            role='receptionist',branch=old_branch,is_active=True,user__is_active=True,
+        ).select_related('user')
+        for profile in old_profiles:
+            StaffNotification.objects.create(
+                user=profile.user,title='نوبت به مرکز دیگری منتقل شد',
+                message=(
+                    f'{appointment.full_name} از {old_branch.name} '
+                    f'({format_jalali(old_date,persian_digits=False)} '
+                    f'{old_time.strftime("%H:%M")}) به {appointment.branch.name} منتقل شد.'
+                ),
+                notification_type='appointment',related_date=appointment.appointment_date,
+            )
+
+
 @_appointment_access_required
 def appointment_availability(request):
     branch_id=(request.GET.get('branch') or '').strip()
@@ -268,6 +353,7 @@ def appointment_schedule(request):
         'schedule_prev':prev_start,
         'schedule_next':next_start,
         'booking_lead':booking_lead,
+        'appointment_time_choices':visit_appointment_time_choices(),
     })
 
 
@@ -437,6 +523,133 @@ def call_center_appointment_slot_create(request,pk):
         },
         'message':f'نوبت {appointment.full_name} با موفقیت ثبت شد.',
     },json_dumps_params={'ensure_ascii':False})
+
+
+@_appointment_access_required
+def appointment_edit(request,pk):
+    """Move an existing booked appointment to a new center/date/time from the 7-day calendar."""
+    if request.method!='POST':
+        return JsonResponse({'ok':False,'error':'method not allowed'},status=405)
+
+    item=get_object_or_404(
+        VisitAppointment.objects.select_related(
+            'branch','lead','lead__assigned_to','lead__first_appointment_by','lead__created_by'
+        ),
+        pk=pk,
+    )
+    if not _can_edit_appointment(request,item):
+        raise PermissionDenied('اجازه ویرایش این نوبت را ندارید.')
+    if item.status!='booked':
+        return JsonResponse({
+            'ok':False,
+            'error':'فقط نوبت‌های رزروشده و هنوز مراجعه‌نشده قابل جابه‌جایی هستند.',
+        },status=400)
+
+    branch_id=(request.POST.get('branch') or '').strip()
+    raw_date=(request.POST.get('appointment_date') or '').strip()
+    raw_time=(request.POST.get('appointment_time') or '').strip()
+
+    if not branch_id.isdigit():
+        return JsonResponse({'ok':False,'error':'مرکز را انتخاب کنید.'},status=400)
+    branch=get_object_or_404(_clinic_branches(),pk=int(branch_id))
+
+    try:
+        appointment_date=date.fromisoformat(raw_date) if '-' in raw_date else parse_jalali(raw_date)
+    except (TypeError,ValueError):
+        return JsonResponse({'ok':False,'error':'تاریخ نوبت معتبر نیست.'},status=400)
+    if appointment_date<timezone.localdate():
+        return JsonResponse({'ok':False,'error':'تاریخ نوبت نمی‌تواند قبل از امروز باشد.'},status=400)
+    if appointment_date.weekday()==4:
+        return JsonResponse({'ok':False,'error':'فعلاً برای جمعه نوبت‌گیری فعال نیست.'},status=400)
+
+    valid_times={value for value,_label in visit_appointment_time_choices()}
+    if raw_time not in valid_times:
+        return JsonResponse({'ok':False,'error':'ساعت نوبت معتبر نیست.'},status=400)
+    appointment_time=datetime.strptime(raw_time,'%H:%M').time()
+
+    collision=VisitAppointment.objects.filter(
+        branch=branch,appointment_date=appointment_date,appointment_time=appointment_time,
+    ).exclude(pk=item.pk).exclude(status__in=('cancelled','no_show')).exists()
+    if collision:
+        return JsonResponse({
+            'ok':False,
+            'error':'این ساعت در مرکز انتخاب‌شده پر است. ساعت دیگری را انتخاب کنید.',
+            'conflict':True,
+        },status=409)
+
+    old_branch=item.branch
+    old_date=item.appointment_date
+    old_time=item.appointment_time
+    changed=(
+        item.branch_id!=branch.pk
+        or item.appointment_date!=appointment_date
+        or item.appointment_time!=appointment_time
+    )
+    if not changed:
+        return JsonResponse({
+            'ok':True,'unchanged':True,
+            'message':'تغییری در نوبت انجام نشده است.',
+            'schedule_url':f"{reverse('appointment_schedule')}?branch={branch.pk}&date={appointment_date.isoformat()}",
+        })
+
+    try:
+        with transaction.atomic():
+            item.branch=branch
+            item.appointment_date=appointment_date
+            item.appointment_time=appointment_time
+            item.save(update_fields=['branch','appointment_date','appointment_time','updated_at'])
+
+            AuditLog.objects.create(
+                actor=request.user,action='appointment_edit',path=request.path,method='POST',
+                object_type='VisitAppointment',object_id=str(item.pk),
+                summary='ویرایش زمان یا مرکز نوبت',
+                metadata={
+                    'patient':item.full_name,
+                    'old_branch_id':old_branch.pk,
+                    'old_branch':old_branch.name,
+                    'old_date':old_date.isoformat(),
+                    'old_time':old_time.strftime('%H:%M'),
+                    'new_branch_id':branch.pk,
+                    'new_branch':branch.name,
+                    'new_date':appointment_date.isoformat(),
+                    'new_time':appointment_time.strftime('%H:%M'),
+                },
+            )
+            transaction.on_commit(
+                lambda appointment_id=item.pk,old_branch_id=old_branch.pk,
+                       old_date=old_date,old_time=old_time:
+                    _after_appointment_edit(
+                        appointment_id,old_branch_id=old_branch_id,
+                        old_date=old_date,old_time=old_time,
+                    )
+            )
+    except (IntegrityError,ValidationError):
+        return JsonResponse({
+            'ok':False,
+            'error':'این ساعت در مرکز انتخاب‌شده پر است. ساعت دیگری را انتخاب کنید.',
+            'conflict':True,
+        },status=409)
+
+    return JsonResponse({
+        'ok':True,
+        'message':'نوبت با موفقیت ویرایش شد.',
+        'appointment':{
+            'id':item.pk,'branch':item.branch.name,'branch_id':item.branch_id,
+            'date':item.appointment_date.isoformat(),
+            'jalali':format_jalali(item.appointment_date,persian_digits=False),
+            'time':item.appointment_time.strftime('%H:%M'),
+        },
+        'schedule_url':f"{reverse('appointment_schedule')}?branch={item.branch_id}&date={item.appointment_date.isoformat()}",
+    },json_dumps_params={'ensure_ascii':False})
+
+
+def _after_appointment_edit(appointment_id, *, old_branch_id, old_date, old_time):
+    item=VisitAppointment.objects.select_related('branch','created_by','created_by__profile').get(pk=appointment_id)
+    old_branch=Branch.objects.filter(pk=old_branch_id).first()
+    _reschedule_pending_appointment_sms(item)
+    _notify_appointment_edit(
+        item,old_branch=old_branch,old_date=old_date,old_time=old_time,
+    )
 
 
 @login_required

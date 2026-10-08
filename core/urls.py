@@ -48,6 +48,7 @@ path('call-center/leads/<int:pk>/name/',referral_views.call_center_lead_name_upd
 path('call-center/leads/<int:pk>/appointment/',appointment_views.call_center_appointment_create,name='call_center_appointment_create'),
 path('call-center/leads/<int:pk>/appointment/slot/',appointment_views.call_center_appointment_slot_create,name='call_center_appointment_slot_create'),
 path('appointments/',appointment_views.appointment_schedule,name='appointment_schedule'),
+path('appointments/<int:pk>/edit/',appointment_views.appointment_edit,name='appointment_edit'),
 path('appointments/availability/',appointment_views.appointment_availability,name='appointment_availability'),
 path('appointments/new/',appointment_views.receptionist_appointment_create,name='receptionist_appointment_create'),
 path('appointments/<int:pk>/status/<str:status>/',appointment_views.receptionist_appointment_status,name='receptionist_appointment_status'),

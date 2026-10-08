@@ -274,6 +274,49 @@ body.gl-role-receptionist.gl-page-appointment_schedule .s7-buttons .s7-complete{
 body.gl-page-appointment_schedule .schedule7 .s7-buttons button.s7-arrive{background:#e8f7ef!important;background-image:none!important;color:#176e4f!important;border:1px solid #c7e4d5!important;box-shadow:none!important;text-shadow:none!important}
 body.gl-page-appointment_schedule .schedule7 .s7-buttons button.s7-complete{background:#eef3fb!important;background-image:none!important;color:#345fc1!important;border:1px solid #d7e3f6!important;box-shadow:none!important;text-shadow:none!important}
 body.gl-page-appointment_schedule .schedule7 .s7-buttons button.s7-cancel{background:#fff0f3!important;background-image:none!important;color:#a94359!important;border:1px solid #f2d8df!important;box-shadow:none!important;text-shadow:none!important}
+
+/* Appointment edit — center/date/time from the seven-day calendar. */
+.s7-edit-appointment{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  min-height:25px!important;padding:0 7px!important;border-radius:8px!important;
+  background:#f4eef9!important;color:#66498a!important;border:1px solid #dacbe7!important;
+  box-shadow:none!important;font:900 7.5px Tahoma!important;cursor:pointer!important;white-space:nowrap!important
+}
+.s7-edit-appointment:hover{background:#eee4f6!important;border-color:#cdb9df!important}
+.s7-edit-backdrop{position:fixed;inset:0;z-index:194;background:rgba(22,35,45,.26);display:none}
+.s7-edit-backdrop.open{display:block}
+.s7-edit-modal{
+  position:fixed;z-index:195;left:50%;top:50%;width:min(470px,93vw);
+  transform:translate(-50%,-46%) scale(.98);opacity:0;pointer-events:none;transition:.16s;
+  background:#fff!important;color:#263e4f!important;border:1px solid #dce5e8;border-radius:18px;
+  box-shadow:0 25px 70px rgba(21,36,48,.20);overflow:hidden
+}
+.s7-edit-modal.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+.s7-edit-head{
+  height:auto!important;min-height:64px!important;margin:0!important;padding:13px 15px!important;
+  display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;
+  background:linear-gradient(135deg,#faf7fd,#f1faf6)!important;border-bottom:1px solid #e2e9eb!important
+}
+.s7-edit-head strong{font-size:13px;color:#263e4f}.s7-edit-head small{display:block;margin-top:4px;font-size:7.5px;color:#7b8993}
+.s7-edit-close{width:32px;height:32px;border-radius:9px!important;background:#f3ecfa!important;color:#684995!important;border:1px solid #d6c5e6!important;box-shadow:none!important;font-size:17px!important;cursor:pointer!important}
+.s7-edit-body{padding:14px;background:#fff}
+.s7-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.s7-edit-field{display:grid;gap:5px;color:#526879;font-size:8px;font-weight:900}
+.s7-edit-field.full{grid-column:1/-1}
+.s7-edit-field select,.s7-edit-field input{
+  width:100%!important;height:40px!important;padding:0 10px!important;border-radius:10px!important;
+  background:#fff!important;color:#263e4f!important;border:1.3px solid #d7e2e5!important;
+  box-shadow:none!important;font:800 9.5px Tahoma!important;color-scheme:light!important
+}
+.s7-edit-field input{direction:ltr;text-align:center;background:#f7f2fc!important;border-color:#d9cbe6!important;color:#614489!important}
+.s7-edit-field select{background:#eef8f3!important;border-color:#cee5d9!important;color:#24684e!important}
+.s7-edit-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}
+.s7-edit-save,.s7-edit-cancel{min-height:40px;border-radius:10px!important;font:900 9px Tahoma!important;cursor:pointer!important;box-shadow:none!important}
+.s7-edit-save{background:#e5f5ed!important;color:#176e4f!important;border:1px solid #c2dfd0!important}
+.s7-edit-cancel{background:#f3eef8!important;color:#624889!important;border:1px solid #d7c9e5!important}
+.s7-edit-status{min-height:18px;margin-top:7px;text-align:center;color:#277355;font-size:8px;font-weight:900}
+.s7-edit-status.error{color:#a33f58}
+@media(max-width:620px){.s7-edit-grid{grid-template-columns:1fr}.s7-edit-field.full{grid-column:auto}}
 </style>
 <section class="schedule7">
   <header class="s7-head">
@@ -320,7 +363,7 @@ body.gl-page-appointment_schedule .schedule7 .s7-buttons button.s7-cancel{backgr
             <div class="s7-booked">
               <div class="s7-booked-top"><span role="button" tabindex="0" class="s7-patient-open" data-patient-quick="{% url 'patient_360_quick_from_appointment' row.appointment.pk %}" title="نمایش پروفایل بیمار">{{ row.appointment.full_name }}</span><span class="s7-time">{{ row.time }}</span></div>
               <small>{% if appointment_role == 'call_center' %}{{ row.appointment.phone }}{% else %}{{ row.appointment.phone|mask_phone }}{% endif %}{% if row.appointment.service %} · {{ row.appointment.service }}{% endif %}</small>
-              <div class="s7-booked-meta"><span class="s7-status">{% gl_choice 'appointment_status' row.appointment.status row.appointment.get_status_display %}</span>{% if row.appointment.booking_by_label %}<span class="s7-booker">{{ row.appointment.booking_by_prefix }}: {{ row.appointment.booking_by_label }} · {{ row.appointment.booking_created_time }}</span>{% endif %}</div>
+              <div class="s7-booked-meta"><span class="s7-status">{% gl_choice 'appointment_status' row.appointment.status row.appointment.get_status_display %}</span>{% if row.appointment.booking_by_label %}<span class="s7-booker">{{ row.appointment.booking_by_prefix }}: {{ row.appointment.booking_by_label }} · {{ row.appointment.booking_created_time }}</span>{% endif %}{% if row.appointment.status == 'booked' %}<button type="button" class="s7-edit-appointment" data-edit-appointment data-edit-url="{% url 'appointment_edit' row.appointment.pk %}" data-name="{{ row.appointment.full_name|escape }}" data-branch="{{ row.appointment.branch_id }}" data-date="{{ row.appointment.appointment_date|jdate_en }}" data-time="{{ row.appointment.appointment_time|time:'H:i' }}">✎ ویرایش</button>{% endif %}</div>
               {% if appointment_role == 'receptionist' %}
               <div class="s7-buttons">
                 {% if row.appointment.status == 'booked' %}<form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'arrived' %}">{% csrf_token %}<button class="s7-arrive">مراجعه کرد</button></form>{% endif %}
@@ -363,6 +406,26 @@ body.gl-page-appointment_schedule .schedule7 .s7-buttons button.s7-cancel{backgr
   </div>
 </aside>
 {% endif %}
+
+<div class="s7-edit-backdrop" data-edit-close></div>
+<aside class="s7-edit-modal" id="s7EditModal" aria-hidden="true">
+  <header class="s7-edit-head"><div><strong id="s7EditTitle">ویرایش نوبت</strong><small>مرکز، تاریخ یا ساعت نوبت را تغییر دهید</small></div><button type="button" class="s7-edit-close" data-edit-close>×</button></header>
+  <div class="s7-edit-body">
+    <div class="s7-edit-grid">
+      <label class="s7-edit-field">مرکز
+        <select id="s7EditBranch">{% for b in appointment_branches %}<option value="{{ b.pk }}">{{ b.name }}</option>{% endfor %}</select>
+      </label>
+      <label class="s7-edit-field">تاریخ شمسی
+        <input id="s7EditDate" type="text" inputmode="numeric" autocomplete="off" placeholder="1405/07/16">
+      </label>
+      <label class="s7-edit-field full">ساعت
+        <select id="s7EditTime">{% for value,label in appointment_time_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+      </label>
+    </div>
+    <div class="s7-edit-actions"><button type="button" class="s7-edit-save" id="s7EditSave">ذخیره تغییرات</button><button type="button" class="s7-edit-cancel" data-edit-close>انصراف</button></div>
+    <div class="s7-edit-status" id="s7EditStatus"></div>
+  </div>
+</aside>
 
 <div class="s7-profile-backdrop" data-profile-close></div>
 <aside class="s7-profile-panel" id="s7ProfilePanel" aria-hidden="true">
@@ -407,6 +470,46 @@ body.gl-page-appointment_schedule .schedule7 .s7-buttons button.s7-cancel{backgr
   function escapeHtml(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
   if(modal.parentNode!==document.body)document.body.appendChild(modal);
   if(back&&back.parentNode!==document.body)document.body.appendChild(back);
+})();
+
+(function(){
+  var modal=document.getElementById('s7EditModal'),back=document.querySelector('.s7-edit-backdrop');
+  if(!modal||!back)return;
+  var title=document.getElementById('s7EditTitle'),branch=document.getElementById('s7EditBranch'),dateInput=document.getElementById('s7EditDate'),time=document.getElementById('s7EditTime'),save=document.getElementById('s7EditSave'),status=document.getElementById('s7EditStatus'),current=null,busy=false;
+  function csrf(){var x=document.querySelector('input[name="csrfmiddlewaretoken"]');if(x&&x.value)return x.value;var m=document.cookie.match(/(?:^|;\s*)(?:csrftoken|greenlife_lan_csrftoken)=([^;]+)/);return m?decodeURIComponent(m[1]):''}
+  function digits(v){return String(v||'').replace(/[۰-۹]/g,function(x){return '۰۱۲۳۴۵۶۷۸۹'.indexOf(x)}).replace(/[٠-٩]/g,function(x){return '٠١٢٣٤٥٦٧٨٩'.indexOf(x)})}
+  function formatDate(){
+    var v=digits(dateInput.value).replace(/[^0-9]/g,'').slice(0,8);
+    if(v.length>6)v=v.slice(0,4)+'/'+v.slice(4,6)+'/'+v.slice(6);
+    else if(v.length>4)v=v.slice(0,4)+'/'+v.slice(4);
+    dateInput.value=v;
+  }
+  dateInput.addEventListener('input',formatDate);
+  function open(btn){
+    current=btn;title.textContent='ویرایش نوبت '+(btn.dataset.name||'');
+    branch.value=btn.dataset.branch||'';dateInput.value=btn.dataset.date||'';time.value=btn.dataset.time||'';
+    status.textContent='';status.classList.remove('error');
+    modal.classList.add('open');back.classList.add('open');modal.setAttribute('aria-hidden','false');
+  }
+  function close(){if(busy)return;modal.classList.remove('open');back.classList.remove('open');modal.setAttribute('aria-hidden','true');current=null}
+  document.querySelectorAll('[data-edit-appointment]').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();open(btn)})});
+  document.querySelectorAll('[data-edit-close]').forEach(function(x){x.addEventListener('click',close)});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close()});
+  save.addEventListener('click',function(){
+    if(!current||busy)return;
+    var fd=new FormData(),token=csrf();if(token)fd.append('csrfmiddlewaretoken',token);
+    fd.append('branch',branch.value);fd.append('appointment_date',dateInput.value);fd.append('appointment_time',time.value);
+    busy=true;save.disabled=true;save.textContent='در حال ذخیره…';status.textContent='در حال بررسی ظرفیت…';status.classList.remove('error');
+    fetch(current.dataset.editUrl,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}})
+      .then(function(r){return r.json().then(function(d){if(!r.ok||!d.ok)throw new Error(d.error||'ویرایش انجام نشد');return d})})
+      .then(function(d){
+        status.textContent=d.message||'نوبت ویرایش شد ✓';
+        setTimeout(function(){window.location.href=d.schedule_url||window.location.href},450);
+      })
+      .catch(function(e){status.textContent=e.message||'خطا در ویرایش نوبت';status.classList.add('error');busy=false;save.disabled=false;save.textContent='ذخیره تغییرات'});
+  });
+  if(modal.parentNode!==document.body)document.body.appendChild(modal);
+  if(back.parentNode!==document.body)document.body.appendChild(back);
 })();
 
 (function(){
@@ -475,6 +578,21 @@ body.gl-page-appointment_schedule .schedule7 .s7-buttons button.s7-cancel{backgr
       imp(el,'background','#e5f5ed');imp(el,'color','#176e4f');imp(el,'border','1px solid #c2dfd0');
     });
     document.querySelectorAll('.s7-book-abort').forEach(function(el){
+      imp(el,'background','#f3eef8');imp(el,'color','#624889');imp(el,'border','1px solid #d7c9e5');imp(el,'box-shadow','none');
+    });
+    document.querySelectorAll('.s7-edit-appointment,.s7-edit-close').forEach(function(el){
+      imp(el,'background','#f4eef9');imp(el,'color','#66498a');imp(el,'border','1px solid #dacbe7');imp(el,'box-shadow','none');
+    });
+    document.querySelectorAll('.s7-edit-modal input').forEach(function(el){
+      imp(el,'background','#f7f2fc');imp(el,'color','#614489');imp(el,'border','1.3px solid #d9cbe6');imp(el,'box-shadow','none');
+    });
+    document.querySelectorAll('.s7-edit-modal select').forEach(function(el){
+      imp(el,'background','#eef8f3');imp(el,'color','#24684e');imp(el,'border','1.3px solid #cee5d9');imp(el,'box-shadow','none');
+    });
+    document.querySelectorAll('.s7-edit-save').forEach(function(el){
+      imp(el,'background','#e5f5ed');imp(el,'color','#176e4f');imp(el,'border','1px solid #c2dfd0');imp(el,'box-shadow','none');
+    });
+    document.querySelectorAll('.s7-edit-cancel').forEach(function(el){
       imp(el,'background','#f3eef8');imp(el,'color','#624889');imp(el,'border','1px solid #d7c9e5');imp(el,'box-shadow','none');
     });
   }
