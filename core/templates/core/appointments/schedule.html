@@ -1,6 +1,36 @@
 {% extends 'core/base.html' %}{% load jalali_tags staff_i18n privacy_filters %}{% block content %}
 <style>
 body.gl-page-appointment_schedule .app-main{background:#f5f8fa!important;background-image:none!important;color:#223649!important}
+/* Receptionist desktop: keep the shared 7-day calendar fully light and aligned with the new receptionist workspace. */
+body.gl-role-receptionist.gl-page-appointment_schedule{background:#f5f7fb!important;color:#223649!important}
+body.gl-role-receptionist.gl-page-appointment_schedule:before,
+body.gl-role-receptionist.gl-page-appointment_schedule:after,
+body.gl-role-receptionist.gl-page-appointment_schedule .app-main:before,
+body.gl-role-receptionist.gl-page-appointment_schedule .app-main:after{display:none!important;background:none!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .app-main{background:#f5f7fb!important;background-image:none!important;color:#223649!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .app-sidebar{background:#fff!important;background-image:none!important;border-color:#e3e8ef!important;box-shadow:none!important;color:#314257!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .app-sidebar :where(a,span,strong,b,p){color:#536277!important;text-shadow:none!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .app-sidebar a:hover,
+body.gl-role-receptionist.gl-page-appointment_schedule .app-sidebar a.is-active,
+body.gl-role-receptionist.gl-page-appointment_schedule .app-sidebar .active{background:#f0edff!important;color:#5e43db!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .topbar{background:#fff!important;background-image:none!important;border-color:#e3e8ef!important;box-shadow:0 6px 20px rgba(34,43,74,.04)!important;color:#314257!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .topbar :where(strong,span,b){color:#536277!important;text-shadow:none!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .topbar-search,
+body.gl-role-receptionist.gl-page-appointment_schedule .header-person{background:#f8fafc!important;border-color:#e2e7ef!important;color:#314257!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .topbar-search input{background:transparent!important;color:#314257!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .schedule7{color:#223649!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .s7-head{padding:11px 15px!important;min-height:54px!important;border-color:#e1e7ee!important;box-shadow:0 6px 18px rgba(34,43,74,.035)!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .s7-head h1{font-size:19px!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .s7-head p{margin-top:2px!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .s7-day,
+body.gl-role-receptionist.gl-page-appointment_schedule .s7-controls{background:#fff!important;border-color:#e1e7ee!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .s7-booked{background:#f2faf6!important;border-color:#dcece4!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .s7-status{background:#e7f6ee!important;color:#1d7353!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .s7-booker{background:#f2ebf9!important;color:#65468e!important;border-color:#dfd1ec!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .s7-arrive{background:#e8f7ef!important;color:#1d7353!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .s7-complete{background:#eef3fb!important;color:#4968a2!important}
+body.gl-role-receptionist.gl-page-appointment_schedule .s7-cancel{background:#fff0f3!important;color:#a94359!important}
+
 body.gl-page-appointment_schedule .cc-desktop-dock,
 body.gl-page-appointment_schedule .cc-direct-side-entry,
 body.gl-page-appointment_schedule .ccx-chat-toggle{display:none!important}
