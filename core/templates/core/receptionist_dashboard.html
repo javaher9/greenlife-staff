@@ -28,6 +28,15 @@
     .side-foot{margin-top:auto;border-top:1px solid var(--line);padding-top:14px;display:grid;gap:6px}.side-foot a{padding:9px 11px;border-radius:11px;font-size:12px}.side-foot a:hover{background:#f6f7fa}
     .main{grid-column:1;grid-row:1;padding:16px 22px 30px;min-width:0;align-self:start;margin:0;transform:none!important}
     .top{background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px 16px;display:grid;grid-template-columns:auto minmax(220px,1fr) auto auto;align-items:center;gap:18px;box-shadow:0 7px 24px rgba(34,43,74,.045)}
+    /* Receptionist identity anchored on the right in RTL, as in call center. */
+    html[dir="rtl"] .top{grid-template-columns:auto auto minmax(220px,1fr) auto}
+    html[dir="rtl"] .top .userbox{grid-column:4;grid-row:1;justify-self:end}
+    html[dir="rtl"] .top .hello{grid-column:1;grid-row:1}
+    html[dir="rtl"] .top .search{grid-column:3;grid-row:1}
+    html[dir="rtl"] .top .rec-lang{grid-column:2;grid-row:1}
+    html[dir="rtl"] .top .avatar{width:64px;height:64px;flex-basis:64px;border-radius:16px}
+    html[dir="rtl"] .top .userbox{flex-direction:row}
+    @media(max-width:850px){html[dir="rtl"] .top{display:flex;flex-wrap:wrap}html[dir="rtl"] .top .search{flex:1 1 220px}}
     .hello h1{font-size:20px;margin:0 0 4px}.hello p{font-size:12px;color:#667187;margin:0;font-weight:650}
     .search{height:44px;border-radius:14px;background:#f6f7fa;border:1px solid #eff1f5;display:flex;align-items:center;gap:10px;padding:0 14px;color:#9aa2b2}
     .search input{border:0;outline:0;background:transparent;width:100%;color:#949baa}.search input::placeholder{color:#a5acba}
