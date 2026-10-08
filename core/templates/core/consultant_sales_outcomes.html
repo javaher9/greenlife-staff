@@ -517,6 +517,103 @@
 
 
 .patient-mini-avatar{width:34px;height:34px;border-radius:50%;overflow:hidden;display:grid;place-items:center;flex:0 0 34px;background:linear-gradient(135deg,#eaf7f1,#f0ebfb);border:2px solid #fff;box-shadow:0 0 0 1px #dce7e3;color:#6953a8;font-size:11px;font-weight:950}.patient-mini-avatar.large{width:46px;height:46px;flex-basis:46px}.patient-mini-avatar img{width:100%;height:100%;object-fit:cover}.queue-row{grid-template-columns:34px minmax(0,1fr) auto!important;align-items:center}.patient-bar-person{display:flex;align-items:center;gap:11px}
+
+/* Bright care palette on every viewport; desktop rules previously stopped at 700px. */
+body.gl-page-consultant_sales_outcomes{background:#f7fcf9!important;color:#294f43!important;color-scheme:light!important}
+body.gl-page-consultant_sales_outcomes .app-main{background:#f7fcf9!important;background-image:none!important;color:#2a5144!important}
+.care{--care-ink:#264c40;--care-soft:#f5fcf8;color:#264c40!important}
+.care .care-hero{
+ background:linear-gradient(115deg,#e9fbf0 0%,#ffffff 49%,#f0eaff 100%)!important;
+ border:1px solid #d4eadd!important;box-shadow:0 12px 30px rgba(53,108,79,.06)!important
+}
+.care .care-hero h1{color:#205940!important;font-size:clamp(19px,2vw,27px)!important;line-height:1.6!important}
+.care .care-hero p{color:#59786a!important;font-size:12px!important}
+.care .care-count{background:#fff!important;border-color:#d5e9df!important}
+.care .care-count strong{color:#247551!important}
+.care .care-count span{color:#527565!important;font-size:11px!important}
+.care .care-kicker{color:#297953!important}
+.care .care-metric{
+ background:linear-gradient(160deg,#fff,#f1fbf6)!important;border:1px solid #dbece2!important;
+ box-shadow:0 9px 23px rgba(32,91,62,.055)!important;min-width:0
+}
+.care .care-metric:nth-child(2){background:linear-gradient(145deg,#fff,#f1efff)!important}
+.care .care-metric:nth-child(3){background:linear-gradient(145deg,#fff,#eaf5ff)!important}
+.care .care-metric:nth-child(4){background:linear-gradient(145deg,#fff,#fff2e5)!important}
+.care .care-metric:nth-child(5){background:linear-gradient(145deg,#fff,#fff0f5)!important}
+.care .care-metric small,.care .care-metric em{font-size:12px!important;color:#527266!important}
+.care .care-metric strong{color:#226046!important}
+.care .queue,.care .workspace,.care .care-rail,.care .recent{
+ background:#fff!important;border:1px solid #dcebe3!important;color:#285345!important;
+ box-shadow:0 10px 27px rgba(37,93,65,.055)!important
+}
+.care .care-head{background:linear-gradient(100deg,#ebf9f1,#f6f4ff)!important;border-color:#dfeee5!important}
+.care .care-head h2,.care .plan-title h3,.care .recent h3{color:#265d47!important;font-size:15px!important}
+.care .care-head small,.care .plan-title small,.care .status-note{color:#587868!important;font-size:12px!important}
+.care .care-filter{background:#f9fdfa!important;border-color:#cee5d7!important;color:#295346!important;font-size:13px!important;min-height:44px!important}
+.care .queue-row{
+ min-height:66px!important;background:#fbfefc!important;border-color:#dceae1!important;
+ color:#264b40!important;min-width:0;overflow-wrap:anywhere
+}
+.care .queue-row.active,.care .queue-row:hover{background:#ecfaf0!important;border-color:#a4dbbd!important}
+.care .queue-row strong{color:#225440!important;font-size:13px!important}
+.care .queue-row small{color:#52776a!important;font-size:11px!important}
+.care .queue-row time{color:#49759c!important;font-size:11px!important}
+.care .patient-bar{background:linear-gradient(110deg,#eef9f2,#f4f1ff)!important;border-color:#dce9e1!important}
+.care .patient-bar h2{color:#255d46!important}
+.care .patient-bar p{color:#56786a!important;font-size:12px!important}
+.care .stage{background:#e1f6e9!important;color:#1c7351!important;border-color:#b9e5cf!important;font-size:11px!important}
+.care .doctor-box{background:#f4f0ff!important;border-color:#e1d8f4!important}
+.care .doctor-box h3{color:#694e9f!important;font-size:13px!important}
+.care .doctor-chips span{background:#eae6fa!important;color:#644f93!important;font-size:11px!important}
+.care .doctor-note{color:#526b65!important;border-color:#e1d9ef!important;font-size:12px!important}
+.care .plan{background:#fff!important}
+.care .item{background:#fcfefa!important;border-color:#d9e9e1!important;color:#295246!important}
+.care .item label,.care .final-form label{color:#496f5f!important;font-size:12px!important}
+.care .item input,.care .item select,.care .add-row input,.care .add-row select,.care .final-box input,
+.care .final-box textarea,.care .nosale textarea,.care .nosale select{
+ background:#fff!important;color:#244c3f!important;border-color:#cfe1d7!important;
+ min-height:42px!important;height:auto!important;font-size:12px!important;min-width:0!important;max-width:100%!important
+}
+.care .toggle{color:#355f51!important;font-size:12px!important;white-space:normal!important}
+.care .original{color:#705e8e!important;font-size:11px!important;overflow-wrap:anywhere}
+.care .add-row,.care .final-box{background:#f6fdf9!important;border-color:#d7e8df!important}
+.care .total-card{background:#fff!important;border-color:#dcebe2!important}
+.care .total-card span{color:#59786a!important;font-size:12px!important}
+.care .total-card strong{color:#215c45!important}
+.care .next-actions,.care .final-form,.care .nosale form{min-width:0}
+.care .recent{background:#fff!important}.care .recent-header h3{color:#255d47!important}
+.care .recent-cols{background:#f0faf4!important;color:#426c59!important;font-size:11px!important}
+.care .recent-row{background:#fff!important;border-color:#e6f0ea!important;font-size:12px!important}
+.care .recent-row strong,.care .recent-row span{color:#3b6656!important}
+.care .recent-row b{background:#e7f8ee!important;color:#27724f!important}
+.care .care-empty-state{background:linear-gradient(140deg,#fff,#f2fbf6,#f7f3ff)!important}
+.care .care-empty-state h3{color:#275b46!important}.care .care-empty-state p{color:#577469!important;font-size:12px!important}
+.care .care-rail{background:#fff!important}.care .quick-action{background:#f6fcf9!important;color:#285a47!important;border-color:#dceae1!important}
+.care .quick-action strong{color:#275943!important;font-size:12px!important}
+.care .quick-action small{color:#547568!important;font-size:11px!important;opacity:1!important}
+.care .quick-summary{background:#f6fcf9!important;color:#37634e!important}
+.care .quick-tools-title{color:#285e47!important}
+.care .device-booking-callout{background:#ebfaef!important;border-color:#cbe5d4!important}
+.care .device-booking-callout small{color:#557869!important;font-size:12px!important}
+.care input,.care textarea,.care select{max-width:100%;min-width:0}
+.care h1,.care h2,.care h3,.care p,.care small,.care strong{overflow-wrap:anywhere}
+@media(max-width:700px){
+ .care{margin:6px auto 20px!important;padding:8px!important}
+ .care .care-grid{grid-template-columns:minmax(0,1fr)!important;grid-template-areas:none!important}
+ .care .care-metric{min-height:105px!important;padding:12px!important}
+ .care .care-metric strong{font-size:25px!important}
+ .care .care-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+ .care .care-hero{flex-wrap:wrap!important;padding:15px!important}
+ .care .patient-bar{flex-wrap:wrap!important}
+ .care .item{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+ .care .item>*{min-width:0!important}
+ .care .original{grid-column:1/-1!important}
+ .care .final-form,.care .nosale form{grid-template-columns:minmax(0,1fr)!important}
+ .care .recent{overflow-x:auto!important}
+ .care .recent-cols,.care .recent-row{min-width:530px!important}
+ .care .care-rail{min-height:0!important}
+}
+
 </style>
 <div class="care">
   <section class="care-hero">
