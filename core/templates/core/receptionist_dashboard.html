@@ -30,8 +30,8 @@
     .top{background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px 16px;display:grid;grid-template-columns:auto minmax(220px,1fr) auto auto;align-items:center;gap:18px;box-shadow:0 7px 24px rgba(34,43,74,.045)}
     /* Receptionist identity anchored on the right in RTL, as in call center. */
     html[dir="rtl"] .top{grid-template-columns:auto auto minmax(220px,1fr) auto}
-    html[dir="rtl"] .top .userbox{grid-column:4;grid-row:1;justify-self:end}
-    html[dir="rtl"] .top .hello{grid-column:1;grid-row:1}
+    html[dir="rtl"] .top .userbox{grid-column:1;grid-row:1;justify-self:start}
+    html[dir="rtl"] .top .hello{grid-column:4;grid-row:1}
     html[dir="rtl"] .top .search{grid-column:3;grid-row:1}
     html[dir="rtl"] .top .rec-lang{grid-column:2;grid-row:1}
     html[dir="rtl"] .top .avatar{width:64px;height:64px;flex-basis:64px;border-radius:16px}
