@@ -18,11 +18,11 @@ ALLOWED_HOSTS = [x.strip() for x in os.getenv('ALLOWED_HOSTS','localhost,127.0.0
 # Requests can reach Django through the public reverse proxy or directly from the
 # production/LAN proxy during health checks. Keep these infrastructure hosts
 # accepted even if an older server-owned .env is restored during rollback.
-for _host in ('staff.greenlifeclinics.com','.greenlifeclinics.com','localhost','127.0.0.1','192.168.40.96'):
+for _host in ('staff.greenlifeclinics.com','app.greenlifeclinics.com','.greenlifeclinics.com','localhost','127.0.0.1','192.168.40.96'):
     if _host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(_host)
 CSRF_TRUSTED_ORIGINS = [x.strip() for x in os.getenv('CSRF_TRUSTED_ORIGINS','').split(',') if x.strip()]
-for _origin in ('https://staff.greenlifeclinics.com','https://crm.greenlifeclinics.com'):
+for _origin in ('https://staff.greenlifeclinics.com','https://app.greenlifeclinics.com','https://crm.greenlifeclinics.com'):
     if _origin not in CSRF_TRUSTED_ORIGINS:
         CSRF_TRUSTED_ORIGINS.append(_origin)
 CSRF_FAILURE_VIEW = 'core.security_views.csrf_failure'

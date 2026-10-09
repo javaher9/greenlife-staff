@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from .models import SmsAutomationRule, SmsScheduledMessage
 
-TEMPLATE_FIELDS={'name','branch','address','date','time','amount','service','staff','phone','notes','event','username','login_url'}
+TEMPLATE_FIELDS={'name','branch','address','date','time','amount','service','staff','phone','notes','event','username','login_url','password'}
 OFFSET_LIMIT=30*24*60
 
 
@@ -206,8 +206,8 @@ def process_due_sms(batch_size=25):
 NETWORK_WELCOME_EVENT='network_member_joined'
 
 
-def queue_network_welcome_sms(member, *, public=False, resend=False):
-    """Queue one Iranian member welcome SMS; never transmit passwords.
+def queue_network_welcome_sms(member, *, public=False, resend=False, initial_password=None):
+    """Queue a welcome SMS; password is available only at account creation/reset.
 
     Returning a status instead of sending on the request thread keeps signup
     independent of external SMS latency. A dedicated SMS worker dispatches it.
@@ -239,10 +239,14 @@ def queue_network_welcome_sms(member, *, public=False, resend=False):
         Q(event_key=prefix+':patient') | Q(event_key__startswith=prefix+'-retry-')
     )
     if resend:
-        if previous.filter(status__in=('pending','sending')).exists():
-            return 'already_queued'
-        if previous.filter(created_at__gte=timezone.now()-timedelta(minutes=5)).exists():
-            return 'recently_sent'
+        if initial_password:
+            # Password reset invalidates old queued credentials: never SMS stale ones.
+            previous.filter(status='pending').update(status='cancelled')
+        else:
+            if previous.filter(status__in=('pending','sending')).exists():
+                return 'already_queued'
+            if previous.filter(created_at__gte=timezone.now()-timedelta(minutes=5)).exists():
+                return 'recently_sent'
         key=f'{key}-retry-{timezone.now():%Y%m%d%H%M%S%f}'
 
     login_path=reverse('public_network:login' if public else 'login')
@@ -253,6 +257,7 @@ def queue_network_welcome_sms(member, *, public=False, resend=False):
             'name':member.user.first_name or member.user.get_full_name() or 'همکار',
             'username':member.user.username,
             'login_url':base+login_path,
+            'password':initial_password or 'از معرف خود دریافت کنید',
         },
     )
     return 'queued' if record else 'not_queued'

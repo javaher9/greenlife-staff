@@ -33,7 +33,7 @@ class NetworkMemberWelcomeSmsTests(TestCase):
         SmsAutomationRule.objects.update_or_create(
             event='network_member_joined',
             defaults={'is_enabled':True,'recipient':'patient','timing':'immediate',
-                      'message_template':'سلام {name}، نام کاربری: {username}، لینک ورود: {login_url}'},
+                      'message_template':'سلام {name}، نام کاربری: {username}، رمز: {password}، لینک ورود: {login_url}'},
         )
 
     def join(self,username='new-driver',phone='09123334444'):
@@ -56,7 +56,7 @@ class NetworkMemberWelcomeSmsTests(TestCase):
         self.assertEqual(item.number,'09123334444')
         self.assertIn('https://staff.greenlifeclinics.com/login/',item.body)
         self.assertIn('new-driver',item.body)
-        self.assertNotIn('NeverSmsMyPassword123',item.body)
+        self.assertIn('NeverSmsMyPassword123',item.body)
 
     def test_disabled_gateway_never_queues_and_still_creates_account(self):
         config=ApiServerSettings.load()
@@ -101,3 +101,38 @@ class NetworkMemberWelcomeSmsTests(TestCase):
         self.assertEqual(response.status_code,200)
         self.assertTrue(ReferralProfile.objects.filter(user__username='new-driver').exists())
         self.assertContains(response,'وضعیت ارسال خودکار تأیید نشده')
+
+    def test_manager_edits_member_details_and_password_and_queues_new_sms(self):
+        self.join()
+        member=ReferralProfile.objects.get(user__username='new-driver')
+        url=reverse('referral_member_edit',args=[member.pk])
+        response=self.client.post(url,{
+            'first_name':'حسین','last_name':'راننده','phone':'09127778899',
+            'username':'edited-driver','new_password':'NewStrongPassword123',
+        })
+        self.assertRedirects(response,reverse('referral_network'))
+        member.refresh_from_db()
+        member.user.refresh_from_db()
+        self.assertEqual(member.phone,'09127778899')
+        self.assertEqual(member.user.username,'edited-driver')
+        self.assertTrue(member.user.check_password('NewStrongPassword123'))
+        self.assertEqual(SmsScheduledMessage.objects.filter(status='pending').count(),1)
+        item=SmsScheduledMessage.objects.get(status='pending')
+        self.assertIn('NewStrongPassword123',item.body)
+        self.assertEqual(item.number,'09127778899')
+
+    def test_non_manager_cannot_edit_member(self):
+        self.join()
+        member=ReferralProfile.objects.get(user__username='new-driver')
+        normal=User.objects.create_user('ordinary-editor',password='Pass1234')
+        EmployeeProfile.objects.update_or_create(
+            user=normal,defaults={'role':'employee','branch':self.branch,'is_active':True},
+        )
+        self.client.force_login(normal)
+        response=self.client.post(reverse('referral_member_edit',args=[member.pk]),{
+            'first_name':'Hacked','last_name':'User','phone':'09129998877',
+            'username':'hacked','new_password':'FakePassword123',
+        })
+        self.assertEqual(response.status_code,403)
+        member.user.refresh_from_db()
+        self.assertEqual(member.user.username,'new-driver')

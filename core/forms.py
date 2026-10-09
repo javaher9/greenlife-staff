@@ -274,6 +274,36 @@ class ReferralMemberForm(forms.Form):
         return photo
 
 
+
+class ReferralMemberEditForm(forms.Form):
+    first_name=forms.CharField(label='نام')
+    last_name=forms.CharField(label='نام خانوادگی')
+    phone=forms.RegexField(r'^09\d{9}$',label='موبایل',help_text='شماره ۱۱ رقمی با 09')
+    username=forms.CharField(label='نام کاربری')
+    new_password=forms.CharField(label='رمز جدید (اختیاری)',required=False,
+                                 widget=forms.PasswordInput(render_value=False),
+                                 help_text='اگر خالی باشد رمز فعلی تغییر نمی‌کند.')
+
+    def __init__(self,*args,member=None,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.member=member
+
+    def clean_username(self):
+        value=self.cleaned_data['username'].strip()
+        qs=User.objects.filter(username__iexact=value)
+        if self.member:
+            qs=qs.exclude(pk=self.member.user_id)
+        if qs.exists():
+            raise forms.ValidationError('نام کاربری تکراری است.')
+        return value
+
+    def clean_new_password(self):
+        value=self.cleaned_data['new_password']
+        if value and len(value)<8:
+            raise forms.ValidationError('رمز جدید باید حداقل ۸ نویسه داشته باشد.')
+        return value
+
+
 class ReferralLeadForm(forms.ModelForm):
     class Meta:
         model=ReferralLead

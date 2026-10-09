@@ -1,0 +1,20 @@
+{% extends 'core/base.html' %}{% block content %}
+<section class="rf-shell rf-form-shell">
+  {% include 'core/referrals/_nav.html' %}
+  <article class="rf-form-card">
+    <span class="rf-eyebrow">مدیریت شبکه فروش</span>
+    <h1>ویرایش عضو: {{ member.user.get_full_name|default:member.user.username }}</h1>
+    <p>برای اصلاح نام، موبایل یا نام کاربری تغییرات را ذخیره کنید. رمز فعلی قابل مشاهده نیست؛ برای اصلاح اشتباه، رمز جدید تعیین کنید.</p>
+    <form method="post">{% csrf_token %}
+      {% for field in form %}
+      <div style="margin:15px 0"><label for="{{ field.id_for_label }}" style="display:block;font-weight:700;margin-bottom:7px">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}<small style="display:block;margin-top:5px">{{ field.help_text }}</small>{% endif %}
+      {% for error in field.errors %}<div style="color:#b91c1c">{{ error }}</div>{% endfor %}</div>
+      {% endfor %}
+      <button class="rf-btn primary" type="submit">ذخیره تغییرات</button>
+      <a class="rf-btn" href="{% url 'referral_network' %}">بازگشت</a>
+    </form>
+  </article>
+</section>
+{% endblock %}

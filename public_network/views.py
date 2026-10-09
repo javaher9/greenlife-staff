@@ -206,7 +206,7 @@ def signup(request, code=None):
         # SMS is best-effort: it must never invalidate a completed signup.
         try:
             from core.sms_automation import queue_network_welcome_sms
-            queue_network_welcome_sms(member,public=True)
+            queue_network_welcome_sms(member,public=True,initial_password=data['password'])
         except Exception:
             pass
         login(request, user)
