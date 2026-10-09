@@ -58,7 +58,7 @@
             </select></div>
             <div class="sms-field"><label>فاصله زمانی</label><div class="sms-inline"><span class="sms-muted">نسبت به زمان رویداد</span><input type="number" name="offset" min="0" max="43200" value="{{ item.rule.offset|default:0 }}"><select name="offset_unit">{% for key,label in unit_choices %}<option value="{{ key }}" {% if item.rule and item.rule.offset_unit == key or not item.rule and key == 'minutes' %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div></div>
           </div>
-          <div class="sms-field" style="margin-top:12px"><label>متن پیامک</label><textarea name="message_template" maxlength="1600" placeholder="گرین لایف&#10;{name} عزیز، ...">{{ item.rule.message_template|default:'' }}</textarea><small>متغیرها: {name}، {branch}، {address}، {date}، {time}، {amount}، {service}، {staff}، {phone}، {notes}، {event}</small></div>
+          <div class="sms-field" style="margin-top:12px"><label>متن پیامک</label><textarea name="message_template" maxlength="1600" placeholder="گرین لایف&#10;{name} عزیز، ...">{{ item.rule.message_template|default:'' }}</textarea><small>متغیرها: {name}، {branch}، {address}، {date}، {time}، {amount}، {service}، {staff}، {phone}، {notes}، {event}، {username}، {login_url}</small></div>
           <label class="sms-switch"><input type="checkbox" name="is_enabled" {% if item.rule and item.rule.is_enabled %}checked{% endif %} {% if not item.connected %}disabled{% endif %}> فعال‌سازی ارسال خودکار {% if not item.connected %}(پس از اتصال رویداد قابل انتخاب است){% endif %}</label>
           <button class="sms-save" type="submit">ذخیره تنظیمات</button>{% if item.rule %}<span class="sms-saved">آخرین ویرایش: {{ item.rule.updated_at|date:'Y/m/d H:i' }}</span>{% endif %}
         </form>
