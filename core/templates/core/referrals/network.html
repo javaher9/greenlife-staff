@@ -1,4 +1,20 @@
 {% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<style>
+.rf-actions-v2{display:grid;gap:7px;margin-top:10px;direction:rtl}
+.rf-actions-v2 .rf-action-v2{display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;width:100%;min-height:42px;padding:8px 7px;border:1px solid #168c76;border-radius:10px;background:linear-gradient(180deg,#076c5b,#05443b);color:#fff!important;font-family:inherit;font-size:12px;font-weight:700;line-height:1.55;text-decoration:none;cursor:pointer;white-space:normal;transition:filter .15s ease}
+.rf-actions-v2 .rf-action-v2:hover{filter:brightness(1.13)}
+.rf-action-v2-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.rf-action-v2-bottom{display:flex;gap:7px;align-items:stretch}
+.rf-action-v2-bottom>a{flex:1;min-width:0}
+.rf-action-v2-bottom>form{flex:0 0 58px;margin:0}
+.rf-action-v2-bottom .rf-action-v2-delete{background:linear-gradient(180deg,#8d343c,#5c202a);border-color:#b35962}
+.rf-action-v2-details{min-width:0;position:relative}
+.rf-action-v2-details summary{list-style:none}
+.rf-action-v2-details summary::-webkit-details-marker{display:none}
+.rf-action-v2-sms-form{position:relative;z-index:2;display:grid;gap:7px;margin-top:7px;padding:8px;border:1px solid #168c76;border-radius:10px;background:#082b2a}
+.rf-action-v2-sms-form textarea{min-width:0;width:100%;box-sizing:border-box;padding:9px;border-radius:8px;background:#fff;color:#172c2c;font:inherit}
+@media(max-width:520px){.rf-action-v2-bottom{flex-wrap:wrap}.rf-action-v2-bottom>a{flex-basis:calc(50% - 4px)}.rf-action-v2-bottom>form{flex-basis:100%}}
+</style>
 <section class="rf-shell">
   {% include 'core/referrals/_nav.html' %}
   <header class="rf-page-head"><div><span class="rf-eyebrow">شبکه دو سطحی</span><h1>مدیریت شبکه فروش</h1><p>نام فارسی، عکس، لید و فروش هر عضو را یکجا ببینید.</p></div><div style="display:flex;gap:9px;flex-wrap:wrap"> <a class="rf-btn" href="{% url 'referral_tree_all' %}" style="border-color:rgba(188,104,255,.45);color:#dfb2ff;background:rgba(124,67,164,.16)">⌘ نمایش کل شبکه</a>{% if can_add_member %}<a class="rf-btn primary" href="{% url 'referral_member_create' %}">＋ افزودن عضو</a>{% endif %}</div></header>
@@ -6,7 +22,30 @@
   <div class="rf-network-grid">{% for row in rows %}{% if row.profile.user.profile.role != 'call_center' %}<article class="rf-member-card level-{{ row.level }}">
     <div class="rf-member-top" style="align-items:center;gap:12px"><div style="display:flex;align-items:center;gap:12px;min-width:0"><div class="rf-avatar rf-avatar-lg" style="flex:0 0 auto">{% if row.photo %}<img src="{{ row.photo }}" alt="{% if row.profile.user.first_name or row.profile.user.last_name %}{{ row.profile.user.first_name }} {{ row.profile.user.last_name }}{% else %}عضو شبکه{% endif %}">{% elif row.profile.user.profile.avatar %}<img src="{{ row.profile.user.profile.avatar.url }}" alt="عضو شبکه">{% else %}<span>{{ row.profile.user.first_name|first|default:'؟' }}</span>{% endif %}</div><div style="min-width:0"><h2 style="margin:0 0 4px;font-size:18px;line-height:1.45">{% if row.profile.user.first_name or row.profile.user.last_name %}{{ row.profile.user.first_name }} {{ row.profile.user.last_name }}{% else %}نام فارسی ثبت نشده{% endif %}</h2><p style="margin:0">{{ row.profile.phone|default:'شماره ثبت نشده' }}</p></div></div><span class="rf-level">سطح {{ row.level|fa }}</span></div>
     <div class="rf-member-stats"><span><b>{{ row.leads|fa }}</b> لید</span><span><b>{{ row.won|fa }}</b> فروش</span><span><b>{{ row.sales|toman }}</b></span></div>
-    <div class="rf-member-actions" style="flex-wrap:wrap"><a href="{% url 'referral_tree_person' row.profile.pk %}" style="flex-basis:100%;border-color:rgba(188,104,255,.38);color:#ddb0ff;background:rgba(188,104,255,.07)">⌘ مشاهده شبکه</a><a href="{% url 'referral_lead_create' %}?referrer={{ row.profile.pk }}">ثبت لید</a>{% if is_manager %}<a href="{% url 'referral_member_edit' row.profile.pk %}" style="border:1px solid #447dce;background:#eff6ff;color:#1d4c87;border-radius:10px;padding:8px 11px;font-weight:800">✎ ویرایش عضو و رمز</a><details style="display:inline-block;min-width:180px;flex:1"><summary style="cursor:pointer;border:1px solid #16856d;border-radius:10px;padding:8px 11px">✉ پیامک دلخواه</summary><form method="post" action="{% url 'referral_member_custom_sms' row.profile.pk %}" style="display:flex;gap:6px;flex-direction:column;margin-top:8px">{% csrf_token %}<textarea name="body" required maxlength="600" rows="3" placeholder="متن پیامک برای عضو..." style="min-width:180px;border-radius:10px;padding:9px;background:white;color:#153d32"></textarea><button type="submit" style="background:#16856d;color:white;padding:9px;border:0;border-radius:10px;cursor:pointer">ارسال پیامک</button></form></details><form method="post" action="{% url 'referral_member_sms_resend' row.profile.pk %}" style="display:inline;margin:0">{% csrf_token %}<button type="submit" style="border:1px solid #16856d;background:#e8faf2;color:#115e49;border-radius:10px;padding:8px 11px;font-family:inherit;font-weight:800;cursor:pointer">✉ ارسال SMS لینک ورود</button></form>{% endif %}{% if row.level < 2 %}<a href="{% url 'referral_member_create' %}?sponsor={{ row.profile.pk }}">افزودن زیرمجموعه</a>{% endif %}{% if user.is_superuser or user.profile.role == 'admin' %}<form method="post" action="{% url 'referral_member_delete' row.profile.pk %}" onsubmit="return confirm('این معرف از شبکه حذف شود؟ اگر سابقه واقعی داشته باشد، سوابق حفظ و حساب او غیرفعال می‌شود.');" style="display:inline;margin:0">{% csrf_token %}<button type="submit" style="background:rgba(239,68,68,.1);border:1px solid rgba(248,113,113,.35);color:#ff9b9b;border-radius:10px;padding:8px 11px;font-family:inherit;font-weight:700;cursor:pointer">حذف</button></form>{% endif %}</div>
+    <div class="rf-actions-v2">
+      <a class="rf-action-v2 rf-action-v2-full" href="{% url 'referral_tree_person' row.profile.pk %}">◉ مشاهده شبکه</a>
+      <div class="rf-action-v2-pair">
+        <a class="rf-action-v2" href="{% url 'referral_lead_create' %}?referrer={{ row.profile.pk }}">＋ ثبت لید</a>
+        {% if is_manager %}
+        <details class="rf-action-v2-details">
+          <summary class="rf-action-v2">✉ پیامک دلخواه</summary>
+          <form class="rf-action-v2-sms-form" method="post" action="{% url 'referral_member_custom_sms' row.profile.pk %}">{% csrf_token %}
+            <textarea name="body" required maxlength="600" rows="3" placeholder="متن پیامک برای عضو..."></textarea>
+            <button class="rf-action-v2" type="submit">ارسال پیامک</button>
+          </form>
+        </details>
+        {% endif %}
+      </div>
+      <div class="rf-action-v2-bottom">
+        {% if is_manager %}<a class="rf-action-v2" href="{% url 'referral_member_edit' row.profile.pk %}">✎ ویرایش عضو و رمز</a>{% endif %}
+        {% if row.level < 2 %}<a class="rf-action-v2" href="{% url 'referral_member_create' %}?sponsor={{ row.profile.pk }}">♧ افزودن زیرمجموعه</a>{% endif %}
+        {% if user.is_superuser or user.profile.role == 'admin' %}
+        <form method="post" action="{% url 'referral_member_delete' row.profile.pk %}" onsubmit="return confirm('این معرف از شبکه حذف شود؟ اگر سابقه واقعی داشته باشد، سوابق حفظ و حساب او غیرفعال می‌شود.');">{% csrf_token %}
+          <button class="rf-action-v2 rf-action-v2-delete" type="submit">حذف</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
   </article>{% endif %}{% empty %}<div class="rf-empty rf-empty-large">شبکه شما هنوز خالی است. اولین عضو را اضافه کنید.</div>{% endfor %}</div>
 </section>
 {% endblock %}
