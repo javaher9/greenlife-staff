@@ -403,7 +403,7 @@ def referral_member_create(request):
             )
         try:
             from .sms_automation import queue_network_welcome_sms
-            sms_status=queue_network_welcome_sms(member)
+            sms_status=queue_network_welcome_sms(member,initial_password=d['password'])
         except Exception:
             sms_status='queue_error'
         public_base=os.getenv('PUBLIC_BASE_URL','https://staff.greenlifeclinics.com').rstrip('/')
@@ -458,6 +458,12 @@ def referral_member_edit(request,pk):
             member.phone=data['phone']
             member.save(update_fields=['phone'])
             EmployeeProfile.objects.filter(user=member.user).update(phone=data['phone'])
+        if changed_password:
+            try:
+                from .sms_automation import queue_network_welcome_sms
+                queue_network_welcome_sms(member,resend=True,initial_password=changed_password)
+            except Exception:
+                messages.warning(request,'رمز ذخیره شد، اما ارسال پیامک آن تأیید نشد.')
         messages.success(request,'اطلاعات عضو ذخیره شد.' + (' رمز ورود نیز تغییر کرد.' if changed_password else ''))
         return redirect('referral_network')
     return render(request,'core/referrals/member_edit.html',{'form':form,'member':member})
