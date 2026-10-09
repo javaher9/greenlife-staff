@@ -113,10 +113,11 @@ SMS_EVENT_GROUPS=(
     ('کال‌سنتر',('lead_new','lead_overdue')),
     ('نتیجه تماس کال‌سنتر',('call_no_answer','call_not_interested','call_follow_up','call_appointment')),
     ('پرسنل و مدیریت',('staff_late','staff_task_due','internal_approval')),
+    ('شبکه فروش',('network_member_joined',)),
 )
 # Only events with an actual backend trigger may be enabled.
 # Enabling other rules saves configuration but cannot imply a live trigger.
-SMS_CONNECTED_EVENTS=set(dict(SmsAutomationRule.EVENT_CHOICES))
+SMS_CONNECTED_EVENTS=set(dict(SmsAutomationRule.EVENT_CHOICES)) | {'network_member_joined'}
 
 
 @_api_admin_required
@@ -130,7 +131,7 @@ def sms_management(request):
         return redirect('sms_management')
     if request.method=='POST':
         event=(request.POST.get('event') or '').strip()
-        if event not in dict(SmsAutomationRule.EVENT_CHOICES):
+        if event not in SMS_CONNECTED_EVENTS:
             messages.error(request,'رویداد پیامک معتبر نیست.')
             return redirect('sms_management')
         rule,created=SmsAutomationRule.objects.get_or_create(event=event)
@@ -195,6 +196,7 @@ def sms_management(request):
 
     existing={rule.event:rule for rule in SmsAutomationRule.objects.all()}
     labels=dict(SmsAutomationRule.EVENT_CHOICES)
+    labels['network_member_joined']='خوشامد عضویت شبکه فروش'
     groups=[{
         'title':title,
         'rules':[{

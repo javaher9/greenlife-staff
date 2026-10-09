@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from .models import SmsAutomationRule, SmsScheduledMessage
 
-TEMPLATE_FIELDS={'name','branch','address','date','time','amount','service','staff','phone','notes','event'}
+TEMPLATE_FIELDS={'name','branch','address','date','time','amount','service','staff','phone','notes','event','username','login_url'}
 OFFSET_LIMIT=30*24*60
 
 
@@ -201,3 +201,58 @@ def process_due_sms(batch_size=25):
         item.save(update_fields=['status','error','updated_at'])
         processed+=1
     return processed
+
+
+NETWORK_WELCOME_EVENT='network_member_joined'
+
+
+def queue_network_welcome_sms(member, *, public=False, resend=False):
+    """Queue one Iranian member welcome SMS; never transmit passwords.
+
+    Returning a status instead of sending on the request thread keeps signup
+    independent of external SMS latency. A dedicated SMS worker dispatches it.
+    """
+    import re
+    from django.urls import reverse
+    from django.db.models import Q
+    from .models import ApiServerSettings, SmsAutomationRule, SmsScheduledMessage
+
+    config=ApiServerSettings.load()
+    if not (config.is_enabled and config.is_configured):
+        return 'gateway_unavailable'
+    rule=SmsAutomationRule.objects.filter(event=NETWORK_WELCOME_EVENT,is_enabled=True).first()
+    if not rule or rule.recipient!='patient':
+        return 'rule_disabled'
+
+    raw=re.sub(r'[^0-9]', '', str(member.phone or ''))
+    if raw.startswith('0098'):
+        raw='0'+raw[4:]
+    elif raw.startswith('98') and len(raw)==12:
+        raw='0'+raw[2:]
+    if not (len(raw)==11 and raw.startswith('09')):
+        return 'invalid_phone'
+
+    kind='public' if public else 'referral'
+    key=f'{kind}-{member.pk}'
+    prefix=f'{NETWORK_WELCOME_EVENT}:{key}'
+    previous=SmsScheduledMessage.objects.filter(rule=rule).filter(
+        Q(event_key=prefix+':patient') | Q(event_key__startswith=prefix+'-retry-')
+    )
+    if resend:
+        if previous.filter(status__in=('pending','sending')).exists():
+            return 'already_queued'
+        if previous.filter(created_at__gte=timezone.now()-timedelta(minutes=5)).exists():
+            return 'recently_sent'
+        key=f'{key}-retry-{timezone.now():%Y%m%d%H%M%S%f}'
+
+    login_path=reverse('public_network:login' if public else 'login')
+    base=getattr(settings,'PUBLIC_BASE_URL','https://staff.greenlifeclinics.com').rstrip('/')
+    record=schedule_sms_event(
+        NETWORK_WELCOME_EVENT,key,patient_number=raw,
+        context={
+            'name':member.user.first_name or member.user.get_full_name() or 'همکار',
+            'username':member.user.username,
+            'login_url':base+login_path,
+        },
+    )
+    return 'queued' if record else 'not_queued'

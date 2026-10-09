@@ -6,6 +6,17 @@
     <span class="rf-eyebrow">حساب با موفقیت ساخته شد</span>
     <h1>ارسال اطلاعات ورود برای {{ member.user.get_full_name|default:member.user.username }}</h1>
     <p class="rf-invite-warning">رمز فقط در همین صفحه نمایش داده می‌شود. آن را همین حالا در واتساپ ارسال کنید.</p>
+    {% if sms_status == 'queued' %}
+    <p class="rf-invite-warning" style="border-color:#1c8b65;color:#126548;background:#e5f7ed">پیامک خوشامدگویی همراه لینک ورود در صف ارسال قرار گرفت. تحویل نهایی را در «مدیریت پیامک» بررسی کنید.</p>
+    {% elif sms_status == 'gateway_unavailable' %}
+    <p class="rf-invite-warning">سرویس پیامک هنوز فعال یا پیکربندی نشده است؛ اطلاعات را فعلاً با واتساپ بفرستید.</p>
+    {% elif sms_status == 'invalid_phone' %}
+    <p class="rf-invite-warning">شماره موبایل عضو برای ارسال پیامک معتبر نیست؛ لینک را از واتساپ ارسال کنید.</p>
+    {% elif sms_status == 'rule_disabled' %}
+    <p class="rf-invite-warning">قانون پیامک خوشامدگویی غیرفعال است؛ از واتساپ استفاده کنید.</p>
+    {% else %}
+    <p class="rf-invite-warning">وضعیت ارسال خودکار تأیید نشده است؛ تا بررسی آن از واتساپ استفاده کنید.</p>
+    {% endif %}
     <div class="rf-invite-credentials">
       <div><span>نام کاربری</span><strong>{{ member.user.username }}</strong></div>
       <div><span>رمز ورود</span><strong>{{ plain_password }}</strong></div>

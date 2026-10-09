@@ -202,6 +202,13 @@ def signup(request, code=None):
                 source=source,
                 source_url=request.build_absolute_uri()[:500],
             )
+        # The public Iranian signup gets the same welcome link, without the password.
+        # SMS is best-effort: it must never invalidate a completed signup.
+        try:
+            from core.sms_automation import queue_network_welcome_sms
+            queue_network_welcome_sms(member,public=True)
+        except Exception:
+            pass
         login(request, user)
         messages.success(request, 'عضویت شما در شبکه اختصاصی Green Life با موفقیت انجام شد.')
         return redirect('public_network:dashboard')
