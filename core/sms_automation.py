@@ -239,10 +239,14 @@ def queue_network_welcome_sms(member, *, public=False, resend=False, initial_pas
         Q(event_key=prefix+':patient') | Q(event_key__startswith=prefix+'-retry-')
     )
     if resend:
-        if previous.filter(status__in=('pending','sending')).exists():
-            return 'already_queued'
-        if previous.filter(created_at__gte=timezone.now()-timedelta(minutes=5)).exists():
-            return 'recently_sent'
+        if initial_password:
+            # Password reset invalidates old queued credentials: never SMS stale ones.
+            previous.filter(status='pending').update(status='cancelled')
+        else:
+            if previous.filter(status__in=('pending','sending')).exists():
+                return 'already_queued'
+            if previous.filter(created_at__gte=timezone.now()-timedelta(minutes=5)).exists():
+                return 'recently_sent'
         key=f'{key}-retry-{timezone.now():%Y%m%d%H%M%S%f}'
 
     login_path=reverse('public_network:login' if public else 'login')
