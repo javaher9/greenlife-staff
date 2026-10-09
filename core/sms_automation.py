@@ -214,13 +214,14 @@ def queue_network_welcome_sms(member, *, public=False, resend=False):
     """
     import re
     from django.urls import reverse
+    from django.db.models import Q
     from .models import ApiServerSettings, SmsAutomationRule, SmsScheduledMessage
 
     config=ApiServerSettings.load()
     if not (config.is_enabled and config.is_configured):
         return 'gateway_unavailable'
     rule=SmsAutomationRule.objects.filter(event=NETWORK_WELCOME_EVENT,is_enabled=True).first()
-    if not rule:
+    if not rule or rule.recipient!='patient':
         return 'rule_disabled'
 
     raw=re.sub(r'[^0-9]', '', str(member.phone or ''))
@@ -235,8 +236,7 @@ def queue_network_welcome_sms(member, *, public=False, resend=False):
     key=f'{kind}-{member.pk}'
     prefix=f'{NETWORK_WELCOME_EVENT}:{key}'
     previous=SmsScheduledMessage.objects.filter(rule=rule).filter(
-        __import__('django.db.models',fromlist=['Q']).Q(event_key=prefix+':patient') |
-        __import__('django.db.models',fromlist=['Q']).Q(event_key__startswith=prefix+'-retry-')
+        Q(event_key=prefix+':patient') | Q(event_key__startswith=prefix+'-retry-')
     )
     if resend:
         if previous.filter(status__in=('pending','sending')).exists():
