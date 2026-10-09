@@ -108,6 +108,50 @@
     .messages-card{border-color:#c4e2d5}
     .selected-fact{border:1px solid #e1e8f3}
     @media(prefers-reduced-motion:reduce){.kpi{transition:none}.kpi:hover{transform:none}}
+
+    /* Clinical operations dashboard: fixed right-side RTL navigation and higher contrast. */
+    html[dir="rtl"] .shell{direction:ltr;grid-template-columns:minmax(0,1fr) 232px}
+    html[dir="rtl"] .side{direction:rtl;grid-column:2;grid-row:1;border-right:0;border-left:2px solid #d7deeb}
+    html[dir="rtl"] .main{direction:rtl;grid-column:1;grid-row:1}
+    html[dir="rtl"] .top{direction:rtl}
+    @media(min-width:851px) and (max-width:1100px){
+      html[dir="rtl"] .shell{grid-template-columns:minmax(0,1fr) 210px}
+    }
+    :root{--bg:#f0f3f8;--line:#d4dce9;--muted:#536078;--shadow:0 7px 22px rgba(25,43,73,.09)}
+    .side{box-shadow:-5px 0 22px rgba(25,43,73,.045)}
+    .nav a,.nav .disabled{font-size:14px;font-weight:750;color:#25334c}
+    .nav a.active{background:#e6ddff;color:#4d2bb9;box-shadow:inset -3px 0 #7350df}
+    .nav a:hover{background:#ebe7ff}
+    .top{border-color:#cbd5e5;box-shadow:0 6px 18px rgba(25,43,73,.07)}
+    .search{background:#f4f6fa;border-color:#d5ddea}
+    .search input{color:#26334b}.search input::placeholder{color:#65728a}
+    .kpi{border-width:2px}
+    .kpi:nth-child(1){background:#e9e1ff;border-color:#bda6f3}
+    .kpi:nth-child(2){background:#dff5e9;border-color:#92d4b0}
+    .kpi:nth-child(3){background:#e0edff;border-color:#9fc2ef}
+    .kpi:nth-child(4){background:#ffe7ec;border-color:#e9a9ba}
+    .kpi-copy small{font-size:13px;color:#26344e}.kpi-copy p{font-size:12px;color:#465571}
+    .flow-step{border-width:2px}
+    .flow-step:nth-child(1){background:#ece5ff;border-color:#bda6f3}
+    .flow-step:nth-child(2){background:#e0efff;border-color:#9fc2ef}
+    .flow-step.consultant{background:#ece3ff;border-color:#bda6f3}
+    .flow-step.doctor{background:#e0efff;border-color:#9fc2ef}
+    .flow-step.payment{background:#fff0d0;border-color:#eac475}
+    .flow-step.done{background:#ddf5e8;border-color:#92d4b0}
+    .flow-step span{font-size:12px;color:#28374f}
+    .card{border-width:2px;border-color:#cdd7e6}
+    .appointments{min-height:0;border-color:#a8c3e9}
+    .appointments .card-head{background:#e8f0ff;border-bottom-color:#b7ccec}
+    .card-head h2{font-size:16px;color:#202e46}
+    .card-head span,.card-head a{font-size:12px;color:#40516b}
+    .table-head{font-size:12px;color:#36465f;background:#eaf0f9}
+    .appointment-row{font-size:12px}
+    .appointment-row strong{font-size:13px}
+    .appointment-row small{font-size:11px;color:#4d5c74}
+    .selected-card{border-color:#bba9e9}
+    .messages-card{border-color:#98d3b7}
+    .selected-empty{font-size:12px;color:#465672}
+    @media(max-width:850px){html[dir="rtl"] .shell{direction:rtl}}
 </style>
 </head>
 <body>
