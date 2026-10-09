@@ -401,6 +401,11 @@ def referral_member_create(request):
                 user=user,sponsor=sponsor,referral_code=_new_code(),phone=d['phone'],
                 photo=d.get('photo'),created_by=request.user,
             )
+        try:
+            from .sms_automation import queue_network_welcome_sms
+            sms_status=queue_network_welcome_sms(member)
+        except Exception:
+            sms_status='queue_error'
         public_base=os.getenv('PUBLIC_BASE_URL','https://staff.greenlifeclinics.com').rstrip('/')
         login_url=f'{public_base}{reverse("login")}'
         full_name=user.get_full_name() or user.username
@@ -421,6 +426,7 @@ def referral_member_create(request):
         return render(request,'core/referrals/member_invite.html',{
             'member':member,'plain_password':d['password'],'login_url':login_url,
             'invite_text':invite_text,'whatsapp_url':whatsapp_url,
+            'sms_status':sms_status,
         })
     return render(request,'core/referrals/form.html',{
         'form':form,'title':'افزودن عضو شبکه','subtitle':f'زیرمجموعه {sponsor}',
