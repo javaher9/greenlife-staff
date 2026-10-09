@@ -1,0 +1,30 @@
+name: Network SMS Checks
+
+on:
+  pull_request:
+    paths:
+      - 'core/**'
+      - 'public_network/**'
+      - '.github/workflows/network-sms-test.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements.txt
+      - name: Validate migration plan
+        env:
+          DJANGO_SETTINGS_MODULE: greenlife.test_settings
+        run: python manage.py makemigrations --check --dry-run
+      - name: Test welcome SMS and referral behavior
+        env:
+          DJANGO_SETTINGS_MODULE: greenlife.test_settings
+        run: python manage.py test core.tests.test_network_member_welcome_sms core.tests.test_referrals core.tests.test_sms_management --verbosity 1
