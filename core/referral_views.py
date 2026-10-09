@@ -21,7 +21,7 @@ from django.utils import timezone
 
 from .forms import (
     PublicReferralLeadForm, BeytootePublicLeadForm, PersianBeautyPublicLeadForm, ReferralLeadForm, ReferralLeadManageForm,
-    ReferralMemberForm, ReferralSaleForm, CallCenterLeadForm, CallCenterLeadCreateForm, CallCenterDirectLeadForm,
+    ReferralMemberForm, ReferralMemberEditForm, ReferralSaleForm, CallCenterLeadForm, CallCenterLeadCreateForm, CallCenterDirectLeadForm,
 )
 from .models import Attendance, AuditLog, CallCenterLeadGroup, ConsultationPlan, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification, VisitAppointment, InternalMessage, DuplicateLeadError, PatientProfile, PersonalNotebookEntry
 from .call_center_identity import FlowerLeadProxy, call_center_display_name
@@ -433,6 +433,56 @@ def referral_member_create(request):
         'button':'ساخت حساب معرف','sponsor':sponsor,
     })
 
+
+
+
+@login_required
+def referral_member_edit(request,pk):
+    if _role(request.user) not in ('admin','manager'):
+        raise PermissionDenied('ویرایش عضو فقط برای مدیریت مجاز است.')
+    current=_ensure_profile(request.user)
+    member=get_object_or_404(_visible_profiles(request,current),pk=pk,user__profile__role='referrer')
+    initial={'first_name':member.user.first_name,'last_name':member.user.last_name,
+             'phone':member.phone,'username':member.user.username}
+    form=ReferralMemberEditForm(request.POST or None,member=member,initial=initial)
+    if request.method=='POST' and form.is_valid():
+        data=form.cleaned_data
+        with transaction.atomic():
+            member.user.first_name=data['first_name']
+            member.user.last_name=data['last_name']
+            member.user.username=data['username']
+            changed_password=data.get('new_password')
+            if changed_password:
+                member.user.set_password(changed_password)
+            member.user.save()
+            member.phone=data['phone']
+            member.save(update_fields=['phone'])
+            EmployeeProfile.objects.filter(user=member.user).update(phone=data['phone'])
+        messages.success(request,'اطلاعات عضو ذخیره شد.' + (' رمز ورود نیز تغییر کرد.' if changed_password else ''))
+        return redirect('referral_network')
+    return render(request,'core/referrals/member_edit.html',{'form':form,'member':member})
+
+
+@login_required
+def referral_member_custom_sms(request,pk):
+    if request.method!='POST':
+        return HttpResponse(status=405)
+    if _role(request.user) not in ('admin','manager'):
+        raise PermissionDenied('ارسال پیامک فقط برای مدیریت مجاز است.')
+    current=_ensure_profile(request.user)
+    member=get_object_or_404(_visible_profiles(request,current),pk=pk,user__profile__role='referrer')
+    body=(request.POST.get('body') or '').strip()
+    if not body or len(body)>600:
+        messages.error(request,'متن پیامک باید بین ۱ تا ۶۰۰ نویسه باشد.')
+        return redirect('referral_network')
+    try:
+        from .sms import send_sms
+        send_sms(member.phone,body,purpose='manual',created_by=request.user)
+    except Exception:
+        messages.error(request,'ارسال پیامک موفق نبود. تنظیمات API و شماره موبایل را بررسی کنید.')
+    else:
+        messages.success(request,'پیامک برای ارسال به درگاه تحویل داده شد.')
+    return redirect('referral_network')
 
 
 @login_required
