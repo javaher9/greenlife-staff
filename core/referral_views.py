@@ -434,6 +434,36 @@ def referral_member_create(request):
     })
 
 
+
+@login_required
+def referral_member_sms_resend(request,pk):
+    """Manual retry for previously registered members; managers only."""
+    if request.method!='POST':
+        return HttpResponse(status=405)
+    if _role(request.user) not in ('admin','manager'):
+        raise PermissionDenied('ارسال پیامک عضویت فقط برای مدیریت مجاز است.')
+    current=_ensure_profile(request.user)
+    member=get_object_or_404(_visible_profiles(request,current),pk=pk,user__profile__role='referrer')
+    try:
+        from .sms_automation import queue_network_welcome_sms
+        state=queue_network_welcome_sms(member,resend=True)
+    except Exception:
+        state='queue_error'
+    if state=='queued':
+        messages.success(request,'پیامک حاوی لینک ورود عضو در صف ارسال قرار گرفت؛ وضعیت را در مدیریت پیامک ببینید.')
+    elif state in ('already_queued','recently_sent'):
+        messages.info(request,'پیامک این عضو قبلاً در صف بوده یا طی ۵ دقیقه اخیر ارسال شده است.')
+    elif state=='gateway_unavailable':
+        messages.warning(request,'سرویس پیامک REST API هنوز فعال یا پیکربندی نشده؛ لینک را از واتساپ بفرستید.')
+    elif state=='invalid_phone':
+        messages.error(request,'شماره موبایل عضو برای ارسال پیامک ایران معتبر نیست.')
+    elif state=='rule_disabled':
+        messages.warning(request,'قانون پیامک خوشامدگویی شبکه فروش غیرفعال است.')
+    else:
+        messages.error(request,'ثبت درخواست پیامک موفق نبود؛ عضویت عضو تغییری نکرد.')
+    return redirect('referral_network')
+
+
 @login_required
 def referral_lead_list(request):
     current=_ensure_profile(request.user)
