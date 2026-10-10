@@ -242,12 +242,14 @@ def dashboard(request):
     if not member or not member.is_active:
         return redirect('public_network:login')
     direct_members = member.members.filter(is_active=True).select_related('user')
+    from core.network_whatsapp import SALES_NETWORK_WHATSAPP_URL
     return render(request, 'public_network/dashboard.html', {
         'member': member,
         'direct_members': direct_members[:12],
         'direct_count': direct_members.count(),
         'share_url': _member_share_url(request, member),
         'share_qr_url': reverse('public_network:invite_qr', args=[member.code]),
+        'sales_whatsapp_url':SALES_NETWORK_WHATSAPP_URL,
     })
 
 
