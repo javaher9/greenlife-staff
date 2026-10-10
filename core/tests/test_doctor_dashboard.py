@@ -141,7 +141,9 @@ class DoctorDashboardTests(TestCase):
         response=self.client.get(reverse('doctor_dashboard'))
         self.assertEqual(response.status_code,200)
         self.assertContains(response,'مریم حسینی')
-        self.assertNotContains(response,'بیمار هنوز پذیرش نشده')
+        self.assertContains(response,'بیمار هنوز پذیرش نشده')
+        self.assertContains(response,'ثبت‌شده · پذیرش نشده')
+        self.assertEqual(len(response.context['appointment_rows']),2)
 
         blocked=self.client.post(reverse('doctor_dashboard'),{
             'appointment_id':waiting.pk,
