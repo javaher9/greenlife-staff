@@ -1184,6 +1184,41 @@ body.gl-page-call_center_dashboard .ccx .cc-work-row.ccx-focus-pulse{
   background:#fcf9ff!important;
   animation:ccxLeadFocusPulse 1.05s ease-out!important;
 }
+
+/* Compact direct-entry shortcut in the left work rail. */
+body.gl-page-call_center_dashboard .ccx .ccx-side-head{
+  align-items:center!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-side-direct{
+  flex:0 0 auto!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-height:29px!important;
+  padding:0 9px!important;
+  border-radius:9px!important;
+  background:#e7f5ee!important;
+  color:#176e4f!important;
+  border:1px solid #c7e2d4!important;
+  box-shadow:0 4px 11px rgba(23,110,79,.06)!important;
+  text-decoration:none!important;
+  font-size:7.8px!important;
+  font-weight:1000!important;
+  white-space:nowrap!important;
+}
+body.gl-page-call_center_dashboard .ccx .ccx-side-direct:hover,
+body.gl-page-call_center_dashboard .ccx .ccx-side-direct:focus{
+  background:#dcf0e6!important;
+  border-color:#b5d7c7!important;
+  outline:none!important;
+}
+@media(max-width:760px){
+  body.gl-page-call_center_dashboard .ccx .ccx-side-direct{
+    min-height:28px!important;
+    padding:0 8px!important;
+    font-size:7.5px!important;
+  }
+}
 </style>
 
 <div class="ccx" lang="fa" dir="rtl" translate="no">
@@ -1287,7 +1322,7 @@ body.gl-page-call_center_dashboard .ccx .cc-work-row.ccx-focus-pulse{
 
     <aside class="ccx-side">
       <section class="ccx-card">
-        <header class="ccx-head"><div><h3>بعدی چیست؟</h3><p>۵ مورد اول صف فعلی</p></div></header>
+        <header class="ccx-head ccx-side-head"><div><h3>بعدی چیست؟</h3><p>۵ مورد اول صف فعلی</p></div><a class="ccx-side-direct" href="{% url 'call_center_direct_lead_create' %}">＋ ثبت مستقیم</a></header>
         <div class="ccx-side-list">{% for row in next_queue %}<a class="ccx-side-item ccx-side-actionable" href="{% url 'call_center_lead' row.lead.pk %}" data-focus-lead="{{ row.lead.pk }}" title="باز کردن و ادامه پیگیری {{ row.lead.full_name }}"><div class="ccx-side-copy"><strong>{{ row.lead.full_name }}</strong><small>{{ row.next_action }} · {{ row.source_label }}</small></div><div class="ccx-side-right"><b>{{ row.sla_label }}</b><span class="ccx-side-go">ادامه ←</span></div></a>{% empty %}<div class="ccx-side-empty">موردی نیست.</div>{% endfor %}</div>
       </section>
       <section class="ccx-card">
