@@ -15,6 +15,15 @@
   .bulk-sms-tools{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:16px 0}
   .bulk-sms-tools button{font:800 11px inherit;background:#f1f8f4;border:1px solid #cfdfd6;border-radius:9px;color:#256b51;padding:9px 13px;cursor:pointer}
   .bulk-sms-tools input{flex:1;min-width:170px;border:1px solid #d0dfd6;border-radius:10px;background:#fff;color:#1e4c39;padding:11px;font-size:12px}
+  .bulk-filter-panel{background:linear-gradient(110deg,#f6fbff,#f8fff9,#fbf7ff);padding:16px;border:1px solid #d8e6e8;border-radius:16px;margin:14px 0 18px}
+  .bulk-filter-panel h3{font-size:15px;color:#2a5d65;margin:0 0 6px}
+  .bulk-filter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin-top:12px}
+  .bulk-filter-field{display:flex;flex-direction:column;gap:6px;color:#315c55;font-size:12px;font-weight:750}
+  .bulk-filter-field select,.bulk-filter-field input{font:inherit;font-size:13px;min-width:0;width:100%;min-height:42px;border-radius:10px;border:1px solid #ccdcda;background:#fff;color:#244f44;padding:9px 11px}
+  .bulk-filter-description{font-size:11px;line-height:1.8;color:#647e78;margin:8px 0 0}
+  .bulk-filter-dates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:11px}
+  @media(max-width:740px){.bulk-filter-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:550px){.bulk-filter-grid,.bulk-filter-dates{grid-template-columns:1fr}}
   .bulk-sms-section{margin:13px 0;border:1px solid #dce9e2;border-radius:15px;overflow:hidden;background:#fbfdfc}
   .bulk-sms-section summary{display:flex;align-items:center;gap:9px;cursor:pointer;list-style:none;padding:13px 15px;background:linear-gradient(90deg,#f2faf5,#f6f4fc);font-size:12px;font-weight:900;color:#214c3b}
   .bulk-sms-section summary::-webkit-details-marker{display:none}
@@ -63,6 +72,47 @@
           <button type="button" id="bulk-select-visible">انتخاب موارد پیدا‌شده</button>
           <button type="button" id="bulk-clear">پاک‌کردن انتخاب‌ها</button>
         </div>
+        <section class="bulk-filter-panel" aria-label="فیلتر ترکیبی و بازه زمانی">
+          <h3>فیلترهای ترکیبی و زمان</h3>
+          <p class="bulk-filter-description">می‌توانید ۲ یا ۳ گروه (یا بیشتر) را ترکیب کنید. «همه شرط‌ها» یعنی شماره باید در تمام گروه‌های انتخابی وجود داشته باشد. «حداقل یکی» یعنی شماره متعلق به هر یک از گروه‌ها باشد.</p>
+          <div class="bulk-filter-grid">
+            <label class="bulk-filter-field">نحوه ترکیب گروه‌ها
+              <select id="bulk-combine">
+                <option value="any">حداقل یکی (یا / OR)</option>
+                <option value="all">همه شرط‌ها (و / AND)</option>
+              </select>
+            </label>
+            <label class="bulk-filter-field">زمان مربوط به کدام رویداد؟
+              <select id="bulk-date-event">
+                <option value="visit">تاریخ نوبت یا مراجعه</option>
+                <option value="lead">تاریخ ثبت لید</option>
+                <option value="service">تاریخ برنامه دستگاه / درمان</option>
+                <option value="patient">تاریخ تشکیل پرونده</option>
+                <option value="network">تاریخ عضویت شبکه فروش</option>
+              </select>
+            </label>
+            <label class="bulk-filter-field">بازه زمانی
+              <select id="bulk-date-preset">
+                <option value="all">0 — همه تاریخ‌ها (غیرفعال)</option>
+                <option value="7">از 7 روز پیش تا امروز</option>
+                <option value="30">از 30 روز پیش تا امروز</option>
+                <option value="60">از 2 ماه پیش تا امروز (60 روز)</option>
+                <option value="365">از یک سال پیش تا امروز (365 روز)</option>
+                <option value="previous_month">ماه تقویمی قبل</option>
+                <option value="custom">از تاریخ ... تا تاریخ ...</option>
+              </select>
+            </label>
+          </div>
+          <div id="bulk-date-custom" class="bulk-filter-dates" hidden>
+            <label class="bulk-filter-field">تاریخ شروع (میلادی)
+              <input id="bulk-date-from" type="date" dir="ltr" aria-label="تاریخ شروع بازه">
+            </label>
+            <label class="bulk-filter-field">تاریخ پایان (میلادی)
+              <input id="bulk-date-to" type="date" dir="ltr" aria-label="تاریخ پایان بازه">
+            </label>
+          </div>
+          <p class="bulk-filter-description">بازه زمانی فقط روی رویداد انتخاب‌شده اثر دارد؛ مثلاً «بیمار VIP» + «مراجعه‌کرده» با تاریخ مراجعه در 30 روز اخیر، پرونده VIP قدیمی را حذف نمی‌کند. برای حذف فیلتر زمان، عدد 0 را انتخاب کنید. شمارش بدون ارسال پیامک انجام می‌شود.</p>
+        </section>
         {% for group, segments in segment_groups.items %}
         <details class="bulk-sms-section" open>
           <summary>{{ group }} <span class="section-count">{{ segments|length }} گروه</span><span class="section-caret">⌄</span></summary>
@@ -107,6 +157,14 @@
   const err=document.getElementById('bulk-error');
   const results=document.getElementById('bulk-results');
   const previewButton=document.getElementById('bulk-preview-button');
+  const combine=document.getElementById('bulk-combine');
+  const dateEvent=document.getElementById('bulk-date-event');
+  const datePreset=document.getElementById('bulk-date-preset');
+  const dateCustom=document.getElementById('bulk-date-custom');
+  const dateFrom=document.getElementById('bulk-date-from');
+  const dateTo=document.getElementById('bulk-date-to');
+  datePreset.addEventListener('change',()=>{dateCustom.hidden=datePreset.value!=='custom';refresh();});
+  [combine,dateEvent,dateFrom,dateTo].forEach(el=>el.addEventListener('change',refresh));
   function refresh(){selectedCount.textContent=String(boxes.filter(b=>b.checked).length);results.hidden=true;err.textContent='';}
   form.addEventListener('change',refresh);
   search.addEventListener('input',()=>{
@@ -120,16 +178,26 @@
     const selected=boxes.filter(b=>b.checked).map(b=>b.value);
     if(!selected.length){err.textContent='ابتدا حداقل یک گروه انتخاب کنید.';return;}
     if(selected.length>80){err.textContent='برای هر پیش‌نمایش حداکثر 80 گروه انتخاب کنید.';return;}
+    if(datePreset.value==='custom'&&(!dateFrom.value||!dateTo.value)){err.textContent='تاریخ شروع و پایان را مشخص کنید.';return;}
     previewButton.disabled=true;err.textContent='';results.hidden=true;
     try{
       const response=await fetch("{% url 'bulk_sms_preview_api' %}",{
         method:'POST',credentials:'same-origin',
         headers:{'Content-Type':'application/json','X-CSRFToken':form.querySelector('input[name=csrfmiddlewaretoken]').value,'Accept':'application/json'},
-        body:JSON.stringify({segments:selected})
+        body:JSON.stringify({
+          segments:selected,combine:combine.value,
+          date_filter:datePreset.value==='all'?{preset:'all'}:{
+            event:dateEvent.value,preset:datePreset.value,
+            ...(datePreset.value==='custom'?{from:dateFrom.value,to:dateTo.value}:{})
+          }
+        })
       });
       const data=await response.json();
       if(!response.ok||!data.ok){throw new Error(data.error||'محاسبه گروه‌ها انجام نشد');}
+      const period=data.date_filter ? (' — از '+data.date_filter.from+' تا '+data.date_filter.to) : ' — همه تاریخ‌ها';
       document.getElementById('bulk-recipient-count').textContent=String(data.count)+(data.truncated?' (فقط بخشی از مخاطبان)':'');
+      const label=document.querySelector('.bulk-sms-stats span');
+      label.textContent=String(selected.length)+' گروه، '+(combine.value==='all'?'اشتراک همه شرط‌ها':'اجتماع گروه‌ها')+period;
       document.getElementById('bulk-masked').textContent=(data.sample_masked||[]).join('، ')||'مخاطبی یافت نشد';
       const per=document.getElementById('bulk-per-group');per.replaceChildren();
       for(const item of data.per_group||[]){
