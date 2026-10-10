@@ -53,7 +53,7 @@ def bulk_sms_preview_api(request):
     try:
         payload=json.loads(request.body)
         keys=payload.get('segments')
-        result=audience_preview(keys)
+        result=audience_preview(keys, combine=payload.get('combine','any'), date_filter=payload.get('date_filter'))
     except (UnicodeDecodeError,json.JSONDecodeError,AttributeError,TypeError,ValueError) as exc:
         return JsonResponse({'ok':False,'error':str(exc)[:180]},status=400)
     return JsonResponse({'ok':True,**result})
