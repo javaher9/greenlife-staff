@@ -266,10 +266,11 @@ def segment_numbers(key, *, window=None):
         return patients.values_list('phone',flat=True).distinct()
     if key.startswith('device:'):
         device_name=key.split(':',1)[1]
-        patients=patients.filter(device_programs__device_name=device_name)
+        conditions={'device_programs__device_name':device_name}
         if apply_date and window['event']=='service':
-            patients=patients.filter(**_datetime_window_kwargs('device_programs__prescribed_at',window))
-        return patients.values_list('phone',flat=True).distinct()
+            conditions.update(_datetime_window_kwargs('device_programs__prescribed_at',window))
+        # Both predicates MUST bind to the same device row.
+        return patients.filter(**conditions).values_list('phone',flat=True).distinct()
     if key.startswith('leadgroup:'):
         return leads.filter(group_id=int(key.split(':',1)[1])).values_list('phone',flat=True)
     if key.startswith('branch_leads:'):
