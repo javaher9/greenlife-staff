@@ -187,6 +187,8 @@ def _appointment_row(item, now):
         label='تکمیل شده'; tone='done'
     elif item.status=='arrived':
         label='در کلینیک'; tone='arrived'
+    elif item.status=='booked':
+        label='ثبت‌شده · پذیرش نشده'; tone='waiting'
     else:
         local_target=timezone.make_aware(
             datetime.combine(item.appointment_date,item.appointment_time),
@@ -291,17 +293,20 @@ def doctor_dashboard(request):
     if branch:
         appointment_qs=(
             VisitAppointment.objects
-            .filter(
-                branch=branch,
-                appointment_date=today,
-            )
-            .filter(Q(status='arrived',care_stage='doctor')|Q(doctor_completed_by=request.user))
+            .filter(branch=branch,appointment_date=today)
             .exclude(status='cancelled')
             .select_related('lead','lead__assigned_to__user','lead__first_appointment_by','branch')
             .order_by('appointment_time','id')
         )
+    # The schedule is visible before check-in, but medical writes remain restricted
+    # to the doctor's checked-in queue or visits completed by this doctor.
     appointments=attach_patient_photos(list(appointment_qs))
-    selected=_selected_appointment(request,appointments)
+    clinical_appointments=[
+        item for item in appointments
+        if (item.status=='arrived' and item.care_stage=='doctor')
+        or item.doctor_completed_by_id==request.user.pk
+    ]
+    selected=_selected_appointment(request,clinical_appointments)
     patient=_ensure_patient(selected,request.user) if selected else None
 
     if request.method=='POST':
