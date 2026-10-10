@@ -5,8 +5,11 @@ tables on demand so no spreadsheet import, stale snapshot, or duplicate user
 lists are needed. Only Iranian mobile numbers are eligible for this version.
 """
 import re
+from datetime import date, timedelta
+from calendar import monthrange
 
 from django.db.models import Q
+from django.utils import timezone
 
 from .models import (
     Branch, CallCenterLeadGroup, PatientProfile, PatientDeviceProgram,
@@ -89,6 +92,70 @@ def catalog():
     return segments
 
 
+# Event types are explicitly allowlisted. The selected date is applied only
+# to matching event records, not to unrelated demographic/CRM conditions.
+DATE_KINDS = frozenset(('visit', 'lead', 'patient', 'service', 'network'))
+DATE_PRESETS = frozenset(('all', '7', '30', '60', '365', 'previous_month', 'custom'))
+
+
+def segment_event(key):
+    if key.startswith('lead_') or key.startswith('leadgroup:') or key == 'network_leads':
+        return 'lead'
+    if key.startswith('visit_') or key.startswith('branch_leads:'):
+        return 'visit'
+    if key.startswith('device:') or key in (
+        'patient_device', 'patient_diet', 'patient_lipolytic', 'patient_analysis',
+    ):
+        return 'service'
+    if key.startswith('patient_') or key.startswith('branch_patients:'):
+        return 'patient'
+    if key.startswith('network_'):
+        return 'network'
+    raise ValueError('گروه ناشناخته است.')
+
+
+def resolve_date_filter(value):
+    """Validate a bounded, inclusive Gregorian event window; zero means all."""
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError('فیلتر تاریخ معتبر نیست.')
+    preset = str(value.get('preset', 'all'))
+    if preset not in DATE_PRESETS:
+        raise ValueError('بازه زمانی ناشناخته است.')
+    if preset == 'all':
+        return None
+    kind = value.get('event')
+    if kind not in DATE_KINDS:
+        raise ValueError('نوع رویداد زمانی نامعتبر است.')
+    today = timezone.localdate()
+    if preset in ('7', '30', '60', '365'):
+        start, end = today - timedelta(days=int(preset) - 1), today
+    elif preset == 'previous_month':
+        first_this_month = today.replace(day=1)
+        end = first_this_month - timedelta(days=1)
+        start = end.replace(day=1)
+    else:
+        try:
+            start = date.fromisoformat(value['from'])
+            end = date.fromisoformat(value['to'])
+        except (TypeError, ValueError, KeyError):
+            raise ValueError('تاریخ شروع و پایان را به‌درستی وارد کنید.')
+        if start > end:
+            raise ValueError('تاریخ شروع نباید بعد از تاریخ پایان باشد.')
+        if (end - start).days > 3650:
+            raise ValueError('حداکثر بازه دلخواه ده سال است.')
+        if end > today:
+            raise ValueError('تاریخ پایان نمی‌تواند بعد از امروز باشد.')
+    return {'event': kind, 'from': start, 'to': end, 'preset': preset}
+
+def _window_kwargs(field, window):
+    return {field + '__gte': window['from'], field + '__lte': window['to']}
+
+def _datetime_window_kwargs(field, window):
+    return _window_kwargs(field + '__date', window)
+
+
 def _iran_number(value):
     digits = str(value or '').translate(
         str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩','01234567890123456789'),
@@ -122,10 +189,15 @@ def _instagram_q():
     )
 
 
-def segment_numbers(key):
+def segment_numbers(key, *, window=None):
     """Iterable of contact numbers for a whitelisted segment key."""
     leads=_lead_base()
     appts=_appointment_base()
+    apply_date = window is not None and segment_event(key) == window['event']
+    if apply_date and window['event']=='lead':
+        leads = leads.filter(**_datetime_window_kwargs('created_at',window))
+    if apply_date and window['event']=='visit':
+        appts = appts.filter(**_window_kwargs('appointment_date',window))
     if key=='lead_all' or key=='network_leads':
         return leads.values_list('phone',flat=True)
     lead_filters={
@@ -179,17 +251,37 @@ def segment_numbers(key):
         'patient_analysis':Q(body_analyses__isnull=False),
     }
     if key in patient_filters:
-        return patients.filter(patient_filters[key]).values_list('phone',flat=True).distinct()
+        patients=patients.filter(patient_filters[key])
+        if apply_date and window['event']=='patient':
+            patients=patients.filter(**_datetime_window_kwargs('created_at',window))
+        elif apply_date and window['event']=='service':
+            field={
+                'patient_device':'device_programs__prescribed_at',
+                'patient_diet':'diet_programs__prescribed_at',
+                'patient_lipolytic':'lipolytic_programs__prescribed_at',
+                'patient_analysis':'body_analyses__recorded_at',
+            }.get(key)
+            if field:
+                patients=patients.filter(**_datetime_window_kwargs(field,window))
+        return patients.values_list('phone',flat=True).distinct()
     if key.startswith('device:'):
         device_name=key.split(':',1)[1]
-        return patients.filter(device_programs__device_name=device_name).values_list('phone',flat=True).distinct()
+        patients=patients.filter(device_programs__device_name=device_name)
+        if apply_date and window['event']=='service':
+            patients=patients.filter(**_datetime_window_kwargs('device_programs__prescribed_at',window))
+        return patients.values_list('phone',flat=True).distinct()
     if key.startswith('leadgroup:'):
         return leads.filter(group_id=int(key.split(':',1)[1])).values_list('phone',flat=True)
     if key.startswith('branch_leads:'):
         return appts.filter(branch_id=int(key.split(':',1)[1])).values_list('phone',flat=True)
     if key.startswith('branch_patients:'):
-        return patients.filter(home_branch_id=int(key.split(':',1)[1])).values_list('phone',flat=True)
+        patients=patients.filter(home_branch_id=int(key.split(':',1)[1]))
+        if apply_date and window['event']=='patient':
+            patients=patients.filter(**_datetime_window_kwargs('created_at',window))
+        return patients.values_list('phone',flat=True)
     network=ReferralProfile.objects.filter(user__is_active=True)
+    if apply_date and window['event']=='network':
+        network=network.filter(**_datetime_window_kwargs('created_at',window))
     if key=='network_active':
         network=network.filter(is_active=True)
     elif key=='network_level1':
@@ -205,18 +297,28 @@ def segment_numbers(key):
     )
 
 
-def audience_preview(keys, *, max_contacts=MAX_PREVIEW_CONTACTS):
+def audience_preview(keys, *, combine='any', date_filter=None, max_contacts=MAX_PREVIEW_CONTACTS):
+    """Read-only union/intersection on normalized phone, with event-scoped dates.
+
+    OR selects anybody in any segment; AND keeps only contacts present in all
+    selected segments. Date applies ONLY to the chosen event family. Never send.
+    """
     available={item['key']:item for item in catalog()}
     if not isinstance(keys,list) or not keys or len(keys)>80 or len(set(keys))!=len(keys):
         raise ValueError('حداقل یک و حداکثر ۸۰ گروه متفاوت را انتخاب کنید.')
     if any(not isinstance(key,str) or key not in available for key in keys):
         raise ValueError('انتخاب گروه نامعتبر است.')
+    if combine not in ('any','all'):
+        raise ValueError('نوع ترکیب گروه‌ها معتبر نیست.')
+    window=resolve_date_filter(date_filter)
+    if window and not any(segment_event(key)==window['event'] for key in keys):
+        raise ValueError('برای این فیلتر زمانی دست‌کم یک گروه از همان نوع رویداد انتخاب کنید.')
     numbers=set()
     scanned=0
     by_group=[]
     truncated=False
-    for key in keys:
-        collection=segment_numbers(key)
+    for index,key in enumerate(keys):
+        collection=segment_numbers(key,window=window)
         iterables=collection if isinstance(collection,tuple) else (collection,)
         group_numbers=set()
         for item in iterables:
@@ -225,19 +327,29 @@ def audience_preview(keys, *, max_contacts=MAX_PREVIEW_CONTACTS):
                 number=_iran_number(raw)
                 if number:
                     group_numbers.add(number)
-                    numbers.add(number)
                 if scanned>=max_contacts:
                     truncated=True
                     break
             if truncated:
                 break
+        if index == 0:
+            numbers=group_numbers.copy()
+        elif combine=='all':
+            numbers.intersection_update(group_numbers)
+        else:
+            numbers.update(group_numbers)
         by_group.append({'key':key,'label':available[key]['label'],'count':len(group_numbers)})
         if truncated:
             break
     return {
         'count':len(numbers),'selected_groups':len(keys),
+        'combine':combine, 'date_filter':{
+            'event':window['event'],
+            'from':window['from'].isoformat(),
+            'to':window['to'].isoformat(),
+        } if window else None,
         'scanned':scanned,'truncated':truncated,
         'per_group':by_group,
         'sample_masked':[n[:4]+'***'+n[-4:] for n in sorted(numbers)[:8]],
-        'note':'پیش‌نمایش است؛ هنوز هیچ پیامکی ارسال نشده است.',
+        'note':'فقط پیش‌نمایش است؛ هیچ پیامکی ارسال نشده است.',
     }
