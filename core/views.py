@@ -1090,6 +1090,8 @@ def employee_edit(request,pk):
         messages.error(request,'به این پرسنل دسترسی ندارید.')
         return redirect('employee_list')
     form=EmployeeEditForm(request.POST or None,employee=employee)
+    if not (request.user.is_superuser or _is_executive_user(request.user)):
+        form.fields.pop('can_send_marketing_sms',None)
     edit_scope=getattr(request,'country_scope',None)
     if edit_scope:
         form.fields['country'].queryset=Country.objects.filter(pk=edit_scope.pk,is_active=True)

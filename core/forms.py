@@ -697,6 +697,7 @@ class EmployeeEditForm(forms.Form):
         help_text='اگر فعال باشد، این فرد می‌تواند گروه سراسری بسازد که برای همه گل‌ها نمایش داده می‌شود.',
     )
     can_use_sales_network=forms.BooleanField(label='دسترسی به شبکه فروش',required=False)
+    can_send_marketing_sms=forms.BooleanField(label='اجازه ارسال پیامک تکی و گروهی',required=False,help_text='شامل شماره دلخواه، مشتریان و لیدها؛ بدون دسترسی به تنظیمات درگاه.')
     is_active=forms.BooleanField(label='فعال',required=False)
     new_password=forms.CharField(label='رمز دسکتاپ جدید',required=False,widget=forms.PasswordInput,help_text='اگر نمی‌خواهید رمز دسکتاپ تغییر کند، خالی بگذارید.')
 
@@ -716,7 +717,7 @@ class EmployeeEditForm(forms.Form):
                 'address':employee.address,'education':employee.education,
                 'is_insured':employee.is_insured,'can_register_instagram_dm_lead':employee.can_register_instagram_dm_lead,
                 'can_manage_call_center_groups':employee.can_manage_call_center_groups,
-                'can_use_sales_network':employee.can_use_sales_network,'is_active':employee.is_active,
+                'can_use_sales_network':employee.can_use_sales_network,'can_send_marketing_sms':employee.can_send_marketing_sms,'is_active':employee.is_active,
             })
 
     def clean_username(self):
@@ -757,6 +758,8 @@ class EmployeeEditForm(forms.Form):
         user.save()
         for field in ('country','preferred_language','branch','role','shift_group','job_title','phone','birth_date','start_date','address','education','is_insured','can_register_instagram_dm_lead','can_manage_call_center_groups','can_use_sales_network','is_active'):
             setattr(employee,field,d.get(field))
+        if 'can_send_marketing_sms' in self.fields:
+            employee.can_send_marketing_sms=bool(d.get('can_send_marketing_sms'))
         if employee.role=='call_center' and not employee.job_title:
             employee.job_title='کارشناس کال‌سنتر'
         if employee.role=='consultant' and not employee.job_title:

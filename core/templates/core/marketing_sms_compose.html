@@ -1,0 +1,42 @@
+{% extends 'core/base.html' %}{% block content %}
+<section style="max-width:1060px;margin:16px auto;padding:20px;direction:rtl;color:#173e39;background:#f7fbfa;border:1px solid #c7e2da;border-radius:18px">
+  <h1 style="margin:0;color:#075c4d">ارسال پیامک</h1>
+  <p>ارسال تکی یا گروهی به شماره دلخواه و مخاطبان ثبت‌شده. هر نوبت حداکثر ۲۵ نفر؛ سقف روزانه ۱۰۰ پیامک. همه ارسال‌ها ثبت می‌شوند.</p>
+  <form method="post" style="display:grid;gap:12px;padding:15px;border-radius:14px;background:#fff;border:1px solid #c7e2da">{% csrf_token %}
+    <input type="hidden" name="mode" value="manual">
+    <label for="manual-numbers">شماره‌های موبایل (هر شماره در یک خط یا جداشده با ویرگول)</label>
+    <textarea id="manual-numbers" name="numbers" rows="3" required placeholder="09123456789" dir="ltr" style="padding:10px;border-radius:9px;border:1px solid #abcfc4"></textarea>
+    <label for="manual-body">متن پیامک</label>
+    <textarea id="manual-body" name="body" maxlength="600" rows="4" required placeholder="متن پیامک را بنویسید..." style="padding:10px;border-radius:9px;border:1px solid #abcfc4"></textarea>
+    <button type="submit" style="border:0;border-radius:10px;background:#087462;color:white;padding:12px;cursor:pointer">ارسال به شماره‌های واردشده</button>
+  </form>
+  <hr style="border:0;border-top:1px solid #bed9d0;margin:22px 0">
+  <h2>ارسال به مشتریان یا لیدها</h2>
+  <form method="get" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+    <select name="source" style="padding:11px;border-radius:9px"><option value="leads" {% if source == 'leads' %}selected{% endif %}>لیدهای ایران</option><option value="patients" {% if source == 'patients' %}selected{% endif %}>پرونده مشتریان</option></select>
+    <input name="q" value="{{ q }}" placeholder="نام یا شماره موبایل" style="flex:1;min-width:140px;padding:11px;border-radius:9px;border:1px solid #abcfc4">
+    <button type="submit" style="border:0;border-radius:9px;background:#087462;color:white;padding:11px">جست‌وجو</button>
+  </form>
+  <form method="post" style="display:grid;gap:12px">{% csrf_token %}
+    <input type="hidden" name="mode" value="selected">
+    <input type="hidden" name="source" value="{{ source }}">
+    <div style="overflow:auto;max-height:380px;background:white;border:1px solid #d1e6e0;border-radius:11px">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr><th style="text-align:right;padding:10px">انتخاب</th><th style="text-align:right">نام</th><th style="text-align:right">شماره</th></tr></thead>
+        <tbody>{% for item in results %}<tr style="border-top:1px solid #e1efec">
+          <td style="padding:10px"><input type="checkbox" name="selected_ids" value="{{ item.id }}"></td>
+          <td>{{ item.full_name }}</td><td dir="ltr" style="text-align:right">{{ item.phone }}</td>
+        </tr>{% empty %}<tr><td colspan="3" style="padding:14px">موردی پیدا نشد.</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    <label for="selected-body">متن پیامک گروهی</label>
+    <textarea id="selected-body" name="body" maxlength="600" rows="4" required placeholder="متن پیامک انتخاب‌شده‌ها..." style="padding:11px;border-radius:9px;border:1px solid #abcfc4"></textarea>
+    <button type="submit" style="border:0;border-radius:10px;background:#087462;color:white;padding:12px;cursor:pointer">ارسال به مخاطبان انتخاب‌شده</button>
+  </form>
+  <h2 style="margin-top:24px">آخرین پیامک‌های ارسالی من</h2>
+  <div style="overflow:auto"><table style="width:100%;background:white;border-collapse:collapse">
+    <tr><th style="text-align:right;padding:10px">شماره</th><th style="text-align:right">وضعیت درگاه</th><th style="text-align:right">زمان</th></tr>
+    {% for item in recent %}<tr style="border-top:1px solid #deebe7"><td style="padding:9px">{{ item.masked_number }}</td><td>{{ item.get_status_display }}</td><td>{{ item.created_at|date:"Y-m-d H:i" }}</td></tr>{% empty %}<tr><td colspan="3">هنوز پیامکی ارسال نشده است.</td></tr>{% endfor %}
+  </table></div>
+</section>
+{% endblock %}

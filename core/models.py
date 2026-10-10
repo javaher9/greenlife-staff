@@ -115,6 +115,7 @@ class EmployeeProfile(models.Model):
         default=False,
         help_text='اجازه ثبت دستی لیدهایی که شماره‌شان از دایرکت اینستاگرام دریافت شده است.',
     )
+    can_send_marketing_sms=models.BooleanField(default=False,help_text='اجازه ارسال پیامک تکی و گروهی، بدون دسترسی به تنظیمات درگاه.')
     can_manage_call_center_groups=models.BooleanField(
         default=False,
         help_text='اجازه ساخت گروه‌های سراسری کال‌سنتر برای همه گل‌ها.',
