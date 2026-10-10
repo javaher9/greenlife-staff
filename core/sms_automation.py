@@ -260,4 +260,11 @@ def queue_network_welcome_sms(member, *, public=False, resend=False, initial_pas
             'password':initial_password or 'از معرف خود دریافت کنید',
         },
     )
+    if record:
+        from .network_whatsapp import SALES_NETWORK_WHATSAPP_URL
+        invite_line='\nگروه واتساپ شبکه فروش (عضویت اختیاری):\n'+SALES_NETWORK_WHATSAPP_URL
+        if SALES_NETWORK_WHATSAPP_URL not in record.body:
+            # Only change the newly queued item, never an already dispatched message.
+            updated=SmsScheduledMessage.objects.filter(pk=record.pk,status='pending').exclude(
+                body__contains=SALES_NETWORK_WHATSAPP_URL).update(body=record.body+invite_line)
     return 'queued' if record else 'not_queued'
