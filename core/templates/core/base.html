@@ -383,6 +383,9 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     <span><b>GreenLife</b><small>STAFF APP</small></span>
   </div>
   <nav class="app-nav">
+    {% if user.is_authenticated and user.profile.can_send_marketing_sms or user.is_superuser %}
+    <a href="{% url 'marketing_sms_compose' %}" class="{% if request.resolver_match.url_name == 'marketing_sms_compose' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>ارسال پیامک</span></a>
+    {% endif %}
     {% if executive_access %}
     <a href="/my-office/" class="gl-executive-nav {% if request.path|slice:':11' == '/my-office/' %}is-active{% endif %}"><span class="nav-ico">✦</span><span>{% gl_t 'shell.my_office' %}</span><b class="gl-private-badge">PRIVATE</b></a>
     <a href="{% url 'doctor_dashboard' %}" class="gl-executive-nav {% if request.resolver_match.url_name == 'doctor_dashboard' %}is-active{% endif %}"><span class="nav-ico">✚</span><span>{% gl_t 'shell.doctor_mode' %}</span></a>
