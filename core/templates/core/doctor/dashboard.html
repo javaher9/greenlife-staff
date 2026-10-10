@@ -278,6 +278,42 @@ html,body{background:#0a1520!important}
 .doctor-api-status{display:none;position:fixed;bottom:20px;left:20px;z-index:999;background:#eaf7ef;color:#215b41;border:1px solid #8bc7a2;border-radius:14px;padding:13px 16px;font-size:13px}.doctor-api-status.error{background:#fff1f1;color:#983b3b;border-color:#e8b2b2}
 @media(max-width:1100px){.doctor-intro{flex-wrap:wrap}.doctor-quick{margin-right:0}}@media(max-width:820px){.doctor-intro{padding:14px!important}.doctor-intro-avatar{height:64px;width:64px;flex-basis:64px}.doctor-intro h1{font-size:18px}}
 
+
+/* Doctor desktop readability pass — scoped; existing endpoints and mobile attendance untouched. */
+@media (min-width:821px) {
+  html:has(.doctor-workspace),body:has(.doctor-workspace){background:#f3f8f6!important;color:#24473c!important;color-scheme:light!important}
+  .doctor-workspace{--d-bg:#f3f8f6;--d-card:#fff;--d-card2:#f7fbf9;--d-line:#d4e3dc;--d-text:#24473c;--d-muted:#586f65;color:#24473c!important;background:#f3f8f6!important}
+  .doctor-side{background:linear-gradient(180deg,#fff,#f3faf6)!important;border-left:1px solid #d5e6dc!important;box-shadow:-6px 0 28px #234d3510!important}
+  .doctor-side .doctor-brand{border-bottom-color:#dce9e2!important}
+  .doctor-side .doctor-brand b{color:#24553f!important}
+  .doctor-side .doctor-brand small{color:#638075!important}
+  .doctor-side nav a,.doctor-side-foot a{color:#365c4a!important;background:transparent!important;border-color:transparent!important;text-shadow:none!important}
+  .doctor-side nav a:hover,.doctor-side-foot a:hover{background:#e9f5ee!important;border-color:#cfe3d6!important;color:#24553f!important}
+  .doctor-side nav a.active{background:#e7f5ed!important;border-color:#bcdcc9!important;color:#236c4b!important;box-shadow:none!important}
+  .doctor-side-ico{background:#eaf5ef!important;color:#287452!important;text-shadow:none!important}
+  .doctor-side-foot a{background:#f6faf7!important;border-color:#d5e5db!important}
+  .doctor-workspace .doctor-card{background:#fff!important;color:#24473c!important;border-color:#dbe8df!important;box-shadow:0 8px 26px #294c3510!important}
+  .doctor-workspace .doctor-shell-actions a,.doctor-workspace .doctor-shell-actions a.neon{background:#fff!important;color:#2b6149!important;border-color:#cbded2!important;box-shadow:none!important}
+  .doctor-workspace .doctor-branch-form select{background:#fff!important;color:#254b3e!important;border-color:#c9dcd2!important}
+  .doctor-workspace .appt-link{background:#fff!important;color:#24473c!important;border-color:#d7e5dc!important}
+  .doctor-workspace .appt-link.active{background:#edf8f1!important;border-color:#6bab83!important;box-shadow:0 0 0 2px #b9dfc7!important}
+  .doctor-workspace .appt-link:hover{background:#f5faf6!important;border-color:#90c4a2!important}
+  .doctor-workspace .appt-time,.doctor-workspace .appt-name,.doctor-workspace .patient-name-row h1{color:#214b39!important}
+  .doctor-workspace .appt-meta,.doctor-workspace .appt-owner,.doctor-workspace .patient-facts,.doctor-workspace .patient-history{color:#536d60!important}
+  .doctor-workspace .doctor-card-head{border-bottom-color:#e0ebe5!important}
+  .doctor-workspace .doctor-card-head h2,.doctor-workspace .doctor-card-head h3{color:#24513d!important}
+  .doctor-workspace .doctor-flash{background:#fff!important;color:#254d3b!important}
+  .doctor-workspace .clinical-form input,.doctor-workspace .clinical-form select,.doctor-workspace .clinical-form textarea{background:#fff!important;color:#25483a!important;border-color:#cbded3!important;color-scheme:light!important}
+  .doctor-workspace input:focus-visible,.doctor-workspace select:focus-visible,.doctor-workspace textarea:focus-visible,.doctor-workspace button:focus-visible,.doctor-workspace a:focus-visible{outline:3px solid #7cb994!important;outline-offset:2px!important}
+  .doctor-workspace .doctor-field label,.doctor-workspace .doctor-card small{color:#516e60!important}
+  .doctor-workspace .doctor-quick a,.doctor-workspace .hero-btn{font-size:12px!important;min-height:42px!important}
+  .doctor-workspace .doctor-quick a:first-child{color:#fff!important}
+}
+@media(max-width:820px){
+  .doctor-workspace a,.doctor-workspace button{touch-action:manipulation}
+  .doctor-workspace input,.doctor-workspace select,.doctor-workspace textarea{font-size:16px!important}
+}
+
 </style>
 </head>
 <body>
