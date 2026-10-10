@@ -60,7 +60,7 @@ def marketing_sms_compose(request):
             messages.error(request,'متن پیامک باید بین ۱ تا ۶۰۰ نویسه باشد.')
             return redirect('marketing_sms_compose')
         if mode=='manual':
-            numbers=[_iran_mobile(n) for n in re.split(r'[,;،\\n]+',request.POST.get('numbers','')) if n.strip()]
+            numbers=[_iran_mobile(n) for n in re.split(r'[,;،\n]+',request.POST.get('numbers','')) if n.strip()]
         elif mode=='selected':
             selected=request.POST.getlist('selected_ids')[:26]
             ids=[int(x) for x in selected if x.isdecimal()]
