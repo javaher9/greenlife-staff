@@ -45,5 +45,7 @@ jobs:
         run: python -m compileall -q core greenlife
       - name: Django system check
         run: python manage.py check
+      - name: SMS group audiences and permissions
+        run: python manage.py test core.tests.test_bulk_sms_audiences --verbosity 2
       - name: Receptionist, call center, finance and lead-ingest regression tests
         run: python manage.py test core.tests.test_receptionist_role core.tests.test_doctor_dashboard core.tests.test_patient_360 core.tests.test_call_center_role core.tests.test_call_center_kpis core.tests.test_appointment_payment_visibility core.tests.test_telegram_lead core.tests.test_instagram_page_sources core.tests.test_consultant_finance core.tests.test_lead_ingest core.tests.test_unified_lead_routing core.tests.test_server_health --verbosity 2
