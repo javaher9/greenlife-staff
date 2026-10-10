@@ -261,15 +261,17 @@ def _default_call_center_group(operator=None):
 def _can_manage_call_center_groups(user):
     if not user or not user.is_authenticated:
         return False
+    if user.is_superuser:
+        return True
     profile=getattr(user,'profile',None)
-    if not profile or profile.role!='call_center':
+    if not profile:
         return False
-    allowed={
-        item.strip() for item in
-        os.getenv('CALL_CENTER_GROUP_MANAGERS','خورشیدی,نرگس').split(',')
-        if item.strip()
-    }
-    return call_center_display_name(profile) in allowed
+    if profile.role in ('admin','internal_manager'):
+        return True
+    return bool(
+        profile.role=='call_center'
+        and getattr(profile,'can_manage_call_center_groups',False)
+    )
 
 
 def _call_center_direct_referrer():
@@ -1528,13 +1530,19 @@ def call_center_quick_message(request):
     return response
 
 
-@call_center_required
+@login_required
 def call_center_group_create(request):
-    if request.method!='POST':
-        return redirect('call_center_dashboard')
     if not _can_manage_call_center_groups(request.user):
-        messages.error(request,'ساخت گروه فقط برای سرگروه مجاز کال‌سنتر فعال است.')
-        return redirect('call_center_dashboard')
+        messages.error(request,'ساخت گروه فقط برای مدیر یا سرگروه مجاز کال‌سنتر فعال است.')
+        return redirect('dashboard')
+    if request.method=='GET':
+        groups=CallCenterLeadGroup.objects.annotate(lead_count=Count('leads')).order_by('-is_default','name','id')
+        return render(request,'core/call_center/group_manage.html',{
+            'groups':groups,
+            'can_manage_groups':True,
+        })
+    if request.method!='POST':
+        return redirect('call_center_group_create')
     name=' '.join((request.POST.get('name') or '').strip().split())
     if not name:
         messages.error(request,'نام گروه را وارد کنید.')
@@ -1558,7 +1566,9 @@ def call_center_group_create(request):
         messages.success(request,f'گروه سراسری «{group.name}» ساخته شد و برای همه گل‌ها قابل مشاهده است.')
     else:
         messages.info(request,f'گروه «{group.name}» از قبل وجود دارد.')
-    return redirect(f"{reverse('call_center_dashboard')}?group={group.pk}")
+    if _role(request.user)=='call_center':
+        return redirect(f"{reverse('call_center_dashboard')}?group={group.pk}")
+    return redirect('call_center_group_create')
 
 
 @call_center_required

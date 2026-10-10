@@ -1,0 +1,21 @@
+{% extends 'core/base.html' %}{% block content %}
+<style>
+.ccgm{max-width:760px;margin:18px auto 90px;padding:0 12px;display:grid;gap:12px}
+.ccgm-head,.ccgm-card{background:#fff;border:1px solid #dfe7ea;border-radius:20px;box-shadow:0 10px 28px rgba(35,54,68,.06)}
+.ccgm-head{padding:18px 20px}.ccgm-head h1{margin:0;color:#263e4f;font-size:22px}.ccgm-head p{margin:6px 0 0;color:#74848f;font-size:10px;line-height:1.8}
+.ccgm-card{padding:16px}.ccgm-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.ccgm-form input{height:42px!important;background:#fff!important;color:#263e4f!important;border:1.3px solid #d7e2e5!important;border-radius:10px!important;box-shadow:none!important;padding:0 11px!important}
+.ccgm-form button{min-height:42px!important;padding:0 15px!important;border-radius:10px!important;background:#e5f5ed!important;color:#176e4f!important;border:1px solid #c3dfd0!important;box-shadow:none!important;font-weight:900!important}
+.ccgm-note{margin-top:9px;padding:8px 10px;border-radius:9px;background:#fff8e9;border:1px solid #eee0bb;color:#7b642e;font-size:8px;line-height:1.8}
+.ccgm-list{display:grid;gap:7px}.ccgm-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border-radius:12px;background:#f8faf9;border:1px solid #e3e9e7}.ccgm-row strong{color:#2b443e;font-size:10px}.ccgm-row span{color:#7a8984;font-size:8px}
+@media(max-width:640px){.ccgm{padding:0 8px;margin-top:10px}.ccgm-head{padding:14px}.ccgm-form{grid-template-columns:1fr}.ccgm-form button{width:100%}}
+</style>
+<section class="ccgm">
+  <header class="ccgm-head"><h1>گروه‌های سراسری کال‌سنتر</h1><p>هر گروهی که اینجا ساخته شود، برای تمام گل‌های کال‌سنتر نمایش داده می‌شود.</p></header>
+  <article class="ccgm-card">
+    <form class="ccgm-form" method="post">{% csrf_token %}<input name="name" maxlength="80" placeholder="مثلاً VIP تهران یا میز قدیمی دکتر جواهریان" required><button type="submit">＋ ساخت گروه</button></form>
+    <div class="ccgm-note">ساخت گروه فقط برای مدیران و سرگروه‌هایی که مجوز «مدیریت گروه‌های کال‌سنتر» دارند فعال است.</div>
+  </article>
+  <article class="ccgm-card"><div class="ccgm-list">{% for group in groups %}<div class="ccgm-row"><strong>{{ group.name }}</strong><span>{{ group.lead_count }} لید{% if group.is_default %} · پیش‌فرض{% endif %}</span></div>{% empty %}<div class="ccgm-row"><strong>هنوز گروهی ثبت نشده است.</strong></div>{% endfor %}</div></article>
+</section>
+{% endblock %}

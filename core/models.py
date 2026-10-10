@@ -115,6 +115,10 @@ class EmployeeProfile(models.Model):
         default=False,
         help_text='اجازه ثبت دستی لیدهایی که شماره‌شان از دایرکت اینستاگرام دریافت شده است.',
     )
+    can_manage_call_center_groups=models.BooleanField(
+        default=False,
+        help_text='اجازه ساخت گروه‌های سراسری کال‌سنتر برای همه گل‌ها.',
+    )
     can_use_sales_network=models.BooleanField(
         default=True,
         help_text='اجازه دسترسی به شبکه فروش و ثبت لید به نام شبکه شخصی.',
