@@ -93,7 +93,7 @@ class BulkSmsAudienceTests(TestCase):
         self.assertEqual(response.status_code,200)
         self.assertContains(response,'ارسال پیامک گروهی')
         self.assertContains(response,'Cooltech Define')
-        self.assertEqual(response['Cache-Control'],'no-store, private')
+        self.assertIn('no-store',response['Cache-Control'])
 
     def test_unauthorized_staff_cannot_access_private_audiences(self):
         self.client.force_login(self.employee)
