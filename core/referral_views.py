@@ -433,12 +433,14 @@ def referral_member_create(request):
         public_base=os.getenv('PUBLIC_BASE_URL','https://staff.greenlifeclinics.com').rstrip('/')
         login_url=f'{public_base}{reverse("login")}'
         full_name=user.get_full_name() or user.username
+        from .network_whatsapp import SALES_NETWORK_WHATSAPP_URL
         invite_text=(
             f'سلام {full_name}\n'
             'عضویت شما در شبکه فروش گرین‌لایف فعال شد.\n\n'
             f'نام کاربری: {user.username}\n'
             f'رمز ورود: {d["password"]}\n'
             f'لینک ورود: {login_url}\n\n'
+            f'گروه واتساپ شبکه فروش (اختیاری): {SALES_NETWORK_WHATSAPP_URL}\\n'
             'لطفاً این اطلاعات را محرمانه نگه دارید.'
         )
         phone=''.join(ch for ch in d['phone'] if ch.isdigit())
@@ -450,7 +452,7 @@ def referral_member_create(request):
         return render(request,'core/referrals/member_invite.html',{
             'member':member,'plain_password':d['password'],'login_url':login_url,
             'invite_text':invite_text,'whatsapp_url':whatsapp_url,
-            'sms_status':sms_status,
+            'sms_status':sms_status,'sales_whatsapp_url':SALES_NETWORK_WHATSAPP_URL,
         })
     return render(request,'core/referrals/form.html',{
         'form':form,'title':'افزودن عضو شبکه','subtitle':f'زیرمجموعه {sponsor}',
