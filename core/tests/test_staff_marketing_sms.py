@@ -2,7 +2,7 @@ from unittest.mock import patch
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
-from core.models import EmployeeProfile, ReferralLead, SmsMessageLog, Country
+from core.models import EmployeeProfile, ReferralLead, SmsMessageLog, Country, ReferralProfile
 
 
 class StaffMarketingSmsTests(TestCase):
@@ -40,7 +40,8 @@ class StaffMarketingSmsTests(TestCase):
         config.return_value.is_enabled=True
         config.return_value.is_configured=True
         country=Country.objects.get(code='IR')
-        lead=ReferralLead.objects.create(full_name='آزمایشی',phone='09121112233',country=country)
+        profile=ReferralProfile.objects.create(user=self.user,referral_code='GLSMSSTAFF1',phone='09121112233')
+        lead=ReferralLead.objects.create(referrer=profile,full_name='آزمایشی',phone='09121112233',country=country)
         response=self.client.post(reverse('marketing_sms_compose'),{
             'mode':'selected','source':'leads','selected_ids':[str(lead.pk)],'body':'تست لید',
         })
