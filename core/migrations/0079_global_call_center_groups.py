@@ -52,6 +52,10 @@ def merge_operator_groups(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
+    # Data merge updates ReferralLead foreign keys before constraints change.
+    # PostgreSQL must commit those trigger events before ALTER TABLE.
+    atomic=False
+
     dependencies=[
         ('core','0078_network_welcome_password_template'),
     ]
