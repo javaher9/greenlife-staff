@@ -440,7 +440,7 @@ def referral_member_create(request):
             f'نام کاربری: {user.username}\n'
             f'رمز ورود: {d["password"]}\n'
             f'لینک ورود: {login_url}\n\n'
-            f'گروه واتساپ شبکه فروش (اختیاری): {SALES_NETWORK_WHATSAPP_URL}\\n'
+            f'گروه واتساپ شبکه فروش (اختیاری): {SALES_NETWORK_WHATSAPP_URL}\n'
             'لطفاً این اطلاعات را محرمانه نگه دارید.'
         )
         phone=''.join(ch for ch in d['phone'] if ch.isdigit())
