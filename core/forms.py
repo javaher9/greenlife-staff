@@ -431,7 +431,7 @@ class CallCenterLeadForm(forms.ModelForm):
         if operator is None:
             self.fields['group'].queryset=CallCenterLeadGroup.objects.none()
         else:
-            self.fields['group'].queryset=CallCenterLeadGroup.objects.filter(owner=operator)
+            self.fields['group'].queryset=CallCenterLeadGroup.objects.all().order_by('-is_default','name','id')
         self.fields['group'].required=False
         self.fields['group'].empty_label='بدون گروه'
         self.fields['contact_result'].required=True
@@ -440,7 +440,7 @@ class CallCenterLeadForm(forms.ModelForm):
         self.fields['contact_result'].choices=[
             ('','---------'),
             ('follow_up','نیاز به پیگیری'),
-            ('appointment','نوبت داده شد'),
+            ('appointment','نوبت ثبت شد'),
             ('no_answer','پاسخ نداد'),
             ('not_interested','تمایل ندارد'),
         ]
@@ -478,11 +478,13 @@ class CallCenterLeadForm(forms.ModelForm):
 class CallCenterDirectLeadForm(forms.ModelForm):
     class Meta:
         model=ReferralLead
-        fields=['full_name','phone','notes']
+        fields=['full_name','phone','group','interested_service','notes']
         labels={
             'full_name':'نام و نام خانوادگی',
             'phone':'شماره موبایل',
-            'notes':'توضیحات دایرکت',
+            'group':'گروه',
+            'interested_service':'خدمت موردنظر',
+            'notes':'توضیحات',
         }
         widgets={
             'full_name':forms.TextInput(attrs={'placeholder':'نام و نام خانوادگی'}),
@@ -490,27 +492,31 @@ class CallCenterDirectLeadForm(forms.ModelForm):
                 'placeholder':'مثلاً 09121234567','inputmode':'tel',
                 'autocomplete':'tel','dir':'ltr',
             }),
+            'interested_service':forms.TextInput(attrs={
+                'placeholder':'مثلاً VIP، لاغری موضعی، پیگیری قدیمی…',
+            }),
             'notes':forms.Textarea(attrs={
-                'rows':5,
-                'placeholder':'خلاصه مکالمه دایرکت، درخواست مراجعه‌کننده و نکته‌ای که اپراتور بعدی باید بداند…',
+                'rows':4,
+                'placeholder':'منبع شماره یا توضیح کوتاه برای پیگیری بعدی (اختیاری)',
             }),
         }
 
-    def __init__(self,*args,**kwargs):
+    def __init__(self,*args,default_group=None,**kwargs):
         super().__init__(*args,**kwargs)
-        self.fields['notes'].required=True
+        groups=CallCenterLeadGroup.objects.all().order_by('-is_default','name','id')
+        self.fields['group'].queryset=groups
+        self.fields['group'].required=True
+        self.fields['group'].empty_label='انتخاب گروه…'
+        if default_group is not None and not self.is_bound:
+            self.fields['group'].initial=default_group
+        self.fields['interested_service'].required=False
+        self.fields['notes'].required=False
 
     def clean_phone(self):
         raw=self.cleaned_data.get('phone') or ''
         value=''.join(ch for ch in raw if ch.isdigit() or ch=='+')
         if len(value)<10:
             raise forms.ValidationError('شماره موبایل معتبر وارد کنید.')
-        return value
-
-    def clean_notes(self):
-        value=(self.cleaned_data.get('notes') or '').strip()
-        if not value:
-            raise forms.ValidationError('توضیحات دایرکت الزامی است.')
         return value
 
 
@@ -537,7 +543,7 @@ class CallCenterLeadCreateForm(forms.ModelForm):
         self.operator=operator
         groups=CallCenterLeadGroup.objects.none()
         if operator is not None:
-            groups=CallCenterLeadGroup.objects.filter(owner=operator).order_by('-is_default','name','id')
+            groups=CallCenterLeadGroup.objects.all().order_by('-is_default','name','id')
         self.fields['group'].queryset=groups
         self.fields['group'].empty_label=None
 

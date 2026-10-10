@@ -1,31 +1,33 @@
 {% extends 'core/base.html' %}{% block content %}
 <style>
-body.gl-page-call_center_direct_lead_create .app-main{background:#f5f8fa!important;background-image:none!important;color:#223649!important}
-body.gl-page-call_center_direct_lead_create .cc-desktop-dock{display:none!important}
-.cc-direct-page{max-width:920px;margin:20px auto 70px;padding:0 14px;direction:rtl;font-family:Tahoma,"Noto Sans Arabic",sans-serif}
-.cc-direct-card{background:#fff!important;border:1px solid #dfe7ea!important;border-radius:22px;box-shadow:0 14px 36px rgba(39,57,75,.055);overflow:hidden}
-.cc-direct-head{padding:22px 24px 18px;border-bottom:1px solid #e8edef;background:linear-gradient(135deg,#edf8f2,#fff 60%,#f5f0fb)!important}
+.cc-direct-page{max-width:760px;margin:18px auto 90px;padding:0 12px}
+.cc-direct-card{background:#fff;border:1px solid #dfe7ea;border-radius:22px;overflow:hidden;box-shadow:0 14px 36px rgba(35,54,68,.07)}
+.cc-direct-head{padding:18px 22px;background:linear-gradient(135deg,#f2faf6,#faf7fd);border-bottom:1px solid #e3eaec}
 .cc-direct-head small{display:block;color:#277a59;font-size:9px;font-weight:900;margin-bottom:6px}.cc-direct-head h1{margin:0;color:#1d3041;font-size:24px}.cc-direct-head p{margin:7px 0 0;color:#6e7c89;font-size:10px;line-height:1.8}
 .cc-direct-body{padding:22px 24px}.cc-direct-note{margin:0 0 17px;padding:11px 13px;border-radius:12px;background:#edf8f2;color:#286f55;border:1px solid #d8ece2;font-size:9px;font-weight:800;line-height:1.8}
-.cc-direct-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.cc-direct-field{display:grid;gap:6px}.cc-direct-field.full{grid-column:1/-1}.cc-direct-field label{font-size:10px;font-weight:900;color:#415466}.cc-direct-required{color:#b8455c}
-.cc-direct-field input,.cc-direct-field textarea{width:100%!important;border:1px solid #d9e3e6!important;border-radius:12px!important;background:#f9fbfc!important;background-image:none!important;color:#23384a!important;font:800 11px Tahoma!important;padding:11px 12px!important;outline:none!important;box-shadow:none!important}.cc-direct-field input{height:44px!important}.cc-direct-field textarea{min-height:145px!important;resize:vertical}.cc-direct-field input:focus,.cc-direct-field textarea:focus{border-color:#78b99d!important;box-shadow:0 0 0 3px rgba(63,155,112,.10)!important}.cc-direct-field input::placeholder,.cc-direct-field textarea::placeholder{color:#7f8d99!important;opacity:1!important}
+.cc-direct-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.cc-direct-field{display:grid;gap:6px}.cc-direct-field.full{grid-column:1/-1}.cc-direct-field label{font-size:10px;font-weight:900;color:#415466}.cc-direct-required{color:#b8455c}
+.cc-direct-field input,.cc-direct-field textarea,.cc-direct-field select{width:100%!important;border:1px solid #d9e3e6!important;border-radius:12px!important;background:#f9fbfc!important;background-image:none!important;color:#23384a!important;font:800 11px Tahoma!important;padding:10px 12px!important;outline:none!important;box-shadow:none!important}.cc-direct-field input,.cc-direct-field select{height:44px!important}.cc-direct-field select{background:#eef8f3!important;color:#24684e!important;border-color:#cee5d9!important}.cc-direct-field textarea{min-height:105px!important;resize:vertical}.cc-direct-field input:focus,.cc-direct-field textarea:focus,.cc-direct-field select:focus{border-color:#78b99d!important;box-shadow:0 0 0 3px rgba(63,155,112,.10)!important}.cc-direct-field input::placeholder,.cc-direct-field textarea::placeholder{color:#7f8d99!important;opacity:1!important}
 .cc-direct-errors{margin-top:4px;color:#b63e58;font-size:9px;font-weight:900}.cc-direct-help{color:#7a8793;font-size:8px;line-height:1.7}
-.cc-direct-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:19px}.cc-direct-actions button,.cc-direct-actions a{min-height:42px;display:inline-flex;align-items:center;justify-content:center;padding:0 17px;border-radius:11px;font:900 10px Tahoma;text-decoration:none}.cc-direct-actions button{border:0;background:#21865f;color:#fff;cursor:pointer}.cc-direct-actions a{border:1px solid #dce5e8;background:#fff;color:#526577}
-@media(max-width:700px){.cc-direct-page{margin-top:12px}.cc-direct-grid{grid-template-columns:1fr}.cc-direct-field.full{grid-column:auto}.cc-direct-head h1{font-size:20px}}
+.cc-direct-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:19px}.cc-direct-actions button,.cc-direct-actions a{min-height:42px;display:inline-flex;align-items:center;justify-content:center;padding:0 17px;border-radius:11px!important;font:900 10px Tahoma!important;text-decoration:none;box-shadow:none!important}.cc-direct-actions button{border:1px solid #c4dfd1!important;background:#e5f5ed!important;color:#176e4f!important;cursor:pointer}.cc-direct-actions a{border:1px solid #ddd3e8!important;background:#f4eff8!important;color:#65478d!important}
+.cc-direct-manager{margin-top:10px;padding:8px 10px;border-radius:9px;background:#fff8e9;border:1px solid #eee0bb;color:#79622c;font-size:8px;line-height:1.8}
+@media(max-width:700px){.cc-direct-page{margin-top:10px;padding:0 8px}.cc-direct-grid{grid-template-columns:1fr}.cc-direct-field.full{grid-column:auto}.cc-direct-head h1{font-size:20px}.cc-direct-body{padding:15px}.cc-direct-actions{display:grid;grid-template-columns:1fr}.cc-direct-actions a{order:2}}
 </style>
 <div class="cc-direct-page">
   <section class="cc-direct-card">
-    <div class="cc-direct-head"><small>CALL CENTER · INSTAGRAM DIRECT</small><h1>ثبت لید از دایرکت</h1><p>فقط اطلاعات ضروری را ثبت کنید؛ توضیحات برای تحویل درست لید به اپراتور بعدی الزامی است.</p></div>
+    <div class="cc-direct-head"><small>CALL CENTER · DIRECT ENTRY</small><h1>ثبت مستقیم لید</h1><p>برای شماره‌های قدیمی، VIP، لیست‌های اختصاصی و لیدهایی که باید مستقیم در صف خودتان بمانند.</p></div>
     <div class="cc-direct-body">
-      <div class="cc-direct-note">ثبت‌کننده شما هستید؛ لید پس از ثبت وارد توزیع عادی کال‌سنتر می‌شود.</div>
+      <div class="cc-direct-note">این لید وارد Round‑Robin نمی‌شود؛ بعد از ثبت مستقیم در صف خود شما و گروه انتخاب‌شده قرار می‌گیرد.</div>
       <form method="post" novalidate>{% csrf_token %}
         <div class="cc-direct-grid">
           <div class="cc-direct-field"><label>{{ form.full_name.label }}</label>{{ form.full_name }}{% if form.full_name.errors %}<div class="cc-direct-errors">{{ form.full_name.errors }}</div>{% endif %}</div>
           <div class="cc-direct-field"><label>{{ form.phone.label }}</label>{{ form.phone }}{% if form.phone.errors %}<div class="cc-direct-errors">{{ form.phone.errors }}</div>{% endif %}</div>
-          <div class="cc-direct-field full"><label>{{ form.notes.label }} <span class="cc-direct-required">*</span></label>{{ form.notes }}<span class="cc-direct-help">خلاصه گفت‌وگو، درخواست بیمار و هر نکته لازم برای تماس بعدی را بنویسید.</span>{% if form.notes.errors %}<div class="cc-direct-errors">{{ form.notes.errors }}</div>{% endif %}</div>
+          <div class="cc-direct-field"><label>{{ form.group.label }} <span class="cc-direct-required">*</span></label>{{ form.group }}{% if form.group.errors %}<div class="cc-direct-errors">{{ form.group.errors }}</div>{% endif %}</div>
+          <div class="cc-direct-field"><label>{{ form.interested_service.label }}</label>{{ form.interested_service }}{% if form.interested_service.errors %}<div class="cc-direct-errors">{{ form.interested_service.errors }}</div>{% endif %}</div>
+          <div class="cc-direct-field full"><label>{{ form.notes.label }}</label>{{ form.notes }}<span class="cc-direct-help">مثلاً: شماره از لیست VIP قدیمی، میز دکتر جواهریان، تماس قبلی یا منبع دیگری بوده است.</span>{% if form.notes.errors %}<div class="cc-direct-errors">{{ form.notes.errors }}</div>{% endif %}</div>
         </div>
         {% if form.non_field_errors %}<div class="cc-direct-errors">{{ form.non_field_errors }}</div>{% endif %}
-        <div class="cc-direct-actions"><a href="{% url 'call_center_dashboard' %}">انصراف</a><button type="submit">ثبت و ارسال به توزیع عادی</button></div>
+        {% if can_manage_groups %}<div class="cc-direct-manager">شما مجوز ساخت گروه سراسری دارید. گروه جدید را از بخش «گروه‌ها و ابزارهای ثانویه» در میز کار بسازید؛ بلافاصله برای همه گل‌ها نمایش داده می‌شود.</div>{% endif %}
+        <div class="cc-direct-actions"><a href="{% url 'call_center_dashboard' %}">انصراف</a><button type="submit">ثبت مستقیم در صف من</button></div>
       </form>
     </div>
   </section>

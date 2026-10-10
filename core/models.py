@@ -210,9 +210,11 @@ class ReferralProfile(models.Model):
 
 
 class CallCenterLeadGroup(models.Model):
-    """Operator-owned folders used to keep the call-center queue understandable."""
+    """Shared call-center folders visible to every flower/operator."""
     owner=models.ForeignKey(
-        EmployeeProfile,on_delete=models.CASCADE,related_name='call_center_lead_groups'
+        EmployeeProfile,on_delete=models.SET_NULL,null=True,blank=True,
+        related_name='call_center_lead_groups',
+        help_text='فیلد قدیمی؛ گروه‌های کال‌سنتر از این پس سراسری هستند.',
     )
     name=models.CharField(max_length=80)
     is_default=models.BooleanField(default=False)
@@ -220,7 +222,7 @@ class CallCenterLeadGroup(models.Model):
     class Meta:
         ordering=['-is_default','name','id']
         constraints=[
-            models.UniqueConstraint(fields=['owner','name'],name='uniq_cc_group_owner_name'),
+            models.UniqueConstraint(fields=['name'],name='uniq_cc_group_name'),
         ]
     def __str__(self): return self.name
 

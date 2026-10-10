@@ -373,14 +373,20 @@ def _locked_round_robin_operator(now=None, channel=None):
 
 
 def _group_for(operator, name, *, is_default=False):
+    # Groups are shared across the whole call center.
     group, _ = CallCenterLeadGroup.objects.get_or_create(
-        owner=operator,
         name=name,
-        defaults={'is_default': is_default},
+        defaults={'owner':None,'is_default':is_default},
     )
+    changed=[]
+    if group.owner_id is not None:
+        group.owner=None
+        changed.append('owner')
     if is_default and not group.is_default:
-        group.is_default = True
-        group.save(update_fields=['is_default'])
+        group.is_default=True
+        changed.append('is_default')
+    if changed:
+        group.save(update_fields=changed)
     return group
 
 

@@ -1099,6 +1099,34 @@ body.gl-page-call_center_dashboard .ccx .ccx-result-msg{
   }
   body.gl-page-call_center_dashboard .ccx .ccx-result-panel:before{display:none!important}
 }
+
+/* Shared call-center group strip. */
+body.gl-page-call_center_dashboard .ccx .ccx-group-strip{
+  display:flex!important;align-items:center!important;gap:5px!important;overflow-x:auto!important;
+  padding:7px 9px!important;margin:0!important;background:#fff!important;border:1px solid #e0e8ea!important;
+  border-radius:13px!important;scrollbar-width:none!important
+}
+body.gl-page-call_center_dashboard .ccx .ccx-group-strip::-webkit-scrollbar{display:none!important}
+body.gl-page-call_center_dashboard .ccx .ccx-group-strip-title{
+  flex:0 0 auto!important;color:#657782!important;font-size:8px!important;font-weight:1000!important;padding:0 3px!important
+}
+body.gl-page-call_center_dashboard .ccx .ccx-group-strip a{
+  flex:0 0 auto!important;display:inline-flex!important;align-items:center!important;gap:5px!important;
+  min-height:29px!important;padding:0 9px!important;border-radius:999px!important;text-decoration:none!important;
+  background:#f6f9f8!important;color:#49615d!important;border:1px solid #dce6e3!important;font-size:8px!important;font-weight:900!important
+}
+body.gl-page-call_center_dashboard .ccx .ccx-group-strip a b{
+  min-width:18px!important;height:18px!important;padding:0 4px!important;border-radius:999px!important;display:grid!important;place-items:center!important;
+  background:#e6efec!important;color:#49615d!important;font-size:7px!important
+}
+body.gl-page-call_center_dashboard .ccx .ccx-group-strip a.active{
+  background:#eee5f7!important;color:#65458d!important;border-color:#cfbde0!important;
+  box-shadow:0 4px 12px rgba(104,73,149,.08)!important
+}
+body.gl-page-call_center_dashboard .ccx .ccx-group-managed-note{
+  margin-top:8px!important;padding:8px 10px!important;border-radius:9px!important;background:#f6f8f9!important;
+  color:#75838d!important;border:1px solid #e3e9eb!important;font-size:8px!important
+}
 </style>
 
 <div class="ccx" lang="fa" dir="rtl" translate="no">
@@ -1125,7 +1153,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-result-msg{
 
   <nav class="ccx-quick-plaque" aria-label="دسترسی‌های سریع کال‌سنتر">
     <a class="ccx-quick-link" href="{% url 'call_center_dashboard' %}"><b>☎</b><span>میز کار</span></a>
-    <a class="ccx-quick-link" href="{% url 'call_center_direct_lead_create' %}"><b>＋</b><span>ثبت لید دایرکت</span></a>
+    <a class="ccx-quick-link" href="{% url 'call_center_direct_lead_create' %}"><b>＋</b><span>ثبت مستقیم لید</span></a>
     <a class="ccx-quick-link purple" href="{% url 'appointment_schedule' %}"><b>▣</b><span>نوبت‌دهی ۷ روزه</span></a>
     <button class="ccx-quick-link purple" type="button" data-chat-open style="cursor:pointer"><b>✉</b><span>چت پرسنل</span></button>
     <a class="ccx-quick-link blue" href="{% url 'internal_messages' %}"><b>◎</b><span>پیام‌های داخلی</span></a>
@@ -1147,6 +1175,12 @@ body.gl-page-call_center_dashboard .ccx .ccx-result-msg{
       <button class="ccx-filter" data-filter="overdue">عقب‌افتاده <b>{{ queue_category_counts.overdue }}</b></button>
     </div>
   </section>
+
+  <nav class="ccx-group-strip" aria-label="گروه‌های مشترک کال‌سنتر">
+    <span class="ccx-group-strip-title">گروه‌ها</span>
+    <a href="{% url 'call_center_dashboard' %}" class="{% if not group_filter %}active{% endif %}">همه</a>
+    {% for group in groups %}<a href="?group={{ group.pk }}" class="{% if group_filter == group.pk|stringformat:'s' %}active{% endif %}">{{ group.name }} <b>{{ group.lead_count }}</b></a>{% endfor %}
+  </nav>
 
   <div class="ccx-layout">
     <main class="ccx-main ccx-card">
@@ -1237,7 +1271,9 @@ body.gl-page-call_center_dashboard .ccx .ccx-result-msg{
       <summary>گروه‌ها و ابزارهای ثانویه ▾</summary>
       <div class="ccx-details-body">
         <div class="ccx-group-list"><a href="{% url 'call_center_dashboard' %}">همه</a>{% for group in groups %}<a href="?group={{ group.pk }}">{{ group.name }} · {{ group.lead_count }}</a>{% endfor %}</div>
-        <form class="ccx-group-form" method="post" action="{% url 'call_center_group_create' %}">{% csrf_token %}<input name="name" maxlength="80" placeholder="گروه جدید" required><button type="submit">ساخت</button></form>
+        {% if can_manage_groups %}
+        <form class="ccx-group-form" method="post" action="{% url 'call_center_group_create' %}">{% csrf_token %}<input name="name" maxlength="80" placeholder="نام گروه سراسری جدید" required><button type="submit">ساخت گروه برای همه</button></form>
+        {% else %}<div class="ccx-group-managed-note">ساخت گروه فقط توسط سرگروه مجاز انجام می‌شود؛ همه گل‌ها گروه‌های مشترک را می‌بینند.</div>{% endif %}
       </div>
     </details>
   </section>

@@ -226,6 +226,8 @@ def _public_referral_url(profile):
 
 CALL_CENTER_STARTER_GROUPS=(
     ('شبکه فروش پرسنل',True),
+    ('VIP',False),
+    ('میزهای قدیمی دکتر جواهریان',False),
     ('وب‌سایت',False),
     ('کمپ',False),
     ('شرکت‌ها و همکاری سازمانی',False),
@@ -233,21 +235,41 @@ CALL_CENTER_STARTER_GROUPS=(
 )
 
 
-def _ensure_call_center_groups(operator):
+def _ensure_call_center_groups(operator=None):
     groups={}
     for name,is_default in CALL_CENTER_STARTER_GROUPS:
         group,_=CallCenterLeadGroup.objects.get_or_create(
-            owner=operator,name=name,defaults={'is_default':is_default},
+            name=name,defaults={'owner':None,'is_default':is_default},
         )
+        changed=[]
+        if group.owner_id is not None:
+            group.owner=None
+            changed.append('owner')
         if is_default and not group.is_default:
             group.is_default=True
-            group.save(update_fields=['is_default'])
+            changed.append('is_default')
+        if changed:
+            group.save(update_fields=changed)
         groups[name]=group
     return groups
 
 
-def _default_call_center_group(operator):
+def _default_call_center_group(operator=None):
     return _ensure_call_center_groups(operator)['شبکه فروش پرسنل']
+
+
+def _can_manage_call_center_groups(user):
+    if not user or not user.is_authenticated:
+        return False
+    profile=getattr(user,'profile',None)
+    if not profile or profile.role!='call_center':
+        return False
+    allowed={
+        item.strip() for item in
+        os.getenv('CALL_CENTER_GROUP_MANAGERS','خورشیدی,نرگس').split(',')
+        if item.strip()
+    }
+    return call_center_display_name(profile) in allowed
 
 
 def _call_center_direct_referrer():
@@ -848,7 +870,7 @@ def call_center_dashboard(request):
     if group_filter=='ungrouped':
         leads=leads.filter(group__isnull=True)
     elif group_filter.isdigit():
-        leads=leads.filter(group_id=int(group_filter),group__owner=operator)
+        leads=leads.filter(group_id=int(group_filter))
 
     today=timezone.localdate()
     tomorrow=today+timedelta(days=1)
@@ -922,7 +944,7 @@ def call_center_dashboard(request):
     if group_filter=='ungrouped':
         queue_scope=queue_scope.filter(group__isnull=True)
     elif group_filter.isdigit():
-        queue_scope=queue_scope.filter(group_id=int(group_filter),group__owner=operator)
+        queue_scope=queue_scope.filter(group_id=int(group_filter))
 
     queue_candidates=list(
         queue_scope
@@ -1139,7 +1161,7 @@ def call_center_dashboard(request):
             next_follow_up__lt=today,
         ).count(),
     }
-    groups=(CallCenterLeadGroup.objects.filter(owner=operator)
+    groups=(CallCenterLeadGroup.objects.all()
             .annotate(lead_count=Count('leads',filter=Q(leads__assigned_to=operator)))
             .order_by('-is_default','name','id'))
     stats={
@@ -1221,6 +1243,7 @@ def call_center_dashboard(request):
         'chat_contacts':chat_contacts,
         'transfer_operators':transfer_operators,
         'routing_policy_notice':routing_policy_notice,
+        'can_manage_groups':_can_manage_call_center_groups(request.user),
         'cockpit':cockpit,'work_queue':work_queue,'next_queue':next_queue,
         'queue_category_counts':category_counts,'upcoming_followups':upcoming_followups,
     })
@@ -1365,14 +1388,8 @@ def call_center_lead_transfer(request,pk):
         return JsonResponse({'ok':False,'error':'این لید همین حالا در صف شماست.'},status=400)
 
     old_group=lead.group
-    group_name=(old_group.name if old_group else 'شبکه فروش پرسنل')
-    target_group,_=CallCenterLeadGroup.objects.get_or_create(
-        owner=target,name=group_name,
-        defaults={'is_default':bool(old_group and old_group.is_default)},
-    )
-    if group_name=='شبکه فروش پرسنل' and not target_group.is_default:
-        target_group.is_default=True
-        target_group.save(update_fields=['is_default'])
+    target_group=old_group or _default_call_center_group(target)
+    group_name=target_group.name
 
     old_name=call_center_display_name(current)
     target_name=call_center_display_name(target)
@@ -1515,7 +1532,10 @@ def call_center_quick_message(request):
 def call_center_group_create(request):
     if request.method!='POST':
         return redirect('call_center_dashboard')
-    name=(request.POST.get('name') or '').strip()
+    if not _can_manage_call_center_groups(request.user):
+        messages.error(request,'ساخت گروه فقط برای سرگروه مجاز کال‌سنتر فعال است.')
+        return redirect('call_center_dashboard')
+    name=' '.join((request.POST.get('name') or '').strip().split())
     if not name:
         messages.error(request,'نام گروه را وارد کنید.')
         return redirect('call_center_dashboard')
@@ -1523,10 +1543,19 @@ def call_center_group_create(request):
         messages.error(request,'نام گروه باید حداکثر ۸۰ کاراکتر باشد.')
         return redirect('call_center_dashboard')
     group,created=CallCenterLeadGroup.objects.get_or_create(
-        owner=request.user.profile,name=name,defaults={'is_default':False},
+        name=name,defaults={'owner':None,'is_default':False},
+    )
+    if group.owner_id is not None:
+        group.owner=None
+        group.save(update_fields=['owner'])
+    AuditLog.objects.create(
+        actor=request.user,action='call_center_group_create',path=request.path,method='POST',
+        object_type='CallCenterLeadGroup',object_id=str(group.pk),
+        summary='Global call-center group created' if created else 'Existing global call-center group selected',
+        metadata={'name':group.name,'created':created},
     )
     if created:
-        messages.success(request,f'گروه «{group.name}» ساخته شد. حالا می‌توانید لیدها را داخل آن قرار دهید.')
+        messages.success(request,f'گروه سراسری «{group.name}» ساخته شد و برای همه گل‌ها قابل مشاهده است.')
     else:
         messages.info(request,f'گروه «{group.name}» از قبل وجود دارد.')
     return redirect(f"{reverse('call_center_dashboard')}?group={group.pk}")
@@ -1557,7 +1586,7 @@ def call_center_lead_create(request):
     error=' '.join(message for messages_list in form.errors.values() for message in messages_list)
     messages.error(request,error or 'اطلاعات ثبت شماره کامل یا معتبر نیست.')
     group_id=(request.POST.get('group') or '').strip()
-    if group_id.isdigit() and CallCenterLeadGroup.objects.filter(pk=group_id,owner=operator).exists():
+    if group_id.isdigit() and CallCenterLeadGroup.objects.filter(pk=group_id).exists():
         return redirect(f"{reverse('call_center_dashboard')}?group={group_id}")
     return redirect('call_center_dashboard')
 
@@ -1565,44 +1594,46 @@ def call_center_lead_create(request):
 @call_center_required
 def call_center_direct_lead_create(request):
     operator=request.user.profile
-    form=CallCenterDirectLeadForm(request.POST or None)
+    default_group=_default_call_center_group(operator)
+    form=CallCenterDirectLeadForm(request.POST or None,default_group=default_group)
     if request.method=='POST' and form.is_valid():
         lead=form.save(commit=False)
         lead.referrer=_call_center_direct_referrer()
-        lead.assigned_to=None
-        lead.assigned_at=None
+        lead.assigned_to=operator
+        lead.assigned_at=timezone.now()
         lead.created_by=request.user
-        lead.group=None
+        lead.group=form.cleaned_data['group']
         lead.source='panel'
-        direct_marker='[channel:instagram] [entry:direct]'
+        direct_marker='[entry:direct]'
         lead.notes=f"{direct_marker}\n{lead.notes}".strip()
         try:
             lead.save()
         except DuplicateLeadError as exc:
             existing=getattr(exc,'existing_lead',None)
             if existing:
+                owner=call_center_display_name(existing.assigned_to) if existing.assigned_to_id else 'بدون مسئول'
                 messages.warning(
                     request,
-                    f'این شماره اخیراً ثبت شده است: {existing.full_name} · مسئول: '
-                    f'{existing.assigned_to.user.get_full_name() if existing.assigned_to_id else "بدون مسئول"}'
+                    f'این شماره اخیراً ثبت شده است: {existing.full_name} · مسئول: {owner}'
                 )
             else:
                 messages.warning(request,'این شماره اخیراً به‌عنوان لید ثبت شده است.')
         else:
-            assigned=_auto_assign_call_center(lead)
-            if assigned:
-                operator_name=assigned.user.get_full_name() or assigned.user.username
-                messages.success(
-                    request,
-                    f'لید دایرکت «{lead.full_name}» ثبت شد و طبق توزیع عادی به «{operator_name}» رسید.'
-                )
-            else:
-                messages.warning(
-                    request,
-                    'لید دایرکت ثبت شد، اما فعلاً اپراتور واجد شرایطی برای توزیع پیدا نشد.'
-                )
-            return redirect('call_center_dashboard')
-    return render(request,'core/call_center/direct_lead_form.html',{'form':form})
+            AuditLog.objects.create(
+                actor=request.user,action='call_center_direct_lead_create',
+                path=request.path,method='POST',
+                object_type='ReferralLead',object_id=str(lead.pk),
+                summary='Call-center operator registered lead directly into own queue',
+                metadata={'group_id':lead.group_id,'group':lead.group.name,'phone':lead.phone},
+            )
+            messages.success(
+                request,
+                f'لید «{lead.full_name}» مستقیم در صف شما و گروه «{lead.group.name}» ثبت شد.'
+            )
+            return redirect(f"{reverse('call_center_dashboard')}?group={lead.group_id}")
+    return render(request,'core/call_center/direct_lead_form.html',{
+        'form':form,'can_manage_groups':_can_manage_call_center_groups(request.user),
+    })
 
 
 @call_center_required
