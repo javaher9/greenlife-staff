@@ -1,0 +1,217 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<style>
+  .bulk-sms-page{direction:rtl;max-width:1510px;margin:17px auto 45px;color:#23473e;font-family:"Noto Sans Arabic",Tahoma,sans-serif}
+  .bulk-sms-page *{box-sizing:border-box}
+  .bulk-sms-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:27px;border-radius:22px;background:linear-gradient(115deg,#fff,#eafaef 55%,#f3edff);border:1px solid #d7e9df;box-shadow:0 10px 30px rgba(28,83,64,.05)}
+  .bulk-sms-hero h1{font-size:24px;margin:0 0 6px;color:#19523d}
+  .bulk-sms-hero p{font-size:12px;line-height:1.9;color:#5c756a;margin:0}
+  .bulk-sms-hero .bulk-nav{display:flex;gap:8px;flex-wrap:wrap}
+  .bulk-sms-hero .bulk-nav a{font-size:11px;text-decoration:none;border:1px solid #c9e4d7;border-radius:11px;background:#fff;padding:10px 14px;color:#267051;font-weight:900}
+  .bulk-sms-layout{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,.85fr);gap:16px;margin-top:16px;align-items:start}
+  .bulk-sms-catalog,.bulk-sms-preview{background:#fff;border:1px solid #dbe8e1;border-radius:20px;padding:19px;box-shadow:0 7px 26px rgba(25,72,55,.035)}
+  .bulk-sms-catalog>h2,.bulk-sms-preview h2{margin:0 0 6px;font-size:17px;color:#19503c}
+  .bulk-sms-muted{font-size:11px;line-height:2;color:#6d8278;margin:0 0 12px}
+  .bulk-sms-tools{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:16px 0}
+  .bulk-sms-tools button{font:800 11px inherit;background:#f1f8f4;border:1px solid #cfdfd6;border-radius:9px;color:#256b51;padding:9px 13px;cursor:pointer}
+  .bulk-sms-tools input{flex:1;min-width:170px;border:1px solid #d0dfd6;border-radius:10px;background:#fff;color:#1e4c39;padding:11px;font-size:12px}
+  .bulk-filter-panel{background:linear-gradient(110deg,#f6fbff,#f8fff9,#fbf7ff);padding:16px;border:1px solid #d8e6e8;border-radius:16px;margin:14px 0 18px}
+  .bulk-filter-panel h3{font-size:15px;color:#2a5d65;margin:0 0 6px}
+  .bulk-filter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin-top:12px}
+  .bulk-filter-field{display:flex;flex-direction:column;gap:6px;color:#315c55;font-size:12px;font-weight:750}
+  .bulk-filter-field select,.bulk-filter-field input{font:inherit;font-size:13px;min-width:0;width:100%;min-height:42px;border-radius:10px;border:1px solid #ccdcda;background:#fff;color:#244f44;padding:9px 11px}
+  .bulk-filter-description{font-size:11px;line-height:1.8;color:#647e78;margin:8px 0 0}
+  .bulk-filter-dates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:11px}
+  @media(max-width:740px){.bulk-filter-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:550px){.bulk-filter-grid,.bulk-filter-dates{grid-template-columns:1fr}}
+  .bulk-sms-section{margin:13px 0;border:1px solid #dce9e2;border-radius:15px;overflow:hidden;background:#fbfdfc}
+  .bulk-sms-section summary{display:flex;align-items:center;gap:9px;cursor:pointer;list-style:none;padding:13px 15px;background:linear-gradient(90deg,#f2faf5,#f6f4fc);font-size:12px;font-weight:900;color:#214c3b}
+  .bulk-sms-section summary::-webkit-details-marker{display:none}
+  .bulk-sms-section .section-count{margin-right:auto;border:1px solid #ddeae1;border-radius:99px;padding:3px 9px;background:#fff;font-size:10px;color:#5f7e6d}
+  .bulk-sms-section .section-caret{font-size:17px;color:#7e8e8a}
+  .bulk-sms-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:11px}
+  .bulk-sms-choice{display:flex;align-items:flex-start;gap:10px;min-height:60px;padding:10px;border:1px solid #e2ebe5;border-radius:11px;background:#fff;cursor:pointer}
+  .bulk-sms-choice:has(input:checked){border-color:#84c6a5;background:#eefaf3;box-shadow:inset 0 0 0 1px #b8e0ca}
+  .bulk-sms-choice input{width:17px;height:17px;flex:0 0 17px;accent-color:#26966c;margin:3px 0 0}
+  .bulk-sms-choice strong{display:block;font-size:11px;color:#284f3f;line-height:1.7}
+  .bulk-sms-choice small{display:block;font-size:10px;color:#71857b;line-height:1.6}
+  .bulk-sms-preview{position:sticky;top:15px}
+  .bulk-sms-stats{padding:15px;border:1px solid #dcebe2;border-radius:13px;background:linear-gradient(135deg,#f2fbf5,#f8f6ff);margin:14px 0}
+  .bulk-sms-stats strong{display:block;font-size:31px;color:#237552;line-height:1.3}
+  .bulk-sms-stats span{font-size:11px;color:#597a68}
+  .bulk-sms-preview button{width:100%;border:0;border-radius:11px;padding:13px 16px;color:#fff;background:linear-gradient(120deg,#20865e,#597ac2);font-weight:900;font-size:12px;cursor:pointer}
+  .bulk-sms-preview button:disabled{opacity:.6;cursor:wait}
+  .bulk-sms-results{margin-top:15px;font-size:12px;color:#436452;line-height:1.8}
+  .bulk-sms-result-row{display:flex;justify-content:space-between;gap:15px;border-bottom:1px solid #e8eee9;padding:7px 0}
+  .bulk-sms-warning{border:1px solid #f0dfbf;background:#fffaf0;color:#886320;padding:11px;border-radius:11px;font-size:11px;line-height:1.9;margin-top:12px}
+  .bulk-sms-error{color:#a13232;font-size:12px;margin-top:11px;min-height:17px}
+  .bulk-sms-info{font-size:10px;color:#74867d;line-height:1.85;margin-top:13px}
+  [hidden]{display:none!important}
+  @media(max-width:970px){.bulk-sms-layout{grid-template-columns:1fr}.bulk-sms-preview{position:static}}
+  @media(max-width:620px){.bulk-sms-page{margin:7px}.bulk-sms-hero{padding:17px}.bulk-sms-hero h1{font-size:19px}.bulk-sms-choices{grid-template-columns:1fr}.bulk-sms-catalog,.bulk-sms-preview{padding:13px}}
+</style>
+
+<div class="bulk-sms-page">
+  <header class="bulk-sms-hero">
+    <div>
+      <h1>ارسال پیامک گروهی</h1>
+      <p>یک یا چند گروه از سراسر اپ انتخاب کنید؛ مخاطبان از دیتابیس آنلاین محاسبه و شماره‌های تکراری حذف می‌شوند.</p>
+    </div>
+    <div class="bulk-nav">
+      <a href="{% url 'marketing_sms_compose' %}">ارسال تکی / انتخاب دستی</a>
+      <a href="{% url 'sms_management' %}">مدیریت درگاه پیامک</a>
+    </div>
+  </header>
+  <div class="bulk-sms-layout">
+    <main class="bulk-sms-catalog">
+      <h2>بانک گروه‌های هوشمند</h2>
+      <p class="bulk-sms-muted">{{ total_segment_types }} نوع گروه قابل انتخاب. هر دسته کوچک یا بزرگ می‌تواند هم‌زمان با دسته‌های دیگر انتخاب شود؛ گروه‌های جدید کال‌سنتر، شعبه‌ها و نام دستگاه‌ها خودکار اضافه می‌شوند.</p>
+      <form id="bulk-audience-form">{% csrf_token %}
+        <div class="bulk-sms-tools">
+          <input id="bulk-group-search" type="search" placeholder="جست‌وجوی نام گروه، دستگاه، کانال یا وضعیت..." aria-label="جست‌وجو بین گروه‌ها">
+          <button type="button" id="bulk-select-visible">انتخاب موارد پیدا‌شده</button>
+          <button type="button" id="bulk-clear">پاک‌کردن انتخاب‌ها</button>
+        </div>
+        <section class="bulk-filter-panel" aria-label="فیلتر ترکیبی و بازه زمانی">
+          <h3>فیلترهای ترکیبی و زمان</h3>
+          <p class="bulk-filter-description">می‌توانید ۲ یا ۳ گروه (یا بیشتر) را ترکیب کنید. «همه شرط‌ها» یعنی شماره باید در تمام گروه‌های انتخابی وجود داشته باشد. «حداقل یکی» یعنی شماره متعلق به هر یک از گروه‌ها باشد.</p>
+          <div class="bulk-filter-grid">
+            <label class="bulk-filter-field">نحوه ترکیب گروه‌ها
+              <select id="bulk-combine">
+                <option value="any">حداقل یکی (یا / OR)</option>
+                <option value="all">همه شرط‌ها (و / AND)</option>
+              </select>
+            </label>
+            <label class="bulk-filter-field">زمان مربوط به کدام رویداد؟
+              <select id="bulk-date-event">
+                <option value="visit">تاریخ نوبت یا مراجعه</option>
+                <option value="lead">تاریخ ثبت لید</option>
+                <option value="service">تاریخ برنامه دستگاه / درمان</option>
+                <option value="patient">تاریخ تشکیل پرونده</option>
+                <option value="network">تاریخ عضویت شبکه فروش</option>
+              </select>
+            </label>
+            <label class="bulk-filter-field">بازه زمانی
+              <select id="bulk-date-preset">
+                <option value="all">0 — همه تاریخ‌ها (غیرفعال)</option>
+                <option value="7">از 7 روز پیش تا امروز</option>
+                <option value="30">از 30 روز پیش تا امروز</option>
+                <option value="60">از 2 ماه پیش تا امروز (60 روز)</option>
+                <option value="365">از یک سال پیش تا امروز (365 روز)</option>
+                <option value="previous_month">ماه تقویمی قبل</option>
+                <option value="custom">از تاریخ ... تا تاریخ ...</option>
+              </select>
+            </label>
+          </div>
+          <div id="bulk-date-custom" class="bulk-filter-dates" hidden>
+            <label class="bulk-filter-field">تاریخ شروع (میلادی)
+              <input id="bulk-date-from" type="date" dir="ltr" aria-label="تاریخ شروع بازه">
+            </label>
+            <label class="bulk-filter-field">تاریخ پایان (میلادی)
+              <input id="bulk-date-to" type="date" dir="ltr" aria-label="تاریخ پایان بازه">
+            </label>
+          </div>
+          <p class="bulk-filter-description">بازه زمانی فقط روی رویداد انتخاب‌شده اثر دارد؛ مثلاً «بیمار VIP» + «مراجعه‌کرده» با تاریخ مراجعه در 30 روز اخیر، پرونده VIP قدیمی را حذف نمی‌کند. برای حذف فیلتر زمان، عدد 0 را انتخاب کنید. شمارش بدون ارسال پیامک انجام می‌شود.</p>
+        </section>
+        {% for group, segments in segment_groups.items %}
+        <details class="bulk-sms-section" open>
+          <summary>{{ group }} <span class="section-count">{{ segments|length }} گروه</span><span class="section-caret">⌄</span></summary>
+          <div class="bulk-sms-choices">
+            {% for segment in segments %}
+            <label class="bulk-sms-choice" data-search="{{ segment.label }} {{ segment.description }} {{ group }}">
+              <input type="checkbox" name="segments" value="{{ segment.key }}">
+              <span><strong>{{ segment.label }}</strong><small>{{ segment.description }}</small></span>
+            </label>
+            {% endfor %}
+          </div>
+        </details>
+        {% endfor %}
+      </form>
+    </main>
+    <aside class="bulk-sms-preview" aria-label="پیش‌نمایش مخاطبان">
+      <h2>پیش‌نمایش مخاطبان</h2>
+      <p class="bulk-sms-muted">انتخاب گروه‌ها کاملاً آنلاین است؛ هیچ خروجی Excel لازم نیست.</p>
+      <div class="bulk-sms-stats"><strong id="bulk-selected-count">0</strong><span>گروه انتخاب‌شده</span></div>
+      <button id="bulk-preview-button" type="button">محاسبه تعداد مخاطبان یکتا</button>
+      <p id="bulk-error" class="bulk-sms-error" role="alert"></p>
+      <div id="bulk-results" class="bulk-sms-results" hidden>
+        <div class="bulk-sms-result-row"><span>مخاطب ایرانی معتبر و بدون تکرار</span><strong id="bulk-recipient-count">—</strong></div>
+        <div class="bulk-sms-result-row"><span>مخاطبان نمونه (شماره پوشانده‌شده)</span><span id="bulk-masked">—</span></div>
+        <div id="bulk-per-group"></div>
+      </div>
+      <div class="bulk-sms-warning">
+        <strong>مرحله آماده‌سازی مخاطبان</strong>
+        <div>در این نسخه فقط گروه‌بندی و پیش‌نمایش فعال است. ارسال انبوه تا آماده‌شدن کنترل رضایت دریافت‌کننده، لغو عضویت، صف ارسال، جلوگیری از ارسال دوباره و تأیید نهایی مدیر غیرفعال می‌ماند.</div>
+      </div>
+      <p class="bulk-sms-info">نتایج بر اساس داده‌های همان لحظه ساخته می‌شوند. این صفحه هیچ پیامکی ارسال نمی‌کند و شماره کامل افراد را نشان نمی‌دهد. برای گروه‌های بسیار بزرگ، پیش‌نمایش با سقف ایمن متوقف می‌شود.</p>
+    </aside>
+  </div>
+</div>
+<script>
+(function(){
+  const form=document.getElementById('bulk-audience-form');
+  const boxes=Array.from(form.querySelectorAll('input[name="segments"]'));
+  const choiceEls=Array.from(form.querySelectorAll('.bulk-sms-choice'));
+  const selectedCount=document.getElementById('bulk-selected-count');
+  const search=document.getElementById('bulk-group-search');
+  const err=document.getElementById('bulk-error');
+  const results=document.getElementById('bulk-results');
+  const previewButton=document.getElementById('bulk-preview-button');
+  const combine=document.getElementById('bulk-combine');
+  const dateEvent=document.getElementById('bulk-date-event');
+  const datePreset=document.getElementById('bulk-date-preset');
+  const dateCustom=document.getElementById('bulk-date-custom');
+  const dateFrom=document.getElementById('bulk-date-from');
+  const dateTo=document.getElementById('bulk-date-to');
+  datePreset.addEventListener('change',()=>{dateCustom.hidden=datePreset.value!=='custom';refresh();});
+  [combine,dateEvent,dateFrom,dateTo].forEach(el=>el.addEventListener('change',refresh));
+  function refresh(){selectedCount.textContent=String(boxes.filter(b=>b.checked).length);results.hidden=true;err.textContent='';}
+  form.addEventListener('change',refresh);
+  search.addEventListener('input',()=>{
+    const q=search.value.trim().toLocaleLowerCase('fa');
+    choiceEls.forEach(el=>{el.hidden=Boolean(q)&&!el.dataset.search.toLocaleLowerCase('fa').includes(q);});
+    form.querySelectorAll('.bulk-sms-section').forEach(el=>{el.hidden=!Array.from(el.querySelectorAll('.bulk-sms-choice')).some(x=>!x.hidden);});
+  });
+  document.getElementById('bulk-select-visible').addEventListener('click',()=>{choiceEls.filter(el=>!el.hidden).forEach(el=>el.querySelector('input').checked=true);refresh();});
+  document.getElementById('bulk-clear').addEventListener('click',()=>{boxes.forEach(b=>b.checked=false);refresh();});
+  previewButton.addEventListener('click',async()=>{
+    const selected=boxes.filter(b=>b.checked).map(b=>b.value);
+    if(!selected.length){err.textContent='ابتدا حداقل یک گروه انتخاب کنید.';return;}
+    if(selected.length>80){err.textContent='برای هر پیش‌نمایش حداکثر 80 گروه انتخاب کنید.';return;}
+    if(datePreset.value==='custom'&&(!dateFrom.value||!dateTo.value)){err.textContent='تاریخ شروع و پایان را مشخص کنید.';return;}
+    previewButton.disabled=true;err.textContent='';results.hidden=true;
+    try{
+      const response=await fetch("{% url 'bulk_sms_preview_api' %}",{
+        method:'POST',credentials:'same-origin',
+        headers:{'Content-Type':'application/json','X-CSRFToken':form.querySelector('input[name=csrfmiddlewaretoken]').value,'Accept':'application/json'},
+        body:JSON.stringify({
+          segments:selected,combine:combine.value,
+          date_filter:datePreset.value==='all'?{preset:'all'}:{
+            event:dateEvent.value,preset:datePreset.value,
+            ...(datePreset.value==='custom'?{from:dateFrom.value,to:dateTo.value}:{})
+          }
+        })
+      });
+      const data=await response.json();
+      if(!response.ok||!data.ok){throw new Error(data.error||'محاسبه گروه‌ها انجام نشد');}
+      const period=data.date_filter ? (' — از '+data.date_filter.from+' تا '+data.date_filter.to) : ' — همه تاریخ‌ها';
+      document.getElementById('bulk-recipient-count').textContent=String(data.count)+(data.truncated?' (فقط بخشی از مخاطبان)':'');
+      const label=document.querySelector('.bulk-sms-stats span');
+      label.textContent=String(selected.length)+' گروه، '+(combine.value==='all'?'اشتراک همه شرط‌ها':'اجتماع گروه‌ها')+period;
+      document.getElementById('bulk-masked').textContent=(data.sample_masked||[]).join('، ')||'مخاطبی یافت نشد';
+      const per=document.getElementById('bulk-per-group');per.replaceChildren();
+      for(const item of data.per_group||[]){
+        const row=document.createElement('div');row.className='bulk-sms-result-row';
+        const label=document.createElement('span');label.textContent=item.label;
+        const total=document.createElement('strong');total.textContent=String(item.count);
+        row.append(label,total);per.appendChild(row);
+      }
+      if(data.truncated)err.textContent='گروه انتخابی بسیار بزرگ است؛ نمایش فعلی کامل نیست و برای ارسال باید صف پردازش صفحه‌بندی‌شده آماده شود.';
+      results.hidden=false;
+    }catch(e){err.textContent=e.message||'خطای ارتباط با سرور';}
+    finally{previewButton.disabled=false;}
+  });
+  refresh();
+})();
+</script>
+{% endblock %}
