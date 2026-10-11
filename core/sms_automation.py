@@ -200,6 +200,10 @@ def process_due_sms(batch_size=25):
             item.error=''
         item.save(update_fields=['status','error','updated_at'])
         processed+=1
+    # Real bulk campaigns share the existing dedicated SMS worker but remain
+    # separately approved, suppressed, metered and auditable.
+    from .bulk_sms_dispatch import process_bulk_sms
+    processed += process_bulk_sms(batch_size=12)
     return processed
 
 
