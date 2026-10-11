@@ -138,6 +138,7 @@ def staff_live_status_api(request):
             'service':item.service or 'ویزیت',
             'status_key':key,
             'status_label':label,
+            'arrival_url':reverse('receptionist_appointment_status',args=[item.pk,'arrived']) if profile.role=='receptionist' and item.status=='booked' else '',
             'needs_action':needs_action,
             'patient_url':reverse('patient_360_from_appointment',args=[item.pk]),
         })
