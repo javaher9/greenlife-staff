@@ -46,6 +46,15 @@ class CallCenterRoleTests(TestCase):
         )
         return User.objects.get(pk=user.pk)
 
+    def test_personal_and_instagram_dm_buttons_have_distinct_destinations(self):
+        response=self.client.get(reverse('call_center_dashboard'))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'href="'+reverse('call_center_direct_lead_create')+'"')
+        self.assertContains(response,'href="'+reverse('instagram_manual_lead')+'"')
+        dm=self.client.get(reverse('instagram_manual_lead'))
+        self.assertEqual(dm.status_code,200)
+        self.assertTemplateUsed(dm,'core/instagram_manual_lead.html')
+
     def test_role_has_distinct_label_and_dashboard_redirect(self):
         self.assertIn(('call_center','کال‌سنتر'),EmployeeProfile.ROLE_CHOICES)
         response=self.client.get(reverse('dashboard'))
