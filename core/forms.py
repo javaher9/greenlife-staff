@@ -507,8 +507,9 @@ class CallCenterDirectLeadForm(forms.ModelForm):
         self.fields['group'].queryset=groups
         self.fields['group'].required=True
         self.fields['group'].empty_label='انتخاب گروه…'
-        if default_group is not None and not self.is_bound:
-            self.fields['group'].initial=default_group
+        # Explicit selection is mandatory for personal direct entry.
+        self.fields['group'].initial=None
+        self.fields['group'].error_messages['required']='انتخاب یکی از گروه‌های موجود الزامی است.'
         self.fields['interested_service'].required=False
         self.fields['notes'].required=False
 
@@ -545,7 +546,10 @@ class CallCenterLeadCreateForm(forms.ModelForm):
         if operator is not None:
             groups=CallCenterLeadGroup.objects.all().order_by('-is_default','name','id')
         self.fields['group'].queryset=groups
-        self.fields['group'].empty_label=None
+        self.fields['group'].required=True
+        self.fields['group'].empty_label='ابتدا گروه را انتخاب کنید…'
+        self.fields['group'].initial=None
+        self.fields['group'].error_messages['required']='انتخاب یکی از گروه‌های موجود الزامی است.'
 
     def clean_phone(self):
         raw=self.cleaned_data.get('phone') or ''
