@@ -1591,7 +1591,7 @@ def call_center_lead_create(request):
         lead.source='panel'
         lead.save()
         messages.success(request,f'لید «{lead.full_name}» در گروه انتخابی ثبت شد و به خود شما اختصاص یافت.')
-        return redirect('call_center_dashboard')
+        return redirect(f"{reverse('call_center_dashboard')}?group={lead.group_id}")
     error=' '.join(message for messages_list in form.errors.values() for message in messages_list)
     messages.error(request,error or 'اطلاعات ثبت شماره کامل یا معتبر نیست.')
     group_id=(request.POST.get('group') or '').strip()
@@ -1603,8 +1603,7 @@ def call_center_lead_create(request):
 @call_center_required
 def call_center_direct_lead_create(request):
     operator=request.user.profile
-    default_group=_default_call_center_group(operator)
-    form=CallCenterDirectLeadForm(request.POST or None,default_group=default_group)
+    form=CallCenterDirectLeadForm(request.POST or None)
     if request.method=='POST' and form.is_valid():
         lead=form.save(commit=False)
         lead.referrer=_call_center_direct_referrer()
@@ -1637,7 +1636,7 @@ def call_center_direct_lead_create(request):
                 metadata={'group_id':lead.group_id,'phone':lead.phone,'assigned_to_id':operator.pk},
             )
             messages.success(request,f'لید «{lead.full_name}» در گروه انتخابی ثبت شد و به خود شما اختصاص یافت.')
-            return redirect('call_center_dashboard')
+            return redirect(f"{reverse('call_center_dashboard')}?group={lead.group_id}")
     return render(request,'core/call_center/direct_lead_form.html',{
         'form':form,'can_manage_groups':_can_manage_call_center_groups(request.user),
     })
