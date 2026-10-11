@@ -1583,17 +1583,14 @@ def call_center_lead_create(request):
     if form.is_valid():
         lead=form.save(commit=False)
         lead.referrer=_call_center_direct_referrer()
-        lead.assigned_to=None
-        lead.group=None
+        # Staff-owned direct entry: keep the selected group and assign to registrar.
+        # Instagram/DM and other inbound channels keep their own round-robin.
+        lead.assigned_to=operator
+        lead.assigned_at=timezone.now()
         lead.created_by=request.user
         lead.source='panel'
         lead.save()
-        assigned=_auto_assign_call_center(lead)
-        if assigned:
-            operator_name=assigned.user.get_full_name() or assigned.user.username
-            messages.success(request,f'لید «{lead.full_name}» ثبت شد و طبق توزیع عادی به «{operator_name}» رسید.')
-        else:
-            messages.warning(request,'لید ثبت شد، اما فعلاً اپراتور واجد شرایطی برای توزیع پیدا نشد.')
+        messages.success(request,f'لید «{lead.full_name}» در گروه انتخابی ثبت شد و به خود شما اختصاص یافت.')
         return redirect('call_center_dashboard')
     error=' '.join(message for messages_list in form.errors.values() for message in messages_list)
     messages.error(request,error or 'اطلاعات ثبت شماره کامل یا معتبر نیست.')
@@ -1611,12 +1608,11 @@ def call_center_direct_lead_create(request):
     if request.method=='POST' and form.is_valid():
         lead=form.save(commit=False)
         lead.referrer=_call_center_direct_referrer()
-        # Direct-entry registration uses the same fair round-robin as all other leads.
-        # Registration does not imply ownership by the submitting operator.
-        lead.assigned_to=None
-        lead.assigned_at=None
+        # Explicit staff direct-entry is owned by its registrar, not round-robin.
+        # Retain the group selected in the form.
+        lead.assigned_to=operator
+        lead.assigned_at=timezone.now()
         lead.created_by=request.user
-        lead.group=None
         lead.source='panel'
         direct_marker='[entry:direct]'
         lead.notes=f"{direct_marker}\n{lead.notes}".strip()
@@ -1633,18 +1629,14 @@ def call_center_direct_lead_create(request):
             else:
                 messages.warning(request,'این شماره اخیراً به‌عنوان لید ثبت شده است.')
         else:
-            assigned=_auto_assign_call_center(lead)
             AuditLog.objects.create(
                 actor=request.user,action='call_center_direct_lead_create',
                 path=request.path,method='POST',
                 object_type='ReferralLead',object_id=str(lead.pk),
-                summary='Call-center direct-entry lead distributed through normal round-robin',
-                metadata={'group_id':lead.group_id,'phone':lead.phone,'assigned_to_id':assigned.pk if assigned else None},
+                summary='Call-center staff direct-entry lead assigned to registrar',
+                metadata={'group_id':lead.group_id,'phone':lead.phone,'assigned_to_id':operator.pk},
             )
-            if assigned:
-                messages.success(request,f'لید «{lead.full_name}» ثبت شد و طبق نوبت‌بندی عادی به «{call_center_display_name(assigned)}» رسید.')
-            else:
-                messages.warning(request,'لید ثبت شد، اما فعلاً اپراتور واجد شرایطی برای توزیع پیدا نشد.')
+            messages.success(request,f'لید «{lead.full_name}» در گروه انتخابی ثبت شد و به خود شما اختصاص یافت.')
             return redirect('call_center_dashboard')
     return render(request,'core/call_center/direct_lead_form.html',{
         'form':form,'can_manage_groups':_can_manage_call_center_groups(request.user),
