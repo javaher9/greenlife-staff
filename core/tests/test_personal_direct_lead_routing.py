@@ -47,3 +47,20 @@ class PersonalDirectLeadRoutingTests(TestCase):
         self.assertEqual(lead.group_id, self.group.pk)
         self.assertEqual(lead.created_by_id, self.user.pk)
         self.assertIn('[entry:direct]', lead.notes)
+
+    def test_inline_personal_lead_rejects_missing_group(self):
+        response = self.client.post(reverse('call_center_lead_create'), {
+            'full_name': 'بدون گروه اول', 'phone': '09129991003',
+            'interested_service': 'پیگیری', 'notes': '',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(ReferralLead.objects.filter(phone='09129991003').exists())
+
+    def test_full_personal_form_rejects_missing_group(self):
+        response = self.client.post(reverse('call_center_direct_lead_create'), {
+            'full_name': 'بدون گروه دوم', 'phone': '09129991004',
+            'interested_service': 'پیگیری', 'notes': '',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'انتخاب یکی از گروه‌های موجود الزامی است.')
+        self.assertFalse(ReferralLead.objects.filter(phone='09129991004').exists())
