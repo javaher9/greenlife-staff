@@ -55,6 +55,13 @@ def sms_center_callback(request):
     body=(request.GET.get('text') or '').strip()[:1600]
     message_time=(request.GET.get('time') or '').strip()[:80]
     category,is_lead=classify_sms_reply(body)
+    if category=='cancel':
+        # Existing callback classifies reply "11" as cancellation. Suppress
+        # future bulk campaigns (including already queued pending contacts).
+        from .bulk_sms_dispatch import suppress_number
+        from .bulk_sms_audiences import _iran_number
+        if _iran_number(phone):
+            suppress_number(phone,source='sms_reply_11')
     lead=None
     if is_lead and phone:
         lead=ReferralLead.recent_duplicate_for_phone(phone)
