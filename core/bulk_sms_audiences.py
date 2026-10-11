@@ -298,7 +298,7 @@ def segment_numbers(key, *, window=None):
     )
 
 
-def audience_preview(keys, *, combine='any', date_filter=None, max_contacts=MAX_PREVIEW_CONTACTS):
+def audience_preview(keys, *, combine='any', date_filter=None, max_contacts=MAX_PREVIEW_CONTACTS, include_numbers=False):
     """Read-only union/intersection on normalized phone, with event-scoped dates.
 
     OR selects anybody in any segment; AND keeps only contacts present in all
@@ -343,6 +343,7 @@ def audience_preview(keys, *, combine='any', date_filter=None, max_contacts=MAX_
         if truncated:
             break
     return {
+        **({'_numbers': sorted(numbers)} if include_numbers else {}),
         'count':len(numbers),'selected_groups':len(keys),
         'combine':combine, 'date_filter':{
             'event':window['event'],
