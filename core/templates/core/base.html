@@ -653,7 +653,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
   {% block content %}{% endblock %}
 </main>
 {% if user.is_authenticated and user.profile.role == 'call_center' %}
-<a class="cc-direct-side-entry {% if request.resolver_match.url_name == 'call_center_direct_lead_create' %}is-active{% endif %}" href="{% url 'call_center_direct_lead_create' %}" aria-label="ثبت لید از دایرکت">
+<a class="cc-direct-side-entry {% if request.resolver_match.url_name == 'instagram_manual_lead' %}is-active{% endif %}" href="{% url 'instagram_manual_lead' %}" aria-label="ثبت لید از دایرکت اینستاگرام">
   <span class="cc-direct-side-ico">＋</span>
   <span>ثبت لید<br>از دایرکت</span>
 </a>
