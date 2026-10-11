@@ -2090,3 +2090,66 @@ from .device_booking_models import (
     DeviceTypeSchedule, BranchDeviceTypeStatus, DeviceCabin,
     PhysicalDevice, DeviceSessionBooking,
 )
+
+
+
+class BulkSmsOptOut(models.Model):
+    """Global marketing-SMS suppression, including inbound reply 11."""
+    number=models.CharField(max_length=11,unique=True,db_index=True)
+    source=models.CharField(max_length=32,default='manual')
+    created_at=models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.number[:4]}***{self.number[-4:]}'
+
+
+class BulkSmsCampaign(models.Model):
+    """Frozen recipient snapshot with explicit executive approval."""
+    STATES=[
+        ('draft','پیش‌نویس'),
+        ('queued','در صف'),
+        ('paused','متوقف موقت'),
+        ('completed','پایان‌یافته'),
+        ('cancelled','لغوشده'),
+    ]
+    created_by=models.ForeignKey(
+        User,on_delete=models.PROTECT,related_name='bulk_sms_campaigns',
+    )
+    body=models.TextField(max_length=600)
+    segments=models.JSONField(default=list)
+    combine=models.CharField(max_length=8,default='any')
+    date_filter=models.JSONField(default=dict,blank=True)
+    status=models.CharField(max_length=12,choices=STATES,default='draft',db_index=True)
+    recipient_count=models.PositiveIntegerField(default=0)
+    excluded_count=models.PositiveIntegerField(default=0)
+    consent_attested=models.BooleanField(default=False)
+    created_at=models.DateTimeField(auto_now_add=True)
+    approved_at=models.DateTimeField(null=True,blank=True)
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering=['-created_at','-id']
+
+
+class BulkSmsRecipient(models.Model):
+    """One row per campaign/phone; ambiguous gateway failures never auto-retry."""
+    STATES=[
+        ('pending','در انتظار'),('sending','در حال ارسال'),
+        ('accepted','پذیرفته‌شده'),('failed','ناموفق'),
+        ('skipped','حذف‌شده از ارسال'),
+    ]
+    campaign=models.ForeignKey(
+        BulkSmsCampaign,on_delete=models.CASCADE,related_name='recipients',
+    )
+    number=models.CharField(max_length=11)
+    status=models.CharField(max_length=12,choices=STATES,default='pending',db_index=True)
+    reason=models.CharField(max_length=140,blank=True)
+    attempted_at=models.DateTimeField(null=True,blank=True)
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints=[
+            models.UniqueConstraint(fields=['campaign','number'],name='unique_bulk_sms_campaign_number'),
+        ]
+        indexes=[models.Index(fields=['status','attempted_at'],name='bulk_sms_dispatch_idx')]
+

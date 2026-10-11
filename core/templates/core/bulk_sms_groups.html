@@ -24,6 +24,22 @@
   .bulk-filter-dates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:11px}
   @media(max-width:740px){.bulk-filter-grid{grid-template-columns:1fr 1fr}}
   @media(max-width:550px){.bulk-filter-grid,.bulk-filter-dates{grid-template-columns:1fr}}
+
+  .bulk-campaign{background:linear-gradient(110deg,#f2faf7,#f6f3ff);border:1px solid #cfe6dc;border-radius:17px;padding:15px;margin-top:18px}
+  .bulk-campaign h3{font-size:16px;color:#235442;margin:0 0 7px}
+  .bulk-campaign textarea{width:100%;min-height:110px;resize:vertical;border-radius:12px;border:1px solid #b9d6cb;background:#fff;color:#204637;line-height:1.9;padding:12px;font-size:13px}
+  .bulk-campaign button{border-radius:11px;border:1px solid #27926b;background:#288464;color:#fff;padding:11px 16px;font-size:12px;font-weight:800;cursor:pointer}
+  .bulk-campaign button:disabled{opacity:.6;cursor:wait}
+  .bulk-campaign .bulk-cancel{background:white;color:#9a5252;border-color:#dbb5b5}
+  .bulk-final-confirm{padding:12px;border:1px solid #bedbcc;border-radius:12px;background:#fff;margin-top:12px}
+  .bulk-final-confirm label{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:#315f4d;margin:11px 0;line-height:1.8}
+  .bulk-final-confirm input[type=text]{padding:9px 11px;border:1px solid #bbd2c3;border-radius:9px;max-width:240px;font-size:13px}
+  .bulk-campaign-table{width:100%;border-collapse:collapse;margin-top:10px}
+  .bulk-campaign-table th,.bulk-campaign-table td{padding:8px 5px;font-size:11px;border-bottom:1px solid #d9e7dc;text-align:right;overflow-wrap:anywhere}
+  .bulk-campaign-table .bulk-small{padding:4px 8px;margin:2px;border-radius:8px;font-size:10px;background:#fff;color:#27684c}
+  .bulk-optout{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+  .bulk-optout input{border-radius:9px;border:1px solid #becfc9;padding:10px;font-size:12px;direction:ltr;background:#fff;color:#294a3c}
+  .bulk-optout button{padding:9px 12px}
   .bulk-sms-section{margin:13px 0;border:1px solid #dce9e2;border-radius:15px;overflow:hidden;background:#fbfdfc}
   .bulk-sms-section summary{display:flex;align-items:center;gap:9px;cursor:pointer;list-style:none;padding:13px 15px;background:linear-gradient(90deg,#f2faf5,#f6f4fc);font-size:12px;font-weight:900;color:#214c3b}
   .bulk-sms-section summary::-webkit-details-marker{display:none}
@@ -139,11 +155,44 @@
         <div class="bulk-sms-result-row"><span>مخاطبان نمونه (شماره پوشانده‌شده)</span><span id="bulk-masked">—</span></div>
         <div id="bulk-per-group"></div>
       </div>
+
+      <section class="bulk-campaign" aria-label="آماده‌سازی کمپین واقعی">
+        <h3>ارسال واقعی پیامک گروهی</h3>
+        <p class="bulk-sms-muted">پس از انتخاب گروه‌ها و بازه، متن را بنویسید و فهرست نهایی را آماده کنید. این مرحله هیچ پیامکی نمی‌فرستد.</p>
+        <textarea id="bulk-message-text" maxlength="560" placeholder="گرین‌لایف — پیام اطلاع‌رسانی شما ... (از ثبت جزئیات پزشکی خصوصی پرهیز کنید)"></textarea>
+        <p class="bulk-sms-muted">«لغو 11» در پایان پیام‌های فاقد راه لغو افزوده می‌شود. پیش از ارسال از رضایت مخاطبان اطمینان حاصل کنید.</p>
+        <button type="button" id="bulk-prepare-campaign">آماده‌سازی کمپین و فهرست نهایی</button>
+        <p id="bulk-campaign-notice" class="bulk-sms-error" role="status"></p>
+        <div id="bulk-final-confirm" class="bulk-final-confirm" hidden>
+          <strong>تأیید نهایی پیش از ورود به صف ارسال</strong>
+          <p id="bulk-final-details" class="bulk-sms-muted"></p>
+          <label><input type="checkbox" id="bulk-consent-check"> تأیید می‌کنم دریافت‌کنندگان، مجوز لازم برای دریافت این نوع پیامک را دارند؛ محتوای پیام اطلاعات پزشکی حساس ندارد و مخاطبانِ درخواست‌کننده عدم ارسال حذف می‌شوند.</label>
+          <label>برای شروع واقعی ارسال، دقیقاً کلمه «تایید» را تایپ کنید:
+            <input type="text" id="bulk-confirm-text" autocomplete="off" placeholder="تایید">
+          </label>
+          <button type="button" id="bulk-confirm-send">تأیید نهایی و شروع ارسال مرحله‌ای</button>
+          <button type="button" class="bulk-cancel" id="bulk-abandon-draft">انصراف از این پیش‌نویس</button>
+        </div>
+      </section>
+      <section class="bulk-campaign" aria-label="پیگیری ارسال‌ها">
+        <h3>وضعیت کمپین‌ها</h3>
+        <p class="bulk-sms-muted">«پذیرفته‌شده» یعنی درگاه پیامک درخواست را قبول کرده است؛ نه لزوماً تحویل نهایی. حداکثر ۴۰۰ تلاش در ۲۴ ساعت؛ ادامه صف در روزهای بعد خودکار انجام می‌شود.</p>
+        <button id="bulk-refresh-campaigns" type="button">به‌روزرسانی وضعیت</button>
+        <div style="overflow:auto">
+          <table class="bulk-campaign-table"><thead><tr><th>کمپین</th><th>وضعیت</th><th>تعداد</th><th>پذیرفته</th><th>ناموفق</th><th>حذف‌شده</th><th>عملیات</th></tr></thead><tbody id="bulk-campaign-rows"><tr><td colspan="7">برای مشاهده وضعیت روی به‌روزرسانی بزنید.</td></tr></tbody></table>
+        </div>
+      </section>
+      <section class="bulk-campaign" aria-label="فهرست عدم ارسال">
+        <h3>عدم دریافت پیامک تبلیغاتی</h3>
+        <p class="bulk-sms-muted">اگر فردی پیامک «11» را پاسخ دهد، خودکار به فهرست عدم ارسال می‌رود؛ در اینجا نیز می‌توانید دستی اضافه کنید.</p>
+        <div class="bulk-optout"><input id="bulk-optout-number" type="tel" placeholder="0912xxxxxxx" aria-label="شماره عدم ارسال"><button id="bulk-optout-add" type="button">افزودن به عدم ارسال</button></div>
+        <p id="bulk-optout-notice" class="bulk-sms-muted"></p>
+      </section>
       <div class="bulk-sms-warning">
-        <strong>مرحله آماده‌سازی مخاطبان</strong>
-        <div>در این نسخه فقط گروه‌بندی و پیش‌نمایش فعال است. ارسال انبوه تا آماده‌شدن کنترل رضایت دریافت‌کننده، لغو عضویت، صف ارسال، جلوگیری از ارسال دوباره و تأیید نهایی مدیر غیرفعال می‌ماند.</div>
+        <strong>ارسال با کنترل ایمنی</strong>
+        <div>تنها بعد از تأیید جداگانه شما آغاز می‌شود. گیرندگان تکراری یک کمپین، شماره‌های لغوکننده و مخاطبان دریافت‌کننده پیامک گروهی در ۷ روز اخیر مجدداً ارسال نمی‌شوند. نتایج نامشخص درگاه بدون بازبینی دستی تکرار نمی‌شوند.</div>
       </div>
-      <p class="bulk-sms-info">نتایج بر اساس داده‌های همان لحظه ساخته می‌شوند. این صفحه هیچ پیامکی ارسال نمی‌کند و شماره کامل افراد را نشان نمی‌دهد. برای گروه‌های بسیار بزرگ، پیش‌نمایش با سقف ایمن متوقف می‌شود.</p>
+      <p class="bulk-sms-info">پیش‌نمایش و آماده‌سازی، هیچ پیامکی ارسال نمی‌کنند؛ ارسال فقط بعد از «تأیید نهایی» و از صف محافظت‌شده انجام می‌شود. شمارش آنلاین بوده و شماره کامل افراد در این صفحه نمایش داده نمی‌شود.</p>
     </aside>
   </div>
 </div>
@@ -211,6 +260,98 @@
     }catch(e){err.textContent=e.message||'خطای ارتباط با سرور';}
     finally{previewButton.disabled=false;}
   });
+
+  // Campaign creation never sends: two independent clicks plus explicit approval.
+  const smsBody=document.getElementById('bulk-message-text');
+  const campaignNotice=document.getElementById('bulk-campaign-notice');
+  const finalBox=document.getElementById('bulk-final-confirm');
+  const finalDetails=document.getElementById('bulk-final-details');
+  const confirmation=document.getElementById('bulk-confirm-text');
+  const consent=document.getElementById('bulk-consent-check');
+  const actionUrl="{% url 'bulk_sms_campaign_api' %}";
+  const statusUrl="{% url 'bulk_sms_campaigns_status_api' %}";
+  let draft=null;
+  const csrf=form.querySelector('input[name=csrfmiddlewaretoken]').value;
+  async function api(action){
+    const r=await fetch(actionUrl,{method:'POST',credentials:'same-origin',headers:{
+      'Content-Type':'application/json','X-CSRFToken':csrf,'Accept':'application/json'
+    },body:JSON.stringify(action)});
+    const j=await r.json();if(!r.ok||!j.ok)throw Error(j.error||'عملیات انجام نشد');return j;
+  }
+  function selection(){
+    return {segments:boxes.filter(b=>b.checked).map(b=>b.value),
+      combine:combine.value,date_filter:datePreset.value==='all'?{preset:'all'}:{
+        event:dateEvent.value,preset:datePreset.value,
+        ...(datePreset.value==='custom'?{from:dateFrom.value,to:dateTo.value}:{})
+      }};
+  }
+  function hideDraft(){draft=null;finalBox.hidden=true;consent.checked=false;confirmation.value='';}
+  [smsBody,combine,dateEvent,datePreset,dateFrom,dateTo].forEach(el=>el.addEventListener('input',hideDraft));
+  form.addEventListener('change',hideDraft);
+  document.getElementById('bulk-prepare-campaign').addEventListener('click',async e=>{
+    const btn=e.currentTarget;btn.disabled=true;hideDraft();campaignNotice.textContent='';
+    try{
+      const selectionValue=selection();
+      if(!selectionValue.segments.length)throw Error('حداقل یک گروه انتخاب کنید.');
+      const prepared=await api({action:'prepare',...selectionValue,body:smsBody.value});
+      draft=prepared;
+      finalDetails.textContent='کمپین '+prepared.id+' — '+prepared.count+' گیرنده پس از حذف '+prepared.excluded+' مخاطب ممنوع/تکراری. متن نهایی: '+prepared.body;
+      finalBox.hidden=false;
+      campaignNotice.textContent='فهرست نهایی آماده است؛ هنوز پیامکی ارسال نشده است.';
+    }catch(error){campaignNotice.textContent=error.message;}
+    finally{btn.disabled=false;}
+  });
+  document.getElementById('bulk-confirm-send').addEventListener('click',async e=>{
+    if(!draft)return;
+    const btn=e.currentTarget;btn.disabled=true;campaignNotice.textContent='';
+    try{
+      const res=await api({action:'approve',campaign_id:draft.id,count:draft.count,
+        consent_attested:consent.checked,typed:confirmation.value.trim()});
+      campaignNotice.textContent=res.message+' شماره کمپین: '+res.id;
+      hideDraft();await refreshCampaigns();
+    }catch(error){campaignNotice.textContent=error.message;}
+    finally{btn.disabled=false;}
+  });
+  document.getElementById('bulk-abandon-draft').addEventListener('click',()=>{
+    hideDraft();campaignNotice.textContent='پیش‌نویس کنار گذاشته شد؛ هیچ پیامکی ارسال نشد.';
+  });
+  const campaignsBody=document.getElementById('bulk-campaign-rows');
+  async function refreshCampaigns(){
+    const r=await fetch(statusUrl,{credentials:'same-origin',headers:{Accept:'application/json'}});
+    const data=await r.json();if(!r.ok||!data.ok)throw Error('خواندن وضعیت کمپین‌ها انجام نشد');
+    campaignsBody.replaceChildren();
+    if(!data.campaigns.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=7;td.textContent='هنوز کمپین تأییدشده یا پیش‌نویس وجود ندارد.';tr.append(td);campaignsBody.append(tr);return;}
+    for(const item of data.campaigns){
+      const tr=document.createElement('tr');
+      [item.id,item.status,item.total,item.accepted,item.failed,item.skipped].forEach(value=>{
+        const td=document.createElement('td');td.textContent=String(value);tr.append(td);
+      });
+      const actions=document.createElement('td');
+      const controls=item.status==='queued'?['pause','cancel']:(item.status==='paused'?['resume','cancel']:[]);
+      for(const action of controls){
+        const button=document.createElement('button');button.type='button';button.className='bulk-small';
+        button.textContent={pause:'توقف',resume:'ادامه',cancel:'لغو باقی‌مانده'}[action];
+        button.addEventListener('click',async()=>{
+          if(action==='cancel'&&!confirm('پیامک‌های ارسال‌نشده این کمپین لغو شوند؟'))return;
+          button.disabled=true;try{await api({action,campaign_id:item.id});await refreshCampaigns();}
+          catch(e){campaignNotice.textContent=e.message;button.disabled=false;}
+        });actions.append(button);
+      }
+      tr.append(actions);campaignsBody.append(tr);
+    }
+  }
+  document.getElementById('bulk-refresh-campaigns').addEventListener('click',async()=>{
+    try{await refreshCampaigns()}catch(e){campaignNotice.textContent=e.message}
+  });
+  document.getElementById('bulk-optout-add').addEventListener('click',async e=>{
+    const button=e.currentTarget;button.disabled=true;
+    const notice=document.getElementById('bulk-optout-notice');
+    try{const data=await api({action:'optout',number:document.getElementById('bulk-optout-number').value});
+      notice.textContent='شماره '+data.number_masked+' به فهرست عدم ارسال افزوده شد.';}
+    catch(error){notice.textContent=error.message;}finally{button.disabled=false}
+  });
+  refreshCampaigns().catch(()=>{});
+
   refresh();
 })();
 </script>
