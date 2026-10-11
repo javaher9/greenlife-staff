@@ -4,7 +4,7 @@
 .gl-live-card{min-width:0;background:#fff!important;color:#263e4f!important;border:1px solid #dfe8e8!important;border-radius:17px!important;box-shadow:0 8px 22px rgba(34,60,54,.05)!important;overflow:hidden}
 .gl-live-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;background:linear-gradient(135deg,#f4faf7,#faf8fd)!important;border-bottom:1px solid #e6edec}
 .gl-live-title{display:flex;align-items:center;gap:8px;min-width:0}.gl-live-title strong{display:block;color:#203f38!important;font-size:11px!important}.gl-live-title small{display:block;margin-top:2px;color:#798b86!important;font-size:7px!important}
-.gl-live-dot{width:8px;height:8px;border-radius:50%;background:#2da875;box-shadow:0 0 0 4px rgba(45,168,117,.10);flex:0 0 8px}
+.gl-live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#2da875;box-shadow:0 0 0 3px rgba(45,168,117,.10);flex:0 0 7px}.gl-live-indicator{display:inline-flex;align-items:center;gap:6px;color:#168553;font-size:10px;white-space:nowrap}.gl-live-separator{color:#9ca9a4;margin-inline:3px}
 .gl-live-refresh{font-size:7px;color:#899793;white-space:nowrap}
 .gl-live-list{display:grid;max-height:300px;overflow:auto;scrollbar-width:thin}
 .gl-live-row{display:grid;grid-template-columns:47px minmax(115px,1fr) minmax(120px,1.2fr) auto;gap:7px;align-items:center;padding:9px 11px;border-top:1px solid #edf1f0;min-height:54px}
@@ -18,16 +18,16 @@
 .gl-live-call{background:#eef7f3!important;color:#176e4f!important;border:1px solid #cce3d8!important}.gl-live-sms{background:#f3ecfa!important;color:#65478d!important;border:1px solid #dacbe7!important}
 .gl-live-empty{padding:24px 12px;text-align:center;color:#899793;font-size:8px;background:#fbfdfc}
 .gl-live-toast{display:none;position:fixed;z-index:9999;left:22px;bottom:22px;max-width:280px;padding:10px 12px;border-radius:11px;background:#e7f5ee;color:#176e4f;border:1px solid #c5e0d2;font-size:8px;font-weight:900;box-shadow:0 10px 28px rgba(31,62,51,.15)}.gl-live-toast.error{background:#fff0f3;color:#a13f57;border-color:#edccd5}
-.gl-live-board.single{grid-template-columns:1fr}
+.gl-live-board.single{grid-template-columns:1fr}.gl-live-board.single .gl-live-row{grid-template-columns:47px minmax(0,1fr) auto}.gl-live-board.single .gl-live-person a{font-size:10.5px}.gl-live-board.single .gl-live-tail{min-width:0}
 @media(max-width:900px){.gl-live-board{grid-template-columns:1fr}.gl-live-row{grid-template-columns:44px minmax(100px,1fr) auto}.gl-live-detail{grid-column:2/4;grid-row:2}.gl-live-tail{grid-column:3;grid-row:1/3}}
 @media(max-width:540px){.gl-live-row{grid-template-columns:40px minmax(0,1fr);gap:5px}.gl-live-tail{grid-column:1/-1;grid-row:auto;justify-content:flex-start}.gl-live-detail{grid-column:2;grid-row:auto}.gl-live-list{max-height:360px}}
 </style>
   <article class="gl-live-card">
-    <header class="gl-live-head"><div class="gl-live-title"><span class="gl-live-dot"></span><div><strong>جریان مراجعه</strong><small data-live-visit-sub>وضعیت زنده نوبت‌ها</small></div></div><span class="gl-live-refresh" data-live-refresh></span></header>
+    <header class="gl-live-head"><div class="gl-live-title"><div><strong>وضعیت مراجعین <span class="gl-live-separator">—</span> <span class="gl-live-indicator"><span class="gl-live-dot" aria-hidden="true"></span>زنده</span></strong><small data-live-visit-sub>نوبت‌های امروز</small></div></div><span class="gl-live-refresh" data-live-refresh></span></header>
     <div class="gl-live-list" data-live-visits><div class="gl-live-empty">در حال دریافت وضعیت…</div></div>
   </article>
   <article class="gl-live-card" data-live-device-card>
-    <header class="gl-live-head"><div class="gl-live-title"><span class="gl-live-dot"></span><div><strong>وضعیت دستگاه‌ها</strong><small data-live-device-sub>جلسات امروز به ترتیب ساعت</small></div></div><span class="gl-live-refresh" data-live-device-refresh></span></header>
+    <header class="gl-live-head"><div class="gl-live-title"><div><strong>وضعیت دستگاه‌ها <span class="gl-live-separator">—</span> <span class="gl-live-indicator"><span class="gl-live-dot" aria-hidden="true"></span>زنده</span></strong><small data-live-device-sub>جلسات امروز به ترتیب ساعت</small></div></div><span class="gl-live-refresh" data-live-device-refresh></span></header>
     <div class="gl-live-list" data-live-devices><div class="gl-live-empty">در حال دریافت وضعیت…</div></div>
   </article>
   <div class="gl-live-toast" data-live-toast></div>
@@ -49,7 +49,7 @@
     visitBox.innerHTML=list.map(function(x){
       return '<div class="gl-live-row"><div class="gl-live-time">'+esc(x.time)+'<small>'+esc(x.day_label)+'</small></div>'+
         '<div class="gl-live-person"><a href="'+esc(x.patient_url)+'">'+esc(x.name)+'</a><small>'+(role==='call_center'?esc(x.branch):esc(x.service))+'</small></div>'+
-        '<div class="gl-live-detail">'+(role==='call_center'?esc(x.service):esc(x.branch))+'</div>'+
+        (role==='call_center'?'':'<div class="gl-live-detail">'+esc(x.branch)+'</div>')+
         '<div class="gl-live-tail"><span class="gl-live-status '+esc(x.status_key)+'">'+esc(x.status_label)+'</span>'+actions(x,'visit')+'</div></div>';
     }).join('');
   }
