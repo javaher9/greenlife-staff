@@ -1611,10 +1611,12 @@ def call_center_direct_lead_create(request):
     if request.method=='POST' and form.is_valid():
         lead=form.save(commit=False)
         lead.referrer=_call_center_direct_referrer()
-        lead.assigned_to=operator
-        lead.assigned_at=timezone.now()
+        # Direct-entry registration uses the same fair round-robin as all other leads.
+        # Registration does not imply ownership by the submitting operator.
+        lead.assigned_to=None
+        lead.assigned_at=None
         lead.created_by=request.user
-        lead.group=form.cleaned_data['group']
+        lead.group=None
         lead.source='panel'
         direct_marker='[entry:direct]'
         lead.notes=f"{direct_marker}\n{lead.notes}".strip()
@@ -1631,18 +1633,19 @@ def call_center_direct_lead_create(request):
             else:
                 messages.warning(request,'این شماره اخیراً به‌عنوان لید ثبت شده است.')
         else:
+            assigned=_auto_assign_call_center(lead)
             AuditLog.objects.create(
                 actor=request.user,action='call_center_direct_lead_create',
                 path=request.path,method='POST',
                 object_type='ReferralLead',object_id=str(lead.pk),
-                summary='Call-center operator registered lead directly into own queue',
-                metadata={'group_id':lead.group_id,'group':lead.group.name,'phone':lead.phone},
+                summary='Call-center direct-entry lead distributed through normal round-robin',
+                metadata={'group_id':lead.group_id,'phone':lead.phone,'assigned_to_id':assigned.pk if assigned else None},
             )
-            messages.success(
-                request,
-                f'لید «{lead.full_name}» مستقیم در صف شما و گروه «{lead.group.name}» ثبت شد.'
-            )
-            return redirect(f"{reverse('call_center_dashboard')}?group={lead.group_id}")
+            if assigned:
+                messages.success(request,f'لید «{lead.full_name}» ثبت شد و طبق نوبت‌بندی عادی به «{call_center_display_name(assigned)}» رسید.')
+            else:
+                messages.warning(request,'لید ثبت شد، اما فعلاً اپراتور واجد شرایطی برای توزیع پیدا نشد.')
+            return redirect('call_center_dashboard')
     return render(request,'core/call_center/direct_lead_form.html',{
         'form':form,'can_manage_groups':_can_manage_call_center_groups(request.user),
     })
