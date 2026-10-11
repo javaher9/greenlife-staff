@@ -251,7 +251,7 @@ def telegram_lead(request):
 @login_required(login_url='/login/')
 def instagram_manual_lead(request):
     profile=getattr(request.user,'profile',None)
-    if not (request.user.is_superuser or (profile and (profile.role == 'admin' or profile.can_register_instagram_dm_lead))):
+    if not (request.user.is_superuser or (profile and profile.is_active and (profile.role in ('admin','call_center') or profile.can_register_instagram_dm_lead))):
         return redirect('dashboard')
     post_data = None
     if request.method == 'POST':
