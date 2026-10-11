@@ -1,0 +1,96 @@
+<section class="gl-live-board" data-live-status-root data-live-url="{% url 'staff_live_status_api' %}{% if live_status_branch %}?branch={{ live_status_branch.pk }}{% endif %}" data-sms-url="{% url 'staff_live_quick_sms' %}">
+<style>
+.gl-live-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0;direction:rtl;font-family:Tahoma,sans-serif}
+.gl-live-card{min-width:0;background:#fff!important;color:#263e4f!important;border:1px solid #dfe8e8!important;border-radius:17px!important;box-shadow:0 8px 22px rgba(34,60,54,.05)!important;overflow:hidden}
+.gl-live-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;background:linear-gradient(135deg,#f4faf7,#faf8fd)!important;border-bottom:1px solid #e6edec}
+.gl-live-title{display:flex;align-items:center;gap:8px;min-width:0}.gl-live-title strong{display:block;color:#203f38!important;font-size:11px!important}.gl-live-title small{display:block;margin-top:2px;color:#798b86!important;font-size:7px!important}
+.gl-live-dot{width:8px;height:8px;border-radius:50%;background:#2da875;box-shadow:0 0 0 4px rgba(45,168,117,.10);flex:0 0 8px}
+.gl-live-refresh{font-size:7px;color:#899793;white-space:nowrap}
+.gl-live-list{display:grid;max-height:300px;overflow:auto;scrollbar-width:thin}
+.gl-live-row{display:grid;grid-template-columns:47px minmax(115px,1fr) minmax(120px,1.2fr) auto;gap:7px;align-items:center;padding:9px 11px;border-top:1px solid #edf1f0;min-height:54px}
+.gl-live-row:first-child{border-top:0}.gl-live-time{font-weight:1000;font-size:10px;color:#294a43;direction:ltr;text-align:center}.gl-live-time small{display:block;margin-top:2px;font-size:6.5px;color:#899894;direction:rtl}
+.gl-live-person{min-width:0}.gl-live-person a{display:block;color:#203e48!important;text-decoration:none;font-size:9.5px;font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gl-live-person small{display:block;margin-top:3px;color:#7c8d94;font-size:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gl-live-detail{min-width:0;color:#526b73;font-size:7.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gl-live-tail{display:flex;align-items:center;justify-content:flex-end;gap:4px;flex-wrap:wrap}
+.gl-live-status{display:inline-flex;align-items:center;justify-content:center;min-height:24px;padding:0 7px;border-radius:999px;border:1px solid #dce5e8;background:#f4f7f8;color:#5d6d78;font-size:7px;font-weight:1000;white-space:nowrap}
+.gl-live-status.booked{background:#f2f4f6;color:#5f6e79;border-color:#dfe5e8}.gl-live-status.doctor,.gl-live-status.arrived{background:#e9f4fb;color:#34749b;border-color:#cfe1ee}.gl-live-status.consultant,.gl-live-status.rescheduled{background:#f2eafa;color:#68458f;border-color:#d8c6e7}.gl-live-status.payment,.gl-live-status.late{background:#fff4df;color:#8a611d;border-color:#ecd7ac}.gl-live-status.completed{background:#e5f6ed;color:#176f4f;border-color:#c4e2d3}.gl-live-status.no_show,.gl-live-status.overdue{background:#fff0f3;color:#a13f57;border-color:#efccd6}.gl-live-status.cancelled{background:#f2f3f4;color:#7a838a;border-color:#e0e3e5}
+.gl-live-action{display:inline-flex!important;align-items:center!important;justify-content:center!important;height:25px!important;min-height:25px!important;padding:0 6px!important;border-radius:7px!important;text-decoration:none!important;font-size:6.8px!important;font-weight:1000!important;box-shadow:none!important;cursor:pointer!important}
+.gl-live-call{background:#eef7f3!important;color:#176e4f!important;border:1px solid #cce3d8!important}.gl-live-sms{background:#f3ecfa!important;color:#65478d!important;border:1px solid #dacbe7!important}
+.gl-live-empty{padding:24px 12px;text-align:center;color:#899793;font-size:8px;background:#fbfdfc}
+.gl-live-toast{display:none;position:fixed;z-index:9999;left:22px;bottom:22px;max-width:280px;padding:10px 12px;border-radius:11px;background:#e7f5ee;color:#176e4f;border:1px solid #c5e0d2;font-size:8px;font-weight:900;box-shadow:0 10px 28px rgba(31,62,51,.15)}.gl-live-toast.error{background:#fff0f3;color:#a13f57;border-color:#edccd5}
+.gl-live-board.single{grid-template-columns:1fr}
+@media(max-width:900px){.gl-live-board{grid-template-columns:1fr}.gl-live-row{grid-template-columns:44px minmax(100px,1fr) auto}.gl-live-detail{grid-column:2/4;grid-row:2}.gl-live-tail{grid-column:3;grid-row:1/3}}
+@media(max-width:540px){.gl-live-row{grid-template-columns:40px minmax(0,1fr);gap:5px}.gl-live-tail{grid-column:1/-1;grid-row:auto;justify-content:flex-start}.gl-live-detail{grid-column:2;grid-row:auto}.gl-live-list{max-height:360px}}
+</style>
+  <article class="gl-live-card">
+    <header class="gl-live-head"><div class="gl-live-title"><span class="gl-live-dot"></span><div><strong>جریان مراجعه</strong><small data-live-visit-sub>وضعیت زنده نوبت‌ها</small></div></div><span class="gl-live-refresh" data-live-refresh></span></header>
+    <div class="gl-live-list" data-live-visits><div class="gl-live-empty">در حال دریافت وضعیت…</div></div>
+  </article>
+  <article class="gl-live-card" data-live-device-card>
+    <header class="gl-live-head"><div class="gl-live-title"><span class="gl-live-dot"></span><div><strong>وضعیت دستگاه‌ها</strong><small data-live-device-sub>جلسات امروز به ترتیب ساعت</small></div></div><span class="gl-live-refresh" data-live-device-refresh></span></header>
+    <div class="gl-live-list" data-live-devices><div class="gl-live-empty">در حال دریافت وضعیت…</div></div>
+  </article>
+  <div class="gl-live-toast" data-live-toast></div>
+<script>
+(function(){
+  var root=document.currentScript.closest('[data-live-status-root]');if(!root)return;
+  var visitBox=root.querySelector('[data-live-visits]'),deviceBox=root.querySelector('[data-live-devices]'),deviceCard=root.querySelector('[data-live-device-card]'),refresh=root.querySelector('[data-live-refresh]'),deviceRefresh=root.querySelector('[data-live-device-refresh]'),visitSub=root.querySelector('[data-live-visit-sub]'),deviceSub=root.querySelector('[data-live-device-sub]'),toast=root.querySelector('[data-live-toast]'),busy=false;
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function phone(v){return String(v||'').replace(/[^0-9+]/g,'')}
+  function showToast(msg,error){toast.textContent=msg;toast.classList.toggle('error',!!error);toast.style.display='block';setTimeout(function(){toast.style.display='none'},2600)}
+  function actions(x,kind){
+    if(!x.needs_action)return '';
+    var call='<a class="gl-live-action gl-live-call" href="tel:'+esc(phone(x.phone))+'">☎ تماس</a>';
+    var attr=kind==='device'?'data-device-booking="'+esc(x.id)+'"':'data-appointment="'+esc(x.id)+'"';
+    return call+'<button type="button" class="gl-live-action gl-live-sms" data-live-sms '+attr+'>✉ SMS</button>';
+  }
+  function renderVisits(list,role){
+    if(!list.length){visitBox.innerHTML='<div class="gl-live-empty">نوبتی در بازه فعلی نیست.</div>';return}
+    visitBox.innerHTML=list.map(function(x){
+      return '<div class="gl-live-row"><div class="gl-live-time">'+esc(x.time)+'<small>'+esc(x.day_label)+'</small></div>'+
+        '<div class="gl-live-person"><a href="'+esc(x.patient_url)+'">'+esc(x.name)+'</a><small>'+(role==='call_center'?esc(x.branch):esc(x.service))+'</small></div>'+
+        '<div class="gl-live-detail">'+(role==='call_center'?esc(x.service):esc(x.branch))+'</div>'+
+        '<div class="gl-live-tail"><span class="gl-live-status '+esc(x.status_key)+'">'+esc(x.status_label)+'</span>'+actions(x,'visit')+'</div></div>';
+    }).join('');
+  }
+  function renderDevices(list){
+    if(!list.length){deviceBox.innerHTML='<div class="gl-live-empty">برای امروز نوبت دستگاهی ثبت نشده است.</div>';return}
+    deviceBox.innerHTML=list.map(function(x){
+      return '<div class="gl-live-row"><div class="gl-live-time">'+esc(x.time)+'</div>'+
+        '<div class="gl-live-person"><a href="'+esc(x.patient_url)+'">'+esc(x.name)+'</a><small>'+esc(x.device)+'</small></div>'+
+        '<div class="gl-live-detail">'+esc(x.service||'جلسه دستگاه')+'</div>'+
+        '<div class="gl-live-tail"><span class="gl-live-status '+esc(x.status_key)+'">'+esc(x.status_label)+'</span>'+actions(x,'device')+'</div></div>';
+    }).join('');
+  }
+  function csrf(){var m=document.cookie.match(/(?:^|;\s*)(?:csrftoken|greenlife_lan_csrftoken)=([^;]+)/);return m?decodeURIComponent(m[1]):''}
+  root.addEventListener('click',function(e){
+    var btn=e.target.closest('[data-live-sms]');if(!btn)return;
+    e.preventDefault();if(btn.disabled)return;btn.disabled=true;var old=btn.textContent;btn.textContent='…';
+    var fd=new FormData(),token=csrf();if(token)fd.append('csrfmiddlewaretoken',token);
+    if(btn.dataset.appointment)fd.append('appointment',btn.dataset.appointment);
+    if(btn.dataset.deviceBooking)fd.append('device_booking',btn.dataset.deviceBooking);
+    fetch(root.dataset.smsUrl,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}})
+      .then(function(r){return r.json().then(function(d){if(!r.ok||!d.ok)throw new Error(d.error||'ارسال انجام نشد');return d})})
+      .then(function(d){showToast(d.message||'SMS ارسال شد.',false)})
+      .catch(function(err){showToast(err.message||'خطا در ارسال SMS',true)})
+      .finally(function(){btn.disabled=false;btn.textContent=old});
+  });
+  function load(){
+    if(busy||document.hidden)return;busy=true;
+    fetch(root.dataset.liveUrl,{credentials:'same-origin',cache:'no-store',headers:{'X-Requested-With':'XMLHttpRequest'}})
+      .then(function(r){return r.json().then(function(d){if(!r.ok||!d.ok)throw new Error(d.error||'خطا');return d})})
+      .then(function(d){
+        renderVisits(d.visits||[],d.role);
+        if(d.show_devices){deviceCard.style.display='block';root.classList.remove('single');renderDevices(d.devices||[])}
+        else{deviceCard.style.display='none';root.classList.add('single')}
+        var scope=d.role==='call_center'?'امروز و فردا · لیدهای من':('امروز'+(d.branch?' · '+d.branch:''));
+        visitSub.textContent=scope;deviceSub.textContent='امروز'+(d.branch?' · '+d.branch:'');
+        refresh.textContent='به‌روزرسانی '+d.refreshed_at;if(deviceRefresh)deviceRefresh.textContent=d.refreshed_at;
+      })
+      .catch(function(){refresh.textContent='اتصال مجدد…'})
+      .finally(function(){busy=false});
+  }
+  load();setInterval(load,8000);document.addEventListener('visibilitychange',function(){if(!document.hidden)load()});
+})();
+</script>
+</section>

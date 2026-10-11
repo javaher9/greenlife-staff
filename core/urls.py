@@ -21,8 +21,11 @@ from . import device_booking_views
 from . import consultant_expense_views
 from . import patient_360_views
 from . import server_health_views
+from . import live_status_views
 from .mcp import mcp_endpoint
 urlpatterns=[
+path('api/staff-live-status/',live_status_views.staff_live_status_api,name='staff_live_status_api'),
+path('api/staff-live-status/sms/',live_status_views.staff_live_quick_sms,name='staff_live_quick_sms'),
 path('workspace/language/',views.language_switch,name='language_switch'),
 path('workspace/country/',views.country_switch,name='country_switch'),
 path('settings/device-capacity/',device_booking_views.device_capacity_settings,name='device_capacity_settings'),

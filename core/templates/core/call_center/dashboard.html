@@ -1329,22 +1329,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-side-direct:focus{
         <header class="ccx-head"><div><h3>پیگیری‌های نزدیک</h3><p>۳ روز آینده</p></div></header>
         <div class="ccx-side-list">{% for lead in upcoming_followups %}<a class="ccx-side-item ccx-side-actionable" href="{% url 'call_center_lead' lead.pk %}" data-focus-lead="{{ lead.pk }}" title="باز کردن و ادامه پیگیری {{ lead.full_name }}"><div class="ccx-side-copy"><strong>{{ lead.full_name }}</strong><small>☎ {{ lead.phone }}</small></div><div class="ccx-side-right"><b>{{ lead.next_follow_up|jdate }}</b><span class="ccx-side-go">ادامه ←</span></div></a>{% empty %}<div class="ccx-side-empty">پیگیری آینده‌ای ثبت نشده.</div>{% endfor %}</div>
       </section>
-      <section class="ccx-card">
-        <header class="ccx-head"><div><div class="ccx-today-live-head"><h3>نوبت‌های امروز</h3><span class="ccx-live-dot">زنده</span></div><p>وضعیت لحظه‌ای مسیر مراجعه</p></div><small class="ccx-live-refresh" id="ccxTodayLiveTime"></small></header>
-        <div class="ccx-today-live-list" id="ccxTodayAppointments" data-live-url="{% url 'call_center_today_appointments_live' %}">
-          {% for item in today_appointments|slice:":5" %}
-          <article class="ccx-today-card" data-appointment-id="{{ item.pk }}">
-            <div class="ccx-today-top"><a class="ccx-today-name" href="{% url 'patient_360_from_appointment' item.pk %}">{{ item.full_name }}</a><b class="ccx-today-time">{{ item.appointment_time|time:"H:i" }}</b></div>
-            <div class="ccx-today-meta">{{ item.branch.name }}{% if item.service %} · {{ item.service }}{% endif %}</div>
-            <div class="ccx-journey-line"><span class="ccx-journey-badge {{ item.journey_key }}">{{ item.journey_label }}</span><small class="ccx-journey-meta">{{ item.journey_changed_time }} · {{ item.journey_source }}</small></div>
-            {% if item.journey_needs_call %}<a class="ccx-live-call" href="tel:{{ item.phone }}">☎ تماس فوری</a>{% endif %}
-          </article>
-          {% empty %}<div class="ccx-live-empty">نوبتی برای امروز ندارید.</div>{% endfor %}
-        </div>
-      </section>
-      <section class="ccx-card">
-        <header class="ccx-head"><div><h3>نوبت‌های فردا</h3><p>تماس یادآوری</p></div></header>
-        <div class="ccx-side-list">{% for item in tomorrow_appointments|slice:":5" %}<div class="ccx-side-item"><div><strong>{{ item.full_name }}</strong><small><a href="tel:{{ item.phone }}">☎ تماس یادآوری</a></small></div><b>{{ item.appointment_time|time:"H:i" }}</b></div>{% empty %}<div class="ccx-side-empty">نوبتی برای فردا ندارید.</div>{% endfor %}</div>
+      {% include "core/_live_status_plaques.html" with live_status_mode="call_center" %}
       </section>
     </aside>
   </div>

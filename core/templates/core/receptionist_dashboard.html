@@ -211,6 +211,8 @@
       <div class="flow-step done"><span>{% gl_t 'rec.completed_flow' %}</span><strong>{{ receptionist_closed_count|default:0 }}</strong></div>
     </section>
 
+    {% include "core/_live_status_plaques.html" %}
+
     {% if receptionist_payment_queue %}
     <section class="card payment-queue">
       <div class="card-head"><h2>{% gl_t 'rec.waiting_payment' %} <span class="payment-badge">{{ receptionist_payment_waiting_count }}</span></h2><span>{% gl_t 'rec.package_ready' %}</span></div>

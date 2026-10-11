@@ -375,6 +375,7 @@ html,body{background:#0a1520!important}
         {% if executive_doctor_mode %}<a href="/my-office/">{% gl_t 'doc.back_management' %}</a>{% endif %}
       </div>
     </header>
+    {% include "core/_live_status_plaques.html" with live_status_branch=doctor_branch %}
     <div class="doctor-grid" id="appointments">
     <aside class="appt-rail">
       <section class="doctor-card">
