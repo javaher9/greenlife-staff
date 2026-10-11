@@ -14,7 +14,7 @@
 </style>
 <div class="cc-direct-page">
   <section class="cc-direct-card">
-    <div class="cc-direct-head"><small>CALL CENTER · DIRECT ENTRY</small><h1>ثبت مستقیم لید</h1><p>برای شماره‌های قدیمی، VIP، لیست‌های اختصاصی و لیدهایی که باید مستقیم در صف خودتان بمانند.</p></div>
+    <div class="cc-direct-head"><small>CALL CENTER · DIRECT ENTRY</small><h1>ثبت مستقیم لید</h1><p>برای ثبت لیدهای دایرکت، شماره‌های قدیمی و سایر ورودی‌ها؛ توزیع بین اپراتورهای کال‌سنتر به نوبت انجام می‌شود.</p></div>
     <div class="cc-direct-body">
       <div class="cc-direct-note">این لید وارد Round‑Robin نمی‌شود؛ بعد از ثبت مستقیم در صف خود شما و گروه انتخاب‌شده قرار می‌گیرد.</div>
       <form method="post" novalidate>{% csrf_token %}
@@ -27,7 +27,7 @@
         </div>
         {% if form.non_field_errors %}<div class="cc-direct-errors">{{ form.non_field_errors }}</div>{% endif %}
         {% if can_manage_groups %}<div class="cc-direct-manager">شما مجوز ساخت گروه سراسری دارید. گروه جدید را از بخش «گروه‌ها و ابزارهای ثانویه» در میز کار بسازید؛ بلافاصله برای همه گل‌ها نمایش داده می‌شود.</div>{% endif %}
-        <div class="cc-direct-actions"><a href="{% url 'call_center_dashboard' %}">انصراف</a><button type="submit">ثبت مستقیم در صف من</button></div>
+        <div class="cc-direct-actions"><a href="{% url 'call_center_dashboard' %}">انصراف</a><button type="submit">ثبت لید و توزیع نوبتی</button></div>
       </form>
     </div>
   </section>
