@@ -1219,6 +1219,21 @@ body.gl-page-call_center_dashboard .ccx .ccx-side-direct:focus{
     font-size:7.5px!important;
   }
 }
+
+/* 2026-10: use the unused right margin, reduce horizontal overflow on call-center desktop */
+@media (min-width:1181px){
+ body.gl-page-call_center_dashboard .ccx{max-width:calc(100vw - 12px)!important;width:100%!important}
+ body.gl-page-call_center_dashboard .ccx-layout{grid-template-columns:210px minmax(0,1fr)!important;gap:8px!important}
+ body.gl-page-call_center_dashboard .ccx-side{width:210px!important;min-width:0!important}
+ body.gl-page-call_center_dashboard .ccx .cc-work-row{grid-template-columns:minmax(150px,1.25fr) minmax(70px,.65fr) minmax(80px,.72fr) minmax(95px,.78fr) minmax(75px,.65fr) minmax(295px,1.7fr)!important;gap:5px!important;padding-inline:8px!important}
+ body.gl-page-call_center_dashboard .ccx .ccx-actions{min-width:0}
+ body.gl-page-call_center_dashboard .ccx .ccx-action{min-width:0;padding-inline:2px!important}
+}
+@media (min-width:1181px) and (max-width:1450px){
+ body.gl-page-call_center_dashboard .ccx-layout{grid-template-columns:180px minmax(0,1fr)!important}
+ body.gl-page-call_center_dashboard .ccx-side{width:180px!important}
+ body.gl-page-call_center_dashboard .ccx .cc-work-row{grid-template-columns:minmax(135px,1.2fr) 68px 78px minmax(85px,.75fr) 70px minmax(260px,1.6fr)!important;gap:4px!important}
+}
 </style>
 
 <div class="ccx" lang="fa" dir="rtl" translate="no">
