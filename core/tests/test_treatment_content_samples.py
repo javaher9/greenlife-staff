@@ -1,4 +1,7 @@
 """Regression for safe five-item MHTML import and rich-content doctor preview."""
+from django.apps import apps
+from django.db import connection
+from importlib import import_module
 from io import BytesIO
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -171,6 +174,33 @@ class TreatmentContentSampleTests(TestCase):
         )
         preview=build_section_preview(section)
         self.assertIn(additional.pk,[media.pk for media in preview.footer_images])
+
+    def test_backfill_repositions_old_import_without_changing_medical_text(self):
+        from django.utils import timezone
+        from core.models import TreatmentRichContent
+        item=TreatmentCatalogItem.objects.get(name='Por-150',category='diet',branch=None)
+        content=TreatmentRichContent.objects.create(master_item=item,origin='MHTML CRM')
+        original='متن رژیم ثبت‌شده توسط پزشک'
+        section=TreatmentRichSection.objects.create(
+            content=content,title='برنامه غذایی',body=original,sort_order=10,
+        )
+        for i in range(11):
+            TreatmentRichMedia.objects.create(
+                section=section,kind='image',
+                original_url=f'https://example.org/original/{i}.jpg',
+                sort_order=(i+1)*10,
+            )
+        migration=import_module('core.migrations.0087_restore_treatment_inline_photos')
+        class SchemaEditor:
+            connection=connection
+        migration.restore_photo_positions(apps,SchemaEditor())
+        section.refresh_from_db()
+        self.assertEqual(section.body,original)
+        images=list(section.media.order_by('sort_order'))
+        self.assertEqual([x.inline_before_line for x in images],
+                         [0,3,6,9,12,None,29,32,35,None,52])
+        self.assertEqual(sum(x.is_responsive_duplicate for x in images),2)
+        self.assertEqual(section.media.count(),11)
 
     def test_repeat_upload_preserves_manual_edits(self):
         self._upload()
