@@ -151,6 +151,34 @@ class TreatmentContentSampleTests(TestCase):
         self.client.force_login(self.doctor)
         self.assertEqual(self.client.get(reverse('treatment_content_preview',args=[content.master_item_id])).status_code,404)
 
+    def test_admin_media_upload_and_remove_persists(self):
+        self._upload()
+        content=TreatmentRichContent.objects.get(master_item__name='Keto-Fast')
+        self.client.force_login(self.admin)
+        response=self.client.post(reverse('treatment_content_manage',args=[content.master_item_id]),{
+            'action':'upload','location':'cover','kind':'image',
+            'media_file':SimpleUploadedFile('replacement.png',IMG,content_type='image/png'),
+        },follow=True)
+        self.assertEqual(response.status_code,200)
+        content.refresh_from_db()
+        self.assertTrue(content.cover_file)
+        self.assertIn('replacement',content.cover_file.name)
+
+        section=content.sections.first()
+        response=self.client.post(reverse('treatment_content_manage',args=[content.master_item_id]),{
+            'action':'upload','location':'section','kind':'audio','section_id':str(section.pk),
+            'media_file':SimpleUploadedFile('sample.m4a',b'audio-only-test',content_type='audio/mp4'),
+        },follow=True)
+        self.assertEqual(response.status_code,200)
+        medium=section.media.filter(kind='audio').first()
+        self.assertIsNotNone(medium)
+        self.assertTrue(medium.uploaded_file)
+        response=self.client.post(reverse('treatment_content_manage',args=[content.master_item_id]),{
+            'action':'remove_media','media_id':str(medium.pk),
+        },follow=True)
+        self.assertEqual(response.status_code,200)
+        self.assertFalse(TreatmentRichMedia.objects.filter(pk=medium.pk).exists())
+
     def test_reject_wrong_zip_atomically(self):
         self.client.force_login(self.admin)
         response=self.client.post(reverse('treatment_content_library'),{
