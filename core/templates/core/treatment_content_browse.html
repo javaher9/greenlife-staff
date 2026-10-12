@@ -1,0 +1,22 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<style>
+.trb{max-width:1000px;margin:18px auto 38px;direction:rtl;color:#26483f}
+.trb .hero{background:linear-gradient(135deg,#e8f6ee,#f2f3ff);border:1px solid #d5e5dc;border-radius:19px;padding:22px}
+.trb h1{font-size:23px;color:#214f3e;margin:0 0 8px}.trb p{font-size:12px;color:#5b786d;line-height:1.9}
+.trb .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:12px;margin-top:16px}
+.trb .card{border:1px solid #d9e6de;border-radius:16px;background:white;padding:18px;box-shadow:0 12px 28px #1a4d3110}
+.trb .card strong{display:block;font-size:15px;color:#225a45;margin:6px 0}.trb .card small{font-size:11px;color:#6a8a7e}
+.trb .card a{display:inline-flex;margin-top:14px;border-radius:10px;background:#288a66;color:#fff!important;padding:9px 15px;font-size:12px;text-decoration:none;font-weight:900}
+</style>
+<div class="trb">
+  <section class="hero"><h1>مشاهده رژیم‌ها و توصیه‌ها</h1>
+    <p>پیش‌نمایش فقط‌خواندنی برای پزشک. مشاهده این مطالب نیازی به پذیرش بیمار ندارد؛ ثبت تجویز همچنان فقط در چرخه اصلی پزشک انجام می‌شود.</p></section>
+  <div class="grid">{% for row in rows %}
+    <article class="card"><small>{% if row.master_item.category == 'diet' %}رژیم غذایی{% else %}توصیه{% endif %}</small>
+      <strong>{{ row.master_item.name }}</strong><small>{{ row.sections.count }} بخش</small>
+      <div><a href="{% url 'treatment_content_preview' row.master_item_id %}">نمایش برنامه کامل</a></div>
+    </article>{% empty %}<p>هنوز محتوایی وارد نشده است؛ ادمین باید نمونه‌های MHTML را وارد کند.</p>{% endfor %}
+  </div>
+</div>
+{% endblock %}
