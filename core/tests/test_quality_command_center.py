@@ -1,4 +1,5 @@
 from datetime import time, timedelta
+from importlib import import_module
 from types import SimpleNamespace
 
 from django.contrib.auth.models import Group, User
@@ -7,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.device_booking_models import DeviceTypeSchedule, PhysicalDevice
-from core.models import Branch, DeviceIssue, EmployeeProfile, VisitAppointment
+from core.models import Attendance, Branch, DeviceIssue, EmployeeProfile, LeaveRequest, VisitAppointment
 from core.quality_command_views import _physical_state
 
 
@@ -102,6 +103,69 @@ class QualityCommandCenterTests(TestCase):
         response = self.client.get(reverse("quality_command_center"))
         self.assertContains(response, "گزارش خرابی باز")
         self.assertContains(response, "1 ایراد دستگاه")
+
+
+    def test_qc_excludes_retired_urmia_and_temporarily_hides_istanbul(self):
+        urmia = Branch.objects.create(name="ارومیه")
+        istanbul = Branch.objects.create(name="استانبول")
+        self.visit(urmia, "بیمار ارومیه", "booked", time(9, 0))
+        self.visit(istanbul, "بیمار استانبول", "booked", time(9, 0))
+        self.client.force_login(self.naderi)
+        for name in ("quality_command_center", "quality_command_data"):
+            response = self.client.get(reverse(name))
+            rendered = response.content.decode("utf-8")
+            self.assertNotIn("بیمار ارومیه", rendered)
+            self.assertNotIn("بیمار استانبول", rendered)
+            self.assertIn("بیمار نیاوران", rendered)
+            self.assertIn("بیمار پونک", rendered)
+
+    def test_attendance_distinguishes_absence_leave_late_and_missing_checkin(self):
+        today = timezone.localdate()
+        late = self.person("qc-late", "employee", self.niavaran)
+        absent = self.person("qc-absent", "employee", self.niavaran)
+        leave = self.person("qc-on-leave", "employee", self.niavaran)
+        missing = self.person("qc-unregistered", "employee", self.niavaran)
+        Attendance.objects.create(
+            user=late, branch=self.niavaran, date=today,
+            check_in=timezone.now(), status="late",
+        )
+        Attendance.objects.create(
+            user=absent, branch=self.niavaran, date=today,
+            status="absent",
+        )
+        LeaveRequest.objects.create(
+            user=leave, start_date=today, end_date=today,
+            request_type="annual", status="approved",
+        )
+        self.client.force_login(self.naderi)
+        response = self.client.get(reverse("quality_command_center"))
+        self.assertEqual(response.status_code, 200)
+        snapshot = response.context["snapshot"]
+        center = next(b for b in snapshot["branches"] if b["id"] == self.niavaran.pk)
+        states = {p["name"]: p["state"] for p in center["staff"]}
+        self.assertEqual(states[late.username], "late")
+        self.assertEqual(states[absent.username], "absent")
+        self.assertEqual(states[leave.username], "leave")
+        self.assertEqual(states[missing.username], "unregistered")
+        self.assertEqual(center["staff_late"], 1)
+        self.assertEqual(center["staff_absent"], 1)
+        self.assertEqual(center["staff_leave"], 1)
+        self.assertGreaterEqual(center["staff_unregistered"], 1)
+        self.assertContains(response, "غیبت قطعی")
+        self.assertContains(response, "مرخصی")
+        self.assertContains(response, "بدون ثبت ورود")
+
+    def test_closed_branch_migration_preserves_history(self):
+        urmia = Branch.objects.create(name="ارومیه")
+        migration = import_module("core.migrations.0083_hide_closed_urmia_branch")
+        migration.deactivate_closed_urmia_branch(
+            SimpleNamespace(get_model=lambda app, name: Branch), None
+        )
+        self.assertFalse(Branch.objects.get(pk=urmia.pk).is_active)
+        self.assertTrue(Branch.objects.get(pk=self.niavaran.pk).is_active)
+        self.assertTrue(VisitAppointment.objects.filter(
+            pk=self.niavaran_visit.pk
+        ).exists())
 
     def test_booking_alone_is_not_reported_as_active_hardware(self):
         now = timezone.now()
