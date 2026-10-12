@@ -18,6 +18,12 @@ from .models import (
     StaffNotification, Task, VisitAppointment, lead_phone_variants, normalize_lead_phone,
 )
 from .sms import send_sms
+from .device_pricing import to_toman_from_million, from_toman_to_million
+
+
+def _device_price_admin(request):
+    profile=getattr(request.user,'profile',None)
+    return bool(request.user.is_superuser or (profile and profile.role=='admin'))
 
 
 def _profile(request):
@@ -326,7 +332,35 @@ def device_capacity_settings(request):
         if not request.user.is_superuser:
             _role_allowed(_profile(request),('admin','manager'))
         action=request.POST.get('action')
-        if action=='toggle_type_branch':
+        if action=='device_price':
+            if not _device_price_admin(request):
+                raise PermissionDenied('فقط ادمین می‌تواند قیمت دستگاه را تغییر دهد.')
+            kind=get_object_or_404(DeviceTypeSchedule,pk=request.POST.get('type_id'))
+            unit=(request.POST.get('price_unit') or 'session').strip()
+            try:
+                if unit not in dict(DeviceTypeSchedule.PRICE_UNITS):
+                    raise ValueError('واحد قیمت معتبر نیست.')
+                price=to_toman_from_million(request.POST.get('unit_price_million'))
+            except ValueError as exc:
+                messages.error(request,str(exc))
+            else:
+                kind.unit_price_toman=price
+                kind.price_unit=unit
+                kind.save(update_fields=['unit_price_toman','price_unit'])
+                messages.success(request,'قیمت واحد دستگاه برای همه شعب به‌روزرسانی شد.')
+        elif action=='toggle_type_active':
+            if not _device_price_admin(request):
+                raise PermissionDenied('فقط ادمین می‌تواند نوع دستگاه را فعال یا غیرفعال کند.')
+            kind=get_object_or_404(DeviceTypeSchedule,pk=request.POST.get('type_id'))
+            if kind.is_active and DeviceSessionBooking.objects.filter(
+                status='booked',starts_at__gte=timezone.now(),
+            ).filter(Q(device__device_type=kind)|Q(secondary_device__device_type=kind)).exists():
+                messages.error(request,'ابتدا نوبت‌های آینده این نوع دستگاه را تعیین تکلیف کنید.')
+            else:
+                kind.is_active=not kind.is_active
+                kind.save(update_fields=['is_active'])
+                messages.success(request,'وضعیت نوع دستگاه در بانک اصلی تغییر کرد.')
+        elif action=='toggle_type_branch':
             kind=get_object_or_404(DeviceTypeSchedule,pk=request.POST.get('type_id'),is_active=True)
             target_active=(request.POST.get('active')=='1')
             if not target_active:
@@ -509,11 +543,16 @@ def device_capacity_settings(request):
         return redirect(f'/settings/device-capacity/?branch={branch.pk}')
 
     types=list(DeviceTypeSchedule.objects.all())
-
+    for kind in types:
+        kind.price_million=from_toman_to_million(kind.unit_price_toman)
+    disabled_ids=set(BranchDeviceTypeStatus.objects.filter(
+        branch=branch,is_active=False,
+    ).values_list('device_type_id',flat=True))
     return render(request,'core/device_capacity_settings.html',{
         'branch':branch,'branches':_device_branches(),
         'is_admin':request.user.is_superuser or _profile(request).role=='admin',
-        'types':types,'active_types':types,
+        'can_manage_device_price':_device_price_admin(request),
+        'types':types,'active_types':[t for t in types if t.is_active and t.pk not in disabled_ids],
         'devices':PhysicalDevice.objects.filter(branch=branch).select_related('device_type','cabin'),
     })
 
@@ -620,8 +659,13 @@ def device_booking_schedule(request):
                 return redirect(f'/device-bookings/?appointment={appointment.pk}')
             device=get_object_or_404(
                 PhysicalDevice.objects.select_related('device_type','cabin'),
-                pk=request.POST.get('device'),branch=branch,is_active=True,
+                pk=request.POST.get('device'),branch=branch,is_active=True,device_type__is_active=True,
             )
+            if BranchDeviceTypeStatus.objects.filter(
+                branch=branch,device_type=device.device_type,is_active=False,
+            ).exists():
+                messages.error(request,'این نوع دستگاه در شعبه غیرفعال است.')
+                return redirect(f'/device-bookings/?appointment={appointment.pk}')
             if not device.cabin_id:
                 internal_cabin,_=DeviceCabin.objects.get_or_create(
                     branch=branch,name=f'__DEV_{device.pk}',
@@ -633,9 +677,14 @@ def device_booking_schedule(request):
             second_raw=(request.POST.get('secondary_device') or '').strip()
             second=(
                 get_object_or_404(PhysicalDevice.objects.select_related('device_type','cabin'),
-                                  pk=int(second_raw),branch=branch,is_active=True)
+                                  pk=int(second_raw),branch=branch,is_active=True,device_type__is_active=True)
                 if second_raw.isdigit() else None
             )
+            if second and BranchDeviceTypeStatus.objects.filter(
+                branch=branch,device_type=second.device_type,is_active=False,
+            ).exists():
+                messages.error(request,'نوع دستگاه دوم در این شعبه غیرفعال است.')
+                return redirect(f'/device-bookings/?appointment={appointment.pk}')
             if second and (second.pk==device.pk or
                 second.device_type.code!='DIF70' or device.device_type.code!='DIF70'):
                 messages.error(request,'برای Double Define دو دستگاه مجزای DIF70 انتخاب کنید.')
@@ -716,8 +765,12 @@ def device_booking_schedule(request):
     attach_patient_photos([booking.appointment for booking in booking_list])
     blocking_statuses={'booked','arrived','late','completed'}
     history_statuses={'no_show','cancelled','rescheduled'}
+    disabled_booking_types=set(BranchDeviceTypeStatus.objects.filter(
+        branch=branch,is_active=False,
+    ).values_list('device_type_id',flat=True))
     device_lines=list(
-        PhysicalDevice.objects.filter(branch=branch,is_active=True)
+        PhysicalDevice.objects.filter(branch=branch,is_active=True,device_type__is_active=True)
+        .exclude(device_type_id__in=disabled_booking_types)
         .select_related('device_type','cabin')
         .order_by('name','id')
     )
