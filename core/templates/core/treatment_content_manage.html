@@ -1,0 +1,61 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<style>
+.tcm{direction:rtl;max-width:1180px;margin:16px auto 42px;color:#e8f3f4}
+.tcm .panel{background:linear-gradient(145deg,#142734,#0c1a29);border:1px solid #365366;border-radius:20px;padding:18px;margin:13px 0;box-shadow:0 12px 27px #0002}
+.tcm h1,.tcm h2{color:#fff;margin:5px 0 14px}.tcm h1{font-size:23px}.tcm h2{font-size:17px}
+.tcm a{color:#82dcba;font-weight:900}.tcm p,.tcm label{color:#cce0e1;font-size:12px;line-height:1.9}
+.tcm label{display:block;margin:8px 0 5px;font-weight:800}
+.tcm input,.tcm textarea,.tcm select{box-sizing:border-box;width:100%;border:1px solid #466477;background:#081924;color:#fff;font:inherit;font-size:13px;border-radius:9px;padding:10px}
+.tcm textarea{min-height:195px;line-height:1.9;resize:vertical;direction:rtl}
+.tcm button{border:0;background:#317e69;color:#fff;padding:10px 15px;border-radius:10px;font:inherit;font-weight:900;cursor:pointer;margin-top:9px}
+.tcm .notice{padding:11px;border:1px solid #6d633c;background:#3c3323;color:#fff5c4;border-radius:10px}
+.tcm .media{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:10px;border-bottom:1px solid #355267}
+.tcm .media img{max-width:130px;max-height:100px;object-fit:contain;background:#fff;border-radius:9px}
+.tcm .compact{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.tcm .muted{color:#a6bbbc;font-size:11px}
+</style>
+<div class="tcm">
+  <p><a href="{% url 'treatment_content_library' %}">← کتابخانه پنج نمونه</a> · <a href="{% url 'treatment_content_preview' content.master_item_id %}">پیش‌نمایش پزشک</a></p>
+  <h1>مدیریت محتوا: {{ content.master_item.name }}</h1>
+  <div class="panel">
+    <p class="notice">این صفحه فقط متن و رسانه این محتوا را تغییر می‌دهد. عنوان ثابت و فهرست تجویز پزشک در بانک «خدمات و درمان‌ها» باقی می‌ماند.</p>
+    <p>وضعیت فعلی: {% if content.is_active %}فعال{% else %}غیرفعال{% endif %} · بخش‌ها: {{ sections|length }}</p>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="toggle"><button type="submit">{% if content.is_active %}غیرفعال کردن محتوا{% else %}فعال کردن محتوا{% endif %}</button></form>
+  </div>
+  <div class="panel"><h2>اطلاعات اصلی و منابع رسانه</h2>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="update_content">
+      <label>اخطار / توضیح بالای برنامه</label><textarea name="intro_warning" style="min-height:100px">{{ content.intro_warning }}</textarea>
+      <label>لینک تصویر اصلی قدیمی</label><input type="url" name="cover_external_url" value="{{ content.cover_external_url }}">
+      <label>لینک صوت اصلی قدیمی</label><input type="url" name="audio_external_url" value="{{ content.audio_external_url }}">
+      <button type="submit">ذخیره اطلاعات اصلی</button>
+    </form>
+    <div class="compact">
+      <form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="upload"><input type="hidden" name="location" value="cover"><input type="hidden" name="kind" value="image"><label>جایگزینی تصویر اصلی</label><input type="file" name="media_file" accept="image/*" required><button>آپلود عکس</button></form>
+      <form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="upload"><input type="hidden" name="location" value="audio"><input type="hidden" name="kind" value="audio"><label>جایگزینی فایل صوتی اصلی</label><input type="file" name="media_file" accept=".mp3,.m4a,.mp4,.wav,.ogg" required><button>آپلود صوت</button></form>
+    </div>
+  </div>
+  {% for section in sections %}
+  <div class="panel">
+    <h2>بخش {{ forloop.counter }} — {{ section.title }}</h2>
+    <form method="post">{% csrf_token %}<input type="hidden" name="action" value="save_section"><input type="hidden" name="section_id" value="{{ section.pk }}">
+      <div class="compact"><div><label>عنوان</label><input name="title" value="{{ section.title }}" required></div><div><label>ترتیب</label><input name="sort_order" type="number" min="0" max="9999" value="{{ section.sort_order }}"></div></div>
+      <label>متن اصلی (با حفظ خطوط فارسی)</label><textarea name="body">{{ section.body }}</textarea>
+      <button type="submit">ذخیره متن این بخش</button>
+    </form>
+    <h2 style="margin-top:20px">رسانه‌های این بخش</h2>
+    {% for medium in section.media.all %}
+    <div class="media">
+      {% if medium.kind == 'image' and medium.url %}<img src="{{ medium.url }}" alt="تصویر مرتبط با {{ section.title }}" loading="lazy">{% elif medium.kind == 'audio' and medium.url %}<audio controls preload="none" src="{{ medium.url }}"></audio>{% endif %}
+      <div><span class="muted">{{ medium.get_kind_display }} — {% if medium.uploaded_file %}فایل ذخیره‌شده{% else %}لینک قدیمی (دسترسی تأیید نشده){% endif %}</span></div>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="remove_media"><input type="hidden" name="media_id" value="{{ medium.pk }}"><button type="submit" style="background:#843e49">حذف رسانه</button></form>
+    </div>
+    {% empty %}<p class="muted">رسانه‌ای در این بخش ثبت نشده است.</p>{% endfor %}
+    <div class="compact">
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="upload"><input type="hidden" name="location" value="section"><input type="hidden" name="section_id" value="{{ section.pk }}"><input type="hidden" name="kind" value="image"><label>افزودن تصویر</label><input type="file" name="media_file" accept="image/*" required><button>افزودن عکس</button></form>
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="upload"><input type="hidden" name="location" value="section"><input type="hidden" name="section_id" value="{{ section.pk }}"><input type="hidden" name="kind" value="audio"><label>افزودن صوت</label><input type="file" name="media_file" accept=".mp3,.m4a,.mp4,.wav,.ogg" required><button>افزودن صوت</button></form>
+    </div>
+  </div>{% endfor %}
+  <div class="panel"><h2>افزودن بخش جدید</h2><form method="post">{% csrf_token %}<input type="hidden" name="action" value="add_section"><input name="title" placeholder="عنوان بخش جدید" required><button type="submit">افزودن بخش</button></form></div>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<style>
+.trp{direction:rtl;max-width:1060px;margin:15px auto 48px;color:#23483f}
+.trp .hero{background:linear-gradient(135deg,#e2f5ed,#fafbf5,#f4eaf7);border:1px solid #c9e3d7;border-radius:23px;padding:26px}
+.trp h1{color:#194d3c;font-size:25px;margin:6px 0}.trp .sub{color:#5c776e;font-size:12px}
+.trp .card{margin:15px 0;padding:23px;background:#fff;border:1px solid #dae8e0;border-radius:18px;box-shadow:0 10px 29px #153d2b12}
+.trp h2{color:#216b51;font-size:19px;margin:0 0 16px}.trp .body{white-space:pre-wrap;line-height:2.18;font-size:14px;overflow-wrap:anywhere}
+.trp .gallery{display:flex;flex-wrap:wrap;gap:13px;margin-top:15px}.trp .gallery img{max-width:100%;max-height:280px;border:1px solid #dbe9e1;border-radius:12px;object-fit:contain;background:#fff}
+.trp .warning{border-radius:12px;padding:13px 15px;background:#fff4e4;border:1px solid #f3d8ad;color:#805a25;line-height:1.9;margin-top:13px}
+.trp .muted{font-size:11px;color:#6d8c80}.trp a{color:#257e60;text-decoration:underline;font-weight:850}.trp audio{max-width:100%}
+@media print{.trp .no-print,.app-sidebar,.topbar{display:none!important}.trp .card{box-shadow:none;border:1px solid #ddd;break-inside:avoid}}
+</style>
+<div class="trp">
+  <div class="hero">
+    <div class="no-print"><a href="{% url 'doctor_dashboard' %}">داشبورد پزشک</a>{% if can_manage %} · <a href="{% url 'treatment_content_manage' content.master_item_id %}">ویرایش ادمین</a>{% endif %}</div>
+    <p class="sub">{% if content.master_item.category == 'diet' %}برنامه غذایی{% else %}توصیه{% endif %} · نسخه آزمایشی پنج محتوای CRM</p>
+    <h1>{{ content.master_item.name }}</h1>
+    {% if content.cover_url %}<img src="{{ content.cover_url }}" style="max-height:220px;max-width:100%;border-radius:15px;margin-top:15px" alt="تصویر اصلی {{ content.master_item.name }}">{% endif %}
+    {% if content.intro_warning %}<div class="warning">{{ content.intro_warning|linebreaksbr }}</div>{% endif %}
+    {% if content.audio_url %}<div style="margin-top:15px"><p class="sub">صدای اصلی (در صورت دسترسی به سرور قدیمی)</p><audio controls preload="none" src="{{ content.audio_url }}"></audio></div>{% else %}<p class="muted">فایل صوتی معتبر موجود نیست یا هنوز بارگذاری نشده است.</p>{% endif %}
+  </div>
+  {% for section in sections %}
+  <article class="card"><h2>{{ section.title }}</h2><div class="body">{{ section.body }}</div>
+    {% for medium in section.media.all %}{% if medium.kind == 'audio' and medium.url %}<div style="margin:16px 0"><audio controls preload="none" src="{{ medium.url }}"></audio></div>{% endif %}{% endfor %}
+    <div class="gallery">{% for medium in section.media.all %}{% if medium.kind == 'image' and medium.url %}<img src="{{ medium.url }}" loading="lazy" alt="تصویر بخش {{ section.title }}">{% endif %}{% endfor %}</div>
+  </article>
+  {% endfor %}
+  <div class="no-print"><button type="button" onclick="window.print()" style="border:0;border-radius:11px;padding:12px 20px;background:#227b5b;color:#fff;font-weight:900;cursor:pointer">چاپ برنامه</button></div>
+</div>
+{% endblock %}
