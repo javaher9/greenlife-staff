@@ -7,7 +7,7 @@ from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.template.loader import render_to_string
@@ -16,7 +16,7 @@ from django.utils import timezone
 from .device_booking_models import DeviceSessionBooking, PhysicalDevice
 from .live_status_views import _visit_state
 from .models import (
-    Attendance, Branch, DeviceIssue, EmployeeProfile, ReferralLead,
+    Attendance, Branch, DeviceIssue, EmployeeProfile, LeaveRequest, ReferralLead,
     StaffNotification, Task, VisitAppointment,
 )
 
@@ -99,7 +99,19 @@ def build_quality_snapshot(user):
     today = timezone.localdate()
     now = timezone.now()
     local_now = timezone.localtime(now)
-    branches = Branch.objects.filter(is_active=True).order_by("name", "id")
+    # The retired Urmia center is off across active operations; Istanbul is
+    # intentionally hidden in QC only until the owner requests its return.
+    hidden_qc_branches = (
+        Q(name__icontains="ارومیه") | Q(name__icontains="اروميه")
+        | Q(name__icontains="urmia") | Q(name__icontains="orumi")
+        | Q(name__icontains="استانبول") | Q(name__icontains="istanbul")
+        | Q(country__code="TR")
+    )
+    branches = (
+        Branch.objects.filter(is_active=True)
+        .exclude(hidden_qc_branches)
+        .order_by("name", "id")
+    )
     if branch_scope:
         branches = branches.filter(pk=branch_scope)
     branch_list = list(branches)
@@ -135,6 +147,14 @@ def build_quality_snapshot(user):
             branch_id__in=branch_ids, is_active=True, user__is_active=True
         ).select_related("user")
     )
+    # Only approved leave spanning today is a confirmed leave. Missing
+    # check-in alone must not be represented as proven absenteeism.
+    approved_leave_users = set(
+        LeaveRequest.objects.filter(
+            user_id__in=[p.user_id for p in staff],
+            status="approved", start_date__lte=today, end_date__gte=today,
+        ).values_list("user_id", flat=True)
+    )
     task_counts = {
         row["assigned_to_id"]: row["n"]
         for row in Task.objects.filter(
@@ -159,6 +179,9 @@ def build_quality_snapshot(user):
                 "late" if record and record.check_in and record.status == "late"
                 else "present" if record and record.check_in and not record.check_out
                 else "left" if record and record.check_out
+                else "leave" if (record and record.status == "leave")
+                    or person.user_id in approved_leave_users
+                else "absent" if record and record.status == "absent"
                 else "unregistered"
             )
             staff_rows.append({
@@ -169,10 +192,20 @@ def build_quality_snapshot(user):
                     "late": "تأخیر ثبت‌شده",
                     "present": "حاضر",
                     "left": "خروج ثبت‌شده",
+                    "leave": "مرخصی تأییدشده",
+                    "absent": "غیبت ثبت‌شده",
                     "unregistered": "ورود ثبت نشده",
                 }[status],
                 "tasks_done": task_counts.get(person.user_id, 0),
+                "check_in": (
+                    timezone.localtime(record.check_in).strftime("%H:%M")
+                    if record and record.check_in else ""
+                ),
             })
+        # Surface potential attendance issues before ordinary present rows.
+        priority = {"absent": 0, "late": 1, "unregistered": 2, "leave": 3,
+                    "present": 4, "left": 5}
+        staff_rows.sort(key=lambda row: (priority.get(row["state"], 9), row["name"]))
         drows = []
         for device in b_devices:
             state, label, patient, next_time = _physical_state(
@@ -199,15 +232,14 @@ def build_quality_snapshot(user):
             "issues": len(b_issues),
             "staff_total": len(b_staff),
             "staff": staff_rows,
-            "staff_present": sum(
-                bool(a.check_in and not a.check_out) for a in b_attendance
-            ),
-            "staff_late": sum(a.status == "late" for a in b_attendance),
-            "staff_absent": sum(
-                not any(a.user_id == p.user_id and a.check_in for a in b_attendance)
-                for p in b_staff
-            ),
-            "status": "attention" if b_issues else "normal",
+            "staff_present": sum(row["state"] in ("present", "late") for row in staff_rows),
+            "staff_late": sum(row["state"] == "late" for row in staff_rows),
+            "staff_absent": sum(row["state"] == "absent" for row in staff_rows),
+            "staff_leave": sum(row["state"] == "leave" for row in staff_rows),
+            "staff_unregistered": sum(row["state"] == "unregistered" for row in staff_rows),
+            "status": "attention" if (b_issues or any(
+                row["state"] in ("late", "absent") for row in staff_rows
+            )) else "normal",
         })
 
     call_center = []

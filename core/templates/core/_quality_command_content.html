@@ -10,7 +10,7 @@
   <div><span class="qc-eyebrow">BRANCH LIVE MATRIX</span><h2>رصد زنده مراکز</h2></div>
   <span class="qc-subdued">اطلاعات بر اساس آخرین ثبت در اپ · بدون تصویر دوربین</span>
 </div>
-<div class="qc-branches">
+<div class="qc-branches qc-branches-fit">
 {% for branch in snapshot.branches %}
 <article class="qc-branch qc-shade-{{ forloop.counter0|add:'1' }}">
   <header class="qc-branch-head">
@@ -49,20 +49,21 @@
     <div class="qc-table-scroll qc-staff-scroll">
       <table><thead><tr><th>نام / سمت</th><th>وضعیت حضور</th><th>کار تکمیل‌شده امروز</th></tr></thead>
       <tbody>{% for person in branch.staff %}
-        <tr><td><b>{{ person.name }}</b><small>{{ person.role }}</small></td><td><span class="qc-status status-{{ person.state }}">{{ person.label }}</span></td><td>{{ person.tasks_done }}</td></tr>
+        <tr><td><b>{{ person.name }}</b><small>{{ person.role }}</small></td><td><span class="qc-status status-{{ person.state }}">{{ person.label }}</span>{% if person.check_in %}<small dir="ltr" class="qc-time">{{ person.check_in }}</small>{% endif %}</td><td>{{ person.tasks_done }}</td></tr>
       {% empty %}<tr><td colspan="3" class="qc-empty">پرسنل فعالی برای این شعبه ثبت نشده است.</td></tr>{% endfor %}</tbody>
       </table>
     </div>
   </div>
-  <footer class="qc-branch-foot">
-    <div><span>حاضر</span><b>{{ branch.staff_present }} / {{ branch.staff_total }}</b></div>
-    <div><span>تأخیر</span><b>{{ branch.staff_late }}</b></div>
-    <div><span>بدون ثبت حضور</span><b>{{ branch.staff_absent }}</b></div>
-    <div><span>ایراد دستگاه</span><b>{{ branch.issues }}</b></div>
+  <footer class="qc-branch-foot qc-attendance-summary" aria-label="کنترل حضور و غیاب شعبه">
+    <div class="qc-a-present"><span>حاضر</span><b>{{ branch.staff_present }} / {{ branch.staff_total }}</b></div>
+    <div class="qc-a-late"><span>تأخیر</span><b>{{ branch.staff_late }}</b></div>
+    <div class="qc-a-absent"><span>غیبت قطعی</span><b>{{ branch.staff_absent }}</b></div>
+    <div class="qc-a-leave"><span>مرخصی</span><b>{{ branch.staff_leave }}</b></div>
+    <div class="qc-a-unregistered"><span>بدون ثبت ورود</span><b>{{ branch.staff_unregistered }}</b></div>
   </footer>
 </article>
 {% empty %}
-<div class="qc-panel qc-empty">هیچ شعبه فعالی برای این حساب در اپ ثبت نشده است.</div>
+<div class="qc-panel qc-empty">شعبه فعالی در محدوده نظارت فعلی ثبت نشده است.</div>
 {% endfor %}
 </div>
 <div class="qc-bottom-grid">

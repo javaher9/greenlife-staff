@@ -92,6 +92,103 @@ body.gl-page-quality_command_center .app-main{max-width:none!important;overflow-
 @media(max-width:860px){.qc-top{flex-wrap:wrap}.qc-bottom-grid{grid-template-columns:minmax(0,1fr)}.qc-commander{padding:12px}.qc-branches{grid-template-columns:minmax(0,1fr)}.qc-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:420px){.qc-commander{padding:8px}.qc-stat{padding:9px;min-height:91px}.qc-stat strong{font-size:25px}.qc-branch{padding:8px}.qc-title-line{gap:8px}.qc-top h1{font-size:18px!important}.qc-logo{width:42px;height:42px}.qc-stat>span,.qc-stat small{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.qc-commander *{animation:none!important;transition:none!important}}
+
+/* KPI-aligned jewel glass. Scoped to QC only, so operational pages stay intact. */
+body.gl-page-quality_command_center .qc-commander{
+  --qc-line:rgba(149,201,233,.29);
+  background:
+    radial-gradient(ellipse at 3% 0%,rgba(27,179,139,.22),transparent 30%),
+    radial-gradient(ellipse at 94% 6%,rgba(111,74,216,.20),transparent 32%),
+    linear-gradient(154deg,#071724 3%,#101d32 55%,#071923 100%);
+  border:1px solid rgba(143,214,228,.23);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 15px 55px rgba(0,0,0,.12);
+}
+.qc-commander .qc-logo{
+  background:linear-gradient(135deg,rgba(32,171,123,.88),rgba(12,91,100,.74));
+  border-color:rgba(117,255,210,.74);
+  box-shadow:inset 0 1px rgba(255,255,255,.22),0 10px 26px rgba(24,199,155,.17);
+}
+.qc-commander .qc-stats{gap:13px;margin-bottom:19px}
+.qc-commander .qc-stat{
+  min-height:118px;
+  border-radius:20px;
+  border-color:color-mix(in srgb,var(--qc-accent) 43%,transparent);
+  background:
+    radial-gradient(ellipse at 12% 0%,rgba(255,255,255,.19),transparent 58%),
+    linear-gradient(145deg,var(--qc-card-start),var(--qc-card-end) 83%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),
+             inset 0 -18px 30px rgba(0,0,0,.13),0 15px 33px rgba(0,0,0,.17);
+  backdrop-filter:blur(19px) saturate(135%);
+}
+.qc-commander .qc-stat::after{opacity:.32;filter:blur(32px)}
+.qc-commander .qc-stat.mint{--qc-card-start:rgba(18,121,84,.90);--qc-card-end:rgba(6,45,42,.82)}
+.qc-commander .qc-stat.blue{--qc-card-start:rgba(22,111,172,.88);--qc-card-end:rgba(8,41,76,.82)}
+.qc-commander .qc-stat.violet{--qc-card-start:rgba(94,56,163,.86);--qc-card-end:rgba(35,24,77,.85)}
+.qc-commander .qc-stat.amber{--qc-card-start:rgba(136,100,29,.83);--qc-card-end:rgba(65,46,22,.81)}
+.qc-commander .qc-stat.cyan{--qc-card-start:rgba(14,117,128,.83);--qc-card-end:rgba(9,47,65,.85)}
+.qc-commander .qc-stat.pink{--qc-card-start:rgba(137,51,91,.86);--qc-card-end:rgba(57,27,62,.83)}
+.qc-commander .qc-stat>span{font-size:11px!important;color:#ffffff!important}
+.qc-commander .qc-stat strong{font-size:32px!important;text-shadow:0 2px 17px rgba(0,0,0,.14)}
+.qc-commander .qc-stat small{color:#e7f0f7!important;font-size:10px!important}
+.qc-commander .qc-branches-fit{
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,335px),1fr))!important;
+  gap:13px!important;
+}
+.qc-commander .qc-branch{
+  --qc-panel-start:rgba(11,88,70,.80);
+  --qc-panel-end:rgba(7,28,41,.91);
+  padding:14px;
+  border:1px solid color-mix(in srgb,var(--qc-color) 64%,transparent);
+  border-radius:20px;
+  background:
+    radial-gradient(ellipse at 0 0,rgba(255,255,255,.13),transparent 53%),
+    linear-gradient(155deg,var(--qc-panel-start),var(--qc-panel-end) 40%,rgba(8,25,41,.92));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.19),0 18px 37px rgba(0,0,0,.20);
+  backdrop-filter:blur(21px) saturate(130%);
+}
+.qc-commander .qc-shade-2{--qc-panel-start:rgba(16,80,147,.83);--qc-panel-end:rgba(9,32,70,.93)}
+.qc-commander .qc-shade-3{--qc-panel-start:rgba(78,45,136,.83);--qc-panel-end:rgba(32,23,64,.93)}
+.qc-commander .qc-shade-4{--qc-panel-start:rgba(117,81,24,.83);--qc-panel-end:rgba(53,34,24,.90)}
+.qc-commander .qc-shade-5{--qc-panel-start:rgba(18,101,117,.82);--qc-panel-end:rgba(7,38,58,.92)}
+.qc-commander .qc-shade-6{--qc-panel-start:rgba(133,52,91,.83);--qc-panel-end:rgba(49,22,47,.90)}
+.qc-commander .qc-branch-head h3{font-size:18px!important}
+.qc-commander .qc-branch-metrics div{
+  background:rgba(255,255,255,.06);border:1px solid rgba(203,236,251,.18);
+  box-shadow:inset 0 1px rgba(255,255,255,.06);border-radius:11px;
+}
+.qc-commander .qc-module{
+  background:rgba(3,20,36,.43);
+  border:1px solid rgba(193,233,245,.22);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07);
+  backdrop-filter:blur(14px);
+}
+.qc-commander .qc-panel{
+  background:linear-gradient(140deg,rgba(25,72,96,.73),rgba(12,31,53,.88));
+  border:1px solid rgba(161,215,233,.29);
+  box-shadow:inset 0 1px rgba(255,255,255,.12),0 13px 32px rgba(0,0,0,.17);
+  backdrop-filter:blur(22px);
+}
+.qc-commander .qc-attendance-summary{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.qc-commander .qc-attendance-summary>div{
+  padding:9px 3px 8px;border-radius:11px;
+  border:1px solid rgba(180,224,245,.20);
+  background:rgba(5,24,44,.45);min-width:0;
+}
+.qc-commander .qc-attendance-summary span{font-size:9px!important;color:#dae8ef}
+.qc-commander .qc-attendance-summary b{font-size:20px!important;line-height:1.4}
+.qc-commander .qc-a-present b{color:#69eab9!important}
+.qc-commander .qc-a-late b{color:#ffd283!important}
+.qc-commander .qc-a-absent b{color:#ff9ca8!important}
+.qc-commander .qc-a-leave b{color:#cbb3ff!important}
+.qc-commander .qc-a-unregistered b{color:#96bbdd!important}
+.qc-commander .qc-status.status-leave{color:#dfc6ff;border-color:#8256ba;background:rgba(100,65,152,.35)}
+.qc-commander .qc-status.status-absent{color:#ff9cad;border-color:#a74f60;background:rgba(108,32,51,.34)}
+@media(max-width:600px){
+  .qc-commander .qc-stats{gap:8px}
+  .qc-commander .qc-attendance-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .qc-commander .qc-stat{min-height:100px}
+}
+
 </style>
 <div class="qc-commander" id="qcCommandRoot">
   <header class="qc-top">
