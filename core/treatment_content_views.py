@@ -16,6 +16,7 @@ from .models import (
     TreatmentCatalogItem, TreatmentRichContent, TreatmentRichSection, TreatmentRichMedia,
 )
 from .treatment_content_service import import_five_sample_zip
+from .treatment_content_layout import build_section_preview
 
 _ALLOWED_IMAGE_EXT={'.jpg','.jpeg','.png','.webp','.gif'}
 _ALLOWED_AUDIO_EXT={'.mp3','.m4a','.mp4','.wav','.ogg'}
@@ -64,7 +65,10 @@ def treatment_content_browse(request):
 @require_GET
 def treatment_content_preview(request, item_id):
     content=_content_for_preview(request,item_id)
-    sections=list(content.sections.prefetch_related('media').all())
+    sections=[
+        build_section_preview(section)
+        for section in content.sections.prefetch_related('media').all()
+    ]
     response=render(request,'core/treatment_content_preview.html',{
         'content':content,'sections':sections,'can_manage':_admin(request),
     })
