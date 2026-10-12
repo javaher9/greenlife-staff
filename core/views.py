@@ -345,6 +345,14 @@ def treatment_catalog_settings(request):
         except (ValueError,TypeError) as exc:
             messages.error(request,f'مبلغ یا ترتیب نمایش نامعتبر است: {exc}')
             return redirect('treatment_catalog_settings')
+        duplicate=TreatmentCatalogItem.objects.filter(
+            category=raw_category,name=name[:180],branch=branch_obj,
+        )
+        if item is not None:
+            duplicate=duplicate.exclude(pk=item.pk)
+        if duplicate.exists():
+            messages.error(request,'این عنوان در همین دسته و شعبه قبلاً ثبت شده است.')
+            return redirect('treatment_catalog_settings')
         if item is None:
             item=TreatmentCatalogItem(created_by=request.user)
         item.category=raw_category
