@@ -107,7 +107,7 @@ class QualityCommandCenterTests(TestCase):
 
     def test_qc_excludes_retired_urmia_and_temporarily_hides_istanbul(self):
         urmia = Branch.objects.create(name="ارومیه")
-        istanbul = Branch.objects.create(name="استانبول")
+        istanbul, _ = Branch.objects.get_or_create(name="استانبول")
         self.visit(urmia, "بیمار ارومیه", "booked", time(9, 0))
         self.visit(istanbul, "بیمار استانبول", "booked", time(9, 0))
         self.client.force_login(self.naderi)
