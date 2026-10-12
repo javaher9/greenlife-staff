@@ -336,7 +336,6 @@ html,body{background:#0a1520!important}
 <body>
 {% for message in messages %}<div class="doctor-flash">{{ message }}</div>{% endfor %}
 <div class="doctor-workspace" id="doctor-top">
-  <a href="{% url 'treatment_content_browse' %}" class="doctor-content-preview" style="position:fixed;bottom:20px;left:18px;z-index:80;box-shadow:0 8px 22px #1235">مشاهده رژیم‌ها و توصیه‌ها</a>
   <aside class="doctor-side">
     <div class="doctor-brand"><span class="doctor-brand-mark">✚</span><span><b>Green Life</b><small>DOCTOR PANEL</small></span></div>
     <nav>
@@ -499,7 +498,7 @@ html,body{background:#0a1520!important}
             </div>
           </div>
           <form method="post" class="new-box">{% csrf_token %}<input type="hidden" name="appointment_id" value="{{ selected_appointment.id }}">{% if doctor_branch %}<input type="hidden" name="branch_id" value="{{ doctor_branch.id }}">{% endif %}<input type="hidden" name="action" value="diet">
-            <div class="box-title"><span>{% gl_t 'doc.select_new_plan' %}</span><small>{% gl_t 'doc.crm_ready' %}</small></div>
+            <div class="box-title"><span>{% gl_t 'doc.select_new_plan' %}</span><a class="doctor-content-preview" href="{% url 'treatment_content_browse' %}" target="_blank" rel="noopener">دیدن رژیم‌ها و توصیه‌ها ↗</a></div>
             <div class="form-grid">
               <div class="doctor-field"><label>{% gl_t 'doc.diet_plan' %}</label><select name="diet_name" required onchange="doctorContentPreview(this,'doctorDietPreview')"><option value="">{% gl_t 'doc.select' %}</option>{% for x in diet_options %}<option value="{{ x.name }}" {% if x.preview_id %}data-preview="{% url 'treatment_content_preview' x.preview_id %}"{% endif %}>{{ x.name }}{% if x.price %} — {{ x.price }}{% endif %}</option>{% endfor %}</select><a id="doctorDietPreview" class="doctor-content-preview" style="display:none" target="_blank" rel="noopener">مشاهده متن کامل رژیم ↗</a></div>
               <div class="doctor-field"><label>{% gl_t 'doc.recommendation_pack' %}</label><select name="recommendation_pack" onchange="doctorContentPreview(this,'doctorAdvicePreview')"><option value="">{% gl_t 'doc.no_recommendation' %}</option>{% for x in recommendation_options %}<option value="{{ x.name }}" {% if x.preview_id %}data-preview="{% url 'treatment_content_preview' x.preview_id %}"{% endif %}>{{ x.name }}{% if x.price %} — {{ x.price }}{% endif %}</option>{% endfor %}</select><a id="doctorAdvicePreview" class="doctor-content-preview" style="display:none" target="_blank" rel="noopener">مشاهده متن کامل توصیه ↗</a></div>
@@ -613,6 +612,7 @@ html,body{background:#0a1520!important}
           <h2>{% if appointment_stats.total %}{% gl_t 'doc.select_patient' %}{% else %}{% gl_t 'doc.no_today' %}{% endif %}</h2>
           <p>{% if appointment_stats.total %}برای شروع ویزیت، بیمار پذیرش‌شده را از فهرست انتخاب کنید.{% else %}با پذیرش توسط منشی، پرونده بیمار در صف ویزیت ظاهر می‌شود. در این فاصله می‌توانید پیام‌های تیم را بررسی کنید.{% endif %}</p>
           <div class="doctor-empty-actions">
+            <a href="{% url 'treatment_content_browse' %}" target="_blank" rel="noopener">مشاهده نمونه رژیم‌ها و توصیه‌ها</a>
             <button class="primary" type="button" data-open-live-chat>✉ {% gl_t 'doc.open_live_chat' %}</button>
             {% if executive_doctor_mode %}<a href="/my-office/">{% gl_t 'doc.back_management' %}</a>{% endif %}
           </div>
