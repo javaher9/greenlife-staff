@@ -258,11 +258,33 @@ def instagram_oauth_callback(request):
             status=502,
         )
     except URLError as exc:
-        reason=getattr(exc,'reason',None)
-        detail=repr(reason) if reason is not None else repr(exc)
+        # The on-prem Staff server can intermittently fail public DNS resolution.
+        # Fall back to a browser-mediated POST to the Railway bridge so the token
+        # exchange happens from Railway, while keeping tokens out of URLs.
+        completion_state=secrets.token_urlsafe(32)
+        request.session['instagram_oauth_completion_state']=completion_state
+        completion_url=_public_base_url(request)+reverse('instagram_oauth_browser_complete')
+        fields={
+            'code':code,
+            'app_id':config.app_id,
+            'app_secret':app_secret,
+            'redirect_uri':_redirect_uri(request),
+            'completion_state':completion_state,
+            'completion_url':completion_url,
+        }
+        inputs=''.join(
+            f'<input type="hidden" name="{escape(str(k),quote=True)}" value="{escape(str(v),quote=True)}">'
+            for k,v in fields.items()
+        )
         return HttpResponse(
-            f'Instagram token exchange failed [network]: {detail}',
-            status=502,
+            '<!doctype html><html><head><meta charset="utf-8">'
+            '<meta name="referrer" content="no-referrer">'
+            '<title>Completing Instagram connection</title></head><body>'
+            '<p>در حال تکمیل اتصال Instagram…</p>'
+            f'<form id="ig-relay" method="post" action="{INSTAGRAM_BRIDGE_BASE}/meta/oauth-browser">'
+            f'{inputs}</form>'
+            '<script>document.getElementById("ig-relay").submit();</script>'
+            '</body></html>'
         )
     except TimeoutError as exc:
         return HttpResponse(
@@ -284,6 +306,60 @@ def instagram_oauth_callback(request):
         messages.success(request,f'Instagram @{config.username or "account"} با موفقیت متصل شد.')
         return redirect('instagram_settings')
     return HttpResponse('Instagram connected successfully. You may close this page.')
+
+
+@csrf_exempt
+@require_http_methods(['GET','POST'])
+def instagram_oauth_browser_complete(request):
+    if request.method=='GET':
+        # Railway returns the sensitive result in the URL fragment; fragments are
+        # not sent to servers. JavaScript posts it back to this same endpoint.
+        return HttpResponse(
+            '<!doctype html><html><head><meta charset="utf-8">'
+            '<meta name="referrer" content="no-referrer">'
+            '<title>Instagram connected</title></head><body>'
+            '<p id="status">در حال ذخیره اتصال Instagram…</p>'
+            '<script>'
+            'const p=new URLSearchParams(location.hash.slice(1));'
+            'fetch(location.pathname,{method:"POST",headers:{"Content-Type":"application/json"},'
+            'body:JSON.stringify(Object.fromEntries(p.entries()))})'
+            '.then(async r=>({ok:r.ok,data:await r.json()}))'
+            '.then(x=>{if(!x.ok) throw new Error(x.data.error||"save_failed");'
+            'location.replace("/settings/instagram-ai/");})'
+            '.catch(e=>{document.getElementById("status").textContent="Instagram connection failed: "+e.message;});'
+            '</script></body></html>'
+        )
+
+    expected=request.session.pop('instagram_oauth_completion_state',None)
+    try:
+        payload=json.loads((request.body or b'{}').decode('utf-8'))
+    except (UnicodeDecodeError,json.JSONDecodeError):
+        return JsonResponse({'ok':False,'error':'invalid_json'},status=400)
+
+    supplied=str(payload.get('state') or '')
+    if not expected or not supplied or not hmac.compare_digest(str(expected),supplied):
+        return JsonResponse({'ok':False,'error':'invalid_state'},status=400)
+
+    token=str(payload.get('access_token') or '')
+    if not token:
+        return JsonResponse({'ok':False,'error':'missing_access_token'},status=400)
+
+    config=InstagramIntegrationSettings.load()
+    config.access_token_cipher=encrypt_secret(token)
+    config.instagram_user_id=str(payload.get('user_id') or '')
+    config.username=str(payload.get('username') or '')
+    try:
+        expires_in=int(payload.get('expires_in') or 0)
+    except (TypeError,ValueError):
+        expires_in=0
+    config.token_expires_at=timezone.now()+timedelta(seconds=expires_in) if expires_in else None
+    config.connected_at=timezone.now()
+    config.is_enabled=True
+    config.save(update_fields=[
+        'access_token_cipher','instagram_user_id','username','token_expires_at',
+        'connected_at','is_enabled','updated_at',
+    ])
+    return JsonResponse({'ok':True})
 
 
 @csrf_exempt
