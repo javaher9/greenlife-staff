@@ -130,7 +130,9 @@ def treatment_content_manage(request, item_id):
             if action=='toggle':
                 content.is_active=not content.is_active
                 content.save(update_fields=['is_active','updated_at'])
-                messages.success(request,'وضعیت محتوا ذخیره شد.')
+                content.master_item.is_active=content.is_active
+                content.master_item.save(update_fields=['is_active','updated_at'])
+                messages.success(request,'وضعیت محتوا و قابلیت انتخاب آن در پنل پزشک هم‌زمان ذخیره شد.')
             elif action=='update_content':
                 content.intro_warning=request.POST.get('intro_warning','')[:8000]
                 content.cover_external_url=request.POST.get('cover_external_url','')[:1300]
