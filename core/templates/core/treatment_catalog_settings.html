@@ -5,7 +5,7 @@
   <p style="font-size:12px">برای خدمات دستگاهی که قیمت اختصاصی ندارند اعمال می‌شود؛ قیمت استثنا در فهرست خدمات اولویت دارد. قیمت بسته‌های نهایی قبلی تغییر نمی‌کند.</p><p style="font-size:12px;font-weight:900;color:#9ff0ce">واحد ورود مبلغ: میلیون تومان — مثال: برای ۵ میلیون تومان فقط عدد 5 را وارد کنید.</p>
   <form method="post" style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">{% csrf_token %}
     <input type="hidden" name="action" value="base_device_tariff">
-    <label>قیمت هر واحد (میلیون تومان) <input type="number" name="base_price_toman" min="0" step="0.001" required value="{{ base_device_tariff|floatformat:0 }}" style="padding:9px;border-radius:8px"></label>
+    <label>قیمت هر واحد (میلیون تومان) <input type="number" name="base_price_toman" min="0" step="0.001" required value="{{ base_device_tariff_million }}" style="padding:9px;border-radius:8px"></label>
     <button type="submit" style="border:0;border-radius:9px;padding:10px 16px;background:#13835e;color:#fff;cursor:pointer">ذخیره تعرفه پایه</button>
   </form>
   <p><a href="{% url 'device_capacity_settings' %}" style="display:inline-block;color:#b0ffe3;font-weight:900;text-decoration:underline">تنظیم کابین‌ها، تعداد دستگاه‌ها و زمان نوبت‌دهی ←</a></p>
@@ -23,6 +23,18 @@
 .catalog-list{padding:10px;display:grid;gap:7px}.catalog-row{display:grid;grid-template-columns:minmax(0,1.2fr) .8fr .6fr auto;gap:8px;align-items:center;padding:10px;border:1px solid #223246;border-radius:12px;background:#0d1722}.catalog-row.inactive{opacity:.55}.catalog-name b{display:block;color:#ffffff!important;font-size:11px!important;font-weight:850!important}.catalog-name small{display:block;color:#aebccb!important;font-size:8px!important;margin-top:3px}.catalog-price{color:#70e4ab;font-size:9px;font-weight:900}.catalog-branch{color:#a4b0bf;font-size:8px}.catalog-actions{display:flex;gap:5px}.catalog-actions button{border:1px solid #314359;border-radius:9px;background:#121e2a;color:#b9c6d5;padding:6px 8px;font:inherit;font-size:7.5px;cursor:pointer}.catalog-actions .danger{color:#ff879e;border-color:rgba(255,95,135,.35)}.catalog-empty{padding:18px;text-align:center;color:#7f8ea0;font-size:9px;border:1px dashed #2a3b4c;border-radius:12px}
 .catalog-filter{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.catalog-filter a{padding:7px 10px;border:1px solid #34475e;border-radius:999px;color:#d2dbe7!important;text-decoration:none;font-size:8.5px!important;font-weight:800!important;background:#0f1924}.catalog-filter a.active{border-color:#8477ff;color:#ffffff!important;background:rgba(119,98,255,.19);box-shadow:0 0 14px rgba(119,98,255,.10)}
 @media(max-width:920px){.catalog-layout{grid-template-columns:1fr}.catalog-form{position:static}.catalog-row{grid-template-columns:1fr 1fr}.catalog-actions{grid-column:1/-1}}
+/* Expand existing rows for full inline editing without altering global layouts */
+.catalog-row{grid-template-columns:minmax(0,1.2fr) .8fr .6fr auto}
+.catalog-inline-edit{grid-column:1/-1;border-top:1px solid #314454;padding-top:9px}
+.catalog-inline-edit>summary{display:inline-flex;cursor:pointer;color:#dfdcff;font-size:11px;font-weight:900;list-style:none;padding:7px 11px;border-radius:9px;background:#2b3051}
+.catalog-inline-edit form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:10px}
+.catalog-inline-edit label{display:grid;gap:5px;color:#d6e6e9;font-size:10px;font-weight:850}
+.catalog-inline-edit input,.catalog-inline-edit select,.catalog-inline-edit textarea{width:100%;min-height:37px;background:#0b1723;border:1px solid #39516a;color:#fff;padding:8px;border-radius:9px;font:inherit;font-size:11px}
+.catalog-inline-edit textarea{min-height:68px}
+.catalog-inline-edit button{background:#4c52b0;border:0;border-radius:10px;padding:9px 14px;color:#fff;font-weight:900;cursor:pointer}
+.catalog-device-line{border-color:#365468}
+.catalog-device-line .catalog-name small{color:#b2ced6}
+@media(max-width:750px){.catalog-inline-edit form{grid-template-columns:1fr}.catalog-row{grid-template-columns:1fr 1fr}}
 </style>
 <div class="catalog-shell">
   <section class="catalog-hero">
@@ -43,10 +55,10 @@
       <h2>افزودن آیتم جدید</h2>
       <p>اگر «شعبه» خالی باشد، آیتم برای همه شعب فعال است.</p>
       <input type="hidden" name="action" value="save">
-      <div class="cf"><label>دسته</label><select name="category" required>{% for key,label in categories %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></div>
+      <div class="cf"><label>دسته</label><select name="category" required>{% for key,label in categories %}{% if key != 'device' %}<option value="{{ key }}">{{ label }}</option>{% endif %}{% endfor %}</select></div>
       <div class="cf"><label>عنوان</label><input name="name" placeholder="مثلاً لیپولیتیک گرید ۳" required></div>
       <div class="cf-row">
-        <div class="cf"><label>قیمت (میلیون تومان)</label><input name="price_toman" inputmode="numeric" placeholder="اختیاری"></div>
+        <div class="cf"><label>قیمت (میلیون تومان)</label><input name="price_toman" inputmode="decimal" type="number" min="0" step="0.001" placeholder="اختیاری"></div>
         <div class="cf"><label>واحد</label><input name="unit_label" placeholder="جلسه / ناحیه / نسخه"></div>
       </div>
       <div class="cf"><label>شعبه</label><select name="branch"><option value="">همه شعب</option>{% for branch in branches %}<option value="{{ branch.id }}">{{ branch.name }}</option>{% endfor %}</select></div>
@@ -63,17 +75,52 @@
       <section class="catalog-group">
         <div class="catalog-group-head"><h3>{{ group.label }}</h3><span class="catalog-count">{{ group.count }}</span></div>
         <div class="catalog-list">
-          {% for item in group.items %}
-          <article class="catalog-row {% if not item.is_active %}inactive{% endif %}">
-            <div class="catalog-name"><b>{{ item.name }}</b><small>{% if item.notes %}{{ item.notes|truncatechars:90 }}{% else %}بدون توضیح{% endif %}</small></div>
-            <div class="catalog-price">{% if item.price_toman %}{{ item.price_toman|floatformat:0 }} تومان{% if item.unit_label %} / {{ item.unit_label }}{% endif %}{% else %}بدون قیمت{% endif %}</div>
-            <div class="catalog-branch">{{ item.branch|default:"همه شعب" }}</div>
-            <div class="catalog-actions">
-              <form method="post">{% csrf_token %}<input type="hidden" name="action" value="toggle"><input type="hidden" name="item_id" value="{{ item.id }}"><button type="submit">{% if item.is_active %}غیرفعال{% else %}فعال{% endif %}</button></form>
-              <form method="post" onsubmit="return confirm('این آیتم حذف شود؟')">{% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="item_id" value="{{ item.id }}"><button class="danger" type="submit">حذف</button></form>
-            </div>
-          </article>
-          {% empty %}<div class="catalog-empty">هنوز آیتمی در این بخش ثبت نشده است.</div>{% endfor %}
+          {% if group.key == 'device' %}
+            {% for item in group.items %}
+            <article class="catalog-row catalog-device-line {% if not item.is_active %}inactive{% endif %}">
+              <div class="catalog-name"><b>{{ item.name }}</b><small>{{ item.treatment_minutes }} دقیقه درمان · {{ item.preparation_minutes }} دقیقه آماده‌سازی · کد {{ item.code }}</small></div>
+              <div class="catalog-price">{% if item.unit_price_toman != None %}{{ item.price_million }} میلیون تومان / {{ item.get_price_unit_display }}{% else %}تعرفه اختصاصی تنظیم نشده{% endif %}</div>
+              <div class="catalog-branch">همه شعب · {% if item.is_active %}فعال{% else %}غیرفعال{% endif %}</div>
+              <div class="catalog-actions"><a href="{% url 'device_capacity_settings' %}" style="color:#b5f2d8;font-size:10px">بانک دستگاه‌ها</a></div>
+              <details class="catalog-inline-edit">
+                <summary>ویرایش قیمت و واحد دستگاه</summary>
+                <form method="post">{% csrf_token %}
+                  <input type="hidden" name="action" value="device_price"><input type="hidden" name="type_id" value="{{ item.pk }}">
+                  <label>قیمت واحد (میلیون تومان)<input name="unit_price_million" type="number" min="0" step="0.001" inputmode="decimal" value="{{ item.price_million }}" placeholder="بدون قیمت اختصاصی"></label>
+                  <label>واحد محاسبه<select name="price_unit"><option value="session" {% if item.price_unit == 'session' %}selected{% endif %}>هر جلسه</option><option value="cup" {% if item.price_unit == 'cup' %}selected{% endif %}>هر کاپ</option></select></label>
+                  <button type="submit">ذخیره قیمت مشترک همه شعب</button>
+                </form>
+              </details>
+            </article>
+            {% empty %}<div class="catalog-empty">بانک دستگاه‌ها هنوز نوع دستگاهی ندارد.</div>{% endfor %}
+          {% else %}
+            {% for item in group.items %}
+            <article class="catalog-row {% if not item.is_active %}inactive{% endif %}">
+              <div class="catalog-name"><b>{{ item.name }}</b><small>{% if item.notes %}{{ item.notes|truncatechars:90 }}{% else %}بدون توضیح{% endif %}</small></div>
+              <div class="catalog-price">{% if item.price_toman != None %}{{ item.price_million }} میلیون تومان{% if item.unit_label %} / {{ item.unit_label }}{% endif %}{% else %}بدون قیمت{% endif %}</div>
+              <div class="catalog-branch">{{ item.branch|default:"همه شعب" }}</div>
+              <div class="catalog-actions">
+                <form method="post">{% csrf_token %}<input type="hidden" name="action" value="toggle"><input type="hidden" name="item_id" value="{{ item.id }}"><button type="submit">{% if item.is_active %}غیرفعال{% else %}فعال{% endif %}</button></form>
+                <form method="post" onsubmit="return confirm('این آیتم حذف شود؟')">{% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="item_id" value="{{ item.id }}"><button class="danger" type="submit">حذف</button></form>
+              </div>
+              <details class="catalog-inline-edit">
+                <summary>ویرایش اطلاعات</summary>
+                <form method="post">{% csrf_token %}
+                  <input type="hidden" name="action" value="save"><input type="hidden" name="item_id" value="{{ item.id }}">
+                  <label>دسته<select name="category">{% for key,label in categories %}{% if key != 'device' %}<option value="{{ key }}" {% if key == item.category %}selected{% endif %}>{{ label }}</option>{% endif %}{% endfor %}</select></label>
+                  <label>عنوان<input name="name" value="{{ item.name }}" required></label>
+                  <label>قیمت (میلیون تومان)<input name="price_toman" type="number" min="0" step="0.001" value="{{ item.price_million }}" placeholder="اختیاری"></label>
+                  <label>واحد<input name="unit_label" value="{{ item.unit_label }}" placeholder="جلسه / نسخه / بسته"></label>
+                  <label>شعبه<select name="branch"><option value="">همه شعب</option>{% for branch in branches %}<option value="{{ branch.id }}" {% if item.branch_id == branch.id %}selected{% endif %}>{{ branch.name }}</option>{% endfor %}</select></label>
+                  <label>ترتیب<input name="sort_order" type="number" min="0" max="9999" value="{{ item.sort_order }}"></label>
+                  <label>وضعیت<select name="is_active"><option value="1" {% if item.is_active %}selected{% endif %}>فعال</option><option value="0" {% if not item.is_active %}selected{% endif %}>غیرفعال</option></select></label>
+                  <label style="grid-column:span 2">توضیحات<textarea name="notes">{{ item.notes }}</textarea></label>
+                  <button type="submit">ذخیره تغییرات</button>
+                </form>
+              </details>
+            </article>
+            {% empty %}<div class="catalog-empty">هنوز آیتمی در این بخش ثبت نشده است.</div>{% endfor %}
+          {% endif %}
         </div>
       </section>
       {% endfor %}
