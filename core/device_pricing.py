@@ -15,6 +15,8 @@ def to_toman_from_million(raw):
         raise ValueError("مبلغ معتبر نیست.")
     if not amount.is_finite() or amount < 0 or amount > Decimal("999999999"):
         raise ValueError("مبلغ باید عددی غیرمنفی باشد.")
+    if amount != amount.quantize(Decimal("0.001")):
+        raise ValueError("مبلغ باید حداکثر سه رقم اعشار داشته باشد.")
     toman = amount * MILLION
     if toman != toman.to_integral_value():
         raise ValueError("مبلغ باید حداکثر سه رقم اعشار داشته باشد.")
