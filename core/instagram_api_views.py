@@ -1,10 +1,13 @@
 import hashlib
 import hmac
+import http.client
 import json
 import secrets
+import socket
+import ssl
 from datetime import timedelta
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
 
 from django.contrib import messages
@@ -75,24 +78,89 @@ def _post_json(url,data,timeout=25):
         return json.loads(response.read().decode('utf-8') or '{}')
 
 
+def _resolve_a_via_doh(host, timeout=8):
+    # The clinic's on-prem DNS can intermittently fail for public hosts.
+    # Query Cloudflare DNS over HTTPS by IP so this recovery path itself
+    # does not depend on the system resolver.
+    query='https://1.1.1.1/dns-query?'+urlencode({'name':host,'type':'A'})
+    req=Request(query,headers={'Accept':'application/dns-json','Host':'cloudflare-dns.com'})
+    with urlopen(req,timeout=timeout) as response:
+        payload=json.loads(response.read().decode('utf-8') or '{}')
+    answers=payload.get('Answer') or []
+    ips=[str(row.get('data') or '').strip() for row in answers if row.get('type')==1]
+    if not ips:
+        raise URLError(socket.gaierror(-3,'DoH returned no A record'))
+    return ips
+
+
+class _PinnedHTTPSConnection(http.client.HTTPSConnection):
+    def __init__(self, host, ip, timeout=20):
+        super().__init__(host,timeout=timeout,context=ssl.create_default_context())
+        self._pinned_ip=ip
+
+    def connect(self):
+        self.sock=socket.create_connection((self._pinned_ip,self.port),self.timeout,self.source_address)
+        if self._tunnel_host:
+            self._tunnel()
+        self.sock=self._context.wrap_socket(self.sock,server_hostname=self.host)
+
+
+def _post_json_with_pinned_ip(url,data,ip,timeout=25):
+    parsed=urlsplit(url)
+    if parsed.scheme!='https' or not parsed.hostname:
+        raise ValueError('Pinned HTTPS helper requires an https URL.')
+    path=parsed.path or '/'
+    if parsed.query:
+        path += '?'+parsed.query
+    body=json.dumps(data).encode('utf-8')
+    conn=_PinnedHTTPSConnection(parsed.hostname,ip,timeout=timeout)
+    try:
+        conn.request('POST',path,body=body,headers={
+            'Host':parsed.hostname,
+            'Content-Type':'application/json',
+            'Accept':'application/json',
+            'Connection':'close',
+        })
+        response=conn.getresponse()
+        raw=response.read()
+        if response.status<200 or response.status>=300:
+            raise HTTPError(url,response.status,response.reason,response.headers,None)
+        return json.loads(raw.decode('utf-8') or '{}')
+    finally:
+        conn.close()
+
+
 def _complete_instagram_oauth(data):
-    # The primary and legacy Railway deployments have distinct hostnames.
-    # Fail over only when DNS resolution fails before a request can be sent;
-    # OAuth codes are single-use and must never be retried on HTTP errors.
-    import socket
-    last_error = None
-    for base in (INSTAGRAM_BRIDGE_BASE, INSTAGRAM_BRIDGE_FALLBACK):
+    # First try normal DNS. If the on-prem resolver fails for both Railway
+    # hostnames, resolve the bridge with DNS-over-HTTPS and connect directly
+    # to that IP while preserving TLS SNI/Host verification.
+    last_dns_error=None
+    for base in (INSTAGRAM_BRIDGE_BASE,INSTAGRAM_BRIDGE_FALLBACK):
         try:
-            return _post_json(base + '/meta/oauth-complete', data)
+            return _post_json(base+'/meta/oauth-complete',data)
         except URLError as exc:
-            reason = getattr(exc, 'reason', None)
-            if isinstance(reason, socket.gaierror):
-                last_error = exc
+            reason=getattr(exc,'reason',None)
+            if isinstance(reason,socket.gaierror):
+                last_dns_error=exc
                 continue
             raise
-    if last_error is not None:
-        raise last_error
-    raise RuntimeError('No Instagram OAuth bridge is configured')
+
+    for base in (INSTAGRAM_BRIDGE_BASE,INSTAGRAM_BRIDGE_FALLBACK):
+        host=urlsplit(base).hostname
+        if not host:
+            continue
+        try:
+            for ip in _resolve_a_via_doh(host):
+                try:
+                    return _post_json_with_pinned_ip(base+'/meta/oauth-complete',data,ip)
+                except (OSError,ssl.SSLError,TimeoutError):
+                    continue
+        except URLError:
+            continue
+
+    if last_dns_error is not None:
+        raise last_dns_error
+    raise RuntimeError('No Instagram OAuth bridge is reachable')
 
 
 def _get_json(url,params,timeout=20):
