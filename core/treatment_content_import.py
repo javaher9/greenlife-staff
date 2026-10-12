@@ -96,6 +96,12 @@ def _read_one(payload, filename):
         raise ValueError('دو بخش توصیه در نمونه یافت نشد.')
 
     first=top_mains[0]
+    headline=first.get_text(' ',strip=True)
+    warning_match=re.search(
+        r'اخطار\s*:\s*(.*?)(?=لطفا با هدفون|مرورگر شما)',
+        headline,flags=re.DOTALL,
+    )
+    warning=re.sub(r'\s+',' ',warning_match.group(1)).strip() if warning_match else ''
     cover=first.find('img')
     cover_url=_image_url(cover.get('src')) if cover else ''
     source=first.select_one('audio source') if category=='diet' else None
@@ -104,7 +110,7 @@ def _read_one(payload, filename):
         audio_url=''
     return {
         'title':title,'category':category,'sections':sections,
-        'cover_url':cover_url,'audio_url':audio_url,
+        'cover_url':cover_url,'audio_url':audio_url,'intro_warning':warning,
         'image_bytes':resources,'source':'MHTML نمونه CRM',
         'missing_image_count':sum(
             bool(img.get('src','').endswith('filename='))
