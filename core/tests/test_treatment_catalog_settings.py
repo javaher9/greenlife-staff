@@ -49,7 +49,7 @@ class TreatmentCatalogSettingsTests(TestCase):
             unit_label='ناحیه',
             created_by=self.admin,
         )
-        DeviceTypeSchedule.objects.create(code='DIF70',name='Double Define')
+        DeviceTypeSchedule.objects.create(code='UTPRICEDIF70',name='Double Define')
         response=self.client.get(reverse('treatment_catalog_settings'))
         body=response.content.decode('utf-8')
         self.assertIn('تنظیمات خدمات و درمان‌ها',body)
