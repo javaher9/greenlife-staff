@@ -148,8 +148,12 @@ class TreatmentContentSampleTests(TestCase):
         self.assertContains(self.client.get(reverse('treatment_content_browse')), 'Keto-Fast')
         self.client.force_login(self.admin)
         self.client.post(reverse('treatment_content_manage',args=[content.master_item_id]),{'action':'toggle'})
+        content.master_item.refresh_from_db()
+        self.assertFalse(content.master_item.is_active)
         self.client.force_login(self.doctor)
         self.assertEqual(self.client.get(reverse('treatment_content_preview',args=[content.master_item_id])).status_code,404)
+        from core.doctor_views import _catalog_options
+        self.assertNotIn('Keto-Fast',[item['name'] for item in _catalog_options('diet',self.branch,())])
 
     def test_admin_media_upload_and_remove_persists(self):
         self._upload()
