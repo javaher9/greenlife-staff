@@ -35,10 +35,10 @@ class UnifiedDevicePricingTests(TestCase):
         self.manager.profile.branch=self.branch
         self.manager.profile.save(update_fields=["role","branch"])
         self.em=DeviceTypeSchedule.objects.create(
-            code="EM30",name="EM تست قیمت",treatment_minutes=30,preparation_minutes=10,
+            code="UTPRICEEM30",name="EM تست قیمت",treatment_minutes=30,preparation_minutes=10,
         )
         self.cryo=DeviceTypeSchedule.objects.create(
-            code="CRYO60",name="کرایو تست قیمت",treatment_minutes=60,preparation_minutes=20,
+            code="UTPRICECRYO60",name="کرایو تست قیمت",treatment_minutes=60,preparation_minutes=20,
             price_unit="cup",
         )
         self.physical=PhysicalDevice.objects.create(
