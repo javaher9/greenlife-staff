@@ -1,0 +1,284 @@
+"""Read-only live quality command centre for authorized operations supervisors.
+
+This dashboard reflects records in the app; it does not claim a live hardware
+heartbeat, a CCTV integration, or PBX phone calls that the app does not store.
+"""
+from datetime import timedelta
+
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.db.models import Count
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.template.loader import render_to_string
+from django.utils import timezone
+
+from .device_booking_models import DeviceSessionBooking, PhysicalDevice
+from .live_status_views import _visit_state
+from .models import (
+    Attendance, Branch, DeviceIssue, EmployeeProfile, ReferralLead,
+    StaffNotification, Task, VisitAppointment,
+)
+
+
+def _qc_scope(user):
+    profile = getattr(user, "profile", None)
+    if not user.is_active or (profile and not profile.is_active):
+        raise PermissionDenied("حساب کاربری فعال نیست.")
+    if user.is_superuser or (profile and profile.role == "admin"):
+        return None
+    if profile and profile.role == "manager" and profile.branch_id:
+        return profile.branch_id
+    if profile and profile.role == "internal_manager":
+        return None
+    title = (getattr(profile, "job_title", "") or "").strip().lower()
+    if profile and (
+        user.groups.filter(name="GreenLife QC").exists()
+        or "کنترل کیفیت" in title
+        or title in ("qc", "quality control")
+    ):
+        return None
+    raise PermissionDenied("دسترسی به اتاق فرمان کنترل کیفیت ندارید.")
+
+
+def _visit_detail(item, now):
+    key, label, alert = _visit_state(item, now)
+    return {
+        "id": item.pk,
+        "name": item.full_name,
+        "time": item.appointment_time.strftime("%H:%M"),
+        "service": item.service or "ویزیت",
+        "label": label,
+        "state": key,
+        "alert": alert,
+    }
+
+
+def _physical_state(device, bookings, issues, now):
+    """Never equate an app booking with an electronic device heartbeat."""
+    if not device.is_active:
+        return "inactive", "غیرفعال در برنامه", "", ""
+    if device.name.strip().casefold() in issues:
+        return "issue", "گزارش خرابی باز", "", ""
+    related = [
+        b for b in bookings
+        if (b.device_id == device.pk or b.secondary_device_id == device.pk)
+        and b.status not in ("cancelled", "rescheduled", "no_show")
+    ]
+    ongoing = next(
+        (b for b in related
+         if b.status in ("arrived", "late")
+         and b.starts_at <= now < b.treatment_ends_at), None
+    )
+    if ongoing:
+        return "busy", "جلسه ثبت‌شده", ongoing.appointment.full_name, (
+            timezone.localtime(ongoing.treatment_ends_at).strftime("%H:%M")
+        )
+    pending = next(
+        (b for b in related if b.status == "booked"
+         and b.starts_at <= now < b.blocked_until), None
+    )
+    if pending:
+        return "review", "نوبت شروع‌نشده", pending.appointment.full_name, (
+            timezone.localtime(pending.starts_at).strftime("%H:%M")
+        )
+    future = sorted(
+        (b for b in related if b.starts_at > now and b.status == "booked"),
+        key=lambda b: b.starts_at,
+    )
+    if future:
+        booking = future[0]
+        return "reserved", "نوبت بعدی", booking.appointment.full_name, (
+            timezone.localtime(booking.starts_at).strftime("%H:%M")
+        )
+    return "idle", "نوبت جاری ندارد", "", ""
+
+
+def build_quality_snapshot(user):
+    branch_scope = _qc_scope(user)
+    today = timezone.localdate()
+    now = timezone.now()
+    local_now = timezone.localtime(now)
+    branches = Branch.objects.filter(is_active=True).order_by("name", "id")
+    if branch_scope:
+        branches = branches.filter(pk=branch_scope)
+    branch_list = list(branches)
+    branch_ids = [b.pk for b in branch_list]
+
+    visits = list(
+        VisitAppointment.objects.filter(
+            branch_id__in=branch_ids, appointment_date=today
+        ).select_related("branch").order_by("branch_id", "appointment_time", "id")
+    )
+    devices = list(
+        PhysicalDevice.objects.filter(branch_id__in=branch_ids)
+        .select_related("branch", "device_type", "cabin")
+        .order_by("branch_id", "name")
+    )
+    bookings = list(
+        DeviceSessionBooking.objects.filter(
+            branch_id__in=branch_ids, starts_at__date=today
+        ).select_related("appointment", "device", "secondary_device")
+        .order_by("starts_at", "id")
+    )
+    issues = list(
+        DeviceIssue.objects.filter(
+            branch_id__in=branch_ids
+        ).exclude(status="resolved").order_by("-created_at")
+    )
+    attendance = list(
+        Attendance.objects.filter(branch_id__in=branch_ids, date=today)
+        .select_related("user")
+    )
+    staff = list(
+        EmployeeProfile.objects.filter(
+            branch_id__in=branch_ids, is_active=True, user__is_active=True
+        ).select_related("user")
+    )
+    task_counts = {
+        row["assigned_to_id"]: row["n"]
+        for row in Task.objects.filter(
+            assigned_to_id__in=[p.user_id for p in staff],
+            status="done", updated_at__date=today,
+        ).values("assigned_to_id").annotate(n=Count("id"))
+    }
+    result = []
+    for branch in branch_list:
+        b_visits = [v for v in visits if v.branch_id == branch.pk]
+        b_bookings = [b for b in bookings if b.branch_id == branch.pk]
+        b_devices = [d for d in devices if d.branch_id == branch.pk]
+        b_issues = [i for i in issues if i.branch_id == branch.pk]
+        issue_names = {i.device_name.strip().casefold() for i in b_issues}
+        b_attendance = [a for a in attendance if a.branch_id == branch.pk]
+        b_staff = [p for p in staff if p.branch_id == branch.pk]
+        attendance_map = {a.user_id: a for a in b_attendance}
+        staff_rows = []
+        for person in b_staff:
+            record = attendance_map.get(person.user_id)
+            status = (
+                "late" if record and record.check_in and record.status == "late"
+                else "present" if record and record.check_in and not record.check_out
+                else "left" if record and record.check_out
+                else "unregistered"
+            )
+            staff_rows.append({
+                "name": person.user.get_full_name() or person.user.username,
+                "role": person.job_title or person.get_role_display(),
+                "state": status,
+                "label": {
+                    "late": "تأخیر ثبت‌شده",
+                    "present": "حاضر",
+                    "left": "خروج ثبت‌شده",
+                    "unregistered": "ورود ثبت نشده",
+                }[status],
+                "tasks_done": task_counts.get(person.user_id, 0),
+            })
+        drows = []
+        for device in b_devices:
+            state, label, patient, next_time = _physical_state(
+                device, b_bookings, issue_names, now
+            )
+            drows.append({
+                "name": device.name,
+                "cabin": device.cabin.name if device.cabin_id else "—",
+                "state": state, "label": label,
+                "patient": patient, "time": next_time,
+            })
+        result.append({
+            "id": branch.pk, "name": branch.name,
+            "visits_total": len(b_visits),
+            "visits_done": sum(v.status in ("arrived", "completed") for v in b_visits),
+            "visits_active": sum(v.status == "arrived" for v in b_visits),
+            "visits_wait": sum(v.status == "booked" for v in b_visits),
+            "visits_missed": sum(v.status in ("no_show", "cancelled") for v in b_visits),
+            "visits": [_visit_detail(v, local_now) for v in b_visits[:150]],
+            "visits_capped": len(b_visits) > 150,
+            "devices": drows,
+            "devices_total": len(drows),
+            "devices_busy": sum(d["state"] == "busy" for d in drows),
+            "issues": len(b_issues),
+            "staff_total": len(b_staff),
+            "staff": staff_rows,
+            "staff_present": sum(
+                bool(a.check_in and not a.check_out) for a in b_attendance
+            ),
+            "staff_late": sum(a.status == "late" for a in b_attendance),
+            "staff_absent": sum(
+                not any(a.user_id == p.user_id and a.check_in for a in b_attendance)
+                for p in b_staff
+            ),
+            "status": "attention" if b_issues else "normal",
+        })
+
+    call_center = []
+    # The CRM stores lead outcomes, not guaranteed PBX call-detail records.
+    for p in EmployeeProfile.objects.filter(
+        role="call_center", is_active=True, user__is_active=True
+    ).select_related("user").order_by("user__first_name", "user__last_name", "pk"):
+        touches = ReferralLead.objects.filter(
+            assigned_to=p, updated_at__date=today
+        ).exclude(contact_result="")
+        booked = VisitAppointment.objects.filter(
+            created_by=p.user, created_at__date=today,
+            source="call_center",
+        ).exclude(status="cancelled").count()
+        overdue = ReferralLead.objects.filter(
+            assigned_to=p, next_follow_up__lt=today
+        ).exclude(status__in=("won", "lost")).count()
+        call_center.append({
+            "name": p.user.get_full_name() or p.user.username,
+            "recorded": touches.count(),
+            "booked": booked,
+            "unanswered": touches.filter(contact_result="no_answer").count(),
+            "overdue": overdue,
+        })
+
+    all_notifications = StaffNotification.objects.filter(
+        user=user, is_read=False
+    ).order_by("-created_at")[:5]
+    return {
+        "generated_at": local_now.strftime("%H:%M:%S"),
+        "date_label": today.strftime("%Y/%m/%d"),
+        "branches": result,
+        "call_center": call_center,
+        "alerts": [
+            {"title": i.title, "message": i.message[:160]}
+            for i in all_notifications
+        ],
+        "total_visits": sum(x["visits_total"] for x in result),
+        "total_arrived": sum(x["visits_done"] for x in result),
+        "total_devices": sum(x["devices_total"] for x in result),
+        "busy_devices": sum(x["devices_busy"] for x in result),
+        "issue_count": sum(x["issues"] for x in result),
+        "present_count": sum(x["staff_present"] for x in result),
+        "recorded_contacts": sum(x["recorded"] for x in call_center),
+        "bookings": sum(x["booked"] for x in call_center),
+        "overdue_followups": sum(x["overdue"] for x in call_center),
+        "limited_branch": bool(branch_scope),
+    }
+
+
+@login_required
+def quality_command_center(request):
+    snapshot = build_quality_snapshot(request.user)
+    response = render(
+        request, "core/quality_command_center.html", {"snapshot": snapshot}
+    )
+    response["Cache-Control"] = "private, no-store"
+    return response
+
+
+@login_required
+def quality_command_data(request):
+    snapshot = build_quality_snapshot(request.user)
+    html = render_to_string(
+        "core/_quality_command_content.html",
+        {"snapshot": snapshot}, request=request,
+    )
+    response = JsonResponse({
+        "ok": True,
+        "html": html,
+        "generated_at": snapshot["generated_at"],
+    }, json_dumps_params={"ensure_ascii": False})
+    response["Cache-Control"] = "private, no-store"
+    return response

@@ -22,8 +22,11 @@ from . import consultant_expense_views
 from . import patient_360_views
 from . import server_health_views
 from . import live_status_views
+from . import quality_command_views
 from .mcp import mcp_endpoint
 urlpatterns=[
+path('quality-center/',quality_command_views.quality_command_center,name='quality_command_center'),
+path('quality-center/data/',quality_command_views.quality_command_data,name='quality_command_data'),
 path('api/staff-live-status/',live_status_views.staff_live_status_api,name='staff_live_status_api'),
 path('api/staff-live-status/sms/',live_status_views.staff_live_quick_sms,name='staff_live_quick_sms'),
 path('workspace/language/',views.language_switch,name='language_switch'),
