@@ -56,5 +56,5 @@ class TreatmentCatalogSettingsTests(TestCase):
         self.assertIn('Double Define',body)
         self.assertIn('دستگاه',body)
 
-        self.assertLess(body.index('توصیه'),body.index('قالب نسخه'))
-        self.assertLess(body.index('قالب نسخه'),body.index('دستگاه'))
+        self.assertLess(body.index('<h3>توصیه</h3>'),body.index('<h3>قالب نسخه</h3>'))
+        self.assertLess(body.index('<h3>قالب نسخه</h3>'),body.index('<h3>دستگاه</h3>'))
