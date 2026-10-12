@@ -1,4 +1,7 @@
 """Regression for safe five-item MHTML import and rich-content doctor preview."""
+from django.apps import apps
+from django.db import connection
+from importlib import import_module
 from io import BytesIO
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -17,6 +20,7 @@ from core.models import (
     TreatmentRichMedia,
 )
 from core.treatment_content_import import APPROVED_ITEMS, extract_approved_samples
+from core.treatment_content_layout import build_section_preview
 
 IMG=base64.b64decode(
     'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGP8//8/AwMDEwMDAwMDAwAkBgMB/DXemwAAAABJRU5ErkJggg=='
@@ -118,6 +122,85 @@ class TreatmentContentSampleTests(TestCase):
         self.assertTrue(media.uploaded_file)
         self.assertIn('sample',media.original_url)
         self.assertTrue(keto.is_active)
+
+    def test_images_stay_inline_beside_corresponding_meal_after_import(self):
+        parsed=extract_approved_samples(self.data)
+        keto=next(x for x in parsed if x['title']=='Keto-Fast')
+        meal=keto['sections'][0]
+        self.assertEqual(len(meal['image_positions']),1)
+        self.assertEqual(meal['image_positions'][0]['before_line'],1)
+        self._upload()
+        section=TreatmentRichSection.objects.get(
+            content__master_item__name='Keto-Fast',title='برنامه غذایی',
+        )
+        medium=section.media.get(kind='image')
+        self.assertEqual(medium.inline_before_line,1)
+        preview=build_section_preview(section)
+        self.assertEqual(len(preview.preview_rows),2)
+        self.assertEqual(preview.preview_rows[0]['text'],'متن اصلی Keto-Fast')
+        self.assertEqual(preview.preview_rows[1]['images'][0].pk,medium.pk)
+        self.assertFalse(preview.footer_images)
+        self.client.force_login(self.admin)
+        response=self.client.get(
+            reverse('treatment_content_preview',args=[section.content.master_item_id]),
+        )
+        self.assertContains(response,'class="meal-photos"')
+        self.assertNotContains(response,'class="gallery"')
+
+    def test_mobile_only_image_duplicate_stays_stored_but_is_not_displayed(self):
+        self._upload()
+        section=TreatmentRichSection.objects.get(
+            content__master_item__name='Keto-Fast',title='برنامه غذایی',
+        )
+        existing=section.media.get(kind='image')
+        duplicate=TreatmentRichMedia.objects.create(
+            section=section,kind='image',sort_order=90,
+            original_url=existing.original_url,inline_before_line=None,
+            is_responsive_duplicate=True,
+        )
+        preview=build_section_preview(section)
+        self.assertEqual(sum(len(row['images']) for row in preview.preview_rows),1)
+        self.assertFalse(preview.footer_images)
+        self.assertTrue(TreatmentRichMedia.objects.filter(pk=duplicate.pk).exists())
+
+    def test_unpositioned_new_media_keeps_gallery_fallback(self):
+        self._upload()
+        section=TreatmentRichSection.objects.get(
+            content__master_item__name='Keto-Fast',title='برنامه غذایی',
+        )
+        additional=TreatmentRichMedia.objects.create(
+            section=section,kind='image',original_url='https://example.org/photo.jpg',
+            sort_order=999,
+        )
+        preview=build_section_preview(section)
+        self.assertIn(additional.pk,[media.pk for media in preview.footer_images])
+
+    def test_backfill_repositions_old_import_without_changing_medical_text(self):
+        from django.utils import timezone
+        from core.models import TreatmentRichContent
+        item=TreatmentCatalogItem.objects.get(name='Por-150',category='diet',branch=None)
+        content=TreatmentRichContent.objects.create(master_item=item,origin='MHTML CRM')
+        original='متن رژیم ثبت‌شده توسط پزشک'
+        section=TreatmentRichSection.objects.create(
+            content=content,title='برنامه غذایی',body=original,sort_order=10,
+        )
+        for i in range(11):
+            TreatmentRichMedia.objects.create(
+                section=section,kind='image',
+                original_url=f'https://example.org/original/{i}.jpg',
+                sort_order=(i+1)*10,
+            )
+        migration=import_module('core.migrations.0087_restore_treatment_inline_photos')
+        class SchemaEditor:
+            connection=connection
+        migration.restore_photo_positions(apps,SchemaEditor())
+        section.refresh_from_db()
+        self.assertEqual(section.body,original)
+        images=list(section.media.order_by('sort_order'))
+        self.assertEqual([x.inline_before_line for x in images],
+                         [0,3,6,9,12,None,29,32,35,None,52])
+        self.assertEqual(sum(x.is_responsive_duplicate for x in images),2)
+        self.assertEqual(section.media.count(),11)
 
     def test_repeat_upload_preserves_manual_edits(self):
         self._upload()

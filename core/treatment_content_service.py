@@ -66,6 +66,13 @@ def import_five_sample_zip(file_bytes, *, replace_existing=False):
                 for kind,urls in (('image',section['images']),('audio',section['audios'])):
                     for position,url in enumerate(urls,start=1):
                         medium=TreatmentRichMedia(section=row,kind=kind,original_url=url,sort_order=position*10)
+                        if kind=='image':
+                            source_positions=section.get('image_positions',[])
+                            if len(source_positions)==len(urls):
+                                placement=source_positions[position-1]
+                                if placement['url']==url:
+                                    medium.inline_before_line=placement['before_line']
+                                    medium.is_responsive_duplicate=placement['is_responsive_duplicate']
                         if kind=='image' and _save_resource(medium.uploaded_file,url,entry['image_bytes']):
                             result['files_saved']+=1
                         medium.save()

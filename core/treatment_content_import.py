@@ -114,6 +114,52 @@ def _content_block(card):
     return groups[-1] if groups else card
 
 
+def _images_with_positions(block):
+    """Collect image locations in the exact leaf-text order used by _text().
+
+    A position means 'before this numbered text line'. Mobile-only duplicates
+    of the same responsive photo remain in the media bank but aren't repeated.
+    """
+    lines=[]
+    found=[]
+    previous=set()
+
+    def walk(node):
+        if isinstance(node,str):
+            part=node.strip()
+            if part:
+                lines.append(part)
+            return
+        if node.tag=='img':
+            url=_image_url(node.get('src'))
+            if url:
+                prefix=re.sub(
+                    r'\n[ \t]*\n(?:[ \t]*\n)+','\n\n',
+                    '\n'.join(lines),
+                ).strip()
+                ancestor=node.parent
+                mobile=False
+                while ancestor is not None:
+                    if 'md:hidden' in ancestor.classes():
+                        mobile=True
+                        break
+                    ancestor=ancestor.parent
+                duplicate=mobile and url in previous
+                found.append({
+                    'url':url,
+                    'before_line':len(prefix.splitlines()) if prefix else 0,
+                    'is_responsive_duplicate':duplicate,
+                })
+                previous.add(url)
+            return
+        if node.tag not in SKIP_TEXT:
+            for child in node.children:
+                walk(child)
+
+    walk(block)
+    return found
+
+
 def _audio_urls(node):
     urls=[]
     for audio in node.elements('audio'):
@@ -178,14 +224,13 @@ def _read_one(payload,filename):
                 continue
             block=_content_block(card)
             content=_text(block)
-            images=[
-                url for node in block.elements('img')
-                if (url:=_image_url(node.get('src')))
-            ]
+            image_positions=_images_with_positions(block)
+            images=[image['url'] for image in image_positions]
             audios=_audio_urls(main) if category=='recommendation' else []
             if content or images:
                 sections.append({
-                    'title':label,'body':content,'images':images,'audios':audios,
+                    'title':label,'body':content,'images':images,
+                    'image_positions':image_positions,'audios':audios,
                 })
     if not sections or not all(section['body'] for section in sections):
         raise ValueError('بخش‌های اصلی محتوا قابل استخراج نیستند: '+title)
