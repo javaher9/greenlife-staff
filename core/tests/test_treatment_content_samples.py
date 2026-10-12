@@ -17,6 +17,7 @@ from core.models import (
     TreatmentRichMedia,
 )
 from core.treatment_content_import import APPROVED_ITEMS, extract_approved_samples
+from core.treatment_content_layout import build_section_preview
 
 IMG=base64.b64decode(
     'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGP8//8/AwMDEwMDAwMDAwAkBgMB/DXemwAAAABJRU5ErkJggg=='
@@ -118,6 +119,58 @@ class TreatmentContentSampleTests(TestCase):
         self.assertTrue(media.uploaded_file)
         self.assertIn('sample',media.original_url)
         self.assertTrue(keto.is_active)
+
+    def test_images_stay_inline_beside_corresponding_meal_after_import(self):
+        parsed=extract_approved_samples(self.data)
+        keto=next(x for x in parsed if x['title']=='Keto-Fast')
+        meal=keto['sections'][0]
+        self.assertEqual(len(meal['image_positions']),1)
+        self.assertEqual(meal['image_positions'][0]['before_line'],1)
+        self._upload()
+        section=TreatmentRichSection.objects.get(
+            content__master_item__name='Keto-Fast',title='برنامه غذایی',
+        )
+        medium=section.media.get(kind='image')
+        self.assertEqual(medium.inline_before_line,1)
+        preview=build_section_preview(section)
+        self.assertEqual(len(preview.preview_rows),2)
+        self.assertEqual(preview.preview_rows[0]['text'],'متن اصلی Keto-Fast')
+        self.assertEqual(preview.preview_rows[1]['images'][0].pk,medium.pk)
+        self.assertFalse(preview.footer_images)
+        self.client.force_login(self.admin)
+        response=self.client.get(
+            reverse('treatment_content_preview',args=[section.content.master_item_id]),
+        )
+        self.assertContains(response,'class="meal-photos"')
+        self.assertNotContains(response,'class="gallery"')
+
+    def test_mobile_only_image_duplicate_stays_stored_but_is_not_displayed(self):
+        self._upload()
+        section=TreatmentRichSection.objects.get(
+            content__master_item__name='Keto-Fast',title='برنامه غذایی',
+        )
+        existing=section.media.get(kind='image')
+        duplicate=TreatmentRichMedia.objects.create(
+            section=section,kind='image',sort_order=90,
+            original_url=existing.original_url,inline_before_line=None,
+            is_responsive_duplicate=True,
+        )
+        preview=build_section_preview(section)
+        self.assertEqual(sum(len(row['images']) for row in preview.preview_rows),1)
+        self.assertFalse(preview.footer_images)
+        self.assertTrue(TreatmentRichMedia.objects.filter(pk=duplicate.pk).exists())
+
+    def test_unpositioned_new_media_keeps_gallery_fallback(self):
+        self._upload()
+        section=TreatmentRichSection.objects.get(
+            content__master_item__name='Keto-Fast',title='برنامه غذایی',
+        )
+        additional=TreatmentRichMedia.objects.create(
+            section=section,kind='image',original_url='https://example.org/photo.jpg',
+            sort_order=999,
+        )
+        preview=build_section_preview(section)
+        self.assertIn(additional.pk,[media.pk for media in preview.footer_images])
 
     def test_repeat_upload_preserves_manual_edits(self):
         self._upload()
