@@ -51,6 +51,17 @@ def _content_for_preview(request, item_id):
 
 @login_required
 @require_GET
+def treatment_content_browse(request):
+    if not _admin(request) and _role(request)!='doctor':
+        raise PermissionDenied('فهرست محتوای پزشکی فقط برای پزشک یا ادمین است.')
+    rows=TreatmentRichContent.objects.filter(
+        is_active=True,master_item__is_active=True,
+    ).select_related('master_item').order_by('master_item__category','master_item__name')
+    return render(request,'core/treatment_content_browse.html',{'rows':rows})
+
+
+@login_required
+@require_GET
 def treatment_content_preview(request, item_id):
     content=_content_for_preview(request,item_id)
     sections=list(content.sections.prefetch_related('media').all())
