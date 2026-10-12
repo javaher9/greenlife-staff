@@ -90,7 +90,7 @@ def _catalog_options(category, branch, fallback):
         qs=qs.filter(Q(branch__isnull=True)|Q(branch=branch))
     else:
         qs=qs.filter(branch__isnull=True)
-    items=list(qs.select_related('branch'))
+    items=list(qs.select_related('branch','rich_content'))
     items.sort(key=lambda item:(
         0 if branch and item.branch_id==branch.id else 1,
         item.sort_order,
@@ -110,7 +110,9 @@ def _catalog_options(category, branch, fallback):
             price=f'{int(item.price_toman):,} تومان'
             if item.unit_label:
                 price+=f' / {item.unit_label}'
-        result.append({'name':item.name,'price':price})
+        detail=getattr(item,'rich_content',None)
+        can_preview=bool(detail and detail.is_active)
+        result.append({'name':item.name,'price':price,'preview_id':item.pk if can_preview else None})
     if result:
         return result
     return [{'name':name,'price':''} for name in fallback]
