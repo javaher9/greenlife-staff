@@ -127,7 +127,26 @@ linear-gradient(135deg,#123c34 0%,#102c38 45%,#182846 100%);border-color:rgba(10
   <label>آماده‌سازی (دقیقه)<input type="number" min="0" max="240" name="preparation_minutes" value="{{ t.preparation_minutes }}"></label>
   <button>ذخیره</button>
   <button class="cap-inline-delete" type="submit" formaction="" name="action" value="delete_type" onclick="return confirm('نوع دستگاه «{{ t.name }}» از بانک حذف شود؟ اگر در مرکزی استفاده شده باشد سیستم اجازه حذف نمی‌دهد.');">حذف</button>
-</form></div>{% empty %}<p class="cap-note cap-muted">هنوز نوع دستگاهی در بانک ثبت نشده است.</p>{% endfor %}
+</form>
+{% if can_manage_device_price %}
+<form method="post" class="cap-type-price" style="display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin-top:12px;padding:10px;border-radius:12px;border:1px solid rgba(82,176,148,.3);background:rgba(26,71,62,.26)">{% csrf_token %}
+  <input type="hidden" name="branch" value="{{ branch.pk }}">
+  <input type="hidden" name="action" value="device_price">
+  <input type="hidden" name="type_id" value="{{ t.pk }}">
+  <label>قیمت واحد (میلیون تومان)<input type="number" min="0" step="0.001" inputmode="decimal" name="unit_price_million" value="{{ t.price_million }}" placeholder="هنوز قیمت ندارد"></label>
+  <label>واحد قیمت<select name="price_unit"><option value="session" {% if t.price_unit == 'session' %}selected{% endif %}>هر جلسه ({{ t.treatment_minutes }} دقیقه)</option><option value="cup" {% if t.price_unit == 'cup' %}selected{% endif %}>هر کاپ</option></select></label>
+  <button type="submit">ذخیره قیمت</button>
+</form>
+<form method="post" class="cap-toggle-form" style="margin-top:7px!important">{% csrf_token %}
+  <input type="hidden" name="branch" value="{{ branch.pk }}">
+  <input type="hidden" name="action" value="toggle_type_active">
+  <input type="hidden" name="type_id" value="{{ t.pk }}">
+  <button type="submit" class="cap-toggle {% if t.is_active %}off{% endif %}" style="font-size:10px">{% if t.is_active %}غیرفعال کردن نوع دستگاه{% else %}فعال کردن نوع دستگاه{% endif %}</button>
+</form>
+{% else %}
+<div class="cap-note" style="margin-top:9px">قیمت واحد: فقط قابل تنظیم توسط ادمین · {% if t.unit_price_toman != None %}{{ t.price_million }} میلیون تومان / {{ t.get_price_unit_display }}{% else %}تعیین نشده{% endif %}</div>
+{% endif %}
+</div>{% empty %}<p class="cap-note cap-muted">هنوز نوع دستگاهی در بانک ثبت نشده است.</p>{% endfor %}
 </section>
 <section class="cap-panel">
 <div class="cap-section-head"><div><h2>دستگاه‌های این مرکز</h2><div class="cap-note">برای هر دستگاه یک کد مشخص مثل RSA1، CRYO1 یا DF1 ثبت کنید؛ فقط دستگاه‌های روشن وارد نوبت‌دهی می‌شوند.</div></div><span class="cap-icon device-icon">▣</span></div>
