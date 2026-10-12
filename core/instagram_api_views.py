@@ -28,7 +28,8 @@ from .views import _is_executive_user
 INSTAGRAM_OAUTH_URL='https://www.instagram.com/oauth/authorize'
 INSTAGRAM_TOKEN_URL='https://api.instagram.com/oauth/access_token'
 INSTAGRAM_GRAPH_BASE='https://graph.instagram.com'
-INSTAGRAM_BRIDGE_BASE='https://instagram-bridge-production-e356.up.railway.app'
+INSTAGRAM_BRIDGE_BASE='https://instagram-bridge-v2-production.up.railway.app'
+INSTAGRAM_BRIDGE_FALLBACK='https://instagram-bridge-production-e356.up.railway.app'
 INSTAGRAM_SCOPES=(
     'instagram_business_basic',
     'instagram_business_manage_messages',
@@ -72,6 +73,26 @@ def _post_json(url,data,timeout=25):
     req=Request(url,data=body,headers={'Content-Type':'application/json','Accept':'application/json'},method='POST')
     with urlopen(req,timeout=timeout) as response:
         return json.loads(response.read().decode('utf-8') or '{}')
+
+
+def _complete_instagram_oauth(data):
+    # The primary and legacy Railway deployments have distinct hostnames.
+    # Fail over only when DNS resolution fails before a request can be sent;
+    # OAuth codes are single-use and must never be retried on HTTP errors.
+    import socket
+    last_error = None
+    for base in (INSTAGRAM_BRIDGE_BASE, INSTAGRAM_BRIDGE_FALLBACK):
+        try:
+            return _post_json(base + '/meta/oauth-complete', data)
+        except URLError as exc:
+            reason = getattr(exc, 'reason', None)
+            if isinstance(reason, socket.gaierror):
+                last_error = exc
+                continue
+            raise
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError('No Instagram OAuth bridge is configured')
 
 
 def _get_json(url,params,timeout=20):
@@ -183,7 +204,7 @@ def instagram_oauth_callback(request):
         return HttpResponse('Instagram app credentials are not configured.',status=503)
 
     try:
-        bridge=_post_json(INSTAGRAM_BRIDGE_BASE+'/meta/oauth-complete',{
+        bridge=_complete_instagram_oauth({
             'app_id':config.app_id,
             'app_secret':app_secret,
             'redirect_uri':_redirect_uri(request),
