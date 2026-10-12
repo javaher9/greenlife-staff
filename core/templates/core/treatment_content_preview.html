@@ -6,6 +6,13 @@
 .trp h1{color:#194d3c;font-size:25px;margin:6px 0}.trp .sub{color:#5c776e;font-size:12px}
 .trp .card{margin:15px 0;padding:23px;background:#fff;border:1px solid #dae8e0;border-radius:18px;box-shadow:0 10px 29px #153d2b12}
 .trp h2{color:#216b51;font-size:19px;margin:0 0 16px}.trp .body{white-space:pre-wrap;line-height:2.18;font-size:14px;overflow-wrap:anywhere}
+.trp .meal-row{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:17px;align-items:start;border-bottom:1px solid #e2eee6;padding:14px 0;direction:rtl}
+.trp .meal-row:first-child{padding-top:0}.trp .meal-row:last-child{border-bottom:0}
+.trp .meal-row.no-photo{display:block;border:0;padding:5px 0}
+.trp .meal-row .body{min-width:0;line-height:2.05;font-size:14px}
+.trp .meal-photos{display:flex;flex-direction:column;align-items:center;gap:9px}
+.trp .meal-photos img{display:block;width:116px;height:112px;object-fit:contain;border:1px solid #d6e5dc;border-radius:14px;background:#fff;padding:4px;box-shadow:0 5px 14px #183f2510}
+@media(max-width:650px){.trp .meal-row{grid-template-columns:minmax(0,1fr) 92px;gap:9px}.trp .meal-photos img{width:90px;height:88px}.trp .card{padding:14px}.trp .meal-row .body{font-size:13px}}
 .trp .gallery{display:flex;flex-wrap:wrap;gap:13px;margin-top:15px}.trp .gallery img{max-width:100%;max-height:280px;border:1px solid #dbe9e1;border-radius:12px;object-fit:contain;background:#fff}
 .trp .warning{border-radius:12px;padding:13px 15px;background:#fff4e4;border:1px solid #f3d8ad;color:#805a25;line-height:1.9;margin-top:13px}
 .trp .muted{font-size:11px;color:#6d8c80}.trp a{color:#257e60;text-decoration:underline;font-weight:850}.trp audio{max-width:100%}
@@ -21,9 +28,25 @@
     {% if content.audio_url %}<div style="margin-top:15px"><p class="sub">صدای اصلی (در صورت دسترسی به سرور قدیمی)</p><audio controls preload="none" src="{{ content.audio_url }}"></audio></div>{% else %}<p class="muted">فایل صوتی معتبر موجود نیست یا هنوز بارگذاری نشده است.</p>{% endif %}
   </div>
   {% for section in sections %}
-  <article class="card"><h2>{{ section.title }}</h2><div class="body">{{ section.body }}</div>
-    {% for medium in section.media.all %}{% if medium.kind == 'audio' and medium.url %}<div style="margin:16px 0"><audio controls preload="none" src="{{ medium.url }}"></audio></div>{% endif %}{% endfor %}
-    <div class="gallery">{% for medium in section.media.all %}{% if medium.kind == 'image' and medium.url %}<img src="{{ medium.url }}" loading="lazy" alt="تصویر بخش {{ section.title }}">{% endif %}{% endfor %}</div>
+  <article class="card"><h2>{{ section.title }}</h2>
+    {% for row in section.preview_rows %}
+      {% if row.text or row.images %}
+      <div class="meal-row {% if not row.images %}no-photo{% endif %}">
+        {% if row.text %}<div class="body">{{ row.text }}</div>{% endif %}
+        {% if row.images %}
+          <div class="meal-photos">
+            {% for medium in row.images %}
+              <img src="{{ medium.url }}" loading="lazy" alt="تصویر مرتبط با این وعده در {{ section.title }}">
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+      {% endif %}
+    {% endfor %}
+    {% for medium in section.audio_media %}<div style="margin:16px 0"><audio controls preload="none" src="{{ medium.url }}"></audio></div>{% endfor %}
+    {% if section.footer_images %}
+      <div class="gallery">{% for medium in section.footer_images %}<img src="{{ medium.url }}" loading="lazy" alt="تصویر بخش {{ section.title }}">{% endfor %}</div>
+    {% endif %}
   </article>
   {% endfor %}
   <div class="no-print"><button type="button" onclick="window.print()" style="border:0;border-radius:11px;padding:12px 20px;background:#227b5b;color:#fff;font-weight:900;cursor:pointer">چاپ برنامه</button></div>
