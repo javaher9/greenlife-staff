@@ -53,6 +53,9 @@ class TreatmentRichMedia(models.Model):
     original_url=models.URLField(max_length=1300,blank=True)
     uploaded_file=models.FileField(upload_to='treatment-content/media/%Y/%m/',blank=True)
     sort_order=models.PositiveSmallIntegerField(default=0)
+    # Image's original position before a numbered line of section.body; null = footer.
+    inline_before_line=models.PositiveSmallIntegerField(null=True,blank=True)
+    is_responsive_duplicate=models.BooleanField(default=False)
 
     class Meta:
         ordering=['sort_order','id']
