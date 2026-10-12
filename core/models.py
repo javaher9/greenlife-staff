@@ -2153,3 +2153,6 @@ class BulkSmsRecipient(models.Model):
         ]
         indexes=[models.Index(fields=['status','attempted_at'],name='bulk_sms_dispatch_idx')]
 
+
+
+from .treatment_content_models import TreatmentRichContent, TreatmentRichSection, TreatmentRichMedia

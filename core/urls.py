@@ -16,6 +16,7 @@ from . import task_management_views
 from . import lead_command_views
 from . import lead_management_views
 from . import doctor_views
+from . import treatment_content_views
 from . import payroll_views
 from . import device_booking_views
 from . import consultant_expense_views
@@ -25,6 +26,10 @@ from . import live_status_views
 from . import quality_command_views
 from .mcp import mcp_endpoint
 urlpatterns=[
+path('doctor/content/',treatment_content_views.treatment_content_browse,name='treatment_content_browse'),
+path('treatment-content/<int:item_id>/preview/',treatment_content_views.treatment_content_preview,name='treatment_content_preview'),
+path('settings/treatment-content/',treatment_content_views.treatment_content_library,name='treatment_content_library'),
+path('settings/treatment-content/<int:item_id>/',treatment_content_views.treatment_content_manage,name='treatment_content_manage'),
 path('quality-center/',quality_command_views.quality_command_center,name='quality_command_center'),
 path('quality-center/data/',quality_command_views.quality_command_data,name='quality_command_data'),
 path('api/staff-live-status/',live_status_views.staff_live_status_api,name='staff_live_status_api'),

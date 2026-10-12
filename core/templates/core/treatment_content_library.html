@@ -1,0 +1,39 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<style>
+.tcl{max-width:1160px;margin:14px auto 40px;color:#eef7f5;direction:rtl}
+.tcl .hero{padding:23px;border-radius:23px;background:linear-gradient(125deg,#122f2c,#162c43,#282646);border:1px solid #45665f;box-shadow:0 18px 46px #0003}
+.tcl h1{font-size:24px;color:#fff;margin:0 0 10px}.tcl p{font-size:12px;line-height:2;color:#d8e8e2}
+.tcl .panel{margin-top:16px;padding:22px;border-radius:20px;background:#101f2c;border:1px solid #345164}
+.tcl .sample{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;border:1px solid #365568;border-radius:13px;padding:13px;margin-top:9px;background:#172d38}
+.tcl .sample b{font-size:15px;color:#fff}.tcl .sample small{color:#b1d5cf;font-size:11px}
+.tcl a{color:#a6e6d0;font-weight:900}.tcl button{padding:10px 18px;background:#239a74;border:0;border-radius:10px;font-weight:900;color:#fff;cursor:pointer}
+.tcl input[type=file]{background:#203846;color:#fff;padding:11px;border-radius:10px;max-width:100%}
+.tcl label{font-size:12px;display:block;margin:10px 0}
+</style>
+<div class="tcl">
+  <div class="hero"><h1>کتابخانه رژیم‌ها و توصیه‌ها</h1>
+  <p>آزمایش فقط چهار رژیم و یک توصیه از خروجی اصلی CRM؛ متصل به همان عنوان‌های بانک خدمات. فایل‌های صوتی فقط در صورت وجود آدرس معتبر نمایش داده می‌شوند. بدون بازنویسی اطلاعات اصلی.</p></div>
+  <section class="panel">
+    <h2 style="color:#fff;font-size:18px">ورود پنج نمونه اصلی از فایل ZIP</h2>
+    <p>فایل «خروجی HTML.zip» را انتخاب کنید. خروجی‌های MHTML در سرور خوانده می‌شوند و عکس‌های جاسازی‌شده نیز در فضای رسانه اپ ذخیره خواهند شد؛ هیچ اتصال به پورت CRM لازم نیست.</p>
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}
+      <input type="file" name="archive" accept=".zip,application/zip" required>
+      <label><input type="checkbox" name="replace_existing" value="1"> بازنویسی متون نمونه‌های قبلاً واردشده (فقط هنگام تأیید عمدی)</label>
+      <button type="submit">بررسی و ورود پنج نمونه</button>
+    </form>
+  </section>
+  <section class="panel"><h2 style="color:#fff;font-size:18px">پنج مورد آزمایشی</h2>
+  {% for row in rows %}<div class="sample">
+    <div><b>{{ row.title }}</b><br><small>{% if row.category == 'diet' %}رژیم{% else %}توصیه{% endif %} · {% if row.item and row.item.rich_content %}{% if row.item.rich_content.is_active %}محتوا فعال{% else %}محتوا غیرفعال{% endif %}{% else %}در انتظار ورود فایل{% endif %}</small></div>
+    <div>
+      {% if row.item and row.item.rich_content %}
+        <a href="{% url 'treatment_content_manage' row.item.pk %}">ویرایش محتوا</a> ·
+        <a href="{% url 'treatment_content_preview' row.item.pk %}">پیش‌نمایش</a>
+      {% elif not row.item %}<small>این عنوان در بانک اصلی پیدا نشد</small>
+      {% else %}<small>بعد از ورود قابل ویرایش می‌شود</small>{% endif %}
+    </div>
+  </div>{% endfor %}
+  </section>
+</div>
+{% endblock %}
