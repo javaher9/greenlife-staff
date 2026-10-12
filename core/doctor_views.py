@@ -16,6 +16,7 @@ from django.utils import timezone
 
 from .call_center_identity import call_center_display_name
 from .patient_ui import attach_patient_photos
+from .device_pricing import device_unit_price
 from .models import (
     BodyAnalysisRecord,
     InternalMessage,
@@ -28,7 +29,7 @@ from .models import (
     StaffNotification,
     TreatmentCatalogItem,
     VisitAppointment,
-    Branch, DeviceBaseTariff,
+    Branch, DeviceBaseTariff, DeviceTypeSchedule, BranchDeviceTypeStatus,
     lead_phone_variants, normalize_lead_phone,
 )
 
@@ -67,6 +68,23 @@ BODY_AREAS = (
 
 
 def _catalog_options(category, branch, fallback):
+    if category=='device':
+        disabled=set(
+            BranchDeviceTypeStatus.objects.filter(branch=branch,is_active=False)
+            .values_list('device_type_id',flat=True)
+        ) if branch else set()
+        result=[]
+        seen=set()
+        for kind in DeviceTypeSchedule.objects.filter(is_active=True).order_by('name','id'):
+            key=kind.name.strip().casefold()
+            if kind.pk in disabled or key in seen:
+                continue
+            seen.add(key)
+            amount=device_unit_price(kind.name,branch)
+            price=(f'{int(amount):,} تومان / {kind.get_price_unit_display()}'
+                   if amount is not None and amount>0 else '')
+            result.append({'name':kind.name,'price':price})
+        return result
     qs=TreatmentCatalogItem.objects.filter(category=category,is_active=True)
     if branch:
         qs=qs.filter(Q(branch__isnull=True)|Q(branch=branch))

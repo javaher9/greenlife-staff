@@ -14,6 +14,7 @@ from django.utils import timezone
 
 from .call_center_identity import call_center_display_name
 from .patient_ui import attach_patient_photos, patient_photo_url_for_phone
+from .device_pricing import device_unit_price
 from .models import (
     ConsultationPlan, ConsultationPlanItem, DeviceBaseTariff, DeviceSessionBooking, EmployeeProfile, FinancialTransaction,
     PatientProfile, ReferralLead, StaffNotification, Task, TreatmentCatalogItem,
@@ -39,6 +40,8 @@ def _queue(profile):
 
 
 def _catalog_price(branch,kind,name):
+    if kind=='device':
+        return device_unit_price(name,branch)
     qs=TreatmentCatalogItem.objects.filter(category=kind,name__iexact=(name or '').strip(),is_active=True)
     if branch:
         local=qs.filter(branch=branch).order_by('sort_order','id').first()

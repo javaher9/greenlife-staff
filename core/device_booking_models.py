@@ -8,6 +8,9 @@ class DeviceTypeSchedule(models.Model):
     name=models.CharField(max_length=100)
     treatment_minutes=models.PositiveSmallIntegerField(default=60)
     preparation_minutes=models.PositiveSmallIntegerField(default=20)
+    PRICE_UNITS=[('session','جلسه'),('cup','کاپ')]
+    unit_price_toman=models.DecimalField(max_digits=18,decimal_places=0,null=True,blank=True)
+    price_unit=models.CharField(max_length=12,choices=PRICE_UNITS,default='session')
     is_active=models.BooleanField(default=True)
 
     class Meta:

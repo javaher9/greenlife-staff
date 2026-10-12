@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-from core.models import Branch, TreatmentCatalogItem
+from core.models import Branch, TreatmentCatalogItem, DeviceTypeSchedule
 
 
 class TreatmentCatalogSettingsTests(TestCase):
@@ -20,7 +20,7 @@ class TreatmentCatalogSettingsTests(TestCase):
             'action':'save',
             'category':'lipolytic',
             'name':'لیپولیتیک گرید ۳',
-            'price_toman':'3500000',
+            'price_toman':'3.5',
             'unit_label':'جلسه',
             'branch':str(self.branch.pk),
             'sort_order':'10',
@@ -49,11 +49,12 @@ class TreatmentCatalogSettingsTests(TestCase):
             unit_label='ناحیه',
             created_by=self.admin,
         )
+        DeviceTypeSchedule.objects.create(code='UTPRICEDIF70',name='Double Define')
         response=self.client.get(reverse('treatment_catalog_settings'))
         body=response.content.decode('utf-8')
         self.assertIn('تنظیمات خدمات و درمان‌ها',body)
         self.assertIn('Double Define',body)
         self.assertIn('دستگاه',body)
 
-        self.assertLess(body.index('توصیه'),body.index('قالب نسخه'))
-        self.assertLess(body.index('قالب نسخه'),body.index('دستگاه'))
+        self.assertLess(body.index('<h3>توصیه</h3>'),body.index('<h3>قالب نسخه</h3>'))
+        self.assertLess(body.index('<h3>قالب نسخه</h3>'),body.index('<h3>دستگاه</h3>'))
