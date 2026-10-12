@@ -7,7 +7,7 @@ from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q
+from django.db.models import Count
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.template.loader import render_to_string
@@ -17,7 +17,7 @@ from .device_booking_models import DeviceSessionBooking, PhysicalDevice
 from .live_status_views import _visit_state
 from .models import (
     Attendance, Branch, DeviceIssue, EmployeeProfile, ReferralLead,
-    StaffNotification, VisitAppointment,
+    StaffNotification, Task, VisitAppointment,
 )
 
 
@@ -124,7 +124,7 @@ def build_quality_snapshot(user):
     issues = list(
         DeviceIssue.objects.filter(
             branch_id__in=branch_ids
-        ).exclude(status="resolved").order_by("-created_at")[:30]
+        ).exclude(status="resolved").order_by("-created_at")
     )
     attendance = list(
         Attendance.objects.filter(branch_id__in=branch_ids, date=today)
@@ -135,6 +135,13 @@ def build_quality_snapshot(user):
             branch_id__in=branch_ids, is_active=True, user__is_active=True
         ).select_related("user")
     )
+    task_counts = {
+        row["assigned_to_id"]: row["n"]
+        for row in Task.objects.filter(
+            assigned_to_id__in=[p.user_id for p in staff],
+            status="done", updated_at__date=today,
+        ).values("assigned_to_id").annotate(n=Count("id"))
+    }
     result = []
     for branch in branch_list:
         b_visits = [v for v in visits if v.branch_id == branch.pk]
@@ -144,6 +151,28 @@ def build_quality_snapshot(user):
         issue_names = {i.device_name.strip().casefold() for i in b_issues}
         b_attendance = [a for a in attendance if a.branch_id == branch.pk]
         b_staff = [p for p in staff if p.branch_id == branch.pk]
+        attendance_map = {a.user_id: a for a in b_attendance}
+        staff_rows = []
+        for person in b_staff:
+            record = attendance_map.get(person.user_id)
+            status = (
+                "late" if record and record.check_in and record.status == "late"
+                else "present" if record and record.check_in and not record.check_out
+                else "left" if record and record.check_out
+                else "unregistered"
+            )
+            staff_rows.append({
+                "name": person.user.get_full_name() or person.user.username,
+                "role": person.job_title or person.get_role_display(),
+                "state": status,
+                "label": {
+                    "late": "تأخیر ثبت‌شده",
+                    "present": "حاضر",
+                    "left": "خروج ثبت‌شده",
+                    "unregistered": "ورود ثبت نشده",
+                }[status],
+                "tasks_done": task_counts.get(person.user_id, 0),
+            })
         drows = []
         for device in b_devices:
             state, label, patient, next_time = _physical_state(
@@ -169,6 +198,7 @@ def build_quality_snapshot(user):
             "devices_busy": sum(d["state"] == "busy" for d in drows),
             "issues": len(b_issues),
             "staff_total": len(b_staff),
+            "staff": staff_rows,
             "staff_present": sum(
                 bool(a.check_in and not a.check_out) for a in b_attendance
             ),
@@ -191,7 +221,7 @@ def build_quality_snapshot(user):
         booked = VisitAppointment.objects.filter(
             created_by=p.user, created_at__date=today,
             source="call_center",
-        ).exclude(status="cancelled").values("lead_id").distinct().count()
+        ).exclude(status="cancelled").count()
         overdue = ReferralLead.objects.filter(
             assigned_to=p, next_follow_up__lt=today
         ).exclude(status__in=("won", "lost")).count()
