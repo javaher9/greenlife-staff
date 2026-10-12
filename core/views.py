@@ -20,7 +20,8 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from .forms import ReportForm, TaskStatusForm, TaskForm, LeaveRequestForm, LeaveReviewForm, AnnouncementForm, BlackboardMessageForm, EmployeeCreateForm, EmployeeEditForm, AttendanceManualForm, KPIRecordForm, ScoreEventForm, WorkShiftForm, ShiftAssignmentForm, AttendanceCorrectionForm, AttendanceCorrectionReviewForm, EmployeeAvatarForm, EmployeeDocumentForm, ChecklistTemplateForm, ChecklistItemForm, PersonnelActionForm, PerformanceGoalForm, InternalRequestForm, ManagementEventForm, ManagerReportCommentForm, JobDutyTemplateForm, GuidelineForm, DeviceIssueForm, DeviceIssueReviewForm, ConsultantFinanceEntryForm, StaffLoginForm, StaffCredentialUpdateForm
 from .patient_ui import attach_patient_photos
-from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, Branch, Country, BranchWorkSchedule, EmployeeWorkSchedule, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction, MeetingActionUpdate, StaffCredential, VisitAppointment, TreatmentCatalogItem, DeviceBaseTariff
+from .device_pricing import to_toman_from_million, from_toman_to_million
+from .models import Announcement, BlackboardMessage, DailyReport, Task, LeaveRequest, SOPDocument, EmployeeProfile, Attendance, KPIRecord, ScoreEvent, WorkShift, ShiftAssignment, Branch, Country, BranchWorkSchedule, EmployeeWorkSchedule, AttendanceCorrectionRequest, StaffNotification, EmployeeDocument, ChecklistTemplate, ChecklistItem, ChecklistCompletion, PersonnelAction, PerformanceGoal, InternalRequest, AuditLog, ManagementEvent, CEOScoreSnapshot, JobDutyTemplate, Guideline, GuidelineAcknowledgement, DeviceIssue, FinancialTransaction, MeetingActionUpdate, StaffCredential, VisitAppointment, TreatmentCatalogItem, DeviceBaseTariff, DeviceTypeSchedule
 from .ai import analyze_finance_receipt, process_report
 from .jalali import format_jalali, gregorian_to_jalali, jalali_to_gregorian, parse_jalali
 from .reporting import day_summary, leaderboard, answer_query
@@ -268,98 +269,125 @@ def login_view(request):
         'next':request.POST.get('next') or request.GET.get('next') or '',
     })
 
-@credential_admin_required
+def treatment_catalog_admin_required(view):
+    @wraps(view)
+    @login_required
+    def wrapper(request, *args, **kwargs):
+        if not (request.user.is_superuser or _is_executive_user(request.user) or role_of(request.user)=='admin'):
+            raise PermissionDenied('Only administrators can manage treatment catalog.')
+        return view(request, *args, **kwargs)
+    return wrapper
+
+
+@treatment_catalog_admin_required
 def treatment_catalog_settings(request):
     category=(request.GET.get('category') or '').strip()
-    if request.method=='POST' and request.POST.get('action')=='base_device_tariff':
-        raw=''.join(ch for ch in (request.POST.get('base_price_toman') or '') if ch.isdigit())
-        if not raw:
-            messages.error(request,'تعرفه پایه را به تومان وارد کنید.')
-        else:
-            DeviceBaseTariff.objects.update_or_create(
-                pk=1,defaults={'price_toman':int(raw),'updated_by':request.user},
-            )
-            messages.success(request,'تعرفه پایه دستگاه‌ها ذخیره شد؛ قیمت‌های استثنا تغییر نکردند.')
-        return redirect('treatment_catalog_settings')
+    category_map=dict(TreatmentCatalogItem.CATEGORY)
+    category_order=('diet','recommendation','print_template','device','lipolytic')
+    ordered_categories=[(key,category_map[key]) for key in category_order if key in category_map]
+
     if request.method=='POST':
         action=(request.POST.get('action') or 'save').strip()
-        item_id=(request.POST.get('item_id') or '').strip()
-        item=None
-        if item_id.isdigit():
-            item=get_object_or_404(TreatmentCatalogItem,pk=int(item_id))
+        if action=='base_device_tariff':
+            try:
+                amount=to_toman_from_million(request.POST.get('base_price_toman'))
+                if amount is None:
+                    raise ValueError('مبلغ تعرفه پایه را وارد کنید.')
+            except ValueError as exc:
+                messages.error(request,str(exc))
+            else:
+                DeviceBaseTariff.objects.update_or_create(
+                    pk=1,defaults={'price_toman':amount,'updated_by':request.user},
+                )
+                messages.success(request,'تعرفه پایه دستگاه‌ها با واحد میلیون تومان ذخیره شد.')
+            return redirect('treatment_catalog_settings')
 
+        if action=='device_price':
+            device=get_object_or_404(DeviceTypeSchedule,pk=request.POST.get('type_id'))
+            unit=(request.POST.get('price_unit') or 'session').strip()
+            try:
+                if unit not in dict(DeviceTypeSchedule.PRICE_UNITS):
+                    raise ValueError('واحد قیمت معتبر نیست.')
+                amount=to_toman_from_million(request.POST.get('unit_price_million'))
+            except ValueError as exc:
+                messages.error(request,str(exc))
+            else:
+                device.unit_price_toman=amount
+                device.price_unit=unit
+                device.save(update_fields=['unit_price_toman','price_unit'])
+                messages.success(request,f'قیمت واحد {device.name} برای همه شعب ذخیره شد.')
+            return redirect(f"{reverse('treatment_catalog_settings')}?category=device")
+
+        raw_id=(request.POST.get('item_id') or '').strip()
+        item=get_object_or_404(TreatmentCatalogItem,pk=int(raw_id)) if raw_id.isdigit() else None
         if action=='delete' and item:
             item.delete()
             messages.success(request,'آیتم حذف شد.')
             return redirect('treatment_catalog_settings')
-
         if action=='toggle' and item:
             item.is_active=not item.is_active
             item.save(update_fields=['is_active','updated_at'])
             messages.success(request,'وضعیت آیتم تغییر کرد.')
             return redirect('treatment_catalog_settings')
-
+        if action!='save':
+            messages.error(request,'عملیات نامعتبر است.')
+            return redirect('treatment_catalog_settings')
         raw_category=(request.POST.get('category') or '').strip()
         name=(request.POST.get('name') or '').strip()
-        branch_id=(request.POST.get('branch') or '').strip()
-        price_raw=''.join(ch for ch in (request.POST.get('price_toman') or '') if ch.isdigit())
-        unit_label=(request.POST.get('unit_label') or '').strip()
-        notes=(request.POST.get('notes') or '').strip()
-        sort_raw=(request.POST.get('sort_order') or '100').strip()
-
-        allowed={key for key,_label in TreatmentCatalogItem.CATEGORY}
-        if raw_category not in allowed or not name:
-            messages.error(request,'نوع و عنوان آیتم الزامی است.')
+        if raw_category not in category_map or raw_category=='device' or (item and item.category=='device') or not name:
+            messages.error(request,'نوع دستگاه فقط از بانک اصلی مدیریت می‌شود؛ عنوان سایر موارد الزامی است.')
             return redirect('treatment_catalog_settings')
-
+        branch_id=(request.POST.get('branch') or '').strip()
         branch_obj=Branch.objects.filter(pk=int(branch_id)).first() if branch_id.isdigit() else None
         try:
-            sort_order=max(0,min(9999,int(sort_raw or 100)))
-        except ValueError:
-            sort_order=100
-        price_toman=int(price_raw) if price_raw else None
-
+            price_toman=to_toman_from_million(request.POST.get('price_toman'))
+            sort_order=max(0,min(9999,int(request.POST.get('sort_order') or '100')))
+        except (ValueError,TypeError) as exc:
+            messages.error(request,f'مبلغ یا ترتیب نمایش نامعتبر است: {exc}')
+            return redirect('treatment_catalog_settings')
         if item is None:
             item=TreatmentCatalogItem(created_by=request.user)
         item.category=raw_category
         item.name=name[:180]
         item.branch=branch_obj
         item.price_toman=price_toman
-        item.unit_label=unit_label[:80]
-        item.notes=notes[:500]
+        item.unit_label=(request.POST.get('unit_label') or '').strip()[:80]
+        item.notes=(request.POST.get('notes') or '').strip()[:500]
         item.sort_order=sort_order
         item.is_active=request.POST.get('is_active')=='1'
         try:
             item.save()
-            messages.success(request,'تنظیمات خدمات ذخیره شد.')
+            messages.success(request,'ویرایش خدمات و درمان‌ها ذخیره شد.')
         except IntegrityError:
             messages.error(request,'این عنوان برای همین دسته و شعبه قبلاً ثبت شده است.')
         return redirect('treatment_catalog_settings')
 
-    items=TreatmentCatalogItem.objects.select_related('branch','created_by')
-    if category:
+    items=TreatmentCatalogItem.objects.exclude(category='device').select_related('branch','created_by')
+    if category and category!='device':
         items=items.filter(category=category)
-
-    category_map=dict(TreatmentCatalogItem.CATEGORY)
-    category_order=('diet','recommendation','print_template','device','lipolytic')
-    ordered_categories=[
-        (key,category_map[key]) for key in category_order if key in category_map
-    ]
+    device_types=list(DeviceTypeSchedule.objects.all().order_by('name','id'))
+    for device in device_types:
+        device.price_million=from_toman_to_million(device.unit_price_toman)
     grouped=[]
     for key,label in ordered_categories:
-        group=list(items.filter(category=key))
+        if key=='device':
+            group=device_types
+        else:
+            group=list(items.filter(category=key))
+            for item in group:
+                item.price_million=from_toman_to_million(item.price_toman)
         grouped.append({'key':key,'label':label,'items':group,'count':len(group)})
 
     return render(request,'core/treatment_catalog_settings.html',{
         'groups':grouped,
         'base_device_tariff':DeviceBaseTariff.current(),
+        'base_device_tariff_million':from_toman_to_million(DeviceBaseTariff.current()),
         'categories':ordered_categories,
         'branches':Branch.objects.filter(is_active=True).order_by('name'),
         'selected_category':category,
-        'total_items':TreatmentCatalogItem.objects.count(),
-        'active_items':TreatmentCatalogItem.objects.filter(is_active=True).count(),
+        'total_items':TreatmentCatalogItem.objects.exclude(category='device').count()+len(device_types),
+        'active_items':TreatmentCatalogItem.objects.exclude(category='device').filter(is_active=True).count()+sum(device.is_active for device in device_types),
     })
-
 
 @credential_admin_required
 def credential_settings(request):
