@@ -46,6 +46,7 @@ def import_five_sample_zip(file_bytes, *, replace_existing=False):
             defaults={
                 'is_active':True,'origin':'MHTML CRM — پنج نمونه',
                 'cover_external_url':entry['cover_url'],'audio_external_url':entry['audio_url'],
+                'intro_warning':entry.get('intro_warning',''),
                 'imported_at':timezone.now(),
             },
         )
@@ -54,6 +55,7 @@ def import_five_sample_zip(file_bytes, *, replace_existing=False):
                 content.sections.all().delete()
                 content.cover_external_url=entry['cover_url']
                 content.audio_external_url=entry['audio_url']
+                content.intro_warning=entry.get('intro_warning','')
                 content.origin='MHTML CRM — پنج نمونه'
                 content.imported_at=timezone.now()
                 content.save()
