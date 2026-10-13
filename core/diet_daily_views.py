@@ -1,0 +1,121 @@
+"""Mobile-first, read-only presentation of actual stored diets.
+
+Clinical source text/media is never generated or rewritten by this view.
+Only staff with doctor/admin permission may preview the diet until a
+patient-scoped authorization flow is available.
+"""
+import re
+
+from django.contrib.auth.decorators import login_required
+from django.http import Http404
+from django.shortcuts import render
+from django.views.decorators.http import require_GET
+
+from .treatment_content_layout import build_section_preview
+from .treatment_content_views import _content_for_preview, _admin
+
+SLOT_LABELS={
+    'breakfast':'صبحانه','snack_am':'میان‌وعده صبح','lunch':'ناهار',
+    'snack_pm':'عصرانه','dinner':'شام','other':'توضیحات',
+}
+SLOT_SYMBOLS={'breakfast':'☀','snack_am':'☘','lunch':'☀','snack_pm':'☕','dinner':'☾','other':'✦'}
+
+
+def _detected_slot(title, body):
+    sample=(title+' '+body[:55]).replace('‌',' ')
+    if 'صبحانه' in sample:
+        return 'breakfast'
+    if 'ناهار' in sample:
+        return 'lunch'
+    if 'عصرانه' in sample:
+        return 'snack_pm'
+    if 'شام' in sample:
+        return 'dinner'
+    if 'میان وعده' in sample or 'میان‌وعده' in sample:
+        return 'snack_am'
+    return 'other'
+
+
+def _prepare_cards(sections):
+    cards=[]
+    for section in sections:
+        section=build_section_preview(section)
+        if section.meal_slot!='other':
+            images=[
+                media for media in section.media.all()
+                if media.kind=='image' and media.url and not media.is_responsive_duplicate
+            ]
+            body=section.body.strip()
+            cards.append({
+                'slot':section.meal_slot,'label':SLOT_LABELS[section.meal_slot],
+                'icon':SLOT_SYMBOLS[section.meal_slot],
+                'title':section.title,
+                'summary':body.splitlines()[:3],'body':body,
+                'photo':images[0].url if images else '',
+                'calories':section.estimated_kcal,
+                'audio':section.audio_media[0].url if section.audio_media else '',
+            })
+            continue
+        # Legacy MHTML remains in its original order. Each interleaved text/photo
+        # group is displayed together; unrelated paragraphs stay text-only.
+        used=False
+        for row in section.preview_rows:
+            body=(row['text'] or '').strip()
+            images=row['images']
+            if not body and not images:
+                continue
+            slot=_detected_slot(section.title,body)
+            cards.append({
+                'slot':slot,'label':SLOT_LABELS[slot] if slot!='other' else section.title,
+                'icon':SLOT_SYMBOLS[slot],'title':section.title,
+                'summary':body.splitlines()[:3],'body':body,
+                'photo':images[0].url if images else '',
+                'calories':None,'audio':'',
+            })
+            used=True
+        for media in section.footer_images:
+            cards.append({
+                'slot':'other','label':section.title,'icon':'✦','title':section.title,
+                'summary':[],'body':'','photo':media.url,'calories':None,'audio':'',
+            })
+        if not used and not section.footer_images and section.body:
+            cards.append({
+                'slot':'other','label':section.title,'icon':'✦','title':section.title,
+                'summary':section.body.splitlines()[:3],'body':section.body,
+                'photo':'','calories':None,'audio':'',
+            })
+    return cards
+
+
+@login_required
+@require_GET
+def diet_daily_preview(request,item_id):
+    content=_content_for_preview(request,item_id)
+    if content.master_item.category!='diet':
+        raise Http404('این مورد رژیم غذایی نیست.')
+    sections=list(content.sections.prefetch_related('media').all())
+    audio_by_day={row.day_number:row for row in content.daily_audio.all()}
+    available_days=sorted({s.day_number for s in sections}|set(audio_by_day)) or [1]
+    try:
+        chosen=int(request.GET.get('day',available_days[0]))
+    except (ValueError,TypeError):
+        chosen=available_days[0]
+    if chosen not in available_days:
+        raise Http404('برای این روز برنامه ثبت نشده است.')
+    i=available_days.index(chosen)
+    prev_day=available_days[i-1] if i>0 else None
+    next_day=available_days[i+1] if i<len(available_days)-1 else None
+    day_audio=audio_by_day.get(chosen)
+    audio_url=day_audio.url if day_audio and day_audio.url else content.audio_url
+    title=content.display_title or ('رژیم پرتقال' if content.master_item.name=='Por-150' else content.master_item.name)
+    slogan=content.slogan or ('لاغری یعنی زندگی بهتر' if content.master_item.name=='Por-150' else '')
+    slogan_photo=content.slogan_image.url if content.slogan_image else content.slogan_external_url
+    response=render(request,'core/diet_daily.html',{
+        'content':content,'title':title,'subtitle':content.hero_subtitle or 'برنامه غذایی اختصاصی',
+        'slogan':slogan,'slogan_photo':slogan_photo,'day':chosen,
+        'days':available_days,'prev_day':prev_day,'next_day':next_day,
+        'cards':_prepare_cards(s for s in sections if s.day_number==chosen),
+        'audio_url':audio_url,'can_manage':_admin(request),
+    })
+    response['Cache-Control']='private, no-store'
+    return response
