@@ -82,11 +82,11 @@ button,select{font:inherit}
  </div>
 </header>
 <div class="diet-title"><h1>{{ title }} 🍊</h1><p>{{ subtitle }}</p></div>
-<section class="diet-hero {% if content.cover_url %}has-image{% endif %}" {% if content.cover_url %}style="background-image:url('{{ content.cover_url|escapejs }}')"{% endif %} aria-label="{{ title }}">
+<section class="diet-hero {% if content.cover_url %}has-image{% endif %}" {% if content.cover_url %}style="background-image:url('{{ content.cover_url }}')"{% endif %} aria-label="{{ title }}">
   <div class="hero-copy"><h2>{{ title }}</h2><p>{{ subtitle }}</p></div>
 </section>
 {% if slogan %}
-<section class="diet-slogan {% if slogan_photo %}has-image{% endif %}" {% if slogan_photo %}style="background-image:url('{{ slogan_photo|escapejs }}')"{% endif %}><strong>{{ slogan }}</strong></section>
+<section class="diet-slogan {% if slogan_photo %}has-image{% endif %}" {% if slogan_photo %}style="background-image:url('{{ slogan_photo }}')"{% endif %}><strong>{{ slogan }}</strong></section>
 {% endif %}
 <section class="diet-voice" aria-label="صدای جادویی">
  <div><strong>صدای جادویی</strong><small>با هدفون گوش دهید</small></div>
