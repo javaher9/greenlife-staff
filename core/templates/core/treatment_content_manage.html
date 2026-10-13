@@ -16,7 +16,7 @@
 .tcm .muted{color:#a6bbbc;font-size:11px}
 </style>
 <div class="tcm">
-  <p><a href="{% url 'treatment_content_library' %}">← کتابخانه پنج نمونه</a> · <a href="{% url 'treatment_content_preview' content.master_item_id %}">پیش‌نمایش پزشک</a></p>
+  <p><a href="{% url 'treatment_content_library' %}">← کتابخانه پنج نمونه</a> · <a href="{% url 'treatment_content_preview' content.master_item_id %}">پیش‌نمایش متن اصلی</a> · {% if content.master_item.category == 'diet' %}<a href="{% url 'diet_daily_preview' content.master_item_id %}">قالب جدید موبایل</a>{% endif %}</p>
   <h1>مدیریت محتوا: {{ content.master_item.name }}</h1>
   <div class="panel">
     <p class="notice">این صفحه فقط متن و رسانه این محتوا را تغییر می‌دهد. عنوان ثابت و فهرست تجویز پزشک در بانک «خدمات و درمان‌ها» باقی می‌ماند.</p>
@@ -25,6 +25,10 @@
   </div>
   <div class="panel"><h2>اطلاعات اصلی و منابع رسانه</h2>
     <form method="post">{% csrf_token %}<input type="hidden" name="action" value="update_content">
+      <label>عنوان نمایشی برای بیمار (مثلاً رژیم پرتقال)</label><input name="display_title" value="{{ content.display_title }}" placeholder="در صورت خالی بودن، عنوان بانک اصلی نشان داده می‌شود">
+      <label>زیرعنوان تصویر اصلی</label><input name="hero_subtitle" value="{{ content.hero_subtitle }}" placeholder="برنامه غذایی اختصاصی">
+      <label>شعار انگیزشی</label><input name="slogan" value="{{ content.slogan }}" placeholder="لاغری یعنی زندگی بهتر">
+      <label>لینک عکس شعار (اختیاری؛ اولویت با عکس بارگذاری‌شده است)</label><input type="url" name="slogan_external_url" value="{{ content.slogan_external_url }}">
       <label>اخطار / توضیح بالای برنامه</label><textarea name="intro_warning" style="min-height:100px">{{ content.intro_warning }}</textarea>
       <label>لینک تصویر اصلی قدیمی</label><input type="url" name="cover_external_url" value="{{ content.cover_external_url }}">
       <label>لینک صوت اصلی قدیمی</label><input type="url" name="audio_external_url" value="{{ content.audio_external_url }}">
@@ -33,13 +37,27 @@
     <div class="compact">
       <form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="upload"><input type="hidden" name="location" value="cover"><input type="hidden" name="kind" value="image"><label>جایگزینی تصویر اصلی</label><input type="file" name="media_file" accept="image/*" required><button>آپلود عکس</button></form>
       <form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="upload"><input type="hidden" name="location" value="audio"><input type="hidden" name="kind" value="audio"><label>جایگزینی فایل صوتی اصلی</label><input type="file" name="media_file" accept=".mp3,.m4a,.mp4,.wav,.ogg" required><button>آپلود صوت</button></form>
+      <form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="upload"><input type="hidden" name="location" value="slogan"><input type="hidden" name="kind" value="image"><label>عکس کارت انگیزشی</label><input type="file" name="media_file" accept="image/*" required><button>آپلود عکس شعار</button></form>
     </div>
+  </div>
+  <div class="panel"><h2>صدای جادویی هر روز</h2>
+    <p>برای هر روز یک فایل صوتی جدا بارگذاری کنید. اگر فایل روزی موجود نباشد، صدای عمومی رژیم پخش می‌شود. زیر عنوان در صفحه بیمار همیشه «با هدفون گوش دهید» است.</p>
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="upload"><input type="hidden" name="location" value="daily_audio"><input type="hidden" name="kind" value="audio">
+      <div class="compact"><div><label>شماره روز</label><input name="day_number" type="number" min="1" max="366" value="1" required></div><div><label>فایل صوتی روز</label><input type="file" name="media_file" accept=".mp3,.m4a,.wav,.ogg,.mp4" required></div></div>
+      <button>ثبت صدای این روز</button>
+    </form>
+    {% for audio in day_audios %}<div class="media"><span>روز {{ audio.day_number }}</span>{% if audio.url %}<audio controls preload="none" src="{{ audio.url }}"></audio>{% endif %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="remove_day_audio"><input type="hidden" name="day_number" value="{{ audio.day_number }}"><button type="submit" style="background:#843e49">حذف</button></form></div>{% endfor %}
   </div>
   {% for section in sections %}
   <div class="panel">
     <h2>بخش {{ forloop.counter }} — {{ section.title }}</h2>
     <form method="post">{% csrf_token %}<input type="hidden" name="action" value="save_section"><input type="hidden" name="section_id" value="{{ section.pk }}">
       <div class="compact"><div><label>عنوان</label><input name="title" value="{{ section.title }}" required></div><div><label>ترتیب</label><input name="sort_order" type="number" min="0" max="9999" value="{{ section.sort_order }}"></div></div>
+      <div class="compact">
+        <div><label>روز برنامه</label><input name="day_number" type="number" min="1" max="366" value="{{ section.day_number }}" required></div>
+        <div><label>نوع وعده</label><select name="meal_slot"><option value="other" {% if section.meal_slot == 'other' %}selected{% endif %}>بخش عمومی/متن قدیمی</option><option value="breakfast" {% if section.meal_slot == 'breakfast' %}selected{% endif %}>صبحانه</option><option value="snack_am" {% if section.meal_slot == 'snack_am' %}selected{% endif %}>میان‌وعده صبح</option><option value="lunch" {% if section.meal_slot == 'lunch' %}selected{% endif %}>ناهار</option><option value="snack_pm" {% if section.meal_slot == 'snack_pm' %}selected{% endif %}>عصرانه</option><option value="dinner" {% if section.meal_slot == 'dinner' %}selected{% endif %}>شام</option></select></div>
+        <div><label>کالری کل این وعده (فقط مقدار تأییدشده)</label><input name="estimated_kcal" type="number" min="0" max="9999" value="{{ section.estimated_kcal|default_if_none:'' }}" placeholder="اختیاری"></div>
+      </div>
       <label>متن اصلی (با حفظ خطوط فارسی)</label><textarea name="body">{{ section.body }}</textarea>
       <button type="submit">ذخیره متن این بخش</button>
     </form>
@@ -56,6 +74,6 @@
     <form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="action" value="upload"><input type="hidden" name="location" value="section"><input type="hidden" name="section_id" value="{{ section.pk }}"><input type="hidden" name="kind" value="audio"><label>افزودن صوت</label><input type="file" name="media_file" accept=".mp3,.m4a,.mp4,.wav,.ogg" required><button>افزودن صوت</button></form>
     </div>
   </div>{% endfor %}
-  <div class="panel"><h2>افزودن بخش جدید</h2><form method="post">{% csrf_token %}<input type="hidden" name="action" value="add_section"><input name="title" placeholder="عنوان بخش جدید" required><button type="submit">افزودن بخش</button></form></div>
+  <div class="panel"><h2>افزودن بخش جدید</h2><form method="post">{% csrf_token %}<input type="hidden" name="action" value="add_section"><div class="compact"><div><label>عنوان وعده یا بخش</label><input name="title" placeholder="مثلاً صبحانه" required></div><div><label>روز</label><input name="day_number" type="number" min="1" max="366" value="1" required></div><div><label>نوع وعده</label><select name="meal_slot"><option value="other">بخش عمومی</option><option value="breakfast">صبحانه</option><option value="snack_am">میان‌وعده صبح</option><option value="lunch">ناهار</option><option value="snack_pm">عصرانه</option><option value="dinner">شام</option></select></div></div><button type="submit">افزودن بخش</button></form></div>
 </div>
 {% endblock %}
