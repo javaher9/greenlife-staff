@@ -63,13 +63,14 @@
     {% for row in orange_rows %}
     <div style="padding:13px 0;border-bottom:1px solid #365366">
       <h2>{{ row.name }} {% if row.manual %}<span class="muted">(شخصی‌سازی‌شده)</span>{% else %}<span class="muted">(از نسخه اصلی / پیش‌فرض)</span>{% endif %}</h2>
-      <form method="post">{% csrf_token %}
+      <form method="post" enctype="multipart/form-data">{% csrf_token %}
         <input type="hidden" name="action" value="save_orange_meal">
         <input type="hidden" name="week_day" value="{{ orange_day }}">
         <input type="hidden" name="week_slot" value="{{ row.slot }}">
         <label>محتوای این وعده</label>
         <textarea name="week_body" rows="4" style="min-height:110px">{{ row.body }}</textarea>
         <div style="max-width:230px"><label>کالری تأییدشده (اختیاری)</label><input type="number" min="0" max="9999" name="week_kcal" value="{{ row.kcal|default_if_none:'' }}"></div>
+        <label>عکس مرتبط همین وعده (اختیاری)</label><input name="week_image" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
         <button type="submit">ثبت این وعده</button>
       </form>
       {% if row.manual %}
