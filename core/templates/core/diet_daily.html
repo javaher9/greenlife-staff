@@ -1,0 +1,124 @@
+{% load static %}
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>{{ title }} | گرین‌لایف</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap');
+:root{color-scheme:light;--ink:#123b35;--mute:#526b65;--bg:#f1faf2;--mint:#d9f0df;--green:#256748;--line:#dfede2}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Vazirmatn,Tahoma,Arial,sans-serif}
+a{color:inherit;text-decoration:none}
+button,select{font:inherit}
+.diet-app{width:min(100%,650px);min-height:100vh;margin:auto;padding:14px 14px 110px}
+.diet-top{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:14px}
+.diet-brand{display:flex;align-items:center;gap:6px;color:#205c3f;font-weight:900;font-size:16px;white-space:nowrap}
+.diet-brand em{display:grid;place-items:center;background:#266b48;color:white;width:33px;height:33px;border-radius:11px;font-style:normal}
+.diet-pick{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e1eee3;border-radius:99px;padding:8px 12px;font-size:12px;min-width:0}
+.diet-pick a{font-weight:900;font-size:20px;line-height:1.2;color:#1d6142}
+.diet-pick a.off{opacity:.22;pointer-events:none}
+.diet-pick span{white-space:nowrap}
+.diet-title{text-align:center;margin:0 0 14px}
+.diet-title h1{margin:0;font-size:24px;color:#132f3b;line-height:1.5;font-weight:900}
+.diet-title p{margin:0;color:#71837c;font-size:12px}
+.diet-hero,.diet-slogan{border-radius:20px;overflow:hidden;margin:0 0 13px;position:relative}
+.diet-hero{min-height:156px;background:#d8eee1;display:flex;align-items:center}
+.diet-hero.has-image{background-size:cover;background-position:center}
+.diet-hero.has-image:before{content:'';position:absolute;inset:0;background:rgba(246,251,244,.72);width:55%;border-radius:0 20px 20px 0}
+.diet-hero .hero-copy{position:relative;z-index:1;padding:18px 20px;width:57%}
+.diet-hero h2{font-size:26px;font-weight:900;margin:0 0 6px;line-height:1.55}
+.diet-hero p{font-size:12px;font-weight:650;margin:0;line-height:1.85}
+.diet-slogan{min-height:108px;background:#d9f0df;display:flex;align-items:center;padding:12px 18px}
+.diet-slogan.has-image{background-size:cover;background-position:center}
+.diet-slogan.has-image:before{content:'';position:absolute;inset:0;background:rgba(225,246,227,.8);width:68%;border-radius:0 20px 20px 0}
+.diet-slogan strong{position:relative;z-index:1;font-weight:900;font-size:19px;line-height:1.7;max-width:70%}
+.diet-voice{display:flex;align-items:center;gap:12px;border-radius:19px;background:#d9f0df;padding:14px 15px;margin:0 0 14px}
+.diet-voice strong{display:block;font-size:16px;font-weight:900}
+.diet-voice small{display:block;color:#557b64;font-size:11px}
+.diet-voice audio{width:100%;height:36px;accent-color:#286b4a}
+.diet-voice .audio-wrap{flex:1;min-width:0}
+.diet-muted{font-size:12px;color:#597c70}
+.diet-list{display:grid;gap:12px}
+.diet-card{background:#fff;border:1px solid #e2ece6;border-radius:20px;overflow:hidden;box-shadow:0 6px 16px #14463008}
+.diet-meal{display:grid;grid-template-columns:40% minmax(0,1fr);direction:rtl;min-height:150px}
+.diet-picture{position:relative;min-height:150px;background:#e6f1e7;overflow:hidden}
+.diet-picture img{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0}
+.diet-picture .label{position:absolute;right:8px;top:9px;padding:7px 11px;border-radius:99px;background:#174c38eb;color:white;font-size:12px;font-weight:900;max-width:calc(100% - 14px)}
+.diet-picture .empty{display:flex;justify-content:center;align-items:center;height:100%;font-size:36px;color:#7ea68e}
+.diet-info{padding:12px 14px;display:flex;flex-direction:column;min-width:0}
+.diet-meal-title{font-size:14px;font-weight:900;margin-bottom:4px}
+.diet-lines{padding:0 14px 0 0;margin:4px 0;color:#324b4b;font-size:12px;line-height:1.9}
+.diet-lines li{margin:0}
+.diet-kcal{font-weight:850;font-size:13px;color:#20694b;margin-top:auto;padding-top:5px}
+.diet-empty-kcal{height:4px;margin-top:auto}
+.diet-card details{border-top:1px solid #f0f3ef;padding:0 14px}
+.diet-card summary{cursor:pointer;font-size:12px;font-weight:800;padding:9px 0;color:#2a7255}
+.diet-full-text{font-size:12px;line-height:2.1;white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 14px;color:#344d46}
+.diet-more{margin-top:15px;padding:18px;background:white;border-radius:18px;color:#6e8178;text-align:center;font-size:12px}
+.diet-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:17px}
+.diet-action{background:#fff;border:1px solid #e5efe7;border-radius:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px 2px;min-height:78px;font-size:10px;font-weight:800;text-align:center}
+.diet-action b{display:grid;place-items:center;width:35px;height:35px;border-radius:50%;font-size:18px;color:#fff;background:#35a477}
+.diet-action.points b{background:#7b54d5}.diet-action.device b{background:#2caa98}.diet-action.visit b{background:#3294df}.diet-action.insta b{background:#bc4aa8}
+.diet-bottom{position:sticky;bottom:0;display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin:15px -14px -110px;padding:12px 10px calc(16px + env(safe-area-inset-bottom));background:#fff;border-radius:25px 25px 0 0;border:1px solid #e9f1e7;box-shadow:0 -9px 25px #1f5a3111}
+.diet-bottom a{text-align:center;color:#657569;font-size:11px;font-weight:800}.diet-bottom a.active{color:#145a3c}
+.diet-bottom span{display:block;font-size:23px;line-height:1.6}
+.diet-admin{text-align:center;font-size:11px;color:#27664d;margin-top:12px}
+@media(min-width:651px){.diet-app{border-inline:1px solid #e4eee6}.diet-meal{min-height:165px}.diet-picture{min-height:165px}}
+@media(max-width:390px){.diet-app{padding-inline:9px}.diet-top{gap:5px}.diet-brand{font-size:12px}.diet-brand em{width:25px;height:25px}.diet-pick{gap:5px;padding:8px}.diet-title h1{font-size:21px}.diet-hero h2{font-size:23px}.diet-slogan strong{font-size:16px}.diet-meal{grid-template-columns:40% minmax(0,1fr)}.diet-lines{font-size:11px}.diet-info{padding:10px}.diet-bottom{margin-inline:-9px}}
+@media print{body{background:#fff}.diet-app{padding:0 10px}.diet-actions,.diet-bottom,.diet-admin,.diet-pick,.diet-card summary{display:none}.diet-card{break-inside:avoid;box-shadow:none}}
+</style>
+</head>
+<body>
+<main class="diet-app">
+<header class="diet-top">
+ <div class="diet-brand"><em>❧</em> گرین‌لایف</div>
+ <div class="diet-pick">
+  {% if prev_day %}<a aria-label="روز قبل" href="?day={{ prev_day }}">❯</a>{% else %}<a class="off" aria-hidden="true">❯</a>{% endif %}
+  <span>▣ روز {{ day }} از {{ days|length }}</span>
+  {% if next_day %}<a aria-label="روز بعد" href="?day={{ next_day }}">❮</a>{% else %}<a class="off" aria-hidden="true">❮</a>{% endif %}
+ </div>
+</header>
+<div class="diet-title"><h1>{{ title }} 🍊</h1><p>{{ subtitle }}</p></div>
+<section class="diet-hero {% if content.cover_url %}has-image{% endif %}" {% if content.cover_url %}style="background-image:url('{{ content.cover_url|escapejs }}')"{% endif %} aria-label="{{ title }}">
+  <div class="hero-copy"><h2>{{ title }}</h2><p>{{ subtitle }}</p></div>
+</section>
+{% if slogan %}
+<section class="diet-slogan {% if slogan_photo %}has-image{% endif %}" {% if slogan_photo %}style="background-image:url('{{ slogan_photo|escapejs }}')"{% endif %}><strong>{{ slogan }}</strong></section>
+{% endif %}
+<section class="diet-voice" aria-label="صدای جادویی">
+ <div><strong>صدای جادویی</strong><small>با هدفون گوش دهید</small></div>
+ <div class="audio-wrap">{% if audio_url %}<audio controls preload="none" controlsList="nodownload" src="{{ audio_url }}"></audio>{% else %}<span class="diet-muted">فایل صوتی هنوز ثبت نشده است.</span>{% endif %}</div>
+</section>
+<section class="diet-list" aria-label="وعده‌های روز">
+{% for card in cards %}
+<article class="diet-card">
+ <div class="diet-meal">
+  <div class="diet-picture">{% if card.photo %}<img src="{{ card.photo }}" alt="تصویر مرتبط با {{ card.label }}" loading="lazy">{% else %}<div class="empty">❧</div>{% endif %}<span class="label">{{ card.label }}</span></div>
+  <div class="diet-info">
+   {% if card.title != card.label %}<div class="diet-meal-title">{{ card.title }}</div>{% endif %}
+   <ul class="diet-lines">{% for line in card.summary %}{% if line %}<li>{{ line }}</li>{% endif %}{% endfor %}</ul>
+   {% if card.calories is not None %}<div class="diet-kcal">🔥 {{ card.calories }} کالری</div>{% else %}<div class="diet-empty-kcal"></div>{% endif %}
+  </div>
+ </div>
+ {% if card.body %}<details><summary>مشاهده توضیحات کامل</summary><p class="diet-full-text">{{ card.body }}</p></details>{% endif %}
+</article>
+{% empty %}<div class="diet-more">برنامه این روز هنوز وارد نشده است.</div>{% endfor %}
+</section>
+<nav class="diet-actions" aria-label="خدمات">
+ <a class="diet-action points" href="{% url 'referral_dashboard' %}"><b>♕</b>کسب امتیاز</a>
+ <a class="diet-action device" href="{% url 'device_booking_schedule' %}"><b>▣</b>نوبت دستگاه</a>
+ <a class="diet-action visit" href="{% url 'appointment_schedule' %}"><b>▦</b>نوبت ویزیت جدید</a>
+ <a class="diet-action insta" href="https://www.instagram.com/greenlifeclinics/" target="_blank" rel="noopener noreferrer"><b>◎</b>اینستاگرام</a>
+</nav>
+{% if can_manage %}<div class="diet-admin"><a href="{% url 'treatment_content_manage' content.master_item_id %}">ویرایش این رژیم در تنظیمات</a></div>{% endif %}
+<nav class="diet-bottom" aria-label="پیمایش پایین">
+ <a href="{% url 'referral_dashboard' %}"><span>⌂</span>خانه</a>
+ <a href="{% url 'diet_daily_preview' content.master_item_id %}?day={{ day }}" class="active"><span>♜</span>برنامه غذایی</a>
+ <a href="{% url 'treatment_content_browse' %}"><span>✧</span>توصیه‌ها</a>
+ <a href="{% url 'doctor_dashboard' %}"><span>•••</span>بیشتر</a>
+</nav>
+</main>
+</body></html>
