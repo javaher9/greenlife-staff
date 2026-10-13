@@ -48,14 +48,50 @@
     </form>
     {% for audio in day_audios %}<div class="media"><span>روز {{ audio.day_number }}</span>{% if audio.url %}<audio controls preload="none" src="{{ audio.url }}"></audio>{% endif %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="remove_day_audio"><input type="hidden" name="day_number" value="{{ audio.day_number }}"><button type="submit" style="background:#843e49">حذف</button></form></div>{% endfor %}
   </div>
+  {% if orange_only %}
+  <section id="orange-week-editor" class="panel">
+    <h2>تنظیم هفت‌روزه رژیم پرتقال</h2>
+    <p class="notice">این تنظیمات فقط برای Por-150 است. متن اصلی ۵ فایل دست‌نخورده می‌ماند. پیش‌فرض مشترک در تمام روزها به کار می‌رود، مگر برای یک روز، وعده‌ای اختصاصی داشته باشیم. کالری بدون تأیید پزشکی خالی بماند.</p>
+    <form method="get" style="max-width:320px">
+      <label>روز مورد نظر برای ویرایش</label>
+      <select name="week_day" onchange="this.form.submit()">
+        <option value="0" {% if orange_day == 0 %}selected{% endif %}>پیش‌فرض مشترک همه روزها</option>
+        {% for number,name in orange_days %}<option value="{{ number }}" {% if orange_day == number %}selected{% endif %}>{{ name }}</option>{% endfor %}
+      </select>
+      <button type="submit">نمایش روز</button>
+    </form>
+    {% for row in orange_rows %}
+    <div style="padding:13px 0;border-bottom:1px solid #365366">
+      <h2>{{ row.name }} {% if row.manual %}<span class="muted">(شخصی‌سازی‌شده)</span>{% else %}<span class="muted">(از نسخه اصلی / پیش‌فرض)</span>{% endif %}</h2>
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="action" value="save_orange_meal">
+        <input type="hidden" name="week_day" value="{{ orange_day }}">
+        <input type="hidden" name="week_slot" value="{{ row.slot }}">
+        <label>محتوای این وعده</label>
+        <textarea name="week_body" rows="4" style="min-height:110px">{{ row.body }}</textarea>
+        <div style="max-width:230px"><label>کالری تأییدشده (اختیاری)</label><input type="number" min="0" max="9999" name="week_kcal" value="{{ row.kcal|default_if_none:'' }}"></div>
+        <button type="submit">ثبت این وعده</button>
+      </form>
+      {% if row.manual %}
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="action" value="clear_orange_meal">
+        <input type="hidden" name="week_day" value="{{ orange_day }}">
+        <input type="hidden" name="week_slot" value="{{ row.slot }}">
+        <button type="submit" style="background:#415769">بازگشت به پیش‌فرض</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
   {% for section in sections %}
   <div class="panel">
     <h2>بخش {{ forloop.counter }} — {{ section.title }}</h2>
     <form method="post">{% csrf_token %}<input type="hidden" name="action" value="save_section"><input type="hidden" name="section_id" value="{{ section.pk }}">
       <div class="compact"><div><label>عنوان</label><input name="title" value="{{ section.title }}" required></div><div><label>ترتیب</label><input name="sort_order" type="number" min="0" max="9999" value="{{ section.sort_order }}"></div></div>
       <div class="compact">
-        <div><label>روز برنامه</label><input name="day_number" type="number" min="1" max="366" value="{{ section.day_number }}" required></div>
-        <div><label>نوع وعده</label><select name="meal_slot"><option value="other" {% if section.meal_slot == 'other' %}selected{% endif %}>بخش عمومی/متن قدیمی</option><option value="breakfast" {% if section.meal_slot == 'breakfast' %}selected{% endif %}>صبحانه</option><option value="snack_am" {% if section.meal_slot == 'snack_am' %}selected{% endif %}>میان‌وعده صبح</option><option value="lunch" {% if section.meal_slot == 'lunch' %}selected{% endif %}>ناهار</option><option value="snack_pm" {% if section.meal_slot == 'snack_pm' %}selected{% endif %}>عصرانه</option><option value="dinner" {% if section.meal_slot == 'dinner' %}selected{% endif %}>شام</option></select></div>
+        <div><label>روز برنامه</label><input name="day_number" type="number" min="{% if orange_only %}0{% else %}1{% endif %}" max="366" value="{{ section.day_number }}" required></div>
+        <div><label>نوع وعده</label><select name="meal_slot"><option value="other" {% if section.meal_slot == 'other' %}selected{% endif %}>بخش عمومی/متن قدیمی</option>{% if orange_only %}<option value="fasting" {% if section.meal_slot == 'fasting' %}selected{% endif %}>ناشتا</option>{% endif %}<option value="breakfast" {% if section.meal_slot == 'breakfast' %}selected{% endif %}>صبحانه</option><option value="snack_am" {% if section.meal_slot == 'snack_am' %}selected{% endif %}>میان‌وعده صبح</option><option value="lunch" {% if section.meal_slot == 'lunch' %}selected{% endif %}>ناهار</option><option value="snack_pm" {% if section.meal_slot == 'snack_pm' %}selected{% endif %}>عصرانه</option><option value="dinner" {% if section.meal_slot == 'dinner' %}selected{% endif %}>شام</option></select></div>
         <div><label>کالری کل این وعده (فقط مقدار تأییدشده)</label><input name="estimated_kcal" type="number" min="0" max="9999" value="{{ section.estimated_kcal|default_if_none:'' }}" placeholder="اختیاری"></div>
       </div>
       <label>متن اصلی (با حفظ خطوط فارسی)</label><textarea name="body">{{ section.body }}</textarea>
