@@ -9,6 +9,8 @@ import re
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import render
+from django.utils import timezone
+from .diet_week_plan import DAYS, build_orange_week
 from django.views.decorators.http import require_GET
 
 from .treatment_content_layout import build_section_preview
@@ -94,12 +96,22 @@ def diet_daily_preview(request,item_id):
     if content.master_item.category!='diet':
         raise Http404('این مورد رژیم غذایی نیست.')
     sections=list(content.sections.prefetch_related('media').all())
+    orange_only=(content.master_item.name=='Por-150')
     audio_by_day={row.day_number:row for row in content.daily_audio.all()}
-    available_days=sorted({s.day_number for s in sections}|set(audio_by_day)) or [1]
+    if orange_only:
+        # Saturday=1 ... Friday=7, calculated in the configured local timezone.
+        available_days=list(range(1,8))
+        suggested_day=(timezone.localdate().weekday()+2)%7+1
+        week=build_orange_week(sections)
+    else:
+        # Every non-orange diet preserves its previous behavior.
+        available_days=sorted({s.day_number for s in sections}|set(audio_by_day)) or [1]
+        suggested_day=available_days[0]
+        week=None
     try:
-        chosen=int(request.GET.get('day',available_days[0]))
+        chosen=int(request.GET.get('day',suggested_day))
     except (ValueError,TypeError):
-        chosen=available_days[0]
+        chosen=suggested_day
     if chosen not in available_days:
         raise Http404('برای این روز برنامه ثبت نشده است.')
     i=available_days.index(chosen)
@@ -114,7 +126,9 @@ def diet_daily_preview(request,item_id):
         'content':content,'title':title,'subtitle':content.hero_subtitle or 'برنامه غذایی اختصاصی',
         'slogan':slogan,'slogan_photo':slogan_photo,'day':chosen,
         'days':available_days,'day_total':max(available_days),'prev_day':prev_day,'next_day':next_day,
-        'cards':_prepare_cards(s for s in sections if s.day_number==chosen),
+        'cards':week[chosen] if orange_only else _prepare_cards(s for s in sections if s.day_number==chosen),
+        'orange_only':orange_only,'day_name':DAYS[chosen-1] if orange_only else '',
+        'day_choices':list(enumerate(DAYS,start=1)) if orange_only else [],
         'audio_url':audio_url,'can_manage':_admin(request),
     })
     response['Cache-Control']='private, no-store'
