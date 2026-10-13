@@ -60,3 +60,77 @@ class DailyDietPresentationTests(TestCase):
         self.client.logout()
         response=self.client.get(reverse('diet_daily_preview',args=[self.item.pk]))
         self.assertEqual(response.status_code,302)
+
+
+class OrangeOnlyWeekTests(TestCase):
+    def setUp(self):
+        self.admin=User.objects.create_superuser('orange-admin','orange@example.com','test-pass')
+        self.client.force_login(self.admin)
+        self.orange=TreatmentCatalogItem.objects.create(category='diet',name='Por-150')
+        self.orange_content=TreatmentRichContent.objects.create(master_item=self.orange)
+        self.other=TreatmentCatalogItem.objects.create(category='diet',name='Keto-Fast')
+        self.other_content=TreatmentRichContent.objects.create(master_item=self.other)
+
+    def test_original_weekday_lunch_and_dinner_are_separated(self):
+        TreatmentRichSection.objects.create(
+            content=self.orange_content,title='برنامه غذایی',
+            body='صبحانه\nنان سبوس‌دار و پنیر\nناهار\nشنبه: مرغ با سبزیجات\nیکشنبه: ماهی و سالاد\nشام\nشنبه: سوپ\nیکشنبه: خوراک سبزیجات',
+        )
+        saturday=self.client.get(reverse('diet_daily_preview',args=[self.orange.pk])+'?day=1')
+        sunday=self.client.get(reverse('diet_daily_preview',args=[self.orange.pk])+'?day=2')
+        self.assertContains(saturday,'نان سبوس‌دار و پنیر')
+        self.assertContains(sunday,'نان سبوس‌دار و پنیر')
+        self.assertContains(saturday,'مرغ با سبزیجات')
+        self.assertNotContains(saturday,'ماهی و سالاد')
+        self.assertContains(sunday,'ماهی و سالاد')
+        self.assertNotContains(sunday,'مرغ با سبزیجات')
+        self.assertContains(saturday,'سوپ')
+        self.assertContains(sunday,'خوراک سبزیجات')
+        self.assertContains(saturday,'شنبه')
+        self.assertContains(sunday,'یکشنبه')
+        self.assertContains(saturday,'touchstart')
+
+    def test_rotates_only_explicit_shared_breakfast_alternatives(self):
+        TreatmentRichSection.objects.create(
+            content=self.orange_content,title='برنامه غذایی',
+            body='صبحانه\nنان و پنیر\nیا\nتخم مرغ و نان\nناهار\nشنبه: مرغ و برنج\nیکشنبه: ماهی',
+        )
+        saturday=self.client.get(reverse('diet_daily_preview',args=[self.orange.pk])+'?day=1')
+        sunday=self.client.get(reverse('diet_daily_preview',args=[self.orange.pk])+'?day=2')
+        self.assertContains(saturday,'نان و پنیر')
+        self.assertNotContains(saturday,'تخم مرغ و نان')
+        self.assertContains(sunday,'تخم مرغ و نان')
+        self.assertNotContains(sunday,'نان و پنیر')
+
+    def test_manual_weekday_override_leaves_source_untouched(self):
+        source=TreatmentRichSection.objects.create(
+            content=self.orange_content,title='برنامه غذایی',
+            body='صبحانه\nنان و پنیر\nناهار\nشنبه: مرغ\nیکشنبه: ماهی',
+        )
+        response=self.client.post(reverse('treatment_content_manage',args=[self.orange.pk]),{
+            'action':'save_orange_meal','week_day':'2','week_slot':'lunch',
+            'week_body':'غذای جایگزین تایید شده پزشک','week_kcal':'275',
+        })
+        self.assertEqual(response.status_code,302)
+        source.refresh_from_db()
+        self.assertIn('یکشنبه: ماهی',source.body)
+        saturday=self.client.get(reverse('diet_daily_preview',args=[self.orange.pk])+'?day=1')
+        sunday=self.client.get(reverse('diet_daily_preview',args=[self.orange.pk])+'?day=2')
+        self.assertContains(saturday,'مرغ')
+        self.assertContains(sunday,'غذای جایگزین تایید شده پزشک')
+        self.assertNotContains(sunday,'یکشنبه: ماهی')
+        self.assertContains(sunday,'275 کالری')
+
+    def test_other_diet_retains_original_single_day_template_and_disallows_week_editor(self):
+        TreatmentRichSection.objects.create(
+            content=self.other_content,title='برنامه غذایی',body='برنامه مخصوص کتو فست',
+        )
+        page=self.client.get(reverse('diet_daily_preview',args=[self.other.pk]))
+        self.assertContains(page,'برنامه مخصوص کتو فست')
+        self.assertNotContains(page,'touchstart')
+        self.assertEqual(self.client.get(reverse('diet_daily_preview',args=[self.other.pk])+'?day=7').status_code,404)
+        response=self.client.post(reverse('treatment_content_manage',args=[self.other.pk]),{
+            'action':'save_orange_meal','week_day':'2','week_slot':'lunch','week_body':'نباید ثبت شود',
+        })
+        self.assertEqual(response.status_code,403)
+        self.assertFalse(TreatmentRichSection.objects.filter(content=self.other_content,body='نباید ثبت شود').exists())
