@@ -21,6 +21,15 @@ button,select{font:inherit}
 .diet-pick a{font-weight:900;font-size:20px;line-height:1.2;color:#1d6142}
 .diet-pick a.off{opacity:.22;pointer-events:none}
 .diet-pick span{white-space:nowrap}
+.orange-week .diet-pick{box-shadow:0 3px 12px #184a2f0c;gap:6px}
+.orange-week .diet-pick select{border:0;background:transparent;min-width:92px;color:#1d6142;font-size:12px;font-weight:900;direction:rtl;outline:none;cursor:pointer}
+.orange-week .diet-pick form{margin:0}
+.orange-week .diet-card{background:#fff}
+.orange-week .diet-meal-title{font-size:14px}
+.orange-week .diet-lines{line-height:2.05}
+.orange-week .diet-picture .label{background:#185b40f0}
+.orange-week .diet-info{min-width:0}
+.orange-week .diet-full-text{font-size:13px}
 .diet-title{text-align:center;margin:0 0 14px}
 .diet-title h1{margin:0;font-size:24px;color:#132f3b;line-height:1.5;font-weight:900}
 .diet-title p{margin:0;color:#71837c;font-size:12px}
@@ -71,13 +80,18 @@ button,select{font:inherit}
 @media print{body{background:#fff}.diet-app{padding:0 10px}.diet-actions,.diet-bottom,.diet-admin,.diet-pick,.diet-card summary{display:none}.diet-card{break-inside:avoid;box-shadow:none}}
 </style>
 </head>
-<body>
+<body class="{% if orange_only %}orange-week{% endif %}">
 <main class="diet-app">
 <header class="diet-top">
  <div class="diet-brand"><em>❧</em> گرین‌لایف</div>
  <div class="diet-pick">
   {% if prev_day %}<a aria-label="روز قبل" href="?day={{ prev_day }}">❯</a>{% else %}<a class="off" aria-hidden="true">❯</a>{% endif %}
-  <span>▣ روز {{ day }} از {{ day_total }}</span>
+  {% if orange_only %}
+  <form method="get" action=""><label for="orange-day" class="sr-only" style="position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden">روز هفته</label>
+  <select id="orange-day" name="day" onchange="this.form.submit()" aria-label="انتخاب روز هفته">
+   {% for number,label in day_choices %}<option value="{{ number }}" {% if number == day %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select></form>
+  {% else %}<span>▣ روز {{ day }} از {{ day_total }}</span>{% endif %}
   {% if next_day %}<a aria-label="روز بعد" href="?day={{ next_day }}">❮</a>{% else %}<a class="off" aria-hidden="true">❮</a>{% endif %}
  </div>
 </header>
@@ -121,4 +135,28 @@ button,select{font:inherit}
  <a href="{% url 'doctor_dashboard' %}"><span>•••</span>بیشتر</a>
 </nav>
 </main>
+{% if orange_only %}
+<script>
+(function(){
+  // Horizontal gestures switch diet days; vertical scrolling and controls are untouched.
+  const region=document.querySelector('.diet-app');
+  let start=null;
+  const ignored='a,button,input,select,textarea,audio,video,details,summary,[contenteditable]';
+  region.addEventListener('touchstart',function(e){
+    if(e.touches.length!==1||e.target.closest(ignored)){start=null;return;}
+    start={x:e.touches[0].clientX,y:e.touches[0].clientY};
+  },{passive:true});
+  region.addEventListener('touchend',function(e){
+    if(!start||e.changedTouches.length!==1)return;
+    const dx=e.changedTouches[0].clientX-start.x,dy=e.changedTouches[0].clientY-start.y;
+    start=null;
+    if(Math.abs(dx)<65||Math.abs(dx)<Math.abs(dy)*1.45)return;
+    const previous={{ prev_day|default:"null" }};
+    const following={{ next_day|default:"null" }};
+    const desired=dx<0?following:previous;
+    if(desired!==null) window.location.href='?day='+desired;
+  },{passive:true});
+})();
+</script>
+{% endif %}
 </body></html>
