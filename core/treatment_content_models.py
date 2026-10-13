@@ -11,6 +11,12 @@ class TreatmentRichContent(models.Model):
     cover_external_url=models.URLField(max_length=1300,blank=True)
     cover_file=models.ImageField(upload_to='treatment-content/covers/%Y/%m/',blank=True)
     intro_warning=models.TextField(blank=True)
+    # Mobile diet presentation; original imported diet data remains untouched.
+    display_title=models.CharField(max_length=160,blank=True)
+    hero_subtitle=models.CharField(max_length=240,blank=True)
+    slogan=models.CharField(max_length=240,blank=True)
+    slogan_image=models.ImageField(upload_to='treatment-content/slogans/%Y/%m/',blank=True)
+    slogan_external_url=models.URLField(max_length=1300,blank=True)
     audio_external_url=models.URLField(max_length=1300,blank=True)
     audio_file=models.FileField(upload_to='treatment-content/audio/%Y/%m/',blank=True)
     origin=models.CharField(max_length=100,blank=True)
@@ -38,6 +44,13 @@ class TreatmentRichSection(models.Model):
     )
     title=models.CharField(max_length=200)
     body=models.TextField(blank=True)
+    day_number=models.PositiveSmallIntegerField(default=1)
+    MEAL_CHOICES=[
+        ('other','بخش عمومی'),('breakfast','صبحانه'),('snack_am','میان‌وعده صبح'),
+        ('lunch','ناهار'),('snack_pm','عصرانه'),('dinner','شام'),
+    ]
+    meal_slot=models.CharField(max_length=16,choices=MEAL_CHOICES,default='other')
+    estimated_kcal=models.PositiveSmallIntegerField(null=True,blank=True)
     sort_order=models.PositiveSmallIntegerField(default=0)
 
     class Meta:
@@ -63,3 +76,19 @@ class TreatmentRichMedia(models.Model):
     @property
     def url(self):
         return self.uploaded_file.url if self.uploaded_file else self.original_url
+
+
+class TreatmentDietDayAudio(models.Model):
+    """An optional clinician-provided audio clip for one day of a diet."""
+    content=models.ForeignKey(TreatmentRichContent,on_delete=models.CASCADE,related_name='daily_audio')
+    day_number=models.PositiveSmallIntegerField()
+    audio_file=models.FileField(upload_to='treatment-content/daily-audio/%Y/%m/',blank=True)
+    external_url=models.URLField(max_length=1300,blank=True)
+    class Meta:
+        constraints=[
+            models.UniqueConstraint(fields=['content','day_number'],name='treatment_diet_day_audio_unique'),
+        ]
+        ordering=['day_number']
+    @property
+    def url(self):
+        return self.audio_file.url if self.audio_file else self.external_url
