@@ -13,7 +13,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_GET, require_http_methods
 
 from .models import (
-    TreatmentCatalogItem, TreatmentRichContent, TreatmentRichSection, TreatmentRichMedia,
+    TreatmentCatalogItem, TreatmentRichContent, TreatmentRichSection, TreatmentRichMedia, TreatmentDietDayAudio,
 )
 from .treatment_content_service import import_five_sample_zip
 from .treatment_content_layout import build_section_preview
@@ -139,6 +139,10 @@ def treatment_content_manage(request, item_id):
                 messages.success(request,'وضعیت محتوا و قابلیت انتخاب آن در پنل پزشک هم‌زمان ذخیره شد.')
             elif action=='update_content':
                 content.intro_warning=request.POST.get('intro_warning','')[:8000]
+                content.display_title=(request.POST.get('display_title') or '').strip()[:160]
+                content.hero_subtitle=(request.POST.get('hero_subtitle') or '').strip()[:240]
+                content.slogan=(request.POST.get('slogan') or '').strip()[:240]
+                content.slogan_external_url=(request.POST.get('slogan_external_url') or '').strip()[:1300]
                 content.cover_external_url=request.POST.get('cover_external_url','')[:1300]
                 content.audio_external_url=request.POST.get('audio_external_url','')[:1300]
                 content.full_clean()
@@ -147,6 +151,13 @@ def treatment_content_manage(request, item_id):
             elif action=='save_section':
                 section=get_object_or_404(content.sections,pk=request.POST.get('section_id'))
                 section.title=(request.POST.get('title') or '').strip()[:200]
+                section.day_number=max(1,min(366,int(request.POST.get('day_number') or 1)))
+                slot=(request.POST.get('meal_slot') or 'other').strip()
+                if slot not in dict(TreatmentRichSection.MEAL_CHOICES):
+                    raise ValueError('نوع وعده معتبر نیست.')
+                section.meal_slot=slot
+                raw_cal=(request.POST.get('estimated_kcal') or '').strip()
+                section.estimated_kcal=max(0,min(9999,int(raw_cal))) if raw_cal else None
                 section.body=request.POST.get('body','')[:150000]
                 section.sort_order=max(0,min(9999,int(request.POST.get('sort_order','0'))))
                 if not section.title:
@@ -158,7 +169,14 @@ def treatment_content_manage(request, item_id):
                 if not title:
                     raise ValueError('عنوان بخش الزامی است.')
                 max_order=(content.sections.order_by('-sort_order').values_list('sort_order',flat=True).first() or 0)
-                content.sections.create(title=title,body='',sort_order=min(max_order+10,9999))
+                day=max(1,min(366,int(request.POST.get('day_number') or 1)))
+                slot=(request.POST.get('meal_slot') or 'other').strip()
+                if slot not in dict(TreatmentRichSection.MEAL_CHOICES):
+                    raise ValueError('نوع وعده معتبر نیست.')
+                content.sections.create(
+                    title=title,body='',day_number=day,meal_slot=slot,
+                    sort_order=min(max_order+10,9999),
+                )
                 messages.success(request,'بخش جدید افزوده شد.')
             elif action=='upload':
                 kind=request.POST.get('kind','')
@@ -182,12 +200,27 @@ def treatment_content_manage(request, item_id):
                     content.cover_file.save(file.name,file,save=True)
                 elif location=='audio' and kind=='audio':
                     content.audio_file.save(file.name,file,save=True)
+                elif location=='slogan' and kind=='image':
+                    content.slogan_image.save(file.name,file,save=True)
+                elif location=='daily_audio' and kind=='audio':
+                    day=max(1,min(366,int(request.POST.get('day_number') or 1)))
+                    audio_row,_=TreatmentDietDayAudio.objects.get_or_create(
+                        content=content,day_number=day,
+                    )
+                    audio_row.audio_file.save(file.name,file,save=True)
                 else:
                     section=get_object_or_404(content.sections,pk=request.POST.get('section_id'))
                     position=(section.media.order_by('-sort_order').values_list('sort_order',flat=True).first() or 0)+10
                     media=TreatmentRichMedia(section=section,kind=kind,sort_order=min(position,9999))
                     media.uploaded_file.save(file.name,file,save=True)
                 messages.success(request,'فایل روی سرور ذخیره شد.')
+            elif action=='remove_day_audio':
+                day=max(1,min(366,int(request.POST.get('day_number') or 1)))
+                audio_row=get_object_or_404(TreatmentDietDayAudio,content=content,day_number=day)
+                if audio_row.audio_file:
+                    audio_row.audio_file.delete(save=False)
+                audio_row.delete()
+                messages.success(request,'صدای اختصاصی روز حذف شد.')
             elif action=='remove_media':
                 medium=get_object_or_404(TreatmentRichMedia,pk=request.POST.get('media_id'),section__content=content)
                 if medium.uploaded_file:
@@ -201,5 +234,5 @@ def treatment_content_manage(request, item_id):
         return redirect('treatment_content_manage',item_id=item_id)
     sections=list(content.sections.prefetch_related('media').all())
     return render(request,'core/treatment_content_manage.html',{
-        'content':content,'sections':sections,
+        'content':content,'sections':sections,'day_audios':list(content.daily_audio.all()),
     })
