@@ -77,7 +77,7 @@ button,select{font:inherit}
  <div class="diet-brand"><em>❧</em> گرین‌لایف</div>
  <div class="diet-pick">
   {% if prev_day %}<a aria-label="روز قبل" href="?day={{ prev_day }}">❯</a>{% else %}<a class="off" aria-hidden="true">❯</a>{% endif %}
-  <span>▣ روز {{ day }} از {{ days|length }}</span>
+  <span>▣ روز {{ day }} از {{ day_total }}</span>
   {% if next_day %}<a aria-label="روز بعد" href="?day={{ next_day }}">❮</a>{% else %}<a class="off" aria-hidden="true">❮</a>{% endif %}
  </div>
 </header>
