@@ -201,6 +201,17 @@ def treatment_content_manage(request, item_id):
                         raise ValueError('کالری باید بین صفر و ۹۹۹۹ باشد.')
                     if not body:
                         raise ValueError('برای حذف تنظیم اختصاصی از دکمه بازگشت به پیش‌فرض استفاده کنید.')
+                    photo=request.FILES.get('week_image')
+                    if photo:
+                        if photo.size>5_000_000 or Path(photo.name).suffix.lower() not in _ALLOWED_IMAGE_EXT:
+                            raise ValueError('عکس وعده باید تصویر معتبر و کمتر از ۵ مگابایت باشد.')
+                        from PIL import Image
+                        try:
+                            im=Image.open(photo)
+                            im.verify()
+                            photo.seek(0)
+                        except Exception as exc:
+                            raise ValueError('فایل عکس معتبر نیست.') from exc
                     primary=existing.order_by('id').first()
                     if primary is None:
                         order=(content.sections.order_by('-sort_order').values_list('sort_order',flat=True).first() or 0)
@@ -213,17 +224,6 @@ def treatment_content_manage(request, item_id):
                         primary.estimated_kcal=kcal
                         primary.save(update_fields=['body','estimated_kcal'])
                     # Optional day-specific image; never touches imported MHTML media.
-                    photo=request.FILES.get('week_image')
-                    if photo:
-                        if photo.size>5_000_000 or Path(photo.name).suffix.lower() not in _ALLOWED_IMAGE_EXT:
-                            raise ValueError('عکس وعده باید تصویر معتبر و کمتر از ۵ مگابایت باشد.')
-                        from PIL import Image
-                        try:
-                            im=Image.open(photo)
-                            im.verify()
-                            photo.seek(0)
-                        except Exception as exc:
-                            raise ValueError('فایل عکس معتبر نیست.') from exc
                         previous=primary.media.filter(kind='image').order_by('sort_order','id').first()
                         if previous is not None:
                             previous.uploaded_file.save(photo.name,photo,save=True)
