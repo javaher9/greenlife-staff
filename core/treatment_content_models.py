@@ -46,7 +46,7 @@ class TreatmentRichSection(models.Model):
     body=models.TextField(blank=True)
     day_number=models.PositiveSmallIntegerField(default=1)
     MEAL_CHOICES=[
-        ('other','بخش عمومی'),('breakfast','صبحانه'),('snack_am','میان‌وعده صبح'),
+        ('other','بخش عمومی'),('fasting','ناشتا'),('breakfast','صبحانه'),('snack_am','میان‌وعده صبح'),
         ('lunch','ناهار'),('snack_pm','عصرانه'),('dinner','شام'),
     ]
     meal_slot=models.CharField(max_length=16,choices=MEAL_CHOICES,default='other')
