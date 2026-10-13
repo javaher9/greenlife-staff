@@ -113,7 +113,7 @@ def diet_daily_preview(request,item_id):
     response=render(request,'core/diet_daily.html',{
         'content':content,'title':title,'subtitle':content.hero_subtitle or 'برنامه غذایی اختصاصی',
         'slogan':slogan,'slogan_photo':slogan_photo,'day':chosen,
-        'days':available_days,'prev_day':prev_day,'next_day':next_day,
+        'days':available_days,'day_total':max(available_days),'prev_day':prev_day,'next_day':next_day,
         'cards':_prepare_cards(s for s in sections if s.day_number==chosen),
         'audio_url':audio_url,'can_manage':_admin(request),
     })
