@@ -2155,4 +2155,4 @@ class BulkSmsRecipient(models.Model):
 
 
 
-from .treatment_content_models import TreatmentRichContent, TreatmentRichSection, TreatmentRichMedia
+from .treatment_content_models import TreatmentRichContent, TreatmentRichSection, TreatmentRichMedia, TreatmentDietDayAudio
