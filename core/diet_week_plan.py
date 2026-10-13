@@ -164,7 +164,8 @@ def build_orange_week(sections):
             is_alternatives=(
                 len(selected)==2 and slot in ('breakfast','snack_am','snack_pm')
                 and (all(item['alternatives'] for item in selected) or
-                     all('گزینه' in item['title'] for item in selected))
+                     all('گزینه' in item['title'] for item in selected) or
+                     all(item['source']=='legacy' and item['body'] for item in selected))
             )
             displayed.extend([selected[(day-1)%2]] if is_alternatives else selected)
         week[day]=displayed
