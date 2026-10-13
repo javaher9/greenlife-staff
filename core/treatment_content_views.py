@@ -212,6 +212,31 @@ def treatment_content_manage(request, item_id):
                         primary.body=body
                         primary.estimated_kcal=kcal
                         primary.save(update_fields=['body','estimated_kcal'])
+                    # Optional day-specific image; never touches imported MHTML media.
+                    photo=request.FILES.get('week_image')
+                    if photo:
+                        if photo.size>5_000_000 or Path(photo.name).suffix.lower() not in _ALLOWED_IMAGE_EXT:
+                            raise ValueError('عکس وعده باید تصویر معتبر و کمتر از ۵ مگابایت باشد.')
+                        from PIL import Image
+                        try:
+                            im=Image.open(photo)
+                            im.verify()
+                            photo.seek(0)
+                        except Exception as exc:
+                            raise ValueError('فایل عکس معتبر نیست.') from exc
+                        previous=primary.media.filter(kind='image').order_by('sort_order','id').first()
+                        if previous is not None:
+                            previous.uploaded_file.save(photo.name,photo,save=True)
+                            previous.original_url=''
+                            previous.sort_order=0
+                            previous.inline_before_line=0
+                            previous.is_responsive_duplicate=False
+                            previous.save()
+                        else:
+                            picture=TreatmentRichMedia(
+                                section=primary,kind='image',sort_order=0,inline_before_line=0,
+                            )
+                            picture.uploaded_file.save(photo.name,photo,save=True)
                     messages.success(request,'وعده انتخاب‌شده ذخیره شد؛ متن اصلی فایل تغییر نکرد.')
                 return redirect(reverse('treatment_content_manage',args=[item_id])+f'?week_day={day}#orange-week-editor')
             elif action=='upload':
