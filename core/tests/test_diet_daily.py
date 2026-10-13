@@ -50,7 +50,8 @@ class DailyDietPresentationTests(TestCase):
         day=self.client.get(reverse('diet_daily_preview',args=[self.item.pk])+'?day=2')
         self.assertContains(day,'غذای واقعی روز دوم')
         self.assertContains(day,'190 کالری')
-        self.assertEqual(self.client.get(reverse('diet_daily_preview',args=[self.item.pk])+'?day=1').status_code,404)
+        # Seven calendar weekdays exist even when some are still empty.
+        self.assertEqual(self.client.get(reverse('diet_daily_preview',args=[self.item.pk])+'?day=1').status_code,200)
 
     def test_daily_audio_and_permissions(self):
         TreatmentRichSection.objects.create(content=self.content,title='ناهار',body='محتوای واقعی')
