@@ -17,6 +17,7 @@ from .models import (
 )
 from .treatment_content_service import import_five_sample_zip
 from .treatment_content_layout import build_section_preview
+from .diet_week_plan import DAYS as ORANGE_DAYS, SLOTS as ORANGE_SLOTS, LABELS as ORANGE_LABELS, build_orange_week, parse_legacy
 
 _ALLOWED_IMAGE_EXT={'.jpg','.jpeg','.png','.webp','.gif'}
 _ALLOWED_AUDIO_EXT={'.mp3','.m4a','.mp4','.wav','.ogg'}
@@ -151,7 +152,7 @@ def treatment_content_manage(request, item_id):
             elif action=='save_section':
                 section=get_object_or_404(content.sections,pk=request.POST.get('section_id'))
                 section.title=(request.POST.get('title') or '').strip()[:200]
-                section.day_number=max(1,min(366,int(request.POST.get('day_number') or 1)))
+                section.day_number=max(0 if content.master_item.name=='Por-150' else 1,min(366,int(request.POST.get('day_number') or 1)))
                 slot=(request.POST.get('meal_slot') or 'other').strip()
                 if slot not in dict(TreatmentRichSection.MEAL_CHOICES):
                     raise ValueError('نوع وعده معتبر نیست.')
@@ -169,7 +170,7 @@ def treatment_content_manage(request, item_id):
                 if not title:
                     raise ValueError('عنوان بخش الزامی است.')
                 max_order=(content.sections.order_by('-sort_order').values_list('sort_order',flat=True).first() or 0)
-                day=max(1,min(366,int(request.POST.get('day_number') or 1)))
+                day=max(0 if content.master_item.name=='Por-150' else 1,min(366,int(request.POST.get('day_number') or 1)))
                 slot=(request.POST.get('meal_slot') or 'other').strip()
                 if slot not in dict(TreatmentRichSection.MEAL_CHOICES):
                     raise ValueError('نوع وعده معتبر نیست.')
@@ -178,6 +179,41 @@ def treatment_content_manage(request, item_id):
                     sort_order=min(max_order+10,9999),
                 )
                 messages.success(request,'بخش جدید افزوده شد.')
+            elif action in ('save_orange_meal','clear_orange_meal'):
+                # Isolated admin workflow for the Por-150 prototype only.
+                if content.master_item.name!='Por-150' or content.master_item.category!='diet':
+                    raise PermissionDenied('ویرایش هفت‌روزه فقط برای رژیم پرتقال فعال است.')
+                day=int(request.POST.get('week_day','-1'))
+                slot=(request.POST.get('week_slot') or '').strip()
+                if day not in range(8) or slot not in (
+                    'fasting','breakfast','snack_am','lunch','snack_pm','dinner',
+                ):
+                    raise ValueError('روز یا وعده نامعتبر است.')
+                existing=content.sections.filter(day_number=day,meal_slot=slot)
+                if action=='clear_orange_meal':
+                    existing.delete()
+                    messages.success(request,'تنظیم اختصاصی این وعده حذف شد؛ مقدار پیش‌فرض نشان داده می‌شود.')
+                else:
+                    body=(request.POST.get('week_body') or '').strip()[:150000]
+                    kcal_raw=(request.POST.get('week_kcal') or '').strip()
+                    kcal=int(kcal_raw) if kcal_raw else None
+                    if kcal is not None and not 0<=kcal<=9999:
+                        raise ValueError('کالری باید بین صفر و ۹۹۹۹ باشد.')
+                    if not body:
+                        raise ValueError('برای حذف تنظیم اختصاصی از دکمه بازگشت به پیش‌فرض استفاده کنید.')
+                    primary=existing.order_by('id').first()
+                    if primary is None:
+                        order=(content.sections.order_by('-sort_order').values_list('sort_order',flat=True).first() or 0)
+                        primary=content.sections.create(
+                            title=ORANGE_LABELS[slot],day_number=day,meal_slot=slot,
+                            sort_order=min(order+10,9999),body=body,estimated_kcal=kcal,
+                        )
+                    else:
+                        primary.body=body
+                        primary.estimated_kcal=kcal
+                        primary.save(update_fields=['body','estimated_kcal'])
+                    messages.success(request,'وعده انتخاب‌شده ذخیره شد؛ متن اصلی فایل تغییر نکرد.')
+                return redirect(reverse('treatment_content_manage',args=[item_id])+f'?week_day={day}#orange-week-editor')
             elif action=='upload':
                 kind=request.POST.get('kind','')
                 file=request.FILES.get('media_file')
@@ -233,6 +269,42 @@ def treatment_content_manage(request, item_id):
             messages.error(request,str(exc))
         return redirect('treatment_content_manage',item_id=item_id)
     sections=list(content.sections.prefetch_related('media').all())
+    orange_only=(content.master_item.category=='diet' and content.master_item.name=='Por-150')
+    orange_rows=[]
+    orange_day=1
+    if orange_only:
+        try:
+            orange_day=int(request.GET.get('week_day','1'))
+        except (ValueError,TypeError):
+            orange_day=1
+        if orange_day not in range(8):
+            orange_day=1
+        week=build_orange_week(sections)
+        common={}
+        for section in sections:
+            if section.title.strip()=='برنامه غذایی':
+                shared,_=parse_legacy(section)
+                for slot,cards in shared.items(): common[slot]=cards
+        for slot in ('fasting','breakfast','snack_am','lunch','snack_pm','dinner'):
+            choices=([card for card in week[orange_day] if card['slot']==slot]
+                     if orange_day else [
+                         card for card in common.get(slot,[])
+                     ])
+            manual=[section for section in sections
+                    if section.meal_slot==slot and section.day_number==orange_day]
+            if orange_day==0 and manual:
+                choices=[{'body':section.body,'calories':section.estimated_kcal}
+                         for section in manual]
+            orange_rows.append({
+                'slot':slot,'name':ORANGE_LABELS[slot],
+                'body':'\n\n'.join(card['body'] for card in choices if card['body']),
+                'kcal':manual[0].estimated_kcal if manual else (
+                    choices[0]['calories'] if len(choices)==1 else None
+                ),
+                'manual':bool(manual),
+            })
     return render(request,'core/treatment_content_manage.html',{
         'content':content,'sections':sections,'day_audios':list(content.daily_audio.all()),
+        'orange_only':orange_only,'orange_day':orange_day,
+        'orange_days':list(enumerate(ORANGE_DAYS,start=1)),'orange_rows':orange_rows,
     })
