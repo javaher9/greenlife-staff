@@ -13,6 +13,7 @@ from urllib.request import Request, urlopen
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.core import signing
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
@@ -65,28 +66,29 @@ def _webhook_uri(request):
 
 
 def _issue_oauth_state(request):
-    state=secrets.token_urlsafe(32)
-    pending=list(request.session.get('instagram_oauth_states') or [])
-    pending=[str(x) for x in pending if x]
-    pending.append(state)
-    request.session['instagram_oauth_states']=pending[-5:]
-    request.session.modified=True
-    return state
+    # Use a signed, time-limited state so OAuth validation does not depend on
+    # the browser preserving the Django session cookie across Instagram.
+    payload={
+        'nonce':secrets.token_urlsafe(24),
+        'uid':request.user.pk if getattr(request,'user',None) and request.user.is_authenticated else None,
+    }
+    return signing.dumps(payload,salt='instagram-oauth-state',compress=True)
 
 
 def _consume_oauth_state(request, supplied):
     supplied=str(supplied or '')
-    pending=[str(x) for x in (request.session.get('instagram_oauth_states') or []) if x]
-    matched=False
-    remaining=[]
-    for item in pending:
-        if not matched and supplied and hmac.compare_digest(item,supplied):
-            matched=True
-            continue
-        remaining.append(item)
-    request.session['instagram_oauth_states']=remaining[-5:]
-    request.session.modified=True
-    return matched
+    if not supplied:
+        return False
+    try:
+        payload=signing.loads(supplied,salt='instagram-oauth-state',max_age=20*60)
+    except (signing.BadSignature,signing.SignatureExpired):
+        return False
+    if not isinstance(payload,dict) or not payload.get('nonce'):
+        return False
+    expected_uid=payload.get('uid')
+    if expected_uid is not None and getattr(request,'user',None) and request.user.is_authenticated:
+        return str(request.user.pk)==str(expected_uid)
+    return True
 
 
 def _post_form(url,data,timeout=20):
