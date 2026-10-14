@@ -10,10 +10,14 @@
 .tcl a{color:#a6e6d0;font-weight:900}.tcl button{padding:10px 18px;background:#239a74;border:0;border-radius:10px;font-weight:900;color:#fff;cursor:pointer}
 .tcl input[type=file]{background:#203846;color:#fff;padding:11px;border-radius:10px;max-width:100%}
 .tcl label{font-size:12px;display:block;margin:10px 0}
+.tcl .edit-action{display:inline-flex;align-items:center;justify-content:center;min-height:39px;padding:9px 16px;border-radius:10px;background:#245e52;color:#eafff5;border:1px solid #488a78;font-size:12px;white-space:nowrap}
+.tcl .edit-action:hover{background:#327d69}
+.tcl .edit-form{display:inline;margin:0}.tcl .edit-form button{background:#245e52;border:1px solid #488a78;min-height:39px}
+.tcl .row-actions{display:flex;align-items:center;gap:12px}.tcl .count{color:#c1e9d8;font-size:12px}
 </style>
 <div class="tcl">
-  <div class="hero"><h1>کتابخانه رژیم‌ها و توصیه‌ها</h1>
-  <p>آزمایش فقط چهار رژیم و یک توصیه از خروجی اصلی CRM؛ متصل به همان عنوان‌های بانک خدمات. فایل‌های صوتی فقط در صورت وجود آدرس معتبر نمایش داده می‌شوند. بدون بازنویسی اطلاعات اصلی.</p></div>
+  <div class="hero"><h1>تنظیمات برنامه غذایی و رژیم‌ها</h1>
+  <p>از دکمه «ویرایش» مقابل هر برنامه، متن وعده‌ها و عکس همان وعده را در جای خودش ببینید، اصلاح کنید یا جایگزین نمایید. {{ count_diets }} رژیم در بانک اصلی ثبت شده است. برنامه‌های بدون محتوای اولیه با وضعیت غیرفعال برای تکمیل باز می‌شوند.</p></div>
   <section class="panel">
     <h2 style="color:#fff;font-size:18px">ورود پنج نمونه اصلی از فایل ZIP</h2>
     <p>فایل «خروجی HTML.zip» را انتخاب کنید. خروجی‌های MHTML در سرور خوانده می‌شوند و عکس‌های جاسازی‌شده نیز در فضای رسانه اپ ذخیره خواهند شد؛ هیچ اتصال به پورت CRM لازم نیست.</p>
@@ -23,15 +27,21 @@
       <button type="submit">بررسی و ورود پنج نمونه</button>
     </form>
   </section>
-  <section class="panel"><h2 style="color:#fff;font-size:18px">پنج مورد آزمایشی</h2>
+  <section class="panel"><h2 style="color:#fff;font-size:18px">فهرست برنامه‌های غذایی و توصیه‌ها</h2>
+  <p>ویرایش متن یا تصویر هر وعده فقط همان مورد را تغییر می‌دهد. برای رژیم پرتقال، برنامه هفتگی نیز در صفحه ویرایش در دسترس است.</p>
   {% for row in rows %}<div class="sample">
-    <div><b>{{ row.title }}</b><br><small>{% if row.category == 'diet' %}رژیم{% else %}توصیه{% endif %} · {% if row.item and row.item.rich_content %}{% if row.item.rich_content.is_active %}محتوا فعال{% else %}محتوا غیرفعال{% endif %}{% else %}در انتظار ورود فایل{% endif %}</small></div>
-    <div>
-      {% if row.item and row.item.rich_content %}
-        <a href="{% url 'treatment_content_manage' row.item.pk %}">ویرایش محتوا</a> ·
+    <div><b>{{ row.title }}</b><br><small>{% if row.category == 'diet' %}رژیم{% else %}توصیه{% endif %} · {% if row.item.rich_content %}{% if row.item.rich_content.is_active %}محتوا فعال{% else %}محتوا غیرفعال{% endif %}{% else %}هنوز محتوایی وارد نشده{% endif %}</small></div>
+    <div class="row-actions">
+      {% if row.item.rich_content %}
+        <a class="edit-action" href="{% url 'treatment_content_manage' row.item.pk %}">✎ ویرایش برنامه</a>
         <a href="{% url 'treatment_content_preview' row.item.pk %}">پیش‌نمایش</a>
-      {% elif not row.item %}<small>این عنوان در بانک اصلی پیدا نشد</small>
-      {% else %}<small>بعد از ورود قابل ویرایش می‌شود</small>{% endif %}
+      {% else %}
+        <form class="edit-form" method="post">{% csrf_token %}
+          <input type="hidden" name="action" value="start_edit">
+          <input type="hidden" name="item_id" value="{{ row.item.pk }}">
+          <button type="submit">✎ شروع ویرایش</button>
+        </form>
+      {% endif %}
     </div>
   </div>{% endfor %}
   </section>
