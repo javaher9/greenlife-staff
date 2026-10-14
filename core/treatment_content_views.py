@@ -17,9 +17,33 @@ from .models import (
 )
 from .treatment_content_service import import_five_sample_zip
 from .treatment_content_layout import build_section_preview
+from .treatment_content_edit_rows import inline_edit_rows,replace_one_line
 from .diet_week_plan import DAYS as ORANGE_DAYS, SLOTS as ORANGE_SLOTS, LABELS as ORANGE_LABELS, build_orange_week, parse_legacy
 
 _ALLOWED_IMAGE_EXT={'.jpg','.jpeg','.png','.webp','.gif'}
+
+
+def _validate_meal_photo(photo):
+    if not photo or photo.size>5_000_000 or Path(photo.name).suffix.lower() not in _ALLOWED_IMAGE_EXT:
+        raise ValueError('عکس باید JPG، PNG، WebP یا GIF و کمتر از ۵ مگابایت باشد.')
+    from PIL import Image
+    try:
+        image=Image.open(photo)
+        image.verify()
+        photo.seek(0)
+    except Exception as exc:
+        raise ValueError('فایل تصویری معتبر نیست.') from exc
+
+
+def _valid_line_anchor(section,raw):
+    try:
+        line=int(raw)
+    except (TypeError,ValueError) as exc:
+        raise ValueError('ردیف تصویر معتبر نیست.') from exc
+    if not 0<=line<=len(section.body.splitlines()):
+        raise ValueError('شماره ردیف در این بخش وجود ندارد.')
+    return line
+
 _ALLOWED_AUDIO_EXT={'.mp3','.m4a','.mp4','.wav','.ogg'}
 
 
@@ -81,6 +105,16 @@ def treatment_content_preview(request, item_id):
 @require_http_methods(['GET','POST'])
 def treatment_content_library(request):
     _admin_only(request)
+    if request.method=='POST' and request.POST.get('action')=='start_edit':
+        item=get_object_or_404(
+            TreatmentCatalogItem,pk=request.POST.get('item_id'),
+            branch__isnull=True,category__in=('diet','recommendation'),
+        )
+        TreatmentRichContent.objects.get_or_create(
+            master_item=item,
+            defaults={'is_active':False,'origin':'پنل مدیریت — در انتظار تکمیل محتوا'},
+        )
+        return redirect('treatment_content_manage',item_id=item.pk)
     if request.method=='POST':
         uploaded=request.FILES.get('archive')
         if not uploaded:
@@ -109,17 +143,16 @@ def treatment_content_library(request):
                     messages.warning(request,warning)
         return redirect('treatment_content_library')
 
-    titles=['Keto-Fast','Sib-150','Por-150','R-250','نکات طلائی در لاغری']
     catalog=list(
         TreatmentCatalogItem.objects.filter(
-            category__in=('diet','recommendation'),name__in=titles,branch__isnull=True,
-        ).select_related('rich_content').order_by('category','name','id')
+            category__in=('diet','recommendation'),branch__isnull=True,
+        ).select_related('rich_content').order_by('category','sort_order','name','id')
     )
-    by_key={(item.category,item.name):item for item in catalog}
-    rows=[{'title':name,'category':('recommendation' if name=='نکات طلائی در لاغری' else 'diet'),
-           'item':by_key.get(('recommendation' if name=='نکات طلائی در لاغری' else 'diet',name))}
-          for name in titles]
-    return render(request,'core/treatment_content_library.html',{'rows':rows})
+    rows=[{'title':item.name,'category':item.category,'item':item} for item in catalog]
+    count_diets=sum(row['category']=='diet' for row in rows)
+    return render(request,'core/treatment_content_library.html',{
+        'rows':rows,'count_diets':count_diets,
+    })
 
 
 @login_required
@@ -165,6 +198,44 @@ def treatment_content_manage(request, item_id):
                     raise ValueError('عنوان بخش نباید خالی باشد.')
                 section.save()
                 messages.success(request,'متن و ترتیب بخش ذخیره شد.')
+            elif action=='save_meal_line':
+                section=get_object_or_404(content.sections,pk=request.POST.get('section_id'))
+                line=_valid_line_anchor(section,request.POST.get('line_number'))
+                replace_one_line(
+                    section,line,request.POST.get('line_signature',''),
+                    request.POST.get('line_text',''),
+                )
+                messages.success(request,'متن همین ردیف ذخیره شد؛ سایر وعده‌ها تغییر نکردند.')
+            elif action in ('add_meal_image','replace_meal_image','delete_meal_image'):
+                if action=='add_meal_image':
+                    section=get_object_or_404(content.sections,pk=request.POST.get('section_id'))
+                    line=_valid_line_anchor(section,request.POST.get('line_number'))
+                    photo=request.FILES.get('meal_image')
+                    _validate_meal_photo(photo)
+                    position=(section.media.order_by('-sort_order').values_list('sort_order',flat=True).first() or 0)+10
+                    medium=TreatmentRichMedia(
+                        section=section,kind='image',sort_order=min(position,9999),
+                        inline_before_line=line,
+                    )
+                    medium.uploaded_file.save(photo.name,photo,save=True)
+                    messages.success(request,'تصویر کنار همین وعده اضافه شد.')
+                else:
+                    medium=get_object_or_404(
+                        TreatmentRichMedia,pk=request.POST.get('media_id'),
+                        section__content=content,kind='image',
+                    )
+                    if action=='replace_meal_image':
+                        photo=request.FILES.get('meal_image')
+                        _validate_meal_photo(photo)
+                        medium.uploaded_file.save(photo.name,photo,save=False)
+                        medium.original_url=''
+                        medium.is_responsive_duplicate=False
+                        medium.save()
+                        messages.success(request,'عکس همین وعده جایگزین شد.')
+                    else:
+                        # Keep physical file for rollback; remove only the association.
+                        medium.delete()
+                        messages.success(request,'تصویر این وعده حذف شد.')
             elif action=='add_section':
                 title=(request.POST.get('title') or '').strip()[:200]
                 if not title:
@@ -179,8 +250,8 @@ def treatment_content_manage(request, item_id):
                     sort_order=min(max_order+10,9999),
                 )
                 messages.success(request,'بخش جدید افزوده شد.')
-            elif action in ('save_orange_meal','clear_orange_meal'):
-                # Isolated admin workflow for the Por-150 prototype only.
+            elif action in ('save_orange_meal','clear_orange_meal','remove_orange_meal_image'):
+                # Por-150 only: manual day/meal overrides preserve the imported source.
                 if content.master_item.name!='Por-150' or content.master_item.category!='diet':
                     raise PermissionDenied('ویرایش هفت‌روزه فقط برای رژیم پرتقال فعال است.')
                 day=int(request.POST.get('week_day','-1'))
@@ -195,49 +266,49 @@ def treatment_content_manage(request, item_id):
                     messages.success(request,'تنظیم اختصاصی این وعده حذف شد؛ مقدار پیش‌فرض نشان داده می‌شود.')
                 else:
                     body=(request.POST.get('week_body') or '').strip()[:150000]
-                    kcal_raw=(request.POST.get('week_kcal') or '').strip()
-                    kcal=int(kcal_raw) if kcal_raw else None
-                    if kcal is not None and not 0<=kcal<=9999:
-                        raise ValueError('کالری باید بین صفر و ۹۹۹۹ باشد.')
                     if not body:
-                        raise ValueError('برای حذف تنظیم اختصاصی از دکمه بازگشت به پیش‌فرض استفاده کنید.')
-                    photo=request.FILES.get('week_image')
-                    if photo:
-                        if photo.size>5_000_000 or Path(photo.name).suffix.lower() not in _ALLOWED_IMAGE_EXT:
-                            raise ValueError('عکس وعده باید تصویر معتبر و کمتر از ۵ مگابایت باشد.')
-                        from PIL import Image
-                        try:
-                            im=Image.open(photo)
-                            im.verify()
-                            photo.seek(0)
-                        except Exception as exc:
-                            raise ValueError('فایل عکس معتبر نیست.') from exc
+                        raise ValueError('متن وعده نباید خالی باشد.')
                     primary=existing.order_by('id').first()
+                    photo=request.FILES.get('week_image') if action=='save_orange_meal' else None
+                    if photo:
+                        _validate_meal_photo(photo)
+                    kcal=None
+                    if action=='save_orange_meal':
+                        kcal_raw=(request.POST.get('week_kcal') or '').strip()
+                        kcal=int(kcal_raw) if kcal_raw else None
+                        if kcal is not None and not 0<=kcal<=9999:
+                            raise ValueError('کالری باید بین صفر و ۹۹۹۹ باشد.')
                     if primary is None:
                         order=(content.sections.order_by('-sort_order').values_list('sort_order',flat=True).first() or 0)
                         primary=content.sections.create(
                             title=ORANGE_LABELS[slot],day_number=day,meal_slot=slot,
                             sort_order=min(order+10,9999),body=body,estimated_kcal=kcal,
                         )
-                    else:
+                    elif action=='save_orange_meal':
                         primary.body=body
                         primary.estimated_kcal=kcal
                         primary.save(update_fields=['body','estimated_kcal'])
-                    # Optional day-specific image; never touches imported MHTML media.
-                        previous=primary.media.filter(kind='image').order_by('sort_order','id').first()
-                        if previous is not None:
-                            previous.uploaded_file.save(photo.name,photo,save=True)
-                            previous.original_url=''
-                            previous.sort_order=0
-                            previous.inline_before_line=0
-                            previous.is_responsive_duplicate=False
-                            previous.save()
-                        else:
-                            picture=TreatmentRichMedia(
-                                section=primary,kind='image',sort_order=0,inline_before_line=0,
-                            )
-                            picture.uploaded_file.save(photo.name,photo,save=True)
-                    messages.success(request,'وعده انتخاب‌شده ذخیره شد؛ متن اصلی فایل تغییر نکرد.')
+                    if action=='remove_orange_meal_image':
+                        # A blank photo in an override hides the legacy default.
+                        for medium in primary.media.filter(kind='image'):
+                            medium.delete()
+                        messages.success(request,'عکس همین وعده حذف شد؛ متن و سایر وعده‌ها محفوظ‌اند.')
+                    else:
+                        if photo:
+                            previous=primary.media.filter(kind='image').order_by('sort_order','id').first()
+                            if previous is not None:
+                                previous.uploaded_file.save(photo.name,photo,save=False)
+                                previous.original_url=''
+                                previous.sort_order=0
+                                previous.inline_before_line=0
+                                previous.is_responsive_duplicate=False
+                                previous.save()
+                            else:
+                                picture=TreatmentRichMedia(
+                                    section=primary,kind='image',sort_order=0,inline_before_line=0,
+                                )
+                                picture.uploaded_file.save(photo.name,photo,save=True)
+                        messages.success(request,'وعده انتخاب‌شده ذخیره شد؛ متن اصلی فایل تغییر نکرد.')
                 return redirect(reverse('treatment_content_manage',args=[item_id])+f'?week_day={day}#orange-week-editor')
             elif action=='upload':
                 kind=request.POST.get('kind','')
@@ -294,6 +365,8 @@ def treatment_content_manage(request, item_id):
             messages.error(request,str(exc))
         return redirect('treatment_content_manage',item_id=item_id)
     sections=list(content.sections.prefetch_related('media').all())
+    for section in sections:
+        section.inline_rows,section.unplaced_images=inline_edit_rows(section)
     orange_only=(content.master_item.category=='diet' and content.master_item.name=='Por-150')
     orange_rows=[]
     orange_day=1
@@ -318,7 +391,9 @@ def treatment_content_manage(request, item_id):
             manual=[section for section in sections
                     if section.meal_slot==slot and section.day_number==orange_day]
             if orange_day==0 and manual:
-                choices=[{'body':section.body,'calories':section.estimated_kcal}
+                choices=[{'body':section.body,'calories':section.estimated_kcal,
+                          'photo':next((medium.url for medium in section.media.all()
+                                        if medium.kind=='image' and medium.url), '')}
                          for section in manual]
             orange_rows.append({
                 'slot':slot,'name':ORANGE_LABELS[slot],
@@ -327,6 +402,7 @@ def treatment_content_manage(request, item_id):
                     choices[0]['calories'] if len(choices)==1 else None
                 ),
                 'manual':bool(manual),
+                'photo':next((card.get('photo','') for card in choices if card.get('photo')), ''),
             })
     return render(request,'core/treatment_content_manage.html',{
         'content':content,'sections':sections,'day_audios':list(content.daily_audio.all()),

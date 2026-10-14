@@ -1,0 +1,59 @@
+<div class="tcm-inline-editor">
+  <h3>ویرایش متن و عکس در محل هر وعده</h3>
+  <p class="muted">متن هر ردیف و عکس مرتبط با همان ردیف کنار هم نمایش داده می‌شوند. تغییر یک ردیف روی بقیه ردیف‌ها اثر ندارد.</p>
+  {% for row in section.inline_rows %}
+  <div class="tcm-meal-entry" id="meal-{{ section.pk }}-{{ row.index }}">
+    <div class="tcm-meal-copy">
+      <small>ردیف {{ forloop.counter }}</small>
+      {% if row.text %}<div class="tcm-meal-text">{{ row.text }}</div>{% else %}<div class="muted">جایگاه تصویر در پایان بخش</div>{% endif %}
+      {% if not row.is_blank %}
+      <details>
+        <summary>✎ ویرایش همین متن</summary>
+        <form method="post" class="tcm-meal-line-form">{% csrf_token %}
+          <input type="hidden" name="action" value="save_meal_line">
+          <input type="hidden" name="section_id" value="{{ section.pk }}">
+          <input type="hidden" name="line_number" value="{{ row.index }}">
+          <input type="hidden" name="line_signature" value="{{ row.signature }}">
+          <label>متن همین ردیف</label>
+          <textarea rows="2" name="line_text" required>{{ row.text }}</textarea>
+          <button type="submit">ذخیره متن همین وعده</button>
+        </form>
+      </details>
+      {% endif %}
+    </div>
+    <div class="tcm-meal-pictures">
+      {% for medium in row.images %}
+      <div class="tcm-meal-picture">
+        {% if medium.url %}<img src="{{ medium.url }}" loading="lazy" alt="عکس کنار همین وعده">
+        {% else %}<div class="tcm-no-photo">فایل تصویر یافت نشد</div>{% endif %}
+        <form method="post" enctype="multipart/form-data">{% csrf_token %}
+          <input type="hidden" name="action" value="replace_meal_image">
+          <input type="hidden" name="media_id" value="{{ medium.pk }}">
+          <label>تعویض عکس همین وعده<input type="file" name="meal_image" accept="image/jpeg,image/png,image/webp,image/gif" required></label>
+          <button type="submit">جایگزینی عکس</button>
+        </form>
+        <form method="post" onsubmit="return confirm('فقط همین تصویر از برنامه حذف شود؟')">{% csrf_token %}
+          <input type="hidden" name="action" value="delete_meal_image">
+          <input type="hidden" name="media_id" value="{{ medium.pk }}">
+          <button class="tcm-danger" type="submit">حذف همین عکس</button>
+        </form>
+      </div>
+      {% empty %}
+      <div class="tcm-no-photo">برای این ردیف عکسی ثبت نشده است.</div>
+      {% endfor %}
+      <details class="tcm-add-photo">
+        <summary>＋ افزودن عکس به همین ردیف</summary>
+        <form method="post" enctype="multipart/form-data">{% csrf_token %}
+          <input type="hidden" name="action" value="add_meal_image">
+          <input type="hidden" name="section_id" value="{{ section.pk }}">
+          <input type="hidden" name="line_number" value="{{ row.index }}">
+          <label>عکس این وعده<input type="file" name="meal_image" accept="image/jpeg,image/png,image/webp,image/gif" required></label>
+          <button type="submit">ثبت عکس</button>
+        </form>
+      </details>
+    </div>
+  </div>
+  {% empty %}
+  <p class="muted">هنوز متن وعده‌ای در این بخش ثبت نشده است. برای شروع از قسمت ویرایش کلی بخش استفاده کنید.</p>
+  {% endfor %}
+</div>

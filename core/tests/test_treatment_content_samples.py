@@ -266,6 +266,113 @@ class TreatmentContentSampleTests(TestCase):
         self.assertEqual(response.status_code,200)
         self.assertFalse(TreatmentRichMedia.objects.filter(pk=medium.pk).exists())
 
+    def test_all_master_diets_have_direct_edit_and_unimported_remain_inactive(self):
+        extra=TreatmentCatalogItem.objects.create(
+            category='diet',name='رژیم آزمایشی تازه',created_by=self.admin,
+        )
+        self.client.force_login(self.admin)
+        library=self.client.get(reverse('treatment_content_library'))
+        self.assertContains(library,'رژیم آزمایشی تازه')
+        self.assertContains(library,'✎ شروع ویرایش')
+        response=self.client.post(reverse('treatment_content_library'),{
+            'action':'start_edit','item_id':str(extra.pk),
+        },follow=True)
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'مدیریت محتوا: رژیم آزمایشی تازه')
+        content=TreatmentRichContent.objects.get(master_item=extra)
+        self.assertFalse(content.is_active)
+        self.assertEqual(content.sections.count(),0)
+        self.assertTrue(extra.is_active)
+        self.client.force_login(self.doctor)
+        self.assertEqual(self.client.get(reverse('treatment_content_manage',args=[extra.pk])).status_code,403)
+
+    def test_inline_meal_text_edit_is_atomic_and_persists_without_moving_images(self):
+        self._upload()
+        content=TreatmentRichContent.objects.get(master_item__name='Keto-Fast')
+        section=content.sections.get(title='برنامه غذایی')
+        before=list(section.media.values_list('pk','inline_before_line'))
+        from core.treatment_content_edit_rows import inline_edit_rows
+        first=inline_edit_rows(section)[0][0]
+        self.client.force_login(self.admin)
+        response=self.client.post(reverse('treatment_content_manage',args=[content.master_item_id]),{
+            'action':'save_meal_line','section_id':section.pk,'line_number':first['index'],
+            'line_signature':first['signature'],'line_text':'متن اصلاح‌شده صبحانه',
+        },follow=True)
+        self.assertEqual(response.status_code,200)
+        section.refresh_from_db()
+        self.assertIn('متن اصلاح‌شده صبحانه',section.body)
+        self.assertEqual(list(section.media.values_list('pk','inline_before_line')),before)
+        stale=self.client.post(reverse('treatment_content_manage',args=[content.master_item_id]),{
+            'action':'save_meal_line','section_id':section.pk,'line_number':first['index'],
+            'line_signature':first['signature'],'line_text':'بازنویسی اشتباه',
+        },follow=True)
+        self.assertEqual(stale.status_code,200)
+        section.refresh_from_db()
+        self.assertNotIn('بازنویسی اشتباه',section.body)
+        self.client.force_login(self.manager)
+        forbidden=self.client.post(reverse('treatment_content_manage',args=[content.master_item_id]),{
+            'action':'save_meal_line','section_id':section.pk,'line_number':0,
+            'line_text':'بدون مجوز',
+        })
+        self.assertEqual(forbidden.status_code,403)
+
+    def test_replace_delete_and_readd_photo_acts_only_on_selected_meal(self):
+        self._upload()
+        content=TreatmentRichContent.objects.get(master_item__name='Keto-Fast')
+        section=content.sections.get(title='برنامه غذایی')
+        image=section.media.get(kind='image')
+        original_count=TreatmentRichMedia.objects.count()
+        original_text=section.body
+        self.client.force_login(self.admin)
+        replaced=self.client.post(reverse('treatment_content_manage',args=[content.master_item_id]),{
+            'action':'replace_meal_image','media_id':image.pk,
+            'meal_image':SimpleUploadedFile('updated-meal.png',IMG,content_type='image/png'),
+        },follow=True)
+        self.assertEqual(replaced.status_code,200)
+        image.refresh_from_db()
+        self.assertTrue(image.uploaded_file)
+        self.assertIn('updated-meal',image.uploaded_file.name)
+        self.assertEqual(TreatmentRichMedia.objects.count(),original_count)
+        deleted=self.client.post(reverse('treatment_content_manage',args=[content.master_item_id]),{
+            'action':'delete_meal_image','media_id':image.pk,
+        },follow=True)
+        self.assertEqual(deleted.status_code,200)
+        self.assertFalse(TreatmentRichMedia.objects.filter(pk=image.pk).exists())
+        added=self.client.post(reverse('treatment_content_manage',args=[content.master_item_id]),{
+            'action':'add_meal_image','section_id':section.pk,'line_number':0,
+            'meal_image':SimpleUploadedFile('new-breakfast.png',IMG,content_type='image/png'),
+        },follow=True)
+        self.assertEqual(added.status_code,200)
+        self.assertTrue(section.media.filter(kind='image',inline_before_line=0).exists())
+        section.refresh_from_db()
+        self.assertEqual(section.body,original_text)
+
+    def test_orange_week_image_replacement_and_delete_in_same_meal_panel(self):
+        self._upload()
+        content=TreatmentRichContent.objects.get(master_item__name='Por-150')
+        self.client.force_login(self.admin)
+        response=self.client.post(reverse('treatment_content_manage',args=[content.master_item_id]),{
+            'action':'save_orange_meal','week_day':'1','week_slot':'lunch',
+            'week_body':'ناهار: مرغ و سالاد','week_kcal':'',
+            'week_image':SimpleUploadedFile('orange-lunch.png',IMG,content_type='image/png'),
+        },follow=True)
+        self.assertEqual(response.status_code,200)
+        meal=content.sections.get(day_number=1,meal_slot='lunch')
+        image=meal.media.get(kind='image')
+        self.assertIn('orange-lunch',image.uploaded_file.name)
+        editor=self.client.get(reverse('treatment_content_manage',args=[content.master_item_id])+'?week_day=1')
+        self.assertContains(editor,'حذف عکس ناهار')
+        self.assertContains(editor,'orange-lunch')
+        remove=self.client.post(reverse('treatment_content_manage',args=[content.master_item_id]),{
+            'action':'remove_orange_meal_image','week_day':'1','week_slot':'lunch',
+            'week_body':'ناهار: مرغ و سالاد',
+        },follow=True)
+        self.assertEqual(remove.status_code,200)
+        self.assertFalse(meal.media.filter(kind='image').exists())
+        meal.refresh_from_db()
+        self.assertEqual(meal.body,'ناهار: مرغ و سالاد')
+        self.assertEqual(TreatmentRichContent.objects.count(),5)
+
     def test_reject_wrong_zip_atomically(self):
         self.client.force_login(self.admin)
         response=self.client.post(reverse('treatment_content_library'),{
