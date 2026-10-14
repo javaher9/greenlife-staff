@@ -32,7 +32,7 @@
 .catalog-inline-edit input,.catalog-inline-edit select,.catalog-inline-edit textarea{width:100%;min-height:37px;background:#0b1723;border:1px solid #39516a;color:#fff;padding:8px;border-radius:9px;font:inherit;font-size:11px}
 .catalog-inline-edit textarea{min-height:68px}
 .catalog-inline-edit button{background:#4c52b0;border:0;border-radius:10px;padding:9px 14px;color:#fff;font-weight:900;cursor:pointer}
-.catalog-device-line{border-color:#365468}
+.catalog-thumb{width:54px;height:54px;flex:none;border-radius:12px;object-fit:cover;border:1px solid #45685b;background:#233b3a}.catalog-name-head{display:flex;align-items:center;gap:10px}.catalog-preview{display:inline-flex;align-items:center;justify-content:center;padding:7px 11px;border:1px solid #3d8c78;border-radius:9px;background:#153d36;color:#b8ffe1!important;font-size:10px;font-weight:900;text-decoration:none;white-space:nowrap}.catalog-device-line{border-color:#365468}
 .catalog-device-line .catalog-name small{color:#b2ced6}
 @media(max-width:750px){.catalog-inline-edit form{grid-template-columns:1fr}.catalog-row{grid-template-columns:1fr 1fr}}
 </style>
@@ -97,10 +97,11 @@
           {% else %}
             {% for item in group.items %}
             <article class="catalog-row {% if not item.is_active %}inactive{% endif %}">
-              <div class="catalog-name"><b>{{ item.name }}</b><small>{% if item.notes %}{{ item.notes|truncatechars:90 }}{% else %}بدون توضیح{% endif %}</small></div>
+              <div class="catalog-name"><div class="catalog-name-head">{% if item.category == 'diet' or item.category == 'recommendation' %}{% if item.rich_content %}{% if item.rich_content.cover_url %}<img class="catalog-thumb" src="{{ item.rich_content.cover_url }}" alt="تصویر {{ item.name }}" loading="lazy">{% else %}<span class="catalog-thumb" style="display:grid;place-items:center;font-size:25px">📋</span>{% endif %}{% endif %}{% endif %}<div><b>{{ item.name }}</b><small>{% if item.notes %}{{ item.notes|truncatechars:90 }}{% else %}بدون توضیح{% endif %}</small></div></div></div>
               <div class="catalog-price">{% if item.price_toman != None %}{{ item.price_million }} میلیون تومان{% if item.unit_label %} / {{ item.unit_label }}{% endif %}{% else %}بدون قیمت{% endif %}</div>
               <div class="catalog-branch">{{ item.branch|default:"همه شعب" }}</div>
               <div class="catalog-actions">
+                {% if item.rich_content %}{% if item.category == 'diet' and item.name == 'Por-150' %}<a class="catalog-preview" href="{% url 'diet_daily_preview' item.pk %}?day=1" target="_blank" rel="noopener">◉ پیش‌نمایش</a>{% else %}<a class="catalog-preview" href="{% url 'treatment_content_preview' item.pk %}" target="_blank" rel="noopener">◉ پیش‌نمایش</a>{% endif %}{% endif %}
                 <form method="post">{% csrf_token %}<input type="hidden" name="action" value="toggle"><input type="hidden" name="item_id" value="{{ item.id }}"><button type="submit">{% if item.is_active %}غیرفعال{% else %}فعال{% endif %}</button></form>
                 <form method="post" onsubmit="return confirm('این آیتم حذف شود؟')">{% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="item_id" value="{{ item.id }}"><button class="danger" type="submit">حذف</button></form>
               </div>
