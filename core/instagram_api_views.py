@@ -64,6 +64,31 @@ def _webhook_uri(request):
     return _public_base_url(request)+reverse('instagram_webhook')
 
 
+def _issue_oauth_state(request):
+    state=secrets.token_urlsafe(32)
+    pending=list(request.session.get('instagram_oauth_states') or [])
+    pending=[str(x) for x in pending if x]
+    pending.append(state)
+    request.session['instagram_oauth_states']=pending[-5:]
+    request.session.modified=True
+    return state
+
+
+def _consume_oauth_state(request, supplied):
+    supplied=str(supplied or '')
+    pending=[str(x) for x in (request.session.get('instagram_oauth_states') or []) if x]
+    matched=False
+    remaining=[]
+    for item in pending:
+        if not matched and supplied and hmac.compare_digest(item,supplied):
+            matched=True
+            continue
+        remaining.append(item)
+    request.session['instagram_oauth_states']=remaining[-5:]
+    request.session.modified=True
+    return matched
+
+
 def _post_form(url,data,timeout=20):
     body=urlencode(data).encode('utf-8')
     req=Request(url,data=body,headers={'Content-Type':'application/x-www-form-urlencoded'},method='POST')
@@ -193,8 +218,7 @@ def instagram_settings(request):
 
     direct_auth_url=''
     if config.is_configured:
-        state=secrets.token_urlsafe(32)
-        request.session['instagram_oauth_state']=state
+        state=_issue_oauth_state(request)
         request.session['instagram_oauth_started_at']=timezone.now().isoformat()
         direct_auth_url=INSTAGRAM_OAUTH_URL+'?'+urlencode({
             'client_id':config.app_id,
@@ -225,8 +249,7 @@ def instagram_oauth_start(request):
         messages.error(request,'ابتدا App ID و App Secret را در تنظیمات Instagram ذخیره کنید.')
         return redirect('instagram_settings')
 
-    state=secrets.token_urlsafe(32)
-    request.session['instagram_oauth_state']=state
+    state=_issue_oauth_state(request)
     request.session['instagram_oauth_started_at']=timezone.now().isoformat()
     query={
         'client_id':config.app_id,
@@ -254,9 +277,8 @@ def instagram_oauth_start(request):
 @require_GET
 def instagram_oauth_callback(request):
     config=InstagramIntegrationSettings.load()
-    expected=request.session.pop('instagram_oauth_state',None)
     state=request.GET.get('state')
-    if not expected or not state or not hmac.compare_digest(str(expected),str(state)):
+    if not _consume_oauth_state(request,state):
         return HttpResponse('Instagram OAuth state validation failed.',status=400)
 
     if request.GET.get('error'):
