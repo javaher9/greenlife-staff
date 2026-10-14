@@ -89,6 +89,41 @@ def _prepare_cards(sections):
     return cards
 
 
+
+# Curated food photography for missing Por-150 meal pictures only.
+# Never replace an image already attached by the diet editor.
+ORANGE_FOOD_PHOTOS = {
+    'orange': 'https://images.unsplash.com/photo-1547514701-42782101795e?w=700&auto=format&fit=crop&q=85',
+    'salad': 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=700&auto=format&fit=crop&q=85',
+    'tea': 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=700&auto=format&fit=crop&q=85',
+    'nuts': 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=700&auto=format&fit=crop&q=85',
+    'water': 'https://images.unsplash.com/photo-1437482078695-73f5ca6c96e2?w=700&auto=format&fit=crop&q=85',
+    'egg': 'https://images.unsplash.com/photo-1506976785307-8732e854ad03?w=700&auto=format&fit=crop&q=85',
+}
+
+def _orange_food_photo(card):
+    if card.get('photo'):
+        return card['photo']
+    body = (card.get('body') or '').replace('‌', ' ')
+    slot = card.get('slot')
+    # Prioritize the ingredients mentioned in the actual instructions.
+    if 'تن ماهی' in body and 'تخم مرغ' in body:
+        # A single-ingredient photo would misrepresent this meal.
+        return ''
+    if 'پرتقال' in body:
+        return ORANGE_FOOD_PHOTOS['orange']
+    if 'سالاد' in body:
+        return ORANGE_FOOD_PHOTOS['salad']
+    if 'چای' in body or 'دمنوش' in body:
+        return ORANGE_FOOD_PHOTOS['tea']
+    if 'آجیل' in body or 'گردو' in body or 'بادام' in body:
+        return ORANGE_FOOD_PHOTOS['nuts']
+    if 'تخم مرغ' in body:
+        return ORANGE_FOOD_PHOTOS['egg']
+    if 'آب' in body and slot == 'other':
+        return ORANGE_FOOD_PHOTOS['water']
+    return ''
+
 @login_required
 @require_GET
 def diet_daily_preview(request,item_id):
@@ -122,11 +157,14 @@ def diet_daily_preview(request,item_id):
     title=content.display_title or ('رژیم پرتقال' if content.master_item.name=='Por-150' else content.master_item.name)
     slogan=content.slogan or ('لاغری یعنی زندگی بهتر' if content.master_item.name=='Por-150' else '')
     slogan_photo=content.slogan_image.url if content.slogan_image else content.slogan_external_url
+    cards = week[chosen] if orange_only else _prepare_cards(s for s in sections if s.day_number==chosen)
+    if orange_only:
+        cards = [dict(card, photo=_orange_food_photo(card)) for card in cards]
     response=render(request,'core/diet_daily.html',{
         'content':content,'title':title,'subtitle':content.hero_subtitle or 'برنامه غذایی اختصاصی',
         'slogan':slogan,'slogan_photo':slogan_photo,'day':chosen,
         'days':available_days,'day_total':max(available_days),'prev_day':prev_day,'next_day':next_day,
-        'cards':week[chosen] if orange_only else _prepare_cards(s for s in sections if s.day_number==chosen),
+        'cards':cards,
         'orange_only':orange_only,'day_name':DAYS[chosen-1] if orange_only else '',
         'day_choices':list(enumerate(DAYS,start=1)) if orange_only else [],
         'audio_url':audio_url,'can_manage':_admin(request),
