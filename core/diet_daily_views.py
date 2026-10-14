@@ -93,36 +93,43 @@ def _prepare_cards(sections):
 # Curated food photography for missing Por-150 meal pictures only.
 # Never replace an image already attached by the diet editor.
 ORANGE_FOOD_PHOTOS = {
-    'orange': 'https://images.unsplash.com/photo-1547514701-42782101795e?w=700&auto=format&fit=crop&q=85',
-    'salad': 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=700&auto=format&fit=crop&q=85',
-    'tea': 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=700&auto=format&fit=crop&q=85',
-    'nuts': 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=700&auto=format&fit=crop&q=85',
-    'water': 'https://images.unsplash.com/photo-1437482078695-73f5ca6c96e2?w=700&auto=format&fit=crop&q=85',
-    'egg': 'https://images.unsplash.com/photo-1506976785307-8732e854ad03?w=700&auto=format&fit=crop&q=85',
+    'orange': 'https://images.unsplash.com/photo-1547514701-42782101795e?w=640&fit=crop&auto=format&q=85',
+    'salad': 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=640&fit=crop&auto=format&q=85',
+    'tea': 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=640&fit=crop&auto=format&q=85',
+    'nuts': 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=640&fit=crop&auto=format&q=85',
+    'egg': 'https://images.unsplash.com/photo-1506976785307-8732e854ad03?w=640&fit=crop&auto=format&q=85',
+    'tuna': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=640&fit=crop&auto=format&q=85',
+    'water': 'https://images.unsplash.com/photo-1437482078695-73f5ca6c96e2?w=640&fit=crop&auto=format&q=85',
+    'fruit': 'https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?w=640&fit=crop&auto=format&q=85',
+    'vegetables': 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=640&fit=crop&auto=format&q=85',
 }
+ORANGE_SLOGAN_FALLBACK = 'https://images.unsplash.com/photo-1500534623283-312aade485b7?w=1100&fit=crop&auto=format&q=85'
 
 def _orange_food_photo(card):
     if card.get('photo'):
         return card['photo']
     body = (card.get('body') or '').replace('‌', ' ')
     slot = card.get('slot')
-    # Prioritize the ingredients mentioned in the actual instructions.
-    if 'تن ماهی' in body and 'تخم مرغ' in body:
-        # A single-ingredient photo would misrepresent this meal.
-        return ''
-    if 'پرتقال' in body:
-        return ORANGE_FOOD_PHOTOS['orange']
-    if 'سالاد' in body:
+    if slot == 'other':
+        return ORANGE_FOOD_PHOTOS['water'] if ('آب' in body or 'مایعات' in body) else ORANGE_FOOD_PHOTOS['vegetables']
+    if 'تن ماهی' in body:
+        return ORANGE_FOOD_PHOTOS['tuna']
+    if 'تخم مرغ' in body:
+        return ORANGE_FOOD_PHOTOS['egg']
+    if 'سالاد' in body or 'سبزی' in body:
         return ORANGE_FOOD_PHOTOS['salad']
-    if 'چای' in body or 'دمنوش' in body:
+    if 'چای' in body or 'دمنوش' in body or 'قهوه' in body:
         return ORANGE_FOOD_PHOTOS['tea']
     if 'آجیل' in body or 'گردو' in body or 'بادام' in body:
         return ORANGE_FOOD_PHOTOS['nuts']
-    if 'تخم مرغ' in body:
-        return ORANGE_FOOD_PHOTOS['egg']
-    if 'آب' in body and slot == 'other':
-        return ORANGE_FOOD_PHOTOS['water']
-    return ''
+    if 'پرتقال' in body or 'آب پرتقال' in body:
+        return ORANGE_FOOD_PHOTOS['orange']
+    if 'میوه' in body:
+        return ORANGE_FOOD_PHOTOS['fruit']
+    if slot in ('breakfast','snack_am','snack_pm'):
+        return ORANGE_FOOD_PHOTOS['fruit']
+    return ORANGE_FOOD_PHOTOS['vegetables']
+
 
 @login_required
 @require_GET
@@ -160,6 +167,8 @@ def diet_daily_preview(request,item_id):
     cards = week[chosen] if orange_only else _prepare_cards(s for s in sections if s.day_number==chosen)
     if orange_only:
         cards = [dict(card, photo=_orange_food_photo(card)) for card in cards]
+    if orange_only and not slogan_photo:
+        slogan_photo = ORANGE_SLOGAN_FALLBACK
     response=render(request,'core/diet_daily.html',{
         'content':content,'title':title,'subtitle':content.hero_subtitle or 'برنامه غذایی اختصاصی',
         'slogan':slogan,'slogan_photo':slogan_photo,'day':chosen,
