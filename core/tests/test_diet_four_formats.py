@@ -173,9 +173,9 @@ class FourDietFormatsTests(TestCase):
         self.assertEqual(first.body,'ویرایش ادمین، حفظ شود')
 
     def test_crm_http_failure_does_not_change_database(self):
-        import requests
+        from urllib.error import URLError
         from core.treatment_crm_diet_transfer import import_one_crm_diet
-        with patch('core.treatment_crm_diet_transfer._read_capped',side_effect=requests.ConnectionError()):
+        with patch('core.treatment_crm_diet_transfer._read_capped',side_effect=URLError('test offline')):
             with self.assertRaises(ValueError):
                 import_one_crm_diet(self.keto)
         self.assertFalse(self.keto_content.sections.exists())
