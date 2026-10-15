@@ -1,0 +1,139 @@
+{% load static %}
+<!doctype html><html lang="fa" dir="rtl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ title }} | {{ template_name }} | گرین‌لایف</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap');
+:root{color-scheme:light;--ink:#193d38;--muted:#617b70;--green:#23775a;--border:#d6e8dd;--bg:#eff8f3}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Vazirmatn,Tahoma,Arial,sans-serif}
+body.ramadan{--bg:#f3f4fa;--green:#555089;--border:#deddf0}
+a{color:var(--green);text-decoration:none}
+button,select{font:inherit}
+.container{max-width:1140px;margin:0 auto;padding:18px 18px 60px}
+.brand{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:8px 2px 16px}
+.brand b{font-size:16px;color:var(--green)}.brand a{font-size:12px;font-weight:800}
+.hero{border-radius:26px;padding:25px;min-height:190px;background:linear-gradient(120deg,#d5f0df,#f2f8ed 65%,#eaf5e9);border:1px solid var(--border);box-shadow:0 8px 23px #1836290a;display:flex;align-items:center;gap:25px}
+.ramadan .hero{background:linear-gradient(120deg,#dfdef4,#f7f5eb 65%,#eeefff)}
+.hero-copy{flex:1}.hero .eyebrow{font-size:12px;font-weight:800;color:var(--green)}
+.hero h1{font-size:28px;line-height:1.55;margin:8px 0}.hero p{line-height:1.85;color:var(--muted);margin:0;font-size:13px}
+.hero img{max-width:36%;height:175px;border-radius:18px;object-fit:cover}
+.warning{margin:13px 0;background:#fff9e7;border:1px solid #eadcaa;border-radius:14px;padding:13px 16px;line-height:2;font-size:12px;white-space:pre-wrap}
+.audio{margin:13px 0;background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px 16px;display:flex;gap:15px;align-items:center}.audio b{font-size:13px}.audio audio{flex:1;width:100%;max-width:400px}
+.day-nav{display:none;background:#fff;position:sticky;top:0;z-index:9;margin:13px 0;border:1px solid var(--border);border-radius:17px;padding:10px 12px;align-items:center;justify-content:space-between;box-shadow:0 5px 22px #162e2416}
+.day-nav select{border:0;font-weight:900;font-size:14px;color:var(--green);padding:8px;outline:none;max-width:55%;background:transparent}
+.day-nav button{background:#e5f3e9;border:0;border-radius:11px;font-size:22px;color:var(--green);width:43px;height:42px;cursor:pointer}
+.days{display:grid;gap:22px;margin:20px auto}.day-sheet{border:1px solid var(--border);border-radius:22px;background:#ffffff;box-shadow:0 8px 25px #153c2410;padding:22px}
+.day-sheet h2{margin:0 0 18px;color:var(--green);font-size:19px;border-bottom:1px solid var(--border);padding-bottom:13px}
+.meal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.meal-card{border:1px solid var(--border);border-radius:16px;display:flex;align-items:stretch;overflow:hidden;min-height:104px;background:#fcfffd}
+.ramadan .meal-card{background:#fefeff}
+.meal-photo{flex:0 0 116px;background:#eef5f0;overflow:hidden}
+.meal-photo img{width:116px;height:100%;max-height:195px;object-fit:contain;background:#fff}
+.meal-data{padding:12px 14px;min-width:0;flex:1}
+.meal-data strong{font-size:14px;color:var(--green)}
+.meal-data p{font-size:12px;line-height:2;white-space:pre-wrap;margin:6px 0 0;overflow-wrap:anywhere}
+.meal-data small{font-size:11px;font-weight:700;color:var(--muted)}
+.meal-card.no-photo .meal-data{padding:13px 16px}
+.extras{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px;margin:24px 0}
+.extra{background:#fff;border-radius:17px;border:1px solid var(--border);padding:21px}
+.extra h2{font-size:17px;color:var(--green);margin:0 0 12px}
+.extra p{font-size:12px;line-height:2.15;white-space:pre-wrap;margin:0;overflow-wrap:anywhere}
+.footer{text-align:center;color:var(--muted);font-size:11px;margin:25px}
+.admin-link{display:inline-block;margin-top:13px;padding:8px 13px;border:1px solid var(--border);border-radius:10px;font-weight:900}
+@media(min-width:761px){.day-sheet{scroll-margin-top:18px}}
+@media(max-width:760px){
+.container{padding:10px 10px 38px}.brand{padding-inline:4px}
+.hero{padding:16px;border-radius:17px;min-height:140px;gap:10px}.hero h1{font-size:21px}.hero img{max-width:38%;height:125px}
+.day-nav{display:flex}.days{display:block;margin:12px 0}
+.day-sheet{display:none;border-radius:16px;padding:15px;margin:0}
+.day-sheet.active{display:block}
+.meal-grid{grid-template-columns:1fr;gap:10px}.meal-card{min-height:100px}.meal-photo{flex-basis:98px}.meal-photo img{width:98px}
+.meal-data{padding:11px}.extra{padding:15px}
+}
+@media print{body{background:white}.container{max-width:100%;padding:0}.day-nav,.brand a,.admin-link{display:none!important}.day-sheet{display:block!important;box-shadow:none;break-inside:avoid}.meal-card{break-inside:avoid}.extra{break-inside:avoid}}
+</style></head>
+<body class="{{ kind }}">
+<main class="container">
+<header class="brand"><b>❧ گرین‌لایف</b><div><a href="{% url 'treatment_content_browse' %}">بازگشت به برنامه‌ها</a></div></header>
+<section class="hero">
+  <div class="hero-copy"><span class="eyebrow">{{ template_name }}</span><h1>{{ title }}</h1>
+  {% if content.hero_subtitle %}<p>{{ content.hero_subtitle }}</p>{% endif %}
+  <p>{% if kind == 'ramadan' %}برنامه سحری، افطار و شام برای روزهای هفته{% else %}برنامه روزانه از شنبه تا جمعه{% endif %}</p></div>
+  {% if content.cover_url %}<img src="{{ content.cover_url }}" alt="تصویر برنامه غذایی" loading="lazy">{% endif %}
+</section>
+{% if content.intro_warning %}<div class="warning">{{ content.intro_warning }}</div>{% endif %}
+{% if content.audio_url %}<section class="audio"><b>با هدفون گوش دهید</b><audio controls preload="none" src="{{ content.audio_url }}"></audio></section>{% endif %}
+<nav class="day-nav" aria-label="انتخاب روز هفته">
+ <button type="button" id="previous-day" aria-label="روز قبل">❯</button>
+ <select id="diet-day-picker" aria-label="روز مورد نظر">{% for day in days %}<option value="{{ day.number }}">{{ day.label }}</option>{% endfor %}</select>
+ <button type="button" id="following-day" aria-label="روز بعد">❮</button>
+</nav>
+<div id="diet-week-days" class="days" aria-label="روزهای برنامه غذایی">
+{% for day in days %}
+<section class="day-sheet {% if forloop.first %}active{% endif %}" id="day-{{ day.number }}" data-day="{{ day.number }}">
+  <h2>{{ day.label }} <small style="color:#8da69a;font-size:11px;font-weight:700">روز {{ day.number }}</small></h2>
+  <div class="meal-grid">
+  {% for card in day.cards %}
+    <article class="meal-card {% if not card.photo %}no-photo{% endif %}">
+      {% if card.photo %}<div class="meal-photo"><img src="{{ card.photo }}" loading="lazy" alt="تصویر {{ card.label }}"></div>{% endif %}
+      <div class="meal-data"><strong>{{ card.label }}</strong>
+        {% if card.calories is not None %}<small> · {{ card.calories }} کالری تأییدشده</small>{% endif %}
+        <p>{{ card.body }}</p>
+      </div>
+    </article>
+  {% empty %}
+    <p style="font-size:12px;color:#778e84">برای این روز هنوز وعده‌ای ثبت نشده است.</p>
+  {% endfor %}
+  </div>
+</section>
+{% endfor %}
+</div>
+<div class="extras">
+{% if content.quota_text %}<section class="extra"><h2>سهمیه‌های روزانه</h2><p>{{ content.quota_text }}</p></section>{% endif %}
+{% if content.free_foods_text %}<section class="extra"><h2>مواد غذایی آزاد</h2><p>{{ content.free_foods_text }}</p></section>{% endif %}
+{% if content.diet_notes_text %}<section class="extra"><h2>توضیحات و نکات برنامه</h2><p>{{ content.diet_notes_text }}</p></section>{% endif %}
+{% for section in extras %}<section class="extra"><h2>{{ section.title }}</h2><p>{{ section.body }}</p></section>{% endfor %}
+</div>
+{% if can_manage %}<a class="admin-link" href="{% url 'treatment_content_manage' content.master_item_id %}">ویرایش برنامه و سهمیه‌ها</a>{% endif %}
+<footer class="footer">گرین‌لایف · نمایش آزمایشی برای پزشک و مدیر · برنامه اصلی بدون تغییر محفوظ است.</footer>
+</main>
+<script>
+(function(){
+  const picker=document.getElementById('diet-day-picker');
+  const sheets=Array.from(document.querySelectorAll('.day-sheet'));
+  const previous=document.getElementById('previous-day');
+  const following=document.getElementById('following-day');
+  if(!picker||!sheets.length)return;
+  let selected=1;
+  function show(n){
+    if(n<1||n>sheets.length)return;
+    selected=n;
+    for(const sheet of sheets){
+      sheet.classList.toggle('active',Number(sheet.dataset.day)===n);
+    }
+    picker.value=String(n);
+    previous.disabled=n===1;
+    following.disabled=n===sheets.length;
+  }
+  picker.addEventListener('change',()=>show(Number(picker.value)));
+  previous.addEventListener('click',()=>show(selected-1));
+  following.addEventListener('click',()=>show(selected+1));
+  let start=null;
+  const swipeArea=document.getElementById('diet-week-days');
+  const ignored='a,button,input,select,textarea,audio,video,summary,[contenteditable]';
+  swipeArea.addEventListener('touchstart',(e)=>{
+    if(window.matchMedia('(min-width:761px)').matches||e.touches.length!==1||e.target.closest(ignored)){start=null;return;}
+    start={x:e.touches[0].clientX,y:e.touches[0].clientY};
+  },{passive:true});
+  swipeArea.addEventListener('touchend',(e)=>{
+    if(!start||e.changedTouches.length!==1)return;
+    const dx=e.changedTouches[0].clientX-start.x,dy=e.changedTouches[0].clientY-start.y;
+    start=null;
+    if(Math.abs(dx)<65||Math.abs(dx)<Math.abs(dy)*1.4)return;
+    show(selected+(dx<0?1:-1));
+  },{passive:true});
+  show(1);
+})();
+</script>
+</body></html>
