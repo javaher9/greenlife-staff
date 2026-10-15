@@ -8,7 +8,7 @@ class TreatmentRichContent(models.Model):
         'core.TreatmentCatalogItem',on_delete=models.PROTECT,related_name='rich_content',
     )
     is_active=models.BooleanField(default=True)
-    TEMPLATE_CHOICES=[('legacy','ساختار اصلی'),('weekly','برنامه هفت‌روزه'),('ramadan','برنامه ماه رمضان')]
+    TEMPLATE_CHOICES=[('legacy','ساختار اصلی'),('weekly','برنامه هفت‌روزه'),('ramadan','برنامه ماه رمضان'),('thirteen','برنامه سیزده‌روزه'),('text','برنامه متنی')]
     presentation_template=models.CharField(max_length=12,choices=TEMPLATE_CHOICES,default='legacy')
     quota_text=models.TextField(blank=True)
     free_foods_text=models.TextField(blank=True)
