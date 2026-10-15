@@ -83,6 +83,20 @@
     </form>
     {% for audio in day_audios %}<div class="media"><span>روز {{ audio.day_number }}</span>{% if audio.url %}<audio controls preload="none" src="{{ audio.url }}"></audio>{% endif %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="remove_day_audio"><input type="hidden" name="day_number" value="{{ audio.day_number }}"><button type="submit" style="background:#843e49">حذف</button></form></div>{% endfor %}
   </div>
+  {% if content.master_item.category == 'diet' %}
+    <section class="panel">
+      <h2>دریافت خودکار اطلاعات رژیم از CRM قدیمی</h2>
+      <p class="muted">از نشانی ثابت crm.greenlifeclinics.com روی پورت 655، فقط با GET و پارامترهای قدیمی d و c=1 خوانده می‌شود. متن و عکس‌های موجود هرگز خودکار بازنویسی نمی‌شوند.</p>
+      {% if not sections %}
+      <form method="post" onsubmit="return confirm('متن این برنامه مستقیماً از CRM خوانده شود؟')">{% csrf_token %}
+        <input type="hidden" name="action" value="crm_import_diet">
+        <button type="submit">دریافت متن و تصویر همین رژیم از CRM</button>
+      </form>
+      {% else %}
+      <p class="notice">این برنامه از قبل محتوا دارد. برای محافظت از ویرایش‌ها، انتقال مجدد غیرفعال است.</p>
+      {% endif %}
+    </section>
+  {% endif %}
   {% include 'core/treatment_diet_template_editor.html' %}
   {% if orange_only and content.presentation_template == 'legacy' %}
   <section id="orange-week-editor" class="panel">
