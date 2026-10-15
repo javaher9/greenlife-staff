@@ -38,9 +38,20 @@
 .tcm .tcm-week-photo-layout>form{grid-column:1;grid-row:1}
 .tcm .tcm-week-photo-layout>aside .muted{display:block;margin-top:7px}
 @media(max-width:690px){.tcm .tcm-meal-entry,.tcm .tcm-week-photo-layout{grid-template-columns:1fr}.tcm .tcm-week-photo-layout>aside,.tcm .tcm-week-photo-layout>form{grid-column:auto;grid-row:auto}.tcm .tcm-meal-pictures{border-right:0;padding-right:0;border-top:1px solid #385969;padding-top:10px}}
+
+.tcm .diet-template-settings{border:1px solid #548a7c;background:linear-gradient(150deg,#14343b,#112734)}
+.tcm .template-meal-editor{border:1px solid #3e6669;background:#152f38;border-radius:16px;padding:14px;margin:12px 0}
+.tcm .template-meal-editor h3{font-size:15px;color:#e3ffed;margin:0 0 12px}
+.tcm .template-meal-editor h3 small{font-size:11px;color:#a1d9c4}
+.tcm .template-meal-layout{display:grid;grid-template-columns:210px minmax(0,1fr);gap:14px;align-items:start}
+.tcm .template-meal-layout .template-photo{border:1px solid #54756e;border-radius:12px;padding:10px;background:#1c3840;color:#b2cec8;font-size:11px;line-height:2}
+.tcm .template-meal-layout .template-photo img{width:100%;max-height:180px;object-fit:contain;background:white;border-radius:9px}
+.tcm .template-meal-layout textarea{min-height:80px}
+.tcm .template-meal-layout .tcm-secondary{background:#475d65}
+@media(max-width:680px){.tcm .template-meal-layout{grid-template-columns:1fr}.tcm .template-meal-layout .template-photo img{max-height:140px}}
 </style>
 <div class="tcm">
-  <p><a href="{% url 'treatment_content_library' %}">← کتابخانه پنج نمونه</a> · <a href="{% url 'treatment_content_preview' content.master_item_id %}">پیش‌نمایش متن اصلی</a> · {% if content.master_item.category == 'diet' %}<a href="{% url 'diet_daily_preview' content.master_item_id %}">قالب جدید موبایل</a>{% endif %}</p>
+  <p><a href="{% url 'treatment_content_library' %}">← کتابخانه پنج نمونه</a> · <a href="{% url 'treatment_content_preview' content.master_item_id %}">پیش‌نمایش متن اصلی</a> · {% if content.master_item.category == 'diet' and content.presentation_template != 'legacy' %}<a href="{% url 'diet_template_preview' content.master_item_id %}">پیش‌نمایش قالب انتخاب‌شده</a>{% endif %} · {% if content.master_item.category == 'diet' %}<a href="{% url 'diet_daily_preview' content.master_item_id %}">قالب جدید موبایل</a>{% endif %}</p>
   <h1>مدیریت محتوا: {{ content.master_item.name }}</h1>
   <div class="panel">
     <p class="notice">این صفحه فقط متن و رسانه این محتوا را تغییر می‌دهد. عنوان ثابت و فهرست تجویز پزشک در بانک «خدمات و درمان‌ها» باقی می‌ماند.</p>
@@ -72,7 +83,8 @@
     </form>
     {% for audio in day_audios %}<div class="media"><span>روز {{ audio.day_number }}</span>{% if audio.url %}<audio controls preload="none" src="{{ audio.url }}"></audio>{% endif %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="remove_day_audio"><input type="hidden" name="day_number" value="{{ audio.day_number }}"><button type="submit" style="background:#843e49">حذف</button></form></div>{% endfor %}
   </div>
-  {% if orange_only %}
+  {% include 'core/treatment_diet_template_editor.html' %}
+  {% if orange_only and content.presentation_template == 'legacy' %}
   <section id="orange-week-editor" class="panel">
     <h2>تنظیم هفت‌روزه رژیم پرتقال</h2>
     <p class="notice">این تنظیمات فقط برای Por-150 است. متن اصلی ۵ فایل دست‌نخورده می‌ماند. پیش‌فرض مشترک در تمام روزها به کار می‌رود، مگر برای یک روز، وعده‌ای اختصاصی داشته باشیم. کالری بدون تأیید پزشکی خالی بماند.</p>
