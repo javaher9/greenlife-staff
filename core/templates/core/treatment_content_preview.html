@@ -49,6 +49,7 @@
     {% endif %}
   </article>
   {% endfor %}
+  {% if content.master_item.category == 'diet' and content.presentation_template != 'legacy' %}<p class="no-print"><a href="{% url 'diet_template_preview' content.master_item_id %}" style="font-size:14px;font-weight:900">◉ مشاهده قالب {{ content.get_presentation_template_display }}</a></p>{% endif %}
   <div class="no-print"><button type="button" onclick="window.print()" style="border:0;border-radius:11px;padding:12px 20px;background:#227b5b;color:#fff;font-weight:900;cursor:pointer">چاپ برنامه</button></div>
 </div>
 {% endblock %}

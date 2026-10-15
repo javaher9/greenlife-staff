@@ -7,13 +7,15 @@ import re
 from collections import defaultdict
 
 DAYS=('شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه')
-SLOTS=('fasting','breakfast','snack_am','lunch','snack_pm','dinner','other')
+SLOTS=('fasting','breakfast','snack_am','pre_lunch','lunch','snack_pm','pre_dinner','dinner','bedtime','other')
 LABELS={'fasting':'ناشتا','breakfast':'صبحانه','snack_am':'میان‌وعده صبح',
-        'lunch':'ناهار','snack_pm':'عصرانه','dinner':'شام','other':'توضیحات'}
-ICONS={'fasting':'◉','breakfast':'☀','snack_am':'☘','lunch':'☀','snack_pm':'☕','dinner':'☾','other':'✦'}
+        'pre_lunch':'قبل از ناهار','lunch':'ناهار','snack_pm':'عصرانه',
+        'pre_dinner':'قبل از شام','dinner':'شام','bedtime':'قبل از خواب','other':'توضیحات'}
+ICONS={'fasting':'◉','breakfast':'☀','snack_am':'☘','pre_lunch':'◌','lunch':'☀','snack_pm':'☕',
+       'pre_dinner':'◌','dinner':'☾','bedtime':'☾','other':'✦'}
 DAY_TOKEN=r'(?:چهارشنبه|پنج\s*شنبه|سه\s*شنبه|دوشنبه|یکشنبه|شنبه|جمعه)'
 DAY_LINE=re.compile(r'^('+DAY_TOKEN+r'(?:\s*(?:و|،|,|/)\s*'+DAY_TOKEN+r')*)\s*([:：\-–])?\s*(.*)$')
-HEAD=re.compile(r'^(میان\s*وعده\s*(?:صبح|عصر)?|صبحانه|ناهار|عصرانه|شام|ناشتا|قبل\s*از\s*صبحانه)\s*([:：\-–])?\s*(.*)$')
+HEAD=re.compile(r'^(میان\s*وعده\s*(?:صبح|عصر)?|ساعت\s*۱۰\s*صبح|ساعت\s*10\s*صبح|قبل\s*از\s*ناهار|قبل\s*از\s*شام|قبل\s*از\s*خواب|صبحانه|ناهار|عصرانه|شام|ناشتا|قبل\s*از\s*صبحانه)\s*([:：\-–])?\s*(.*)$')
 ALTERNATIVE=re.compile(r'^\s*(?:یا|گزینه\s*(?:اول|دوم|1|2|۱|۲)\s*[:：]?)\s*$')
 
 
@@ -31,7 +33,9 @@ def day_label(line):
         key=normalize(label).replace(' ','')
         found=next((i+1 for i,name in enumerate(DAYS) if normalize(name).replace(' ','')==key),None)
         if found and found not in indices: indices.append(found)
-    return (tuple(indices),match.group(3).strip()) if indices else None
+    original=DAY_LINE.match((line or '').strip())
+    rest=original.group(3).strip() if original else match.group(3).strip()
+    return (tuple(indices),rest) if indices else None
 
 
 def meal_label(line):
@@ -39,13 +43,16 @@ def meal_label(line):
     if not match or (not match.group(2) and match.group(3)):
         return None
     title=''.join(match.group(1).split())
-    if title in ('ناشتا','قبلازصبحانه'): slot='fasting'
-    elif title=='صبحانه': slot='breakfast'
-    elif title=='ناهار': slot='lunch'
-    elif title=='شام': slot='dinner'
-    elif title in ('عصرانه','میانوعدهعصر'): slot='snack_pm'
-    else: slot='snack_am'
-    return slot,match.group(3).strip()
+    mapping={
+        'ناشتا':'fasting','قبلازصبحانه':'fasting',
+        'صبحانه':'breakfast','ساعت۱۰صبح':'snack_am','ساعت10صبح':'snack_am',
+        'میانوعدهصبح':'snack_am','میانوعده':'snack_am',
+        'قبلازناهار':'pre_lunch','ناهار':'lunch','عصرانه':'snack_pm',
+        'میانوعدهعصر':'snack_pm','قبلازشام':'pre_dinner',
+        'شام':'dinner','قبلازخواب':'bedtime',
+    }
+    original=HEAD.match((line or '').strip())
+    return mapping.get(title,'snack_am'),(original or match).group(3).strip()
 
 
 def pictures(section):
@@ -70,11 +77,12 @@ def split_options(lines):
     return variants
 
 
-def parse_legacy(section):
+def parse_legacy(section,heading_detector=None):
     """Parse only explicit headings and weekday labels; keep unclear text intact."""
     common=defaultdict(list)
     weekdays=defaultdict(lambda:defaultdict(list))
     lines=section.body.splitlines()
+    heading_detector=heading_detector or meal_label
     blocks=[]
     slot='other'
     block=None
@@ -83,9 +91,9 @@ def parse_legacy(section):
         block={'slot':new_slot,'days':day_ids,'start':i,'end':i,'lines':[]}
         blocks.append(block)
     for i,raw in enumerate(lines):
-        line=re.sub(r'^\s*[-•●*]\s*','',normalize(raw))
+        line=re.sub(r'^\s*[-•●*]\s*','',raw.strip())
         if not line: continue
-        heading=meal_label(line)
+        heading=heading_detector(line)
         if heading:
             slot,rest=heading
             begin(slot,None,i)
@@ -96,7 +104,7 @@ def parse_legacy(section):
             day_ids,rest=weekday
             begin(slot,day_ids,i)
             if rest:
-                sub=meal_label(rest)
+                sub=heading_detector(rest)
                 if sub:
                     block['slot'],rest=sub
                 if rest: block['lines'].append(rest)

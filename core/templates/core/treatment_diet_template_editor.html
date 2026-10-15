@@ -1,0 +1,74 @@
+{% if content.master_item.category == 'diet' %}
+<section class="panel diet-template-settings" id="structured-template-editor">
+<h2>انتخاب قالب برنامه غذایی</h2>
+<p class="notice">قالب هفت‌روزه و قالب رمضان مستقل هستند. تغییر قالب، متن و تصاویر قدیمی را پاک نمی‌کند. دو قالب دیگر بعداً اضافه خواهند شد.</p>
+<form method="post">{% csrf_token %}
+  <input type="hidden" name="action" value="save_diet_template">
+  <label>نوع قالب نمایش</label>
+  <select name="presentation_template">
+    <option value="legacy" {% if content.presentation_template == 'legacy' %}selected{% endif %}>ساختار اصلی (بدون تبدیل)</option>
+    <option value="weekly" {% if content.presentation_template == 'weekly' %}selected{% endif %}>برنامه غذایی هفت‌روزه — شنبه تا جمعه</option>
+    <option value="ramadan" {% if content.presentation_template == 'ramadan' %}selected{% endif %}>برنامه ماه رمضان — سحری، افطار، شام</option>
+  </select>
+  <div class="compact">
+    <div><label>سهمیه‌ها (از جمله تعداد خرما یا قاشق روغن)</label><textarea name="quota_text" rows="5" placeholder="فقط مقدار تأییدشده پزشک را وارد کنید">{{ content.quota_text }}</textarea></div>
+    <div><label>مواد غذایی آزاد</label><textarea name="free_foods_text" rows="5" placeholder="فهرست مواد غذایی آزاد">{{ content.free_foods_text }}</textarea></div>
+  </div>
+  <label>توضیحات تکمیلی</label><textarea name="diet_notes_text" rows="4">{{ content.diet_notes_text }}</textarea>
+  <p class="muted">متن اصلی «سهمیه و مواد آزاد» و «توضیحات» که از CRM وارد شده نیز جداگانه و بدون حذف نمایش داده می‌شود؛ از این فیلدها برای تنظیم مستقل هر بخش استفاده کنید.</p>
+  <button type="submit">ذخیره تنظیمات قالب و سهمیه</button>
+</form>
+{% if content.presentation_template == 'weekly' or content.presentation_template == 'ramadan' %}
+<p><a style="color:#a7f2c4;font-size:14px;font-weight:900" href="{% url 'diet_template_preview' content.master_item_id %}" target="_blank" rel="noopener">◉ مشاهده پیش‌نمایش قالب انتخاب‌شده</a></p>
+<h2>ویرایش وعده‌های هر روز</h2>
+<p class="muted">روز ۰ برای وعده‌های مشترک تمام روزهاست. تغییرات روزهای ۱ تا ۷، فقط همان روز را تغییر می‌دهد.</p>
+<form method="get" style="max-width:330px">
+  <label>روز برنامه</label>
+  <select name="template_day" onchange="this.form.submit()">
+    <option value="0" {% if template_day == 0 %}selected{% endif %}>پیش‌فرض مشترک همه روزها</option>
+    {% for number,label in template_days %}
+      <option value="{{ number }}" {% if template_day == number %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">نمایش روز</button>
+</form>
+{% for row in template_rows %}
+<article class="template-meal-editor">
+  <h3>{{ row.name }} {% if row.manual %}<small>ویرایش اختصاصی</small>{% endif %}</h3>
+  <div class="template-meal-layout">
+    <div class="template-photo">
+      {% if row.photo %}<img src="{{ row.photo }}" alt="تصویر {{ row.name }}" loading="lazy">{% else %}<span>برای این وعده عکس ثبت نشده است</span>{% endif %}
+      {% if row.manual and row.photo %}
+      <form method="post" onsubmit="return confirm('عکس همین وعده حذف شود؟')">{% csrf_token %}
+        <input type="hidden" name="action" value="remove_template_photo">
+        <input type="hidden" name="template_day" value="{{ template_day }}">
+        <input type="hidden" name="template_slot" value="{{ row.slot }}">
+        <button class="tcm-danger">حذف عکس این وعده</button>
+      </form>
+      {% endif %}
+    </div>
+    <div>
+      <form method="post" enctype="multipart/form-data">{% csrf_token %}
+        <input type="hidden" name="action" value="save_template_meal">
+        <input type="hidden" name="template_day" value="{{ template_day }}">
+        <input type="hidden" name="template_slot" value="{{ row.slot }}">
+        <label>متن همین وعده</label><textarea name="template_body" rows="3">{{ row.body }}</textarea>
+        <label>عکس همین وعده (جایگزینی اختیاری)</label><input type="file" name="template_image" accept="image/jpeg,image/png,image/webp,image/gif">
+        <label>کالری تأییدشده (اختیاری)</label><input type="number" name="template_kcal" min="0" max="9999" value="{{ row.kcal|default_if_none:'' }}">
+        <button type="submit">ذخیره {{ row.name }}</button>
+      </form>
+      {% if row.manual %}
+      <form method="post" onsubmit="return confirm('تنظیم اختصاصی این وعده به نسخه اصلی برگردد؟')">{% csrf_token %}
+        <input type="hidden" name="action" value="clear_template_meal">
+        <input type="hidden" name="template_day" value="{{ template_day }}">
+        <input type="hidden" name="template_slot" value="{{ row.slot }}">
+        <button type="submit" class="tcm-secondary">بازگشت به مقدار اصلی</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</article>
+{% endfor %}
+{% endif %}
+</section>
+{% endif %}

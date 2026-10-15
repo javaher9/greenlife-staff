@@ -15,7 +15,7 @@
   <div class="grid">{% for row in rows %}
     <article class="card"><small>{% if row.master_item.category == 'diet' %}رژیم غذایی{% else %}توصیه{% endif %}</small>
       <strong>{{ row.master_item.name }}</strong><small>{{ row.sections.count }} بخش</small>
-      <div>{% if row.master_item.category == 'diet' %}<a href="{% url 'diet_daily_preview' row.master_item_id %}">نمایش قالب جدید رژیم</a>{% else %}<a href="{% url 'treatment_content_preview' row.master_item_id %}">نمایش برنامه کامل</a>{% endif %}</div>
+      <div>{% if row.master_item.category == 'diet' and row.presentation_template != 'legacy' %}<a href="{% url 'diet_template_preview' row.master_item_id %}">مشاهده قالب {{ row.get_presentation_template_display }}</a>{% elif row.master_item.category == 'diet' %}<a href="{% url 'diet_daily_preview' row.master_item_id %}">نمایش رژیم</a>{% else %}<a href="{% url 'treatment_content_preview' row.master_item_id %}">نمایش برنامه کامل</a>{% endif %}</div>
     </article>{% empty %}<p>هنوز محتوایی وارد نشده است؛ ادمین باید نمونه‌های MHTML را وارد کند.</p>{% endfor %}
   </div>
 </div>

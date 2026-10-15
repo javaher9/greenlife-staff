@@ -8,6 +8,11 @@ class TreatmentRichContent(models.Model):
         'core.TreatmentCatalogItem',on_delete=models.PROTECT,related_name='rich_content',
     )
     is_active=models.BooleanField(default=True)
+    TEMPLATE_CHOICES=[('legacy','ساختار اصلی'),('weekly','برنامه هفت‌روزه'),('ramadan','برنامه ماه رمضان')]
+    presentation_template=models.CharField(max_length=12,choices=TEMPLATE_CHOICES,default='legacy')
+    quota_text=models.TextField(blank=True)
+    free_foods_text=models.TextField(blank=True)
+    diet_notes_text=models.TextField(blank=True)
     cover_external_url=models.URLField(max_length=1300,blank=True)
     cover_file=models.ImageField(upload_to='treatment-content/covers/%Y/%m/',blank=True)
     intro_warning=models.TextField(blank=True)
@@ -47,7 +52,10 @@ class TreatmentRichSection(models.Model):
     day_number=models.PositiveSmallIntegerField(default=1)
     MEAL_CHOICES=[
         ('other','بخش عمومی'),('fasting','ناشتا'),('breakfast','صبحانه'),('snack_am','میان‌وعده صبح'),
-        ('lunch','ناهار'),('snack_pm','عصرانه'),('dinner','شام'),
+        ('pre_lunch','قبل از ناهار'),('lunch','ناهار'),('snack_pm','عصرانه'),
+        ('pre_dinner','قبل از شام'),('dinner','شام'),('bedtime','قبل از خواب'),
+        ('pre_suhoor','قبل از سحری'),('suhoor','سحری'),('iftar','افطار'),
+        ('after_iftar','بعد از افطار'),
     ]
     meal_slot=models.CharField(max_length=16,choices=MEAL_CHOICES,default='other')
     estimated_kcal=models.PositiveSmallIntegerField(null=True,blank=True)

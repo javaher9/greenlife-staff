@@ -18,6 +18,7 @@ from . import lead_management_views
 from . import doctor_views
 from . import treatment_content_views
 from . import diet_daily_views
+from . import diet_template_views
 from . import payroll_views
 from . import device_booking_views
 from . import consultant_expense_views
@@ -28,6 +29,7 @@ from . import quality_command_views
 from .mcp import mcp_endpoint
 urlpatterns=[
 path('doctor/content/',treatment_content_views.treatment_content_browse,name='treatment_content_browse'),
+path('treatment-content/<int:item_id>/template/',diet_template_views.diet_template_preview,name='diet_template_preview'),
 path('treatment-content/<int:item_id>/daily/',diet_daily_views.diet_daily_preview,name='diet_daily_preview'),
 path('treatment-content/<int:item_id>/preview/',treatment_content_views.treatment_content_preview,name='treatment_content_preview'),
 path('settings/treatment-content/',treatment_content_views.treatment_content_library,name='treatment_content_library'),
