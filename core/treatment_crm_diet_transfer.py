@@ -5,7 +5,8 @@ Keep imported medical content and original image links; where images come from
 the trusted legacy host, copy bytes so preview doesn't depend on port 655.
 """
 from urllib.parse import quote, urlsplit
-import requests
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, HTTPRedirectHandler, ProxyHandler, build_opener
 from PIL import Image
 from io import BytesIO
 from django.db import transaction
@@ -20,24 +21,34 @@ ALLOWED_HOSTS={'crm.greenlifeclinics.com','80.210.34.152'}
 MAX_IMAGES=40
 
 
+class NoRedirects(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        # The legacy fixed-host GET must never follow arbitrary redirects.
+        return None
+
+
 def _read_capped(url, *, limit):
-    """Disallow HTTP redirects and bound both response and duration."""
-    response=requests.get(
-        url,timeout=(4,14),allow_redirects=False,
-        headers={'Accept':'text/html,image/*;q=0.8'},
-        stream=True,
-    )
+    """GET once with no redirects, bounded payload and read timeout."""
+    opener=build_opener(NoRedirects(),ProxyHandler({}))
+    request=Request(url,headers={'Accept':'text/html,image/*;q=0.8'},method='GET')
     try:
-        if response.status_code!=200:
-            raise ValueError(f'سرور CRM کد HTTP {response.status_code} برگرداند.')
-        raw=bytearray()
-        for chunk in response.iter_content(chunk_size=65536):
-            raw.extend(chunk)
-            if len(raw)>limit:
-                raise ValueError('اندازه پاسخ CRM از حد مجاز بیشتر است.')
-        return bytes(raw),response.headers.get('Content-Type','')
-    finally:
-        response.close()
+        with opener.open(request,timeout=15) as response:
+            status=response.status
+            if status!=200:
+                raise ValueError(f'سرور CRM کد HTTP {status} برگرداند.')
+            size=0
+            chunks=[]
+            while True:
+                chunk=response.read(min(65536,limit+1-size))
+                if not chunk:
+                    break
+                size+=len(chunk)
+                if size>limit:
+                    raise ValueError('اندازه پاسخ CRM از حد مجاز بیشتر است.')
+                chunks.append(chunk)
+            return b''.join(chunks),response.headers.get('Content-Type','')
+    except HTTPError as exc:
+        raise ValueError(f'سرور CRM کد HTTP {exc.code} برگرداند یا به نشانی دیگری هدایت کرد.') from exc
 
 
 def _copy_images(entry):
@@ -57,7 +68,7 @@ def _copy_images(entry):
                 continue
             image=Image.open(BytesIO(data))
             image.verify()
-        except (ValueError,requests.RequestException, OSError):
+        except (ValueError,URLError, OSError):
             continue
         entry['image_bytes'][url]=data
         copied+=1
@@ -68,7 +79,7 @@ def fetch_crm_diet(diet_name):
     url=f'{CRM_BASE}/diet1.php?d={quote(diet_name,safe="")}&c=1'
     try:
         raw,mime=_read_capped(url,limit=8_000_000)
-    except requests.RequestException as exc:
+    except URLError as exc:
         raise ValueError('اتصال GET به CRM روی پورت ۶۵۵ برقرار نشد. محتوای موجود تغییر نکرد.') from exc
     if 'html' not in mime.lower() and not raw[:200].lower().lstrip().startswith((b'<!doctype',b'<html')):
         raise ValueError('پاسخ CRM صفحه HTML قابل پردازش نبود.')
