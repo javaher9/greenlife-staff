@@ -493,7 +493,7 @@ def treatment_content_manage(request, item_id):
             rows=([card for card in data.get(template_day,[]) if card['slot']==slot] if template_day else [])
             template_rows.append({
                 'slot':slot,'name':labels[slot],'manual':bool(manual),
-                'body':manual.body if manual else '\\n'.join(card['body'] for card in rows),
+                'body':manual.body if manual else '\n'.join(card['body'] for card in rows),
                 'photo':next((m.url for m in manual.media.all() if m.kind=='image' and m.url),'') if manual else
                     next((card.get('photo','') for card in rows if card.get('photo')),''),
                 'kcal':manual.estimated_kcal if manual else None,
