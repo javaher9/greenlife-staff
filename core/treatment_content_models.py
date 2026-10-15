@@ -59,6 +59,7 @@ class TreatmentRichSection(models.Model):
     ]
     meal_slot=models.CharField(max_length=16,choices=MEAL_CHOICES,default='other')
     estimated_kcal=models.PositiveSmallIntegerField(null=True,blank=True)
+    is_editor_page=models.BooleanField(default=False)
     sort_order=models.PositiveSmallIntegerField(default=0)
 
     class Meta:
