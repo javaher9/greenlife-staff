@@ -8,6 +8,9 @@
 *{box-sizing:border-box}html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Vazirmatn,Tahoma,Arial,sans-serif}
 body.ramadan{--bg:#f3f4fa;--green:#555089;--border:#deddf0}
+body.thirteen{--bg:#f3f8f6;--green:#26716d;--border:#d6e6e2}
+.thirteen-visit{background:#fef5dd;border:1px solid #dfb85b;border-radius:17px;padding:20px;margin:18px 0;font-size:15px;font-weight:800;text-align:center;color:#695129}
+.unassigned{background:#fffaf2;border:1px solid #e8c796;border-radius:15px;padding:16px;margin:16px 0}.unassigned h3{font-size:15px}.unassigned p{white-space:pre-wrap;line-height:2;font-size:12px}
 a{color:var(--green);text-decoration:none}
 button,select{font:inherit}
 .container{max-width:1140px;margin:0 auto;padding:18px 18px 60px}
@@ -59,7 +62,7 @@ button,select{font:inherit}
 <section class="hero">
   <div class="hero-copy"><span class="eyebrow">{{ template_name }}</span><h1>{{ title }}</h1>
   {% if content.hero_subtitle %}<p>{{ content.hero_subtitle }}</p>{% endif %}
-  <p>{% if kind == 'ramadan' %}برنامه سحری، افطار و شام برای روزهای هفته{% else %}برنامه روزانه از شنبه تا جمعه{% endif %}</p></div>
+  <p>{% if kind == 'ramadan' %}برنامه سحری، افطار و شام برای روزهای هفته{% elif kind == 'thirteen' %}روزهای ۱ تا ۱۳؛ روز چهاردهم مراجعه به مطب{% else %}برنامه روزانه از شنبه تا جمعه{% endif %}</p></div>
   {% if content.cover_url %}<img src="{{ content.cover_url }}" alt="تصویر برنامه غذایی" loading="lazy">{% endif %}
 </section>
 {% if content.intro_warning %}<div class="warning">{{ content.intro_warning }}</div>{% endif %}
@@ -89,6 +92,14 @@ button,select{font:inherit}
 </section>
 {% endfor %}
 </div>
+{% if kind == 'thirteen' %}
+<section class="thirteen-visit">روز ۱۴ · مراجعه به مطب برای بررسی و تنظیم برنامه بعدی</section>
+{% if unmapped %}
+<section class="unassigned"><h3>متن اصلی منتقل‌شده که روز آن مشخص نشده است</h3><p>این بخش از CRM بدون حدس‌زدن روز یا وعده حفظ شده است. لطفاً در تنظیمات، وعده‌های روزهای مربوط را مشخص کنید.</p>
+{% for section in unmapped %}<h3>{{ section.title }}</h3><p>{{ section.body }}</p>{% endfor %}
+</section>
+{% endif %}
+{% endif %}
 <div class="extras">
 {% if content.quota_text %}<section class="extra"><h2>سهمیه‌های روزانه</h2><p>{{ content.quota_text }}</p></section>{% endif %}
 {% if content.free_foods_text %}<section class="extra"><h2>مواد غذایی آزاد</h2><p>{{ content.free_foods_text }}</p></section>{% endif %}

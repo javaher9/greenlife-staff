@@ -18,6 +18,24 @@
 <div class="tcl">
   <div class="hero"><h1>تنظیمات برنامه غذایی و رژیم‌ها</h1>
   <p>از دکمه «ویرایش» مقابل هر برنامه، متن وعده‌ها و عکس همان وعده را در جای خودش ببینید، اصلاح کنید یا جایگزین نمایید. {{ count_diets }} رژیم در بانک اصلی ثبت شده است. برنامه‌های بدون محتوای اولیه با وضعیت غیرفعال برای تکمیل باز می‌شوند.</p></div>
+  <section class="panel" id="create-diet">
+    <h2 style="color:#fff;font-size:18px">＋ ساخت برنامه غذایی جدید</h2>
+    <p>ابتدا نام برنامه و یکی از چهار قالب را انتخاب کنید. برنامه جدید تا تکمیل و فعال‌کردن شما فقط پیش‌نویس خواهد بود.</p>
+    <form method="post" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;align-items:end">{% csrf_token %}
+      <input type="hidden" name="action" value="create_diet">
+      <label>نام برنامه غذایی<input type="text" name="diet_name" maxlength="180" placeholder="برای مثال: برنامه غذایی جدید" required style="display:block;width:100%;padding:12px;background:#223d48;color:#fff;border:1px solid #557b76;border-radius:10px"></label>
+      <label>نوع قالب
+        <select name="diet_template" required style="display:block;width:100%;padding:12px;background:#223d48;color:#fff;border:1px solid #557b76;border-radius:10px">
+          <option value="" selected disabled>یکی را انتخاب کنید</option>
+          <option value="weekly">هفت‌روزه (شنبه تا جمعه)</option>
+          <option value="ramadan">ماه رمضان (سحری و افطار)</option>
+          <option value="thirteen">سیزده‌روزه (روز ۱ تا ۱۳)</option>
+          <option value="text">متنی (تصویر و متن، ورق‌خور)</option>
+        </select>
+      </label>
+      <button type="submit">ساخت پیش‌نویس و رفتن به ویرایش</button>
+    </form>
+  </section>
   <section class="panel">
     <h2 style="color:#fff;font-size:18px">ورود پنج نمونه اصلی از فایل ZIP</h2>
     <p>فایل «خروجی HTML.zip» را انتخاب کنید. خروجی‌های MHTML در سرور خوانده می‌شوند و عکس‌های جاسازی‌شده نیز در فضای رسانه اپ ذخیره خواهند شد؛ هیچ اتصال به پورت CRM لازم نیست.</p>
@@ -28,7 +46,7 @@
     </form>
   </section>
   <section class="panel"><h2 style="color:#fff;font-size:18px">فهرست برنامه‌های غذایی و توصیه‌ها</h2>
-  <p>ویرایش متن یا تصویر هر وعده فقط همان مورد را تغییر می‌دهد. برای رژیم پرتقال، برنامه هفتگی نیز در صفحه ویرایش در دسترس است.</p>
+  <p>ویرایش متن یا تصویر هر وعده فقط همان مورد را تغییر می‌دهد. برای هر برنامه امکان انتخاب و ویرایش قالب‌های چهارگانه وجود دارد. توصیه‌ها ساختار جداگانه خود را دارند.</p>
   {% for row in rows %}<div class="sample">
     <div><b>{{ row.title }}</b><br><small>{% if row.category == 'diet' %}رژیم{% else %}توصیه{% endif %} · {% if row.item.rich_content %}{% if row.item.rich_content.is_active %}محتوا فعال{% else %}محتوا غیرفعال{% endif %}{% else %}هنوز محتوایی وارد نشده{% endif %}</small></div>
     <div class="row-actions">

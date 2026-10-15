@@ -1,0 +1,69 @@
+<section class="tcm-text-pages" id="text-pages-settings">
+  <h2>صفحه‌های متن و عکس</h2>
+  <p class="muted">هر بخش می‌تواند یک ورق مستقل باشد. متن و عکس همین بخش کنار هم ویرایش می‌شوند. در موبایل با کشیدن انگشت صفحه‌ها عوض می‌شوند.</p>
+  {% for section in sections %}
+    {% if section.meal_slot == 'other' %}
+    <div class="template-meal-editor">
+      <h3>برگ {{ forloop.counter }} · {{ section.title }} {% if not section.is_editor_page %}<small>محتوای اصلی CRM</small>{% endif %}</h3>
+      <div class="template-meal-layout">
+        <div class="template-photo">
+          {% for medium in section.media.all %}{% if medium.kind == 'image' and not medium.is_responsive_duplicate %}
+          <div style="margin-bottom:12px">
+            {% if medium.url %}<img src="{{ medium.url }}" alt="تصویر {{ section.title }}" loading="lazy">{% endif %}
+            <form method="post" enctype="multipart/form-data">{% csrf_token %}
+              <input type="hidden" name="action" value="replace_meal_image">
+              <input type="hidden" name="media_id" value="{{ medium.pk }}">
+              <label>تعویض همین عکس</label><input name="meal_image" type="file" accept="image/png,image/jpeg,image/webp,image/gif" required>
+              <button type="submit">جایگزینی عکس</button>
+            </form>
+            <form method="post" onsubmit="return confirm('فقط همین تصویر حذف شود؟')">{% csrf_token %}
+              <input type="hidden" name="action" value="delete_meal_image">
+              <input type="hidden" name="media_id" value="{{ medium.pk }}">
+              <button type="submit" class="tcm-danger">حذف تصویر</button>
+            </form>
+          </div>
+          {% endif %}{% endfor %}
+          <form method="post" enctype="multipart/form-data">{% csrf_token %}
+            <input type="hidden" name="action" value="upload">
+            <input type="hidden" name="location" value="section">
+            <input type="hidden" name="kind" value="image">
+            <input type="hidden" name="section_id" value="{{ section.pk }}">
+            <label>عکس جدید برای این برگ</label>
+            <input type="file" name="media_file" accept="image/png,image/jpeg,image/webp,image/gif" required>
+            <button type="submit">افزودن عکس</button>
+          </form>
+        </div>
+        <div>
+          <form method="post">{% csrf_token %}
+            <input type="hidden" name="action" value="save_text_page">
+            <input type="hidden" name="section_id" value="{{ section.pk }}">
+            <label>عنوان این برگ</label><input name="page_title" value="{{ section.title }}" maxlength="200" required>
+            <label>متن این برگ</label><textarea name="page_body" rows="5">{{ section.body }}</textarea>
+            <label>ترتیب نمایش (عدد کوچکتر زودتر)</label>
+            <input name="page_order" type="number" min="0" max="9999" value="{{ section.sort_order }}">
+            <button type="submit">ذخیره متن و ترتیب این برگ</button>
+          </form>
+          {% if section.is_editor_page %}
+          <form method="post" onsubmit="return confirm('این برگ جدید و عکس‌های وابسته حذف شوند؟')">{% csrf_token %}
+            <input type="hidden" name="action" value="delete_text_page">
+            <input type="hidden" name="section_id" value="{{ section.pk }}">
+            <button type="submit" class="tcm-danger">حذف این برگ</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  {% endfor %}
+  <div class="template-meal-editor">
+    <h3>＋ افزودن برگ جدید با متن و عکس</h3>
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}
+      <input type="hidden" name="action" value="add_text_page">
+      <label>عنوان این صفحه</label><input name="page_title" maxlength="200" placeholder="برای مثال: روش مصرف سیب" required>
+      <label>متن صفحه</label><textarea name="page_body" rows="4" required></textarea>
+      <label>عکس این صفحه (اختیاری)</label>
+      <input type="file" name="page_image" accept="image/png,image/jpeg,image/webp,image/gif">
+      <button type="submit">افزودن این صفحه</button>
+    </form>
+  </div>
+</section>

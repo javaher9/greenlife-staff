@@ -57,6 +57,8 @@ jobs:
         run: python manage.py test core.tests.test_treatment_content_samples --verbosity 2
       - name: Weekly and Ramadan diet template regression tests
         run: python manage.py test core.tests.test_diet_two_templates core.tests.test_diet_daily --verbosity 2
+      - name: Thirteen-day, text diet, new draft and CRM transfer regression
+        run: python manage.py test core.tests.test_diet_four_formats core.tests.test_diet_two_templates core.tests.test_diet_daily --verbosity 2
       - name: Receptionist, call center, finance and lead-ingest regression tests
         run: python manage.py test core.tests.test_receptionist_role core.tests.test_doctor_dashboard core.tests.test_unified_device_pricing core.tests.test_treatment_catalog_settings core.tests.test_treatment_master_data core.tests.test_patient_360 core.tests.test_call_center_role core.tests.test_call_center_kpis core.tests.test_appointment_payment_visibility core.tests.test_telegram_lead core.tests.test_instagram_page_sources core.tests.test_consultant_finance core.tests.test_lead_ingest core.tests.test_unified_lead_routing core.tests.test_server_health --verbosity 2
 

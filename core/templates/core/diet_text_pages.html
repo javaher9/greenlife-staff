@@ -1,0 +1,99 @@
+<!doctype html><html lang="fa" dir="rtl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ title }} · برنامه غذایی متنی</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;900&display=swap');
+*{box-sizing:border-box}body{margin:0;background:#eff7f2;color:#214239;font-family:Vazirmatn,Tahoma,Arial,sans-serif}
+a{color:#267455;font-weight:800;text-decoration:none}
+.container{max-width:960px;margin:0 auto;padding:16px 16px 55px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;font-size:12px}
+.hero{background:linear-gradient(125deg,#d9eee0,#f7f5ed);border:1px solid #cfe3d5;border-radius:22px;padding:25px;display:flex;align-items:center;gap:20px}
+.hero h1{font-size:27px;margin:7px 0}.hero p{font-size:13px;line-height:2;color:#61776d}
+.hero img{width:35%;max-height:185px;object-fit:cover;border-radius:16px}
+.pager{display:none;position:sticky;top:0;z-index:3;background:#fff;border:1px solid #cddfd4;border-radius:15px;padding:10px;margin:14px 0;align-items:center;justify-content:space-between;box-shadow:0 3px 15px #1e4d3218}
+.pager button{font:inherit;background:#e0f1e6;color:#216d50;font-weight:900;border:0;border-radius:10px;padding:9px 12px;cursor:pointer}.pager button:disabled{opacity:.35}.pager b{font-size:13px}
+.pages{display:grid;gap:18px;margin:18px 0}
+.page{background:#fff;border:1px solid #d8e8dd;border-radius:18px;padding:22px;box-shadow:0 8px 25px #2555380a}
+.page h2{font-size:19px;margin:0 0 15px;color:#267455}
+.page-row{display:flex;gap:18px;padding:13px 0;border-bottom:1px solid #ebf2ed;align-items:start}
+.page-row:last-child{border-bottom:0}
+.page-text{flex:1;min-width:0;font-size:13px;line-height:2.15;white-space:pre-wrap;overflow-wrap:anywhere}
+.page-photos{width:min(180px,38%);display:grid;gap:8px}
+.page-photos img{display:block;width:100%;max-height:230px;object-fit:contain;background:#fff;border:1px solid #e5ede8;border-radius:13px}
+.gallery{display:flex;flex-wrap:wrap;gap:12px}.gallery img{width:125px;max-height:135px;object-fit:contain}
+.extra{background:#fff;border:1px solid #d8e8dd;border-radius:16px;padding:17px;margin:12px 0}
+.extra h2{font-size:16px;color:#267455}.extra p{white-space:pre-wrap;line-height:2;font-size:12px}
+.admin{display:block;margin:20px 0;font-size:12px}
+@media(max-width:720px){
+ .container{padding:10px 10px 35px}.hero{padding:17px;border-radius:17px}.hero h1{font-size:21px}.hero img{max-height:125px}
+ .pager{display:flex}.pages{display:block}.page{display:none;padding:15px}.page.active{display:block}
+ .page-row{gap:9px}.page-text{font-size:12px}.page-photos{width:37%}
+}
+@media print{.pager,header a,.admin{display:none!important}.page{display:block!important;break-inside:avoid;box-shadow:none}}
+</style></head><body>
+<main class="container">
+<header><strong>❧ گرین‌لایف</strong><a href="{% url 'treatment_content_browse' %}">بازگشت</a></header>
+<section class="hero"><div style="flex:1"><small>قالب برنامه غذایی متنی</small><h1>{{ title }}</h1><p>مطالعه مرحله‌به‌مرحله متن و تصاویر برنامه</p></div>
+{% if content.cover_url %}<img src="{{ content.cover_url }}" alt="عکس اصلی">{% endif %}</section>
+{% if content.intro_warning %}<div class="extra"><p>{{ content.intro_warning }}</p></div>{% endif %}
+{% if content.audio_url %}<div class="extra"><audio controls preload="none" src="{{ content.audio_url }}" style="width:100%"></audio></div>{% endif %}
+{% if pages %}
+<nav class="pager" aria-label="ورق زدن صفحات">
+ <button id="back" type="button" aria-label="صفحه قبل">❯</button>
+ <b id="page-counter">صفحه ۱ از {{ pages|length }}</b>
+ <button id="forward" type="button" aria-label="صفحه بعد">❮</button>
+</nav>
+<div class="pages" id="text-diet-pages">
+{% for page in pages %}
+<section class="page {% if forloop.first %}active{% endif %}" data-page="{{ forloop.counter }}">
+  <h2>{{ page.title }}</h2>
+  {% for row in page.preview_rows %}
+    {% if row.text or row.images %}
+    <div class="page-row">
+      {% if row.text %}<div class="page-text">{{ row.text }}</div>{% endif %}
+      {% if row.images %}<div class="page-photos">{% for media in row.images %}<img src="{{ media.url }}" alt="تصویر این بخش" loading="lazy">{% endfor %}</div>{% endif %}
+    </div>
+    {% endif %}
+  {% endfor %}
+  {% if page.footer_images %}<div class="gallery">{% for media in page.footer_images %}<img src="{{ media.url }}" alt="تصویر تکمیلی" loading="lazy">{% endfor %}</div>{% endif %}
+  {% for media in page.audio_media %}<audio controls preload="none" src="{{ media.url }}" style="max-width:100%"></audio>{% endfor %}
+</section>
+{% endfor %}
+</div>
+{% else %}<div class="extra">این برنامه هنوز متن یا صفحه‌ای ندارد.</div>{% endif %}
+{% if content.quota_text %}<section class="extra"><h2>سهمیه</h2><p>{{ content.quota_text }}</p></section>{% endif %}
+{% if content.free_foods_text %}<section class="extra"><h2>مواد غذایی آزاد</h2><p>{{ content.free_foods_text }}</p></section>{% endif %}
+{% if content.diet_notes_text %}<section class="extra"><h2>توضیحات</h2><p>{{ content.diet_notes_text }}</p></section>{% endif %}
+{% if can_manage %}<a class="admin" href="{% url 'treatment_content_manage' content.master_item_id %}">ویرایش عکس و متن این برنامه</a>{% endif %}
+</main>
+<script>
+(function(){
+ const area=document.getElementById('text-diet-pages');
+ if(!area)return;
+ const pages=Array.from(area.querySelectorAll('.page'));
+ const counter=document.getElementById('page-counter');
+ const prev=document.getElementById('back');
+ const next=document.getElementById('forward');
+ let active=1;
+ function show(day){
+   if(day<1||day>pages.length)return;
+   active=day;pages.forEach((p,i)=>p.classList.toggle('active',i===active-1));
+   counter.textContent='صفحه '+active+' از '+pages.length;
+   prev.disabled=active===1;next.disabled=active===pages.length;
+ }
+ prev.addEventListener('click',()=>show(active-1));
+ next.addEventListener('click',()=>show(active+1));
+ let start=null;
+ area.addEventListener('touchstart',e=>{
+   if(window.matchMedia('(min-width:721px)').matches||e.touches.length!==1||e.target.closest('a,button,audio,input,select')){start=null;return;}
+   start={x:e.touches[0].clientX,y:e.touches[0].clientY};
+ },{passive:true});
+ area.addEventListener('touchend',e=>{
+   if(!start||e.changedTouches.length!==1)return;
+   const dx=e.changedTouches[0].clientX-start.x,dy=e.changedTouches[0].clientY-start.y;start=null;
+   if(Math.abs(dx)>65&&Math.abs(dx)>Math.abs(dy)*1.45)show(active+(dx<0?1:-1));
+ },{passive:true});
+ show(1);
+})();
+</script>
+</body></html>
