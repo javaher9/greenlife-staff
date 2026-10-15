@@ -14,6 +14,10 @@ def assign_remaining_pilots(apps, schema_editor):
 class Migration(migrations.Migration):
     dependencies=[('core','0090_two_diet_templates')]
     operations=[
+        migrations.AddField(
+            model_name='treatmentrichsection',name='is_editor_page',
+            field=models.BooleanField(default=False),
+        ),
         migrations.AlterField(
             model_name='treatmentrichcontent',name='presentation_template',
             field=models.CharField(max_length=12,default='legacy',choices=[
