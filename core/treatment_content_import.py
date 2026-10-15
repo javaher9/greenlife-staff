@@ -170,10 +170,10 @@ def _audio_urls(node):
     return urls
 
 
-def _read_one(payload,filename):
-    title=PurePosixPath(filename).stem
+def _read_one(payload,filename,*,source_title=None,approved_only=True):
+    title=source_title or PurePosixPath(filename).stem
     category='recommendation' if title=='نکات طلائی در لاغری' else 'diet'
-    if (category,title) not in APPROVED_ITEMS:
+    if approved_only and (category,title) not in APPROVED_ITEMS:
         raise ValueError('عنوان نمونه خارج از فهرست مجاز است: '+title)
     message=email.message_from_bytes(payload,policy=email.policy.default)
     htmls=[
@@ -276,3 +276,27 @@ def extract_approved_samples(zip_bytes):
     if {(entry['category'],entry['title']) for entry in entries}!=APPROVED_ITEMS:
         raise ValueError('فهرست پنج نمونه با عناوین مورد انتظار مطابقت ندارد.')
     return entries
+
+
+def extract_live_diet_html(html_bytes, diet_name, *, encoding='utf-8'):
+    """Adapt an actual CRM GET response to existing strict source parser.
+
+    No fabricated pages or guessed medical quantities. ZIP pilot validation
+    remains strict and unchanged. Recommendations are not supported here.
+    """
+    from email.mime.text import MIMEText
+    if not isinstance(html_bytes,bytes) or not html_bytes or len(html_bytes)>8_000_000:
+        raise ValueError('اندازه پاسخ CRM نامعتبر است.')
+    if not diet_name or diet_name.strip()!=diet_name or len(diet_name)>180:
+        raise ValueError('نام رژیم برای خواندن CRM معتبر نیست.')
+    try:
+        source=html_bytes.decode(encoding,errors='strict')
+    except (UnicodeError,LookupError) as exc:
+        raise ValueError('کدگذاری متن فارسی CRM معتبر نیست؛ باید بررسی شود.') from exc
+    source_message=MIMEText(source,_subtype='html',_charset='utf-8')
+    entry=_read_one(source_message.as_bytes(),'crm-diet.mhtml',
+                    source_title=diet_name,approved_only=False)
+    if entry['category']!='diet' or not entry['sections']:
+        raise ValueError('قالب پاسخ رژیم CRM شناخته نشد؛ انتقال لغو شد.')
+    entry['source']='CRM HTTP GET'
+    return entry
