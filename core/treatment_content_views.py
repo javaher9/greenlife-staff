@@ -19,6 +19,7 @@ from .treatment_content_service import import_five_sample_zip
 from .treatment_content_layout import build_section_preview
 from .treatment_content_edit_rows import inline_edit_rows,replace_one_line
 from .diet_week_plan import DAYS as ORANGE_DAYS, SLOTS as ORANGE_SLOTS, LABELS as ORANGE_LABELS, build_orange_week, parse_legacy
+from .diet_ramadan_plan import SLOTS as RAMADAN_SLOTS, LABELS as RAMADAN_LABELS, build_ramadan_week
 
 _ALLOWED_IMAGE_EXT={'.jpg','.jpeg','.png','.webp','.gif'}
 
@@ -182,6 +183,71 @@ def treatment_content_manage(request, item_id):
                 content.full_clean()
                 content.save()
                 messages.success(request,'اطلاعات عمومی ذخیره شد.')
+            elif action=='save_diet_template':
+                if content.master_item.category!='diet':
+                    raise ValueError('این تنظیمات فقط برای برنامه غذایی است.')
+                template=(request.POST.get('presentation_template') or '').strip()
+                if template not in ('legacy','weekly','ramadan'):
+                    raise ValueError('نوع قالب نامعتبر است.')
+                content.presentation_template=template
+                content.quota_text=request.POST.get('quota_text','')[:25000]
+                content.free_foods_text=request.POST.get('free_foods_text','')[:25000]
+                content.diet_notes_text=request.POST.get('diet_notes_text','')[:25000]
+                content.save(update_fields=[
+                    'presentation_template','quota_text','free_foods_text','diet_notes_text','updated_at',
+                ])
+                messages.success(request,'نوع قالب و اطلاعات سهمیه/غذاهای آزاد ذخیره شد.')
+            elif action in ('save_template_meal','clear_template_meal','remove_template_photo'):
+                if content.master_item.category!='diet' or content.presentation_template not in ('weekly','ramadan'):
+                    raise PermissionDenied('ویرایش روزانه فقط برای قالب هفتگی یا رمضان فعال است.')
+                day=int(request.POST.get('template_day','-1'))
+                slot=(request.POST.get('template_slot') or '').strip()
+                allowed=(RAMADAN_SLOTS if content.presentation_template=='ramadan' else ORANGE_SLOTS)
+                labels=(RAMADAN_LABELS if content.presentation_template=='ramadan' else ORANGE_LABELS)
+                if day not in range(8) or slot not in allowed or slot=='other':
+                    raise ValueError('روز یا وعده انتخاب‌شده معتبر نیست.')
+                existing=content.sections.filter(day_number=day,meal_slot=slot)
+                if action=='clear_template_meal':
+                    existing.delete()
+                    messages.success(request,'تنظیم اختصاصی این وعده پاک شد؛ نسخه اصلی نمایش داده می‌شود.')
+                else:
+                    body=(request.POST.get('template_body') or '').strip()[:150000]
+                    primary=existing.order_by('id').first()
+                    if action=='save_template_meal' and not body:
+                        raise ValueError('متن وعده نباید خالی باشد.')
+                    if primary is None:
+                        if not body:
+                            raise ValueError('ابتدا برای این وعده متن تأییدشده ثبت کنید.')
+                        order=content.sections.order_by('-sort_order').values_list('sort_order',flat=True).first() or 0
+                        primary=content.sections.create(
+                            title=labels[slot],body=body,day_number=day,meal_slot=slot,
+                            sort_order=min(order+10,9999),
+                        )
+                    if action=='remove_template_photo':
+                        primary.media.filter(kind='image').delete()
+                        messages.success(request,'تصویر همین وعده حذف شد؛ متن محفوظ ماند.')
+                    else:
+                        photo=request.FILES.get('template_image')
+                        if photo:
+                            _validate_meal_photo(photo)
+                        raw_kcal=(request.POST.get('template_kcal') or '').strip()
+                        kcal=int(raw_kcal) if raw_kcal else None
+                        if kcal is not None and not 0<=kcal<=9999:
+                            raise ValueError('کالری باید بین صفر و ۹۹۹۹ باشد.')
+                        primary.body=body
+                        primary.estimated_kcal=kcal
+                        primary.save(update_fields=['body','estimated_kcal'])
+                        if photo:
+                            medium=primary.media.filter(kind='image').order_by('sort_order','pk').first()
+                            if medium is None:
+                                medium=TreatmentRichMedia(section=primary,kind='image',sort_order=0,inline_before_line=0)
+                            medium.uploaded_file.save(photo.name,photo,save=False)
+                            medium.original_url=''
+                            medium.inline_before_line=0
+                            medium.is_responsive_duplicate=False
+                            medium.save()
+                        messages.success(request,'تنظیم این وعده ذخیره شد؛ فایل اصلی رژیم تغییر نکرد.')
+                return redirect(reverse('treatment_content_manage',args=[item_id])+f'?template_day={day}#structured-template-editor')
             elif action=='save_section':
                 section=get_object_or_404(content.sections,pk=request.POST.get('section_id'))
                 section.title=(request.POST.get('title') or '').strip()[:200]
@@ -404,8 +470,38 @@ def treatment_content_manage(request, item_id):
                 'manual':bool(manual),
                 'photo':next((card.get('photo','') for card in choices if card.get('photo')), ''),
             })
+    template_rows=[]
+    template_day=1
+    selected_template=content.presentation_template
+    if content.master_item.category=='diet' and selected_template in ('weekly','ramadan'):
+        try:
+            template_day=int(request.GET.get('template_day','1'))
+        except (TypeError,ValueError):
+            template_day=1
+        if template_day not in range(8):
+            template_day=1
+        if selected_template=='weekly':
+            data=build_orange_week(sections)
+            slots=[slot for slot in ORANGE_SLOTS if slot!='other']
+            labels=ORANGE_LABELS
+        else:
+            data=build_ramadan_week(sections)
+            slots=[slot for slot in RAMADAN_SLOTS if slot!='other']
+            labels=RAMADAN_LABELS
+        for slot in slots:
+            manual=next((row for row in sections if row.meal_slot==slot and row.day_number==template_day),None)
+            rows=([card for card in data.get(template_day,[]) if card['slot']==slot] if template_day else [])
+            template_rows.append({
+                'slot':slot,'name':labels[slot],'manual':bool(manual),
+                'body':manual.body if manual else '\\n'.join(card['body'] for card in rows),
+                'photo':next((m.url for m in manual.media.all() if m.kind=='image' and m.url),'') if manual else
+                    next((card.get('photo','') for card in rows if card.get('photo')),''),
+                'kcal':manual.estimated_kcal if manual else None,
+            })
     return render(request,'core/treatment_content_manage.html',{
         'content':content,'sections':sections,'day_audios':list(content.daily_audio.all()),
+        'template_rows':template_rows,'template_day':template_day,
+        'template_days':list(enumerate(ORANGE_DAYS,start=1)),
         'orange_only':orange_only,'orange_day':orange_day,
         'orange_days':list(enumerate(ORANGE_DAYS,start=1)),'orange_rows':orange_rows,
     })
