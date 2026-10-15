@@ -20,6 +20,7 @@ from .treatment_content_layout import build_section_preview
 from .treatment_content_edit_rows import inline_edit_rows,replace_one_line
 from .diet_week_plan import DAYS as ORANGE_DAYS, SLOTS as ORANGE_SLOTS, LABELS as ORANGE_LABELS, build_orange_week, parse_legacy
 from .diet_ramadan_plan import SLOTS as RAMADAN_SLOTS, LABELS as RAMADAN_LABELS, build_ramadan_week
+from .diet_thirteen_plan import build_thirteen_days
 
 _ALLOWED_IMAGE_EXT={'.jpg','.jpeg','.png','.webp','.gif'}
 
@@ -106,6 +107,33 @@ def treatment_content_preview(request, item_id):
 @require_http_methods(['GET','POST'])
 def treatment_content_library(request):
     _admin_only(request)
+    if request.method=='POST' and request.POST.get('action')=='create_diet':
+        title=(request.POST.get('diet_name') or '').strip()
+        template=(request.POST.get('diet_template') or '').strip()
+        if not title or len(title)>180:
+            messages.error(request,'نام برنامه الزامی است و نباید بیش از ۱۸۰ حرف باشد.')
+        elif template not in ('weekly','ramadan','thirteen','text'):
+            messages.error(request,'ابتدا یکی از چهار قالب اصلی را انتخاب کنید.')
+        else:
+            from django.db import transaction
+            with transaction.atomic():
+                exists=TreatmentCatalogItem.objects.filter(
+                    category='diet',name__iexact=title,branch__isnull=True,
+                ).first()
+                if exists:
+                    messages.error(request,'برنامه‌ای با این نام از قبل در بانک اصلی ثبت شده است.')
+                else:
+                    item=TreatmentCatalogItem.objects.create(
+                        name=title,category='diet',branch=None,
+                        is_active=False,created_by=request.user,
+                    )
+                    TreatmentRichContent.objects.create(
+                        master_item=item,presentation_template=template,is_active=False,
+                        origin='ایجاد توسط مدیر؛ در انتظار تکمیل',
+                    )
+                    messages.success(request,'برنامه جدید به‌صورت پیش‌نویس ساخته شد. وعده‌ها و عکس‌ها را تکمیل و سپس فعال کنید.')
+                    return redirect('treatment_content_manage',item_id=item.pk)
+        return redirect('treatment_content_library')
     if request.method=='POST' and request.POST.get('action')=='start_edit':
         item=get_object_or_404(
             TreatmentCatalogItem,pk=request.POST.get('item_id'),
@@ -187,7 +215,7 @@ def treatment_content_manage(request, item_id):
                 if content.master_item.category!='diet':
                     raise ValueError('این تنظیمات فقط برای برنامه غذایی است.')
                 template=(request.POST.get('presentation_template') or '').strip()
-                if template not in ('legacy','weekly','ramadan'):
+                if template not in ('legacy','weekly','ramadan','thirteen','text'):
                     raise ValueError('نوع قالب نامعتبر است.')
                 content.presentation_template=template
                 content.quota_text=request.POST.get('quota_text','')[:25000]
@@ -198,13 +226,13 @@ def treatment_content_manage(request, item_id):
                 ])
                 messages.success(request,'نوع قالب و اطلاعات سهمیه/غذاهای آزاد ذخیره شد.')
             elif action in ('save_template_meal','clear_template_meal','remove_template_photo'):
-                if content.master_item.category!='diet' or content.presentation_template not in ('weekly','ramadan'):
+                if content.master_item.category!='diet' or content.presentation_template not in ('weekly','ramadan','thirteen'):
                     raise PermissionDenied('ویرایش روزانه فقط برای قالب هفتگی یا رمضان فعال است.')
                 day=int(request.POST.get('template_day','-1'))
                 slot=(request.POST.get('template_slot') or '').strip()
                 allowed=(RAMADAN_SLOTS if content.presentation_template=='ramadan' else ORANGE_SLOTS)
                 labels=(RAMADAN_LABELS if content.presentation_template=='ramadan' else ORANGE_LABELS)
-                if day not in range(8) or slot not in allowed or slot=='other':
+                if day not in range(14 if content.presentation_template=='thirteen' else 8) or slot not in allowed or slot=='other':
                     raise ValueError('روز یا وعده انتخاب‌شده معتبر نیست.')
                 existing=content.sections.filter(day_number=day,meal_slot=slot)
                 if action=='clear_template_meal':
@@ -248,6 +276,43 @@ def treatment_content_manage(request, item_id):
                             medium.save()
                         messages.success(request,'تنظیم این وعده ذخیره شد؛ فایل اصلی رژیم تغییر نکرد.')
                 return redirect(reverse('treatment_content_manage',args=[item_id])+f'?template_day={day}#structured-template-editor')
+            elif action=='add_text_page':
+                if content.master_item.category!='diet' or content.presentation_template!='text':
+                    raise PermissionDenied('افزودن صفحه فقط برای برنامه متنی مجاز است.')
+                title=(request.POST.get('page_title') or '').strip()[:200]
+                body=request.POST.get('page_body','')[:150000]
+                if not title or not body.strip():
+                    raise ValueError('عنوان و متن صفحه باید مشخص باشد.')
+                photo=request.FILES.get('page_image')
+                if photo:
+                    _validate_meal_photo(photo)
+                order=(content.sections.order_by('-sort_order').values_list('sort_order',flat=True).first() or 0)
+                section=content.sections.create(
+                    title=title,body=body,day_number=0,meal_slot='other',
+                    sort_order=min(order+10,9999),is_editor_page=True,
+                )
+                if photo:
+                    media=TreatmentRichMedia(section=section,kind='image',sort_order=10,inline_before_line=0)
+                    media.uploaded_file.save(photo.name,photo,save=True)
+                messages.success(request,'صفحه متنی همراه متن و عکس آن افزوده شد.')
+            elif action=='save_text_page':
+                if content.presentation_template!='text' or content.master_item.category!='diet':
+                    raise PermissionDenied('ویرایش صفحه در قالب متنی مجاز است.')
+                section=get_object_or_404(content.sections,pk=request.POST.get('section_id'),meal_slot='other')
+                title=(request.POST.get('page_title') or '').strip()[:200]
+                if not title:
+                    raise ValueError('عنوان صفحه نمی‌تواند خالی باشد.')
+                section.title=title
+                section.body=request.POST.get('page_body','')[:150000]
+                section.sort_order=max(0,min(9999,int(request.POST.get('page_order','100'))))
+                section.save(update_fields=['title','body','sort_order'])
+                messages.success(request,'صفحه متنی و ترتیب آن ذخیره شد.')
+            elif action=='delete_text_page':
+                if content.master_item.category!='diet' or content.presentation_template!='text':
+                    raise PermissionDenied('حذف صفحه فقط در قالب متنی مجاز است.')
+                section=get_object_or_404(content.sections,pk=request.POST.get('section_id'),is_editor_page=True)
+                section.delete()
+                messages.success(request,'صفحه انتخاب‌شده حذف شد؛ متن اصلی واردشده از CRM محفوظ است.')
             elif action=='save_section':
                 section=get_object_or_404(content.sections,pk=request.POST.get('section_id'))
                 section.title=(request.POST.get('title') or '').strip()[:200]
@@ -472,28 +537,37 @@ def treatment_content_manage(request, item_id):
             })
     template_rows=[]
     template_day=1
+    template_days=[]
     selected_template=content.presentation_template
-    if content.master_item.category=='diet' and selected_template in ('weekly','ramadan'):
+    if content.master_item.category=='diet' and selected_template in ('weekly','ramadan','thirteen'):
+        limit=13 if selected_template=='thirteen' else 7
         try:
             template_day=int(request.GET.get('template_day','1'))
         except (TypeError,ValueError):
             template_day=1
-        if template_day not in range(8):
+        if template_day not in range(limit+1):
             template_day=1
-        if selected_template=='weekly':
+        if selected_template=='thirteen':
+            data,_=build_thirteen_days(sections)
+            slots=[slot for slot in ORANGE_SLOTS if slot!='other']
+            labels=ORANGE_LABELS
+            template_days=[(i,f'روز {i}') for i in range(1,14)]
+        elif selected_template=='weekly':
             data=build_orange_week(sections)
             slots=[slot for slot in ORANGE_SLOTS if slot!='other']
             labels=ORANGE_LABELS
+            template_days=list(enumerate(ORANGE_DAYS,start=1))
         else:
             data=build_ramadan_week(sections)
             slots=[slot for slot in RAMADAN_SLOTS if slot!='other']
             labels=RAMADAN_LABELS
+            template_days=list(enumerate(ORANGE_DAYS,start=1))
         for slot in slots:
             manual=next((row for row in sections if row.meal_slot==slot and row.day_number==template_day),None)
             rows=([card for card in data.get(template_day,[]) if card['slot']==slot] if template_day else [])
             template_rows.append({
                 'slot':slot,'name':labels[slot],'manual':bool(manual),
-                'body':manual.body if manual else '\n'.join(card['body'] for card in rows),
+                'body':manual.body if manual else '\\n'.join(card['body'] for card in rows),
                 'photo':next((m.url for m in manual.media.all() if m.kind=='image' and m.url),'') if manual else
                     next((card.get('photo','') for card in rows if card.get('photo')),''),
                 'kcal':manual.estimated_kcal if manual else None,
@@ -501,7 +575,7 @@ def treatment_content_manage(request, item_id):
     return render(request,'core/treatment_content_manage.html',{
         'content':content,'sections':sections,'day_audios':list(content.daily_audio.all()),
         'template_rows':template_rows,'template_day':template_day,
-        'template_days':list(enumerate(ORANGE_DAYS,start=1)),
+        'template_days':template_days,
         'orange_only':orange_only,'orange_day':orange_day,
         'orange_days':list(enumerate(ORANGE_DAYS,start=1)),'orange_rows':orange_rows,
     })
