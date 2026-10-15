@@ -28,7 +28,8 @@ def ramadan_meal_label(line):
         'یکساعتبعدازافطار':'after_iftar','بعدازافطار':'after_iftar',
         'شام':'dinner','قبلازخواب':'bedtime',
     }
-    return mapping[title],match.group(3).strip()
+    original=HEAD.match((line or '').strip())
+    return mapping[title],(original or match).group(3).strip()
 
 
 def _uniques(cards):
