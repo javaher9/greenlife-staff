@@ -64,7 +64,7 @@ class TwoDietLayoutsTests(TestCase):
         self.assertContains(p,'قبل از ناهار')
         self.assertContains(p,'مرغ و سالاد')
         self.assertContains(p,'ماهی و سالاد')
-        self.assertContains(p,'day-sheet',count=8)  # CSS selector + 7 section nodes
+        self.assertContains(p,'data-day=',count=7)
         self.assertContains(p,'touchstart')
         self.assertContains(p,'@media(max-width:760px)')
         self.assertContains(p,'@media print')
