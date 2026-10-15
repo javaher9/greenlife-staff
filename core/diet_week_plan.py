@@ -33,7 +33,9 @@ def day_label(line):
         key=normalize(label).replace(' ','')
         found=next((i+1 for i,name in enumerate(DAYS) if normalize(name).replace(' ','')==key),None)
         if found and found not in indices: indices.append(found)
-    return (tuple(indices),match.group(3).strip()) if indices else None
+    original=DAY_LINE.match((line or '').strip())
+    rest=original.group(3).strip() if original else match.group(3).strip()
+    return (tuple(indices),rest) if indices else None
 
 
 def meal_label(line):
@@ -49,7 +51,8 @@ def meal_label(line):
         'میانوعدهعصر':'snack_pm','قبلازشام':'pre_dinner',
         'شام':'dinner','قبلازخواب':'bedtime',
     }
-    return mapping.get(title,'snack_am'),match.group(3).strip()
+    original=HEAD.match((line or '').strip())
+    return mapping.get(title,'snack_am'),(original or match).group(3).strip()
 
 
 def pictures(section):
@@ -88,7 +91,7 @@ def parse_legacy(section,heading_detector=None):
         block={'slot':new_slot,'days':day_ids,'start':i,'end':i,'lines':[]}
         blocks.append(block)
     for i,raw in enumerate(lines):
-        line=re.sub(r'^\s*[-•●*]\s*','',normalize(raw))
+        line=re.sub(r'^\s*[-•●*]\s*','',raw.strip())
         if not line: continue
         heading=heading_detector(line)
         if heading:
