@@ -16,6 +16,7 @@ from .models import (
     TreatmentCatalogItem, TreatmentRichContent, TreatmentRichSection, TreatmentRichMedia, TreatmentDietDayAudio,
 )
 from .treatment_content_service import import_five_sample_zip
+from .treatment_crm_diet_transfer import import_one_crm_diet
 from .treatment_content_layout import build_section_preview
 from .treatment_content_edit_rows import inline_edit_rows,replace_one_line
 from .diet_week_plan import DAYS as ORANGE_DAYS, SLOTS as ORANGE_SLOTS, LABELS as ORANGE_LABELS, build_orange_week, parse_legacy
@@ -194,7 +195,18 @@ def treatment_content_manage(request, item_id):
     if request.method=='POST':
         action=(request.POST.get('action') or '').strip()
         try:
-            if action=='toggle':
+            if action=='crm_import_diet':
+                if content.master_item.category!='diet':
+                    raise PermissionDenied('انتقال خودکار فقط برای برنامه غذایی فعال است.')
+                result=import_one_crm_diet(content.master_item)
+                messages.success(
+                    request,
+                    f"محتوای {result['sections']} بخش از CRM دریافت و در پیش‌نویس ثبت شد؛ "
+                    f"{result['media_saved']} تصویر محلی ذخیره شد. تا زمان تأیید مدیر غیرفعال است.",
+                )
+                if result['missing']:
+                    messages.warning(request,f"{result['missing']} تصویر در پاسخ CRM نشانی معتبر نداشت.")
+            elif action=='toggle':
                 content.is_active=not content.is_active
                 content.save(update_fields=['is_active','updated_at'])
                 content.master_item.is_active=content.is_active
