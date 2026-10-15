@@ -56,7 +56,7 @@ class DailyDietPresentationTests(TestCase):
     def test_daily_audio_and_permissions(self):
         TreatmentRichSection.objects.create(content=self.content,title='ناهار',body='محتوای واقعی')
         TreatmentDietDayAudio.objects.create(content=self.content,day_number=1,external_url='https://example.org/voice.mp3')
-        page=self.client.get(reverse('diet_daily_preview',args=[self.item.pk]))
+        page=self.client.get(reverse('diet_daily_preview',args=[self.item.pk])+'?day=1')
         self.assertContains(page,'https://example.org/voice.mp3')
         self.client.logout()
         response=self.client.get(reverse('diet_daily_preview',args=[self.item.pk]))
