@@ -1,7 +1,7 @@
 {% if content.master_item.category == 'diet' %}
 <section class="panel diet-template-settings" id="structured-template-editor">
 <h2>انتخاب قالب برنامه غذایی</h2>
-<p class="notice">قالب هفت‌روزه و قالب رمضان مستقل هستند. تغییر قالب، متن و تصاویر قدیمی را پاک نمی‌کند. دو قالب دیگر بعداً اضافه خواهند شد.</p>
+<p class="notice">هر برنامه یکی از چهار قالب هفت‌روزه، رمضان، سیزده‌روزه یا متنی را دارد. انتخاب قالب، اطلاعات اصلی CRM و تصاویر قبلی را حذف نمی‌کند.</p>
 <form method="post">{% csrf_token %}
   <input type="hidden" name="action" value="save_diet_template">
   <label>نوع قالب نمایش</label>
@@ -9,6 +9,8 @@
     <option value="legacy" {% if content.presentation_template == 'legacy' %}selected{% endif %}>ساختار اصلی (بدون تبدیل)</option>
     <option value="weekly" {% if content.presentation_template == 'weekly' %}selected{% endif %}>برنامه غذایی هفت‌روزه — شنبه تا جمعه</option>
     <option value="ramadan" {% if content.presentation_template == 'ramadan' %}selected{% endif %}>برنامه ماه رمضان — سحری، افطار، شام</option>
+    <option value="thirteen" {% if content.presentation_template == 'thirteen' %}selected{% endif %}>برنامه غذایی سیزده‌روزه — روز ۱ تا ۱۳، مراجعه روز ۱۴</option>
+    <option value="text" {% if content.presentation_template == 'text' %}selected{% endif %}>برنامه غذایی متنی — صفحات دارای متن و عکس</option>
   </select>
   <div class="compact">
     <div><label>سهمیه‌ها (از جمله تعداد خرما یا قاشق روغن)</label><textarea name="quota_text" rows="5" placeholder="فقط مقدار تأییدشده پزشک را وارد کنید">{{ content.quota_text }}</textarea></div>
@@ -18,10 +20,13 @@
   <p class="muted">متن اصلی «سهمیه و مواد آزاد» و «توضیحات» که از CRM وارد شده نیز جداگانه و بدون حذف نمایش داده می‌شود؛ از این فیلدها برای تنظیم مستقل هر بخش استفاده کنید.</p>
   <button type="submit">ذخیره تنظیمات قالب و سهمیه</button>
 </form>
-{% if content.presentation_template == 'weekly' or content.presentation_template == 'ramadan' %}
+{% if content.presentation_template != 'legacy' %}
 <p><a style="color:#a7f2c4;font-size:14px;font-weight:900" href="{% url 'diet_template_preview' content.master_item_id %}" target="_blank" rel="noopener">◉ مشاهده پیش‌نمایش قالب انتخاب‌شده</a></p>
+{% if content.presentation_template == 'text' %}
+  {% include 'core/treatment_diet_text_page_editor.html' %}
+{% else %}
 <h2>ویرایش وعده‌های هر روز</h2>
-<p class="muted">روز ۰ برای وعده‌های مشترک تمام روزهاست. تغییرات روزهای ۱ تا ۷، فقط همان روز را تغییر می‌دهد.</p>
+<p class="muted">روز ۰ برای وعده‌های مشترک است؛ روزهای ۱ تا ۷ یا ۱ تا ۱۳ هرکدام جدا و قابل ویرایش هستند. در برنامه ۱۳روزه روز ۱۴ مراجعه به مطب است.</p>
 <form method="get" style="max-width:330px">
   <label>روز برنامه</label>
   <select name="template_day" onchange="this.form.submit()">
@@ -69,6 +74,7 @@
   </div>
 </article>
 {% endfor %}
+{% endif %}
 {% endif %}
 </section>
 {% endif %}
