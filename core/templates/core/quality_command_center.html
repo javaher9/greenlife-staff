@@ -191,6 +191,17 @@ body.gl-page-quality_command_center .qc-commander{
 
 
 /* QC operational readability refinement: never brighten the glass headers. */
+body.gl-page-quality_command_center .qc-commander .qc-top {
+  background:linear-gradient(115deg,rgba(25,104,92,.29),rgba(18,48,77,.46) 55%,rgba(68,42,103,.30))!important;
+  border:1px solid rgba(151,213,221,.27)!important;
+  border-radius:17px!important;padding:12px 15px!important;margin:0 0 15px!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.13);
+  color:#f7fcff!important;
+}
+body.gl-page-quality_command_center .qc-commander .qc-top h1 {
+  color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;
+}
+
 body.gl-page-quality_command_center .qc-commander .qc-branch-head {
   background:linear-gradient(110deg,rgba(255,255,255,.105),rgba(10,42,65,.52))!important;
   color:#f6fcff!important;
@@ -276,7 +287,7 @@ body.gl-page-quality_command_center .qc-commander .qc-branch-head .qc-tag.warn {
 
 </style>
 <div class="qc-commander" id="qcCommandRoot">
-  <header class="qc-top">
+  <div class="qc-top">
     <div class="qc-title-line">
       <div class="qc-logo" aria-hidden="true">✦</div>
       <div><span class="qc-eyebrow">GREENLIFE / QUALITY COMMAND CENTER</span><h1>اتاق فرمان کنترل کیفیت</h1><p>مانیتورینگ یکپارچه مراکز، نوبت‌ها، دستگاه‌ها و کال‌سنتر</p></div>
@@ -286,7 +297,7 @@ body.gl-page-quality_command_center .qc-commander .qc-branch-head .qc-tag.warn {
       <button class="qc-head-btn" id="qcPause" type="button" aria-pressed="false">توقف نوسازی</button>
       <button class="qc-head-btn" id="qcRefresh" type="button">↻ تازه‌سازی</button>
     </div>
-  </header>
+  </div>
   <div id="qcLiveContent">{% include 'core/_quality_command_content.html' %}</div>
 </div>
 <script>
