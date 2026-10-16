@@ -8,6 +8,7 @@ from .diet_week_plan import DAYS, build_orange_week
 from .diet_ramadan_plan import build_ramadan_week, SLOTS as RAMADAN_SLOTS
 from .diet_thirteen_plan import build_thirteen_days
 from .treatment_content_layout import build_section_preview
+from .diet_extras_display import prepare_diet_extras
 from .treatment_content_views import _admin, _content_for_preview
 
 TYPES={'weekly':'برنامه غذایی هفت‌روزه','ramadan':'برنامه ماه رمضان',
@@ -57,10 +58,12 @@ def diet_template_preview(request,item_id):
         {'number':i,'label':label,'cards':_deduplicate(raw_days.get(i,[]))}
         for i,label in enumerate(names,start=1)
     ]
-    extras=[
-        section for section in sections
-        if section.meal_slot=='other' and section.title.strip()!='برنامه غذایی'
-    ]
+    extras=prepare_diet_extras(
+        sections,
+        quota_text=content.quota_text,
+        free_foods_text=content.free_foods_text,
+        notes_text=content.diet_notes_text,
+    )
     response=render(request,'core/diet_two_templates.html',{
         'content':content,'title':title,'template_name':TYPES[kind],
         'kind':kind,'days':days,'extras':extras,'unmapped':unmapped,
