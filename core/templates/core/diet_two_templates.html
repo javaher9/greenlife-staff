@@ -66,7 +66,7 @@ button,select{font:inherit}
   {% if content.cover_url %}<img src="{{ content.cover_url }}" alt="تصویر برنامه غذایی" loading="lazy">{% endif %}
 </section>
 {% if content.intro_warning %}<div class="warning">{{ content.intro_warning }}</div>{% endif %}
-{% if content.audio_url %}<section class="audio"><b>با هدفون گوش دهید</b><audio controls preload="none" src="{{ content.audio_url }}"></audio></section>{% endif %}
+{% if content.audio_url %}<section class="audio"><b><span aria-hidden="true">🎧</span> گوش دهید</b><audio controls preload="none" src="{{ content.audio_url }}"></audio></section>{% endif %}
 <nav class="day-nav" aria-label="انتخاب روز هفته">
  <button type="button" id="previous-day" aria-label="روز قبل">❯</button>
  <select id="diet-day-picker" aria-label="روز مورد نظر">{% for day in days %}<option value="{{ day.number }}">{{ day.label }}</option>{% endfor %}</select>
@@ -101,9 +101,6 @@ button,select{font:inherit}
 {% endif %}
 {% endif %}
 <div class="extras">
-{% if content.quota_text %}<section class="extra"><h2>سهمیه‌های روزانه</h2><p>{{ content.quota_text }}</p></section>{% endif %}
-{% if content.free_foods_text %}<section class="extra"><h2>مواد غذایی آزاد</h2><p>{{ content.free_foods_text }}</p></section>{% endif %}
-{% if content.diet_notes_text %}<section class="extra"><h2>توضیحات و نکات برنامه</h2><p>{{ content.diet_notes_text }}</p></section>{% endif %}
 {% for section in extras %}<section class="extra"><h2>{{ section.title }}</h2><p>{{ section.body }}</p></section>{% endfor %}
 </div>
 {% if can_manage %}<a class="admin-link" href="{% url 'treatment_content_manage' content.master_item_id %}">ویرایش برنامه و سهمیه‌ها</a>{% endif %}
