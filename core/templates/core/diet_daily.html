@@ -111,7 +111,7 @@ button,select{font:inherit}
 <section class="diet-slogan {% if slogan_photo %}has-image{% endif %}" {% if slogan_photo %}style="background-image:url('{{ slogan_photo }}')"{% endif %}><strong>{{ slogan }}</strong></section>
 {% endif %}
 <section class="diet-voice" aria-label="صدای جادویی">
- <div><strong>صدای جادویی</strong><small>با هدفون گوش دهید</small></div>
+ <div><strong>صدای جادویی</strong><small><span aria-hidden="true">🎧</span> گوش دهید</small></div>
  <div class="audio-wrap">{% if audio_url %}<audio controls preload="none" controlsList="nodownload" src="{{ audio_url }}"></audio>{% else %}<span class="diet-muted">فایل صوتی هنوز ثبت نشده است.</span>{% endif %}</div>
 </section>
 <section class="diet-list" aria-label="وعده‌های روز">
