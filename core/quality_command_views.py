@@ -242,11 +242,15 @@ def build_quality_snapshot(user):
             )) else "normal",
         })
 
+    # Use exactly the same visible operator scope for dashboard statistics
+    # and drill-down: a branch manager must not see another site's leads.
+    visible_call_center = EmployeeProfile.objects.filter(
+        role="call_center", is_active=True, user__is_active=True,
+        branch_id__in=branch_ids,
+    ).select_related("user").order_by("user__first_name", "user__last_name", "pk")
     call_center = []
     # The CRM stores lead outcomes, not guaranteed PBX call-detail records.
-    for p in EmployeeProfile.objects.filter(
-        role="call_center", is_active=True, user__is_active=True
-    ).select_related("user").order_by("user__first_name", "user__last_name", "pk"):
+    for p in visible_call_center:
         touches = ReferralLead.objects.filter(
             assigned_to=p, updated_at__date=today
         ).exclude(contact_result="")
@@ -264,6 +268,43 @@ def build_quality_snapshot(user):
             "unanswered": touches.filter(contact_result="no_answer").count(),
             "overdue": overdue,
         })
+
+    # The review queue is intentionally read-only. Counts remain exhaustive,
+    # while only a bounded set of safe-to-display details is rendered.
+    attention_issues = [
+        {
+            "id": issue.pk,
+            "branch": next(
+                (item.name for item in branch_list if item.pk == issue.branch_id),
+                "—",
+            ),
+            "device": issue.device_name,
+            "status": issue.get_status_display(),
+            "date": timezone.localtime(issue.created_at).strftime("%Y/%m/%d"),
+        }
+        for issue in issues[:50]
+    ]
+    overdue_lead_qs = (
+        ReferralLead.objects.filter(
+            assigned_to__in=visible_call_center,
+            next_follow_up__lt=today,
+        ).exclude(status__in=("won", "lost"))
+        .select_related("assigned_to__user")
+        .order_by("next_follow_up", "id")
+    )
+    overdue_lead_total = overdue_lead_qs.count()
+    attention_overdue = [
+        {
+            "name": lead.full_name,
+            "operator": (
+                lead.assigned_to.user.get_full_name()
+                or lead.assigned_to.user.username
+            ),
+            "due_date": lead.next_follow_up.strftime("%Y/%m/%d"),
+            "days": (today - lead.next_follow_up).days,
+        }
+        for lead in overdue_lead_qs[:75]
+    ]
 
     all_notifications = StaffNotification.objects.filter(
         user=user, is_read=False
@@ -286,6 +327,10 @@ def build_quality_snapshot(user):
         "recorded_contacts": sum(x["recorded"] for x in call_center),
         "bookings": sum(x["booked"] for x in call_center),
         "overdue_followups": sum(x["overdue"] for x in call_center),
+        "attention_issues": attention_issues,
+        "attention_issues_more": max(0, len(issues) - len(attention_issues)),
+        "attention_overdue": attention_overdue,
+        "attention_overdue_more": max(0, overdue_lead_total - len(attention_overdue)),
         "limited_branch": bool(branch_scope),
     }
 
