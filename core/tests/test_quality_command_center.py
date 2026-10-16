@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.device_booking_models import DeviceTypeSchedule, PhysicalDevice
-from core.models import Attendance, Branch, DeviceIssue, EmployeeProfile, LeaveRequest, VisitAppointment
+from core.models import Attendance, Branch, DeviceIssue, EmployeeProfile, LeaveRequest, ReferralLead, ReferralProfile, VisitAppointment
 from core.quality_command_views import _physical_state
 
 
@@ -166,6 +166,67 @@ class QualityCommandCenterTests(TestCase):
         self.assertTrue(VisitAppointment.objects.filter(
             pk=self.niavaran_visit.pk
         ).exists())
+
+
+    def test_attention_card_opens_grounded_issue_and_overdue_lead_details(self):
+        source_user = User.objects.create_user(username="qc-source-user")
+        source = ReferralProfile.objects.create(
+            user=source_user, referral_code="GLQCSOURCE", is_active=True,
+        )
+        operator = self.person("qc-call-one", "call_center", self.niavaran)
+        ReferralLead.objects.create(
+            referrer=source, full_name="پیگیری عقب‌افتاده نیاوران",
+            phone="09121230011", assigned_to=operator.profile,
+            next_follow_up=timezone.localdate()-timedelta(days=2),
+            status="contacted",
+        )
+        DeviceIssue.objects.create(
+            reporter=self.admin, branch=self.niavaran,
+            device_name="کرایو A", description="قطعی برای بررسی",
+        )
+        self.client.force_login(self.naderi)
+        response=self.client.get(reverse("quality_command_center"))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response, 'id="qcAttention"')
+        self.assertContains(response, 'class="qc-stat pink qc-attention-trigger"')
+        self.assertContains(response, "پیگیری عقب‌افتاده نیاوران")
+        self.assertContains(response, "کرایو A")
+        self.assertEqual(response.context["snapshot"]["overdue_followups"],1)
+        self.assertEqual(response.context["snapshot"]["issue_count"],1)
+        self.assertContains(response, "وضعیت پرسنل مرکز")
+        self.assertContains(response, "qc-device-row")
+        fragment=self.client.get(reverse("quality_command_data")).json()["html"]
+        self.assertIn("qcAttention",fragment)
+
+    def test_manager_attention_queue_is_branch_scoped(self):
+        source_user=User.objects.create_user(username="qc-source-other")
+        source=ReferralProfile.objects.create(
+            user=source_user,referral_code="GLQCOTHER",is_active=True,
+        )
+        own=self.person("qc-local-cc","call_center",self.niavaran)
+        other=self.person("qc-remote-cc","call_center",self.punak)
+        for p, name, phone in (
+            (own.profile,"پیگیری شعبه خود","09121230012"),
+            (other.profile,"پیگیری شعبه دیگر","09121230013"),
+        ):
+            ReferralLead.objects.create(
+                referrer=source,full_name=name,phone=phone,assigned_to=p,
+                status="contacted",
+                next_follow_up=timezone.localdate()-timedelta(days=1),
+            )
+        DeviceIssue.objects.create(
+            reporter=self.employee, branch=self.punak,
+            device_name="دستگاه شعبه دیگر",description="نباید در جزئیات مدیر دیده شود",
+        )
+        self.client.force_login(self.manager)
+        response=self.client.get(reverse("quality_command_center"))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,"پیگیری شعبه خود")
+        self.assertNotContains(response,"پیگیری شعبه دیگر")
+        self.assertNotContains(response,"دستگاه شعبه دیگر")
+        self.assertEqual(response.context["snapshot"]["overdue_followups"],1)
+        data=self.client.get(reverse("quality_command_data")).json()["html"]
+        self.assertNotIn("پیگیری شعبه دیگر",data)
 
     def test_booking_alone_is_not_reported_as_active_hardware(self):
         now = timezone.now()
