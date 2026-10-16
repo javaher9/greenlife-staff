@@ -55,6 +55,54 @@ button,select{font:inherit}
 .meal-data{padding:11px}.extra{padding:15px}
 }
 @media print{body{background:white}.container{max-width:100%;padding:0}.day-nav,.brand a,.admin-link{display:none!important}.day-sheet{display:block!important;box-shadow:none;break-inside:avoid}.meal-card{break-inside:avoid}.extra{break-inside:avoid}}
+/* GreenLife premium diet visual treatment – presentation only */
+:root{--ink:#173e32;--muted:#6c7565;--green:#1b5b43;--border:#e1d6b7;--bg:#f7f3e8;--gold:#c9a25e}
+body{background:radial-gradient(ellipse at 12% 17%,#dcebdd 0,transparent 36%),radial-gradient(ellipse at 95% 63%,#f5e8bf 0,transparent 44%),linear-gradient(155deg,#edf3e5,#fbf4e3 70%,#eff4e8);min-height:100vh}
+.container{max-width:1060px;padding:17px 18px 65px}
+.brand{padding:12px 5px 19px}.brand b{font-size:17px;letter-spacing:.2px}.brand a{border:1px solid #d6d9bc;border-radius:30px;padding:8px 15px;background:#fff9;box-shadow:0 4px 13px #27492c12}
+.hero{position:relative;isolation:isolate;display:flex;align-items:end;min-height:345px;overflow:hidden;padding:30px;border-radius:29px;background:linear-gradient(115deg,#113b2df0,#345139c0 50%,#9d85364d),radial-gradient(circle at 80% 35%,#be8e4f,#345c3b);border:1px solid #e9cf9f;box-shadow:0 18px 34px #32462620,0 5px 12px #a17f3220}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#0c261fe8 0%,#193f33bd 46%,#172a2022 100%);z-index:-1}
+.hero .hero-cover{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;max-width:none;max-height:none;border-radius:0;z-index:-2;filter:saturate(1.12) contrast(1.02)}
+.hero-copy{position:relative;z-index:1;max-width:70%;padding:4px 0;color:#fff8e4;text-shadow:0 2px 10px #112b257c}
+.hero .eyebrow{color:#fff2c9;font-size:13px;letter-spacing:.1px}.hero h1{font-size:clamp(27px,5vw,42px);font-weight:900;line-height:1.4;margin:8px 0 12px;color:#fffdf3}
+.hero p{color:#fff4dd;font-size:13px;line-height:2}
+.audio{border-radius:23px;background:linear-gradient(135deg,#fffdf8f5,#fbf3e7f0);border:1px solid #f4dfb5;box-shadow:0 9px 20px #3a51331c, inset 0 1px #fff;gap:12px;padding:16px 20px}
+.audio b{color:#1a5a43;font-size:14px;min-width:max-content;display:flex;align-items:center;gap:7px}
+.audio audio{accent-color:#1b624b;min-width:0}
+.day-nav{background:linear-gradient(110deg,#fffaf0,#f9f4e6);border:1px solid #dec58c;border-radius:40px;box-shadow:0 9px 18px #725f2924, inset 0 2px #fff;min-height:70px;padding:10px 15px}
+.day-nav select{font-size:16px;font-weight:900;color:#1b533f;text-align:center;cursor:pointer}
+.day-nav button{background:linear-gradient(155deg,#f7efd8,#ecdfb9);color:#1d5d45;border-radius:50%;width:45px;height:45px;box-shadow:0 3px 7px #51441c1a;border:1px solid #fef9eb}
+.day-nav button:disabled{opacity:.37;cursor:default}
+.day-sheet{background:linear-gradient(150deg,#fffdf7,#faf7ec);border:1px solid #e7d9b9;border-radius:25px;box-shadow:0 12px 25px #273e2810;padding:24px}
+.day-sheet h2{color:#1d5d44;font-weight:900;font-size:19px}
+.meal-grid{gap:17px}
+.meal-card{background:linear-gradient(115deg,#fffdf5,#f8f3e8);border:1px solid #ddc99c;border-radius:23px;min-height:172px;box-shadow:0 9px 22px #3d49221a,inset 0 1px #fff;transition:transform .2s ease,box-shadow .2s ease}
+.meal-card:hover{transform:translateY(-2px);box-shadow:0 13px 27px #3d492226}
+.meal-photo{order:2;flex:0 0 39%;max-width:39%;background:#fff7e9;border-right:1px solid #e9d9b7;padding:10px}
+.meal-photo img{width:100%;height:100%;max-height:none;min-height:145px;object-fit:cover;background:#fff;border-radius:17px;border:2px solid #fff;box-shadow:0 2px 12px #22372b26}
+.meal-data{order:1;display:flex;flex-direction:column;justify-content:center;padding:17px 19px;text-align:right}
+.meal-data strong{font-size:18px;font-weight:900;color:#19543e}
+.meal-data p{font-size:13px;line-height:2.15;color:#3c5146}
+.meal-data small{font-size:11px;color:#9a7b39}
+.meal-card.no-photo .meal-data{padding:19px 23px}
+.extra{border:1px solid #e2d0a9;border-radius:21px;background:#fffcf6;box-shadow:0 9px 18px #3b522410;padding:22px}
+.extra h2{font-size:17px;font-weight:900}
+.admin-link{background:#1c5c43;color:#fff8e6;padding:12px 17px;box-shadow:0 7px 15px #144b342c}
+@media(max-width:760px){
+.container{padding:12px 11px 35px}.brand{padding:7px 4px 15px}
+.hero{min-height:280px;padding:20px 19px;border-radius:25px;align-items:center}
+.hero-copy{max-width:80%;align-self:center}.hero h1{font-size:32px}.hero .eyebrow{font-size:12px}
+.hero::after{background:linear-gradient(90deg,#102c26e8,#183628b5 53%,#152d2510)}
+.audio{padding:11px 13px;gap:8px}.audio b{font-size:12px}.audio audio{max-width:70%;min-width:0}
+.day-nav{min-height:65px;padding:8px 12px;margin:16px 0}.day-nav button{width:43px;height:43px}
+.day-sheet{padding:14px 12px;border-radius:22px}.day-sheet h2{font-size:17px;margin-bottom:15px}
+.meal-grid{gap:14px}.meal-card{min-height:152px;border-radius:21px}
+.meal-photo{flex:0 0 39%;max-width:39%;padding:7px}.meal-photo img{min-height:133px;border-radius:16px}
+.meal-data{padding:13px 11px}.meal-data strong{font-size:16px}.meal-data p{font-size:12px;line-height:2.05}
+.meal-card.no-photo .meal-data{padding:17px}.extra{padding:19px}
+}
+@media(max-width:390px){.hero{min-height:240px}.hero-copy{max-width:88%}.meal-photo{flex-basis:37%;max-width:37%}.meal-data strong{font-size:15px}.meal-data p{font-size:11px}}
+@media print{.hero{print-color-adjust:exact;-webkit-print-color-adjust:exact}.meal-card{box-shadow:none}}
 </style></head>
 <body class="{{ kind }}">
 <main class="container">
@@ -63,7 +111,7 @@ button,select{font:inherit}
   <div class="hero-copy"><span class="eyebrow">{{ template_name }}</span><h1>{{ title }}</h1>
   {% if content.hero_subtitle %}<p>{{ content.hero_subtitle }}</p>{% endif %}
   <p>{% if kind == 'ramadan' %}برنامه سحری، افطار و شام برای روزهای هفته{% elif kind == 'thirteen' %}روزهای ۱ تا ۱۳؛ روز چهاردهم مراجعه به مطب{% else %}برنامه روزانه از شنبه تا جمعه{% endif %}</p></div>
-  {% if content.cover_url %}<img src="{{ content.cover_url }}" alt="تصویر برنامه غذایی" loading="lazy">{% endif %}
+  {% if content.cover_url %}<img class="hero-cover" src="{{ content.cover_url }}" alt="تصویر برنامه غذایی">{% endif %}
 </section>
 {% if content.intro_warning %}<div class="warning">{{ content.intro_warning }}</div>{% endif %}
 {% if content.audio_url %}<section class="audio"><b><span aria-hidden="true">🎧</span> گوش دهید</b><audio controls preload="none" src="{{ content.audio_url }}"></audio></section>{% endif %}
