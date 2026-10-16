@@ -158,9 +158,9 @@ def build_orange_week(sections):
             for day,mapping in days.items():
                 for slot,cards in mapping.items(): source_days[day][slot].extend(cards)
         else:
-            item=make_card('other',section.body.splitlines(),title=section.title)
-            if section.day_number in (0,1): source_shared['other'].append(item)
-            elif 1<=section.day_number<=7: source_days[section.day_number]['other'].append(item)
+            # Notes/quota/allowed-food sections belong below the complete week.
+            # Do not render them again as daily "توضیحات" meal cards.
+            continue
 
     week={}
     for day in range(1,8):
