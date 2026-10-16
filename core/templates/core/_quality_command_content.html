@@ -4,7 +4,7 @@
   <div class="qc-stat violet"><div class="qc-stat-icon">▣</div><span>دستگاه‌های ثبت‌شده</span><strong>{{ snapshot.total_devices }}</strong><small>{{ snapshot.busy_devices }} جلسه جاری ثبت‌شده</small></div>
   <div class="qc-stat amber"><div class="qc-stat-icon">◷</div><span>نوبت ثبت‌شده کال‌سنتر</span><strong>{{ snapshot.bookings }}</strong><small>بر اساس ثبت امروز</small></div>
   <div class="qc-stat cyan"><div class="qc-stat-icon">☎</div><span>پیگیری‌های ثبت‌شده</span><strong>{{ snapshot.recorded_contacts }}</strong><small>نه تعداد تماس تلفنی PBX</small></div>
-  <div class="qc-stat pink"><div class="qc-stat-icon">!</div><span>موارد نیازمند رسیدگی</span><strong>{{ snapshot.issue_count|add:snapshot.overdue_followups }}</strong><small>{{ snapshot.issue_count }} ایراد دستگاه · {{ snapshot.overdue_followups }} پیگیری معوق</small></div>
+  <a class="qc-stat pink qc-attention-trigger" href="#qcAttention" aria-label="مشاهده ریز موارد نیازمند رسیدگی"><div class="qc-stat-icon">!</div><span>موارد نیازمند رسیدگی</span><strong>{{ snapshot.issue_count|add:snapshot.overdue_followups }}</strong><small>{{ snapshot.issue_count }} ایراد دستگاه · {{ snapshot.overdue_followups }} پیگیری معوق · مشاهده جزئیات ↙</small></a>
 </div>
 <div class="qc-section-header">
   <div><span class="qc-eyebrow">BRANCH LIVE MATRIX</span><h2>رصد زنده مراکز</h2></div>
@@ -13,36 +13,15 @@
 <div class="qc-branches qc-branches-fit">
 {% for branch in snapshot.branches %}
 <article class="qc-branch qc-shade-{{ forloop.counter0|add:'1' }}">
-  <header class="qc-branch-head">
+  <div class="qc-branch-head">
     <div><span class="qc-pulse"></span><h3>{{ branch.name }}</h3></div>
     <span class="qc-tag {% if branch.status == 'attention' %}warn{% else %}normal{% endif %}">{% if branch.status == 'attention' %}نیازمند بررسی{% else %}مانیتورینگ فعال{% endif %}</span>
-  </header>
+  </div>
   <div class="qc-branch-metrics">
     <div><small>ویزیت</small><strong>{{ branch.visits_total }}</strong></div>
     <div><small>مراجعه</small><strong>{{ branch.visits_done }}</strong></div>
     <div><small>در انتظار</small><strong>{{ branch.visits_wait }}</strong></div>
     <div><small>عدم مراجعه/لغو</small><strong>{{ branch.visits_missed }}</strong></div>
-  </div>
-  <div class="qc-module">
-    <div class="qc-module-title"><strong><span>◷</span> وضعیت زنده ویزیت‌ها</strong><span>{{ branch.visits_total }} نوبت</span></div>
-    <div class="qc-table-scroll qc-visit-scroll">
-      <table><thead><tr><th>زمان</th><th>مراجع</th><th>خدمت</th><th>وضعیت</th></tr></thead>
-      <tbody>{% for visit in branch.visits %}
-        <tr><td class="qc-time">{{ visit.time }}</td><td title="{{ visit.name }}">{{ visit.name }}</td><td title="{{ visit.service }}">{{ visit.service }}</td><td><span class="qc-status status-{{ visit.state }}">{{ visit.label }}</span></td></tr>
-      {% empty %}<tr><td colspan="4" class="qc-empty">ویزیتی برای امروز ثبت نشده است.</td></tr>{% endfor %}</tbody>
-      </table>
-    </div>
-    {% if branch.visits_capped %}<small class="qc-limited">150 مورد اول نمایش داده شده است.</small>{% endif %}
-  </div>
-  <div class="qc-module">
-    <div class="qc-module-title"><strong><span>▣</span> وضعیت زنده دستگاه‌ها</strong><span>{{ branch.devices_total }} دستگاه</span></div>
-    <div class="qc-table-scroll qc-device-scroll">
-      <table><thead><tr><th>دستگاه / کابین</th><th>وضعیت بر اساس اپ</th><th>بیمار / زمان</th></tr></thead>
-      <tbody>{% for dev in branch.devices %}
-        <tr><td><b>{{ dev.name }}</b><small>{{ dev.cabin }}</small></td><td><span class="qc-status status-{{ dev.state }}">{{ dev.label }}</span></td><td>{% if dev.patient %}<b>{{ dev.patient }}</b><small class="qc-time">{{ dev.time }}</small>{% else %}—{% endif %}</td></tr>
-      {% empty %}<tr><td colspan="3" class="qc-empty">دستگاه ثبت‌شده‌ای در این مرکز وجود ندارد.</td></tr>{% endfor %}</tbody>
-      </table>
-    </div>
   </div>
   <div class="qc-module qc-staff-module">
     <div class="qc-module-title"><strong><span>♙</span> وضعیت پرسنل مرکز</strong><span>{{ branch.staff_total }} نفر</span></div>
@@ -61,6 +40,29 @@
     <div class="qc-a-leave"><span>مرخصی</span><b>{{ branch.staff_leave }}</b></div>
     <div class="qc-a-unregistered"><span>بدون ثبت ورود</span><b>{{ branch.staff_unregistered }}</b></div>
   </footer>
+  <div class="qc-module">
+    <div class="qc-module-title"><strong><span>◷</span> وضعیت زنده ویزیت‌ها</strong><span>{{ branch.visits_total }} نوبت</span></div>
+    <div class="qc-table-scroll qc-visit-scroll">
+      <table><thead><tr><th>زمان</th><th>مراجع / خدمت</th><th>وضعیت</th></tr></thead>
+      <tbody>{% for visit in branch.visits %}
+        <tr><td class="qc-time">{{ visit.time }}</td><td><b title="{{ visit.name }}">{{ visit.name }}</b><small title="{{ visit.service }}">{{ visit.service }}</small></td><td><span class="qc-status status-{{ visit.state }}">{{ visit.label }}</span></td></tr>
+      {% empty %}<tr><td colspan="3" class="qc-empty">ویزیتی برای امروز ثبت نشده است.</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    {% if branch.visits_capped %}<small class="qc-limited">150 مورد اول نمایش داده شده است.</small>{% endif %}
+  </div>
+  <div class="qc-module">
+    <div class="qc-module-title"><strong><span>▣</span> وضعیت زنده دستگاه‌ها</strong><span>{{ branch.devices_total }} دستگاه</span></div>
+    <div class="qc-device-list qc-device-scroll">
+      {% for dev in branch.devices %}
+      <div class="qc-device-row">
+        <div class="qc-device-identity" title="{{ dev.name }} · {{ dev.cabin }}"><b>{{ dev.name }}</b><small>{{ dev.cabin }}</small></div>
+        <div class="qc-device-state"><span class="qc-status status-{{ dev.state }}">{{ dev.label }}</span>{% if dev.patient %}<small title="{{ dev.patient }}">{{ dev.patient }} · <span dir="ltr">{{ dev.time }}</span></small>{% endif %}</div>
+      </div>
+      {% empty %}<div class="qc-empty">دستگاه ثبت‌شده‌ای در این مرکز وجود ندارد.</div>{% endfor %}
+    </div>
+  </div>
+
 </article>
 {% empty %}
 <div class="qc-panel qc-empty">شعبه فعالی در محدوده نظارت فعلی ثبت نشده است.</div>
@@ -92,4 +94,29 @@
     <div class="qc-cctv-note"><span>◉</span><div><strong>دوربین‌ها / مانیتور پرسنل</strong><small>اتصال مستقیم تصویر هنوز در این اپ برقرار نشده است؛ آمارهای این صفحه از داده ثبت‌شده استخراج می‌شوند.</small></div></div>
   </aside>
 </div>
+<details class="qc-attention-panel" id="qcAttention">
+  <summary class="qc-attention-heading"><span class="qc-attention-icon">!</span><span><b>ریز موارد نیازمند رسیدگی</b><small>فهرست نظارتی برای پیگیری آقای نادری · صرفاً خواندنی</small></span><span class="qc-attention-total">{{ snapshot.issue_count|add:snapshot.overdue_followups }} مورد <span class="qc-attention-chevron">⌄</span></span></summary>
+  <div class="qc-attention-body">
+    <section class="qc-attention-group">
+      <h3>گزارش‌های باز دستگاه‌ها <small>{{ snapshot.issue_count }} مورد</small></h3>
+      <div class="qc-attention-scroll">
+        <table><thead><tr><th>شعبه</th><th>دستگاه</th><th>وضعیت</th><th>تاریخ ثبت</th></tr></thead><tbody>
+        {% for issue in snapshot.attention_issues %}<tr><td>{{ issue.branch }}</td><td title="{{ issue.device }}">{{ issue.device }}</td><td>{{ issue.status }}</td><td class="qc-time">{{ issue.date }}</td></tr>
+        {% empty %}<tr><td colspan="4" class="qc-empty">مورد بازی ثبت نشده است.</td></tr>{% endfor %}
+        </tbody></table>
+      </div>
+      {% if snapshot.attention_issues_more %}<p class="qc-attention-more">و {{ snapshot.attention_issues_more }} مورد دیگر</p>{% endif %}
+    </section>
+    <section class="qc-attention-group">
+      <h3>پیگیری‌های عقب‌افتاده کال‌سنتر <small>{{ snapshot.overdue_followups }} لید</small></h3>
+      <div class="qc-attention-scroll">
+        <table><thead><tr><th>مراجع</th><th>کارشناس</th><th>سررسید</th><th>روز تأخیر</th></tr></thead><tbody>
+        {% for lead in snapshot.attention_overdue %}<tr><td title="{{ lead.name }}">{{ lead.name }}</td><td title="{{ lead.operator }}">{{ lead.operator }}</td><td class="qc-time">{{ lead.due_date }}</td><td class="qc-number-warn">{{ lead.days }}</td></tr>
+        {% empty %}<tr><td colspan="4" class="qc-empty">پیگیری عقب‌افتاده‌ای ثبت نشده است.</td></tr>{% endfor %}
+        </tbody></table>
+      </div>
+      {% if snapshot.attention_overdue_more %}<p class="qc-attention-more">و {{ snapshot.attention_overdue_more }} لید دیگر · موارد قدیمی‌تر در ابتدای فهرست</p>{% endif %}
+    </section>
+  </div>
+</details>
 <div class="qc-data-foot">آخرین دریافت اطلاعات: <b dir="ltr">{{ snapshot.generated_at }}</b> · زمان‌بندی خودکار به‌روزرسانی هر 25 ثانیه · دستگاه در حال کار به معنای «جلسه جاری ثبت‌شده» است، نه پایش برق یا سنسور دستگاه.</div>
