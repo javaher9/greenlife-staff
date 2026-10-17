@@ -355,6 +355,79 @@ body.gl-page-quality_command_center .qc-commander .qc-device-row{
   min-height:0!important;
   padding:5px 8px!important;
 }
+
+/* Dense two-up staff status: names and statuses sit together without empty table columns. */
+body.gl-page-quality_command_center .qc-commander .qc-staff-grid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-auto-rows:minmax(0,auto);
+  align-content:start;
+  gap:4px!important;
+  min-height:0!important;
+  max-height:184px!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  padding:6px!important;
+  scrollbar-color:#47778c transparent;
+  scrollbar-width:thin;
+}
+body.gl-page-quality_command_center .qc-commander .qc-staff-chip{
+  display:flex!important;
+  align-items:center;
+  justify-content:space-between;
+  gap:4px;
+  min-width:0;
+  min-height:36px;
+  padding:4px 6px;
+  border:1px solid rgba(167,210,229,.19);
+  background:rgba(7,27,42,.35);
+  border-radius:8px;
+  overflow:hidden;
+}
+body.gl-page-quality_command_center .qc-commander .qc-staff-person{
+  min-width:0;
+  flex:1 1 52%;
+}
+body.gl-page-quality_command_center .qc-commander .qc-staff-person b,
+body.gl-page-quality_command_center .qc-commander .qc-staff-person small{
+  display:block;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  text-align:right;
+}
+body.gl-page-quality_command_center .qc-commander .qc-staff-person b{
+  color:#f3faff!important;font-size:10px!important;line-height:1.5;
+}
+body.gl-page-quality_command_center .qc-commander .qc-staff-person small{
+  color:#aac7d8!important;font-size:8px!important;
+}
+body.gl-page-quality_command_center .qc-commander .qc-staff-presence{
+  flex:0 0 auto;
+  max-width:48%;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:1px;
+}
+body.gl-page-quality_command_center .qc-commander .qc-staff-presence .qc-status{
+  font-size:8px!important;
+  padding:2px 4px!important;
+  line-height:1.4;
+  white-space:nowrap!important;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+body.gl-page-quality_command_center .qc-commander .qc-staff-presence small{
+  color:#c6d9e3!important;font-size:8px!important;
+}
+@media(max-width:420px){
+  body.gl-page-quality_command_center .qc-commander .qc-staff-grid{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+}
+
 </style>
 <div class="qc-commander" id="qcCommandRoot">
   <div class="qc-top">
