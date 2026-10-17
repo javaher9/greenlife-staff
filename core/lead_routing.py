@@ -5,6 +5,7 @@ from django.db.models import Count, Max, Q
 from django.utils import timezone
 
 from .models import Attendance, CallCenterLeadGroup, EmployeeProfile, LeaveRequest, ReferralLead, StaffNotification
+from .lead_routing_models import CallCenterRoutingDay
 
 
 CHANNEL_LABELS = {
@@ -18,12 +19,12 @@ CHANNEL_LABELS = {
 
 OPEN_ROUTING_STATUSES = ('new', 'contacted', 'appointment')
 
-# Overnight/no-staff leads stay in a pending queue. On normal workdays the
-# backlog stays fully frozen so the first person arriving in the morning cannot
-# receive a burst. At 11:00 the full queue is released among whoever is present. Friday is a duty day: as soon as the first
-# eligible operator checks in, the whole pending queue may be released to them.
-PENDING_MORNING_RELEASE_HOUR = 11
-PENDING_MORNING_RELEASE_MINUTE = 0
+# Before 10:15 each present flower receives one fifth of the SAME opening
+# queue, once. At 10:15 the remainder balances the four active flowers,
+# including those not checked in (approved leave is still excluded).
+# Friday retains the on-duty-only exception. Assigned leads never move.
+PENDING_MORNING_RELEASE_HOUR = 10
+PENDING_MORNING_RELEASE_MINUTE = 15
 
 # Fixed equal-weight rotation requested by management. The order itself is the
 # policy: Narges -> Banafsha -> Yasaman -> Khorshidi -> repeat. Absent operators
@@ -218,7 +219,7 @@ def expected_operator_user_ids(day=None):
     return user_ids - leave_ids
 
 
-def eligible_operator_user_ids(day=None):
+def eligible_operator_user_ids(day=None, *, now=None):
     """Users eligible to receive new leads right now.
 
     An operator must have checked in today, must not have checked out, and must
@@ -229,6 +230,7 @@ def eligible_operator_user_ids(day=None):
         Attendance.objects.filter(
             date=day,
             check_in__isnull=False,
+            check_in__lte=now or timezone.now(),
             check_out__isnull=True,
             user__profile__role='call_center',
             user__profile__is_active=True,
@@ -237,15 +239,7 @@ def eligible_operator_user_ids(day=None):
     )
     if not present_ids:
         return set()
-    leave_ids = set(
-        LeaveRequest.objects.filter(
-            user_id__in=present_ids,
-            status='approved',
-            start_date__lte=day,
-            end_date__gte=day,
-        ).values_list('user_id', flat=True)
-    )
-    return present_ids - leave_ids
+    return present_ids & expected_operator_user_ids(day)
 
 
 def _locked_present_operators(day=None):
@@ -466,115 +460,148 @@ def _assign_to_operator(lead, operator, group_name, notification_title, *, notif
     return operator
 
 
-def _pending_release_ready(local_now, eligible_user_ids):
-    # Presence is required on every day. Friday is the only day where the
-    # overnight backlog may be released immediately to the first present flower.
-    return bool(eligible_user_ids)
+def _release_time(local_now):
+    return timezone.make_aware(
+        datetime.combine(local_now.date(), time(
+            PENDING_MORNING_RELEASE_HOUR, PENDING_MORNING_RELEASE_MINUTE,
+        )),
+        timezone.get_current_timezone(),
+    )
 
-
-def _pending_release_candidates(local_now, pending):
-    """Return only leads allowed to leave the pending queue right now.
-
-    Management policy:
-    - Friday: release the full pending queue as soon as an eligible flower is in.
-    - Saturday-Thursday before 11:00: release nothing at all. Overnight and
-      same-morning leads stay unassigned so the first person checking in cannot
-      receive a burst.
-    - Saturday-Thursday from 11:00 onward: release the full queue through the
-      same equal round-robin across the flowers currently present.
-    """
-    if not pending:
-        return []
-
-    if local_now.weekday() == 4:
-        return pending
-
-    release_at=time(PENDING_MORNING_RELEASE_HOUR,PENDING_MORNING_RELEASE_MINUTE)
-    if local_now.time() < release_at:
-        return []
-    return pending
 
 @transaction.atomic
 def release_pending_leads_if_ready(*, force=False, now=None):
-    """Distribute queued leads using the fixed equal-weight rotation.
+    """One opening share per flower, one balancing settlement, then rotation.
 
-    Friday releases the full queue as soon as the first eligible operator is in.
-    On Saturday-Thursday, the entire unassigned queue is frozen until 11:00,
-    including leads created during the same morning. At 11:00 the full queue is
-    released through the same equal round-robin across present operators.
+    A unique day row is locked BEFORE operator/lead rows, so attendance hooks,
+    the server worker and concurrent ingestion requests share the same ledger.
+    `force` intentionally cannot bypass the time, attendance or exclusion rules.
     """
     local_now = timezone.localtime(now or timezone.now())
     day = local_now.date()
-    eligible_ids = eligible_operator_user_ids(day)
-    if not force and not _pending_release_ready(local_now, eligible_ids):
+    release_at = _release_time(local_now)
+    friday = local_now.weekday() == 4
+    eligible_ids = eligible_operator_user_ids(day, now=local_now)
+    expected_ids = expected_operator_user_ids(day)
+    if not expected_ids or ((friday or local_now < release_at) and not eligible_ids):
         return 0
 
-    operators = _locked_present_operators(day)
-    if not operators:
-        return 0
-
+    state, created = CallCenterRoutingDay.objects.get_or_create(
+        date=day, defaults={'opening_at': local_now},
+    )
+    state = CallCenterRoutingDay.objects.select_for_update().get(pk=state.pk)
+    all_operators = list(
+        EmployeeProfile.objects.select_for_update()
+        .filter(role='call_center', is_active=True, user__is_active=True)
+        .select_related('user').order_by('id')
+    )
+    # Re-read attendance/leave after acquiring the routing lock.
+    eligible_ids = eligible_operator_user_ids(day, now=local_now)
+    expected_ids = expected_operator_user_ids(day)
+    operators = _operators_for_channel(all_operators, None)
+    present = [op for op in operators if op.user_id in eligible_ids]
+    expected = [op for op in operators if op.user_id in expected_ids]
     pending = list(
-        ReferralLead.objects
-        .select_for_update()
-        .select_related('referrer')
-        .filter(
-            assigned_to__isnull=True,
-            status__in=OPEN_ROUTING_STATUSES,
-        )
+        ReferralLead.objects.select_for_update(of=('self',))
+        .select_related('referrer', 'country')
+        .filter(assigned_to__isnull=True, status__in=OPEN_ROUTING_STATUSES,
+                created_at__lte=local_now)
         .order_by('created_at', 'id')
     )
-    if not pending:
-        return 0
-
-    operators=_operators_for_channel(operators,None)
-    website_operators=_operators_for_channel(operators,'website')
-    if not operators:
-        return 0
-
-    release_candidates=_pending_release_candidates(local_now,pending)
-    if not release_candidates:
-        return 0
-
+    domestic = [lead for lead in pending if not _is_turkey_lead(lead)]
+    if created:
+        # Snapshot at the first eligible check-in, including that morning's
+        # accumulated leads. If first run is late, never count post-cutoff leads.
+        state.opening_lead_ids = [
+            lead.pk for lead in domestic if lead.created_at <= release_at
+        ]
     assigned = 0
-    for lead in release_candidates:
-        if _is_turkey_lead(lead):
-            operator=_turkey_operator(lock=True)
-            if not operator:
-                continue
-            _assign_to_operator(
-                lead,operator,'Türkiye | Turkey','لید جدید ترکیه',
-                notify=True,assigned_at=local_now,
-            )
-            assigned += 1
-            continue
-        channel=_pending_channel(lead)
-        pool=website_operators if channel=='website' else operators
-        if not pool:
-            # Never fall back to disallowed operators for a restricted channel.
-            continue
-        operator=_next_no_burst_operator(pool,day)
-        if not operator:
-            continue
-        group_name, title = _pending_destination(lead)
-        _assign_to_operator(
-            lead,
-            operator,
-            group_name,
-            title,
-            notify=True,
-            assigned_at=local_now,
-        )
-        assigned += 1
+    counts = dict(state.allocation_counts)
 
+    def assign(lead, operator, *, morning=False):
+        nonlocal assigned
+        group_name, title = _pending_destination(lead)
+        if _is_turkey_lead(lead):
+            group_name, title = 'Türkiye | Turkey', 'لید جدید ترکیه'
+        _assign_to_operator(lead, operator, group_name, title,
+                            notify=True, assigned_at=local_now)
+        assigned += 1
+        if morning:
+            key = str(operator.pk)
+            counts[key] = counts.get(key, 0) + 1
+
+    if not friday and local_now < release_at:
+        quota = len(state.opening_lead_ids) // 5
+        opening_ids = set(state.opening_lead_ids)
+        queue = [lead for lead in domestic if lead.pk in opening_ids]
+        arrivals = dict(Attendance.objects.filter(
+            date=day, user_id__in=eligible_ids,
+        ).values_list('user_id', 'check_in'))
+        for operator in sorted(present, key=lambda op: (arrivals[op.user_id], op.pk)):
+            if operator.pk in state.early_operator_ids:
+                continue
+            for lead in queue[:quota]:
+                assign(lead, operator, morning=True)
+            queue = queue[quota:]
+            state.early_operator_ids.append(operator.pk)
+    else:
+        if not friday and state.settled_at is None and expected:
+            # Management explicitly includes late/not-yet-present flowers in
+            # this ONE settlement. No already-assigned lead is queried/moved.
+            for lead in domestic:
+                if lead.created_at > release_at:
+                    continue
+                operator = min(expected, key=lambda op: counts.get(str(op.pk), 0))
+                assign(lead, operator, morning=True)
+            state.settled_at = local_now
+        # Friday's entire queue, and post-cutoff leads on other days, follow
+        # attendance-based round robin without a later catch-up redistribution.
+        for lead in pending:
+            if lead.assigned_to_id or not present:
+                continue
+            if _is_turkey_lead(lead):
+                operator = next((op for op in all_operators
+                                 if _identity_matches(op, TURKEY_OPERATOR_IDENTITIES)), None)
+            else:
+                operator = _next_no_burst_operator(present, day)
+            if operator:
+                assign(lead, operator)
+
+    state.allocation_counts = counts
+    state.save(update_fields=[
+        'opening_lead_ids', 'early_operator_ids', 'allocation_counts', 'settled_at',
+    ])
     return assigned
+
+
+def operator_routing_summary(operator, now=None):
+    """Read-only status for the operational page; no attendance is invented."""
+    local_now = timezone.localtime(now or timezone.now())
+    if _operator_is_blocked(operator) or _rotation_rank(operator) is None:
+        return 'دریافت خودکار لید برای شما فعلاً غیرفعال است.'
+    if operator.user_id not in expected_operator_user_ids(local_now.date()):
+        return 'امروز به‌علت مرخصی یا غیرفعال بودن، در توزیع لید نیستید.'
+    if local_now.weekday() == 4:
+        return 'جمعه: صف لید بین همکاران حاضر توزیع می‌شود.'
+    state = CallCenterRoutingDay.objects.filter(date=local_now.date()).first()
+    if state and state.settled_at:
+        received = state.allocation_counts.get(str(operator.pk), 0)
+        return f'تسویه صبح انجام شد: {received} لید برای شما؛ لیدهای جدید نوبتی توزیع می‌شوند.'
+    if local_now >= _release_time(local_now):
+        return 'تقسیم نهایی لیدهای صبح هنوز انجام نشده است؛ زمان مقرر 10:15.'
+    if not state:
+        return 'سهم صبح: 20% از صف ابتدای کار پس از ثبت ورود؛ تسویه نهایی ساعت 10:15.'
+    quota = len(state.opening_lead_ids) // 5
+    received = state.allocation_counts.get(str(operator.pk), 0)
+    return f'سهم صبح شما: {quota} لید؛ دریافت‌شده: {received}؛ تسویه نهایی ساعت 10:15.'
 
 
 def _live_assignment_allowed(now=None):
     """Whether a newly arriving lead may be assigned immediately.
 
     Friday keeps the duty-day exception. On every other day, no automatic
-    assignment happens before 11:00; new leads remain pending and are released
-    with the rest of the queue at 11:00.
+    live assignment happens before 10:15; the opening-share allocator above
+    is the only path that may release a morning lead.
     """
     local_now=timezone.localtime(now or timezone.now())
     if local_now.weekday()==4:
@@ -585,7 +612,7 @@ def _live_assignment_allowed(now=None):
 
 def _release_before_live_assignment():
     # At/after the release point (or Friday), clear eligible pending work before
-    # routing the newest lead. Before 11:00 on normal days this is a no-op.
+    # routing the newest lead. Before 10:15 only unclaimed opening shares move.
     release_pending_leads_if_ready()
 
 

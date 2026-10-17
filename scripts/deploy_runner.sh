@@ -340,6 +340,25 @@ if docker ps --format '{{.Names}}' | grep -qx "$LAN_WEB"; then
   probe_lan_proxy 20
 fi
 
+# A dedicated lightweight worker keeps the 10:15 lead settlement independent
+# of SMS provider latency and of whether staff have a browser tab open.
+echo "Refreshing call-center lead worker after successful cutover..."
+LEAD_WORKER="greenlife-lead-worker"
+docker rm -f "$LEAD_WORKER" >/dev/null 2>&1 || true
+docker run -d --name "$LEAD_WORKER" --restart unless-stopped --network "$NETWORK" --env-file "$ENV_FILE" --entrypoint python greenlife-staff-runtime-web:latest manage.py process_lead_queue --loop --interval 15 >/dev/null
+for i in {1..6}; do
+  if docker inspect -f '{{.State.Running}}' "$LEAD_WORKER" 2>/dev/null | grep -qx true; then
+    echo "Call-center lead worker is running."
+    break
+  fi
+  if [[ "$i" == "6" ]]; then
+    echo "ERROR: call-center lead worker did not stay running." >&2
+    docker logs --tail=60 "$LEAD_WORKER" >&2 || true
+    exit 1
+  fi
+  sleep 2
+done
+
 if "${COMPOSE[@]}" config --services | grep -qx sms_worker; then
   echo "Refreshing SMS worker after successful cutover..."
   "${COMPOSE[@]}" up -d --no-deps --no-build --force-recreate sms_worker

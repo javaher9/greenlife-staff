@@ -1236,6 +1236,9 @@ body.gl-page-call_center_dashboard .ccx .ccx-side-direct:focus{
 }
 </style>
 
+<style>
+.ccx-routing-summary{margin:8px 0 0;padding:7px 10px;border:1px solid #accfbd;border-radius:13px;background:#edf7f2;color:#344c60!important;font-size:12px!important;line-height:1.9;font-weight:700;white-space:normal;overflow-wrap:anywhere}
+</style>
 <div class="ccx" lang="fa" dir="rtl" translate="no">
   {% if routing_policy_notice %}<div class="cc-routing-warning">⚠ {{ routing_policy_notice }}</div>{% endif %}
   <header class="ccx-desk ccx-card">
@@ -1246,10 +1249,11 @@ body.gl-page-call_center_dashboard .ccx .ccx-side-direct:focus{
         <h1>{{ user.get_full_name|default:user.username }}</h1>
         <div class="ccx-role-line"><b>{{ user.profile.job_title|default:user.profile.get_role_display }}</b>{% if user.profile.branch %} · {{ user.profile.branch }}{% endif %}</div>
         <div class="ccx-presence"><span class="ccx-state {{ cockpit.routing_state }}">{{ cockpit.routing_state_label }}</span><span class="ccx-start">شروع {{ cockpit.shift_started_at }} · {{ cockpit.routing_state_reason }}</span></div>
+        <p class="ccx-routing-summary" role="status">{{ cockpit.routing_summary }}</p>
       </div>
     </div>
     <div class="ccx-kpis">
-      <div class="ccx-kpi"><span>لید امروز</span><strong>{{ stats.today }}</strong><small>ورودی امروز شما</small></div>
+      <div class="ccx-kpi"><span>لید امروز</span><strong>{{ stats.today }}</strong><small>تخصیص امروز، شامل صف صبح</small></div>
       <div class="ccx-kpi alert"><span>عقب‌مانده</span><strong>{{ queue_category_counts.overdue }}</strong><small>نیازمند اقدام سریع</small></div>
       <div class="ccx-kpi good"><span>تماس امروز</span><strong>{{ cockpit.calls_today }}</strong><small>نتیجه ثبت‌شده امروز</small></div>
       <div class="ccx-kpi"><span>نوبت گرفته‌شده</span><strong>{{ cockpit.appointments_created_today }}</strong><small>ثبت امروز توسط شما</small></div>

@@ -860,7 +860,7 @@ def call_center_required(view):
 @call_center_required
 def call_center_dashboard(request):
     operator=request.user.profile
-    from .lead_routing import operator_policy_notice, eligible_operator_user_ids
+    from .lead_routing import operator_policy_notice, eligible_operator_user_ids, operator_routing_summary
     routing_policy_notice=operator_policy_notice(operator)
     default_group=_default_call_center_group(operator)
     ReferralLead.objects.filter(assigned_to=operator,group__isnull=True).update(group=default_group)
@@ -1092,6 +1092,7 @@ def call_center_dashboard(request):
         .order_by('next_follow_up','updated_at')[:5]
     )
     cockpit={
+        'routing_summary':operator_routing_summary(operator),
         'routing_state':routing_state,
         'routing_state_label':routing_state_label,
         'routing_state_reason':routing_state_reason,
@@ -1104,7 +1105,10 @@ def call_center_dashboard(request):
     }
 
     month_start=today.replace(day=1)
-    today_leads=all_leads.filter(created_at__date=today)
+    today_leads=all_leads.filter(
+        Q(assigned_at__date=today) |
+        Q(assigned_at__isnull=True,created_at__date=today)
+    )
     month_leads=all_leads.filter(created_at__date__gte=month_start)
     month_total=month_leads.count()
     month_handled=month_leads.exclude(status='new').count()
@@ -1143,7 +1147,9 @@ def call_center_dashboard(request):
         assigned_to__role='call_center',
         assigned_to__is_active=True,
         assigned_to__user__is_active=True,
-        created_at__date=today,
+    ).filter(
+        Q(assigned_at__date=today) |
+        Q(assigned_at__isnull=True,created_at__date=today)
     ).count()
     performance={
         'today_uncontacted':today_leads.filter(status='new').count(),

@@ -1,5 +1,6 @@
 from collections import Counter
 from datetime import datetime, time, timedelta
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -11,6 +12,11 @@ from core.models import Attendance, Country, EmployeeProfile, ReferralLead, Refe
 
 class UnifiedLeadRoutingTests(TestCase):
     def setUp(self):
+        clock = patch('django.utils.timezone.now', return_value=timezone.make_aware(
+            datetime(2026, 10, 17, 12), timezone.get_current_timezone(),
+        ))
+        clock.start()
+        self.addCleanup(clock.stop)
         source_user = User.objects.create_user(username='routing-source', password='x')
         self.source = ReferralProfile.objects.create(
             user=source_user,
@@ -136,12 +142,12 @@ class UnifiedLeadRoutingTests(TestCase):
         shares=[counts[self.operators[index].id] for index in (0,2,4)]
         self.assertLessEqual(max(shares)-min(shares),1)
 
-    def test_normal_day_overnight_backlog_stays_frozen_until_1115(self):
+    def test_normal_day_releases_one_fifth_of_opening_queue_before_1015(self):
         self._keep_only(0, 2)
         today=timezone.localdate()
         saturday=today+timedelta(days=(5-today.weekday())%7)
         before_release=timezone.make_aware(
-            datetime.combine(saturday,time(10,30)),
+            datetime.combine(saturday,time(9,30)),
             timezone.get_current_timezone(),
         )
         overnight_at=timezone.make_aware(
@@ -158,18 +164,18 @@ class UnifiedLeadRoutingTests(TestCase):
 
         released=release_pending_leads_if_ready(now=before_release)
 
-        self.assertEqual(released,0)
+        self.assertEqual(released,1)
         self.assertEqual(
             ReferralLead.objects.filter(assigned_to__isnull=True).count(),
-            6,
+            5,
         )
 
-    def test_normal_day_releases_overnight_backlog_equally_at_1115(self):
+    def test_normal_day_releases_overnight_backlog_equally_at_1015(self):
         self._keep_only(0,2)
         today=timezone.localdate()
         saturday=today+timedelta(days=(5-today.weekday())%7)
         release_time=timezone.make_aware(
-            datetime.combine(saturday,time(11,15)),
+            datetime.combine(saturday,time(10,15)),
             timezone.get_current_timezone(),
         )
         overnight_at=timezone.make_aware(
@@ -192,7 +198,7 @@ class UnifiedLeadRoutingTests(TestCase):
         self.assertEqual(counts[self.operators[0].id],3)
         self.assertEqual(counts[self.operators[2].id],3)
 
-    def test_normal_day_same_day_pending_can_flow_before_1115(self):
+    def test_small_opening_queue_rounds_down_until_1015(self):
         self._keep_only(0)
         today=timezone.localdate()
         saturday=today+timedelta(days=(5-today.weekday())%7)
@@ -210,9 +216,9 @@ class UnifiedLeadRoutingTests(TestCase):
 
         released=release_pending_leads_if_ready(now=now)
 
-        self.assertEqual(released,1)
+        self.assertEqual(released,0)
         lead.refresh_from_db()
-        self.assertEqual(lead.assigned_to_id,self.operators[0].id)
+        self.assertIsNone(lead.assigned_to_id)
 
     def test_friday_duty_releases_overnight_queue_as_soon_as_operator_is_present(self):
         self._keep_only(1)
@@ -272,11 +278,10 @@ class UnifiedLeadRoutingTests(TestCase):
             assigned.append(assign_referral_lead(lead).id)
         self.assertTrue(blocked.isdisjoint(set(assigned)))
 
-    def test_khorshidi_has_very_low_weight_and_dashboard_notice(self):
+    def test_khorshidi_has_equal_weight_and_no_reduction_notice(self):
         khorshidi=self.operators[1]
-        self.assertEqual(operator_weight(khorshidi),0.20)
-        self.assertIn('۱۰۰ تماس',operator_policy_notice(khorshidi))
-        self.assertIn('تا اطلاع ثانوی',operator_policy_notice(khorshidi))
+        self.assertEqual(operator_weight(khorshidi),1.0)
+        self.assertEqual(operator_policy_notice(khorshidi),'')
         self.assertEqual(operator_policy_notice(self.operators[0]),'')
 
     def test_website_lead_waits_if_only_kamelya_and_laleh_are_present(self):

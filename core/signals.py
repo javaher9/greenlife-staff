@@ -86,7 +86,7 @@ def release_pending_call_center_leads(sender, instance, **kwargs):
     """Release the pending lead queue when a call-center operator checks in.
 
     The routing engine itself decides whether the overnight queue is ready to be
-    released (Friday duty, the whole expected team present, or 11:00+). Running
+    released (one 20% opening share, 10:15 settlement, or Friday duty). Running
     after commit ensures the new attendance row is visible to the routing query.
     """
     if not instance.check_in or instance.check_out:
