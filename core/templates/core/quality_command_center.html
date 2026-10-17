@@ -304,6 +304,57 @@ body.gl-page-quality_command_center .qc-commander .qc-staff-scroll th{
 body.gl-page-quality_command_center .qc-commander .qc-staff-scroll td{
   padding-top:5px!important;padding-bottom:5px!important;
 }
+
+/* Genuine content-height QC: remove empty reserved space on every inner panel.
+   Keep maximum heights for long lists so one busy centre cannot dominate the page. */
+body.gl-page-quality_command_center .qc-commander .qc-branches-fit{
+  align-items:start!important;
+}
+body.gl-page-quality_command_center .qc-commander .qc-branch{
+  align-self:start!important;
+  height:auto!important;
+  min-height:0!important;
+  padding:10px!important;
+}
+body.gl-page-quality_command_center .qc-commander .qc-visit-scroll,
+body.gl-page-quality_command_center .qc-commander .qc-device-scroll,
+body.gl-page-quality_command_center .qc-commander .qc-staff-scroll{
+  min-height:0!important;
+  height:auto!important;
+  max-height:170px!important;
+}
+body.gl-page-quality_command_center .qc-commander .qc-module{
+  margin:5px 0!important;
+}
+body.gl-page-quality_command_center .qc-commander .qc-module-title{
+  padding:6px 8px!important;
+}
+body.gl-page-quality_command_center .qc-commander .qc-branch-head{
+  margin-bottom:7px!important;
+  min-height:43px!important;
+  padding:7px 9px!important;
+}
+body.gl-page-quality_command_center .qc-commander .qc-branch-metrics{
+  margin-bottom:5px!important;
+}
+body.gl-page-quality_command_center .qc-commander .qc-branch-metrics div{
+  padding:4px 2px!important;
+}
+body.gl-page-quality_command_center .qc-commander .qc-attendance-summary{
+  margin:5px 0!important;
+}
+body.gl-page-quality_command_center .qc-commander .qc-attendance-summary>div{
+  padding:5px 2px!important;
+}
+body.gl-page-quality_command_center .qc-commander .qc-staff-scroll td,
+body.gl-page-quality_command_center .qc-commander .qc-visit-scroll td{
+  padding-top:4px!important;
+  padding-bottom:4px!important;
+}
+body.gl-page-quality_command_center .qc-commander .qc-device-row{
+  min-height:0!important;
+  padding:5px 8px!important;
+}
 </style>
 <div class="qc-commander" id="qcCommandRoot">
   <div class="qc-top">

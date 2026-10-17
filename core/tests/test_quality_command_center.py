@@ -237,6 +237,8 @@ class QualityCommandCenterTests(TestCase):
                         html.index("<small>مراجعه</small>"))
         self.assertIn("qc-staff-scroll", html)
         self.assertIn("min-height:0!important", html)
+        self.assertIn("align-items:start!important", html)
+        self.assertIn("max-height:170px!important", html)
 
     def test_booking_alone_is_not_reported_as_active_hardware(self):
         now = timezone.now()
