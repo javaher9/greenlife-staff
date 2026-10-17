@@ -655,6 +655,7 @@ def public_beytoote_lead(request):
         lead.group=None
         lead.created_by=None
         lead.save()
+        _auto_assign_call_center(lead)
         completed=True
         form=BeytootePublicLeadForm()
     return render(request,'core/referrals/public_lead.html',{
