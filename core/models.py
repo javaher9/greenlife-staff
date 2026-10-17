@@ -85,6 +85,7 @@ class EmployeeProfile(models.Model):
         ('admin','مدیر سیستم'),
         ('internal_manager','مدیر داخلی'),
         ('manager','مدیر شعبه'),
+        ('quality_control','کنترل کیفیت'),
         ('referral_supervisor','ناظر شبکه فروش'),
         ('call_center','کال‌سنتر'),
         ('consultant','مشاور'),
