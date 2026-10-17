@@ -914,7 +914,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     button.style.left=(a.left-b.left+7)+'px';
   }
   function setup(input){
-    if(input.dataset.glEyeReady||input.type!=='password')return;
+    if(input.dataset.glEyeReady||input.type!=='password'||input.readOnly||input.disabled||input.closest('.cred-row .cred-secret, .cred-row .cred-value'))return;
     input.dataset.glEyeReady='1';
     const host=input.closest('label')||input.parentElement;
     if(!host)return;
