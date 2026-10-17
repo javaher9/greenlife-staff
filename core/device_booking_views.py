@@ -18,6 +18,7 @@ from .models import (
     StaffNotification, Task, VisitAppointment, lead_phone_variants, normalize_lead_phone,
 )
 from .sms import send_sms
+from .models import SmsScheduledMessage
 from .device_pricing import to_toman_from_million, from_toman_to_million
 
 
@@ -303,7 +304,8 @@ def _send_confirmation(pk):
             'appointment','branch','device','secondary_device'
         ).get(pk=pk)
         config=ApiServerSettings.load()
-        if not (config.is_enabled and config.appointment_confirmation_enabled and config.is_configured):
+        if (booking.status != 'booked' or booking.confirmation_sent_at or
+            not (config.is_enabled and config.appointment_confirmation_enabled and config.is_configured)):
             return
         label=booking.device.device_type.name
         if booking.secondary_device_id:
@@ -916,8 +918,17 @@ def device_booking_status(request,pk,status):
     with transaction.atomic():
         booking=get_object_or_404(qs,pk=pk)
         previous_status=booking.status
+        if previous_status == 'completed' and status != 'completed' and not (request.user.is_superuser or profile.role in ('admin','manager')):
+            messages.error(request,'اصلاح جلسه تکمیل‌شده فقط با تأیید مدیریت مجاز است.')
+            return redirect('device_booking_schedule')
+        if previous_status == status:
+            return redirect('device_booking_schedule')
         booking.status=status
         booking.save(update_fields=['status','updated_at'])
+        if status in ('cancelled','rescheduled','no_show'):
+            SmsScheduledMessage.objects.filter(
+                event_key__startswith=f'device_session_reminder:{booking.pk}:',status='pending'
+            ).update(status='cancelled')
         progress=_sync_device_treatment_progress(booking.plan_item_id)
 
     day=format_jalali(timezone.localtime(booking.starts_at).date())
