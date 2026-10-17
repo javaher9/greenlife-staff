@@ -2,7 +2,26 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
-from .views import executive_required
+from functools import wraps
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.conf import settings
+
+
+def marketing_manager_required(view):
+    @wraps(view)
+    @login_required
+    def wrapped(request, *args, **kwargs):
+        user = request.user
+        profile = getattr(user, "profile", None)
+        if not user.is_active or (profile and not profile.is_active):
+            raise PermissionDenied("حساب کاربری فعال نیست.")
+        executive = (user.username or "").lower() in settings.EXECUTIVE_USERNAMES
+        role = getattr(profile, "role", None)
+        if not (executive or user.is_superuser or role in ("admin", "internal_manager", "manager")):
+            raise PermissionDenied("دسترسی مدیریتی به اتاق فرمان لید ندارید.")
+        return view(request, *args, **kwargs)
+    return wrapped
 
 AGENTS = [
     ("commander","Lead Commander","فرمانده لید","جمع‌بندی و اولویت‌بندی فرصت‌ها"),
@@ -32,11 +51,11 @@ def _snapshot():
         "note":"هیچ فعالیت ساختگی نمایش داده نمی‌شود؛ Activity فقط پس از اتصال Worker واقعی ثبت خواهد شد.",
     }
 
-@executive_required
+@marketing_manager_required
 def lead_command_center(request):
     return render(request,"core/lead_command_center.html",{"snapshot":_snapshot()})
 
 @require_GET
-@executive_required
+@marketing_manager_required
 def lead_command_center_live(request):
     return JsonResponse(_snapshot(),json_dumps_params={"ensure_ascii":False})
