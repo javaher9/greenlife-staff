@@ -18,7 +18,6 @@ from .models import (
     StaffNotification, Task, VisitAppointment, lead_phone_variants, normalize_lead_phone,
 )
 from .sms import send_sms
-from .models import SmsScheduledMessage
 from .device_pricing import to_toman_from_million, from_toman_to_million
 
 
