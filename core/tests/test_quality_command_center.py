@@ -228,6 +228,16 @@ class QualityCommandCenterTests(TestCase):
         data=self.client.get(reverse("quality_command_data")).json()["html"]
         self.assertNotIn("پیگیری شعبه دیگر",data)
 
+    def test_waiting_metric_precedes_arrived_and_staff_has_compact_style(self):
+        self.client.force_login(self.naderi)
+        response = self.client.get(reverse("quality_command_center"))
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode("utf-8")
+        self.assertLess(html.index("<small>در انتظار</small>"),
+                        html.index("<small>مراجعه</small>"))
+        self.assertIn("qc-staff-scroll", html)
+        self.assertIn("min-height:0!important", html)
+
     def test_booking_alone_is_not_reported_as_active_hardware(self):
         now = timezone.now()
         booked = SimpleNamespace(
