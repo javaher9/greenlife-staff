@@ -19,12 +19,11 @@ CHANNEL_LABELS = {
 OPEN_ROUTING_STATUSES = ('new', 'contacted', 'appointment')
 
 # Overnight/no-staff leads stay in a pending queue. On normal workdays the
-# backlog is released progressively so the first person arriving in the morning
-# cannot receive the whole queue. At 11:15 the remaining backlog is released in
-# full among whoever is present. Friday is a duty day: as soon as the first
+# backlog stays fully frozen so the first person arriving in the morning cannot
+# receive a burst. At 11:00 the full queue is released among whoever is present. Friday is a duty day: as soon as the first
 # eligible operator checks in, the whole pending queue may be released to them.
 PENDING_MORNING_RELEASE_HOUR = 11
-PENDING_MORNING_RELEASE_MINUTE = 15
+PENDING_MORNING_RELEASE_MINUTE = 0
 
 # Fixed equal-weight rotation requested by management. The order itself is the
 # policy: Narges -> Banafsha -> Yasaman -> Khorshidi -> repeat. Absent operators
@@ -478,10 +477,11 @@ def _pending_release_candidates(local_now, pending):
 
     Management policy:
     - Friday: release the full pending queue as soon as an eligible flower is in.
-    - Saturday-Thursday before 11:15: keep *overnight* backlog untouched.
-      Only leads created during the current local day may be released.
-    - Saturday-Thursday from 11:15 onward: release the full backlog and let the
-      normal equal round-robin distribute it across the flowers currently in.
+    - Saturday-Thursday before 11:00: release nothing at all. Overnight and
+      same-morning leads stay unassigned so the first person checking in cannot
+      receive a burst.
+    - Saturday-Thursday from 11:00 onward: release the full queue through the
+      same equal round-robin across the flowers currently present.
     """
     if not pending:
         return []
@@ -490,20 +490,17 @@ def _pending_release_candidates(local_now, pending):
         return pending
 
     release_at=time(PENDING_MORNING_RELEASE_HOUR,PENDING_MORNING_RELEASE_MINUTE)
-    if local_now.time() >= release_at:
-        return pending
-
-    tz=timezone.get_current_timezone()
-    day_start=timezone.make_aware(datetime.combine(local_now.date(),time.min),tz)
-    return [lead for lead in pending if lead.created_at >= day_start]
+    if local_now.time() < release_at:
+        return []
+    return pending
 
 @transaction.atomic
 def release_pending_leads_if_ready(*, force=False, now=None):
     """Distribute queued leads using the fixed equal-weight rotation.
 
     Friday releases the full queue as soon as the first eligible operator is in.
-    On Saturday-Thursday, overnight carryover is frozen until 11:15; meanwhile
-    same-day queued leads may still flow normally. At 11:15 the overnight queue
+    On Saturday-Thursday, overnight carryover is frozen until 11:00; meanwhile
+    same-day queued leads may still flow normally. At 11:00 the overnight queue
     is released through the same equal round-robin across present operators.
     """
     local_now = timezone.localtime(now or timezone.now())
@@ -572,9 +569,23 @@ def release_pending_leads_if_ready(*, force=False, now=None):
     return assigned
 
 
+def _live_assignment_allowed(now=None):
+    """Whether a newly arriving lead may be assigned immediately.
+
+    Friday keeps the duty-day exception. On every other day, no automatic
+    assignment happens before 11:00; new leads remain pending and are released
+    with the rest of the queue at 11:00.
+    """
+    local_now=timezone.localtime(now or timezone.now())
+    if local_now.weekday()==4:
+        return True
+    release_at=time(PENDING_MORNING_RELEASE_HOUR,PENDING_MORNING_RELEASE_MINUTE)
+    return local_now.time() >= release_at
+
+
 def _release_before_live_assignment():
-    # After the morning release point (or when the whole expected team is in),
-    # clear the pending queue before routing the newest lead.
+    # At/after the release point (or Friday), clear eligible pending work before
+    # routing the newest lead. Before 11:00 on normal days this is a no-op.
     release_pending_leads_if_ready()
 
 
@@ -584,6 +595,8 @@ def assign_external_lead(lead, channel):
     lead.refresh_from_db(fields=['assigned_to', 'group', 'assigned_at', 'country'])
     if lead.assigned_to_id:
         return lead.assigned_to
+    if not _live_assignment_allowed():
+        return None
     if _is_turkey_lead(lead):
         return _assign_turkey_lead(lead)
 
@@ -621,6 +634,10 @@ def assign_referral_lead(lead):
     lead.refresh_from_db(fields=['assigned_to', 'group', 'assigned_at', 'country'])
     if lead.assigned_to_id:
         return lead.assigned_to
+    if not _live_assignment_allowed():
+        return None
+    if not _live_assignment_allowed():
+        return None
     if _is_turkey_lead(lead):
         return _assign_turkey_lead(lead)
 
