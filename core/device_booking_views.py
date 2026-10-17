@@ -15,7 +15,7 @@ from .models import (
     ApiServerSettings, Branch, ConsultationPlan, ConsultationPlanItem,
     BranchDeviceTypeStatus, DeviceCabin, DeviceSessionBooking, DeviceTypeSchedule,
     FinancialTransaction, PatientCareNote, PatientDeviceProgram, PatientProfile, PhysicalDevice,
-    StaffNotification, Task, VisitAppointment, lead_phone_variants, normalize_lead_phone,
+    StaffNotification, Task, VisitAppointment, SmsScheduledMessage, lead_phone_variants, normalize_lead_phone,
 )
 from .sms import send_sms
 from .device_pricing import to_toman_from_million, from_toman_to_million
