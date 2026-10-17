@@ -625,6 +625,8 @@ def dashboard(request):
         return redirect('executive_workspace')
     if role=='referral_supervisor':
         return redirect('referral_supervisor_dashboard')
+    if role=='quality_control':
+        return redirect('quality_command_center')
     # Doctors use the clinical workspace on desktop, but keep the normal
     # personnel home on phones so attendance, tasks and daily staff tools
     # remain immediately available.

@@ -386,6 +386,12 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
   {% if user.is_superuser or user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' or 'کنترل کیفیت' in user.profile.job_title %}
     <a href="{% url 'quality_command_center' %}" class="{% if request.resolver_match.url_name == 'quality_command_center' %}is-active{% endif %}"><span class="nav-ico">◉</span><span>اتاق فرمان کنترل کیفیت</span></a>
     {% endif %}
+    {% if user.profile.role == 'quality_control' %}
+    <a href="{% url 'quality_command_center' %}" class="{% if request.resolver_match.url_name == 'quality_command_center' %}is-active{% endif %}"><span class="nav-ico">◉</span><span>اتاق فرمان کنترل کیفیت</span></a>
+    <a href="/profile/"><span class="nav-ico">♙</span><span>پرونده من</span></a>
+    <a href="{% url 'staff_security' %}"><span class="nav-ico">⚿</span><span>امنیت حساب</span></a>
+    <a href="/logout/"><span class="nav-ico">↪</span><span>خروج</span></a>
+    {% else %}
     {% if executive_access or user.is_superuser or user.profile.role == 'admin' %}
     <details class="gl-settings-menu gl-marketing-main-menu" {% if request.resolver_match.url_name == 'lead_command_center' or request.resolver_match.url_name == 'referral_lead_list' or request.resolver_match.url_name == 'website_lead_settings' or request.resolver_match.url_name == 'instagram_settings' or request.resolver_match.url_name == 'bulk_sms_groups' %}open{% endif %}>
       <summary><span class="nav-ico">◈</span><span>مارکتینگ</span><span class="settings-caret">⌄</span></summary>
@@ -631,6 +637,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
       </div>
     {% endif %}
     {% endif %}
+    {% endif %}{# restricted quality-control role menu #}
   </nav>
   <div class="sidebar-footer">
     {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'doctor' or user.profile.role == 'receptionist' %}
