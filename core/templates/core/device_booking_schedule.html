@@ -1470,6 +1470,7 @@
         onclick="openPatientCard(this)">{{ booking.appointment.full_name }}</button>
       <small>{{ booking.device.name }}{% if booking.secondary_device %} + {{ booking.secondary_device.name }}{% endif %} · {{ booking.plan_item.title }}</small>
       <small>درمان {{ booking.treatment_minutes_snapshot|latin_digits }} دقیقه · آماده‌سازی {{ booking.preparation_minutes_snapshot|latin_digits }} دقیقه · آزاد از {{ booking.blocked_until|date:'H:i'|latin_digits }}</small>
+      <small>پیامک ثبت نوبت: {% if booking.confirmation_sent_at %}ارسال به سامانه{% else %}بدون تأیید ارسال{% endif %} · یادآوری: {% if booking.reminder_sent_at %}ارسال به سامانه{% else %}ارسال‌نشده{% endif %}</small>
     </div>
     <b>{{ booking.get_status_display }}</b>
     <span></span>
