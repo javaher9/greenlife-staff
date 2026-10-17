@@ -2,27 +2,110 @@
 {% block title %}Lead Command Center{% endblock %}
 {% block content %}
 <style>
-.lcc{direction:rtl;font-family:Tahoma,sans-serif;color:#eef6ff;display:grid;gap:12px}.lcc *{box-sizing:border-box}.lcc-top{padding:15px;border-radius:18px;border:1px solid #2b425b;background:linear-gradient(120deg,#11182e,#092523);display:flex;justify-content:space-between;gap:14px;align-items:center}.lcc-title small{color:#5ee9bd}.lcc-title h1{font-size:21px;margin:4px 0}.lcc-controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.lcc-btn{border:1px solid #38506b;background:#17243a;color:#eaf3ff;border-radius:10px;padding:8px 11px;cursor:pointer}.lcc-btn.on{border-color:#35d6a2;color:#65f0c2}.live-dot{width:8px;height:8px;border-radius:50%;background:#35d6a2;display:inline-block;box-shadow:0 0 10px #35d6a2}.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.kpi,.agent,.feed{border:1px solid #2d4259;background:#0d1a2a;border-radius:15px}.kpi{padding:12px}.kpi small{color:#9fb1c4;font-size:9px}.kpi b{display:block;font-size:22px;margin-top:5px}.agents{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.agent{padding:12px;min-height:126px}.agent-head{display:flex;justify-content:space-between;gap:8px}.agent h3{font-size:12px;margin:0}.agent p{font-size:9px;color:#9fb1c4;margin:5px 0 12px}.status{font-size:8px;border:1px solid #526173;border-radius:20px;padding:4px 7px;color:#bdc8d5}.status.running{color:#65f0c2;border-color:#35d6a2}.activity{font-size:9px;color:#dce7f3}.heartbeat{font-size:8px;color:#7f93a8;margin-top:9px}.feed{padding:13px}.feed-head{display:flex;justify-content:space-between;margin-bottom:9px}.event{display:flex;gap:8px;padding:8px 0;border-top:1px solid #1e3043;font-size:9px}.empty{padding:18px;text-align:center;color:#8195aa;font-size:9px}.truth{font-size:8px;color:#8fa4b8}.spin{display:inline-block;width:12px;height:12px;border:2px solid #35506c;border-top-color:#65f0c2;border-radius:50%;animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}@media(max-width:900px){.agents{grid-template-columns:repeat(2,1fr)}.kpis{grid-template-columns:repeat(3,1fr)}}@media(max-width:560px){.lcc-top{align-items:flex-start;flex-direction:column}.agents{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+
+/* Lead Command Center: scoped readable dark dashboard, isolated from shell theme */
+.lcc{
+ --lcc-bg:#101f32;--lcc-bg2:#13283b;--lcc-border:#38536b;--lcc-text:#f4f8fc;
+ --lcc-secondary:#c8d7e6;--lcc-muted:#adc1d3;--lcc-green:#71ebc2;
+ direction:rtl;font-family:Tahoma,"Noto Sans Arabic",Arial,sans-serif;
+ color:var(--lcc-text)!important;display:grid;gap:16px;line-height:1.75;
+ font-size:15px;max-width:100%;min-width:0;
+}
+.lcc *, .lcc *::before, .lcc *::after{box-sizing:border-box}
+.lcc .lcc-top{
+ position:relative!important;top:auto!important;height:auto!important;min-height:120px;
+ padding:22px 24px!important;margin:0!important;border-radius:20px!important;
+ border:1px solid #426858!important;background:linear-gradient(115deg,#132a37,#0c3029)!important;
+ color:var(--lcc-text)!important;box-shadow:0 12px 32px rgba(0,0,0,.16)!important;
+ display:flex!important;justify-content:space-between!important;align-items:center!important;
+ gap:18px!important;flex-wrap:wrap;backdrop-filter:none!important;
+}
+.lcc .lcc-title{min-width:0;flex:1 1 300px}
+.lcc .lcc-title small{display:block;color:#90e9c5!important;font-size:12px!important;letter-spacing:.3px;font-weight:700}
+.lcc .lcc-title h1{font-size:clamp(23px,2.2vw,29px)!important;font-weight:800!important;line-height:1.5!important;margin:5px 0 7px!important;color:#fff!important}
+.lcc .lcc-truth{color:var(--lcc-secondary)!important;font-size:13px!important;line-height:1.9!important}
+.lcc .lcc-controls{display:flex;gap:10px;align-items:center;justify-content:flex-start;flex-wrap:wrap}
+.lcc .lcc-controls .lcc-live-indicator{
+ display:inline-flex;align-items:center;gap:7px;color:#d9f9ec!important;
+ font-size:13px!important;font-weight:700;background:#154134;border:1px solid #397e63;
+ border-radius:24px;padding:5px 10px;
+}
+.lcc .lcc-controls .lcc-updated{color:#d7e9f4!important;font-size:13px!important}
+.lcc .lcc-btn{
+ border:1px solid #537188!important;background:#17374b!important;color:#f4faff!important;
+ border-radius:11px!important;padding:9px 14px!important;min-height:42px;
+ cursor:pointer!important;font-family:inherit!important;font-size:13px!important;font-weight:700!important;
+ box-shadow:none!important;white-space:nowrap;
+}
+.lcc .lcc-btn:hover,.lcc .lcc-btn:focus-visible{background:#234b62!important;border-color:#8ac9d3!important}
+.lcc .lcc-btn.on{border-color:#62cca5!important;background:#175442!important;color:#e5fff5!important}
+.lcc .lcc-btn:focus-visible{outline:3px solid #a8efd7!important;outline-offset:3px}
+.lcc .lcc-live-dot{width:9px;height:9px;flex:0 0 auto;border-radius:50%;background:#65e6b2;display:inline-block;box-shadow:0 0 0 3px rgba(101,230,178,.14)}
+.lcc .lcc-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.lcc .lcc-kpi,.lcc .lcc-agent,.lcc .lcc-feed{
+ border:1px solid var(--lcc-border)!important;background:linear-gradient(155deg,#14273c,#102033)!important;
+ border-radius:17px!important;color:var(--lcc-text)!important;
+ box-shadow:0 9px 25px rgba(0,0,0,.10)!important;min-width:0;
+}
+.lcc .lcc-kpi{padding:18px 19px!important;min-height:118px;display:flex;flex-direction:column;justify-content:space-between;gap:5px}
+.lcc .lcc-kpi small{color:var(--lcc-secondary)!important;font-size:13px!important;line-height:1.5!important;font-weight:700!important}
+.lcc .lcc-kpi b{font-size:clamp(27px,2.9vw,37px)!important;line-height:1.25!important;font-weight:800!important;display:block;color:#f6faff!important;font-variant-numeric:tabular-nums}
+.lcc .lcc-kpi:first-child b{color:var(--lcc-green)!important}
+.lcc .lcc-agents{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.lcc .lcc-agent{padding:20px!important;min-height:190px;display:flex;flex-direction:column}
+.lcc .lcc-agent-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.lcc .lcc-agent h3{font-size:18px!important;line-height:1.65!important;font-weight:800!important;color:#f5f9ff!important;margin:0!important}
+.lcc .lcc-agent h3 small{display:block;color:#b8d9dc!important;font-size:13px!important;font-weight:600!important;line-height:1.6!important;direction:ltr;text-align:right}
+.lcc .lcc-agent p{font-size:14px!important;color:var(--lcc-secondary)!important;line-height:1.8!important;margin:10px 0 12px!important}
+.lcc .lcc-status{
+ flex:0 0 auto;display:inline-flex;align-items:center;border:1px solid #aa9155!important;
+ border-radius:999px;padding:5px 11px!important;color:#ffe7b2!important;background:#3f3627!important;
+ font-size:12px!important;font-weight:750!important;line-height:1.5;
+}
+.lcc .lcc-status.running{color:#bcffe1!important;background:#194d3d!important;border-color:#4bbd92!important}
+.lcc .lcc-activity{font-size:13px!important;color:#e7f3fa!important;font-weight:600;line-height:1.7;margin-top:auto}
+.lcc .lcc-heartbeat{font-size:12px!important;color:var(--lcc-muted)!important;line-height:1.7;margin-top:8px}
+.lcc .lcc-feed{padding:19px 22px!important;min-height:146px}
+.lcc .lcc-feed-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.lcc .lcc-feed-head b{font-size:17px!important;color:#f2f8ff!important;font-weight:800!important}
+.lcc .lcc-event{display:flex;gap:12px;padding:12px 3px;border-top:1px solid var(--lcc-border);font-size:14px;color:#edf6fb}
+.lcc .lcc-empty{padding:25px 18px;text-align:center;color:#d2e0ef!important;font-size:14px!important;line-height:1.9!important;background:#172a3d;border:1px dashed #48647c;border-radius:12px}
+.lcc .lcc-spin{display:inline-block;width:14px;height:14px;border:2px solid #50748b;border-top-color:#72e4b8;border-radius:50%;animation:lcc-spin-rotate 1s linear infinite}
+.lcc .lcc-spin[hidden]{display:none!important}
+@keyframes lcc-spin-rotate{to{transform:rotate(360deg)}}
+@media(max-width:1120px){.lcc .lcc-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.lcc .lcc-agents{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){
+ .lcc{gap:12px;font-size:14px}
+ .lcc .lcc-top{padding:17px!important;align-items:flex-start!important}
+ .lcc .lcc-controls{width:100%}
+ .lcc .lcc-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .lcc .lcc-kpi{padding:14px!important;min-height:105px}
+ .lcc .lcc-agents{grid-template-columns:1fr}
+ .lcc .lcc-agent{padding:16px!important;min-height:175px}
+ .lcc .lcc-feed{padding:15px!important}
+}
+@media(max-width:380px){.lcc .lcc-kpis{grid-template-columns:1fr}.lcc .lcc-btn{flex:1}}
+@media(prefers-reduced-motion:reduce){.lcc .lcc-spin{animation:none}}
 </style>
 <section class="lcc" id="leadCommand">
  <header class="lcc-top">
-  <div class="lcc-title"><small>GREENLIFE · LEAD GENERATION HQ</small><h1>مرکز فرمان زنده ایجنت‌ها</h1><div class="truth" id="truthNote">فقط فعالیت واقعی Backend نمایش داده می‌شود.</div></div>
+  <div class="lcc-title"><small>GREENLIFE · LEAD GENERATION HQ</small><h1>اتاق فرمان تولید لید</h1><div class="lcc-truth" id="truthNote">فقط فعالیت واقعی Backend نمایش داده می‌شود.</div></div>
   <div class="lcc-controls">
-   <span><i class="live-dot" id="liveDot"></i> <b id="liveLabel">LIVE</b></span>
-   <span class="truth" id="updated">در حال اتصال…</span><span class="spin" id="spinner"></span>
-   <button type="button" class="lcc-btn on" id="liveToggle">Live ON</button>
+   <span class="lcc-live-indicator"><i class="lcc-live-dot" id="liveDot"></i> <b id="liveLabel">LIVE</b></span>
+   <span class="lcc-updated" id="updated">در حال اتصال…</span><span class="lcc-spin" id="spinner"></span>
+   <button type="button" class="lcc-btn on" id="liveToggle" aria-pressed="true">به‌روزرسانی روشن</button>
    <button type="button" class="lcc-btn" id="refreshNow">↻ تازه‌سازی</button>
   </div>
  </header>
- <div class="kpis">
-  <div class="kpi"><small>AGENTS</small><b id="kAgents">7</b></div>
-  <div class="kpi"><small>ACTIVE NOW</small><b id="kActive">0</b></div>
-  <div class="kpi"><small>QUALIFIED TODAY</small><b id="kQualified">0</b></div>
-  <div class="kpi"><small>OPPORTUNITIES</small><b id="kOpp">0</b></div>
-  <div class="kpi"><small>REVENUE TODAY</small><b id="kRevenue">0</b></div>
+ <div class="lcc-kpis">
+  <div class="lcc-kpi"><small>ایجنت‌های تعریف‌شده</small><b id="kAgents">7</b></div>
+  <div class="lcc-kpi"><small>ایجنت فعال</small><b id="kActive">0</b></div>
+  <div class="lcc-kpi"><small>لید واجد شرایط امروز</small><b id="kQualified">0</b></div>
+  <div class="lcc-kpi"><small>فرصت‌های شناسایی‌شده</small><b id="kOpp">0</b></div>
+  <div class="lcc-kpi"><small>فروش امروز (تومان)</small><b id="kRevenue">0</b></div>
  </div>
- <div class="agents" id="agentGrid"></div>
- <section class="feed"><div class="feed-head"><b>Live Agent Activity</b><span class="truth">Status 5s · KPI 30s</span></div><div id="eventFeed" aria-live="polite"><div class="empty">هنوز رویداد واقعی ثبت نشده است.</div></div></section>
+ <div class="lcc-agents" id="agentGrid"></div>
+ <section class="lcc-feed"><div class="lcc-feed-head"><b>گزارش فعالیت ایجنت‌ها</b><span class="lcc-truth">به‌روزرسانی وضعیت هر ۵ ثانیه · شاخص‌ها هر ۳۰ ثانیه</span></div><div id="eventFeed" aria-live="polite"><div class="lcc-empty">هنوز فعالیت واقعی ثبت نشده است. پس از اتصال Worker، رویدادها اینجا نمایش داده می‌شوند.</div></div></section>
 </section>
 <script>
 (function(){
@@ -33,12 +116,12 @@
   $('updated').textContent='آپدیت '+new Date(d.server_time).toLocaleTimeString('fa-IR');
   $('truthNote').textContent=d.note||'';
   if(Date.now()-lastKpi>29000){$('kAgents').textContent=d.kpi.agents;$('kActive').textContent=d.kpi.active;$('kQualified').textContent=d.kpi.qualified_today;$('kOpp').textContent=d.kpi.opportunities;$('kRevenue').textContent=money(d.kpi.revenue_today);lastKpi=Date.now();}
-  $('agentGrid').innerHTML=d.agents.map(a=>'<article class="agent"><div class="agent-head"><h3>'+a.fa+'<br><small>'+a.name+'</small></h3><span class="status '+(a.status==='running'?'running':'')+'">'+a.status_label+'</span></div><p>'+a.mission+'</p><div class="activity">'+a.activity+'</div><div class="heartbeat">'+(a.heartbeat?'Heartbeat: '+a.heartbeat:'Heartbeat: —')+'</div></article>').join('');
-  $('eventFeed').innerHTML=d.events&&d.events.length?d.events.map(e=>'<div class="event"><b>'+e.time+'</b><span>'+e.agent+' → '+e.message+'</span></div>').join(''):'<div class="empty">هنوز رویداد واقعی ثبت نشده است.</div>';
+  $('agentGrid').innerHTML=d.agents.map(a=>'<article class="lcc-agent"><div class="lcc-agent-head"><h3>'+a.fa+'<br><small>'+a.name+'</small></h3><span class="lcc-status '+(a.status==='running'?'running':'')+'">'+(a.status==='waiting'?'در انتظار':a.status_label)+'</span></div><p>'+a.mission+'</p><div class="lcc-activity">'+a.activity+'</div><div class="lcc-heartbeat">'+(a.heartbeat?'آخرین سیگنال: '+a.heartbeat:'سیگنال دریافت نشده')+'</div></article>').join('');
+  $('eventFeed').innerHTML=d.events&&d.events.length?d.events.map(e=>'<div class="lcc-event"><b>'+e.time+'</b><span>'+e.agent+' → '+e.message+'</span></div>').join(''):'<div class="lcc-empty">هنوز فعالیت واقعی ثبت نشده است. پس از اتصال Worker، رویدادها اینجا نمایش داده می‌شوند.</div>';
  }
- async function pull(){if(!live)return;$('spinner').hidden=false;try{const r=await fetch('/lead-command/api/live/',{headers:{'X-Requested-With':'XMLHttpRequest'},cache:'no-store'});if(!r.ok)throw Error();render(await r.json());}catch(e){$('updated').textContent='ارتباط موقتاً قطع است';}finally{$('spinner').hidden=true;}}
+ async function pull(){if(!live)return;$('spinner').hidden=false;try{const r=await fetch('/lead-command/api/live/',{headers:{'X-Requested-With':'XMLHttpRequest'},cache:'no-store'});if(!r.ok)throw Error();render(await r.json());}catch(e){$('updated').textContent='ارتباط با گزارش زنده برقرار نیست';}finally{$('spinner').hidden=true;}}
  function schedule(){clearInterval(timer);if(live){pull();timer=setInterval(pull,5000);}}
- $('liveToggle').addEventListener('click',()=>{live=!live;$('liveToggle').textContent=live?'Live ON':'Live OFF';$('liveToggle').classList.toggle('on',live);$('liveLabel').textContent=live?'LIVE':'PAUSED';$('liveDot').style.opacity=live?'1':'.25';schedule();});
+ $('liveToggle').addEventListener('click',()=>{live=!live;$('liveToggle').textContent=live?'به‌روزرسانی روشن':'به‌روزرسانی خاموش';$('liveToggle').classList.toggle('on',live);$('liveToggle').setAttribute('aria-pressed',String(live));$('liveLabel').textContent=live?'LIVE':'PAUSED';$('liveDot').style.opacity=live?'1':'.25';schedule();});
  $('refreshNow').addEventListener('click',pull);
  document.addEventListener('visibilitychange',()=>{if(document.hidden){clearInterval(timer);}else schedule();});
  schedule();
