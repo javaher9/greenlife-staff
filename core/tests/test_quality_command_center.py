@@ -235,7 +235,9 @@ class QualityCommandCenterTests(TestCase):
         html = response.content.decode("utf-8")
         self.assertLess(html.index("<small>در انتظار</small>"),
                         html.index("<small>مراجعه</small>"))
-        self.assertIn("qc-staff-scroll", html)
+        self.assertIn("qc-staff-grid", html)
+        self.assertIn("qc-staff-chip", html)
+        self.assertIn("grid-template-columns:repeat(2,minmax(0,1fr))", html)
         self.assertIn("min-height:0!important", html)
         self.assertIn("align-items:start!important", html)
         self.assertIn("max-height:170px!important", html)
