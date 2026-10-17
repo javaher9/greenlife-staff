@@ -242,6 +242,28 @@ class QualityCommandCenterTests(TestCase):
         self.assertIn("align-items:start!important", html)
         self.assertIn("max-height:170px!important", html)
 
+
+    def test_dedicated_quality_control_role_has_command_center_and_limited_menu(self):
+        self.naderi.profile.role = "quality_control"
+        self.naderi.profile.job_title = "ناظر"
+        self.naderi.profile.save(update_fields=["role", "job_title"])
+        self.client.force_login(self.naderi)
+        response = self.client.get(reverse("quality_command_center"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "بیمار نیاوران")
+        self.assertContains(response, "بیمار پونک")
+        self.assertNotContains(response, "مدیریت شرح وظایف")
+        html = response.content.decode("utf-8")
+        self.assertEqual(html.count('href="/quality-center/"'), 1)
+        home = self.client.get("/", follow=False)
+        self.assertEqual(home.status_code, 302)
+        self.assertEqual(home["Location"], reverse("quality_command_center"))
+
+    def test_role_is_selectable_for_staff_edit_form(self):
+        from core.forms import EmployeeEditForm
+        form = EmployeeEditForm(employee=self.naderi.profile)
+        self.assertIn(("quality_control", "کنترل کیفیت"), list(form.fields["role"].choices))
+
     def test_booking_alone_is_not_reported_as_active_hardware(self):
         now = timezone.now()
         booked = SimpleNamespace(
