@@ -29,6 +29,8 @@ def _qc_scope(user):
         return None
     if profile and profile.role == "manager" and profile.branch_id:
         return profile.branch_id
+    if profile and profile.role == "quality_control":
+        return None
     if profile and profile.role == "internal_manager":
         return None
     title = (getattr(profile, "job_title", "") or "").strip().lower()
