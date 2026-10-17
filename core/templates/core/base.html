@@ -390,7 +390,9 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     <details class="gl-settings-menu gl-marketing-main-menu" {% if request.resolver_match.url_name == 'lead_command_center' or request.resolver_match.url_name == 'referral_lead_list' or request.resolver_match.url_name == 'website_lead_settings' or request.resolver_match.url_name == 'instagram_settings' or request.resolver_match.url_name == 'bulk_sms_groups' %}open{% endif %}>
       <summary><span class="nav-ico">◈</span><span>مارکتینگ</span><span class="settings-caret">⌄</span></summary>
       <div class="gl-settings-submenu">
+        {% if executive_access %}
         <a href="{% url 'lead_command_center' %}" class="{% if request.resolver_match.url_name == 'lead_command_center' %}is-active{% endif %}"><span class="nav-ico">◎</span><span>اتاق فرمان لید</span></a>
+        {% endif %}
         <a href="{% url 'referral_lead_list' %}" class="{% if request.resolver_match.url_name == 'referral_lead_list' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>لیدهای شبکه فروش</span></a>
         <a href="{% url 'website_lead_settings' %}" class="{% if request.resolver_match.url_name == 'website_lead_settings' %}is-active{% endif %}"><span class="nav-ico">⌁</span><span>لیدهای سایت</span></a>
         <a href="{% url 'bulk_sms_groups' %}" class="{% if request.resolver_match.url_name == 'bulk_sms_groups' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>کمپین پیامکی</span></a>
