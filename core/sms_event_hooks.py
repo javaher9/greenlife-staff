@@ -63,9 +63,16 @@ def device_session_sms_events(sender,instance,created,**kwargs):
     context['date']=format_jalali(timezone.localtime(instance.starts_at).date())
     context['time']=timezone.localtime(instance.starts_at).strftime('%H:%M')
     if created:
-        schedule_sms_event('device_session_booked',instance.pk,event_at=instance.starts_at,patient_number=a.phone,context=context)
-        schedule_sms_event('device_session_reminder',instance.pk,event_at=instance.starts_at,patient_number=a.phone,context=context)
+        # Device booking confirmations and reminders use the dedicated device SMS path.
+        # Do not queue duplicates in the generic automation engine.
         return
+    if instance.status in ('cancelled','rescheduled','no_show'):
+        from .models import SmsScheduledMessage
+        SmsScheduledMessage.objects.filter(
+            event_key__in=[f'device_session_booked:{instance.pk}:patient',
+                          f'device_session_reminder:{instance.pk}:patient'],
+            status='pending',
+        ).update(status='cancelled')
     if instance.status in ('arrived','late'):
         schedule_sms_event('device_session_started',f'{instance.pk}-started',patient_number=a.phone,context=context)
     elif instance.status=='completed':
