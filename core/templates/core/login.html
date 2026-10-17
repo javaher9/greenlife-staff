@@ -14,4 +14,56 @@ html[dir="ltr"] .login-language-switch{right:auto;left:20px}
 <picture class="login-fixed-art" aria-hidden="true"><source media="(max-width:700px)" srcset="{% static 'core/login/staff-login-mobile-full.webp' %}?v=v38.1"><img src="{% static 'core/login/staff-login-wide-full.webp' %}?v=v38.1" alt="" fetchpriority="high"></picture>
 <form method="post" class="login-fixed-form" aria-label="{% gl_t 'login.form_label' %}">{% csrf_token %}<h1 class="login-sr">GreenLife Staff</h1><label class="login-sr" for="{{ form.username.id_for_label }}">{% gl_t 'login.username' %}</label>{{ form.username }}<label class="login-sr" for="{{ form.password.id_for_label }}">{% if mobile_login %}{% gl_t 'login.mobile_pin' %}{% else %}{% gl_t 'login.desktop_password' %}{% endif %}</label>{{ form.password }}{% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}<button type="submit" aria-label="{% gl_t 'login.submit' %}">{% gl_t 'login.submit' %}</button>{% if form.non_field_errors %}<div class="login-fixed-error" role="alert">{{ form.non_field_errors.0 }}</div>{% endif %}</form>
 <p class="device-login-hint">{% if mobile_login %}{% gl_t 'login.mobile_hint' %}{% else %}{% gl_t 'login.desktop_hint' %}{% endif %}</p>
-</main></body></html>
+</main><style>
+.gl-secret-eye{position:absolute!important;z-index:5!important;display:grid!important;place-items:center!important;width:34px!important;height:32px!important;min-width:34px!important;min-height:32px!important;padding:4px!important;margin:0!important;border:1px solid rgba(120,160,170,.38)!important;border-radius:9px!important;background:rgba(17,57,65,.12)!important;color:inherit!important;cursor:pointer!important;line-height:1!important;box-shadow:none!important;transform:translateY(-50%)!important}
+.gl-secret-eye:focus-visible{outline:2px solid #21ba91!important;outline-offset:2px!important}
+.gl-secret-eye svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+</style>
+<script>
+(function(){
+  'use strict';
+  const icon='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const hiddenIcon='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.5 6.1A11.8 11.8 0 0 1 12 6c6.4 0 10 6 10 6a17 17 0 0 1-3.3 3.7M6.2 6.2C3.6 8.2 2 12 2 12s3.6 6 10 6c1.7 0 3.2-.4 4.5-1.1"/><path d="M10 10a3 3 0 0 0 4 4"/></svg>';
+  function position(input,button,host){
+    if(!input.isConnected||!button.isConnected)return;
+    const a=input.getBoundingClientRect(),b=host.getBoundingClientRect();
+    button.style.top=(a.top-b.top+a.height/2)+'px';
+    button.style.left=(a.left-b.left+7)+'px';
+  }
+  function setup(input){
+    if(input.dataset.glEyeReady||input.type!=='password')return;
+    input.dataset.glEyeReady='1';
+    const host=input.closest('label')||input.parentElement;
+    if(!host)return;
+    if(getComputedStyle(host).position==='static')host.style.position='relative';
+    const btn=document.createElement('button');
+    btn.type='button';btn.className='gl-secret-eye';
+    btn.setAttribute('aria-label','نمایش رمز عبور');
+    btn.setAttribute('aria-pressed','false');
+    btn.setAttribute('title','نمایش رمز');
+    btn.innerHTML=icon;
+    input.style.paddingLeft='44px';
+    host.appendChild(btn);
+    const refresh=()=>position(input,btn,host);
+    btn.addEventListener('click',()=>{
+      const visible=input.type==='password';
+      input.type=visible?'text':'password';
+      btn.innerHTML=visible?hiddenIcon:icon;
+      btn.setAttribute('aria-label',visible?'مخفی کردن رمز عبور':'نمایش رمز عبور');
+      btn.setAttribute('aria-pressed',visible?'true':'false');
+      btn.title=visible?'مخفی کردن رمز':'نمایش رمز';
+      refresh();
+    });
+    requestAnimationFrame(refresh);
+    window.addEventListener('resize',refresh);
+  }
+  function scan(root){
+    if(root.matches&&root.matches('input[type="password"]'))setup(root);
+    if(root.querySelectorAll)root.querySelectorAll('input[type="password"]').forEach(setup);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>scan(document));
+  else scan(document);
+  new MutationObserver(list=>{list.forEach(x=>x.addedNodes.forEach(n=>{if(n.nodeType===1)scan(n)}));}).observe(document.documentElement,{childList:true,subtree:true});
+})();
+</script>
+</body></html>
