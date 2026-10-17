@@ -1,3 +1,5 @@
+from datetime import datetime, time, timedelta
+from django.db.models import Count
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
@@ -6,6 +8,7 @@ from functools import wraps
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.conf import settings
+from .models import ReferralLead
 
 
 def marketing_manager_required(view):
@@ -34,21 +37,53 @@ AGENTS = [
 ]
 
 def _snapshot():
-    # V1 is intentionally honest: agents stay WAITING until a real worker writes heartbeats/events.
-    now=timezone.now()
-    agents=[{
-        "key":key,"name":name,"fa":fa,"mission":mission,
-        "status":"waiting","status_label":"WAITING",
-        "activity":"در انتظار اتصال Worker واقعی",
-        "heartbeat":None,
-    } for key,name,fa,mission in AGENTS]
+    """Read-only snapshot. Worker statuses are not invented or inferred from CRM activity."""
+    now = timezone.now()
+    day = timezone.localdate(now)
+    start = timezone.make_aware(datetime.combine(day, time.min))
+    end = start + timedelta(days=1)
+
+    # Only records explicitly assigned to the Iran market; no historical leads.
+    # ReferralLead has no reliable destination-branch field: this KPI is Iran-wide,
+    # not a claimed Niyavaran/Punak or marketing-only acquisition count.
+    todays_leads = ReferralLead.objects.filter(
+        country__code="IR", created_at__gte=start, created_at__lt=end
+    )
+    total_today = todays_leads.aggregate(total=Count("id"))["total"] or 0
+    recent = list(todays_leads.order_by("-created_at").values("id", "created_at")[:8])
+    events = [
+        {
+            "id": item["id"],
+            "time": timezone.localtime(item["created_at"]).strftime("%H:%M"),
+            "agent": "ثبت در CRM",
+            "message": "لید جدید در اپ ثبت شد",
+        }
+        for item in recent
+    ]
+
+    agents = [{
+        "key": key, "name": name, "fa": fa, "mission": mission,
+        "status": "waiting", "status_label": "WAITING",
+        "activity": "در انتظار اتصال Worker واقعی",
+        "heartbeat": None,
+    } for key, name, fa, mission in AGENTS]
     return {
-        "server_time":now.isoformat(),
-        "live":True,
-        "agents":agents,
-        "kpi":{"agents":len(agents),"active":0,"qualified_today":0,"opportunities":0,"revenue_today":0},
-        "events":[],
-        "note":"هیچ فعالیت ساختگی نمایش داده نمی‌شود؛ Activity فقط پس از اتصال Worker واقعی ثبت خواهد شد.",
+        "server_time": now.isoformat(),
+        "live": True,
+        "crm_connected": True,
+        "scope": "IR",
+        "agents": agents,
+        "kpi": {
+            "agents": len(agents), "active": 0,
+            "new_today": total_today,
+            # These are not measurable reliably from current fields.
+            # null means unknown; never substitute zeros.
+            "qualified_today": None,
+            "opportunities": None,
+            "revenue_today": None,
+        },
+        "events": events,
+        "note": "پایش CRM فعال است: تعداد لیدهای ثبت‌شده امروز در ایران (همه منابع). ایجنت‌های جذب خودکار هنوز به Worker متصل نیستند.",
     }
 
 @marketing_manager_required
