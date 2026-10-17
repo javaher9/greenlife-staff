@@ -546,7 +546,7 @@ def release_pending_leads_if_ready(*, force=False, now=None):
                 continue
             _assign_to_operator(
                 lead,operator,'Türkiye | Turkey','لید جدید ترکیه',
-                notify=True,assigned_at=timezone.now(),
+                notify=True,assigned_at=local_now,
             )
             assigned += 1
             continue
@@ -565,7 +565,7 @@ def release_pending_leads_if_ready(*, force=False, now=None):
             group_name,
             title,
             notify=True,
-            assigned_at=timezone.now(),
+            assigned_at=local_now,
         )
         assigned += 1
 
