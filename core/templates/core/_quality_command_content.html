@@ -25,12 +25,13 @@
   </div>
   <div class="qc-module qc-staff-module">
     <div class="qc-module-title"><strong><span>♙</span> وضعیت پرسنل مرکز</strong><span>{{ branch.staff_total }} نفر</span></div>
-    <div class="qc-table-scroll qc-staff-scroll">
-      <table><thead><tr><th>نام / سمت</th><th>وضعیت حضور</th><th>کار تکمیل‌شده امروز</th></tr></thead>
-      <tbody>{% for person in branch.staff %}
-        <tr><td><b>{{ person.name }}</b><small>{{ person.role }}</small></td><td><span class="qc-status status-{{ person.state }}">{{ person.label }}</span>{% if person.check_in %}<small dir="ltr" class="qc-time">{{ person.check_in }}</small>{% endif %}</td><td>{{ person.tasks_done }}</td></tr>
-      {% empty %}<tr><td colspan="3" class="qc-empty">پرسنل فعالی برای این شعبه ثبت نشده است.</td></tr>{% endfor %}</tbody>
-      </table>
+    <div class="qc-staff-grid" aria-label="فهرست وضعیت پرسنل مرکز">
+      {% for person in branch.staff %}
+        <div class="qc-staff-chip" title="{{ person.name }} | {{ person.role }} | {{ person.label }}{% if person.check_in %} | {{ person.check_in }}{% endif %}">
+          <div class="qc-staff-person"><b>{{ person.name }}</b><small>{{ person.role }}</small></div>
+          <div class="qc-staff-presence"><span class="qc-status status-{{ person.state }}">{{ person.label }}</span>{% if person.check_in %}<small dir="ltr">{{ person.check_in }}</small>{% endif %}</div>
+        </div>
+      {% empty %}<div class="qc-empty">پرسنل فعالی برای این شعبه ثبت نشده است.</div>{% endfor %}
     </div>
   </div>
   <footer class="qc-branch-foot qc-attendance-summary" aria-label="کنترل حضور و غیاب شعبه">
