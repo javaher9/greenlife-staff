@@ -136,32 +136,85 @@ class UnifiedLeadRoutingTests(TestCase):
         shares=[counts[self.operators[index].id] for index in (0,2,4)]
         self.assertLessEqual(max(shares)-min(shares),1)
 
-    def test_overnight_backlog_waits_for_more_staff_before_11(self):
+    def test_normal_day_overnight_backlog_stays_frozen_until_1115(self):
         self._keep_only(0, 2)
-        leads = [self._new_lead(index) for index in range(1, 7)]
-        self._check_in(0)
+        today=timezone.localdate()
+        saturday=today+timedelta(days=(5-today.weekday())%7)
+        before_release=timezone.make_aware(
+            datetime.combine(saturday,time(10,30)),
+            timezone.get_current_timezone(),
+        )
+        overnight_at=timezone.make_aware(
+            datetime.combine(saturday-timedelta(days=1),time(23,0)),
+            timezone.get_current_timezone(),
+        )
+        leads=[self._new_lead(index) for index in range(1,7)]
+        ReferralLead.objects.filter(pk__in=[lead.pk for lead in leads]).update(created_at=overnight_at)
+        Attendance.objects.update_or_create(
+            user=self.operators[0].user,
+            date=saturday,
+            defaults={'check_in':before_release,'check_out':None,'status':'present'},
+        )
 
-        released = release_pending_leads_if_ready(now=self._at(9, 30))
-        self.assertEqual(released, 0)
+        released=release_pending_leads_if_ready(now=before_release)
+
+        self.assertEqual(released,0)
         self.assertEqual(
             ReferralLead.objects.filter(assigned_to__isnull=True).count(),
             6,
         )
 
-        self._check_in(2)
-        released = release_pending_leads_if_ready(now=self._at(10, 0))
-        self.assertEqual(released, 6)
-
-        counts = Counter(
-            ReferralLead.objects.values_list('assigned_to_id', flat=True)
+    def test_normal_day_releases_overnight_backlog_equally_at_1115(self):
+        self._keep_only(0,2)
+        today=timezone.localdate()
+        saturday=today+timedelta(days=(5-today.weekday())%7)
+        release_time=timezone.make_aware(
+            datetime.combine(saturday,time(11,15)),
+            timezone.get_current_timezone(),
         )
-        self.assertEqual(counts[self.operators[0].id], 3)
-        self.assertEqual(counts[self.operators[2].id], 3)
-        for lead in leads:
-            lead.refresh_from_db()
-            self.assertIsNotNone(lead.assigned_at)
+        overnight_at=timezone.make_aware(
+            datetime.combine(saturday-timedelta(days=1),time(23,0)),
+            timezone.get_current_timezone(),
+        )
+        leads=[self._new_lead(index) for index in range(1,7)]
+        ReferralLead.objects.filter(pk__in=[lead.pk for lead in leads]).update(created_at=overnight_at)
+        for index in (0,2):
+            Attendance.objects.update_or_create(
+                user=self.operators[index].user,
+                date=saturday,
+                defaults={'check_in':release_time-timedelta(minutes=30),'check_out':None,'status':'present'},
+            )
 
-    def test_friday_duty_releases_pending_queue_as_soon_as_operator_is_present(self):
+        released=release_pending_leads_if_ready(now=release_time)
+
+        self.assertEqual(released,6)
+        counts=Counter(ReferralLead.objects.values_list('assigned_to_id',flat=True))
+        self.assertEqual(counts[self.operators[0].id],3)
+        self.assertEqual(counts[self.operators[2].id],3)
+
+    def test_normal_day_same_day_pending_can_flow_before_1115(self):
+        self._keep_only(0)
+        today=timezone.localdate()
+        saturday=today+timedelta(days=(5-today.weekday())%7)
+        now=timezone.make_aware(
+            datetime.combine(saturday,time(9,30)),
+            timezone.get_current_timezone(),
+        )
+        lead=self._new_lead(80)
+        ReferralLead.objects.filter(pk=lead.pk).update(created_at=now-timedelta(minutes=10))
+        Attendance.objects.update_or_create(
+            user=self.operators[0].user,
+            date=saturday,
+            defaults={'check_in':now-timedelta(minutes=5),'check_out':None,'status':'present'},
+        )
+
+        released=release_pending_leads_if_ready(now=now)
+
+        self.assertEqual(released,1)
+        lead.refresh_from_db()
+        self.assertEqual(lead.assigned_to_id,self.operators[0].id)
+
+    def test_friday_duty_releases_overnight_queue_as_soon_as_operator_is_present(self):
         self._keep_only(1)
         lead=self._new_lead(90)
         today=timezone.localdate()
@@ -170,6 +223,11 @@ class UnifiedLeadRoutingTests(TestCase):
             datetime.combine(friday,time(9,15)),
             timezone.get_current_timezone(),
         )
+        overnight_at=timezone.make_aware(
+            datetime.combine(friday-timedelta(days=1),time(23,0)),
+            timezone.get_current_timezone(),
+        )
+        ReferralLead.objects.filter(pk=lead.pk).update(created_at=overnight_at)
         Attendance.objects.update_or_create(
             user=self.operators[1].user,
             date=friday,

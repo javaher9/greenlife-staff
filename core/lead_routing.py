@@ -468,68 +468,43 @@ def _assign_to_operator(lead, operator, group_name, notification_title, *, notif
 
 
 def _pending_release_ready(local_now, eligible_user_ids):
-    # Any present eligible operator can start receiving part of the morning
-    # backlog. Friday is intentionally immediate/full; normal days are capped
-    # progressively until the 11:15 hard release point.
+    # Presence is required on every day. Friday is the only day where the
+    # overnight backlog may be released immediately to the first present flower.
     return bool(eligible_user_ids)
 
 
-def _morning_release_fraction(local_now):
-    """Cumulative share of the overnight backlog allowed out before 11:15."""
-    if local_now.weekday() == 4:
-        return 1.0
-    current=local_now.time()
-    if current >= time(PENDING_MORNING_RELEASE_HOUR, PENDING_MORNING_RELEASE_MINUTE):
-        return 1.0
-    if current >= time(11, 0):
-        return 0.75
-    if current >= time(10, 0):
-        return 0.50
-    return 0.25
+def _pending_release_candidates(local_now, pending):
+    """Return only leads allowed to leave the pending queue right now.
 
-
-def _pending_release_quota(local_now, pending):
-    """How many queued leads may be released in this pass.
-
-    The calculation is cumulative for leads that were already waiting before
-    the current local day. This keeps repeated live arrivals from draining the
-    entire overnight queue early.
+    Management policy:
+    - Friday: release the full pending queue as soon as an eligible flower is in.
+    - Saturday-Thursday before 11:15: keep *overnight* backlog untouched.
+      Only leads created during the current local day may be released.
+    - Saturday-Thursday from 11:15 onward: release the full backlog and let the
+      normal equal round-robin distribute it across the flowers currently in.
     """
     if not pending:
-        return 0
+        return []
+
     if local_now.weekday() == 4:
-        return len(pending)
-    if local_now.time() >= time(PENDING_MORNING_RELEASE_HOUR, PENDING_MORNING_RELEASE_MINUTE):
-        return len(pending)
+        return pending
+
+    release_at=time(PENDING_MORNING_RELEASE_HOUR,PENDING_MORNING_RELEASE_MINUTE)
+    if local_now.time() >= release_at:
+        return pending
 
     tz=timezone.get_current_timezone()
-    day_start=timezone.make_aware(datetime.combine(local_now.date(), time.min), tz)
-    overnight_pending=[lead for lead in pending if lead.created_at < day_start]
-    if not overnight_pending:
-        # Daytime leads that arrived while nobody was present may be released
-        # normally once staff are available.
-        return len(pending)
-
-    already_released=ReferralLead.objects.filter(
-        created_at__lt=day_start,
-        assigned_at__date=local_now.date(),
-        status__in=OPEN_ROUTING_STATUSES,
-    ).count()
-    total_backlog=already_released+len(overnight_pending)
-    target=int((total_backlog*_morning_release_fraction(local_now))+0.999999)
-    overnight_quota=max(0,target-already_released)
-
-    # Do not hold today's newly queued leads behind the overnight quota.
-    daytime_count=len(pending)-len(overnight_pending)
-    return min(len(pending),overnight_quota+daytime_count)
+    day_start=timezone.make_aware(datetime.combine(local_now.date(),time.min),tz)
+    return [lead for lead in pending if lead.created_at >= day_start]
 
 @transaction.atomic
 def release_pending_leads_if_ready(*, force=False, now=None):
     """Distribute queued leads using the fixed equal-weight rotation.
 
-    Normal days release the overnight queue progressively (25% before 10:00,
-    50% by 10:00, 75% by 11:00) and release everything still waiting at 11:15.
     Friday releases the full queue as soon as the first eligible operator is in.
+    On Saturday-Thursday, overnight carryover is frozen until 11:15; meanwhile
+    same-day queued leads may still flow normally. At 11:15 the overnight queue
+    is released through the same equal round-robin across present operators.
     """
     local_now = timezone.localtime(now or timezone.now())
     day = local_now.date()
@@ -559,14 +534,12 @@ def release_pending_leads_if_ready(*, force=False, now=None):
     if not operators:
         return 0
 
-    release_quota=_pending_release_quota(local_now,pending)
-    if release_quota <= 0:
+    release_candidates=_pending_release_candidates(local_now,pending)
+    if not release_candidates:
         return 0
 
     assigned = 0
-    for lead in pending:
-        if assigned >= release_quota:
-            break
+    for lead in release_candidates:
         if _is_turkey_lead(lead):
             operator=_turkey_operator(lock=True)
             if not operator:
