@@ -499,9 +499,9 @@ def release_pending_leads_if_ready(*, force=False, now=None):
     """Distribute queued leads using the fixed equal-weight rotation.
 
     Friday releases the full queue as soon as the first eligible operator is in.
-    On Saturday-Thursday, overnight carryover is frozen until 11:00; meanwhile
-    same-day queued leads may still flow normally. At 11:00 the overnight queue
-    is released through the same equal round-robin across present operators.
+    On Saturday-Thursday, the entire unassigned queue is frozen until 11:00,
+    including leads created during the same morning. At 11:00 the full queue is
+    released through the same equal round-robin across present operators.
     """
     local_now = timezone.localtime(now or timezone.now())
     day = local_now.date()
@@ -636,8 +636,6 @@ def assign_referral_lead(lead):
         return lead.assigned_to
     if not _live_assignment_allowed():
         return None
-    if not _live_assignment_allowed():
-        return None
     if _is_turkey_lead(lead):
         return _assign_turkey_lead(lead)
 
@@ -659,6 +657,8 @@ def assign_social_lead(lead, group_name='اینستاگرام - لینک', notif
     lead.refresh_from_db(fields=['assigned_to', 'group', 'assigned_at', 'country'])
     if lead.assigned_to_id:
         return lead.assigned_to
+    if not _live_assignment_allowed():
+        return None
     if _is_turkey_lead(lead):
         return _assign_turkey_lead(lead)
 
