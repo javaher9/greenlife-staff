@@ -47,6 +47,8 @@ jobs:
         run: python manage.py check
       - name: Quality command center permissions and live source regression
         run: python manage.py test core.tests.test_quality_command_center --verbosity 2
+      - name: Lead command CRM counting and privacy regression
+        run: python manage.py test core.tests.test_lead_command_live --verbosity 2
       - name: SMS group audiences and permissions
         run: python manage.py test core.tests.test_bulk_sms_audiences --verbosity 2
       - name: Approved bulk SMS dispatch, opt-out and safety regression
