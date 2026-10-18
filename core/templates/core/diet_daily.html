@@ -25,19 +25,19 @@ button,select{font:inherit}
 .orange-week .diet-pick select{border:0;background:transparent;min-width:92px;color:#1d6142;font-size:12px;font-weight:900;direction:rtl;outline:none;cursor:pointer}
 .orange-week .diet-pick form{margin:0}
 .orange-week .diet-card{background:#fff}
-.orange-week .diet-meal,.orange-week .diet-picture{min-height:112px}
-.orange-week .diet-card.compact .diet-meal,.orange-week .diet-card.compact .diet-picture{min-height:94px}
-.orange-week .diet-card.compact .diet-info{padding-block:9px}
-.orange-week .diet-card.compact .diet-lines{line-height:1.75}
+.orange-week .diet-meal,.orange-week .diet-picture{min-height:142px}
+.orange-week .diet-card.compact .diet-meal,.orange-week .diet-card.compact .diet-picture{min-height:126px}
+.orange-week .diet-card.compact .diet-info{padding-block:12px}
+.orange-week .diet-card.compact .diet-lines{line-height:1.9}
 .orange-week .diet-picture .empty{position:absolute;inset:0;background:linear-gradient(145deg,#d8ecdd,#f0f7e8);font-size:27px}
-.orange-week .diet-slogan.has-image{background-position:center 42%;min-height:125px}
-.orange-week .diet-slogan.has-image:before{background:linear-gradient(90deg,rgba(224,247,227,.96),rgba(224,247,227,.35));width:100%}
+.orange-week .diet-slogan.has-image{background-position:center 42%;min-height:125px;justify-content:flex-end}
+.orange-week .diet-slogan.has-image:before{background:linear-gradient(90deg,rgba(224,247,227,.95),rgba(224,247,227,.02) 75%);width:100%}
 
-.orange-week .diet-meal-title{font-size:14px}
-.orange-week .diet-lines{line-height:2.05}
+.orange-week .diet-meal-title{font-size:15px}
+.orange-week .diet-lines{font-size:14px;line-height:1.95}
 .orange-week .diet-picture .label{background:#185b40f0}
 .orange-week .diet-info{min-width:0}
-.orange-week .diet-full-text{font-size:13px}
+.orange-week .diet-full-text{font-size:14px}
 .diet-title{text-align:center;margin:0 0 14px}
 .diet-title h1{margin:0;font-size:24px;color:#132f3b;line-height:1.5;font-weight:900}
 .diet-title p{margin:0;color:#71837c;font-size:12px}
@@ -83,8 +83,8 @@ button,select{font:inherit}
 .diet-bottom a{text-align:center;color:#657569;font-size:11px;font-weight:800}.diet-bottom a.active{color:#145a3c}
 .diet-bottom span{display:block;font-size:23px;line-height:1.6}
 .diet-admin{text-align:center;font-size:11px;color:#27664d;margin-top:12px}
-@media(min-width:651px){.diet-app{border-inline:1px solid #e4eee6}.diet-meal{min-height:165px}.diet-picture{min-height:165px}.orange-week .diet-meal,.orange-week .diet-picture{min-height:112px}.orange-week .diet-card.compact .diet-meal,.orange-week .diet-card.compact .diet-picture{min-height:94px}}
-@media(max-width:390px){.diet-app{padding-inline:9px}.diet-top{gap:5px}.diet-brand{font-size:12px}.diet-brand em{width:25px;height:25px}.diet-pick{gap:5px;padding:8px}.diet-title h1{font-size:21px}.diet-hero h2{font-size:23px}.diet-slogan strong{font-size:16px}.diet-meal{grid-template-columns:40% minmax(0,1fr)}.diet-lines{font-size:11px}.diet-info{padding:10px}.diet-bottom{margin-inline:-9px}}
+@media(min-width:651px){.diet-app{border-inline:1px solid #e4eee6}.diet-meal{min-height:165px}.diet-picture{min-height:165px}.orange-week .diet-meal,.orange-week .diet-picture{min-height:142px}.orange-week .diet-card.compact .diet-meal,.orange-week .diet-card.compact .diet-picture{min-height:126px}}
+@media(max-width:390px){.diet-app{padding-inline:9px}.diet-top{gap:5px}.diet-brand{font-size:12px}.diet-brand em{width:25px;height:25px}.diet-pick{gap:5px;padding:8px}.diet-title h1{font-size:21px}.diet-hero h2{font-size:23px}.diet-slogan strong{font-size:16px}.diet-meal{grid-template-columns:40% minmax(0,1fr)}.diet-lines{font-size:12.5px}.orange-week .diet-lines{font-size:12.5px}.diet-info{padding:10px}.diet-bottom{margin-inline:-9px}}
 @media print{body{background:#fff}.diet-app{padding:0 10px}.diet-actions,.diet-bottom,.diet-admin,.diet-pick,.diet-card summary{display:none}.diet-card{break-inside:avoid;box-shadow:none}}
 </style>
 </head>
@@ -111,8 +111,8 @@ button,select{font:inherit}
 <section class="diet-slogan {% if slogan_photo %}has-image{% endif %}" {% if slogan_photo %}style="background-image:url('{{ slogan_photo }}')"{% endif %}><strong>{{ slogan }}</strong></section>
 {% endif %}
 <section class="diet-voice" aria-label="صدای جادویی">
- <div><strong>صدای جادویی</strong><small><span aria-hidden="true">🎧</span> گوش دهید</small></div>
- <div class="audio-wrap">{% if audio_url %}<audio controls preload="none" controlsList="nodownload" src="{{ audio_url }}"></audio>{% else %}<span class="diet-muted">فایل صوتی هنوز ثبت نشده است.</span>{% endif %}</div>
+ <div><strong>صدای جادویی</strong><small><span aria-hidden="true">🎧</span> با هدفون گوش دهید</small></div>
+ <div class="audio-wrap">{% if audio_url %}<audio controls preload="metadata" controlsList="nodownload" src="{{ audio_url }}" onerror="this.hidden=true;this.nextElementSibling.hidden=false"></audio><span class="diet-muted" hidden>فایل صدا در دسترس نیست؛ از تنظیمات آن را بارگذاری کنید.</span>{% else %}<span class="diet-muted">فایل صوتی هنوز ثبت نشده است.</span>{% endif %}</div>
 </section>
 <section class="diet-list" aria-label="وعده‌های روز">
 {% for card in cards %}
