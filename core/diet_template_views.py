@@ -32,6 +32,12 @@ def _deduplicate(items):
 def diet_template_preview(request,item_id):
     content=_content_for_preview(request,item_id)
     kind=content.presentation_template
+    # Por-150 is the one approved mobile pilot. Do not route it through
+    # the unrelated generic weekly template; other diets stay unchanged.
+    if (content.master_item.category=='diet' and
+            content.master_item.name=='Por-150' and kind=='weekly'):
+        from .diet_daily_views import diet_daily_preview
+        return diet_daily_preview(request,item_id)
     if content.master_item.category!='diet' or kind not in TYPES:
         raise Http404('برای این برنامه قالب هفت‌روزه یا رمضان انتخاب نشده است.')
     sections=list(content.sections.prefetch_related('media').all())
