@@ -73,6 +73,34 @@ class OrangeOnlyWeekTests(TestCase):
         self.other=TreatmentCatalogItem.objects.create(category='diet',name='Keto-Fast')
         self.other_content=TreatmentRichContent.objects.create(master_item=self.other)
 
+    def test_orange_weekly_preview_uses_approved_mobile_card_not_generic_cream_template(self):
+        self.orange_content.presentation_template='weekly'
+        self.orange_content.save(update_fields=['presentation_template'])
+        TreatmentRichSection.objects.create(
+            content=self.orange_content,title='برنامه غذایی',
+            body='صبحانه\\nیک پرتقال\\nناهار\\nشنبه: خوراک سبزیجات',
+        )
+        page=self.client.get(reverse('diet_template_preview',args=[self.orange.pk]))
+        self.assertEqual(page.status_code,200)
+        self.assertContains(page,'لاغری یعنی زندگی بهتر')
+        self.assertContains(page,'صدای جادویی')
+        self.assertContains(page,'نوبت دستگاه')
+        self.assertContains(page,'رژیم پرتقال')
+        self.assertContains(page,'orange-week')
+        self.assertNotContains(page,'برنامه غذایی هفت‌روزه')
+
+    def test_generic_weekly_diet_is_unchanged(self):
+        self.other_content.presentation_template='weekly'
+        self.other_content.save(update_fields=['presentation_template'])
+        TreatmentRichSection.objects.create(
+            content=self.other_content,title='برنامه غذایی',
+            body='صبحانه\\nفرنی\\nناهار\\nشنبه: سوپ',
+        )
+        page=self.client.get(reverse('diet_template_preview',args=[self.other.pk]))
+        self.assertEqual(page.status_code,200)
+        self.assertContains(page,'برنامه غذایی هفت‌روزه')
+        self.assertNotContains(page,'لاغری یعنی زندگی بهتر')
+
     def test_original_weekday_lunch_and_dinner_are_separated(self):
         TreatmentRichSection.objects.create(
             content=self.orange_content,title='برنامه غذایی',
