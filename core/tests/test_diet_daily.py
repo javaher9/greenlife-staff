@@ -123,8 +123,8 @@ class OrangeOnlyWeekTests(TestCase):
     def test_orange_ui_is_single_title_compact_illustrated_and_links_are_grounded(self):
         TreatmentRichSection.objects.create(
             content=self.orange_content,title='برنامه غذایی',
-            body='ناشتا\\nیک لیوان آب\\nصبحانه\\nیک عدد پرتقال\\n'
-                 'میان وعده صبح\\nدو عدد هویج\\nناهار\\nشنبه: سبزیجات',
+            body='ناشتا\nیک لیوان آب\nصبحانه\nیک عدد پرتقال\n'
+                 'میان وعده صبح\nدو عدد هویج\nناهار\nشنبه: سبزیجات',
         )
         TreatmentRichSection.objects.create(
             content=self.orange_content,title='عصرانه',body='یک لیوان چای',
