@@ -9,6 +9,8 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.conf import settings
 from .models import ReferralLead, MarketingWorkerState
+from .bulk_sms_views import _may_manage_bulk_sms
+from .marketing_sms_views import _is_allowed as _can_send_direct_sms
 
 
 def marketing_manager_required(view):
@@ -98,7 +100,12 @@ def _snapshot():
 
 @marketing_manager_required
 def lead_command_center(request):
-    return render(request,"core/lead_command_center.html",{"snapshot":_snapshot()})
+    # Reuse the existing SMS permission gates; never broaden sending access.
+    return render(request, "core/lead_command_center.html", {
+        "snapshot": _snapshot(),
+        "can_bulk_sms": _may_manage_bulk_sms(request.user),
+        "can_direct_sms": _can_send_direct_sms(request.user),
+    })
 
 @require_GET
 @marketing_manager_required
