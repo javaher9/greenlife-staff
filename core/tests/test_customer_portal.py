@@ -20,9 +20,10 @@ class CustomerPortalTests(TestCase):
         cache.clear()
         self.branch=Branch.objects.create(name='تست کلینیک')
         self.user=User.objects.create_user(username='cust-center',password='securepass!')
-        self.staff=EmployeeProfile.objects.create(
-            user=self.user,role='call_center',branch=self.branch
-        )
+        self.staff=EmployeeProfile.objects.get(user=self.user)
+        self.staff.role='call_center'
+        self.staff.branch=self.branch
+        self.staff.save(update_fields=['role','branch'])
 
     def authenticate_customer(self,phone='09123456789'):
         member=CustomerPortalMember.objects.create(
@@ -125,7 +126,10 @@ class CustomerPortalTests(TestCase):
         branch2=Branch.objects.create(name='مرکز دوم')
         device_req=CustomerServiceRequest.objects.create(member=owner,branch=branch2,kind='device')
         consultant=User.objects.create_user(username='branch-consultant',password='securepass!')
-        EmployeeProfile.objects.create(user=consultant,role='consultant',branch=self.branch)
+        consultant_profile=EmployeeProfile.objects.get(user=consultant)
+        consultant_profile.role='consultant'
+        consultant_profile.branch=self.branch
+        consultant_profile.save(update_fields=['role','branch'])
         self.client.force_login(consultant)
         self.assertNotContains(self.client.get(reverse('staff_customer_requests')+'?status=all'),str(owner.phone))
         from django.http import Http404
