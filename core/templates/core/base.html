@@ -697,6 +697,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
 <nav class="cc-desktop-dock" aria-label="{% gl_t 'shell.call_center_tools' %}">
   <a class="dock-primary {% if request.path|slice:':13' == '/call-center/' %}is-active{% endif %}" href="/call-center/"><span class="dock-ico">☎</span><span>{% gl_t 'shell.patients_leads' %}</span></a>
   <a class="{% if request.path|slice:':14' == '/appointments/' %}is-active{% endif %}" href="/appointments/"><span class="dock-ico">▣</span><span>{% gl_t 'common.appointments' %}</span></a>
+  <a class="{% if request.resolver_match.url_name == 'staff_customer_requests' %}is-active{% endif %}" href="{% url 'staff_customer_requests' %}"><span class="dock-ico">♧</span><span>درخواست بیماران</span></a>
   <a class="{% if request.path|slice:':10' == '/messages/' %}is-active{% endif %}" href="{% url 'internal_messages' %}"><span class="dock-ico">✉</span><span>{% gl_t 'common.internal_messages' %}</span></a>
   <a class="{% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}" href="/notifications/"><span class="dock-ico">♢</span><span>{% gl_t 'common.notifications' %}</span></a>
   <a href="/logout/"><span class="dock-ico">↪</span><span>{% gl_t 'common.logout' %}</span></a>
