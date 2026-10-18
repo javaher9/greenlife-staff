@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from core.models import Country, EmployeeProfile, ReferralLead, ReferralProfile, MarketingWorkerState
+from core.models import Country, EmployeeProfile, ReferralLead, ReferralProfile, MarketingWorkerState, BulkSmsCampaign, BulkSmsRecipient, SmsMessageLog
 from core.management.commands.run_marketing_monitor import monitor_once
 
 
@@ -93,3 +93,45 @@ class LeadCommandLiveTests(TestCase):
         self.assertEqual(snapshot["kpi"]["active"], 0)
         self.assertTrue(all(a["status"] == "waiting" for a in snapshot["agents"]))
         self.assertEqual(snapshot["kpi"]["new_today"], 0)
+
+    def test_sms_panel_admin_sees_existing_read_only_campaigns(self):
+        campaign = BulkSmsCampaign.objects.create(
+            created_by=self.admin, body='متن آزمایشی تست', segments=['website'],
+            status='completed', recipient_count=2, consent_attested=True,
+        )
+        BulkSmsRecipient.objects.create(
+            campaign=campaign, number='09121111333', status='accepted',
+        )
+        BulkSmsRecipient.objects.create(
+            campaign=campaign, number='09121111334', status='failed',
+        )
+        self.client.force_login(self.admin)
+        page = self.client.get(reverse('lead_command_center'))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'پیامک مارکتینگ')
+        self.assertContains(page, 'id="smsCampaigns"')
+        self.assertContains(page, reverse('bulk_sms_groups'))
+        self.assertContains(page, reverse('bulk_sms_campaigns_status_api'))
+        self.assertNotContains(page, '09121111333')
+        status = self.client.get(reverse('bulk_sms_campaigns_status_api'))
+        self.assertEqual(status.status_code, 200)
+        self.assertEqual(len(status.json()['campaigns']), 1)
+        self.assertEqual(status.json()['campaigns'][0]['accepted'], 1)
+        self.assertEqual(status.json()['campaigns'][0]['failed'], 1)
+        self.assertNotIn('09121111333', status.content.decode('utf-8'))
+        self.assertEqual(SmsMessageLog.objects.count(), 0)
+
+    def test_manager_without_sms_permission_has_no_bulk_panel_or_send_links(self):
+        manager = User.objects.create_user(username='lcc-manager', password='test')
+        EmployeeProfile.objects.update_or_create(
+            user=manager, defaults={'role': 'manager', 'is_active': True}
+        )
+        self.client.force_login(manager)
+        response = self.client.get(reverse('lead_command_center'))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'id="smsCampaigns"')
+        self.assertNotContains(response, reverse('bulk_sms_groups'))
+        self.assertNotContains(response, reverse('marketing_sms_compose'))
+        self.assertEqual(
+            self.client.get(reverse('bulk_sms_campaigns_status_api')).status_code, 403
+        )
