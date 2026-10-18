@@ -115,12 +115,41 @@ button,select{font:inherit}
 .orange-week .diet-card details.orange-details[hidden]{display:none!important}
 .orange-week .diet-card .diet-info{justify-content:center}
 @media(max-width:390px){.orange-week .diet-card .diet-lines{font-size:12.5px}}
+
+/* Por-150 mobile refresh; leave legacy diet templates as before. */
+.orange-week .diet-top{margin-bottom:12px}
+.orange-week .diet-hero.has-image:before{top:0;bottom:0;right:0;left:auto;inset:auto 0 auto auto;height:100%;width:36%;border-radius:0 20px 20px 0;background:rgba(252,252,242,.72)}
+.orange-week .diet-hero .hero-copy{width:36%;padding:9px 7px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.orange-week .diet-hero .hero-copy h2{font-size:clamp(17px,4.5vw,25px);line-height:1.45;margin:0 0 7px}
+.orange-week .diet-hero .hero-copy p{font-size:clamp(9px,2.7vw,12px);line-height:1.65}
+.orange-week .orange-day-picker{margin:0 0 14px;width:min(100%,360px);min-height:46px;justify-content:space-between;gap:10px;box-shadow:0 4px 18px #235a3b0b}
+.orange-week .orange-day-picker form{flex:1;text-align:center}
+.orange-week .orange-day-picker select{width:100%;text-align:center;text-align-last:center;font-size:15px}
+.orange-week .diet-meal,.orange-week .diet-card.compact .diet-meal{grid-template-columns:minmax(88px,min(31%,156px)) minmax(0,1fr);min-height:0}
+.orange-week .diet-picture,.orange-week .diet-card.compact .diet-picture{min-height:110px;background:#f2f7f1}
+.orange-week .diet-picture img.meal-illustration{top:18px;left:5px;right:5px;bottom:4px;width:calc(100% - 10px);height:calc(100% - 22px);object-fit:contain;object-position:center;position:absolute;display:block}
+.orange-week .diet-picture .label{top:5px;right:5px;z-index:1;font-size:10px;font-weight:850;padding:5px 8px;line-height:1.35;max-width:calc(100% - 10px)}
+.orange-week .diet-info{padding:12px 13px}
+.orange-week .diet-voice{margin-bottom:12px}
+.orange-week .diet-action b svg{width:24px;height:24px;display:block}
+.orange-week .diet-action.insta b{background:transparent}
+.orange-week .diet-action.insta b svg{width:34px;height:34px}
+@media(max-width:390px){
+ .orange-week .diet-hero .hero-copy{width:38%}
+ .orange-week .diet-hero.has-image:before{width:38%}
+ .orange-week .diet-hero .hero-copy h2{font-size:17px}
+ .orange-week .diet-picture .label{font-size:9px;padding:5px 6px}
+ .orange-week .diet-info{padding:9px 11px}
+}
+
 </style>
 </head>
 <body class="{% if orange_only %}orange-week{% endif %}">
 <main class="diet-app">
 <header class="diet-top">
  <div class="diet-brand"><em>❧</em> گرین‌لایف</div>
+
+{% if not orange_only %}
  <div class="diet-pick">
   {% if orange_only %}
   {% if prev_day %}<a aria-label="روز قبل" href="?day={{ prev_day }}"><span class="day-chevron right" aria-hidden="true"></span></a>{% else %}<a class="off" aria-hidden="true"><span class="day-chevron right"></span></a>{% endif %}
@@ -135,8 +164,11 @@ button,select{font:inherit}
   {% if next_day %}<a aria-label="روز بعد" href="?day={{ next_day }}"><span class="day-chevron left" aria-hidden="true"></span></a>{% else %}<a class="off" aria-hidden="true"><span class="day-chevron left"></span></a>{% endif %}
   {% else %}{% if next_day %}<a aria-label="روز بعد" href="?day={{ next_day }}">❮</a>{% else %}<a class="off" aria-hidden="true">❮</a>{% endif %}{% endif %}
  </div>
+{% endif %}
 </header>
+{% if not orange_only %}
 <div class="diet-title"><h1>{{ title }} 🍊</h1><p>{{ subtitle }}</p></div>
+{% endif %}
 <section class="diet-hero {% if content.cover_url %}has-image{% endif %}" {% if content.cover_url %}style="background-image:url('{{ content.cover_url }}')"{% endif %} aria-label="{{ title }}">
   <div class="hero-copy"><h2>{{ title }}</h2><p>{{ subtitle }}</p></div>
 </section>
@@ -154,14 +186,29 @@ button,select{font:inherit}
  <div><strong>صدای جادویی</strong><small><span aria-hidden="true">🎧</span> با هدفون گوش دهید</small></div>
  <div class="audio-wrap">{% if audio_url %}<audio controls preload="metadata" controlsList="nodownload" src="{{ audio_url }}" onerror="this.hidden=true;this.nextElementSibling.hidden=false"></audio><span class="diet-muted" hidden>فایل صدا در دسترس نیست؛ از تنظیمات آن را بارگذاری کنید.</span>{% else %}<span class="diet-muted">فایل صوتی هنوز ثبت نشده است.</span>{% endif %}</div>
 </section>
+{% if orange_only %}
+ <div class="diet-pick orange-day-picker">
+  {% if orange_only %}
+  {% if prev_day %}<a aria-label="روز قبل" href="?day={{ prev_day }}"><span class="day-chevron right" aria-hidden="true"></span></a>{% else %}<a class="off" aria-hidden="true"><span class="day-chevron right"></span></a>{% endif %}
+  {% else %}{% if prev_day %}<a aria-label="روز قبل" href="?day={{ prev_day }}">❯</a>{% else %}<a class="off" aria-hidden="true">❯</a>{% endif %}{% endif %}
+  {% if orange_only %}
+  <form method="get" action=""><label for="orange-day" class="sr-only" style="position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden">روز هفته</label>
+  <select id="orange-day" name="day" onchange="this.form.submit()" aria-label="انتخاب روز هفته">
+   {% for number,label in day_choices %}<option value="{{ number }}" {% if number == day %}selected{% endif %}>{{ label }}</option>{% endfor %}
+  </select></form>
+  {% else %}<span>▣ روز {{ day }} از {{ day_total }}</span>{% endif %}
+  {% if orange_only %}
+  {% if next_day %}<a aria-label="روز بعد" href="?day={{ next_day }}"><span class="day-chevron left" aria-hidden="true"></span></a>{% else %}<a class="off" aria-hidden="true"><span class="day-chevron left"></span></a>{% endif %}
+  {% else %}{% if next_day %}<a aria-label="روز بعد" href="?day={{ next_day }}">❮</a>{% else %}<a class="off" aria-hidden="true">❮</a>{% endif %}{% endif %}
+ </div>
+{% endif %}
 <section class="diet-list" aria-label="وعده‌های روز">
 {% for card in cards %}
 <article class="diet-card {% if orange_only and card.summary|length <= 1 %}compact{% endif %}">
  <div class="diet-meal">
   <div class="diet-picture">
     {% if orange_only %}
-      {% if card.fallback_food == 'carrots' %}{% static 'core/diet/carrots.svg' as fallback_image %}{% else %}{% static 'core/diet/fruit.svg' as fallback_image %}{% endif %}
-      <img src="{{ card.photo|default:fallback_image }}" alt="تصویر مرتبط با {{ card.label }}" loading="lazy" data-fallback="{{ fallback_image }}" onerror="this.onerror=null;this.src=this.dataset.fallback">
+      <img class="meal-illustration" src="{{ card.illustration_url }}" alt="نماد {{ card.label }}" loading="lazy" onerror="this.onerror=null;this.src='{% static 'core/diet/fruit.svg' %}'">
     {% elif card.photo %}
       <img src="{{ card.photo }}" alt="غذای {{ card.label }}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="empty" style="display:none">🍽️</div>
     {% else %}<div class="empty">❧</div>{% endif %}
@@ -179,10 +226,10 @@ button,select{font:inherit}
 {% empty %}<div class="diet-more">برنامه این روز هنوز وارد نشده است.</div>{% endfor %}
 </section>
 <nav class="diet-actions" aria-label="خدمات">
- <a class="diet-action points" href="{% url 'referral_dashboard' %}"><b>♕</b>کسب امتیاز</a>
+ {% if orange_only %}<a class="diet-action points" href="{% url 'referral_dashboard' %}" aria-label="کسب امتیاز و معرفی دوستان"><b aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="11" rx="2"/><path d="M2 7h20v4H2zM12 7v14M12 7c-3.5 0-6-1.2-6-3a2 2 0 0 1 2-2c2.2 0 4 3.1 4 5Zm0 0c3.5 0 6-1.2 6-3a2 2 0 0 0-2-2c-2.2 0-4 3.1-4 5Z"/></svg></b>کسب امتیاز</a>{% else %}<a class="diet-action points" href="{% url 'referral_dashboard' %}"><b>♕</b>کسب امتیاز</a>{% endif %}
  <a class="diet-action device" href="{% url 'device_booking_schedule' %}"><b>▣</b>نوبت دستگاه</a>
  <a class="diet-action visit" href="{% url 'appointment_schedule' %}"><b>▦</b>نوبت ویزیت جدید</a>
- <a class="diet-action insta" href="https://www.instagram.com/greenlifeclinics/" target="_blank" rel="noopener noreferrer"><b>◎</b>اینستاگرام</a>
+ {% if orange_only %}<a class="diet-action insta" href="https://www.instagram.com/greenlifeclinics/" target="_blank" rel="noopener noreferrer" aria-label="باز کردن اینستاگرام گرین‌لایف"><b aria-hidden="true"><svg viewBox="0 0 36 36" role="img" aria-label="Instagram" fill="none"><defs><linearGradient id="ig-orange-150" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#feda75"/><stop offset=".33" stop-color="#fa7e1e"/><stop offset=".62" stop-color="#d62976"/><stop offset="1" stop-color="#4f5bd5"/></linearGradient></defs><rect x="1" y="1" width="34" height="34" rx="9" fill="url(#ig-orange-150)"/><rect x="8" y="8" width="20" height="20" rx="6" stroke="white" stroke-width="2.5"/><circle cx="18" cy="18" r="5.2" stroke="white" stroke-width="2.5"/><circle cx="25" cy="11" r="1.7" fill="white"/></svg></b>اینستاگرام</a>{% else %}<a class="diet-action insta" href="https://www.instagram.com/greenlifeclinics/" target="_blank" rel="noopener noreferrer"><b>◎</b>اینستاگرام</a>{% endif %}
 </nav>
 {% if can_manage %}<div class="diet-admin"><a href="{% url 'treatment_content_manage' content.master_item_id %}">ویرایش این رژیم در تنظیمات</a></div>{% endif %}
 <nav class="diet-bottom" aria-label="پیمایش پایین">
