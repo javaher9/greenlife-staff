@@ -6,6 +6,7 @@ from pathlib import Path
 from django import template
 from django.conf import settings
 from django.db.models import Count, Sum, Q
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from core.jalali import gregorian_to_jalali, jalali_to_gregorian
@@ -231,7 +232,15 @@ def _apply_transaction_filters(qs, branch, flower_id, source, service):
     if branch:
         qs = qs.filter(branch=branch)
     if flower_id:
-        qs = qs.filter(call_center_owner_id=flower_id)
+        # Use the stored owner first; legacy appointment receipts can derive the
+        # immutable first-booking owner without altering finance records.
+        qs = qs.filter(
+            Q(call_center_owner_id=flower_id)
+            | Q(
+                call_center_owner_id__isnull=True,
+                appointment__lead__first_appointment_by_id=flower_id,
+            )
+        )
     if source:
         if source == 'direct':
             qs = qs.filter(appointment__isnull=True)
@@ -385,33 +394,47 @@ def finance_intelligence(context):
         | Q(description__icontains='دایا') | Q(description__icontains='daya')
     ).count()
 
-    # Matrix: flower x branch, using the selected period and remaining filters.
-    matrix_base = FinancialTransaction.objects.filter(
-        review_status='approved', entry_type='inc', occurred_at__gte=start, occurred_at__lt=end,
-        call_center_owner_id__isnull=False,
+    # Matrix uses exactly the approved revenue shown in the finance KPI, with
+    # the same branch, flower, source, service and period filters. Reports never
+    # write attribution into historical receipts.
+    matrix_base = income.annotate(
+        effective_flower_id=Coalesce(
+            'call_center_owner_id',
+            'appointment__lead__first_appointment_by_id',
+        ),
     )
-    if source:
-        if source == 'direct':
-            matrix_base = matrix_base.filter(appointment__isnull=True)
-        else:
-            matrix_base = matrix_base.filter(appointment__lead__source=source)
-    if service:
-        matrix_base = matrix_base.filter(sale_reason=service)
-    if branch:
-        matrix_base = matrix_base.filter(branch=branch)
-    if flower_id:
-        matrix_base = matrix_base.filter(call_center_owner_id=flower_id)
-
-    flowers = list(EmployeeProfile.objects.filter(
+    matrix_grouped = list(
+        matrix_base.values('effective_flower_id', 'branch_id')
+        .annotate(total=Sum('amount')).order_by()
+    )
+    matrix_values = {
+        (r['effective_flower_id'], r['branch_id']): _money(r['total'])
+        for r in matrix_grouped
+    }
+    active_flowers = list(EmployeeProfile.objects.filter(
         role='call_center', is_active=True, user__is_active=True,
     ).select_related('user').order_by('user__first_name', 'user__last_name'))
+    grouped_owner_ids = {
+        r['effective_flower_id'] for r in matrix_grouped
+        if r['effective_flower_id'] is not None
+    }
+    historical_flowers = list(EmployeeProfile.objects.filter(
+        role='call_center', user_id__in=grouped_owner_ids,
+    ).exclude(user_id__in=[f.user_id for f in active_flowers])
+     .select_related('user').order_by('user__first_name', 'user__last_name'))
+    flowers = active_flowers + historical_flowers
     if flower_id:
         flowers = [f for f in flowers if f.user_id == flower_id]
-    branches = list(Branch.objects.filter(is_active=True).order_by('name'))
+    known_flower_ids = {f.user_id for f in flowers}
+    branches = list(Branch.objects.filter(
+        Q(is_active=True) | Q(pk__in=income.values('branch_id'))
+    ).distinct().order_by('name'))
     if branch:
         branches = [b for b in branches if b.pk == branch.pk]
-    grouped = matrix_base.values('call_center_owner_id', 'branch_id').annotate(total=Sum('amount'))
-    matrix_values = {(r['call_center_owner_id'], r['branch_id']): _money(r['total']) for r in grouped}
+    if any(row['branch_id'] is None for row in matrix_grouped):
+        from types import SimpleNamespace
+        branches.append(SimpleNamespace(pk=None, name='بدون شعبه'))
+
     matrix_rows = []
     for flower in flowers:
         cells = []
@@ -420,7 +443,36 @@ def finance_intelligence(context):
             val = matrix_values.get((flower.user_id, b.pk), ZERO)
             row_total += val
             cells.append({'branch': b, 'total': val})
-        matrix_rows.append({'flower': flower, 'cells': cells, 'total': row_total})
+        matrix_rows.append({
+            'flower': flower, 'cells': cells, 'total': row_total,
+            'historical': not (flower.is_active and flower.user.is_active),
+        })
+
+    # Any receipt not tied to an eligible call-center operator is explicitly
+    # reconciled, instead of making real income vanish into zero-only cells.
+    unassigned_by_branch = {}
+    for (owner_id, branch_id), amount in matrix_values.items():
+        if owner_id not in known_flower_ids:
+            unassigned_by_branch[branch_id] = (
+                unassigned_by_branch.get(branch_id, ZERO) + amount
+            )
+    matrix_unassigned_cells = [
+        {'branch': b, 'total': unassigned_by_branch.get(b.pk, ZERO)}
+        for b in branches
+    ]
+    matrix_unassigned_total = sum(
+        (c['total'] for c in matrix_unassigned_cells), ZERO,
+    )
+    matrix_attributed_total = sum(
+        (r['total'] for r in matrix_rows), ZERO,
+    )
+    matrix_total_cells = [
+        {'branch': b, 'total': sum(
+            (r['cells'][idx]['total'] for r in matrix_rows), ZERO,
+        ) + matrix_unassigned_cells[idx]['total']}
+        for idx, b in enumerate(branches)
+    ]
+    matrix_reconciled_total = matrix_attributed_total + matrix_unassigned_total
 
     # Alerts focus on exceptions and concentration, not generic prose.
     alerts = []
@@ -443,7 +495,10 @@ def finance_intelligence(context):
     if branch:
         entries = entries.filter(branch=branch)
     if flower_id:
-        entries = entries.filter(call_center_owner_id=flower_id)
+        entries = entries.filter(
+            Q(call_center_owner_id=flower_id)
+            | Q(call_center_owner_id__isnull=True,appointment__lead__first_appointment_by_id=flower_id)
+        )
     if source:
         entries = entries.filter(appointment__isnull=True) if source == 'direct' else entries.filter(appointment__lead__source=source)
     if service:
@@ -467,6 +522,11 @@ def finance_intelligence(context):
         'source_rows': source_rows, 'source_donut': source_donut, 'source_gradient': source_gradient,
         'service_rows': service_rows, 'uncategorized_count': uncategorized_count,
         'matrix_branches': branches, 'matrix_rows': matrix_rows,
+        'matrix_unassigned_cells': matrix_unassigned_cells,
+        'matrix_unassigned_total': matrix_unassigned_total,
+        'matrix_attributed_total': matrix_attributed_total,
+        'matrix_total_cells': matrix_total_cells,
+        'matrix_reconciled_total': matrix_reconciled_total,
         'alerts': alerts, 'entries': entries.order_by('-occurred_at', '-id')[:60],
         'external_revenue': external_revenue,
     }
