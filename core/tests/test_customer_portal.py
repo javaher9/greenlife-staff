@@ -166,3 +166,5 @@ class CustomerPortalTests(TestCase):
             'action':'award','referral_id':referral.pk
         })
         self.assertEqual(CustomerClubPoints.objects.filter(referral=referral).count(),1)
+
+# CI-only verification branch: exercise customer workflows against Django/PostgreSQL.
