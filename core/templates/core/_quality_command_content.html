@@ -80,7 +80,7 @@
     <div class="qc-table-scroll qc-call-table">
     <table><thead><tr><th>کارشناس</th><th>پیگیری ثبت‌شده</th><th>نوبت ثبت‌شده</th><th>بی‌پاسخ</th><th>معوق</th></tr></thead>
     <tbody>{% for op in snapshot.call_center %}
-    <tr><td><b>{{ op.name }}</b></td><td>{{ op.recorded }}</td><td><span class="qc-number-good">{{ op.booked }}</span></td><td>{{ op.unanswered }}</td><td><span class="{% if op.overdue %}qc-number-warn{% endif %}">{{ op.overdue }}</span></td></tr>
+    <tr><td><span class="qc-flower-operator"><span class="qc-flower-photo">{% if op.avatar_url %}<img src="{{ op.avatar_url }}" alt="" loading="lazy" width="26" height="26">{% else %}<span class="qc-flower-initial" aria-hidden="true">{{ op.initial }}</span>{% endif %}</span><b class="qc-flower-name" title="{{ op.name }}">{{ op.name }}</b></span></td><td>{{ op.recorded }}</td><td><span class="qc-number-good">{{ op.booked }}</span></td><td>{{ op.unanswered }}</td><td><span class="{% if op.overdue %}qc-number-warn{% endif %}">{{ op.overdue }}</span></td></tr>
     {% empty %}<tr><td class="qc-empty" colspan="5">کارشناس فعال ثبت نشده است.</td></tr>{% endfor %}</tbody></table>
     </div>
     <p class="qc-note">پیگیری ثبت‌شده از نتیجه لیدهای ویرایش‌شده امروز استخراج می‌شود؛ تا زمان اتصال به گزارش تلفن، معادل تعداد مکالمات واقعی نیست.</p>

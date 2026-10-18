@@ -102,6 +102,35 @@ class QualityCommandCenterTests(TestCase):
         self.assertNotIn("network-punak-ghost", data.json()["html"])
         self.assertIn("quality-employee", data.json()["html"])
 
+    def test_call_center_radar_uses_flower_alias_and_small_staff_portrait(self):
+        flower = self.person("radar-tavana", "call_center", self.niavaran)
+        flower.first_name = "حدیث"
+        flower.last_name = "توانا"
+        flower.save(update_fields=["first_name", "last_name"])
+        flower.profile.avatar.name = "avatars/radar-tavana.jpg"
+        flower.profile.save(update_fields=["avatar"])
+        unnamed = self.person("radar-unmapped", "call_center", self.niavaran)
+        self.client.force_login(self.naderi)
+        response = self.client.get(reverse("quality_command_center"))
+        self.assertEqual(response.status_code, 200)
+        row = next(x for x in response.context["snapshot"]["call_center"]
+                   if x["name"] == "بنفشه")
+        self.assertEqual(row["initial"], "ب")
+        self.assertTrue(row["avatar_url"].endswith("avatars/radar-tavana.jpg"))
+        self.assertIn("گل تعیین‌نشده",
+                      [x["name"] for x in response.context["snapshot"]["call_center"]])
+        page = response.content.decode("utf-8")
+        radar = page.split('<section class="qc-panel qc-callcenter">', 1)[1].split("</section>", 1)[0]
+        self.assertIn('qc-flower-operator', radar)
+        self.assertIn('qc-flower-photo', radar)
+        self.assertIn("radar-tavana.jpg", radar)
+        self.assertIn("بنفشه", radar)
+        self.assertNotIn("حدیث توانا", radar)
+        self.assertNotIn("radar-unmapped", radar)
+        fragment = self.client.get(reverse("quality_command_data")).json()["html"]
+        self.assertIn("بنفشه", fragment)
+        self.assertIn("radar-tavana.jpg", fragment)
+
     def test_manager_scope_does_not_leak_other_branch_patient(self):
         self.client.force_login(self.manager)
         response = self.client.get(reverse("quality_command_center"))
