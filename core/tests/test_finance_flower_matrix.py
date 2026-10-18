@@ -119,8 +119,8 @@ class FinanceFlowerMatrixTests(TestCase):
         self.assertEqual(report['matrix_reconciled_total'], report['total'])
 
     def test_zero_matrix_cells_render_muted_dashes_without_changing_totals(self):
-        self._income('545000000', owner=self.flower, branch=self.branch)
-        self._income('45000000', branch=self.second_branch)
+        self._income('5450000000', owner=self.flower, branch=self.branch)
+        self._income('450000000', branch=self.second_branch)
         self.client.force_login(self.admin)
         response = self.client.get('/finance/')
         self.assertEqual(response.status_code, 200)
@@ -133,7 +133,7 @@ class FinanceFlowerMatrixTests(TestCase):
         self.assertIn('>45</td>', matrix_html)
         self.assertIn('>590</td>', matrix_html)
         report = self._report()
-        self.assertEqual(report['matrix_reconciled_total'], Decimal('590000000'))
+        self.assertEqual(report['matrix_reconciled_total'], Decimal('5900000000'))
         self.assertEqual(report['matrix_reconciled_total'], report['total'])
 
     def test_branch_service_filters_preserve_reconciliation(self):
