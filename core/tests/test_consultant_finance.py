@@ -463,3 +463,20 @@ class ConsultantFinanceEntryTests(TestCase):
         self.assertEqual(entry.receipt_analysis['tracking_number'],'12345')
         self.assertIn('اختلاف',entry.receipt_analysis['warnings'][0])
         client.responses.create.assert_called_once()
+
+
+class ConsultantResponsiveGridTests(TestCase):
+    """Keep the consultant queue/workspace/rail usable on narrow viewports."""
+
+    def test_mobile_layout_stacks_named_grid_areas(self):
+        from pathlib import Path
+        from django.template.loader import get_template
+
+        template_path=get_template('core/consultant_sales_outcomes.html').origin.name
+        css=Path(template_path).read_text(encoding='utf-8')
+        self.assertIn('@media(max-width:700px)',css)
+        self.assertIn(
+            'grid-template-columns:minmax(0,1fr)!important;'
+            'grid-template-areas:"queue" "workspace" "rail"!important',
+            css,
+        )
