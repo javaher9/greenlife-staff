@@ -82,7 +82,7 @@ class FinanceFlowerMatrixTests(TestCase):
         self.assertEqual(report['matrix_attributed_total'], Decimal('0'))
         self.assertEqual(report['matrix_unassigned_total'], Decimal('596000000'))
         self.assertEqual(report['matrix_reconciled_total'], report['total'])
-        self.assertEqual(report['matrix_total_cells'][0]['total'], report['total'])
+        self.assertEqual(sum((c['total'] for c in report['matrix_total_cells']), Decimal('0')), report['total'])
         manual.refresh_from_db()
         self.assertIsNone(manual.call_center_owner_id)
         self.client.force_login(self.admin)
