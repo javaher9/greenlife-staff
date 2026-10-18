@@ -125,8 +125,37 @@
 @media(max-width:1120px){.lcc .lcc-kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 @media(max-width:500px){.lcc .lcc-kpi{min-height:113px}}
 @media(prefers-reduced-motion:reduce){.lcc .lcc-kpi.is-updated{animation:none}}
+
+/* SMS: intentionally read-only command telemetry. Sending remains in approved SMS module. */
+.lcc .lcc-sms{border:1px solid #5f507d;border-radius:19px;background:linear-gradient(130deg,#1f2540,#14293b 60%,#142f34);padding:20px 22px;min-width:0;display:grid;gap:15px}
+.lcc .lcc-sms-head{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.lcc .lcc-sms-head h2{font-size:19px!important;font-weight:900!important;margin:0;color:#dcc4ff!important}
+.lcc .lcc-sms-head p{font-size:13px!important;line-height:1.9!important;color:#cbd8e7!important;margin:3px 0 0}
+.lcc .lcc-sms-links{display:flex;gap:9px;flex-wrap:wrap}
+.lcc .lcc-sms-links a{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:8px 13px;border-radius:11px;border:1px solid #6a749f;background:#2c3859;color:#f8faff!important;font-size:13px;font-weight:800!important;text-decoration:none!important}
+.lcc .lcc-sms-links a:hover,.lcc .lcc-sms-links a:focus-visible{background:#3b4c73;outline-color:#b8c5ff}
+.lcc .lcc-sms-links a.primary{background:#305b54;border-color:#58a690;color:#e8fff3!important}
+.lcc .lcc-sms-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.lcc .lcc-sms-stat{border:1px solid #455574;border-radius:12px;background:#18283e;padding:13px 15px;min-width:0;border-top:3px solid var(--sms-accent,#ac8df6)}
+.lcc .lcc-sms-stat:nth-child(2){--sms-accent:#67cae9}.lcc .lcc-sms-stat:nth-child(3){--sms-accent:#74e2ae}.lcc .lcc-sms-stat:nth-child(4){--sms-accent:#f19b9b}
+.lcc .lcc-sms-stat small{color:#dae1ee!important;font-size:12px!important;font-weight:700!important;display:block;line-height:1.7}
+.lcc .lcc-sms-stat strong{display:block;margin-top:5px;font-size:27px!important;line-height:1.4;color:var(--sms-accent,#c1acff)!important;font-variant-numeric:tabular-nums}
+.lcc .lcc-sms-stat.changed{animation:lcc-count-pulse .85s ease-out}
+.lcc .lcc-sms-hint{color:#c6d8e7!important;font-size:12px!important;line-height:1.9;margin:0}
+.lcc .lcc-sms-campaigns{display:grid;gap:8px}
+.lcc .lcc-sms-campaign{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:11px 13px;background:rgba(11,23,36,.48);border:1px solid #455873;border-radius:12px;color:#f0f6ff!important;font-size:13px!important}
+.lcc .lcc-sms-campaign-title{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.lcc .lcc-sms-state{border-radius:20px;padding:3px 9px;font-weight:800;font-size:12px;border:1px solid #586b88;color:#d6e4f2;background:#293b50}
+.lcc .lcc-sms-state.queued{color:#a1f9ce;background:#1c5143;border-color:#3a9e78}.lcc .lcc-sms-state.paused{color:#ffe2a9;background:#49392c;border-color:#af8a4d}
+.lcc .lcc-sms-state.completed{color:#b8d7ff;background:#243d5c;border-color:#507ba7}.lcc .lcc-sms-state.cancelled{color:#ffc7cc;background:#4a2b39;border-color:#a35f6d}
+.lcc .lcc-sms-state.draft{color:#dfd6f0;background:#34334b;border-color:#696682}
+.lcc .lcc-sms-campaign-meta{color:#c6d8e7!important;font-size:12px!important;line-height:1.8}
+.lcc .lcc-sms-loading,.lcc .lcc-sms-error{font-size:13px;color:#d4e4ee;background:#17273a;padding:12px 14px;border-radius:11px;border:1px dashed #58687e}
+.lcc .lcc-sms-error{color:#ffe0df;border-color:#915d67}
+@media(max-width:850px){.lcc .lcc-sms-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:500px){.lcc .lcc-sms{padding:16px}.lcc .lcc-sms-links{width:100%}.lcc .lcc-sms-links a{flex:1}}
 </style>
-<section class="lcc" id="leadCommand">
+<section class="lcc" id="leadCommand" data-sms-url="{% if can_bulk_sms %}{% url 'bulk_sms_campaigns_status_api' %}{% endif %}">
  <header class="lcc-top">
   <div class="lcc-title"><small>GREENLIFE · LEAD GENERATION HQ</small><h1>اتاق فرمان تولید لید</h1><div class="lcc-truth" id="truthNote">فقط فعالیت واقعی Backend نمایش داده می‌شود.</div></div>
   <div class="lcc-controls">
@@ -145,12 +174,36 @@
   <div class="lcc-kpi"><small>فروش قابل انتساب (تومان)</small><b id="kRevenue">—</b></div>
  </div>
  <div class="lcc-agents" id="agentGrid"></div>
+
+{% if can_bulk_sms or can_direct_sms %}
+ <section class="lcc-sms" aria-label="پیامک مارکتینگ">
+  <div class="lcc-sms-head">
+    <div><h2>پیامک مارکتینگ</h2><p>کنترل کمپین‌ها از همین اتاق فرمان؛ ارسال فقط با تأیید در ماژول پیامک</p></div>
+    <nav class="lcc-sms-links" aria-label="دسترسی‌های پیامک">
+     {% if can_bulk_sms %}<a class="primary" href="{% url 'bulk_sms_groups' %}">مدیریت کمپین گروهی</a><a href="{% url 'sms_leads' %}">لیدهای پاسخ پیامکی</a>{% endif %}
+     {% if can_direct_sms %}<a href="{% url 'marketing_sms_compose' %}">ارسال دستی پیامک</a>{% endif %}
+    </nav>
+  </div>
+  {% if can_bulk_sms %}
+  <div class="lcc-sms-stats" id="smsStats" aria-label="آمار کمپین‌ها">
+    <div class="lcc-sms-stat"><small>کمپین‌های در صف</small><strong id="smsQueued">—</strong></div>
+    <div class="lcc-sms-stat"><small>مخاطب منتظر ارسال</small><strong id="smsPending">—</strong></div>
+    <div class="lcc-sms-stat"><small>پذیرش توسط درگاه</small><strong id="smsAccepted">—</strong></div>
+    <div class="lcc-sms-stat"><small>پیامک ناموفق</small><strong id="smsFailed">—</strong></div>
+  </div>
+  <p class="lcc-sms-hint">آمار واقعی فقط از ۱۵ کمپین گروهی اخیرِ حساب شماست (نه پیامک دستی). «پذیرش درگاه» به معنای تحویل قطعی به موبایل نیست. گزارش هر ۳۰ ثانیه تازه می‌شود؛ این صفحه هیچ پیامکی ارسال نمی‌کند.</p>
+  <div class="lcc-sms-campaigns" id="smsCampaigns" aria-live="polite"><div class="lcc-sms-loading">در حال دریافت گزارش کمپین‌ها…</div></div>
+  {% else %}
+  <p class="lcc-sms-hint">دسترسی به گزارش کمپین‌های گروهی فقط برای مدیر مجاز است. ارسال دستی طبق مجوز فعلی حساب از صفحه پیامک انجام می‌شود.</p>
+  {% endif %}
+ </section>
+{% endif %}
  <section class="lcc-feed"><div class="lcc-feed-head"><b>ورود زنده لیدهای CRM</b><span class="lcc-truth">خواندن اطلاعات واقعی هر ۵ ثانیه · بدون ثبت لید ساختگی</span></div><div id="eventFeed" aria-live="polite"><div class="lcc-empty">هنوز لید جدیدی در اپ ثبت نشده است. ایجنت‌های جذب خودکار هنوز به Worker متصل نیستند.</div></div></section>
 </section>
 <script>
 (function(){
  const root=document.getElementById('leadCommand'); if(!root||root.dataset.init)return; root.dataset.init='1';
- let live=true,timer=null,previousCount=null,previousEventIds=null;
+ let live=true,timer=null,smsTimer=null,smsBusy=false,previousSmsAccepted=null,previousCount=null,previousEventIds=null;
  const $=id=>document.getElementById(id);
  const nf=new Intl.NumberFormat('fa-IR');
  const fmt=v=>v===null||v===undefined?'—':nf.format(Number(v));
@@ -174,11 +227,42 @@
   $('eventFeed').innerHTML=events.length?events.map(e=>'<div class="lcc-event '+(previousEventIds&&!previousEventIds.has(String(e.id))?'new-arrival':'')+'"><b>'+safe(e.time)+'</b><span>'+safe(e.agent)+' · '+safe(e.message)+'</span></div>').join(''):'<div class="lcc-empty">هنوز لید جدیدی امروز در اپ ایران ثبت نشده است.</div>';
   previousEventIds=nextIds;
  }
+
+ const smsUrl=root.dataset.smsUrl;
+ const smsStates={draft:'پیش‌نویس',queued:'در صف',paused:'متوقف موقت',completed:'پایان‌یافته',cancelled:'لغوشده'};
+ async function pollSms(){
+  if(!smsUrl||!live||smsBusy)return;
+  smsBusy=true;
+  try{
+   const r=await fetch(smsUrl,{method:'GET',credentials:'same-origin',cache:'no-store',headers:{'X-Requested-With':'XMLHttpRequest'}});
+   if(!r.ok)throw Error('SMS report unavailable');
+   const data=await r.json();
+   if(!data.ok||!Array.isArray(data.campaigns))throw Error('SMS report invalid');
+   const cs=data.campaigns;
+   const total=(name)=>cs.reduce((n,c)=>n+Math.max(0,Number(c[name])||0),0);
+   const queued=cs.filter(c=>c.status==='queued').length;
+   const pending=cs.reduce((n,c)=>n+(c.status==='queued'?Math.max(0,Number(c.pending)||0)+Math.max(0,Number(c.sending)||0):0),0);
+   const accepted=total('accepted'),failed=total('failed');
+   $('smsQueued').textContent=fmt(queued);$('smsPending').textContent=fmt(pending);
+   $('smsAccepted').textContent=fmt(accepted);$('smsFailed').textContent=fmt(failed);
+   if(previousSmsAccepted!==null&&accepted>previousSmsAccepted){
+    const card=$('smsAccepted').closest('.lcc-sms-stat');card.classList.remove('changed');void card.offsetWidth;card.classList.add('changed');
+   }
+   previousSmsAccepted=accepted;
+   $('smsCampaigns').innerHTML=cs.length?cs.slice(0,5).map(c=>{
+    const status=Object.prototype.hasOwnProperty.call(smsStates,c.status)?c.status:'draft';
+    return '<div class="lcc-sms-campaign"><div class="lcc-sms-campaign-title"><b>کمپین '+fmt(c.id)+'</b><span class="lcc-sms-state '+status+'">'+smsStates[status]+'</span></div>'+
+    '<span class="lcc-sms-campaign-meta">کل '+fmt(c.total)+' · پذیرفته '+fmt(c.accepted)+' · ناموفق '+fmt(c.failed)+'</span></div>';
+   }).join(''):'<div class="lcc-sms-loading">هنوز کمپین گروهی برای این حساب ثبت نشده است.</div>';
+  }catch(e){
+   $('smsCampaigns').innerHTML='<div class="lcc-sms-error">گزارش پیامک در دسترس نیست؛ برای بررسی به صفحه کمپین‌های پیامکی بروید. هیچ ارسالی از این صفحه انجام نمی‌شود.</div>';
+  }finally{smsBusy=false;}
+ }
  async function pull(){if(!live)return;$('spinner').hidden=false;try{const r=await fetch('/lead-command/api/live/',{headers:{'X-Requested-With':'XMLHttpRequest'},cache:'no-store'});if(!r.ok)throw Error();render(await r.json());}catch(e){$('updated').textContent='ارتباط با گزارش زنده برقرار نیست';}finally{$('spinner').hidden=true;}}
- function schedule(){clearInterval(timer);if(live){pull();timer=setInterval(pull,5000);}}
+ function schedule(){clearInterval(timer);clearInterval(smsTimer);if(live){pull();pollSms();timer=setInterval(pull,5000);if(smsUrl)smsTimer=setInterval(pollSms,30000);}}
  $('liveToggle').addEventListener('click',()=>{live=!live;$('liveToggle').textContent=live?'به‌روزرسانی روشن':'به‌روزرسانی خاموش';$('liveToggle').classList.toggle('on',live);$('liveToggle').setAttribute('aria-pressed',String(live));$('liveLabel').textContent=live?'پایش CRM روشن':'پایش متوقف';$('liveDot').style.opacity=live?'1':'.25';schedule();});
- $('refreshNow').addEventListener('click',pull);
- document.addEventListener('visibilitychange',()=>{if(document.hidden){clearInterval(timer);}else schedule();});
+ $('refreshNow').addEventListener('click',()=>{pull();pollSms();});
+ document.addEventListener('visibilitychange',()=>{if(document.hidden){clearInterval(timer);clearInterval(smsTimer);}else schedule();});
  schedule();
 })();
 </script>
