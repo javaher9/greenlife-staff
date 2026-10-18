@@ -102,8 +102,9 @@ ORANGE_FOOD_PHOTOS = {
     'water': 'https://images.unsplash.com/photo-1437482078695-73f5ca6c96e2?w=640&fit=crop&auto=format&q=85',
     'fruit': 'https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?w=640&fit=crop&auto=format&q=85',
     'vegetables': 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=640&fit=crop&auto=format&q=85',
+    'carrots': 'https://images.unsplash.com/photo-1447175008436-054170c2e979?w=640&fit=crop&auto=format&q=85',
 }
-ORANGE_SLOGAN_FALLBACK = 'https://images.unsplash.com/photo-1500534623283-312aade485b7?w=1100&fit=crop&auto=format&q=85'
+ORANGE_SLOGAN_FALLBACK = 'https://images.unsplash.com/photo-1743926465923-cfd31487cb88?w=1100&fit=crop&auto=format&q=80'
 
 def _orange_food_photo(card):
     if card.get('photo'):
@@ -112,6 +113,8 @@ def _orange_food_photo(card):
     slot = card.get('slot')
     if slot == 'other':
         return ORANGE_FOOD_PHOTOS['water'] if ('آب' in body or 'مایعات' in body) else ORANGE_FOOD_PHOTOS['vegetables']
+    if 'هویج' in body:
+        return ORANGE_FOOD_PHOTOS['carrots']
     if 'تن ماهی' in body:
         return ORANGE_FOOD_PHOTOS['tuna']
     if 'تخم مرغ' in body:
@@ -170,7 +173,9 @@ def diet_daily_preview(request,item_id):
     slogan_photo=content.slogan_image.url if content.slogan_image else content.slogan_external_url
     cards = week[chosen] if orange_only else _prepare_cards(s for s in sections if s.day_number==chosen)
     if orange_only:
-        cards = [dict(card, photo=_orange_food_photo(card)) for card in cards]
+        cards = [dict(card, photo=_orange_food_photo(card),
+                      fallback_food='carrots' if 'هویج' in (card.get('body') or '') else 'fruit')
+                 for card in cards]
     if orange_only and not slogan_photo:
         slogan_photo = ORANGE_SLOGAN_FALLBACK
     response=render(request,'core/diet_daily.html',{
