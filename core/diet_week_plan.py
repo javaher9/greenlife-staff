@@ -118,7 +118,7 @@ def parse_legacy(section,heading_detector=None):
         photo=''
         for pic in media:
             p=pic.inline_before_line
-            if p is not None and b['start']<=p<=b['end']+1:
+            if p is not None and b['start']<=p<=b['end']:
                 photo=pic.url
                 break
         alternatives=split_options(b['lines'])
@@ -175,6 +175,27 @@ def build_orange_week(sections):
                      all('گزینه' in item['title'] for item in selected) or
                      all(item['source']=='legacy' and item['body'] for item in selected))
             )
-            displayed.extend([selected[(day-1)%2]] if is_alternatives else selected)
+            if is_alternatives:
+                displayed.append(selected[(day-1)%2])
+            elif slot!='other' and len(selected)>1 and all(item['source']=='legacy' for item in selected):
+                # The old CRM export uses multiple paragraphs for parts of the
+                # same meal. Keep every distinct instruction but only ONE card
+                # per meal/day. Repeated identical lines must not appear twice.
+                unique=[]
+                seen=set()
+                for item in selected:
+                    key=normalize(item['body'])
+                    if key and key not in seen:
+                        unique.append(item)
+                        seen.add(key)
+                if unique:
+                    combined=make_card(
+                        slot,[item['body'] for item in unique],
+                        title=unique[0]['title'],
+                        photo=next((item['photo'] for item in unique if item['photo']),''),
+                    )
+                    displayed.append(combined)
+            else:
+                displayed.extend(selected)
         week[day]=displayed
     return week
