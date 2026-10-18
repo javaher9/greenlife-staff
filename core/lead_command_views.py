@@ -8,7 +8,7 @@ from functools import wraps
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.conf import settings
-from .models import ReferralLead, MarketingWorkerState
+from .models import ReferralLead, MarketingWorkerState, MarketingSmsPlan
 from .bulk_sms_views import _may_manage_bulk_sms
 from .marketing_sms_views import _is_allowed as _can_send_direct_sms
 
@@ -35,7 +35,8 @@ AGENTS = [
     ("seo","Google / SEO Agent","گوگل و سئو","فرصت‌های High-Intent و صفحات تجاری"),
     ("instagram","Instagram Agent","اینستاگرام","بهبود ورودی و Qualification"),
     ("partner","Partnership Agent","پارتنرشیپ","کشف و ارزیابی شرکای مناسب"),
-    ("quality","Lead Quality Agent","کیفیت لید","اندازه‌گیری کیفیت منبع تا فروش"),
+    ("quality","Lead Quality Agent","کیفیت لید","پایش وضعیت نوبت و فروش در CRM"),
+    ("sms","SMS Strategy Agent","برنامه‌ریز پیامک","ایده و متن روزانه برای گروه‌های مختلف مخاطبان"),
 ]
 
 def _snapshot():
@@ -63,20 +64,36 @@ def _snapshot():
         for item in recent
     ]
 
-    commander = MarketingWorkerState.objects.filter(key="commander").first()
-    commander_live = bool(
-        commander and commander.heartbeat_at
-        and commander.heartbeat_at >= now - timedelta(seconds=180)
-    )
+    states = {
+        item.key: item for item in MarketingWorkerState.objects.filter(
+            key__in=[key for key, *_ in AGENTS]
+        )
+    }
+    def is_running(key):
+        item = states.get(key)
+        return bool(item and item.heartbeat_at and
+                    item.heartbeat_at >= now - timedelta(seconds=180))
+
     agents = [{
         "key": key, "name": name, "fa": fa, "mission": mission,
-        "status": ("running" if commander_live and key == "commander" else "waiting"),
-        "status_label": ("RUNNING" if commander_live and key == "commander" else "WAITING"),
-        "activity": (commander.activity if commander_live and key == "commander"
-                     else "در انتظار اتصال Worker واقعی"),
-        "heartbeat": (timezone.localtime(commander.heartbeat_at).isoformat()
-                      if commander_live and key == "commander" else None),
+        "status": ("running" if is_running(key) else "waiting"),
+        "status_label": ("RUNNING" if is_running(key) else "WAITING"),
+        "activity": (states[key].activity if is_running(key) else "در انتظار اجرای واقعی Worker"),
+        "heartbeat": (timezone.localtime(states[key].heartbeat_at).isoformat()
+                      if is_running(key) else None),
     } for key, name, fa, mission in AGENTS]
+    plan = MarketingSmsPlan.objects.filter(day=day).first()
+    sms_plan = ({
+        "day": plan.day.isoformat(),
+        "segment": plan.segment_title,
+        "segment_key": plan.segment_key,
+        "body": plan.body,
+        "reason": plan.rationale,
+        "candidate_count": plan.candidate_count,
+        "preview_limited": plan.preview_limited,
+        "status": "proposal",
+    } if plan else None)
+    active_count = sum(1 for agent in agents if agent["status"] == "running")
     return {
         "server_time": now.isoformat(),
         "live": True,
@@ -84,7 +101,7 @@ def _snapshot():
         "scope": "IR",
         "agents": agents,
         "kpi": {
-            "agents": len(agents), "active": int(commander_live),
+            "agents": len(agents), "active": active_count,
             "new_today": total_today,
             # These are not measurable reliably from current fields.
             # null means unknown; never substitute zeros.
@@ -93,9 +110,10 @@ def _snapshot():
             "revenue_today": None,
         },
         "events": events,
-        "note": ("پایش CRM فعال است؛ Worker فرمانده لید صرفاً ثبت‌های جدید ایران را بررسی می‌کند. سایر ایجنت‌ها هنوز به سرویس جذب متصل نیستند."
-                 if commander_live else
-                 "شمارش CRM فعال است. هنوز Worker بازاریابی آنلاین نیست؛ داده‌های ثبت‌شده اپ از همه منابع ایران‌اند."),
+        "sms_plan": sms_plan,
+        "note": ("پایش داخلی CRM و برنامه‌ریزی پیامک فعال است؛ اتصال مستقیم جست‌وجوی وب/اینستاگرام هنوز فعال نیست و پیامک خودکار ارسال نمی‌شود."
+                 if active_count else
+                 "شمارش CRM فعال است؛ Workerهای مارکتینگ هنوز سیگنال تازه ندارند."),
     }
 
 @marketing_manager_required
