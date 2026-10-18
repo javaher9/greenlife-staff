@@ -1,0 +1,53 @@
+name: Finance Matrix Focused Checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'core/templates/core/finance_dashboard.html'
+      - 'core/templatetags/finance_intelligence.py'
+      - 'core/tests/test_finance_flower_matrix.py'
+      - '.github/workflows/finance-matrix-checks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  finance-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: greenlife
+          POSTGRES_USER: greenlife
+          POSTGRES_PASSWORD: test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U greenlife -d greenlife"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DEBUG: "1"
+      SECRET_KEY: "test-only-finance-regression-secret"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
+      POSTGRES_DB: greenlife
+      POSTGRES_USER: greenlife
+      POSTGRES_PASSWORD: test-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m compileall -q core
+      - run: python manage.py check
+      - name: Finance matrix, aliases and finance entry regression
+        run: python manage.py test core.tests.test_finance_flower_matrix core.tests.test_call_center_flower_names core.tests.test_consultant_finance --verbosity 2
