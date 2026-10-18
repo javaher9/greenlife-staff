@@ -360,7 +360,7 @@ def staff_customer_requests(request):
 def staff_customer_request_action(request,pk):
     _staff_gate(request)
     with transaction.atomic():
-        row=get_object_or_404(_visible_staff_requests(request).select_for_update(),pk=pk)
+        row=get_object_or_404(_visible_staff_requests(request).select_for_update(of=('self',)),pk=pk)
         if not _is_staff_allowed(request,row.kind):
             raise PermissionDenied()
         action=request.POST.get('action')
