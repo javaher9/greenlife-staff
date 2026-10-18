@@ -687,6 +687,11 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     </div>
   </header>
   {% for message in messages %}<div class="msg {{ message.tags }}">{{ message }}</div>{% endfor %}
+  {% if user.is_authenticated %}
+  <div style="display:flex;justify-content:flex-end;margin:6px 12px 0;direction:rtl">
+    <a href="{% url 'management_alert_center' %}" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid #c9ddd3;background:#f7fbf9;color:#155e43;border-radius:12px;text-decoration:none;font-weight:800;font-size:13px" aria-label="باز کردن مرکز هشدارها">🔔 هشدارها و اقدامات ←</a>
+  </div>
+  {% endif %}
   {% block content %}{% endblock %}
 </main>
 {% if user.is_authenticated and user.profile.role == 'call_center' %}
