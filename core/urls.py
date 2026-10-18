@@ -18,6 +18,7 @@ from . import lead_management_views
 from . import doctor_views
 from . import treatment_content_views
 from . import diet_daily_views
+from . import customer_portal_views
 from . import diet_template_views
 from . import payroll_views
 from . import device_booking_views
@@ -28,6 +29,14 @@ from . import live_status_views
 from . import quality_command_views
 from .mcp import mcp_endpoint
 urlpatterns=[
+path('customer/login/',customer_portal_views.customer_login,name='customer_login'),
+path('customer/logout/',customer_portal_views.customer_logout,name='customer_logout'),
+path('customer/club/',customer_portal_views.customer_club,name='customer_club'),
+path('customer/invite/<str:code>/',customer_portal_views.customer_join,name='customer_join'),
+path('customer/request/<str:kind>/',customer_portal_views.customer_request,name='customer_request'),
+path('staff/customer-requests/',customer_portal_views.staff_customer_requests,name='staff_customer_requests'),
+path('staff/customer-requests/<int:pk>/action/',customer_portal_views.staff_customer_request_action,name='staff_customer_request_action'),
+path('staff/customer-club/',customer_portal_views.staff_customer_club,name='staff_customer_club'),
 path('doctor/content/',treatment_content_views.treatment_content_browse,name='treatment_content_browse'),
 path('treatment-content/<int:item_id>/template/',diet_template_views.diet_template_preview,name='diet_template_preview'),
 path('treatment-content/<int:item_id>/daily/',diet_daily_views.diet_daily_preview,name='diet_daily_preview'),
