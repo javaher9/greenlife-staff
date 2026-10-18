@@ -359,9 +359,9 @@ for i in {1..6}; do
   sleep 2
 done
 
-# Marketing monitor is opt-in and never shares the call-center lead worker.
-# This read-only process scans CRM intake and writes a heartbeat; no marketing calls.
-if grep -Eq '^MARKETING_MONITOR_ENABLED=(1|true|yes)
+# CRM marketing monitor remains disabled during this safety hotfix.
+# Existing independent lead-routing and SMS workers run as before.
+if "${COMPOSE[@]}" config --services | grep -qx sms_worker; then
   echo "Refreshing SMS worker after successful cutover..."
   "${COMPOSE[@]}" up -d --no-deps --no-build --force-recreate sms_worker
 else
