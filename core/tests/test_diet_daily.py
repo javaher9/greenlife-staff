@@ -78,7 +78,7 @@ class OrangeOnlyWeekTests(TestCase):
         self.orange_content.save(update_fields=['presentation_template'])
         TreatmentRichSection.objects.create(
             content=self.orange_content,title='برنامه غذایی',
-            body='صبحانه\\nیک پرتقال\\nناهار\\nشنبه: خوراک سبزیجات',
+            body='صبحانه\nیک پرتقال\nناهار\nشنبه: خوراک سبزیجات',
         )
         page=self.client.get(reverse('diet_template_preview',args=[self.orange.pk]))
         self.assertEqual(page.status_code,200)
@@ -94,7 +94,7 @@ class OrangeOnlyWeekTests(TestCase):
         self.other_content.save(update_fields=['presentation_template'])
         TreatmentRichSection.objects.create(
             content=self.other_content,title='برنامه غذایی',
-            body='صبحانه\\nفرنی\\nناهار\\nشنبه: سوپ',
+            body='صبحانه\nفرنی\nناهار\nشنبه: سوپ',
         )
         page=self.client.get(reverse('diet_template_preview',args=[self.other.pk]))
         self.assertEqual(page.status_code,200)
