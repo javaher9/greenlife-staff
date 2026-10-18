@@ -101,6 +101,23 @@ class OrangeOnlyWeekTests(TestCase):
         self.assertContains(page,'برنامه غذایی هفت‌روزه')
         self.assertNotContains(page,'لاغری یعنی زندگی بهتر')
 
+    def test_orange_visual_card_details_stay_inside_white_card(self):
+        TreatmentRichSection.objects.create(
+            content=self.orange_content,title='برنامه غذایی',
+            body='میان وعده صبح\nدو عدد هویج\nناهار\nشنبه: مرغ و سبزیجات',
+        )
+        response=self.client.get(reverse('diet_daily_preview',args=[self.orange.pk])+'?day=1')
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'orange-slogan')
+        self.assertContains(response,'slogan-woman')
+        self.assertContains(response,'happy-woman.svg')
+        self.assertContains(response,'carrots.svg')
+        self.assertContains(response,'orange-details')
+        self.assertContains(response,'با هدفون گوش دهید')
+        page=response.content.decode('utf-8')
+        self.assertIn('orange-details',page)
+        self.assertIn('نوبت دستگاه',page)
+
     def test_original_weekday_lunch_and_dinner_are_separated(self):
         TreatmentRichSection.objects.create(
             content=self.orange_content,title='برنامه غذایی',
