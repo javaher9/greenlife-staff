@@ -86,6 +86,24 @@ button,select{font:inherit}
 @media(min-width:651px){.diet-app{border-inline:1px solid #e4eee6}.diet-meal{min-height:165px}.diet-picture{min-height:165px}.orange-week .diet-meal,.orange-week .diet-picture{min-height:142px}.orange-week .diet-card.compact .diet-meal,.orange-week .diet-card.compact .diet-picture{min-height:126px}}
 @media(max-width:390px){.diet-app{padding-inline:9px}.diet-top{gap:5px}.diet-brand{font-size:12px}.diet-brand em{width:25px;height:25px}.diet-pick{gap:5px;padding:8px}.diet-title h1{font-size:21px}.diet-hero h2{font-size:23px}.diet-slogan strong{font-size:16px}.diet-meal{grid-template-columns:40% minmax(0,1fr)}.diet-lines{font-size:12.5px}.orange-week .diet-lines{font-size:12.5px}.diet-info{padding:10px}.diet-bottom{margin-inline:-9px}}
 @media print{body{background:#fff}.diet-app{padding:0 10px}.diet-actions,.diet-bottom,.diet-admin,.diet-pick,.diet-card summary{display:none}.diet-card{break-inside:avoid;box-shadow:none}}
+
+/* Por-150 refinements only: simple flat color, no empty footer under meals. */
+.orange-week .diet-card{background:#fff;border:1px solid #dfebdf;box-shadow:0 3px 16px #25472c0d}
+.orange-week .diet-meal,.orange-week .diet-card.compact .diet-meal{min-height:0;align-items:stretch}
+.orange-week .diet-picture{min-height:112px}
+.orange-week .diet-card.compact .diet-picture{min-height:106px}
+.orange-week .diet-info{padding:14px 15px;justify-content:center}
+.orange-week .diet-info .diet-lines{margin-top:3px;line-height:1.8}
+.orange-week .diet-card details.orange-details{padding:0;border:0}
+.orange-week .diet-card details.orange-details summary{padding:7px 0 0;font-size:11px;color:#277753}
+.orange-week .diet-card details.orange-details p{margin:7px 0 2px}
+.orange-week .diet-card .diet-picture img{object-fit:cover;object-position:center}
+.orange-week .diet-slogan.orange-slogan{height:133px;min-height:133px;padding:0;background:#d9f0df}
+.orange-week .diet-slogan.orange-slogan:before{display:none}
+.orange-slogan .slogan-woman{display:block;position:absolute;right:0;top:0;width:66%;height:100%;object-fit:cover;object-position:center 34%}
+.orange-slogan .slogan-caption{position:absolute;left:0;top:0;bottom:0;width:52%;background:#d9f0df;display:flex;align-items:center;justify-content:center;padding:13px;z-index:2;text-align:center}
+.orange-slogan .slogan-caption strong{max-width:100%;font-size:clamp(15px,3.6vw,22px);line-height:1.8}
+@media(max-width:390px){.orange-week .diet-info{padding:11px 10px}.orange-week .diet-info .diet-lines{font-size:12px}.orange-slogan .slogan-caption{width:53%}}
 </style>
 </head>
 <body class="{% if orange_only %}orange-week{% endif %}">
@@ -108,7 +126,14 @@ button,select{font:inherit}
   <div class="hero-copy"><h2>{{ title }}</h2><p>{{ subtitle }}</p></div>
 </section>
 {% if slogan %}
+{% if orange_only %}
+<section class="diet-slogan orange-slogan" aria-label="پیام انگیزشی">
+  <img class="slogan-woman" src="{{ slogan_photo }}" alt="دختر شاد با دست‌های باز" loading="eager" onerror="this.onerror=null;this.src='{% static 'core/diet/happy-woman.svg' %}'">
+  <div class="slogan-caption"><strong>{{ slogan }}</strong></div>
+</section>
+{% else %}
 <section class="diet-slogan {% if slogan_photo %}has-image{% endif %}" {% if slogan_photo %}style="background-image:url('{{ slogan_photo }}')"{% endif %}><strong>{{ slogan }}</strong></section>
+{% endif %}
 {% endif %}
 <section class="diet-voice" aria-label="صدای جادویی">
  <div><strong>صدای جادویی</strong><small><span aria-hidden="true">🎧</span> با هدفون گوش دهید</small></div>
@@ -118,14 +143,23 @@ button,select{font:inherit}
 {% for card in cards %}
 <article class="diet-card {% if orange_only and card.summary|length <= 1 %}compact{% endif %}">
  <div class="diet-meal">
-  <div class="diet-picture">{% if card.photo %}<img src="{{ card.photo }}" alt="غذای {{ card.label }}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="empty" style="display:none">🍽️</div>{% else %}<div class="empty">❧</div>{% endif %}<span class="label">{{ card.label }}</span></div>
+  <div class="diet-picture">
+    {% if orange_only %}
+      {% if card.fallback_food == 'carrots' %}{% static 'core/diet/carrots.svg' as fallback_image %}{% else %}{% static 'core/diet/fruit.svg' as fallback_image %}{% endif %}
+      <img src="{{ card.photo|default:fallback_image }}" alt="تصویر مرتبط با {{ card.label }}" loading="lazy" data-fallback="{{ fallback_image }}" onerror="this.onerror=null;this.src=this.dataset.fallback">
+    {% elif card.photo %}
+      <img src="{{ card.photo }}" alt="غذای {{ card.label }}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="empty" style="display:none">🍽️</div>
+    {% else %}<div class="empty">❧</div>{% endif %}
+    <span class="label">{{ card.label }}</span>
+  </div>
   <div class="diet-info">
    {% if card.title != card.label %}<div class="diet-meal-title">{{ card.title }}</div>{% endif %}
    <ul class="diet-lines">{% for line in card.summary %}{% if line %}<li>{{ line }}</li>{% endif %}{% endfor %}</ul>
    {% if card.calories is not None %}<div class="diet-kcal">🔥 {{ card.calories }} کالری</div>{% else %}<div class="diet-empty-kcal"></div>{% endif %}
+   {% if orange_only and card.body %}<details class="orange-details"><summary>مشاهده توضیحات کامل</summary><p class="diet-full-text">{{ card.body }}</p></details>{% endif %}
   </div>
  </div>
- {% if card.body %}<details><summary>مشاهده توضیحات کامل</summary><p class="diet-full-text">{{ card.body }}</p></details>{% endif %}
+ {% if not orange_only and card.body %}<details><summary>مشاهده توضیحات کامل</summary><p class="diet-full-text">{{ card.body }}</p></details>{% endif %}
 </article>
 {% empty %}<div class="diet-more">برنامه این روز هنوز وارد نشده است.</div>{% endfor %}
 </section>
