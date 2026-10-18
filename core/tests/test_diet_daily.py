@@ -92,6 +92,20 @@ class OrangeOnlyWeekTests(TestCase):
         self.assertContains(sunday,'یکشنبه')
         self.assertContains(saturday,'touchstart')
 
+    def test_repeated_lunch_lines_render_one_meal_card(self):
+        TreatmentRichSection.objects.create(
+            content=self.orange_content,title='برنامه غذایی',
+            body='صبحانه\nیک عدد پرتقال\nناهار\nشنبه: سوپ و سالاد\nشنبه: سوپ و سالاد\nشنبه: یک لیوان آب\nیکشنبه: غذای متفاوت',
+        )
+        saturday=self.client.get(reverse('diet_daily_preview',args=[self.orange.pk])+'?day=1')
+        self.assertEqual(saturday.status_code,200)
+        page=saturday.content.decode('utf-8')
+        self.assertEqual(page.count('<span class="label">ناهار</span>'),1)
+        self.assertIn('سوپ و سالاد',page)
+        self.assertIn('یک لیوان آب',page)
+        self.assertNotIn('غذای متفاوت',page)
+        self.assertEqual(page.count('سوپ و سالاد'),2) # one summary and one expanded description
+
     def test_rotates_only_explicit_shared_breakfast_alternatives(self):
         TreatmentRichSection.objects.create(
             content=self.orange_content,title='برنامه غذایی',
