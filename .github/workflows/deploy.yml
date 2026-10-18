@@ -144,7 +144,8 @@ jobs:
           python3 -m compileall -q core greenlife
           python3 -m py_compile scripts/harden_env.py scripts/check_zero_downtime_migrations.py
           python3 scripts/check_zero_downtime_migrations.py
-          bash -n entrypoint.sh scripts/*.sh
+          bash -n entrypoint.sh
+          for script in scripts/*.sh; do bash -n "$script"; done
 
       - name: Sync source to fixed production directory
         id: sync_source
