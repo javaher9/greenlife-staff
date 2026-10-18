@@ -98,12 +98,23 @@ button,select{font:inherit}
 .orange-week .diet-card details.orange-details summary{padding:7px 0 0;font-size:11px;color:#277753}
 .orange-week .diet-card details.orange-details p{margin:7px 0 2px}
 .orange-week .diet-card .diet-picture img{object-fit:cover;object-position:center}
-.orange-week .diet-slogan.orange-slogan{height:133px;min-height:133px;padding:0;background:#d9f0df}
+.orange-week .diet-slogan.orange-slogan{height:clamp(118px,30vw,160px);min-height:118px;padding:0;background:#d9f0df}
 .orange-week .diet-slogan.orange-slogan:before{display:none}
-.orange-slogan .slogan-woman{display:block;position:absolute;right:0;top:0;width:66%;height:100%;object-fit:cover;object-position:center 34%}
-.orange-slogan .slogan-caption{position:absolute;left:0;top:0;bottom:0;width:52%;background:#d9f0df;display:flex;align-items:center;justify-content:center;padding:13px;z-index:2;text-align:center}
+.orange-slogan .slogan-woman{display:block;position:absolute;right:0;top:0;width:64%;height:100%;object-fit:contain;object-position:center center;background:#e1f0db}
+.orange-slogan .slogan-caption{position:absolute;left:0;top:0;bottom:0;width:39%;background:#d9f0df;display:flex;align-items:center;justify-content:center;padding:10px;z-index:2;text-align:center}
 .orange-slogan .slogan-caption strong{max-width:100%;font-size:clamp(15px,3.6vw,22px);line-height:1.8}
-@media(max-width:390px){.orange-week .diet-info{padding:11px 10px}.orange-week .diet-info .diet-lines{font-size:12px}.orange-slogan .slogan-caption{width:53%}}
+@media(max-width:390px){.orange-week .diet-info{padding:11px 10px}.orange-week .diet-info .diet-lines{font-size:12px}.orange-slogan .slogan-caption{width:39%}}
+
+/* Por-150 only: explicit outward arrows, no RTL mirrored glyphs */
+.orange-week .day-chevron{display:block;width:9px;height:9px;border-top:3px solid currentColor;border-right:3px solid currentColor}
+.orange-week .day-chevron.right{transform:rotate(45deg)}
+.orange-week .day-chevron.left{transform:rotate(-135deg)}
+.orange-week .diet-pick a{min-width:20px;min-height:24px;display:flex;justify-content:center;align-items:center}
+.orange-week .diet-card .diet-lines{font-size:14px;line-height:1.9}
+.orange-week.diet-enhanced .diet-lines{max-height:7.6em;overflow:hidden}
+.orange-week .diet-card details.orange-details[hidden]{display:none!important}
+.orange-week .diet-card .diet-info{justify-content:center}
+@media(max-width:390px){.orange-week .diet-card .diet-lines{font-size:12.5px}}
 </style>
 </head>
 <body class="{% if orange_only %}orange-week{% endif %}">
@@ -111,14 +122,18 @@ button,select{font:inherit}
 <header class="diet-top">
  <div class="diet-brand"><em>❧</em> گرین‌لایف</div>
  <div class="diet-pick">
-  {% if prev_day %}<a aria-label="روز قبل" href="?day={{ prev_day }}">❯</a>{% else %}<a class="off" aria-hidden="true">❯</a>{% endif %}
+  {% if orange_only %}
+  {% if prev_day %}<a aria-label="روز قبل" href="?day={{ prev_day }}"><span class="day-chevron right" aria-hidden="true"></span></a>{% else %}<a class="off" aria-hidden="true"><span class="day-chevron right"></span></a>{% endif %}
+  {% else %}{% if prev_day %}<a aria-label="روز قبل" href="?day={{ prev_day }}">❯</a>{% else %}<a class="off" aria-hidden="true">❯</a>{% endif %}{% endif %}
   {% if orange_only %}
   <form method="get" action=""><label for="orange-day" class="sr-only" style="position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden">روز هفته</label>
   <select id="orange-day" name="day" onchange="this.form.submit()" aria-label="انتخاب روز هفته">
    {% for number,label in day_choices %}<option value="{{ number }}" {% if number == day %}selected{% endif %}>{{ label }}</option>{% endfor %}
   </select></form>
   {% else %}<span>▣ روز {{ day }} از {{ day_total }}</span>{% endif %}
-  {% if next_day %}<a aria-label="روز بعد" href="?day={{ next_day }}">❮</a>{% else %}<a class="off" aria-hidden="true">❮</a>{% endif %}
+  {% if orange_only %}
+  {% if next_day %}<a aria-label="روز بعد" href="?day={{ next_day }}"><span class="day-chevron left" aria-hidden="true"></span></a>{% else %}<a class="off" aria-hidden="true"><span class="day-chevron left"></span></a>{% endif %}
+  {% else %}{% if next_day %}<a aria-label="روز بعد" href="?day={{ next_day }}">❮</a>{% else %}<a class="off" aria-hidden="true">❮</a>{% endif %}{% endif %}
  </div>
 </header>
 <div class="diet-title"><h1>{{ title }} 🍊</h1><p>{{ subtitle }}</p></div>
@@ -156,7 +171,7 @@ button,select{font:inherit}
    {% if card.title != card.label %}<div class="diet-meal-title">{{ card.title }}</div>{% endif %}
    <ul class="diet-lines">{% for line in card.summary %}{% if line %}<li>{{ line }}</li>{% endif %}{% endfor %}</ul>
    {% if card.calories is not None %}<div class="diet-kcal">🔥 {{ card.calories }} کالری</div>{% else %}<div class="diet-empty-kcal"></div>{% endif %}
-   {% if orange_only and card.body %}<details class="orange-details"><summary>مشاهده توضیحات کامل</summary><p class="diet-full-text">{{ card.body }}</p></details>{% endif %}
+   {% if orange_only and card.body %}<details class="orange-details" hidden><summary>توضیحات بیشتر</summary><p class="diet-full-text">{{ card.body }}</p></details>{% endif %}
   </div>
  </div>
  {% if not orange_only and card.body %}<details><summary>مشاهده توضیحات کامل</summary><p class="diet-full-text">{{ card.body }}</p></details>{% endif %}
@@ -180,6 +195,22 @@ button,select{font:inherit}
 {% if orange_only %}
 <script>
 (function(){
+  // Apply the 4-visible-line rule to the actual rendered phone width.
+  const mealCards=Array.from(document.querySelectorAll('.diet-card'));
+  function updateMealExpansion(){
+    // Measure each complete meal text after the browser has laid it out.
+    document.body.classList.add('diet-enhanced');
+    for(const card of mealCards){
+      const lines=card.querySelector('.diet-lines');
+      const details=card.querySelector('.orange-details');
+      if(!lines||!details)continue;
+      const overflow=lines.scrollHeight>lines.clientHeight+2;
+      details.hidden=!overflow;
+      if(!overflow)details.open=false;
+    }
+  }
+  requestAnimationFrame(updateMealExpansion);
+  window.addEventListener('resize',updateMealExpansion,{passive:true});
   // Horizontal gestures switch diet days; vertical scrolling and controls are untouched.
   const region=document.querySelector('.diet-app');
   let start=null;
