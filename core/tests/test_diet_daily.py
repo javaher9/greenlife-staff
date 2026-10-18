@@ -146,6 +146,34 @@ class OrangeOnlyWeekTests(TestCase):
             self.assertIn('href="%s"' % reverse(name),html)
         self.assertIn('href="https://www.instagram.com/greenlifeclinics/"',html)
 
+    def test_orange_weekday_picker_is_centered_and_arrows_follow_persian_week(self):
+        TreatmentRichSection.objects.create(
+            content=self.orange_content,title='برنامه غذایی',body='صبحانه\nپرتقال',
+        )
+        for selected, next_day, previous_day in ((1, 2, None), (4, 5, 3), (7, None, 6)):
+            with self.subTest(day=selected):
+                page=self.client.get(
+                    reverse('diet_daily_preview',args=[self.orange.pk])+
+                    '?day='+str(selected)
+                )
+                self.assertEqual(page.status_code,200)
+                html=page.content.decode('utf-8')
+                self.assertIn('.orange-day-picker{margin:0 auto 14px;',html)
+                picker=html.split('<div class="diet-pick orange-day-picker">',1)[1].split('</div>',1)[0]
+                right=picker.split('class="day-chevron right"',1)[0].rsplit('<a ',1)[1]
+                left=picker.split('class="day-chevron left"',1)[0].rsplit('<a ',1)[1]
+                if next_day is None:
+                    self.assertIn('class="off"',right)
+                else:
+                    self.assertIn('aria-label="روز بعد"',right)
+                    self.assertIn('href="?day=%s"' % next_day,right)
+                if previous_day is None:
+                    self.assertIn('class="off"',left)
+                else:
+                    self.assertIn('aria-label="روز قبل"',left)
+                    self.assertIn('href="?day=%s"' % previous_day,left)
+                self.assertIn('const desired=dx>0?following:previous;',html)
+
     def test_original_weekday_lunch_and_dinner_are_separated(self):
         TreatmentRichSection.objects.create(
             content=self.orange_content,title='برنامه غذایی',
