@@ -154,6 +154,13 @@
 .lcc .lcc-sms-error{color:#ffe0df;border-color:#915d67}
 @media(max-width:850px){.lcc .lcc-sms-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:500px){.lcc .lcc-sms{padding:16px}.lcc .lcc-sms-links{width:100%}.lcc .lcc-sms-links a{flex:1}}
+
+.lcc .lcc-sms-plan{border:1px solid #9278c9;border-radius:15px;background:linear-gradient(110deg,#2b2851,#1a3446);padding:16px 18px;display:grid;gap:9px}
+.lcc .lcc-sms-plan h3{font-size:17px!important;color:#e9d7ff!important;margin:0!important}
+.lcc .lcc-sms-plan p{font-size:13px!important;color:#e6edf7!important;line-height:2;margin:0}
+.lcc .lcc-sms-plan .sms-strategy-body{white-space:pre-line;background:#17283d;border:1px solid #506888;border-radius:11px;padding:12px 14px;font-size:14px!important;line-height:2.1}
+.lcc .lcc-sms-plan .sms-strategy-note{color:#f4deb1!important;font-size:12px!important}
+.lcc .lcc-sms-plan .sms-strategy-copy{font:inherit;align-self:start;justify-self:start;border:1px solid #8e96c5;border-radius:9px;background:#303e61;color:#f4f7ff;padding:8px 15px;font-size:12px;cursor:pointer}
 </style>
 <section class="lcc" id="leadCommand" data-sms-url="{% if can_bulk_sms %}{% url 'bulk_sms_campaigns_status_api' %}{% endif %}">
  <header class="lcc-top">
@@ -166,7 +173,7 @@
   </div>
  </header>
  <div class="lcc-kpis">
-  <div class="lcc-kpi"><small>ایجنت‌های تعریف‌شده</small><b id="kAgents">۷</b></div>
+  <div class="lcc-kpi"><small>ایجنت‌های تعریف‌شده</small><b id="kAgents">۸</b></div>
   <div class="lcc-kpi"><small>ایجنت فعال</small><b id="kActive">۰</b></div>
   <div class="lcc-kpi" id="newLeadCard"><small>لیدهای ثبت‌شده امروز · ایران</small><b id="kNew">—</b><span class="lcc-subtitle">از همه ورودی‌های اپ</span></div>
   <div class="lcc-kpi"><small>لید واجد شرایط امروز</small><b id="kQualified">—</b></div>
@@ -183,6 +190,13 @@
      {% if can_bulk_sms %}<a class="primary" href="{% url 'bulk_sms_groups' %}">مدیریت کمپین گروهی</a><a href="{% url 'sms_leads' %}">لیدهای پاسخ پیامکی</a>{% endif %}
      {% if can_direct_sms %}<a href="{% url 'marketing_sms_compose' %}">ارسال دستی پیامک</a>{% endif %}
     </nav>
+  </div>
+  <div class="lcc-sms-plan" id="smsStrategy" aria-live="polite">
+    <h3>ایجنت برنامه‌ریز پیامک · پیشنهاد امروز</h3>
+    <p id="smsStrategyTarget">در انتظار نخستین اجرای Worker واقعی…</p>
+    <p class="sms-strategy-body" id="smsStrategyBody">—</p>
+    <p class="sms-strategy-note">فقط پیش‌نویس؛ ارسال خودکار غیرفعال است تا رضایت معتبر گیرندگان بررسی شود. برآورد مخاطبان به معنای مجوز ارسال نیست.</p>
+    <button class="sms-strategy-copy" type="button" id="copySmsStrategy">کپی متن پیشنهادی</button>
   </div>
   {% if can_bulk_sms %}
   <div class="lcc-sms-stats" id="smsStats" aria-label="آمار کمپین‌ها">
@@ -217,6 +231,14 @@
   $('kQualified').textContent=fmt(d.kpi.qualified_today);
   $('kOpp').textContent=fmt(d.kpi.opportunities);
   $('kRevenue').textContent=fmt(d.kpi.revenue_today);
+  if($('smsStrategyTarget')&&$('smsStrategyBody')){
+    const p=d.sms_plan;
+    $('smsStrategyTarget').textContent=p?
+      ('گروه پیشنهادی: '+p.segment+' · مخاطب ثبت‌شده در CRM: '+(p.candidate_count===null?'نامشخص':fmt(p.candidate_count))+
+       (p.preview_limited?' (شمارش محدود)':'')+' · '+p.reason):
+      'هنوز برای امروز برنامه‌ای ثبت نشده است.';
+    $('smsStrategyBody').textContent=p?p.body:'—';
+  }
   if(previousCount!==null && Number(d.kpi.new_today)>previousCount){
    const card=$('newLeadCard');card.classList.remove('is-updated');void card.offsetWidth;card.classList.add('is-updated');
   }
@@ -262,6 +284,12 @@
  function schedule(){clearInterval(timer);clearInterval(smsTimer);if(live){pull();pollSms();timer=setInterval(pull,5000);if(smsUrl)smsTimer=setInterval(pollSms,30000);}}
  $('liveToggle').addEventListener('click',()=>{live=!live;$('liveToggle').textContent=live?'به‌روزرسانی روشن':'به‌روزرسانی خاموش';$('liveToggle').classList.toggle('on',live);$('liveToggle').setAttribute('aria-pressed',String(live));$('liveLabel').textContent=live?'پایش CRM روشن':'پایش متوقف';$('liveDot').style.opacity=live?'1':'.25';schedule();});
  $('refreshNow').addEventListener('click',()=>{pull();pollSms();});
+ if($('copySmsStrategy'))$('copySmsStrategy').addEventListener('click',()=>{
+  const t=$('smsStrategyBody').textContent;
+  if(t&&t!=='—'&&navigator.clipboard){navigator.clipboard.writeText(t).then(()=>{
+   $('copySmsStrategy').textContent='کپی شد';
+  }).catch(()=>{$('copySmsStrategy').textContent='امکان کپی نیست';});}
+ });
  document.addEventListener('visibilitychange',()=>{if(document.hidden){clearInterval(timer);clearInterval(smsTimer);}else schedule();});
  schedule();
 })();
