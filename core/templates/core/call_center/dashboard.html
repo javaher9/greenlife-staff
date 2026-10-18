@@ -1278,6 +1278,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-side-direct:focus{
     <div class="ccx-search"><input id="ccxSearch" type="search" placeholder="جستجو در نام، موبایل، منبع یا خدمت…"></div>
     <div class="ccx-filter-row" id="ccxFilters">
       <button class="ccx-filter active" data-filter="all">همه <b>{{ queue_category_counts.all }}</b></button>
+      <button class="ccx-filter" data-filter="receivedtoday" title="لیدهای تخصیص‌یافته امروز که هنوز در صف کار هستند">دریافتی امروز در صف <b>{{ queue_category_counts.receivedtoday }}</b></button>
       <button class="ccx-filter" data-filter="new">جدید <b>{{ queue_category_counts.new }}</b></button>
       <button class="ccx-filter" data-filter="todaycall">باید امروز تماس بگیرم <b>{{ queue_category_counts.todaycall }}</b></button>
       <button class="ccx-filter" data-filter="followup">پیگیری <b>{{ queue_category_counts.followup }}</b></button>

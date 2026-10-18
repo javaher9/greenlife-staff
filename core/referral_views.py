@@ -951,6 +951,8 @@ def call_center_dashboard(request):
     elif group_filter.isdigit():
         queue_scope=queue_scope.filter(group_id=int(group_filter))
 
+    # Filters and search run over rendered rows in the browser. Truncating
+    # the oldest records here hides fresh assignments once the backlog grows.
     queue_candidates=list(
         queue_scope
         .exclude(status__in=('won','lost'))
@@ -961,7 +963,7 @@ def call_center_dashboard(request):
             Q(status='appointment')
         )
         .select_related('country','assigned_to','group','referrer__user','created_by')
-        .order_by('assigned_at','created_at','id')[:250]
+        .order_by('assigned_at','created_at','id')
     )
 
     def _wa_url(phone):
@@ -992,13 +994,15 @@ def call_center_dashboard(request):
         return 'other'
 
     work_queue=[]
-    category_counts={key:0 for key in ('all','new','todaycall','followup','appointment','noanswer','overdue')}
+    category_counts={key:0 for key in ('all','receivedtoday','new','todaycall','followup','appointment','noanswer','overdue')}
     for lead in queue_candidates:
         proxy=FlowerLeadProxy(lead)
         assigned_at=lead.assigned_at or lead.created_at
         assigned_local=timezone.localtime(assigned_at)
         age_minutes=max(0,int((local_now-assigned_local).total_seconds()//60))
         categories=[]
+        if assigned_local.date()==today:
+            categories.append('receivedtoday')
         is_overdue=bool(lead.next_follow_up and lead.next_follow_up<today)
         if lead.status=='new':
             categories.append('new')
