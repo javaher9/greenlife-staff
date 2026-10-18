@@ -55,7 +55,6 @@ class CallCenterKpiPanelTests(TestCase):
         for label in ('لید امروز','تماس امروز','نوبت گرفته‌شده',
                       'فروش امروز','نرخ پاسخ','عملکرد من','صف کار امروز'):
             self.assertContains(response,label)
-        self.assertContains(response,'{{', count=0) if False else None
 
         performance = response.context['performance']
         self.assertEqual(performance['today_uncontacted'], 1)
