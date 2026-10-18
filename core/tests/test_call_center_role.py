@@ -84,34 +84,19 @@ class CallCenterRoleTests(TestCase):
         self.assertNotContains(response,'شبکه فروش من')
         self.assertNotContains(response,'/referrals/')
 
-    def test_dashboard_keeps_mobile_navigation_and_uses_photo_ready_light_workspace(self):
+    def test_dashboard_keeps_mobile_navigation_and_real_work_queue(self):
         response=self.client.get(reverse('call_center_dashboard'))
         self.assertEqual(response.status_code,200)
-        self.assertNotContains(response,'cc-mobile-leads')
         self.assertContains(response,'cc-mobile-home')
         self.assertContains(response,'cc-mobile-notifications')
-        self.assertContains(response,'class="cc-v5"')
-        self.assertContains(response,'شعار امروز')
-        self.assertContains(response,'هر تماس، یک قدم برای حال بهتر')
-        self.assertContains(response,'مراجعین و لیدهای من')
-        self.assertContains(response,'جای عکس مراجع')
-        self.assertContains(response,'برنامه نوبت‌های امروز')
-        self.assertContains(response,'09:00')
-        self.assertContains(response,'18:00')
-        self.assertContains(response,'ارتباط داخلی تیم')
-        self.assertContains(response,'id="ccQuickMessageForm"')
-        self.assertContains(response,'.cc-v6-chat-copy p{margin:3px 0 0;color:#526174;font-size:8px;font-weight:700')
-        self.assertContains(response,'مسیر مراجعه')
-        self.assertContains(response,'تماس')
-        self.assertContains(response,'پیگیری')
-        self.assertContains(response,'نوبت')
-        self.assertContains(response,'مراجعه')
-        self.assertContains(response,'class="cc-desktop-dock"')
-        self.assertContains(response,'بیماران / لیدها')
-        self.assertContains(response,'نوبت‌ها')
-        self.assertContains(response,'پیام داخلی')
-        self.assertContains(response,'cc-mobile-attendance')
-        self.assertContains(response,'cc-mobile-reports')
+        self.assertContains(response,'class="ccx"')
+        self.assertContains(response,'صف کار امروز')
+        self.assertContains(response,'data-lead-id="%s"' % self.lead_one.pk)
+        self.assertNotContains(response,'data-lead-id="%s"' % self.lead_two.pk)
+        self.assertContains(response,'میز کار')
+        self.assertContains(response,'عملکرد من')
+        self.assertContains(response,'ccx-queue')
+        self.assertContains(response,'tel:09120000001')
 
     def test_quick_message_sends_to_staff_and_creates_notification(self):
         response=self.client.post(reverse('call_center_quick_message'),{
@@ -152,39 +137,47 @@ class CallCenterRoleTests(TestCase):
             self.assertEqual(self.client.get(reverse(name)).status_code,403)
         self.assertFalse(ReferralProfile.objects.filter(user=self.operator_one).exists())
 
-    def test_new_leads_are_balanced_between_active_operators(self):
-        extra=ReferralLead.objects.create(
+    def test_new_leads_keep_existing_ownership_and_pending_queue_policy(self):
+        """The routing worker, not registration itself, settles opening queues."""
+        from unittest.mock import patch
+        already_owned=ReferralLead.objects.create(
             referrer=self.referrer,full_name='صف اضافه',phone='09120000003',
             assigned_to=self.operator_one.profile,
         )
-        self.assertIsNotNone(extra.pk)
         new_lead=ReferralLead.objects.create(
             referrer=self.referrer,full_name='مشتری تازه',phone='09120000004',
         )
-        assigned=_auto_assign_call_center(new_lead)
+        with patch('core.lead_routing.release_pending_leads_if_ready',return_value=0), \
+             patch('core.lead_routing._live_assignment_allowed',return_value=False):
+            self.assertEqual(_auto_assign_call_center(already_owned),self.operator_one.profile)
+            self.assertIsNone(_auto_assign_call_center(new_lead))
         new_lead.refresh_from_db()
-        self.assertEqual(assigned,self.operator_two.profile)
-        self.assertEqual(new_lead.assigned_to,self.operator_two.profile)
-        self.assertTrue(StaffNotification.objects.filter(
+        self.assertIsNone(new_lead.assigned_to)
+        self.assertFalse(StaffNotification.objects.filter(
             user=self.operator_two,notification_type='call_center_lead',
         ).exists())
 
-    def test_groups_are_bootstrapped_and_existing_leads_go_to_staff_sales_group(self):
+    def test_groups_are_global_and_existing_leads_go_to_staff_sales_group(self):
         response=self.client.get(reverse('call_center_dashboard'))
         self.assertEqual(response.status_code,200)
-        names=set(CallCenterLeadGroup.objects.filter(owner=self.operator_one.profile).values_list('name',flat=True))
+        groups=CallCenterLeadGroup.objects.filter(owner__isnull=True)
+        names=set(groups.values_list('name',flat=True))
         self.assertTrue({
             'شبکه فروش پرسنل','وب‌سایت','کمپ','شرکت‌ها و همکاری سازمانی','اینستاگرام'
         }.issubset(names))
         self.lead_one.refresh_from_db()
-        self.assertIsNotNone(self.lead_one.group_id)
         self.assertEqual(self.lead_one.group.name,'شبکه فروش پرسنل')
         self.assertContains(response,'شبکه فروش پرسنل')
 
-    def test_operator_can_create_group_and_move_own_lead(self):
+    def test_authorized_operator_can_create_global_group_and_move_own_lead(self):
+        self.operator_one.profile.can_manage_call_center_groups=True
+        self.operator_one.profile.save(update_fields=['can_manage_call_center_groups'])
         response=self.client.post(reverse('call_center_group_create'),{'name':'کمپ VIP'})
-        self.assertEqual(response.status_code,302)
-        group=CallCenterLeadGroup.objects.get(owner=self.operator_one.profile,name='کمپ VIP')
+        self.assertRedirects(response,
+                             reverse('call_center_dashboard')+'?group='+str(
+                                 CallCenterLeadGroup.objects.get(name='کمپ VIP').pk),
+                             fetch_redirect_response=False)
+        group=CallCenterLeadGroup.objects.get(owner__isnull=True,name='کمپ VIP')
         response=self.client.post(reverse('call_center_lead',args=[self.lead_one.pk]),{
             'contact_result':'no_answer','group':group.pk,'next_follow_up':'',
             'interested_service':'لاغری','notes':'انتقال به گروه کمپ',
@@ -210,28 +203,34 @@ class CallCenterRoleTests(TestCase):
         self.assertEqual(lead.created_by,self.operator_one)
         self.assertFalse(lead.referrer.is_active)
 
-    def test_operator_cannot_register_phone_in_another_operators_group(self):
-        other_group=CallCenterLeadGroup.objects.create(owner=self.operator_two.profile,name='خصوصی بنفشه')
+    def test_operator_can_use_shared_group_but_lead_stays_with_registrar(self):
+        shared_group=CallCenterLeadGroup.objects.create(owner=None,name='کمپ مشترک')
         response=self.client.post(reverse('call_center_lead_create'),{
-            'full_name':'نباید ثبت شود','phone':'09124445566','group':other_group.pk,
+            'full_name':'لید مشترک','phone':'09124445566','group':shared_group.pk,
             'interested_service':'','notes':'',
         })
-        self.assertRedirects(response,reverse('call_center_dashboard'),fetch_redirect_response=False)
-        self.assertFalse(ReferralLead.objects.filter(full_name='نباید ثبت شود').exists())
+        self.assertRedirects(response,
+                             reverse('call_center_dashboard')+'?group='+str(shared_group.pk),
+                             fetch_redirect_response=False)
+        lead=ReferralLead.objects.get(phone='09124445566')
+        self.assertEqual(lead.assigned_to,self.operator_one.profile)
+        self.assertEqual(lead.group,shared_group)
 
-    def test_referral_registration_says_exactly_where_lead_went(self):
+    def test_referral_registration_retains_lead_even_during_morning_queue(self):
+        """Registration remains visible even if round-robin is deferred to 10:15."""
+        from unittest.mock import patch
         self.client.force_login(self.referrer_user)
-        response=self.client.post(reverse('referral_lead_create'),{
-            'full_name':'مشتری شفاف','phone':'09121112222',
-            'alternate_phone':'','interested_service':'مشاوره','notes':'',
-            'referrer':self.referrer.pk,
-        },follow=True)
+        with patch('core.referral_views._auto_assign_call_center',return_value=None):
+            response=self.client.post(reverse('referral_lead_create'),{
+                'full_name':'مشتری شفاف','phone':'09121112222',
+                'alternate_phone':'','interested_service':'مشاوره','notes':'',
+                'referrer':self.referrer.pk,
+            },follow=True)
         lead=ReferralLead.objects.get(full_name='مشتری شفاف')
-        self.assertIsNotNone(lead.assigned_to_id)
-        self.assertIsNotNone(lead.group_id)
-        self.assertEqual(lead.group.name,'شبکه فروش پرسنل')
-        self.assertContains(response,'شبکه فروش پرسنل')
-        self.assertContains(response,'اپراتور')
+        self.assertEqual(lead.referrer,self.referrer)
+        self.assertIsNone(lead.assigned_to)
+        self.assertEqual(lead.status,'new')
+        self.assertEqual(response.status_code,200)
 
     def test_manager_assignment_field_only_lists_call_center_staff(self):
         form=ReferralLeadManageForm(instance=self.lead_one)

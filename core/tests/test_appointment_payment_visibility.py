@@ -137,8 +137,9 @@ class AppointmentPaymentVisibilityTests(TestCase):
         self.client.force_login(self.receptionist)
         receptionist_page = self.client.get(reverse('appointment_schedule'), {'date': day})
         self.assertEqual(receptionist_page.status_code, 200)
-        self.assertContains(receptionist_page, 'پرداخت تأییدشده:')
-        self.assertContains(receptionist_page, '>2</b> میلیون تومان')
+        self.assertContains(receptionist_page, 'مجموع پرداخت تأییدشده')
+        self.assertContains(receptionist_page, 'p.approved_total')
+        self.assertEqual(appointment_paid_million(self.appointment), '2')
 
         self.client.force_login(self.operator)
         call_center_page = self.client.get(
@@ -146,8 +147,9 @@ class AppointmentPaymentVisibilityTests(TestCase):
             {'date': day, 'branch': self.branch.pk},
         )
         self.assertEqual(call_center_page.status_code, 200)
-        self.assertContains(call_center_page, 'پرداخت تأییدشده:')
-        self.assertContains(call_center_page, '>2</b> میلیون تومان')
+        self.assertContains(call_center_page, 'مجموع پرداخت تأییدشده')
+        self.assertContains(call_center_page, 'p.approved_total')
+        self.assertEqual(appointment_paid_million(self.appointment), '2')
 
     def test_receptionist_arrival_moves_lead_to_visited_but_never_downgrades_won(self):
         self.client.force_login(self.receptionist)

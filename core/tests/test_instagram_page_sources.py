@@ -88,10 +88,19 @@ class InstagramPageSourceTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
+        # The morning queue can defer assignment until release time.
+        # Model a lead after legitimate assignment to verify operator attribution UI.
+        lead = ReferralLead.objects.get(full_name='مراجع منبع اینستاگرام')
+        self.assertIn('[instagram_page:greenlife_cafe]', lead.notes)
+        ReferralLead.objects.filter(pk=lead.pk).update(
+            assigned_to=self.operator,assigned_at=timezone.now()
+        )
         self.client.force_login(self.operator.user)
         dashboard = self.client.get(reverse('call_center_dashboard'))
         self.assertEqual(dashboard.status_code, 200)
-        self.assertContains(dashboard, 'اینستاگرام · لینک · Greenlife.cafe')
+        self.assertContains(dashboard, 'Greenlife.cafe')
+        self.assertContains(dashboard, 'ccx-source')
+        self.assertContains(dashboard, 'data-lead-id="%s"' % lead.pk)
 
         self.client.force_login(self.manager.user)
         hub = self.client.get(reverse('lead_management_dashboard'))
