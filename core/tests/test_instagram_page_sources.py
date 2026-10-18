@@ -98,7 +98,9 @@ class InstagramPageSourceTests(TestCase):
         self.client.force_login(self.operator.user)
         dashboard = self.client.get(reverse('call_center_dashboard'))
         self.assertEqual(dashboard.status_code, 200)
-        self.assertContains(dashboard, 'اینستاگرام · لینک · Greenlife.cafe')
+        self.assertContains(dashboard, 'Greenlife.cafe')
+        self.assertContains(dashboard, 'ccx-source')
+        self.assertContains(dashboard, 'data-lead-id="%s"' % lead.pk)
 
         self.client.force_login(self.manager.user)
         hub = self.client.get(reverse('lead_management_dashboard'))
