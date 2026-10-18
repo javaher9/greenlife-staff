@@ -259,6 +259,20 @@ class QualityCommandCenterTests(TestCase):
         self.assertEqual(home.status_code, 302)
         self.assertEqual(home["Location"], reverse("quality_command_center"))
 
+    def test_quality_control_mobile_gets_personal_dashboard_and_attendance(self):
+        self.naderi.profile.role = "quality_control"
+        self.naderi.profile.save(update_fields=["role"])
+        self.client.force_login(self.naderi)
+        mobile = {"HTTP_USER_AGENT": "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Mobile Safari/537.36"}
+        home = self.client.get("/", **mobile)
+        self.assertEqual(home.status_code, 200)
+        self.assertContains(home, 'href="/attendance/"')
+        self.assertContains(home, "ثبت ورود و خروج")
+        self.assertEqual(self.client.get("/attendance/", **mobile).status_code, 200)
+        desktop = self.client.get("/", HTTP_USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130")
+        self.assertEqual(desktop.status_code, 302)
+        self.assertEqual(desktop["Location"], reverse("quality_command_center"))
+
     def test_role_is_selectable_for_staff_edit_form(self):
         from core.forms import EmployeeEditForm
         form = EmployeeEditForm(employee=self.naderi.profile)
