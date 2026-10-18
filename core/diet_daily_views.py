@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import render
 from django.utils import timezone
+from django.templatetags.static import static
 from .diet_week_plan import DAYS, build_orange_week
 from django.views.decorators.http import require_GET
 
@@ -173,11 +174,11 @@ def diet_daily_preview(request,item_id):
     slogan_photo=content.slogan_image.url if content.slogan_image else content.slogan_external_url
     cards = week[chosen] if orange_only else _prepare_cards(s for s in sections if s.day_number==chosen)
     if orange_only:
-        cards = [dict(card, photo=_orange_food_photo(card),
+        cards = [dict(card, summary=(card.get('body') or '').splitlines(), photo=_orange_food_photo(card),
                       fallback_food='carrots' if 'هویج' in (card.get('body') or '') else 'fruit')
                  for card in cards]
     if orange_only and not slogan_photo:
-        slogan_photo = ORANGE_SLOGAN_FALLBACK
+        slogan_photo = static('core/diet/orange-slogan-woman.webp')
     response=render(request,'core/diet_daily.html',{
         'content':content,'title':title,'subtitle':content.hero_subtitle or 'برنامه غذایی اختصاصی',
         'slogan':slogan,'slogan_photo':slogan_photo,'day':chosen,
