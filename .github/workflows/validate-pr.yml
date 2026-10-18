@@ -61,6 +61,8 @@ jobs:
         run: python manage.py test core.tests.test_treatment_content_samples --verbosity 2
       - name: Diet preview notes, quotas and headphone regression
         run: python manage.py test core.tests.test_diet_preview_extras --verbosity 2
+      - name: Customer self-service OTP, request, and loyalty regression tests
+        run: python manage.py test core.tests.test_customer_portal --verbosity 2
       - name: Weekly and Ramadan diet template regression tests
         run: python manage.py test core.tests.test_diet_two_templates core.tests.test_diet_daily --verbosity 2
       - name: Thirteen-day, text diet, new draft and CRM transfer regression
