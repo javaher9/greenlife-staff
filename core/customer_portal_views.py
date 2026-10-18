@@ -444,7 +444,9 @@ def staff_customer_club(request):
                         error='معرفی یافت نشد.'
                     else:
                         valid_visit=VisitAppointment.objects.filter(
-                            phone=ref.invited.phone,status__in=('arrived','completed')
+                            phone=ref.invited.phone,
+                            status__in=('arrived','completed'),
+                            appointment_date__gte=timezone.localdate(ref.created_at),
                         ).exists()
                         if not valid_visit:
                             error='مراجعه تأییدشده‌ای برای شماره دوست ثبت نشده است.'
