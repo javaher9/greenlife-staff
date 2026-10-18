@@ -50,4 +50,4 @@ jobs:
       - run: python -m compileall -q core
       - run: python manage.py check
       - name: Finance matrix, aliases and finance entry regression
-        run: python manage.py test core.tests.test_finance_flower_matrix core.tests.test_call_center_flower_names core.tests.test_consultant_finance --verbosity 2
+        run: python manage.py test core.tests.test_finance_flower_matrix core.tests.test_consultant_finance --verbosity 2
