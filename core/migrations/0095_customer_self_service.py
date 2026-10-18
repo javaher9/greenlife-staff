@@ -49,7 +49,7 @@ class Migration(migrations.Migration):
         ]),
         migrations.CreateModel(name='CustomerServiceRequest',fields=[
             ('id',models.BigAutoField(auto_created=True,primary_key=True,serialize=False,verbose_name='ID')),
-            ('kind',models.CharField(choices=[('visit','درخواست ویزیت'),('device','درخواست نوبت دستگاه')],max_length=12)),
+            ('kind',models.CharField(choices=[('visit','درخواست ویزیت'),('device','درخواست نوبت دستگاه'),('network','درخواست عضویت شبکه فروش')],max_length=12)),
             ('preferred_date',models.DateField(blank=True,null=True)),
             ('daypart',models.CharField(choices=[('any','فرقی ندارد'),('morning','صبح'),('afternoon','بعدازظهر')],default='any',max_length=12)),
             ('note',models.CharField(blank=True,max_length=300)),
