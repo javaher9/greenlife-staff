@@ -111,7 +111,7 @@ class OrangeOnlyWeekTests(TestCase):
         self.assertContains(response,'orange-slogan')
         self.assertContains(response,'slogan-woman')
         self.assertContains(response,'orange-slogan-woman.webp')
-        self.assertContains(response,'carrots.svg')
+        self.assertContains(response,'meal-snack-am.svg')
         self.assertContains(response,'orange-details')
         self.assertContains(response,'updateMealExpansion')
         self.assertContains(response,'day-chevron')
@@ -119,6 +119,32 @@ class OrangeOnlyWeekTests(TestCase):
         page=response.content.decode('utf-8')
         self.assertIn('orange-details',page)
         self.assertIn('نوبت دستگاه',page)
+
+    def test_orange_ui_is_single_title_compact_illustrated_and_links_are_grounded(self):
+        TreatmentRichSection.objects.create(
+            content=self.orange_content,title='برنامه غذایی',
+            body='ناشتا\\nیک لیوان آب\\nصبحانه\\nیک عدد پرتقال\\n'
+                 'میان وعده صبح\\nدو عدد هویج\\nناهار\\nشنبه: سبزیجات',
+        )
+        TreatmentRichSection.objects.create(
+            content=self.orange_content,title='عصرانه',body='یک لیوان چای',
+            meal_slot='snack_pm',day_number=1,
+        )
+        page=self.client.get(reverse('diet_daily_preview',args=[self.orange.pk])+'?day=1')
+        self.assertEqual(page.status_code,200)
+        html=page.content.decode('utf-8')
+        self.assertNotIn('<div class="diet-title">',html)
+        self.assertEqual(html.count('<h2>رژیم پرتقال</h2>'),1)
+        self.assertLess(html.index('class="diet-voice"'),html.index('class="diet-pick orange-day-picker"'))
+        self.assertLess(html.index('class="diet-pick orange-day-picker"'),html.index('class="diet-list"'))
+        for name in ('fasting','breakfast','snack-am','snack-pm','lunch'):
+            self.assertIn('meal-%s.svg' % name,html)
+        self.assertIn('ig-orange-150',html)
+        self.assertIn('aria-label="کسب امتیاز و معرفی دوستان"',html)
+        self.assertIn('class="diet-action insta"',html)
+        for name in ('referral_dashboard','device_booking_schedule','appointment_schedule'):
+            self.assertIn('href="%s"' % reverse(name),html)
+        self.assertIn('href="https://www.instagram.com/greenlifeclinics/"',html)
 
     def test_original_weekday_lunch_and_dinner_are_separated(self):
         TreatmentRichSection.objects.create(
