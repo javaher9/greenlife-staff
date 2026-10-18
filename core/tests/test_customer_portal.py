@@ -128,7 +128,8 @@ class CustomerPortalTests(TestCase):
         EmployeeProfile.objects.create(user=consultant,role='consultant',branch=self.branch)
         self.client.force_login(consultant)
         self.assertNotContains(self.client.get(reverse('staff_customer_requests')+'?status=all'),str(owner.phone))
-        with self.assertRaises(PermissionDenied):
+        from django.http import Http404
+        with self.assertRaises(Http404):
             # The staff action cannot access another branch even by guessed ID.
             from core.customer_portal_views import staff_customer_request_action
             from django.test import RequestFactory
