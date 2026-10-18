@@ -132,14 +132,13 @@ class CustomerPortalTests(TestCase):
         consultant_profile.save(update_fields=['role','branch'])
         self.client.force_login(consultant)
         self.assertNotContains(self.client.get(reverse('staff_customer_requests')+'?status=all'),str(owner.phone))
-        from django.http import Http404
-        with self.assertRaises(Http404):
-            # The staff action cannot access another branch even by guessed ID.
-            from core.customer_portal_views import staff_customer_request_action
-            from django.test import RequestFactory
-            req=RequestFactory().post('/',{'action':'claim'})
-            req.user=consultant
-            staff_customer_request_action(req,device_req.pk)
+        # Test through real middleware/session instead of a stale in-memory
+        # reverse OneToOne user.profile cache created by the user signal.
+        other_branch_response=self.client.post(
+            reverse('staff_customer_request_action',args=[device_req.pk]),
+            {'action':'claim'},
+        )
+        self.assertEqual(other_branch_response.status_code,404)
         friend=CustomerPortalMember.objects.create(
             phone='09121111111',referral_code='GLCFRIENDABC'
         )
