@@ -24,7 +24,7 @@ class CustomerPortalOTP(models.Model):
 
 
 class CustomerServiceRequest(models.Model):
-    KINDS=[('visit','درخواست ویزیت'),('device','درخواست نوبت دستگاه')]
+    KINDS=[('visit','درخواست ویزیت'),('device','درخواست نوبت دستگاه'),('network','درخواست عضویت شبکه فروش')]
     STATUSES=[
         ('pending','در انتظار بررسی'),('contacted','در حال پیگیری'),
         ('booked','نوبت تأیید شد'),('declined','بسته شد'),
