@@ -13,6 +13,7 @@ from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.utils import timezone
 
+from .call_center_identity import call_center_display_name
 from .device_booking_models import DeviceSessionBooking, PhysicalDevice
 from .live_status_views import _visit_state
 from .models import (
@@ -265,8 +266,15 @@ def build_quality_snapshot(user):
         overdue = ReferralLead.objects.filter(
             assigned_to=p, next_follow_up__lt=today
         ).exclude(status__in=("won", "lost")).count()
+        flower_name = call_center_display_name(p)
+        # QC should never substitute a legal/real name for an unknown alias.
+        real_name = p.user.get_full_name() or p.user.username
+        if flower_name == real_name:
+            flower_name = "گل تعیین‌نشده"
         call_center.append({
-            "name": p.user.get_full_name() or p.user.username,
+            "name": flower_name,
+            "initial": flower_name[0],
+            "avatar_url": p.avatar.url if p.avatar else "",
             "recorded": touches.count(),
             "booked": booked,
             "unanswered": touches.filter(contact_result="no_answer").count(),
@@ -301,8 +309,10 @@ def build_quality_snapshot(user):
         {
             "name": lead.full_name,
             "operator": (
-                lead.assigned_to.user.get_full_name()
-                or lead.assigned_to.user.username
+                call_center_display_name(lead.assigned_to)
+                if call_center_display_name(lead.assigned_to)
+                != (lead.assigned_to.user.get_full_name() or lead.assigned_to.user.username)
+                else "گل تعیین‌نشده"
             ),
             "due_date": lead.next_follow_up.strftime("%Y/%m/%d"),
             "days": (today - lead.next_follow_up).days,
