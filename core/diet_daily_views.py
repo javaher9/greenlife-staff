@@ -174,9 +174,20 @@ def diet_daily_preview(request,item_id):
     slogan_photo=content.slogan_image.url if content.slogan_image else content.slogan_external_url
     cards = week[chosen] if orange_only else _prepare_cards(s for s in sections if s.day_number==chosen)
     if orange_only:
-        cards = [dict(card, summary=(card.get('body') or '').splitlines(), photo=_orange_food_photo(card),
-                      fallback_food='carrots' if 'هویج' in (card.get('body') or '') else 'fruit')
-                 for card in cards]
+        # Display-only illustration choices: original clinician photographs stay in
+        # the database for editing and other templates. Never infer a food portion.
+        meal_art={
+            'fasting':'fasting','breakfast':'breakfast',
+            'snack_am':'snack-am','lunch':'lunch','snack_pm':'snack-pm',
+            'dinner':'dinner','other':'other',
+        }
+        cards=[
+            dict(card,summary=(card.get('body') or '').splitlines(),
+                 illustration_url=static(
+                    'core/diet/meal-%s.svg' % meal_art.get(card.get('slot'),'other')
+                 ))
+            for card in cards
+        ]
     if orange_only and not slogan_photo:
         slogan_photo = static('core/diet/orange-slogan-woman.webp')
     response=render(request,'core/diet_daily.html',{
