@@ -498,5 +498,43 @@ if [[ -f "$LAN_COMPOSE_FILE" ]]; then
   fi
 fi
 
+# Launch a dedicated, low-impact CRM intake monitor only after BOTH nginx
+# health checks and login checks have passed. Do not touch the web, call-center
+# lead-routing worker, SMS worker, or the public proxy here.
+echo "Starting independent read-only marketing commander..."
+MARKETING_WORKER="greenlife-marketing-monitor"
+if docker container inspect "$MARKETING_WORKER" >/dev/null 2>&1; then
+  if ! docker inspect -f '{{.State.Running}}' "$MARKETING_WORKER" | grep -qx true; then
+    docker start "$MARKETING_WORKER" >/dev/null
+  fi
+else
+  docker run -d --name "$MARKETING_WORKER" \
+    --restart unless-stopped --cpus=0.25 --memory=384m --pids-limit=64 \
+    --log-opt max-size=5m --log-opt max-file=2 \
+    --network "$NETWORK" --env-file "$ENV_FILE" --entrypoint python \
+    greenlife-staff-runtime-web:latest manage.py run_marketing_monitor \
+    --loop --interval 60 >/dev/null
+fi
+
+# A Docker "running" state alone is not proof of working DB connectivity.
+# Verify a newly committed heartbeat; never manufacture an active UI state.
+marketing_ready=0
+for i in {1..12}; do
+  if docker inspect -f '{{.State.Running}}' "$MARKETING_WORKER" 2>/dev/null | grep -qx true \
+    && docker exec "$PUBLIC_WEB" python manage.py shell -c \
+      "from django.utils import timezone; from core.marketing_worker_models import MarketingWorkerState; x=MarketingWorkerState.objects.filter(key='commander').values('heartbeat_at').first(); assert x and x['heartbeat_at'] and 0 <= (timezone.now()-x['heartbeat_at']).total_seconds() < 150" \
+       >/dev/null 2>&1; then
+    marketing_ready=1
+    echo "Marketing commander heartbeat verified; only commander agent is active."
+    break
+  fi
+  sleep 5
+done
+if [[ "$marketing_ready" != "1" ]]; then
+  echo "ERROR: marketing commander heartbeat not confirmed. Core clinic services are untouched." >&2
+  docker logs --tail=30 "$MARKETING_WORKER" 2>&1 | sed -E 's/09[0-9]{9}/09*********/g' >&2 || true
+  exit 1
+fi
+
 echo "Deploy successful."
 "${COMPOSE[@]}" ps

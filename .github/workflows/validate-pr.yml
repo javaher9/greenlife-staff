@@ -43,6 +43,8 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Compile changed application
         run: python -m compileall -q core greenlife
+      - name: Production deployment shell syntax gate
+        run: bash -n scripts/deploy_runner.sh
       - name: Django system check
         run: python manage.py check
       - name: Quality command center permissions and live source regression
