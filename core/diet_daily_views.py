@@ -161,7 +161,11 @@ def diet_daily_preview(request,item_id):
     next_day=available_days[i+1] if i<len(available_days)-1 else None
     day_audio=audio_by_day.get(chosen)
     audio_url=day_audio.url if day_audio and day_audio.url else content.audio_url
-    title=content.display_title or ('رژیم پرتقال' if content.master_item.name=='Por-150' else content.master_item.name)
+    # The legacy catalog identifier should never leak as the patient-facing
+    # headline. Respect any custom title chosen by the editor.
+    saved_title=(content.display_title or '').strip()
+    title=('رژیم پرتقال' if orange_only and saved_title in ('','Por-150')
+           else saved_title or content.master_item.name)
     slogan=content.slogan or ('لاغری یعنی زندگی بهتر' if content.master_item.name=='Por-150' else '')
     slogan_photo=content.slogan_image.url if content.slogan_image else content.slogan_external_url
     cards = week[chosen] if orange_only else _prepare_cards(s for s in sections if s.day_number==chosen)
