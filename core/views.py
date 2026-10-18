@@ -102,7 +102,7 @@ def country_switch(request):
 
 MANAGEMENT_ROLES=('admin','internal_manager','manager')
 FINANCE_ROLES=('admin','manager')
-PERSONNEL_ROLES=('employee','call_center','consultant','doctor','receptionist')
+PERSONNEL_ROLES=('employee','call_center','consultant','doctor','receptionist','quality_control')
 
 
 def _is_mobile_request(request):
@@ -625,7 +625,7 @@ def dashboard(request):
         return redirect('executive_workspace')
     if role=='referral_supervisor':
         return redirect('referral_supervisor_dashboard')
-    if role=='quality_control':
+    if role=='quality_control' and not _is_mobile_request(request):
         return redirect('quality_command_center')
     # Doctors use the clinical workspace on desktop, but keep the normal
     # personnel home on phones so attendance, tasks and daily staff tools
