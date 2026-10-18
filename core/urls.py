@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import management_alert_views
 from . import action_center_views
 from . import camp_views
 from . import referral_views
@@ -29,6 +30,8 @@ from . import live_status_views
 from . import quality_command_views
 from .mcp import mcp_endpoint
 urlpatterns=[
+path('alerts/',management_alert_views.alert_center,name='management_alert_center'),
+path('api/alerts/management/',management_alert_views.alert_center_api,name='management_alert_api'),
 path('customer/login/',customer_portal_views.customer_login,name='customer_login'),
 path('customer/logout/',customer_portal_views.customer_logout,name='customer_logout'),
 path('customer/club/',customer_portal_views.customer_club,name='customer_club'),
