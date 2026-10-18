@@ -8,7 +8,7 @@ from functools import wraps
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.conf import settings
-from .models import ReferralLead
+from .models import ReferralLead, MarketingWorkerState
 
 
 def marketing_manager_required(view):
@@ -61,11 +61,19 @@ def _snapshot():
         for item in recent
     ]
 
+    commander = MarketingWorkerState.objects.filter(key="commander").first()
+    commander_live = bool(
+        commander and commander.heartbeat_at
+        and commander.heartbeat_at >= now - timedelta(seconds=180)
+    )
     agents = [{
         "key": key, "name": name, "fa": fa, "mission": mission,
-        "status": "waiting", "status_label": "WAITING",
-        "activity": "در انتظار اتصال Worker واقعی",
-        "heartbeat": None,
+        "status": ("running" if commander_live and key == "commander" else "waiting"),
+        "status_label": ("RUNNING" if commander_live and key == "commander" else "WAITING"),
+        "activity": (commander.activity if commander_live and key == "commander"
+                     else "در انتظار اتصال Worker واقعی"),
+        "heartbeat": (timezone.localtime(commander.heartbeat_at).isoformat()
+                      if commander_live and key == "commander" else None),
     } for key, name, fa, mission in AGENTS]
     return {
         "server_time": now.isoformat(),
@@ -74,7 +82,7 @@ def _snapshot():
         "scope": "IR",
         "agents": agents,
         "kpi": {
-            "agents": len(agents), "active": 0,
+            "agents": len(agents), "active": int(commander_live),
             "new_today": total_today,
             # These are not measurable reliably from current fields.
             # null means unknown; never substitute zeros.
@@ -83,7 +91,9 @@ def _snapshot():
             "revenue_today": None,
         },
         "events": events,
-        "note": "پایش CRM فعال است: تعداد لیدهای ثبت‌شده امروز در ایران (همه منابع). ایجنت‌های جذب خودکار هنوز به Worker متصل نیستند.",
+        "note": ("پایش CRM فعال است؛ Worker فرمانده لید صرفاً ثبت‌های جدید ایران را بررسی می‌کند. سایر ایجنت‌ها هنوز به سرویس جذب متصل نیستند."
+                 if commander_live else
+                 "شمارش CRM فعال است. هنوز Worker بازاریابی آنلاین نیست؛ داده‌های ثبت‌شده اپ از همه منابع ایران‌اند."),
     }
 
 @marketing_manager_required
