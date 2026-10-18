@@ -6,7 +6,8 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from core.models import Country, EmployeeProfile, ReferralLead, ReferralProfile
+from core.models import Country, EmployeeProfile, ReferralLead, ReferralProfile, MarketingWorkerState
+from core.management.commands.run_marketing_monitor import monitor_once
 
 
 class LeadCommandLiveTests(TestCase):
@@ -65,3 +66,30 @@ class LeadCommandLiveTests(TestCase):
         self.client.force_login(employee)
         self.assertEqual(self.client.get(reverse("lead_command_center")).status_code, 403)
         self.assertEqual(self.client.get(reverse("lead_command_center_live")).status_code, 403)
+
+    def test_running_requires_real_recent_monitor_heartbeat(self):
+        self.client.force_login(self.admin)
+        snapshot = self.client.get(reverse("lead_command_center_live")).json()
+        self.assertEqual(snapshot["kpi"]["active"], 0)
+        self._lead("09121111238", self.ir)
+        self.assertEqual(monitor_once(), 1)
+        self.assertEqual(ReferralLead.objects.count(), 1)
+        snapshot = self.client.get(reverse("lead_command_center_live")).json()
+        self.assertEqual(snapshot["kpi"]["active"], 1)
+        running = [a for a in snapshot["agents"] if a["status"] == "running"]
+        self.assertEqual([a["key"] for a in running], ["commander"])
+        self.assertEqual(snapshot["kpi"]["new_today"], 1)
+        self.assertTrue(running[0]["heartbeat"])
+
+    def test_stale_monitor_does_not_pretend_active(self):
+        MarketingWorkerState.objects.create(
+            key="commander",
+            heartbeat_at=timezone.now()-timedelta(minutes=5),
+            last_run_leads=5,
+            activity="old heartbeat",
+        )
+        self.client.force_login(self.admin)
+        snapshot = self.client.get(reverse("lead_command_center_live")).json()
+        self.assertEqual(snapshot["kpi"]["active"], 0)
+        self.assertTrue(all(a["status"] == "waiting" for a in snapshot["agents"]))
+        self.assertEqual(snapshot["kpi"]["new_today"], 0)
