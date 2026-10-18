@@ -146,7 +146,9 @@ def build_quality_snapshot(user):
     )
     staff = list(
         EmployeeProfile.objects.filter(
-            branch_id__in=branch_ids, is_active=True, user__is_active=True
+            branch_id__in=branch_ids, is_active=True, user__is_active=True,
+            role__in=("admin", "internal_manager", "manager", "quality_control",
+                      "employee", "call_center", "consultant", "doctor", "receptionist"),
         ).select_related("user")
     )
     # Only approved leave spanning today is a confirmed leave. Missing
