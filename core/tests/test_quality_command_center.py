@@ -78,6 +78,30 @@ class QualityCommandCenterTests(TestCase):
         self.assertTrue(data.json()["ok"])
         self.assertIn("بیمار پونک", data.json()["html"])
 
+    def test_only_active_assigned_clinic_staff_appear_in_branch_personnel(self):
+        # Referral-network accounts can carry a branch FK for legacy reasons,
+        # but they are not employees at that clinic.
+        self.person("network-punak-ghost", "referrer", self.punak,
+                    job_title="معرف مشتری")
+        self.person("network-niavaran-ghost", "referrer", self.niavaran,
+                    job_title="معرف مشتری")
+        self.person("network-afsariyeh-ghost", "referral_supervisor",
+                    self.punak, job_title="معرف مشتری")
+        unassigned = self.person("qc-no-branch", "employee", self.punak)
+        unassigned.profile.branch = None
+        unassigned.profile.save(update_fields=["branch"])
+        self.client.force_login(self.naderi)
+        response = self.client.get(reverse("quality_command_center"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "network-punak-ghost")
+        self.assertNotContains(response, "network-niavaran-ghost")
+        self.assertNotContains(response, "network-afsariyeh-ghost")
+        self.assertNotContains(response, "qc-no-branch")
+        data = self.client.get(reverse("quality_command_data"))
+        self.assertEqual(data.status_code, 200)
+        self.assertNotIn("network-punak-ghost", data.json()["html"])
+        self.assertIn("quality-employee", data.json()["html"])
+
     def test_manager_scope_does_not_leak_other_branch_patient(self):
         self.client.force_login(self.manager)
         response = self.client.get(reverse("quality_command_center"))
