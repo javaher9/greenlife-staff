@@ -1194,6 +1194,9 @@ def health_check(request):
 
 @login_required
 def attendance(request):
+    # Shared scan-room stations are not employees and cannot record attendance.
+    if getattr(getattr(request.user, 'profile', None), 'role', None) == 'scan_station':
+        raise PermissionDenied('حساب ایستگاه اسکن مشمول حضور و غیاب نیست.')
     today=timezone.localdate()
     profile=getattr(request.user,'profile',None)
     branch=getattr(profile,'branch',None)
