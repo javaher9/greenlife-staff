@@ -86,7 +86,10 @@ def treatment_content_browse(request):
     rows=TreatmentRichContent.objects.filter(
         is_active=True,master_item__is_active=True,
     ).select_related('master_item').order_by('master_item__category','master_item__name')
-    return render(request,'core/treatment_content_browse.html',{'rows':rows})
+    from .diet_excel_sample_previews import preview_cards
+    return render(request,'core/treatment_content_browse.html',{
+        'rows':rows,'excel_preview_cards':preview_cards() if _admin(request) else [],
+    })
 
 
 @login_required
@@ -180,8 +183,10 @@ def treatment_content_library(request):
     )
     rows=[{'title':item.name,'category':item.category,'item':item} for item in catalog]
     count_diets=sum(row['category']=='diet' for row in rows)
+    from .diet_excel_sample_previews import preview_cards
     return render(request,'core/treatment_content_library.html',{
         'rows':rows,'count_diets':count_diets,
+        'excel_preview_cards':preview_cards(),
     })
 
 

@@ -47,6 +47,8 @@ jobs:
         run: bash -n scripts/deploy_runner.sh
       - name: Django system check
         run: python manage.py check
+      - name: Verify two read-only Excel diet previews
+        run: python manage.py test core.tests.test_excel_diet_sample_previews --verbosity 2
       - name: Validate blank thirteen-day meal suppression
         run: python manage.py test core.tests.test_diet_four_formats --verbosity 2
       - name: Test corrected Keto-Fast first day and day plaques
