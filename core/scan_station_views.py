@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
 from django.utils import timezone
-from .models import PatientProfile, BodyAnalysisRecord, EmployeeProfile
+from .models import PatientProfile, BodyAnalysisRecord, EmployeeProfile, VisitAppointment
 
 FIELDS = [('weight_kg','وزن (kg)'),('inbody_score','امتیاز'),('skeletal_muscle_kg','عضلات (kg)'),('fat_kg','چربی (kg)'),('whr','نسبت دور کمر به باسن'),('visceral_fat','چربی احشایی')]
 
@@ -17,19 +17,32 @@ def scan_station(request):
     branch = profile.branch
     if not branch and profile.role not in ('admin','internal_manager'):
         raise PermissionDenied('شعبه حساب اسکن مشخص نشده است.')
-    patients = PatientProfile.objects.all()
-    if branch:
-        patients = patients.filter(home_branch=branch)
-    patients = patients.order_by('-updated_at')[:100]
+    # Only patients checked in today appear here; no full patient-directory selector.
+    queue = list(VisitAppointment.objects.filter(
+        branch=branch, status='arrived', appointment_date=timezone.localdate()
+    ).order_by('appointment_time','id')[:80]) if branch else []
+    for appointment in queue:
+        appointment.scan_completed = BodyAnalysisRecord.objects.filter(
+            patient__phone=appointment.phone,
+            measurements__scan_appointment_id=appointment.pk,
+        ).exists()
     staff = EmployeeProfile.objects.filter(user__is_active=True,is_active=True).exclude(role__in=['scan_station','referrer'])
     if branch:
         staff = staff.filter(branch=branch)
     staff = staff.select_related('user').order_by('user__first_name','user__last_name')
     default_staff = staff.filter(role='receptionist').first()
     if request.method == 'POST':
-        patient = get_object_or_404(PatientProfile,pk=request.POST.get('patient_id'))
-        if branch and patient.home_branch_id != branch.id:
-            raise PermissionDenied
+        appointment = get_object_or_404(
+            VisitAppointment, pk=request.POST.get('appointment_id'),
+            branch=branch, status='arrived', appointment_date=timezone.localdate()
+        )
+        patient = PatientProfile.objects.filter(phone=appointment.phone).first()
+        if patient is None:
+            messages.error(request,'پرونده ۳۶۰ این مراجع هنوز ایجاد نشده است.')
+            return redirect('scan_station')
+        if BodyAnalysisRecord.objects.filter(patient=patient, measurements__scan_appointment_id=appointment.pk).exists():
+            messages.error(request,'اسکن این نوبت قبلاً ثبت شده است.')
+            return redirect('scan_station')
         operator = get_object_or_404(staff,pk=request.POST.get('operator_id'))
         values = {}
         try:
@@ -53,8 +66,8 @@ def scan_station(request):
                 visceral_fat=values['visceral_fat'],
                 measurements={'fat_kg':str(values['fat_kg']),'whr':str(values['whr']),
                               'scan_operator_id':operator.pk,'scan_operator_name':operator.user.get_full_name() or operator.user.username,
-                              'scan_branch_id':branch.pk if branch else None},
+                              'scan_branch_id':branch.pk if branch else None,'scan_appointment_id':appointment.pk},
                 recorded_by=request.user)
             messages.success(request,'اسکن و آنالیز ثبت شد.')
             return redirect('scan_station')
-    return render(request,'core/scan_station.html',{'patients':patients,'staff':staff,'default_staff':default_staff,'branch':branch,'fields':FIELDS})
+    return render(request,'core/scan_station.html',{'queue':queue,'staff':staff,'default_staff':default_staff,'branch':branch,'fields':FIELDS})
