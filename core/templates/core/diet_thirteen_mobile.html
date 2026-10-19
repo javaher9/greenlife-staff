@@ -116,8 +116,7 @@ a{color:inherit;text-decoration:none}button,select{font:inherit}
  <article class="meal">
   <div class="meal-visual">
    <span class="meal-name">{{ card.label }}</span>
-   {% if card.photo %}<img class="real-food" src="{{ card.photo }}" alt="تصویر اختصاصی {{ card.label }}" loading="lazy">
-   {% else %}<img src="{{ card.illustration_url }}" alt="نماد {{ card.label }}" loading="lazy">{% endif %}
+   <img class="meal-time-icon" src="{{ card.illustration_url }}" alt="نماد زمانی {{ card.label }}" loading="lazy">
   </div>
   <div class="meal-copy">{% if card.title != card.label %}<h3>{{ card.title }}</h3>{% endif %}
    <p>{{ card.body }}</p>

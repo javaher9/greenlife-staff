@@ -103,6 +103,9 @@ body{background:radial-gradient(ellipse at 12% 17%,#dcebdd 0,transparent 36%),ra
 }
 @media(max-width:390px){.hero{min-height:240px}.hero-copy{max-width:88%}.meal-photo{flex-basis:37%;max-width:37%}.meal-data strong{font-size:15px}.meal-data p{font-size:11px}}
 @media print{.hero{print-color-adjust:exact;-webkit-print-color-adjust:exact}.meal-card{box-shadow:none}}
+/* The same slot-based non-food illustrations used by orange and 13-day diets. */
+.meal-photo{background:#f0f8f1}
+.meal-photo img.meal-time-icon{object-fit:contain;background:transparent;border:0;box-shadow:none;padding:5px;min-height:100px}
 </style></head>
 <body class="{{ kind }}">
 <main class="container">
@@ -126,8 +129,8 @@ body{background:radial-gradient(ellipse at 12% 17%,#dcebdd 0,transparent 36%),ra
   <h2>{{ day.label }} <small style="color:#8da69a;font-size:11px;font-weight:700">روز {{ day.number }}</small></h2>
   <div class="meal-grid">
   {% for card in day.cards %}
-    <article class="meal-card {% if not card.photo %}no-photo{% endif %}">
-      {% if card.photo %}<div class="meal-photo"><img src="{{ card.photo }}" loading="lazy" alt="تصویر {{ card.label }}"></div>{% endif %}
+    <article class="meal-card">
+      <div class="meal-photo"><img class="meal-time-icon" src="{{ card.illustration_url }}" loading="lazy" alt="نماد زمانی {{ card.label }}"></div>
       <div class="meal-data"><strong>{{ card.label }}</strong>
         {% if card.calories is not None %}<small> · {{ card.calories }} کالری تأییدشده</small>{% endif %}
         <p>{{ card.body }}</p>

@@ -11,17 +11,15 @@ from django.http import Http404
 from django.shortcuts import render
 from django.utils import timezone
 from django.templatetags.static import static
-from .diet_week_plan import DAYS, build_orange_week
+from .diet_week_plan import DAYS, LABELS, ICONS, build_orange_week
+from .diet_meal_icons import meal_illustration_url
 from django.views.decorators.http import require_GET
 
 from .treatment_content_layout import build_section_preview
 from .treatment_content_views import _content_for_preview, _admin
 
-SLOT_LABELS={
-    'breakfast':'صبحانه','snack_am':'میان‌وعده صبح','lunch':'ناهار',
-    'snack_pm':'عصرانه','dinner':'شام','other':'توضیحات',
-}
-SLOT_SYMBOLS={'breakfast':'☀','snack_am':'☘','lunch':'☀','snack_pm':'☕','dinner':'☾','other':'✦'}
+SLOT_LABELS={**LABELS,'pre_suhoor':'قبل از سحری','suhoor':'سحری','iftar':'افطار','after_iftar':'بعد از افطار'}
+SLOT_SYMBOLS={**ICONS,'pre_suhoor':'◌','suhoor':'☾','iftar':'◌','after_iftar':'☾'}
 
 
 def _detected_slot(title, body):
@@ -173,21 +171,13 @@ def diet_daily_preview(request,item_id):
     slogan=content.slogan or ('لاغری یعنی زندگی بهتر' if content.master_item.name=='Por-150' else '')
     slogan_photo=content.slogan_image.url if content.slogan_image else content.slogan_external_url
     cards = week[chosen] if orange_only else _prepare_cards(s for s in sections if s.day_number==chosen)
-    if orange_only:
-        # Display-only illustration choices: original clinician photographs stay in
-        # the database for editing and other templates. Never infer a food portion.
-        meal_art={
-            'fasting':'fasting','breakfast':'breakfast',
-            'snack_am':'snack-am','lunch':'lunch','snack_pm':'snack-pm',
-            'dinner':'dinner','other':'other',
-        }
-        cards=[
-            dict(card,summary=(card.get('body') or '').splitlines(),
-                 illustration_url=static(
-                    'core/diet/meal-%s.svg' % meal_art.get(card.get('slot'),'other')
-                 ))
-            for card in cards
-        ]
+    # Clinical pictures stay in the media bank; all actual meal cards share
+    # the approved neutral time-of-day icon system.
+    cards=[
+        dict(card,illustration_url=meal_illustration_url(card.get('slot')),
+             summary=(card.get('body') or '').splitlines() if orange_only else card.get('summary',[]))
+        for card in cards
+    ]
     if orange_only and not slogan_photo:
         slogan_photo = static('core/diet/orange-slogan-woman.webp')
     response=render(request,'core/diet_daily.html',{
