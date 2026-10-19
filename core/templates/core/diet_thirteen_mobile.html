@@ -1,0 +1,177 @@
+{% load static %}
+<!doctype html><html lang="fa" dir="rtl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>{{ title }} | برنامه ۱۳روزه | گرین‌لایف</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap');
+:root{color-scheme:light;--bg:#f1faf2;--mint:#d9f0df;--green:#256748;--ink:#163a35;--muted:#648073;--line:#dfede2}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Vazirmatn,Tahoma,Arial,sans-serif}
+a{color:inherit;text-decoration:none}button,select{font:inherit}
+.app{width:min(100%,650px);min-height:100vh;margin:auto;padding:14px 14px 105px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:8px}
+.brand{font-weight:900;font-size:16px;color:var(--green)}.brand em{font-style:normal;display:inline-grid;place-items:center;width:33px;height:33px;border-radius:11px;color:#fff;background:#266b48;margin-left:5px}
+.back{font-size:12px;color:var(--green);font-weight:800}
+.hero{position:relative;isolation:isolate;overflow:hidden;border-radius:20px;min-height:158px;background:#d8eee1;margin-bottom:13px;display:flex;align-items:center}
+.hero-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;z-index:-2}
+.hero-cover-shade{position:absolute;inset:0 0 0 auto;width:37%;background:rgba(248,252,247,.88);z-index:-1}
+.hero-copy{width:37%;text-align:center;padding:15px 9px}
+.hero-copy h1{font-size:clamp(19px,4.5vw,27px);line-height:1.55;margin:0 0 6px}
+.hero-copy p{font-size:11px;line-height:1.8;margin:0;color:#3e6859;font-weight:650}
+.slogan{position:relative;display:flex;align-items:center;min-height:114px;border-radius:19px;background:var(--mint);overflow:hidden;margin-bottom:13px}
+.slogan-picture{position:absolute;inset:0 0 0 auto;width:60%;height:100%;object-fit:cover}
+.slogan .caption{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;text-align:center;width:41%;min-height:114px;padding:13px;background:var(--mint);font-size:clamp(15px,3.6vw,20px);font-weight:900;line-height:1.75}
+.warning,.unassigned{border-radius:16px;background:#fff8e8;border:1px solid #ecd8a4;padding:15px 17px;margin:13px 0;line-height:2;font-size:12px;white-space:pre-wrap}
+.audio{display:flex;gap:11px;align-items:center;border-radius:19px;background:var(--mint);padding:13px 15px;margin-bottom:13px}
+.audio .audio-label{min-width:max-content}.audio strong{display:block;font-size:15px;font-weight:900}.audio small{font-size:10px;color:#4e765d}
+.audio-player{flex:1;min-width:0}.audio audio{width:100%;height:36px;accent-color:var(--green)}
+.audio-note{font-size:12px;color:#557869;line-height:1.8}
+.day-nav{display:flex;align-items:center;gap:11px;justify-content:space-between;margin:0 auto 14px;min-height:50px;padding:7px 13px;background:#fff;border:1px solid #e0eee4;border-radius:50px;max-width:360px;box-shadow:0 3px 12px #17452c0b}
+.day-nav button{display:grid;place-items:center;width:31px;height:31px;border:0;background:#eaf6ed;color:var(--green);border-radius:50%;cursor:pointer;font-size:20px;font-weight:900}
+.day-nav button:disabled{opacity:.32;cursor:default}
+.day-nav select{flex:1;min-width:0;border:0;background:#fff;color:#1d6142;font-weight:900;text-align:center;text-align-last:center;outline:none;font-size:15px;cursor:pointer}
+.days{margin:0}.day-sheet{display:none}.day-sheet.active{display:block}
+.day-label{font-size:17px;font-weight:900;color:#225b42;display:flex;justify-content:space-between;align-items:center;margin:12px 3px 15px}
+.day-label small{font-size:11px;color:#748a7e;font-weight:600}
+.meals{display:grid;grid-template-columns:1fr;gap:11px}
+.meal{border:1px solid #dfece2;border-radius:19px;background:#fff;overflow:hidden;box-shadow:0 3px 14px #2353330a;display:grid;grid-template-columns:minmax(87px,min(31%,152px)) minmax(0,1fr);min-height:116px}
+.meal-visual{position:relative;background:#f2f8f1;min-height:116px;overflow:hidden}
+.meal-visual img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:20px 7px 6px}
+.meal-visual img.real-food{object-fit:cover;padding:0}
+.meal-name{position:absolute;right:6px;top:7px;background:#175a42;color:#fff;max-width:calc(100% - 12px);padding:5px 8px;line-height:1.4;border-radius:15px;font-size:10px;font-weight:900;z-index:1}
+.meal-copy{display:flex;flex-direction:column;justify-content:center;padding:12px 14px;min-width:0}
+.meal-copy h3{font-size:14px;font-weight:900;margin:0 0 5px;color:#246746}
+.meal-copy p{font-size:13px;color:#354e46;line-height:2;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.meal-copy small{font-size:11px;color:#286e52;font-weight:800;margin-top:6px}
+.empty{padding:18px;border-radius:16px;background:#fff;border:1px solid var(--line);font-size:13px;color:#6c8277}
+.visit{background:#e2f1e6;border:1px solid #cde4d4;border-radius:20px;padding:21px;margin:20px 0 15px;line-height:1.9}
+.visit h2{font-size:18px;color:#1e6747;margin:0 0 6px}.visit p{font-size:13px;margin:0;color:#496f59}
+.visit a{display:inline-block;background:#247751;color:#fff;border-radius:12px;padding:10px 18px;font-size:12px;font-weight:850;margin-top:12px}
+.extras{display:grid;gap:11px;margin-top:14px}
+.extra{background:#fff;border:1px solid #e0ece3;border-radius:17px;padding:17px}
+.extra h2{font-size:15px;color:#226145;margin:0 0 9px}.extra p{font-size:12px;line-height:2.1;white-space:pre-wrap;margin:0}
+.unassigned h2{font-size:14px;margin:0 0 9px}.unassigned h3{font-size:13px;margin:10px 0 3px}.unassigned p{margin:0;white-space:pre-wrap}
+.actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:18px}
+.action{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px;background:#fff;border:1px solid #e4efe6;border-radius:14px;padding:11px 3px;font-size:10px;font-weight:800;text-align:center;min-height:80px}
+.action-icon{display:grid;place-items:center;background:#268567;color:#fff;border-radius:50%;height:36px;width:36px}
+.action-icon svg{width:23px;height:23px}.action.points .action-icon{background:#7757c7}.action.visit-action .action-icon{background:#3286c9}
+.action.insta .action-icon{background:transparent}.action.insta .action-icon svg{width:34px;height:34px}
+.admin{display:block;text-align:center;font-size:11px;color:#267050;margin:14px 0}
+.footer{font-size:10px;color:#698071;text-align:center;margin-top:15px}
+@media(min-width:651px){.app{border-inline:1px solid #e5eee6}}
+@media(max-width:390px){.app{padding-inline:9px}.brand{font-size:12px}.back{font-size:11px}.hero-copy,.hero-cover-shade{width:40%}.hero-copy h1{font-size:18px}.meal-copy{padding:10px}.meal-copy p{font-size:12px}.actions{gap:4px}.action{font-size:9px;padding-inline:2px}}
+@media print{body{background:#fff}.app{max-width:100%;padding:0}.top,.actions,.admin,.day-nav,.footer{display:none}.day-sheet{display:block!important;break-before:page}.meal{break-inside:avoid;box-shadow:none}.extra{break-inside:avoid}}
+</style></head>
+<body>
+<main class="app">
+<header class="top"><div class="brand"><em>❧</em>گرین‌لایف</div><a class="back" href="{% url 'treatment_content_browse' %}">بازگشت به برنامه‌ها</a></header>
+<section class="hero" aria-label="{{ title }}">
+ {% if content.cover_url %}<img class="hero-image" src="{{ content.cover_url }}" alt="تصویر اختصاصی {{ title }}">{% endif %}
+ <div class="hero-cover-shade"></div><div class="hero-copy"><h1>{{ title }}</h1><p>{{ content.hero_subtitle|default:'برنامه غذایی ۱۳روزه' }}</p></div>
+</section>
+{% if content.slogan %}
+<section class="slogan" aria-label="پیام انگیزشی برنامه">
+ {% if slogan_photo %}<img class="slogan-picture" src="{{ slogan_photo }}" alt="تصویر اختصاصی پیام انگیزشی">{% endif %}
+ <div class="caption">{{ content.slogan }}</div>
+</section>
+{% endif %}
+{% if content.intro_warning %}<div class="warning" role="note">{{ content.intro_warning }}</div>{% endif %}
+<section class="audio" aria-label="صدای جادویی">
+ <div class="audio-label"><strong>صدای جادویی</strong><small>🎧 با هدفون گوش دهید</small></div>
+ <div class="audio-player">
+  <audio id="daily-voice" controls preload="metadata" {% if days.0.audio_url %}src="{{ days.0.audio_url }}"{% else %}hidden{% endif %}></audio>
+  <span id="no-voice" class="audio-note" {% if days.0.audio_url %}hidden{% endif %}>فایل صوتی هنوز ثبت نشده است.</span>
+ </div>
+</section>
+<nav class="day-nav" aria-label="انتخاب روز برنامه">
+ <button id="following-day" type="button" aria-label="روز بعد" title="روز بعد">❯</button>
+ <select id="diet-day-picker" aria-label="انتخاب روز از ۱۳ روز">{% for day in days %}<option value="{{ day.number }}">{{ day.label }}</option>{% endfor %}</select>
+ <button id="previous-day" type="button" aria-label="روز قبل" title="روز قبل">❮</button>
+</nav>
+<div class="days" id="thirteen-days" aria-label="برنامه ۱۳ روز">
+{% for day in days %}
+<section class="day-sheet {% if forloop.first %}active{% endif %}" id="day-{{ day.number }}" data-day="{{ day.number }}" data-audio-url="{{ day.audio_url }}">
+ <h2 class="day-label">{{ day.label }} <small>روز {{ day.number }} از ۱۳</small></h2>
+ <div class="meals">
+ {% for card in day.cards %}
+ <article class="meal">
+  <div class="meal-visual">
+   <span class="meal-name">{{ card.label }}</span>
+   {% if card.photo %}<img class="real-food" src="{{ card.photo }}" alt="تصویر اختصاصی {{ card.label }}" loading="lazy">
+   {% else %}<img src="{{ card.illustration_url }}" alt="نماد {{ card.label }}" loading="lazy">{% endif %}
+  </div>
+  <div class="meal-copy">{% if card.title != card.label %}<h3>{{ card.title }}</h3>{% endif %}
+   <p>{{ card.body }}</p>
+   {% if card.calories is not None %}<small>{{ card.calories }} کالری تأییدشده</small>{% endif %}
+  </div>
+ </article>
+ {% empty %}<div class="empty">برای این روز هنوز وعده‌ای ثبت نشده است. متن یا وعده‌ای از روزهای دیگر حدس زده نمی‌شود.</div>{% endfor %}
+ </div>
+</section>
+{% endfor %}
+</div>
+<section class="visit"><h2>روز ۱۴ · پیگیری پزشک</h2>
+ <p>روز ۱۴، برای بررسی نتیجه و تنظیم مرحله بعدی، مراجعه به مطب با هماهنگی پرسنل انجام می‌شود. ابتدا درخواست ویزیت ثبت کنید؛ درخواست، نوبت قطعی نیست.</p>
+ <a href="{% url 'customer_request' 'visit' %}">درخواست ویزیت</a>
+</section>
+{% if unmapped %}
+<section class="unassigned"><h2>متن اصلی که روز آن مشخص نشده است (نیازمند بررسی پزشک)</h2>
+ این متن از CRM حفظ شده و بدون تأیید پزشک به هیچ روزی نسبت داده نمی‌شود.
+ {% for section in unmapped %}<h3>{{ section.title }}</h3><p>{{ section.body }}</p>{% endfor %}
+</section>
+{% endif %}
+{% if extras %}<div class="extras">{% for section in extras %}
+<section class="extra"><h2>{{ section.title }}</h2><p>{{ section.body }}</p></section>
+{% endfor %}</div>{% endif %}
+<nav class="actions" aria-label="خدمات گرین‌لایف">
+<a class="action points" href="{% url 'customer_club' %}"><span class="action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="10" width="18" height="11" rx="2"/><path d="M2 7h20v4H2zM12 7v14M12 7c-3.5 0-6-1.2-6-3a2 2 0 0 1 2-2c2.2 0 4 3.1 4 5Zm0 0c3.5 0 6-1.2 6-3a2 2 0 0 0-2-2c-2.2 0-4 3.1-4 5Z"/></svg></span>کسب امتیاز</a>
+<a class="action device" href="{% url 'customer_request' 'device' %}"><span class="action-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 4h16v11H8zM12 15v6l-4 5M20 15v6l4 5M8 26h16M14 8h4M16 21v5"/></svg></span>درخواست دستگاه</a>
+<a class="action visit-action" href="{% url 'customer_request' 'visit' %}"><span class="action-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5v8a7 7 0 0 0 14 0V5M6 5h4M20 5h4M15 20v2a6 6 0 0 0 12 0v-2"/><circle cx="27" cy="18" r="3"/></svg></span>درخواست ویزیت</a>
+<a class="action insta" href="https://www.instagram.com/greenlifeclinics/" target="_blank" rel="noopener noreferrer"><span class="action-icon" aria-hidden="true"><svg viewBox="0 0 36 36"><defs><linearGradient id="keto-ig" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#feda75"/><stop offset=".33" stop-color="#fa7e1e"/><stop offset=".62" stop-color="#d62976"/><stop offset="1" stop-color="#4f5bd5"/></linearGradient></defs><rect x="1" y="1" width="34" height="34" rx="9" fill="url(#keto-ig)"/><rect x="8" y="8" width="20" height="20" rx="6" stroke="#fff" stroke-width="2.5" fill="none"/><circle cx="18" cy="18" r="5" stroke="#fff" stroke-width="2.5" fill="none"/><circle cx="25" cy="11" r="1.8" fill="#fff"/></svg></span>اینستاگرام</a>
+</nav>
+{% if can_manage %}<a class="admin" href="{% url 'treatment_content_manage' content.master_item_id %}">ویرایش متن، تصویر و صدای این برنامه در تنظیمات</a>{% endif %}
+<footer class="footer">گرین‌لایف · پیش‌نمایش پزشک و مدیر · متن اصلی بدون تغییر محفوظ است</footer>
+</main>
+<script>
+(function(){
+ const area=document.getElementById('thirteen-days');
+ const pages=Array.from(area.querySelectorAll('.day-sheet'));
+ const picker=document.getElementById('diet-day-picker');
+ const next=document.getElementById('following-day'),prev=document.getElementById('previous-day');
+ const voice=document.getElementById('daily-voice'),noVoice=document.getElementById('no-voice');
+ if(!area||!pages.length||!picker)return;
+ let active=1;
+ function show(n){
+  if(!Number.isInteger(n)||n<1||n>pages.length)return;
+  active=n;
+  for(const page of pages){page.classList.toggle('active',Number(page.dataset.day)===active);}
+  picker.value=String(active);next.disabled=active===pages.length;prev.disabled=active===1;
+  const url=pages[active-1].dataset.audioUrl || '';
+  if(voice){
+   if(voice.getAttribute('src')!==url){
+    voice.pause();voice.removeAttribute('src');
+    if(url)voice.setAttribute('src',url);
+    voice.load();
+   }
+   voice.hidden=!url;
+   if(noVoice)noVoice.hidden=Boolean(url);
+  }
+ }
+ picker.addEventListener('change',()=>show(Number(picker.value)));
+ next.addEventListener('click',()=>show(active+1));prev.addEventListener('click',()=>show(active-1));
+ let touchStart=null;
+ const ignored='a,button,input,select,textarea,audio,video,summary,[contenteditable]';
+ area.addEventListener('touchstart',e=>{
+  if(e.touches.length!==1||e.target.closest(ignored)){touchStart=null;return;}
+  touchStart={x:e.touches[0].clientX,y:e.touches[0].clientY};
+ },{passive:true});
+ area.addEventListener('touchend',e=>{
+  if(!touchStart||e.changedTouches.length!==1)return;
+  const dx=e.changedTouches[0].clientX-touchStart.x,dy=e.changedTouches[0].clientY-touchStart.y;touchStart=null;
+  if(Math.abs(dx)>65&&Math.abs(dx)>Math.abs(dy)*1.45)show(active+(dx>0?1:-1));
+ },{passive:true});
+ show(1);
+})();
+</script>
+</body></html>

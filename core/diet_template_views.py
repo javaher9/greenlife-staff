@@ -2,6 +2,7 @@
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import render
+from django.templatetags.static import static
 from django.views.decorators.http import require_GET
 
 from .diet_week_plan import DAYS, build_orange_week
@@ -70,6 +71,33 @@ def diet_template_preview(request,item_id):
         free_foods_text=content.free_foods_text,
         notes_text=content.diet_notes_text,
     )
+    if kind=='thirteen':
+        # Dedicated mobile visual language shared with Por-150, but every
+        # Keto/13-day media field is read from THIS content, never the orange pilot.
+        meal_images={
+            'fasting':'fasting','breakfast':'breakfast','snack_am':'snack-am',
+            'pre_lunch':'fasting','lunch':'lunch','snack_pm':'snack-pm',
+            'pre_dinner':'fasting','dinner':'dinner','bedtime':'other',
+        }
+        day_audio={audio.day_number:audio.url for audio in content.daily_audio.all() if audio.url}
+        for day in days:
+            day['audio_url']=day_audio.get(day['number']) or content.audio_url or ''
+            day['cards']=[
+                dict(card,illustration_url=static(
+                    'core/diet/meal-%s.svg'%meal_images.get(card.get('slot'),'other')
+                )) for card in day['cards']
+            ]
+        slogan_photo=(content.slogan_image.url if content.slogan_image else
+                      content.slogan_external_url)
+        display_title=('رژیم کتو فست' if content.master_item.name=='Keto-Fast'
+                       and title in ('Keto-Fast','') else title)
+        response=render(request,'core/diet_thirteen_mobile.html',{
+            'content':content,'title':display_title,'days':days,
+            'slogan_photo':slogan_photo,
+            'extras':extras,'unmapped':unmapped,'can_manage':_admin(request),
+        })
+        response['Cache-Control']='private, no-store'
+        return response
     response=render(request,'core/diet_two_templates.html',{
         'content':content,'title':title,'template_name':TYPES[kind],
         'kind':kind,'days':days,'extras':extras,'unmapped':unmapped,
