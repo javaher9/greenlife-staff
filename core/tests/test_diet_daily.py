@@ -140,10 +140,16 @@ class OrangeOnlyWeekTests(TestCase):
         for name in ('fasting','breakfast','snack-am','snack-pm','lunch'):
             self.assertIn('meal-%s.svg' % name,html)
         self.assertIn('ig-orange-150',html)
-        self.assertIn('aria-label="کسب امتیاز و معرفی دوستان"',html)
+        self.assertIn('aria-label="باشگاه امتیاز و معرفی دوستان"',html)
         self.assertIn('class="diet-action insta"',html)
-        for name in ('referral_dashboard','device_booking_schedule','appointment_schedule'):
-            self.assertIn('href="%s"' % reverse(name),html)
+        # Patient CTA buttons now create requests for staff confirmation, not
+        # direct bookings on internal staff calendars.
+        for url in (
+            reverse('customer_club'),
+            reverse('customer_request',kwargs={'kind':'device'}),
+            reverse('customer_request',kwargs={'kind':'visit'}),
+        ):
+            self.assertIn('href="%s"' % url,html)
         self.assertIn('href="https://www.instagram.com/greenlifeclinics/"',html)
 
     def test_orange_weekday_picker_is_centered_and_arrows_follow_persian_week(self):
