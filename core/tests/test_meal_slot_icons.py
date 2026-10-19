@@ -75,7 +75,8 @@ class MealSlotIconPresentationTests(TestCase):
         for code,kind,slot,icon in cases:
             with self.subTest(code=code):
                 item,section=self.add_food(code,kind,slot,'فقط میوه تازه')
-                response=self.client.get(reverse('diet_template_preview',args=[item.pk]))
+                url=reverse('diet_template_preview',args=[item.pk])
+                response=self.client.get(url+'?day=1' if code=='Por-150' else url)
                 self.assertEqual(response.status_code,200)
                 self.assertContains(response,icon)
                 self.assertContains(response,'نماد زمانی')
