@@ -67,6 +67,8 @@ jobs:
         run: python manage.py test core.tests.test_bulk_sms_audiences --verbosity 2
       - name: Approved bulk SMS dispatch, opt-out and safety regression
         run: python manage.py test core.tests.test_bulk_sms_dispatch --verbosity 2
+      - name: Doctor and patient 360 six-scan metrics regression
+        run: python manage.py test core.tests.test_six_scan_display core.tests.test_doctor_dashboard core.tests.test_patient_360 --verbosity 2
       - name: Device bank and treatment editing focused regression tests
         run: python manage.py test core.tests.test_unified_device_pricing core.tests.test_treatment_catalog_settings --verbosity 2
       - name: Legacy MHTML five-item content, media and doctor-preview regression
