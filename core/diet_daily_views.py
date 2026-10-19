@@ -13,6 +13,7 @@ from django.utils import timezone
 from django.templatetags.static import static
 from .diet_week_plan import DAYS, LABELS, ICONS, build_orange_week
 from .diet_meal_icons import meal_illustration_url
+from .diet_extras_display import prepare_diet_extras
 from django.views.decorators.http import require_GET
 
 from .treatment_content_layout import build_section_preview
@@ -180,6 +181,11 @@ def diet_daily_preview(request,item_id):
     ]
     if content.master_item.name=='Por-150' and not slogan_photo:
         slogan_photo = static('core/diet/orange-slogan-woman.webp')
+    extras=prepare_diet_extras(sections,
+        quota_text=content.quota_text,
+        free_foods_text=content.free_foods_text,
+        notes_text=content.diet_notes_text,
+    )
     response=render(request,'core/diet_daily.html',{
         'content':content,'title':title,'subtitle':content.hero_subtitle or 'برنامه غذایی اختصاصی',
         'slogan':slogan,'slogan_photo':slogan_photo,'day':chosen,
@@ -187,7 +193,7 @@ def diet_daily_preview(request,item_id):
         'cards':cards,
         'orange_only':orange_only,'day_name':DAYS[chosen-1] if orange_only else '',
         'day_choices':list(enumerate(DAYS,start=1)) if orange_only else [],
-        'audio_url':audio_url,'can_manage':_admin(request),
+        'audio_url':audio_url,'extras':extras,'can_manage':_admin(request),
     })
     response['Cache-Control']='private, no-store'
     return response
