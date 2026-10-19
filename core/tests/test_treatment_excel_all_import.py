@@ -44,7 +44,7 @@ def files():
         weight.append(rec)
     weight.append({0:1,1:'توصیفی',2:'Cof-150',66:'https://example.org/coffee.png',
                    68:'رژیم قهوه',
-                   71:'\n'.join('روز %d: صبحانه: نوشیدنی روز %d'%(i,i) for i in range(1,14))})
+                   71:'\n'.join('روز دوم صبح : نوشیدنی روز دوم' if i==2 else 'روز %d: صبحانه: نوشیدنی روز %d'%(i,i) for i in range(1,14))+'\nروز چهاردهم: مراجعه به پزشک'})
     for code in TEXT:
         weight.append({0:1,1:'توصیفی',2:code,68:'رژیم متنی',
                        71:'دستور پزشکی واقعی این رژیم',
@@ -69,6 +69,10 @@ class AllDietExcelImportTests(TestCase):
         self.assertEqual(sum(x['kind']=='text' for x in b),5)
         self.assertEqual(sum(x['kind']=='ramadan' for x in b),3)
         self.assertEqual(next(x['kind'] for x in b if x['code']=='Cof-150'),'thirteen')
+        coffee=next(x for x in b if x['code']=='Cof-150')
+        self.assertIn('روز دوم: صبح',coffee['raw_days'])
+        self.assertNotIn('روز چهاردهم',coffee['raw_days'])
+        self.assertIn('روز چهاردهم',coffee['followup'])
         self.assertIn('توضیح متنی در ستون غیرمنتظره',
                       next(x['pages'] for x in b if x['code']=='Asl-150'))
 
