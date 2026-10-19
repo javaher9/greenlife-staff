@@ -53,7 +53,10 @@ def diet_template_preview(request,item_id):
         return response
     unmapped=[]
     if kind=='thirteen':
-        raw_days,unmapped=build_thirteen_days(sections)
+        raw_days,unmapped=build_thirteen_days(
+            sections,
+            infer_first_keto_day=(content.master_item.name=='Keto-Fast'),
+        )
         names=[f'روز {n}' for n in range(1,14)]
     elif kind=='ramadan':
         raw_days=build_ramadan_week(sections)
