@@ -27,10 +27,18 @@ a{color:inherit;text-decoration:none}button,select{font:inherit}
 .audio .audio-label{min-width:max-content}.audio strong{display:block;font-size:15px;font-weight:900}.audio small{font-size:10px;color:#4e765d}
 .audio-player{flex:1;min-width:0}.audio audio{width:100%;height:36px;accent-color:var(--green)}
 .audio-note{font-size:12px;color:#557869;line-height:1.8}
-.day-nav{display:flex;align-items:center;gap:11px;justify-content:space-between;margin:0 auto 14px;min-height:50px;padding:7px 13px;background:#fff;border:1px solid #e0eee4;border-radius:50px;max-width:360px;box-shadow:0 3px 12px #17452c0b}
-.day-nav button{display:grid;place-items:center;width:31px;height:31px;border:0;background:#eaf6ed;color:var(--green);border-radius:50%;cursor:pointer;font-size:20px;font-weight:900}
-.day-nav button:disabled{opacity:.32;cursor:default}
-.day-nav select{flex:1;min-width:0;border:0;background:#fff;color:#1d6142;font-weight:900;text-align:center;text-align-last:center;outline:none;font-size:15px;cursor:pointer}
+/* 13 independent mint plaques, two complete rows even on narrow phones. */
+.day-selector{margin:0 auto 17px;width:min(100%,590px);padding:10px 9px 12px;border:1px solid #e0eee4;border-radius:20px;background:#f8fcf8}
+.day-selector-title{font-size:12px;font-weight:850;color:#537966;text-align:center;margin:0 0 8px}
+.day-plaques{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;direction:rtl}
+.day-plaque{appearance:none;min-width:0;min-height:43px;padding:6px 2px;border:1px solid #dbe9df;border-radius:12px;background:#fff;color:#41745d;cursor:pointer;font-size:clamp(9px,2.65vw,12px);font-weight:800;white-space:nowrap;text-align:center;box-shadow:0 2px 7px #15432607;transition:background .15s,border-color .15s}
+.day-plaque[aria-selected="true"]{background:#cee9d6;color:#19573a;border-color:#99caac;font-weight:900;box-shadow:0 2px 7px #326d410b}
+.day-plaque:focus-visible,.day-nav button:focus-visible{outline:3px solid #6da886;outline-offset:2px}
+.day-nav{display:flex;align-items:center;gap:12px;justify-content:space-between;margin:0 auto 12px;min-height:42px;padding:5px 8px;background:#fff;border:1px solid #e0eee4;border-radius:50px;max-width:360px}
+.day-nav button{display:grid;place-items:center;width:32px;height:32px;border:1px solid #dbeadd;background:#eaf6ed;color:#327553;border-radius:50%;cursor:pointer;font-size:20px;font-weight:800}
+.day-nav button:disabled{opacity:.3;cursor:default}
+.day-nav .day-current{flex:1;text-align:center;color:#296546;font-size:14px;font-weight:900}
+
 .days{margin:0}.day-sheet{display:none}.day-sheet.active{display:block}
 .day-label{font-size:17px;font-weight:900;color:#225b42;display:flex;justify-content:space-between;align-items:center;margin:12px 3px 15px}
 .day-label small{font-size:11px;color:#748a7e;font-weight:600}
@@ -39,7 +47,7 @@ a{color:inherit;text-decoration:none}button,select{font:inherit}
 .meal-visual{position:relative;background:#f2f8f1;min-height:116px;overflow:hidden}
 .meal-visual img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:20px 7px 6px}
 .meal-visual img.real-food{object-fit:cover;padding:0}
-.meal-name{position:absolute;right:6px;top:7px;background:#175a42;color:#fff;max-width:calc(100% - 12px);padding:5px 8px;line-height:1.4;border-radius:15px;font-size:10px;font-weight:900;z-index:1}
+.meal-name{position:absolute;right:6px;top:7px;background:#e0f1e4;color:#236143;max-width:calc(100% - 12px);padding:5px 8px;line-height:1.4;border-radius:15px;font-size:10px;font-weight:900;z-index:1}
 .meal-copy{display:flex;flex-direction:column;justify-content:center;padding:12px 14px;min-width:0}
 .meal-copy h3{font-size:14px;font-weight:900;margin:0 0 5px;color:#246746}
 .meal-copy p{font-size:13px;color:#354e46;line-height:2;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
@@ -60,7 +68,7 @@ a{color:inherit;text-decoration:none}button,select{font:inherit}
 .admin{display:block;text-align:center;font-size:11px;color:#267050;margin:14px 0}
 .footer{font-size:10px;color:#698071;text-align:center;margin-top:15px}
 @media(min-width:651px){.app{border-inline:1px solid #e5eee6}}
-@media(max-width:390px){.app{padding-inline:9px}.brand{font-size:12px}.back{font-size:11px}.hero-copy,.hero-cover-shade{width:40%}.hero-copy h1{font-size:18px}.meal-copy{padding:10px}.meal-copy p{font-size:12px}.actions{gap:4px}.action{font-size:9px;padding-inline:2px}}
+@media(max-width:390px){.app{padding-inline:9px}.brand{font-size:12px}.back{font-size:11px}.hero-copy,.hero-cover-shade{width:40%}.hero-copy h1{font-size:18px}.meal-copy{padding:10px}.meal-copy p{font-size:12px}.actions{gap:4px}.action{font-size:9px;padding-inline:2px}.day-plaques{gap:4px}.day-plaque{min-height:40px;padding-inline:1px;font-size:10px}.day-selector{padding-inline:7px}}
 @media print{body{background:#fff}.app{max-width:100%;padding:0}.top,.actions,.admin,.day-nav,.footer{display:none}.day-sheet{display:block!important;break-before:page}.meal{break-inside:avoid;box-shadow:none}.extra{break-inside:avoid}}
 </style></head>
 <body>
@@ -84,14 +92,24 @@ a{color:inherit;text-decoration:none}button,select{font:inherit}
   <span id="no-voice" class="audio-note" {% if days.0.audio_url %}hidden{% endif %}>فایل صوتی هنوز ثبت نشده است.</span>
  </div>
 </section>
-<nav class="day-nav" aria-label="انتخاب روز برنامه">
- <button id="following-day" type="button" aria-label="روز بعد" title="روز بعد">❯</button>
- <select id="diet-day-picker" aria-label="انتخاب روز از ۱۳ روز">{% for day in days %}<option value="{{ day.number }}">{{ day.label }}</option>{% endfor %}</select>
- <button id="previous-day" type="button" aria-label="روز قبل" title="روز قبل">❮</button>
+<nav class="day-selector" aria-label="۱۳ روز برنامه">
+ <p class="day-selector-title">برنامه روزانه · انتخاب روز</p>
+ <div class="day-plaques" role="tablist" aria-label="انتخاب روز از ۱۳ روز">
+ {% for day in days %}
+  <button type="button" class="day-plaque" role="tab" id="day-tab-{{ day.number }}" data-select-day="{{ day.number }}"
+   aria-controls="day-{{ day.number }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+   tabindex="{% if forloop.first %}0{% else %}-1{% endif %}">{{ day.label }}</button>
+ {% endfor %}
+ </div>
 </nav>
+<div class="day-nav" aria-label="روز قبل و بعد">
+ <button id="following-day" type="button" aria-label="روز بعد" title="روز بعد">❯</button>
+ <span class="day-current" id="day-current" aria-live="polite">روز ۱ از ۱۳</span>
+ <button id="previous-day" type="button" aria-label="روز قبل" title="روز قبل">❮</button>
+</div>
 <div class="days" id="thirteen-days" aria-label="برنامه ۱۳ روز">
 {% for day in days %}
-<section class="day-sheet {% if forloop.first %}active{% endif %}" id="day-{{ day.number }}" data-day="{{ day.number }}" data-audio-url="{{ day.audio_url }}">
+<section class="day-sheet {% if forloop.first %}active{% endif %}" role="tabpanel" aria-labelledby="day-tab-{{ day.number }}" {% if not forloop.first %}hidden{% endif %} id="day-{{ day.number }}" data-day="{{ day.number }}" data-audio-url="{{ day.audio_url }}">
  <h2 class="day-label">{{ day.label }} <small>روز {{ day.number }} از ۱۳</small></h2>
  <div class="meals">
  {% for card in day.cards %}
@@ -137,16 +155,27 @@ a{color:inherit;text-decoration:none}button,select{font:inherit}
 (function(){
  const area=document.getElementById('thirteen-days');
  const pages=Array.from(area.querySelectorAll('.day-sheet'));
- const picker=document.getElementById('diet-day-picker');
+ const tabs=Array.from(document.querySelectorAll('.day-plaque'));
+ const current=document.getElementById('day-current');
  const next=document.getElementById('following-day'),prev=document.getElementById('previous-day');
  const voice=document.getElementById('daily-voice'),noVoice=document.getElementById('no-voice');
- if(!area||!pages.length||!picker)return;
+ if(!area||pages.length!==13||tabs.length!==13||!current)return;
  let active=1;
  function show(n){
   if(!Number.isInteger(n)||n<1||n>pages.length)return;
   active=n;
-  for(const page of pages){page.classList.toggle('active',Number(page.dataset.day)===active);}
-  picker.value=String(active);next.disabled=active===pages.length;prev.disabled=active===1;
+  for(const page of pages){
+   const chosen=Number(page.dataset.day)===active;
+   page.classList.toggle('active',chosen);
+   page.hidden=!chosen;
+  }
+  for(const tab of tabs){
+   const chosen=Number(tab.dataset.selectDay)===active;
+   tab.setAttribute('aria-selected',chosen?'true':'false');
+   tab.tabIndex=chosen?0:-1;
+  }
+  current.textContent='روز '+active+' از ۱۳';
+  next.disabled=active===pages.length;prev.disabled=active===1;
   const url=pages[active-1].dataset.audioUrl || '';
   if(voice){
    if(voice.getAttribute('src')!==url){
@@ -158,7 +187,18 @@ a{color:inherit;text-decoration:none}button,select{font:inherit}
    if(noVoice)noVoice.hidden=Boolean(url);
   }
  }
- picker.addEventListener('change',()=>show(Number(picker.value)));
+ tabs.forEach(tab=>{
+  tab.addEventListener('click',()=>show(Number(tab.dataset.selectDay)));
+  tab.addEventListener('keydown',event=>{
+   // Persian RTL: right advances, left returns.
+   const delta=event.key==='ArrowRight'?1:event.key==='ArrowLeft'?-1:0;
+   if(!delta)return;
+   event.preventDefault();
+   const desired=Math.max(1,Math.min(13,active+delta));
+   show(desired);
+   tabs[desired-1].focus();
+  });
+ });
  next.addEventListener('click',()=>show(active+1));prev.addEventListener('click',()=>show(active-1));
  let touchStart=null;
  const ignored='a,button,input,select,textarea,audio,video,summary,[contenteditable]';
