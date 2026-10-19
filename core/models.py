@@ -91,6 +91,7 @@ class EmployeeProfile(models.Model):
         ('consultant','مشاور'),
         ('doctor','پزشک'),
         ('receptionist','منشی'),
+        ('scan_station','ایستگاه اسکن و آنالیز (غیرپرسنلی)'),
         ('employee','کارمند'),
         ('referrer','معرف مشتری'),
     ]
