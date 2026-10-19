@@ -10,9 +10,9 @@ class ConsultantMobileStyleTests(SimpleTestCase):
         template = Path(
             get_template('core/consultant_sales_outcomes.html').origin.name
         ).read_text(encoding='utf-8')
-        start = template.index('@media(max-width:700px){')
-        end = template.index('}', start) + 1
-        css = template[start:end]
+        # The media rule is intentionally one line with nested braces.
+        css = next(line for line in template.splitlines()
+                   if line.startswith('@media(max-width:700px){'))
         self.assertIn('grid-template-columns:minmax(0,1fr)!important', css)
         self.assertIn('.care-metric{background:#f5fbf7;border-color:#d7e9df}', css)
         self.assertIn('.care-metric small,.care-metric em{color:#516f66}', css)
