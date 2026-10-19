@@ -47,6 +47,8 @@ jobs:
         run: bash -n scripts/deploy_runner.sh
       - name: Django system check
         run: python manage.py check
+      - name: Verify all 46 XLSX diets before activating imports
+        run: python manage.py test core.tests.test_treatment_excel_all_import core.tests.test_treatment_excel_weekly_import --verbosity 2
       - name: Test safe 34-weekly-diet XLSX import
         run: python manage.py test core.tests.test_treatment_excel_weekly_import --verbosity 2
       - name: Verify two read-only Excel diet previews
