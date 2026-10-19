@@ -24,12 +24,14 @@ from . import diet_template_views
 from . import payroll_views
 from . import device_booking_views
 from . import consultant_expense_views
+from . import scan_station_views
 from . import patient_360_views
 from . import server_health_views
 from . import live_status_views
 from . import quality_command_views
 from .mcp import mcp_endpoint
 urlpatterns=[
+path('scan/',scan_station_views.scan_station,name='scan_station'),
 path('alerts/',management_alert_views.alert_center,name='management_alert_center'),
 path('api/alerts/management/',management_alert_views.alert_center_api,name='management_alert_api'),
 path('customer/login/',customer_portal_views.customer_login,name='customer_login'),
