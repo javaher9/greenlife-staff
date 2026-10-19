@@ -15,7 +15,7 @@ ICONS={'fasting':'◉','breakfast':'☀','snack_am':'☘','pre_lunch':'◌','lun
        'pre_dinner':'◌','dinner':'☾','bedtime':'☾','other':'✦'}
 DAY_TOKEN=r'(?:چهارشنبه|پنج\s*شنبه|سه\s*شنبه|دوشنبه|یکشنبه|شنبه|جمعه)'
 DAY_LINE=re.compile(r'^('+DAY_TOKEN+r'(?:\s*(?:و|،|,|/)\s*'+DAY_TOKEN+r')*)\s*([:：\-–])?\s*(.*)$')
-HEAD=re.compile(r'^(میان\s*وعده\s*(?:صبح|عصر)?|ساعت\s*۱۰\s*صبح|ساعت\s*10\s*صبح|قبل\s*از\s*ناهار|قبل\s*از\s*شام|قبل\s*از\s*خواب|صبحانه|ناهار|عصرانه|شام|ناشتا|قبل\s*از\s*صبحانه)\s*([:：\-–])?\s*(.*)$')
+HEAD=re.compile(r'^(میان\s*وعده\s*(?:صبح|عصر|شب)?|ساعت\s*۱۰\s*صبح|ساعت\s*10\s*صبح|قبل\s*از\s*ناهار|قبل\s*از\s*شام|قبل\s*از\s*خواب|صبحانه|ناهار|عصرانه|شام|ناشتا|قبل\s*از\s*صبحانه|میان\s*صبح|نهار|صببحانه|صبح)\s*([:：\-–])?\s*(.*)$')
 ALTERNATIVE=re.compile(r'^\s*(?:یا|گزینه\s*(?:اول|دوم|1|2|۱|۲)\s*[:：]?)\s*$')
 
 
@@ -45,10 +45,10 @@ def meal_label(line):
     title=''.join(match.group(1).split())
     mapping={
         'ناشتا':'fasting','قبلازصبحانه':'fasting',
-        'صبحانه':'breakfast','ساعت۱۰صبح':'snack_am','ساعت10صبح':'snack_am',
-        'میانوعدهصبح':'snack_am','میانوعده':'snack_am',
-        'قبلازناهار':'pre_lunch','ناهار':'lunch','عصرانه':'snack_pm',
-        'میانوعدهعصر':'snack_pm','قبلازشام':'pre_dinner',
+        'صبحانه':'breakfast','صببحانه':'breakfast','صبح':'breakfast','ساعت۱۰صبح':'snack_am','ساعت10صبح':'snack_am',
+        'میانوعدهصبح':'snack_am','میانصبح':'snack_am','میانوعده':'snack_am',
+        'قبلازناهار':'pre_lunch','ناهار':'lunch','نهار':'lunch','عصرانه':'snack_pm',
+        'میانوعدهعصر':'snack_pm','میانوعدهشب':'bedtime','قبلازشام':'pre_dinner',
         'شام':'dinner','قبلازخواب':'bedtime',
     }
     original=HEAD.match((line or '').strip())
@@ -154,9 +154,21 @@ def build_orange_week(sections):
             continue
         if section.title.strip()=='برنامه غذایی':
             shared,days=parse_legacy(section)
-            for slot,cards in shared.items(): source_shared[slot].extend(cards)
+            # Imported 7-day Excel records can have an entire, separately
+            # authored paragraph per day. Its day_number is authoritative;
+            # never repeat that text across all seven weekdays.
+            target_day=section.day_number if 1<=section.day_number<=7 else None
+            for slot,cards in shared.items():
+                if target_day: source_days[target_day][slot].extend(cards)
+                else: source_shared[slot].extend(cards)
             for day,mapping in days.items():
-                for slot,cards in mapping.items(): source_days[day][slot].extend(cards)
+                for slot,cards in mapping.items():
+                    if target_day and day!=target_day:
+                        # Named weekday within a day-specific section is
+                        # ambiguous, so preserve content under its named day.
+                        source_days[day][slot].extend(cards)
+                    else:
+                        source_days[day][slot].extend(cards)
         else:
             # Notes/quota/allowed-food sections belong below the complete week.
             # Do not render them again as daily "توضیحات" meal cards.
