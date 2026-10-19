@@ -12,7 +12,8 @@ class DietPreviewExtrasTests(TestCase):
     def setUp(self):
         self.user=User.objects.create_superuser('extra-admin','extra@example.org','password')
         self.client.force_login(self.user)
-        item=TreatmentCatalogItem.objects.create(category='diet',name='Por-150')
+        # Use a generic weekly diet; Por-150 intentionally uses its separate pilot view.
+        item=TreatmentCatalogItem.objects.create(category='diet',name='Test-Weekly-Extras')
         self.content=TreatmentRichContent.objects.create(
             master_item=item,presentation_template='weekly',
             audio_external_url='https://example.org/valid-original-audio.mp3',

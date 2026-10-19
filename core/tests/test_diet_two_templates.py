@@ -57,7 +57,16 @@ class TwoDietLayoutsTests(TestCase):
         self.assertIn('pre_dinner',common)
         self.assertIn('bedtime',common)
         self.assertIn('lunch',days[1])
-        p=self.client.get(reverse('diet_template_preview',args=[self.orange.pk]))
+        # The approved Por-150 pilot intentionally uses the compact daily view.
+        # Exercise the separate generic 7-day view with the same source data.
+        generic=TreatmentCatalogItem.objects.create(category='diet',name='Test-Weekly-Layout')
+        generic_content=TreatmentRichContent.objects.create(
+            master_item=generic,presentation_template='weekly',
+        )
+        TreatmentRichSection.objects.create(
+            content=generic_content,title=self.week_source.title,body=self.week_source.body,
+        )
+        p=self.client.get(reverse('diet_template_preview',args=[generic.pk]))
         self.assertEqual(p.status_code,200)
         self.assertContains(p,'صبحانه')
         self.assertContains(p,'دو عدد هویج')
