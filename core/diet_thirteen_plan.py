@@ -23,13 +23,15 @@ def get_explicit_day(line):
     return None
 
 
-def build_thirteen_days(sections):
-    """Return 13 exact-day cards and unassigned source sections for manual review.
+def build_thirteen_days(sections, *, infer_first_keto_day=False):
+    """Return exact-day cards and any source text requiring manual review.
 
-    A legacy heading "روز 1" is required. If the source has none, keep it
-    in a visible unassigned appendix; do not claim it belongs to day 1.
-    Explicitly authored 0-day defaults can be reused across all days.
+    For the separately approved Keto-Fast source ONLY: a leading sequence
+    starting explicitly with 'صبحانه' belongs to day 1 when the first
+    numbered day is 2 (or no numbered days are present). Do not generalize
+    undated prose or synthesize snacks/other days. The CRM text is never edited.
     """
+    sections=list(sections)
     source=defaultdict(lambda:defaultdict(list))
     shared=defaultdict(list)
     edited=defaultdict(lambda:defaultdict(list))
@@ -37,6 +39,9 @@ def build_thirteen_days(sections):
     for section in sections:
         if section.meal_slot!='other':
             if section.day_number not in range(14):
+                continue
+            if not (section.body or '').strip():
+                # Do not render empty editor slots as invented meals.
                 continue
             media=pictures(section)
             card=make_card(section.meal_slot,section.body.splitlines(),
@@ -56,6 +61,21 @@ def build_thirteen_days(sections):
         source_lines=section.body.splitlines()
         photos=pictures(section)
         image_positions=[(m.inline_before_line,m.url) for m in photos if m.inline_before_line is not None]
+        nonempty=[line for line in source_lines if line.strip()]
+        first_line=nonempty[0] if nonempty else ''
+        first_explicit=next(
+            (day for line in source_lines
+             if (info:=get_explicit_day(line)) for day in (info[0],)),
+            None,
+        )
+        # A leading Keto-Fast breakfast was historically exported without the
+        # "روز ۱" heading. Only that documented boundary gets implicit day 1.
+        leading_breakfast_day=(
+            infer_first_keto_day
+            and meal_label(first_line) is not None
+            and meal_label(first_line)[0]=='breakfast'
+            and first_explicit in (None,2)
+        )
 
         def flush():
             if active_day is None or current_slot is None or not block:
@@ -84,6 +104,8 @@ def build_thirteen_days(sections):
                         not_placed.append(line)
                 continue
             heading=meal_label(line)
+            if heading and active_day is None and leading_breakfast_day:
+                active_day=1
             if heading and active_day is not None:
                 flush()
                 current_slot,rest=heading
