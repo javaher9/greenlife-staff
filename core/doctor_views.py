@@ -16,7 +16,7 @@ from django.utils import timezone
 
 from .call_center_identity import call_center_display_name
 from .patient_ui import attach_patient_photos
-from .device_pricing import device_unit_price
+from .device_pricing import device_unit_price, from_toman_to_million
 from .models import (
     BodyAnalysisRecord,
     InternalMessage,
@@ -107,7 +107,7 @@ def _catalog_options(category, branch, fallback):
         if item.category=='device' and item.price_toman is None:
             item.price_toman=DeviceBaseTariff.current()
         if item.price_toman is not None:
-            price=f'{int(item.price_toman):,} تومان'
+            price=from_toman_to_million(item.price_toman)
             if item.unit_label:
                 price+=f' / {item.unit_label}'
         detail=getattr(item,'rich_content',None)
