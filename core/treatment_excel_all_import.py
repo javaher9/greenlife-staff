@@ -66,13 +66,17 @@ def read_all_diets(weight_xlsx,ramadan_xlsx):
             # Cof-150 was exported as descriptive, but its original text
             # contains the 13 numbered days. Preserve every line.
             data['raw_days']=(row.get(71) or '').strip()
-            data['extras']=[(row.get(i) or '').strip()
-                            for i in range(73,100,2) if (row.get(i) or '').strip()]
+            data['extras']=[str(row.get(i) or '').strip()
+                            for i in range(72,110) if str(row.get(i) or '').strip()
+                            and not str(row.get(i)).strip().lower().startswith(('http://','https://'))]
             if not data['raw_days']:raise ValueError('متن اصلی ۱۳ روزه Cof-150 خالی است.')
         else:
             data['display_title']=(row.get(68) or '').strip()
-            data['pages']=[(row.get(i) or '').strip() for i in range(71,110,2)
-                           if (row.get(i) or '').strip()]
+            # Exported descriptive files sometimes have genuine prose in
+            # nominally "image" columns. Preserve ALL non-URL text in order.
+            data['pages']=[str(row.get(i) or '').strip() for i in range(70,110)
+                           if str(row.get(i) or '').strip()
+                           and not str(row.get(i)).strip().lower().startswith(('http://','https://'))]
             if not data['pages']:raise ValueError(f'محتوای متنی {code} خالی است.')
         extra.append(data)
         codes.add(code)
