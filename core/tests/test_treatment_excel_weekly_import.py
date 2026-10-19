@@ -40,8 +40,8 @@ def _xlsx():
         fields={0:idx,1:'روزانه' if code in MOODS else 'هفتگی (عمومی)',
                 2:code,4:'https://example.org/header.png',9:'هر روز یک صبحانه'}
         if code in MOODS:
-            fields.update({26:'صبحانه: برنامه شنبه\\nمیان وعده صبح: ساعت ده\\nمیان وعده شب: قبل خواب',
-                           29:'صبحانه: برنامه یکشنبه\\nناهار: ناهار روز دوم'})
+            fields.update({26:'صبحانه: برنامه شنبه\nمیان وعده صبح: ساعت ده\nمیان وعده شب: قبل خواب',
+                           29:'صبحانه: برنامه یکشنبه\nناهار: ناهار روز دوم'})
         rows.append(make_row(idx,fields))
     xml=('<?xml version="1.0" encoding="UTF-8"?>'
          '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'
