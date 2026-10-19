@@ -85,6 +85,10 @@ class FourDietFormatsTests(TestCase):
         self.assertNotContains(response,'diet-day-picker')
         self.assertNotContains(response,'background:#175a42')
         self.assertNotContains(response,'data-select-day="14"')
+        self.assertContains(response,'روز ۱')
+        self.assertContains(response,'روز ۱۳')
+        self.assertNotContains(response,'روز ۱ از ۱۳')
+        self.assertContains(response,'برنامه غذایی روز انتخاب‌شده')
 
     def test_thirteen_mobile_presentation_matches_orange_structure_but_uses_own_media(self):
         self.keto_content.cover_external_url='https://example.org/keto-cover.jpg'
@@ -138,11 +142,68 @@ class FourDietFormatsTests(TestCase):
         self.assertEqual(response.status_code,200)
         self.assertNotContains(response,'class="slogan"')
         self.assertContains(response,'فایل صوتی هنوز ثبت نشده است.')
-        self.assertContains(response,'روز 13 از ۱۳')
+        self.assertContains(response,'روز ۱۳')
+        self.assertNotContains(response,'روز 13 از ۱۳')
         self.assertNotContains(response,'روز ۱۴</h2>')
         self.assertContains(response,'نان و پنیر')
         self.assertContains(response,'سوپ')
         self.assertNotContains(response,'orange-slogan-woman.webp')
+
+    def test_keto_starting_with_breakfast_is_one_complete_first_day(self):
+        source=TreatmentRichSection.objects.create(
+            content=self.keto_content,title='برنامه غذایی',
+            body='صبحانه\nدو عدد تخم مرغ\nناهار\nمرغ و سالاد\n'
+                 'شام\nسوپ کتو\nروز ۲\nصبحانه\nپنیر و گردو',
+        )
+        direct,unassigned=build_thirteen_days(
+            [source],infer_first_keto_day=True,
+        )
+        self.assertEqual(
+            [item['slot'] for item in direct[1]],
+            ['breakfast','lunch','dinner'],
+        )
+        self.assertEqual(
+            [item['body'] for item in direct[1]],
+            ['دو عدد تخم مرغ','مرغ و سالاد','سوپ کتو'],
+        )
+        self.assertEqual([item['body'] for item in direct[2]],['پنیر و گردو'])
+        self.assertFalse(direct[3])
+        self.assertFalse(unassigned)
+        self.assertNotIn('snack_am',[card['slot'] for card in direct[1]])
+        self.assertNotIn('snack_pm',[card['slot'] for card in direct[1]])
+        legacy,unassigned=build_thirteen_days([source])
+        self.assertFalse(legacy[1])
+        self.assertIn('صبحانه',unassigned[0]['body'])
+
+        page=self.client.get(reverse('diet_template_preview',args=[self.keto.pk]))
+        self.assertEqual(page.status_code,200)
+        html=page.content.decode('utf-8')
+        first=html.split('id="day-1"',1)[1].split('</section>',1)[0]
+        self.assertIn('دو عدد تخم مرغ',first)
+        self.assertIn('مرغ و سالاد',first)
+        self.assertIn('سوپ کتو',first)
+        self.assertNotIn('meal-snack-am.svg',first)
+        self.assertNotIn('meal-snack-pm.svg',first)
+
+    def test_keto_without_day_headers_can_be_only_day_one_if_breakfast_is_first(self):
+        source=TreatmentRichSection.objects.create(
+            content=self.keto_content,title='برنامه غذایی',
+            body='صبحانه\nاملت\nناهار\nماهی\nشام\nسالاد',
+        )
+        days,unassigned=build_thirteen_days([source],infer_first_keto_day=True)
+        self.assertEqual([row['slot'] for row in days[1]],['breakfast','lunch','dinner'])
+        self.assertFalse(days[2])
+        self.assertFalse(unassigned)
+
+    def test_non_breakfast_prose_without_day_heading_remains_unassigned(self):
+        source=TreatmentRichSection.objects.create(
+            content=self.keto_content,title='برنامه غذایی',
+            body='ابتدا شرایط پزشک بررسی شود\nصبحانه\nتخم‌مرغ',
+        )
+        days,unassigned=build_thirteen_days([source],infer_first_keto_day=True)
+        self.assertFalse(days[1])
+        self.assertEqual(len(unassigned),1)
+        self.assertIn('ابتدا شرایط پزشک',unassigned[0]['body'])
 
     def test_thirteen_persian_day_heading_without_guessing_unmapped_text(self):
         self.assertEqual(get_explicit_day('روز ۱۳: صبحانه'),(13,'صبحانه'))

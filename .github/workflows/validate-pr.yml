@@ -47,6 +47,8 @@ jobs:
         run: bash -n scripts/deploy_runner.sh
       - name: Django system check
         run: python manage.py check
+      - name: Test corrected Keto-Fast first day and day plaques
+        run: python manage.py test core.tests.test_diet_four_formats --verbosity 2
       - name: Check 13-day mint plaques and related diet formats
         run: python manage.py test core.tests.test_diet_four_formats --verbosity 2
       - name: Thirteen-day mobile preview focused regression
