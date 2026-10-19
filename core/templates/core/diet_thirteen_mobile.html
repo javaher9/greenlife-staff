@@ -37,7 +37,7 @@ a{color:inherit;text-decoration:none}button,select{font:inherit}
 .day-nav{display:flex;align-items:center;gap:12px;justify-content:space-between;margin:0 auto 12px;min-height:42px;padding:5px 8px;background:#fff;border:1px solid #e0eee4;border-radius:50px;max-width:360px}
 .day-nav button{display:grid;place-items:center;width:32px;height:32px;border:1px solid #dbeadd;background:#eaf6ed;color:#327553;border-radius:50%;cursor:pointer;font-size:20px;font-weight:800}
 .day-nav button:disabled{opacity:.3;cursor:default}
-.day-nav .day-current{flex:1;text-align:center;color:#296546;font-size:14px;font-weight:900}
+.day-nav .day-current{flex:1;text-align:center;color:#5a806a;font-size:12px;font-weight:750}
 
 .days{margin:0}.day-sheet{display:none}.day-sheet.active{display:block}
 .day-label{font-size:17px;font-weight:900;color:#225b42;display:flex;justify-content:space-between;align-items:center;margin:12px 3px 15px}
@@ -104,13 +104,13 @@ a{color:inherit;text-decoration:none}button,select{font:inherit}
 </nav>
 <div class="day-nav" aria-label="روز قبل و بعد">
  <button id="following-day" type="button" aria-label="روز بعد" title="روز بعد">❯</button>
- <span class="day-current" id="day-current" aria-live="polite">روز ۱ از ۱۳</span>
+ <span class="day-current" id="day-current">وعده‌های روز انتخاب‌شده</span>
  <button id="previous-day" type="button" aria-label="روز قبل" title="روز قبل">❮</button>
 </div>
 <div class="days" id="thirteen-days" aria-label="برنامه ۱۳ روز">
 {% for day in days %}
 <section class="day-sheet {% if forloop.first %}active{% endif %}" role="tabpanel" aria-labelledby="day-tab-{{ day.number }}" {% if not forloop.first %}hidden{% endif %} id="day-{{ day.number }}" data-day="{{ day.number }}" data-audio-url="{{ day.audio_url }}">
- <h2 class="day-label">{{ day.label }} <small>روز {{ day.number }} از ۱۳</small></h2>
+ <h2 class="day-label">برنامه غذایی روز انتخاب‌شده</h2>
  <div class="meals">
  {% for card in day.cards %}
  <article class="meal">
@@ -174,7 +174,6 @@ a{color:inherit;text-decoration:none}button,select{font:inherit}
    tab.setAttribute('aria-selected',chosen?'true':'false');
    tab.tabIndex=chosen?0:-1;
   }
-  current.textContent='روز '+active+' از ۱۳';
   next.disabled=active===pages.length;prev.disabled=active===1;
   const url=pages[active-1].dataset.audioUrl || '';
   if(voice){
