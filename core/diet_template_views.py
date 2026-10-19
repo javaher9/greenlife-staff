@@ -57,7 +57,8 @@ def diet_template_preview(request,item_id):
             sections,
             infer_first_keto_day=(content.master_item.name=='Keto-Fast'),
         )
-        names=[f'روز {n}' for n in range(1,14)]
+        persian_digits=str.maketrans('0123456789','۰۱۲۳۴۵۶۷۸۹')
+        names=[f"روز {str(n).translate(persian_digits)}" for n in range(1,14)]
     elif kind=='ramadan':
         raw_days=build_ramadan_week(sections)
         names=list(DAYS)
