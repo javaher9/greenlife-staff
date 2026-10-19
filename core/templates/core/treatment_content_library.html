@@ -31,6 +31,25 @@
     {% endfor %}
     </div>
   </section>
+  <section class="panel" id="all-diets-excel-import">
+ <h2 style="color:#fff;font-size:18px">انتقال همه ۴۶ رژیم · هفت‌روزه، سیزده‌روزه، متنی و رمضان</h2>
+ <p>هر دو فایل اصلی اکسل را انتخاب کنید. قبل از ثبت، ۴۶ کد و قالب بررسی می‌شود. Cof-150 سیزده‌روزه است، عکس وعده‌ها منتقل نمی‌شود، سربرگ‌های خالی خالی می‌مانند و رژیم‌های دارای محتوای قبلی بدون بازنویسی حفظ می‌شوند.</p>
+ <form method="post" enctype="multipart/form-data" style="display:flex;flex-wrap:wrap;gap:12px;align-items:end">{% csrf_token %}
+  <input type="hidden" name="action" value="all_excel_preview">
+  <label>فایل رژیم‌های لاغری <input type="file" name="all_weight_excel" accept=".xlsx" required></label>
+  <label>فایل رژیم‌های ماه رمضان <input type="file" name="all_ramadan_excel" accept=".xlsx" required></label>
+  <button type="submit">بررسی هر ۴۶ رژیم بدون ثبت</button>
+ </form>
+ {% if all_diets_ready %}
+ <div style="border:1px solid #77b59b;border-radius:15px;background:#183d37;padding:15px;margin-top:12px">
+  <p style="color:#eaffec;font-weight:800">۴۶ رژیم در مرحله تأیید هستند. ورود موارد جدید به‌صورت پیش‌نویس غیرفعال انجام می‌شود؛ محتوای موجود به‌طور خودکار جایگزین نخواهد شد.</p>
+  <form method="post">{% csrf_token %}
+   <input type="hidden" name="action" value="all_excel_import">
+   <button type="submit">تأیید و انتقال رژیم‌های معتبر</button>
+  </form>
+ </div>
+ {% endif %}
+</section>
   <section class="panel" id="weekly-excel-import">
     <h2 style="color:#fff;font-size:18px">انتقال ۳۴ رژیم هفت‌روزه از اکسل</h2>
     <p>۲۷ رژیم هفتگی عمومی و ۷ رژیم مزاجی؛ نمایش شنبه تا جمعه. عکس وعده‌ها منتقل نمی‌شود، آیکن‌های استاندارد استفاده می‌شوند و فقط تصویر سربرگ و صدای خود رژیم وارد می‌شوند. رژیم‌های دارای محتوای قبلی بدون بازنویسی باقی می‌مانند.</p>
