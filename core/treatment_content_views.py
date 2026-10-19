@@ -111,6 +111,44 @@ def treatment_content_preview(request, item_id):
 @require_http_methods(['GET','POST'])
 def treatment_content_library(request):
     _admin_only(request)
+    # Full 34-weekly-diet XLSX import is admin-only and two-step by design.
+    # Previewing never saves medical records. A repeated confirmation is safe.
+    import base64
+    from .treatment_excel_weekly_import import extract_workbook, validate_batch, import_weekly_diets
+    action=(request.POST.get('action') or '') if request.method=='POST' else ''
+    if action=='weekly_excel_preview':
+        uploaded=request.FILES.get('weekly_excel')
+        if not uploaded or not uploaded.name.lower().endswith('.xlsx'):
+            messages.error(request,'فایل XLSX رژیم‌های لاغری را انتخاب کنید.')
+        elif uploaded.size>300_000:
+            messages.error(request,'حجم فایل بیشتر از حد مجاز ۳۰۰ کیلوبایت است.')
+        else:
+            try:
+                raw=uploaded.read()
+                entries=extract_workbook(raw)
+                request.session['weekly_excel_pending']=base64.b64encode(raw).decode('ascii')
+                request.session.modified=True
+                messages.success(request,f'فایل بررسی شد؛ {len(entries)} رژیم هفت‌روزه آماده تأیید است.')
+            except ValueError as exc:
+                messages.error(request,str(exc))
+        return redirect('treatment_content_library')
+    if action=='weekly_excel_import':
+        pending=request.session.get('weekly_excel_pending')
+        if not pending:
+            messages.error(request,'ابتدا فایل اکسل را بررسی کنید.')
+        else:
+            try:
+                entries=extract_workbook(base64.b64decode(pending))
+                result=import_weekly_diets(entries,request.user)
+                request.session.pop('weekly_excel_pending',None)
+                messages.success(request,
+                    f"انتقال ایمن انجام شد: {result['created']} رژیم جدید، "
+                    f"{result['filled']} رژیم با محتوای اکسل، "
+                    f"{result['skipped']} رژیم دارای محتوای قبلی و بدون بازنویسی. "
+                    "رژیم‌های تازه در حالت پیش‌نویس هستند.")
+            except (ValueError,ValidationError) as exc:
+                messages.error(request,str(exc))
+        return redirect('treatment_content_library')
     if request.method=='POST' and request.POST.get('action')=='create_diet':
         title=(request.POST.get('diet_name') or '').strip()
         template=(request.POST.get('diet_template') or '').strip()
@@ -182,10 +220,18 @@ def treatment_content_library(request):
         ).select_related('rich_content').order_by('category','sort_order','name','id')
     )
     rows=[{'title':item.name,'category':item.category,'item':item} for item in catalog]
+    weekly_excel_preview=[]
+    pending=request.session.get('weekly_excel_pending')
+    if pending:
+        try:
+            weekly_excel_preview=validate_batch(extract_workbook(base64.b64decode(pending)))
+        except ValueError as exc:
+            request.session.pop('weekly_excel_pending',None)
+            messages.error(request,'فایل در انتظار تأیید معتبر نیست: '+str(exc))
     count_diets=sum(row['category']=='diet' for row in rows)
     from .diet_excel_sample_previews import preview_cards
     return render(request,'core/treatment_content_library.html',{
-        'rows':rows,'count_diets':count_diets,
+        'rows':rows,'count_diets':count_diets,'weekly_excel_preview':weekly_excel_preview,
         'excel_preview_cards':preview_cards(),
     })
 
