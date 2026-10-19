@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from core.models import (
-    TreatmentCatalogItem,TreatmentRichContent,TreatmentRichSection,TreatmentRichMedia,
+    TreatmentCatalogItem,TreatmentRichContent,TreatmentRichSection,TreatmentRichMedia,TreatmentDietDayAudio,
 )
 from core.diet_thirteen_plan import build_thirteen_days,get_explicit_day
 from core.treatment_content_import import extract_live_diet_html
@@ -60,6 +60,64 @@ class FourDietFormatsTests(TestCase):
         self.assertContains(page,'مراجعه به مطب')
         self.assertContains(page,'touchstart')
         self.assertNotContains(page,'روز ۱۴</h2>')
+
+    def test_thirteen_mobile_presentation_matches_orange_structure_but_uses_own_media(self):
+        self.keto_content.cover_external_url='https://example.org/keto-cover.jpg'
+        self.keto_content.slogan='هر روز، فرصتی تازه برای سلامتی'
+        self.keto_content.slogan_external_url='https://example.org/keto-smile.jpg'
+        self.keto_content.audio_external_url='https://example.org/keto-general.mp3'
+        self.keto_content.save()
+        TreatmentDietDayAudio.objects.create(
+            content=self.keto_content,day_number=2,
+            external_url='https://example.org/keto-day2.mp3',
+        )
+        section=TreatmentRichSection.objects.create(
+            content=self.keto_content,title='صبحانه',
+            meal_slot='breakfast',day_number=1,body='تخم‌مرغ و پنیر مخصوص کتو',
+        )
+        TreatmentRichMedia.objects.create(
+            section=section,kind='image',
+            original_url='https://example.org/keto-breakfast.jpg',
+        )
+        response=self.client.get(reverse('diet_template_preview',args=[self.keto.pk]))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'رژیم کتو فست')
+        self.assertContains(response,'https://example.org/keto-cover.jpg')
+        self.assertContains(response,'https://example.org/keto-smile.jpg')
+        self.assertContains(response,'هر روز، فرصتی تازه برای سلامتی')
+        self.assertContains(response,'صدای جادویی')
+        self.assertContains(response,'https://example.org/keto-day2.mp3')
+        self.assertContains(response,'https://example.org/keto-general.mp3')
+        self.assertContains(response,'https://example.org/keto-breakfast.jpg')
+        self.assertContains(response,'data-day=',count=13)
+        self.assertContains(response,'روز ۱۴')
+        self.assertContains(response,'درخواست ویزیت')
+        self.assertContains(response,'dx>0?1:-1')
+        self.assertContains(response,'روز بعد')
+        self.assertContains(response,'روز قبل')
+        self.assertContains(response,'.day-sheet{display:none}')
+        self.assertContains(response,'href="'+reverse('customer_club')+'"')
+        self.assertContains(response,'href="'+reverse('customer_request',args=['device'])+'"')
+        self.assertContains(response,'href="'+reverse('customer_request',args=['visit'])+'"')
+        self.assertNotContains(response,'orange-slogan-woman.webp')
+        self.assertNotContains(response,'لاغری یعنی زندگی بهتر')
+        self.assertNotContains(response,'https://example.org/orange-cover.jpg')
+        self.assertNotContains(response,'۳۲۰ کالری')
+
+    def test_thirteen_without_slogan_or_audio_displays_no_orange_fallback(self):
+        TreatmentRichSection.objects.create(
+            content=self.keto_content,title='برنامه غذایی',
+            body='روز ۱\nصبحانه\nنان و پنیر\nروز ۱۳\nشام\nسوپ',
+        )
+        response=self.client.get(reverse('diet_template_preview',args=[self.keto.pk]))
+        self.assertEqual(response.status_code,200)
+        self.assertNotContains(response,'class="slogan"')
+        self.assertContains(response,'فایل صوتی هنوز ثبت نشده است.')
+        self.assertContains(response,'روز ۱۳ از ۱۳')
+        self.assertNotContains(response,'روز ۱۴</h2>')
+        self.assertContains(response,'نان و پنیر')
+        self.assertContains(response,'سوپ')
+        self.assertNotContains(response,'orange-slogan-woman.webp')
 
     def test_thirteen_persian_day_heading_without_guessing_unmapped_text(self):
         self.assertEqual(get_explicit_day('روز ۱۳: صبحانه'),(13,'صبحانه'))
