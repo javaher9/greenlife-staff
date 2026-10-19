@@ -178,9 +178,9 @@ def consultant_sales_outcomes(request):
                 item.quantity=max(1,min(99,int(request.POST.get('quantity') or 1)))
             except (TypeError,ValueError):
                 item.quantity=1
-            raw_price=(request.POST.get('unit_price_toman') or '').replace(',','').strip()
+            raw_price=(request.POST.get('unit_price_million') or '').replace(',','').strip()
             try:
-                item.unit_price_toman=max(Decimal('0'),Decimal(raw_price or '0'))
+                item.unit_price_toman=max(Decimal('0'),Decimal(raw_price or '0') * Decimal('1000000'))
             except InvalidOperation:
                 item.unit_price_toman=Decimal('0')
             try:
@@ -223,9 +223,9 @@ def consultant_sales_outcomes(request):
             return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
 
         if action=='finalize':
-            raw_discount=(request.POST.get('discount_toman') or '').replace(',','').strip()
+            raw_discount=(request.POST.get('discount_million') or '').replace(',','').strip()
             try:
-                discount=max(Decimal('0'),Decimal(raw_discount or '0'))
+                discount=max(Decimal('0'),Decimal(raw_discount or '0') * Decimal('1000000'))
             except InvalidOperation:
                 discount=Decimal('0')
             plan.note=(request.POST.get('plan_note') or '').strip()[:3000]
@@ -255,11 +255,11 @@ def consultant_sales_outcomes(request):
                     is_active=True,profile__is_active=True,profile__role='receptionist',
                     profile__branch=selected.branch,
                 )
-                amount=f'{int(plan.final_amount_toman):,}'
+                amount=format(plan.final_amount_toman / Decimal('1000000'),'f').rstrip('0').rstrip('.')
                 for user in receptionists:
                     StaffNotification.objects.create(
                         user=user,title='پرداخت جدید از مشاور',
-                        message=f'{selected.full_name} · مبلغ نهایی {amount} تومان · آماده دریافت',
+                        message=f'{selected.full_name} · مبلغ نهایی {amount} میلیون تومان · آماده دریافت',
                         notification_type='consultant_payment',related_date=timezone.localdate(),
                     )
             messages.success(request,'پرونده برای منشی ارسال شد و در صف «در انتظار پرداخت» قرار گرفت.')
