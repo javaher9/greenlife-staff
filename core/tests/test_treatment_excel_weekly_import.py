@@ -77,7 +77,7 @@ class WeeklyExcelImportTests(TestCase):
         result=import_weekly_diets(entries,self.admin)
         self.assertEqual(result['filled'],33)
         self.assertEqual(result['skipped'],1)
-        self.assertEqual(TreatmentCatalogItem.objects.filter(category='diet').count(),before+33)
+        self.assertEqual(TreatmentCatalogItem.objects.filter(category='diet').count(),before+result['created'])
         saved.refresh_from_db()
         self.assertEqual(saved.body,'رژیم پزشک بدون تغییر')
         mood=TreatmentCatalogItem.objects.get(name='Dam-160')
