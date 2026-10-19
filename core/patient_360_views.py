@@ -18,6 +18,7 @@ from .models import (
 )
 from .sms import SmsGatewayError, send_sms
 from .jalali import format_jalali
+from .scan_analysis_display import scan_summary, scan_history_rows
 
 
 ALLOWED_ROLES={'admin','internal_manager','manager','doctor','consultant','receptionist','call_center'}
@@ -509,6 +510,8 @@ def patient_360(request, pk):
         'sms_count':SmsMessageLog.objects.filter(Q(number__in=variants)|Q(appointment_id__in=appointment_ids)).count(),
         'analyses':analyses,
         'latest_analysis':latest_analysis,
+        'latest_scan_metrics':scan_summary(latest_analysis),
+        'scan_history_rows':scan_history_rows(analyses),
         'weight_delta':weight_delta,
         'diets':diets,
         'devices':devices,

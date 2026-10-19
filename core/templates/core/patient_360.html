@@ -26,7 +26,7 @@
 .p360-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;padding:13px 15px!important;border-bottom:1px solid #e8efed!important;background:linear-gradient(90deg,#fbfefd,#f8f7fd)!important}
 .p360-head h2{margin:0!important;color:#173f36!important;font-size:13px!important}.p360-head span{color:#7a8d88!important;font-size:8px!important}
 .p360-body{padding:13px 15px!important}.p360-empty{padding:17px;text-align:center;color:#84958f!important;font-size:8.5px!important}
-.p360-analysis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-bottom:10px}.p360-metric{padding:10px;border:1px solid #e2ece8!important;border-radius:12px!important}.p360-metric span{display:block!important;color:#71847e!important;font-size:7.5px!important}.p360-metric strong{display:block!important;margin-top:3px;color:#17493c!important;font-size:15px!important}
+.p360-analysis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin-bottom:10px}.p360-metric{padding:10px;border:1px solid #e2ece8!important;border-radius:12px!important}.p360-metric span{display:block!important;color:#71847e!important;font-size:7.5px!important}.p360-metric strong{display:block!important;margin-top:3px;color:#17493c!important;font-size:15px!important}
 .p360-table-wrap{overflow:auto;border:1px solid #e5ecea!important;border-radius:13px!important}.p360-table{width:100%;border-collapse:collapse;font-size:8.5px!important;min-width:620px}.p360-table th{background:#f4f8f6!important;color:#587169!important;font-weight:900!important}.p360-table th,.p360-table td{padding:8px 7px;border-bottom:1px solid #edf2f0;text-align:right;vertical-align:top}.p360-table td{color:#294b43!important;background:#fff!important}
 .p360-visit-card .p360-body{padding:0!important}.p360-visit-scroll{overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;scrollbar-width:thin!important}.p360-visit-table{width:100%;min-width:1040px;border-collapse:separate;border-spacing:0;font-size:8.6px!important}.p360-visit-table th{position:sticky;top:0;z-index:2;padding:9px 8px;background:#f3f8f6!important;color:#49675e!important;border-bottom:1px solid #dfeae6;font-weight:950;text-align:right}.p360-visit-table th:nth-child(3){background:#eef9f2!important;color:#267456!important}.p360-visit-table th:nth-child(4){background:#fff8eb!important;color:#a16622!important}.p360-visit-table th:nth-child(5){background:#f4f0fd!important;color:#684da0!important}.p360-visit-table th:nth-child(6){background:#eef6fd!important;color:#3c6e9c!important}
 .p360-visit-table td{padding:9px 8px!important;border-bottom:1px solid #edf2f0!important;background:#fff!important;color:#2d4e46!important;vertical-align:top;line-height:1.65!important}.p360-visit-table tr:hover td{background:#fbfdfc!important}.p360-visit-no{display:inline-flex;align-items:center;gap:5px;font-weight:950;color:#173f36!important}.p360-visit-no i{width:21px;height:21px;border-radius:8px;background:#ece6fb;display:grid;place-items:center;color:#6e51ad;font-style:normal;font-size:8px}.p360-visit-date{white-space:nowrap}.p360-status{display:inline-flex;margin-top:4px;padding:3px 6px;border-radius:999px;background:#edf7f2!important;color:#277356!important;font-size:7.5px!important;font-weight:900}
@@ -569,13 +569,19 @@ body.gl-patient360-workspace .p360-mini-btn.secondary{
         <div class="p360-body">
           {% if latest_analysis %}
           <div class="p360-analysis">
-            <div class="p360-metric"><span>وزن</span><strong>{{ latest_analysis.weight_kg|default:"—" }}</strong></div>
-            <div class="p360-metric"><span>BMI</span><strong>{{ latest_analysis.bmi|default:"—" }}</strong></div>
-            <div class="p360-metric"><span>چربی بدن</span><strong>{{ latest_analysis.body_fat_percent|default:"—" }}</strong></div>
-            <div class="p360-metric"><span>عضله</span><strong>{{ latest_analysis.skeletal_muscle_kg|default:"—" }}</strong></div>
-            <div class="p360-metric"><span>چربی احشایی</span><strong>{{ latest_analysis.visceral_fat|default:"—" }}</strong></div>
+            {% for metric in latest_scan_metrics %}
+            <div class="p360-metric"><span>{{ metric.label }}{% if metric.unit %} ({{ metric.unit }}){% endif %}</span><strong>{{ metric.value|default_if_none:"—" }}</strong></div>
+            {% endfor %}
           </div>
-          <div class="p360-table-wrap"><table class="p360-table"><thead><tr><th>تاریخ</th><th>وزن</th><th>BMI</th><th>چربی %</th><th>عضله</th></tr></thead><tbody>{% for a in analyses %}<tr><td>{{ a.recorded_at|date:"Y/m/d" }}</td><td>{{ a.weight_kg|default:"—" }}</td><td>{{ a.bmi|default:"—" }}</td><td>{{ a.body_fat_percent|default:"—" }}</td><td>{{ a.skeletal_muscle_kg|default:"—" }}</td></tr>{% endfor %}</tbody></table></div>
+          <div class="p360-table-wrap">
+            <table class="p360-table">
+              <thead><tr><th>تاریخ</th><th>وزن</th><th>امتیاز آنالیز</th><th>عضلات</th><th>چربی (kg)</th><th>WHR</th><th>چربی احشایی</th></tr></thead>
+              <tbody>{% for entry in scan_history_rows %}<tr>
+                <td>{{ entry.date|date:"Y/m/d" }}</td>
+                {% for metric in entry.metrics %}<td>{{ metric.value|default_if_none:"—" }}</td>{% endfor %}
+              </tr>{% endfor %}</tbody>
+            </table>
+          </div>
           {% else %}<div class="p360-empty">هنوز آنالیز بدن برای این بیمار ثبت نشده است.</div>{% endif %}
         </div>
       </section>
