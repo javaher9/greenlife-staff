@@ -142,6 +142,23 @@ class UnifiedDevicePricingTests(TestCase):
         self.assertContains(response,"رژیم اصلاح شده")
         self.assertContains(response,"ویرایش اطلاعات")
 
+    def test_doctor_catalog_shows_millions_not_raw_toman(self):
+        for category,amount,expected in (
+            ("diet","32000000","32"),
+            ("recommendation","2500000","2.5"),
+            ("print_template","1000000","1"),
+            ("lipolytic","4250000","4.25"),
+        ):
+            item=TreatmentCatalogItem.objects.create(
+                category=category,name="مبلغ پزشک "+category,
+                price_toman=Decimal(amount),
+            )
+            row=next(x for x in _catalog_options(category,self.branch,()) if x["name"]==item.name)
+            self.assertEqual(row["price"],expected)
+            self.assertNotIn("000000",row["price"])
+            item.refresh_from_db()
+            self.assertEqual(item.price_toman,Decimal(amount))
+
     def test_base_tariff_input_is_in_million_toman(self):
         self.client.force_login(self.role_admin)
         response=self.client.post(reverse("treatment_catalog_settings"),{
