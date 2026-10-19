@@ -47,6 +47,10 @@ jobs:
         run: bash -n scripts/deploy_runner.sh
       - name: Django system check
         run: python manage.py check
+      - name: Consultant narrow-screen light UI smoke test
+        run: python manage.py test core.tests.test_consultant_mobile_style --verbosity 2
+      - name: Phone staff chat light-theme smoke test
+        run: python manage.py test core.tests.test_shared_chat_mobile_light --verbosity 2
       - name: Quality command center permissions and live source regression
         run: python manage.py test core.tests.test_quality_command_center --verbosity 2
       - name: Lead command CRM counting and privacy regression
