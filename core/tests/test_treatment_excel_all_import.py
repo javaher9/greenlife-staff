@@ -74,10 +74,12 @@ class AllDietExcelImportTests(TestCase):
         rc=TreatmentRichContent.objects.create(master_item=existing)
         original=TreatmentRichSection.objects.create(content=rc,title='برنامه غذایی',body='تأیید پزشک',
                                                        meal_slot='other')
+        before_count=TreatmentCatalogItem.objects.filter(category='diet').count()
         result=import_all_diets(*files(),self.admin)
         self.assertEqual(result['filled'],45)
         self.assertEqual(result['skipped'],1)
-        self.assertEqual(TreatmentCatalogItem.objects.filter(category='diet').count(),46)
+        self.assertEqual(TreatmentCatalogItem.objects.filter(category='diet').count(),
+                         before_count+result['created'])
         original.refresh_from_db()
         self.assertEqual(original.body,'تأیید پزشک')
         for code,kind in [('Cof-150','thirteen'),('R-250','ramadan'),('Sib-150','text')]:
