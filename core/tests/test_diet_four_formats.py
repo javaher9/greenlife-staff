@@ -61,6 +61,28 @@ class FourDietFormatsTests(TestCase):
         self.assertContains(page,'touchstart')
         self.assertNotContains(page,'روز ۱۴</h2>')
 
+    def test_thirteen_distinct_mint_plaques_show_one_day_at_a_time(self):
+        TreatmentRichSection.objects.create(
+            content=self.keto_content,title='برنامه غذایی',
+            body='روز ۱\nصبحانه\nتخم مرغ\nروز ۲\nناهار\nسالاد',
+        )
+        response=self.client.get(reverse('diet_template_preview',args=[self.keto.pk]))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'data-select-day=',count=13)
+        self.assertContains(response,'role="tab"',count=13)
+        self.assertContains(response,'role="tabpanel"',count=13)
+        self.assertContains(response,'aria-selected="true"',count=1)
+        self.assertContains(response,'aria-selected="false"',count=12)
+        self.assertContains(response,'grid-template-columns:repeat(7,minmax(0,1fr))')
+        self.assertContains(response,'.day-plaque[aria-selected="true"]{background:#cee9d6')
+        self.assertContains(response,'page.hidden=!chosen')
+        self.assertContains(response,'show(active+1)')
+        self.assertContains(response,'show(active-1)')
+        self.assertContains(response,'dx>0?1:-1')
+        self.assertNotContains(response,'diet-day-picker')
+        self.assertNotContains(response,'background:#175a42')
+        self.assertNotContains(response,'data-select-day="14"')
+
     def test_thirteen_mobile_presentation_matches_orange_structure_but_uses_own_media(self):
         self.keto_content.cover_external_url='https://example.org/keto-cover.jpg'
         self.keto_content.slogan='هر روز، فرصتی تازه برای سلامتی'
