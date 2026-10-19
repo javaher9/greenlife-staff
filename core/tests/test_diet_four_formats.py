@@ -71,8 +71,11 @@ class FourDietFormatsTests(TestCase):
         self.assertContains(response,'data-select-day=',count=13)
         self.assertContains(response,'role="tab"',count=13)
         self.assertContains(response,'role="tabpanel"',count=13)
-        self.assertContains(response,'aria-selected="true"',count=1)
-        self.assertContains(response,'aria-selected="false"',count=12)
+        plaque_markup=response.content.decode('utf-8').split(
+            '<nav class="day-selector"',1
+        )[1].split('</nav>',1)[0]
+        self.assertEqual(plaque_markup.count('aria-selected="true"'),1)
+        self.assertEqual(plaque_markup.count('aria-selected="false"'),12)
         self.assertContains(response,'grid-template-columns:repeat(7,minmax(0,1fr))')
         self.assertContains(response,'.day-plaque[aria-selected="true"]{background:#cee9d6')
         self.assertContains(response,'page.hidden=!chosen')
