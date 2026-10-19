@@ -33,10 +33,9 @@ def _deduplicate(items):
 def diet_template_preview(request,item_id):
     content=_content_for_preview(request,item_id)
     kind=content.presentation_template
-    # Por-150 is the one approved mobile pilot. Do not route it through
-    # the unrelated generic weekly template; other diets stay unchanged.
-    if (content.master_item.category=='diet' and
-            content.master_item.name=='Por-150' and kind=='weekly'):
+    # The seven-day layout is approved for all weekly diets, while Ramadan,
+    # thirteen-day and text templates retain their independent presentations.
+    if content.master_item.category=='diet' and kind=='weekly':
         from .diet_daily_views import diet_daily_preview
         return diet_daily_preview(request,item_id)
     if content.master_item.category!='diet' or kind not in TYPES:
