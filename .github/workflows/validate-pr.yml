@@ -71,6 +71,8 @@ jobs:
         run: python manage.py test core.tests.test_unified_device_pricing core.tests.test_treatment_catalog_settings --verbosity 2
       - name: Legacy MHTML five-item content, media and doctor-preview regression
         run: python manage.py test core.tests.test_treatment_content_samples --verbosity 2
+      - name: Shared meal-time icon assets and dietary rendering regression
+        run: python manage.py test core.tests.test_meal_slot_icons --verbosity 2
       - name: Diet preview notes, quotas and headphone regression
         run: python manage.py test core.tests.test_diet_preview_extras --verbosity 2
       - name: Weekly and Ramadan diet template regression tests
