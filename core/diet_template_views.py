@@ -2,9 +2,9 @@
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import render
-from django.templatetags.static import static
 from django.views.decorators.http import require_GET
 
+from .diet_meal_icons import meal_illustration_url
 from .diet_week_plan import DAYS, build_orange_week
 from .diet_ramadan_plan import build_ramadan_week, SLOTS as RAMADAN_SLOTS
 from .diet_thirteen_plan import build_thirteen_days
@@ -75,27 +75,20 @@ def diet_template_preview(request,item_id):
         free_foods_text=content.free_foods_text,
         notes_text=content.diet_notes_text,
     )
+    # All scheduled diets (weekly, 13-day, Ramadan) use the same non-food
+    # time-of-day icons. Uploaded food photographs are never discarded.
+    for day in days:
+        day['cards']=[
+            dict(card,illustration_url=meal_illustration_url(card.get('slot')))
+            for card in day['cards'] if (card.get('body') or '').strip()
+        ]
     if kind=='thirteen':
-        # Dedicated mobile visual language shared with Por-150, but every
-        # Keto/13-day media field is read from THIS content, never the orange pilot.
-        meal_images={
-            'fasting':'fasting','breakfast':'breakfast','snack_am':'snack-am',
-            'pre_lunch':'fasting','lunch':'lunch','snack_pm':'snack-pm',
-            'pre_dinner':'fasting','dinner':'dinner','bedtime':'other',
-        }
         day_audio={audio.day_number:audio.url for audio in content.daily_audio.all() if audio.url}
         for day in days:
             day['audio_url']=day_audio.get(day['number']) or content.audio_url or ''
             # Exactly like the approved weekly template: absent/blank slots
             # have NO meal card, image, title or fallback placeholder.
             # A meal is defined by actual clinician-authored text, not a slot.
-            day['cards']=[
-                dict(card,illustration_url=static(
-                    'core/diet/meal-%s.svg'%meal_images.get(card.get('slot'),'other')
-                ))
-                for card in day['cards']
-                if (card.get('body') or '').strip()
-            ]
         slogan_photo=(content.slogan_image.url if content.slogan_image else
                       content.slogan_external_url)
         display_title=('رژیم کتو فست' if content.master_item.name=='Keto-Fast'

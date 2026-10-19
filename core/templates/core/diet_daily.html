@@ -142,6 +142,8 @@ button,select{font:inherit}
  .orange-week .diet-info{padding:9px 11px}
 }
 
+/* Shared time-of-day illustrations for all daily meal previews. */
+.diet-picture img.meal-illustration{position:absolute;inset:16px 6px 5px;width:calc(100% - 12px);height:calc(100% - 21px);object-fit:contain;display:block;background:transparent}
 </style>
 </head>
 <body class="{% if orange_only %}orange-week{% endif %}">
@@ -207,10 +209,10 @@ button,select{font:inherit}
 <article class="diet-card {% if orange_only and card.summary|length <= 1 %}compact{% endif %}">
  <div class="diet-meal">
   <div class="diet-picture">
-    {% if orange_only %}
-      <img class="meal-illustration" src="{{ card.illustration_url }}" alt="نماد {{ card.label }}" loading="lazy" onerror="this.onerror=null;this.src='{% static 'core/diet/fruit.svg' %}'">
+    {% if orange_only or card.slot != 'other' %}
+      <img class="meal-illustration" src="{{ card.illustration_url }}" alt="نماد زمانی {{ card.label }}" loading="lazy" onerror="this.onerror=null;this.src='{% static 'core/diet/meal-other.svg' %}'">
     {% elif card.photo %}
-      <img src="{{ card.photo }}" alt="غذای {{ card.label }}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="empty" style="display:none">🍽️</div>
+      <img src="{{ card.photo }}" alt="تصویر بخش توضیحات" loading="lazy">
     {% else %}<div class="empty">❧</div>{% endif %}
     <span class="label">{{ card.label }}</span>
   </div>

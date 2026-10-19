@@ -153,7 +153,13 @@ class FourDietFormatsTests(TestCase):
         self.assertContains(response,'صدای جادویی')
         self.assertContains(response,'https://example.org/keto-day2.mp3')
         self.assertContains(response,'https://example.org/keto-general.mp3')
-        self.assertContains(response,'https://example.org/keto-breakfast.jpg')
+        # A previously saved food photo remains in the DB but is not shown
+        # in the patient-facing meal card after the neutral icon rollout.
+        self.assertNotContains(response,'https://example.org/keto-breakfast.jpg')
+        self.assertTrue(TreatmentRichMedia.objects.filter(
+            section=section,original_url='https://example.org/keto-breakfast.jpg',
+        ).exists())
+        self.assertContains(response,'meal-breakfast.svg')
         self.assertContains(response,'data-day=',count=13)
         self.assertContains(response,'روز ۱۴')
         self.assertContains(response,'درخواست ویزیت')
