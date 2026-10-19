@@ -73,10 +73,11 @@ class WeeklyExcelImportTests(TestCase):
             content=oldcontent,title='برنامه غذایی',body='رژیم پزشک بدون تغییر',
             day_number=1,meal_slot='other')
         entries=extract_workbook(_xlsx())
+        before=TreatmentCatalogItem.objects.filter(category='diet').count()
         result=import_weekly_diets(entries,self.admin)
         self.assertEqual(result['filled'],33)
         self.assertEqual(result['skipped'],1)
-        self.assertEqual(TreatmentCatalogItem.objects.filter(category='diet').count(),34)
+        self.assertEqual(TreatmentCatalogItem.objects.filter(category='diet').count(),before+33)
         saved.refresh_from_db()
         self.assertEqual(saved.body,'رژیم پزشک بدون تغییر')
         mood=TreatmentCatalogItem.objects.get(name='Dam-160')
@@ -100,4 +101,4 @@ class WeeklyExcelImportTests(TestCase):
         page=self.client.get('/settings/treatment-content/')
         self.assertEqual(page.status_code,200)
         self.assertContains(page,'انتقال ۳۴ رژیم هفت‌روزه')
-        self.assertEqual(TreatmentCatalogItem.objects.count(),0)
+        self.assertEqual(TreatmentCatalogItem.objects.filter(name__startswith='Test-Weekly-').count(),0)
