@@ -90,6 +90,42 @@ class FourDietFormatsTests(TestCase):
         self.assertNotContains(response,'روز ۱ از ۱۳')
         self.assertContains(response,'برنامه غذایی روز انتخاب‌شده')
 
+    def test_thirteen_skips_unfilled_breakfast_snacks_and_other_meals(self):
+        # Blank editor slots should never create empty cards or stock photos.
+        for slot,text in (
+            ('fasting',''),('breakfast','   '),('snack_am',''),
+            ('pre_lunch',''),('snack_pm','   '),('dinner',''),
+        ):
+            TreatmentRichSection.objects.create(
+                content=self.keto_content,title=slot,
+                meal_slot=slot,day_number=1,body=text,
+            )
+        TreatmentRichSection.objects.create(
+            content=self.keto_content,title='ناهار',
+            meal_slot='lunch',day_number=1,body='مرغ کبابی و سالاد',
+        )
+        TreatmentRichSection.objects.create(
+            content=self.keto_content,title='میان‌وعده صبح',
+            meal_slot='snack_am',day_number=2,body='یک عدد سیب',
+        )
+        response=self.client.get(reverse('diet_template_preview',args=[self.keto.pk]))
+        self.assertEqual(response.status_code,200)
+        html=response.content.decode('utf-8')
+        day1=html.split('id="day-1"',1)[1].split('</section>',1)[0]
+        day2=html.split('id="day-2"',1)[1].split('</section>',1)[0]
+        self.assertEqual(day1.count('<article class="meal">'),1)
+        self.assertIn('مرغ کبابی و سالاد',day1)
+        self.assertNotIn('میان‌وعده صبح',day1)
+        self.assertNotIn('عصرانه',day1)
+        self.assertNotIn('meal-snack-am.svg',day1)
+        self.assertNotIn('meal-snack-pm.svg',day1)
+        self.assertIn('میان‌وعده صبح',day2)
+        self.assertIn('یک عدد سیب',day2)
+        day3=html.split('id="day-3"',1)[1].split('</section>',1)[0]
+        self.assertNotIn('<article class="meal">',day3)
+        self.assertIn('برنامه غذایی این روز هنوز ثبت نشده است.',day3)
+        self.assertNotIn('class="empty"',html)
+
     def test_thirteen_mobile_presentation_matches_orange_structure_but_uses_own_media(self):
         self.keto_content.cover_external_url='https://example.org/keto-cover.jpg'
         self.keto_content.slogan='هر روز، فرصتی تازه برای سلامتی'
