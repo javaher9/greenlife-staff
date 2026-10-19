@@ -116,6 +116,43 @@ def treatment_content_library(request):
     import base64
     from .treatment_excel_weekly_import import extract_workbook, validate_batch, import_weekly_diets
     action=(request.POST.get('action') or '') if request.method=='POST' else ''
+    if action=='all_excel_preview':
+        from .treatment_excel_all_import import read_all_diets
+        weights=request.FILES.get('all_weight_excel')
+        ramadan=request.FILES.get('all_ramadan_excel')
+        if not weights or not ramadan or not all(
+            f.name.lower().endswith('.xlsx') and f.size<=300_000
+            for f in (weights,ramadan)
+        ):
+            messages.error(request,'هر دو فایل XLSX لاغری و رمضان، هر کدام حداکثر ۳۰۰ کیلوبایت، الزامی هستند.')
+        else:
+            try:
+                wb=weights.read()
+                rb=ramadan.read()
+                weekly,other=read_all_diets(wb,rb)
+                request.session['all_diets_pending']=[base64.b64encode(wb).decode('ascii'),base64.b64encode(rb).decode('ascii')]
+                request.session.modified=True
+                messages.success(request,f'هر ۴۶ رژیم شناسایی شد: {len(weekly)} هفت‌روزه و {len(other)} سایر قالب‌ها. هنوز چیزی ذخیره نشده است.')
+            except ValueError as exc:
+                messages.error(request,str(exc))
+        return redirect('treatment_content_library')
+    if action=='all_excel_import':
+        from .treatment_excel_all_import import import_all_diets
+        pending=request.session.get('all_diets_pending')
+        if not pending or len(pending)!=2:
+            messages.error(request,'ابتدا هر دو فایل اکسل را برای پیش‌نمایش بارگذاری کنید.')
+        else:
+            try:
+                result=import_all_diets(base64.b64decode(pending[0]),base64.b64decode(pending[1]),request.user)
+                request.session.pop('all_diets_pending',None)
+                request.session.modified=True
+                messages.success(request,
+                    f"نتیجه انتقال ۴۶ رژیم: {result['filled']} تکمیل، "
+                    f"{result['created']} رکورد جدید، {result['skipped']} رکورد قبلی بدون بازنویسی. "
+                    "رژیم‌های جدید تا بازبینی پزشکی غیرفعال می‌مانند.")
+            except (ValueError,ValidationError) as exc:
+                messages.error(request,str(exc))
+        return redirect('treatment_content_library')
     if action=='weekly_excel_preview':
         uploaded=request.FILES.get('weekly_excel')
         if not uploaded or not uploaded.name.lower().endswith('.xlsx'):
@@ -232,6 +269,7 @@ def treatment_content_library(request):
     from .diet_excel_sample_previews import preview_cards
     return render(request,'core/treatment_content_library.html',{
         'rows':rows,'count_diets':count_diets,'weekly_excel_preview':weekly_excel_preview,
+        'all_diets_ready':bool(request.session.get('all_diets_pending')),
         'excel_preview_cards':preview_cards(),
     })
 
