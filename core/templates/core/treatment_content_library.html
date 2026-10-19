@@ -18,6 +18,19 @@
 <div class="tcl">
   <div class="hero"><h1>تنظیمات برنامه غذایی و رژیم‌ها</h1>
   <p>از دکمه «ویرایش» مقابل هر برنامه، متن وعده‌ها و عکس همان وعده را در جای خودش ببینید، اصلاح کنید یا جایگزین نمایید. {{ count_diets }} رژیم در بانک اصلی ثبت شده است. برنامه‌های بدون محتوای اولیه با وضعیت غیرفعال برای تکمیل باز می‌شوند.</p></div>
+  <section class="panel" id="excel-sample-previews">
+    <h2 style="color:#fff;font-size:18px">پیش‌نمایش دو رژیم از اکسل · در انتظار تأیید</h2>
+    <p>این دو نمونه از فایل اکسل فقط برای بررسی هستند. در بانک رژیم‌ها ذخیره یا برای تجویز فعال نشده‌اند؛ عکس وعده‌ها منتقل نشده و نمادهای زمان روز نمایش داده می‌شوند.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+    {% for preview in excel_preview_cards %}
+     <a href="{% url 'excel_diet_sample_preview' preview.id %}" style="display:block;background:#eef8f0;border:1px solid #cde6d4;border-radius:17px;overflow:hidden;text-decoration:none;color:#285d43">
+      {% if preview.cover_url %}<img src="{{ preview.cover_url }}" alt="تصویر سربرگ {{ preview.name }}" loading="lazy" onerror="this.style.display='none'" style="display:block;width:100%;height:120px;object-fit:cover;background:#e1efe4">{% endif %}
+      <span style="display:block;padding:12px;font-size:13px;font-weight:800;color:#205e43">{{ preview.name }}</span>
+      <span style="display:block;padding:0 12px 12px;font-size:11px;color:#56806a">شنبه تا جمعه · مشاهده هفت روز</span>
+     </a>
+    {% endfor %}
+    </div>
+  </section>
   <section class="panel" id="create-diet">
     <h2 style="color:#fff;font-size:18px">＋ ساخت برنامه غذایی جدید</h2>
     <p>ابتدا نام برنامه و یکی از چهار قالب را انتخاب کنید. برنامه جدید تا تکمیل و فعال‌کردن شما فقط پیش‌نویس خواهد بود.</p>
