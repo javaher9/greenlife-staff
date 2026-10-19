@@ -113,7 +113,7 @@ class FourDietFormatsTests(TestCase):
         self.assertEqual(response.status_code,200)
         self.assertNotContains(response,'class="slogan"')
         self.assertContains(response,'فایل صوتی هنوز ثبت نشده است.')
-        self.assertContains(response,'روز ۱۳ از ۱۳')
+        self.assertContains(response,'روز 13 از ۱۳')
         self.assertNotContains(response,'روز ۱۴</h2>')
         self.assertContains(response,'نان و پنیر')
         self.assertContains(response,'سوپ')
