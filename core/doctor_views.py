@@ -17,6 +17,7 @@ from django.utils import timezone
 from .call_center_identity import call_center_display_name
 from .patient_ui import attach_patient_photos
 from .device_pricing import device_unit_price, from_toman_to_million
+from .scan_analysis_display import SCAN_FIELDS, scan_value
 from .models import (
     BodyAnalysisRecord,
     InternalMessage,
@@ -244,7 +245,8 @@ def _sparkline(values, width=180, height=52):
 
 
 def _metric_card(analyses, field, label, unit, tone):
-    values=[getattr(item,field) for item in analyses if getattr(item,field) is not None]
+    values=[scan_value(item,field) for item in analyses]
+    values=[value for value in values if value is not None]
     latest=values[-1] if values else None
     delta=None
     if len(values)>=2:
@@ -479,12 +481,12 @@ def doctor_dashboard(request):
         )
         analyses.reverse()
         metric_cards=[
-            _metric_card(analyses,'weight_kg','وزن','kg','violet'),
-            _metric_card(analyses,'visceral_fat','چربی احشایی','','rose'),
-            _metric_card(analyses,'inbody_score','امتیاز آنالیز','','indigo'),
-            _metric_card(analyses,'skeletal_muscle_kg','عضله','kg','green'),
-            _metric_card(analyses,'body_fat_percent','درصد چربی','%','amber'),
+            _metric_card(analyses,field,label,unit,tone)
+            for (field,label,unit),tone in zip(
+                SCAN_FIELDS,('violet','indigo','green','amber','rose','teal')
+            )
         ]
+
         diet_history=list(
             PatientDietProgram.objects.filter(patient_id__in=sibling_ids)
             .select_related('appointment').order_by('-prescribed_at','-id')[:8]
