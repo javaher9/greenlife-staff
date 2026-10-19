@@ -47,7 +47,8 @@ def files():
                    71:'\n'.join('روز %d: صبحانه: نوشیدنی روز %d'%(i,i) for i in range(1,14))})
     for code in TEXT:
         weight.append({0:1,1:'توصیفی',2:code,68:'رژیم متنی',
-                       71:'دستور پزشکی واقعی این رژیم'})
+                       71:'دستور پزشکی واقعی این رژیم',
+                       80:'توضیح متنی در ستون غیرمنتظره' if code=='Asl-150' else ''})
     ram=[{0:'شناسه اختصاصی',1:'کد رژیم',6:'قبل از سحری'}]
     for code in ('R-50','R-250','R-150'):
         ram.append({1:code,2:'شعار رمضان',3:'https://example.org/ramadan.png',
@@ -68,6 +69,8 @@ class AllDietExcelImportTests(TestCase):
         self.assertEqual(sum(x['kind']=='text' for x in b),5)
         self.assertEqual(sum(x['kind']=='ramadan' for x in b),3)
         self.assertEqual(next(x['kind'] for x in b if x['code']=='Cof-150'),'thirteen')
+        self.assertIn('توضیح متنی در ستون غیرمنتظره',
+                      next(x['pages'] for x in b if x['code']=='Asl-150'))
 
     def test_import_preserves_existing_and_marks_all_new_inactive(self):
         existing=TreatmentCatalogItem.objects.create(category='diet',name='Weekly-00')
