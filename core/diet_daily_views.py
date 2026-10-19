@@ -140,7 +140,7 @@ def diet_daily_preview(request,item_id):
     if content.master_item.category!='diet':
         raise Http404('این مورد رژیم غذایی نیست.')
     sections=list(content.sections.prefetch_related('media').all())
-    orange_only=(content.master_item.name=='Por-150')
+    orange_only=(content.presentation_template=='weekly' or content.master_item.name=='Por-150')
     audio_by_day={row.day_number:row for row in content.daily_audio.all()}
     if orange_only:
         # Saturday=1 ... Friday=7, calculated in the configured local timezone.
@@ -166,7 +166,7 @@ def diet_daily_preview(request,item_id):
     # The legacy catalog identifier should never leak as the patient-facing
     # headline. Respect any custom title chosen by the editor.
     saved_title=(content.display_title or '').strip()
-    title=('رژیم پرتقال' if orange_only and saved_title in ('','Por-150')
+    title=('رژیم پرتقال' if content.master_item.name=='Por-150' and saved_title in ('','Por-150')
            else saved_title or content.master_item.name)
     slogan=content.slogan or ('لاغری یعنی زندگی بهتر' if content.master_item.name=='Por-150' else '')
     slogan_photo=content.slogan_image.url if content.slogan_image else content.slogan_external_url
@@ -178,7 +178,7 @@ def diet_daily_preview(request,item_id):
              summary=(card.get('body') or '').splitlines() if orange_only else card.get('summary',[]))
         for card in cards
     ]
-    if orange_only and not slogan_photo:
+    if content.master_item.name=='Por-150' and not slogan_photo:
         slogan_photo = static('core/diet/orange-slogan-woman.webp')
     response=render(request,'core/diet_daily.html',{
         'content':content,'title':title,'subtitle':content.hero_subtitle or 'برنامه غذایی اختصاصی',
