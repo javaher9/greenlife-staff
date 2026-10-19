@@ -236,7 +236,7 @@ button,select{font:inherit}
 {% if can_manage %}<div class="diet-admin"><a href="{% url 'treatment_content_manage' content.master_item_id %}">ویرایش این رژیم در تنظیمات</a></div>{% endif %}
 <nav class="diet-bottom" aria-label="پیمایش پایین">
  {% if orange_only %}<a href="{% url 'customer_club' %}"><span>⌂</span>خانه</a>{% else %}<a href="{% url 'referral_dashboard' %}"><span>⌂</span>خانه</a>{% endif %}
- <a href="{% url 'diet_daily_preview' content.master_item_id %}?day={{ day }}" class="active"><span>♜</span>برنامه غذایی</a>
+ {% if sample_legacy_id %}<a href="{% url 'excel_diet_sample_preview' sample_legacy_id %}?day={{ day }}" class="active"><span>♜</span>برنامه غذایی</a>{% else %}<a href="{% url 'diet_daily_preview' content.master_item_id %}?day={{ day }}" class="active"><span>♜</span>برنامه غذایی</a>{% endif %}
  <a href="{% url 'treatment_content_browse' %}"><span>✧</span>توصیه‌ها</a>
  <a href="{% url 'doctor_dashboard' %}"><span>•••</span>بیشتر</a>
 </nav>
