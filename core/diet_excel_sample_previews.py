@@ -101,7 +101,7 @@ def excel_diet_sample_preview(request,legacy_id):
         'next_day':day+1 if day<7 else None,
         'day_choices':list(enumerate(DAYS,start=1)),
         'cards':cards,'audio_url':'','orange_only':True,
-        'can_manage':False,
+        'can_manage':False,'sample_legacy_id':legacy_id,
     })
     response['Cache-Control']='private, no-store'
     return response
