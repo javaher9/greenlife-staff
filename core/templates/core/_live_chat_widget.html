@@ -120,6 +120,42 @@
   .gl-live-chat-bubble b{color:#61766f}.gl-live-chat-bubble p{color:#244942;font-size:9.5px}.gl-live-chat-bubble small{color:#83958f}
   .gl-live-chat-compose{background:#fff;border-color:#e4ece9}.gl-live-chat-compose textarea{background:#f8fbfa;color:#294a43;border-color:#d9e5e0;font-size:10px}.gl-live-chat-compose button{border-color:#2d9670;background:linear-gradient(135deg,#18805c,#7056c4);color:#fff}
 }
+
+/* Phone chat: light palette only; keep existing positioning and interactions. */
+@media(max-width:700px){
+  .gl-live-chat{color:#274a40}
+  .gl-live-chat-launcher{background:linear-gradient(145deg,#f1fbf5,#e5f4ed);color:#18704d;border-color:#bdded0;box-shadow:0 9px 24px rgba(33,91,72,.16)}
+  .gl-live-chat-launcher:hover{box-shadow:0 11px 27px rgba(33,91,72,.2)}
+  .gl-live-chat-badge{border-color:#f6fbf7}
+  .gl-live-chat-toast{background:#fff;border-color:#d9e9e1;box-shadow:0 12px 27px rgba(32,77,62,.17)}
+  .gl-live-chat-toast b{color:#274a40}
+  .gl-live-chat-toast p{color:#60786e;font-size:10px}
+  .gl-live-chat-drawer{background:#fff;border-color:#dae8e1;box-shadow:0 18px 46px rgba(32,77,62,.20)}
+  .gl-live-chat-head{background:linear-gradient(135deg,#effaf3,#f7f4fe);border-color:#dceae3}
+  .gl-live-chat-icon{background:#e0f3e8;color:#216b4b;border-color:#c8e5d7;box-shadow:none}
+  .gl-live-chat-title strong{color:#23483c;font-size:12px}
+  .gl-live-chat-title small{color:#647c72;font-size:9px}
+  .gl-live-chat-close{background:#fff;color:#536f64;border-color:#cbded5}
+  .gl-live-chat-contacts{background:#f7fbf8;border-color:#dbe8e0}
+  .gl-live-chat-contact{color:#36594a;min-height:42px}
+  .gl-live-chat-contact:hover{background:#eaf6ef;border-color:#d1e5da}
+  .gl-live-chat-contact.active{background:#e8f4ed;border-color:#bfdcca;color:#245b43}
+  .gl-live-chat-contact small{color:#667c70;font-size:8px}
+  .gl-live-chat-thread{background:#fff}
+  .gl-live-chat-person{border-color:#e0eae4;color:#294f40}
+  .gl-live-chat-person strong{color:#294f40}
+  .gl-live-chat-person small{color:#71867b;font-size:9px}
+  .gl-live-chat-stream{background:#fbfdfb}
+  .gl-live-chat-empty{color:#6c8277;font-size:10px}
+  .gl-live-chat-bubble{background:#fff;border-color:#d8e6dc;color:#284a3e}
+  .gl-live-chat-bubble.mine{background:#e6f5ec;border-color:#c9e4d3}
+  .gl-live-chat-bubble b{color:#577266}
+  .gl-live-chat-bubble p{color:#24463a;font-size:10px}
+  .gl-live-chat-bubble small{color:#6f8579}
+  .gl-live-chat-compose{background:#fff;border-color:#e0ebe4}
+  .gl-live-chat-compose textarea{background:#f7fbf8;color:#264a3d;border-color:#c9dfd2;font-size:11px}
+  .gl-live-chat-compose button{background:linear-gradient(135deg,#238561,#6954b7);border-color:#439775;color:#fff}
+}
 </style>
 
 <div class="gl-live-chat" id="glLiveChat">
