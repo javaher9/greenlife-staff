@@ -86,10 +86,15 @@ def diet_template_preview(request,item_id):
         day_audio={audio.day_number:audio.url for audio in content.daily_audio.all() if audio.url}
         for day in days:
             day['audio_url']=day_audio.get(day['number']) or content.audio_url or ''
+            # Exactly like the approved weekly template: absent/blank slots
+            # have NO meal card, image, title or fallback placeholder.
+            # A meal is defined by actual clinician-authored text, not a slot.
             day['cards']=[
                 dict(card,illustration_url=static(
                     'core/diet/meal-%s.svg'%meal_images.get(card.get('slot'),'other')
-                )) for card in day['cards']
+                ))
+                for card in day['cards']
+                if (card.get('body') or '').strip()
             ]
         slogan_photo=(content.slogan_image.url if content.slogan_image else
                       content.slogan_external_url)
