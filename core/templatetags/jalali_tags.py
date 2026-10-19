@@ -76,3 +76,15 @@ def appointment_paid_million(appointment):
     except Exception:
         return '0'
     return million_toman(amount)
+
+
+@register.filter
+def toman_million(value):
+    """Presentation-only conversion: stored TOMAN -> million toman."""
+    try:
+        amount=Decimal(str(value))/Decimal('1000000')
+        if not amount.is_finite():
+            return '0'
+        return format(amount.normalize(),'f').rstrip('0').rstrip('.') if '.' in format(amount.normalize(),'f') else format(amount.normalize(),'f')
+    except (InvalidOperation,TypeError,ValueError):
+        return '0'
