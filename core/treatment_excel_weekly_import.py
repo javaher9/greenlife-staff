@@ -123,12 +123,17 @@ def import_weekly_diets(entries,actor):
                 continue
             # Explicit day numbers are stored intact, without guessing which foods
             # belong to which meal. Source paragraphs are clinician-owned.
-            for i,(slot,title,body) in enumerate(e['common'],start=1):
-                TreatmentRichSection.objects.create(content=content,title=title,body=body,
-                    day_number=0,meal_slot=slot,sort_order=i*10)
+            # Keep every original Excel line verbatim. The existing weekly
+            # interpreter understands meal labels and individual weekdays.
+            if e['common']:
+                blocks=[title+'\n'+body for slot,title,body in e['common']]
+                TreatmentRichSection.objects.create(content=content,
+                    title='برنامه غذایی',body='\n'.join(blocks),
+                    day_number=0,meal_slot='other',sort_order=10)
             for day,body in e['days']:
-                TreatmentRichSection.objects.create(content=content,title='برنامه غذایی',
-                    body=body,day_number=day,meal_slot='other',sort_order=100+day)
+                TreatmentRichSection.objects.create(content=content,
+                    title='برنامه غذایی',body=body,
+                    day_number=day,meal_slot='other',sort_order=100+day)
             content.presentation_template='weekly'
             content.cover_external_url=e['cover'][:1300]
             content.audio_external_url=e['audio'][:1300]
