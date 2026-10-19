@@ -52,7 +52,7 @@ a{color:inherit;text-decoration:none}button,select{font:inherit}
 .meal-copy h3{font-size:14px;font-weight:900;margin:0 0 5px;color:#246746}
 .meal-copy p{font-size:13px;color:#354e46;line-height:2;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
 .meal-copy small{font-size:11px;color:#286e52;font-weight:800;margin-top:6px}
-.empty{padding:18px;border-radius:16px;background:#fff;border:1px solid var(--line);font-size:13px;color:#6c8277}
+.no-day-food{font-size:12px;color:#7a9384;text-align:center;margin:17px 0 23px;line-height:1.9}
 .visit{background:#e2f1e6;border:1px solid #cde4d4;border-radius:20px;padding:21px;margin:20px 0 15px;line-height:1.9}
 .visit h2{font-size:18px;color:#1e6747;margin:0 0 6px}.visit p{font-size:13px;margin:0;color:#496f59}
 .visit a{display:inline-block;background:#247751;color:#fff;border-radius:12px;padding:10px 18px;font-size:12px;font-weight:850;margin-top:12px}
@@ -124,8 +124,9 @@ a{color:inherit;text-decoration:none}button,select{font:inherit}
    {% if card.calories is not None %}<small>{{ card.calories }} کالری تأییدشده</small>{% endif %}
   </div>
  </article>
- {% empty %}<div class="empty">برای این روز هنوز وعده‌ای ثبت نشده است. متن یا وعده‌ای از روزهای دیگر حدس زده نمی‌شود.</div>{% endfor %}
+ {% endfor %}
  </div>
+ {% if not day.cards %}<p class="no-day-food" role="status">برنامه غذایی این روز هنوز ثبت نشده است.</p>{% endif %}
 </section>
 {% endfor %}
 </div>
