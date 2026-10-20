@@ -30,6 +30,14 @@ a{color:inherit;text-decoration:none}button,select{font:inherit}
 /* 13 independent mint plaques, two complete rows even on narrow phones. */
 .day-selector{margin:0 auto 17px;width:min(100%,590px);padding:10px 9px 12px;border:1px solid #e0eee4;border-radius:20px;background:#f8fcf8}
 .day-selector-title{font-size:12px;font-weight:850;color:#537966;text-align:center;margin:0 0 8px}
+.day-order-note{font-size:12px;line-height:1.95;color:#426b55;margin:0 2px 12px}
+.day-complete-mark{display:none;margin-inline-start:3px;color:#256748;font-weight:900}
+.day-plaque.is-complete .day-complete-mark{display:inline}
+.day-plaque.is-complete{border-color:#87bc98}
+.day-progress{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;font-size:12px;color:#426b55}
+.day-completion{display:flex;align-items:center;gap:8px;cursor:pointer;min-height:36px;font-weight:800}
+.day-completion input{width:20px;height:20px;accent-color:#256748}
+.progress-storage-note{width:100%;font-size:10px;color:#648073}
 .day-plaques{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;direction:rtl}
 .day-plaque{appearance:none;min-width:0;min-height:43px;padding:6px 2px;border:1px solid #dbe9df;border-radius:12px;background:#fff;color:#41745d;cursor:pointer;font-size:clamp(9px,2.65vw,12px);font-weight:800;white-space:nowrap;text-align:center;box-shadow:0 2px 7px #15432607;transition:background .15s,border-color .15s}
 .day-plaque[aria-selected="true"]{background:#cee9d6;color:#19573a;border-color:#99caac;font-weight:900;box-shadow:0 2px 7px #326d410b}
@@ -97,12 +105,18 @@ a{color:inherit;text-decoration:none}button,select{font:inherit}
 </section>
 <nav class="day-selector" aria-label="۱۳ روز برنامه">
  <p class="day-selector-title">برنامه روزانه · انتخاب روز</p>
+ <p class="day-order-note">لازم نیست روزها را به‌ترتیب شماره انجام دهید. می‌توانید مثلاً ابتدا برنامه روز ۵، سپس روز ۴ و بعد روز ۱۳ را انتخاب کنید. هر برنامه روزانه را کامل انجام دهید و پس از پایان، آن را علامت بزنید تا روزهای انجام‌شده مشخص بمانند.</p>
  <div class="day-plaques" role="tablist" aria-label="انتخاب روز از ۱۳ روز">
  {% for day in days %}
   <button type="button" class="day-plaque" role="tab" id="day-tab-{{ day.number }}" data-select-day="{{ day.number }}"
    aria-controls="day-{{ day.number }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
-   tabindex="{% if forloop.first %}0{% else %}-1{% endif %}">{{ day.label }}</button>
+   tabindex="{% if forloop.first %}0{% else %}-1{% endif %}"><span>{{ day.label }}</span><span class="day-complete-mark" aria-hidden="true">✓</span></button>
  {% endfor %}
+ </div>
+ <div class="day-progress" data-progress-owner="{{ request.user.pk }}" data-progress-plan="{{ content.master_item_id }}" data-progress-version="{{ content.imported_at|date:'U' }}" id="diet-progress">
+  <label class="day-completion"><input type="checkbox" id="day-completed"><span id="day-completed-label">این روز را انجام دادم</span></label>
+  <span id="day-completed-count" role="status" aria-live="polite">۰ از ۱۳ روز انجام شده</span>
+  <small class="progress-storage-note" id="progress-storage-note">علامت‌ها در همین مرورگر ذخیره می‌شوند.</small>
  </div>
 </nav>
 <div class="day-nav" aria-label="روز قبل و بعد">
@@ -164,9 +178,38 @@ a{color:inherit;text-decoration:none}button,select{font:inherit}
  const voice=document.getElementById('daily-voice'),noVoice=document.getElementById('no-voice');
  if(!area||pages.length!==13||tabs.length!==13||!current)return;
  let active=1;
+ const progress=document.getElementById('diet-progress');
+ const completedBox=document.getElementById('day-completed');
+ const completedLabel=document.getElementById('day-completed-label');
+ const completedCount=document.getElementById('day-completed-count');
+ const storageNote=document.getElementById('progress-storage-note');
+ const storageKey=['greenlife','thirteen-progress',progress.dataset.progressOwner,progress.dataset.progressPlan,progress.dataset.progressVersion].join(':');
+ const completed=new Set();
+ const persian=value=>String(value).replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+ try{
+  const stored=JSON.parse(localStorage.getItem(storageKey)||'[]');
+  if(Array.isArray(stored))stored.forEach(n=>{if(Number.isInteger(n)&&n>=1&&n<=13)completed.add(n);});
+ }catch(error){storageNote.textContent='ذخیره در این مرورگر در دسترس نیست؛ علامت‌ها فقط تا بستن صفحه باقی می‌مانند.';}
+ function updateProgress(){
+  tabs.forEach(tab=>{
+   const number=Number(tab.dataset.selectDay),done=completed.has(number);
+   tab.classList.toggle('is-complete',done);
+   tab.setAttribute('aria-label','روز '+persian(number)+(done?'، انجام‌شده':''));
+  });
+  completedBox.checked=completed.has(active);
+  completedLabel.textContent='روز '+persian(active)+' را انجام دادم';
+  completedCount.textContent=persian(completed.size)+' از ۱۳ روز انجام شده';
+ }
+ completedBox.addEventListener('change',()=>{
+  if(completedBox.checked)completed.add(active);else completed.delete(active);
+  try{localStorage.setItem(storageKey,JSON.stringify(Array.from(completed)));}
+  catch(error){storageNote.textContent='ذخیره در این مرورگر در دسترس نیست؛ علامت‌ها فقط تا بستن صفحه باقی می‌مانند.';}
+  updateProgress();
+ });
  function show(n){
   if(!Number.isInteger(n)||n<1||n>pages.length)return;
   active=n;
+  updateProgress();
   for(const page of pages){
    const chosen=Number(page.dataset.day)===active;
    page.classList.toggle('active',chosen);
