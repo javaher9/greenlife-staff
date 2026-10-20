@@ -110,7 +110,7 @@
     <div class="row-actions">
       {% if row.item.rich_content %}
         <a class="edit-action" href="{% url 'treatment_content_manage' row.item.pk %}">✎ ویرایش برنامه</a>
-        {% if row.item.rich_content.presentation_template != 'legacy' and row.item.category == 'diet' %}<a href="{% url 'diet_template_preview' row.item.pk %}" target="_blank" rel="noopener">پیش‌نمایش قالب</a>{% else %}<a href="{% url 'treatment_content_preview' row.item.pk %}">پیش‌نمایش</a>{% endif %}
+        {% if row.item.rich_content.presentation_template != 'legacy' and row.item.category == 'diet' %}<a href="{% url 'diet_template_preview' row.item.pk %}" target="_blank" rel="noopener">پیش‌نمایش قالب</a> <a href="{% url 'diet_companion_preview' row.item.pk %}" target="_blank" rel="noopener">همراه رژیم · ثبت وعده‌ها</a>{% else %}<a href="{% url 'treatment_content_preview' row.item.pk %}">پیش‌نمایش</a>{% endif %}
       {% else %}
         <form class="edit-form" method="post">{% csrf_token %}
           <input type="hidden" name="action" value="start_edit">

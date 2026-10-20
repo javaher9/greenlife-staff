@@ -148,6 +148,8 @@ def diet_daily_preview(request,item_id):
         available_days=list(range(1,8))
         suggested_day=(timezone.localdate().weekday()+2)%7+1
         week=build_orange_week(sections)
+        if not week.get(suggested_day):
+            suggested_day=next((n for n in available_days if week.get(n)),suggested_day)
     else:
         # Every non-orange diet preserves its previous behavior.
         available_days=sorted({s.day_number for s in sections}|set(audio_by_day)) or [1]
@@ -187,7 +189,7 @@ def diet_daily_preview(request,item_id):
         notes_text=content.diet_notes_text,
     )
     response=render(request,'core/diet_daily.html',{
-        'content':content,'title':title,'subtitle':content.hero_subtitle or 'برنامه غذایی اختصاصی',
+        'content':content,'title':title,'subtitle':content.hero_subtitle or ('برنامه غذایی هفت‌روزه' if content.presentation_template=='weekly' and content.master_item.name!='Por-150' else 'برنامه غذایی اختصاصی'),
         'slogan':slogan,'slogan_photo':slogan_photo,'day':chosen,
         'days':available_days,'day_total':max(available_days),'prev_day':prev_day,'next_day':next_day,
         'cards':cards,

@@ -18,6 +18,7 @@ from . import lead_command_views
 from . import lead_management_views
 from . import doctor_views
 from . import treatment_content_views
+from . import diet_companion_views
 from . import diet_daily_views
 from . import diet_excel_sample_previews
 from . import customer_portal_views
@@ -32,6 +33,10 @@ from . import live_status_views
 from . import quality_command_views
 from .mcp import mcp_endpoint
 urlpatterns=[
+path('customer/diets/',diet_companion_views.customer_diets,name='customer_diets'),
+path('customer/diets/<int:pk>/',diet_companion_views.customer_diet,name='customer_diet'),
+path('customer/diets/<int:pk>/log/',diet_companion_views.customer_diet_log,name='customer_diet_log'),
+path('treatment-content/<int:item_id>/companion/',diet_companion_views.companion_preview,name='diet_companion_preview'),
 path('scan/',scan_station_views.scan_station,name='scan_station'),
 path('alerts/',management_alert_views.alert_center,name='management_alert_center'),
 path('api/alerts/management/',management_alert_views.alert_center_api,name='management_alert_api'),

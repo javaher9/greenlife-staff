@@ -30,6 +30,7 @@ header{display:flex;justify-content:space-between;align-items:center;margin-bott
  .page-row{gap:9px}.page-text{font-size:12px}.page-photos{width:37%}
 }
 @media print{.pager,header a,.admin{display:none!important}.page{display:block!important;break-inside:avoid;box-shadow:none}}
+.pager .fixed-chevron{display:block;width:9px;height:9px;border-top:3px solid currentColor;border-right:3px solid currentColor}.pager .right{transform:rotate(45deg)}.pager .left{transform:rotate(-135deg)}
 </style></head><body>
 <main class="container">
 <header><strong>❧ گرین‌لایف</strong><a href="{% url 'treatment_content_browse' %}">بازگشت</a></header>
@@ -39,9 +40,9 @@ header{display:flex;justify-content:space-between;align-items:center;margin-bott
 {% if content.audio_url %}<div class="extra"><audio controls preload="none" src="{{ content.audio_url }}" style="width:100%"></audio></div>{% endif %}
 {% if pages %}
 <nav class="pager" aria-label="ورق زدن صفحات">
- <button id="back" type="button" aria-label="صفحه قبل">❯</button>
+ <button id="forward" type="button" aria-label="صفحه بعد"><span class="fixed-chevron right" aria-hidden="true"></span></button>
  <b id="page-counter">صفحه ۱ از {{ pages|length }}</b>
- <button id="forward" type="button" aria-label="صفحه بعد">❮</button>
+ <button id="back" type="button" aria-label="صفحه قبل"><span class="fixed-chevron left" aria-hidden="true"></span></button>
 </nav>
 <div class="pages" id="text-diet-pages">
 {% for page in pages %}

@@ -158,6 +158,10 @@ def build_orange_week(sections):
             # authored paragraph per day. Its day_number is authoritative;
             # never repeat that text across all seven weekdays.
             target_day=section.day_number if 1<=section.day_number<=7 else None
+            # A legacy block naming several weekdays is a whole-week source.
+            # Its unlabeled meals are shared; per-day Excel blocks stay isolated.
+            if len(days)>1:
+                target_day=None
             for slot,cards in shared.items():
                 if target_day: source_days[target_day][slot].extend(cards)
                 else: source_shared[slot].extend(cards)

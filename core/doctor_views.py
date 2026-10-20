@@ -395,6 +395,7 @@ def doctor_dashboard(request):
                     patient=patient,
                     appointment=selected,
                     diet_name=diet[:160],
+                    catalog_item=TreatmentCatalogItem.objects.filter(category='diet',branch__isnull=True,name=diet).first(),
                     recommendation_pack=(request.POST.get('recommendation_pack') or '').strip()[:160],
                     print_template=(request.POST.get('print_template') or '').strip()[:160],
                     note=(request.POST.get('note') or '').strip()[:2000],
