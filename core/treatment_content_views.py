@@ -96,6 +96,13 @@ def treatment_content_browse(request):
 @require_GET
 def treatment_content_preview(request, item_id):
     content=_content_for_preview(request,item_id)
+    # Older doctor/catalog links still target /preview/. Weekly diets must use
+    # the approved day-by-day cards there too; source=1 is the admin text audit.
+    if (content.master_item.category=='diet'
+            and content.presentation_template=='weekly'
+            and not (request.GET.get('source')=='1' and _admin(request))):
+        from .diet_daily_views import diet_daily_preview
+        return diet_daily_preview(request,item_id)
     sections=[
         build_section_preview(section)
         for section in content.sections.prefetch_related('media').all()
