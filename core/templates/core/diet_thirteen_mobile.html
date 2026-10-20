@@ -37,6 +37,9 @@ a{color:inherit;text-decoration:none}button,select{font:inherit}
 .day-nav{display:flex;align-items:center;gap:12px;justify-content:space-between;margin:0 auto 12px;min-height:42px;padding:5px 8px;background:#fff;border:1px solid #e0eee4;border-radius:50px;max-width:360px}
 .day-nav button{display:grid;place-items:center;width:32px;height:32px;border:1px solid #dbeadd;background:#eaf6ed;color:#327553;border-radius:50%;cursor:pointer;font-size:20px;font-weight:800}
 .day-nav button:disabled{opacity:.3;cursor:default}
+.day-nav .day-chevron{display:block;width:9px;height:9px;border-top:3px solid currentColor;border-right:3px solid currentColor}
+.day-nav .day-chevron.right{transform:rotate(45deg)}
+.day-nav .day-chevron.left{transform:rotate(-135deg)}
 .day-nav .day-current{flex:1;text-align:center;color:#5a806a;font-size:12px;font-weight:750}
 
 .days{margin:0}.day-sheet{display:none}.day-sheet.active{display:block}
@@ -103,9 +106,9 @@ a{color:inherit;text-decoration:none}button,select{font:inherit}
  </div>
 </nav>
 <div class="day-nav" aria-label="روز قبل و بعد">
- <button id="following-day" type="button" aria-label="روز بعد" title="روز بعد">❯</button>
+ <button id="following-day" type="button" aria-label="روز بعد" title="روز بعد"><span class="day-chevron right" aria-hidden="true"></span></button>
  <span class="day-current" id="day-current">وعده‌های روز انتخاب‌شده</span>
- <button id="previous-day" type="button" aria-label="روز قبل" title="روز قبل">❮</button>
+ <button id="previous-day" type="button" aria-label="روز قبل" title="روز قبل"><span class="day-chevron left" aria-hidden="true"></span></button>
 </div>
 <div class="days" id="thirteen-days" aria-label="برنامه ۱۳ روز">
 {% for day in days %}
