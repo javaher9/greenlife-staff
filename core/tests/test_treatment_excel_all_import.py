@@ -74,10 +74,20 @@ class AllDietExcelImportTests(TestCase):
         rc=TreatmentRichContent.objects.create(master_item=existing)
         original=TreatmentRichSection.objects.create(content=rc,title='برنامه غذایی',body='تأیید پزشک',
                                                        meal_slot='other')
+        weekly,other=read_all_diets(*files())
+        imported_codes={row['code'] for row in weekly+other}
+        before_count=TreatmentCatalogItem.objects.filter(category='diet').count()
+        untouched_ids=set(TreatmentCatalogItem.objects.filter(category='diet').exclude(name__in=imported_codes).values_list('pk',flat=True))
         result=import_all_diets(*files(),self.admin)
         self.assertEqual(result['filled'],45)
         self.assertEqual(result['skipped'],1)
-        self.assertEqual(TreatmentCatalogItem.objects.filter(category='diet').count(),46)
+        # Seeded catalog records vary by database/test order. Count only the
+        # rows this import actually creates while checking all 46 input codes.
+        self.assertEqual(TreatmentCatalogItem.objects.filter(category='diet').count(),
+                         before_count+result['created'])
+        self.assertEqual(len(imported_codes),46)
+        self.assertSetEqual(set(TreatmentCatalogItem.objects.filter(category='diet',name__in=imported_codes).values_list('name',flat=True)),imported_codes)
+        self.assertSetEqual(set(TreatmentCatalogItem.objects.filter(category='diet').exclude(name__in=imported_codes).values_list('pk',flat=True)),untouched_ids)
         original.refresh_from_db()
         self.assertEqual(original.body,'تأیید پزشک')
         for code,kind in [('Cof-150','thirteen'),('R-250','ramadan'),('Sib-150','text')]:
