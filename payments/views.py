@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
-from .models import PaymentRequest, PaymentEvent, PettyCashExpense
+from .models import PaymentRequest, PaymentEvent, PettyCashExpense, PaymentClarification
 
 def executive(user):
     return user.is_authenticated and user.username.lower() in settings.EXECUTIVE_USERNAMES
@@ -23,6 +23,11 @@ class RequestForm(forms.ModelForm):
         model=PaymentRequest
         fields=['kind','amount_toman','description','recipient_name','recipient_iban','recipient_card']
         widgets={'description':forms.Textarea(attrs={'rows':2})}
+    def clean_description(self):
+        value=self.cleaned_data['description'].strip()
+        if len(value)<10:
+            raise ValidationError('شرح درخواست باید حداقل ده نویسه باشد.')
+        return value
     def clean(self):
         d=super().clean()
         if d.get('kind')=='payment' and not (d.get('recipient_iban') or d.get('recipient_card')):
@@ -61,12 +66,13 @@ def workspace(request):
             entry.created_by=request.user
             entry.save()
             return redirect('payments_workspace')
+    clarifications=PaymentRequest.objects.filter(state='needs_info',clarification_assignee=request.user).prefetch_related('clarifications')
     queue=PaymentRequest.objects.filter(state='approved',assigned_to=request.user).select_related('requester')
     mine=PaymentRequest.objects.filter(requester=request.user)[:30]
     expenses=PettyCashExpense.objects.filter(holder=request.user)
     received=PaymentRequest.objects.filter(kind='petty_cash',beneficiary=request.user,state='paid').aggregate(x=Sum('amount_toman'))['x'] or 0
     spent=expenses.aggregate(x=Sum('amount_toman'))['x'] or 0
-    return render(request,'payments/workspace.html',dict(form=form,expense_form=expense_form,queue=queue,mine=mine,expenses=expenses[:20],balance=received-spent))
+    return render(request,'payments/workspace.html',dict(form=form,expense_form=expense_form,queue=queue,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent))
 
 @login_required
 @require_POST
@@ -80,6 +86,16 @@ def review(request,pk):
         action=request.POST.get('action')
         if action=='reject':
             p.state='rejected'
+        elif action=='needs_info':
+            note=request.POST.get('question','').strip()
+            assignee=get_object_or_404(User,pk=request.POST.get('clarification_assignee') or p.requester_id,is_active=True)
+            if len(note)<5:
+                return HttpResponseBadRequest('سؤال توضیحی الزامی است.')
+            if not staff(assignee) and not executive(assignee):
+                raise PermissionDenied()
+            p.state='needs_info'
+            p.clarification_assignee=assignee
+            PaymentClarification.objects.create(payment=p,author=request.user,message=note)
         elif action=='approve':
             assignee=get_object_or_404(User,pk=request.POST.get('assigned_to'),is_active=True)
             channel=request.POST.get('channel')
@@ -134,4 +150,21 @@ def admin_dashboard(request):
     consultants=User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant')
     accountants=User.objects.filter(is_active=True,user_permissions__codename='execute_official_payment').distinct()
     paid=requests.filter(state='paid')
-    return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants})
+    return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants,'staff_members':User.objects.filter(is_active=True,profile__is_active=True).order_by('first_name','last_name')})
+
+@login_required
+@require_POST
+def answer_clarification(request,pk):
+    with transaction.atomic():
+        p=get_object_or_404(PaymentRequest.objects.select_for_update(),pk=pk)
+        if p.state!='needs_info' or p.clarification_assignee_id!=request.user.id:
+            raise PermissionDenied()
+        response=request.POST.get('answer','').strip()
+        if len(response)<5:
+            return HttpResponseBadRequest('پاسخ توضیحی الزامی است.')
+        PaymentClarification.objects.create(payment=p,author=request.user,message=response)
+        p.state='pending'
+        p.clarification_assignee=None
+        p.save(update_fields=['state','clarification_assignee'])
+        PaymentEvent.objects.create(payment=p,actor=request.user,action='clarification_answered')
+    return redirect('payments_workspace')
