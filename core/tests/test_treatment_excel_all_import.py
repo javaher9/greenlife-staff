@@ -76,8 +76,8 @@ class AllDietExcelImportTests(TestCase):
         original=TreatmentRichSection.objects.create(content=rc,title='برنامه غذایی',body='تأیید پزشک',
                                                        meal_slot='other')
         result=import_all_diets(*files(),self.admin)
-        self.assertEqual(result['filled'],45)
-        self.assertEqual(result['skipped'],1)
+        self.assertEqual(result['filled'],46)
+        self.assertEqual(result['skipped'],0)
         self.assertEqual(TreatmentCatalogItem.objects.filter(category='diet').count(),46)
         original.refresh_from_db()
         self.assertEqual(original.body,'تأیید پزشک')
