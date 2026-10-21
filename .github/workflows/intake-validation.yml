@@ -1,0 +1,46 @@
+name: Validate Patient Intake
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  intake:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: greenlife
+          POSTGRES_USER: greenlife
+          POSTGRES_PASSWORD: test-password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U greenlife -d greenlife"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DEBUG: "1"
+      SECRET_KEY: "only-for-testing-patient-intake"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
+      POSTGRES_DB: greenlife
+      POSTGRES_USER: greenlife
+      POSTGRES_PASSWORD: test-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Compile intake and touched views
+        run: python -m compileall -q intake core/doctor_views.py core/patient_360_views.py core/live_status_views.py
+      - name: Django integrity check
+        run: python manage.py check
+      - name: Confirm migrations are consistent
+        run: python manage.py makemigrations --check --dry-run
+      - name: Test positive only summaries
+        run: python manage.py test core.tests.test_intake_summary
