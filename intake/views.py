@@ -97,8 +97,8 @@ def intake_form(request, token):
         medications = request.POST.get('medications', '').strip()[:1000]
         allergies = request.POST.get('allergies', '').strip()[:1000]
         comments = request.POST.get('comments', '').strip()[:1000]
-        if not reasons or request.POST.get('consent') != 'on':
-            return render(request, 'intake/form.html', {'error': 'علت مراجعه و تأیید آگاهی از ثبت اطلاعات الزامی است.', 'invitation': invitation, 'conditions': LIMITED_CHOICES['conditions'], 'safety_flags': LIMITED_CHOICES['safety_flags']})
+        if not reasons or request.POST.get('consent') != 'on' or request.POST.get('screening_confirmed') != 'on':
+            return render(request, 'intake/form.html', {'error': 'علت مراجعه، تأیید بررسی سوابق بیماری و آگاهی از ثبت اطلاعات الزامی است.', 'invitation': invitation, 'conditions': LIMITED_CHOICES['conditions'], 'safety_flags': LIMITED_CHOICES['safety_flags']})
         if any(len(x) > 100 for x in reasons) or any(x not in LIMITED_CHOICES['conditions'] for x in conditions) or any(x not in LIMITED_CHOICES['safety_flags'] for x in flags):
             raise PermissionDenied('مقادیر فرم نامعتبر است.')
         with transaction.atomic():
