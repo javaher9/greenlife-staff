@@ -27,6 +27,7 @@ class PaymentRequest(models.Model):
     class Meta:
         ordering = ['-created_at']
         indexes = [models.Index(fields=['assigned_to','state'])]
+        permissions = [('execute_official_payment','May execute official bank payments')]
 class PettyCashExpense(models.Model):
     holder = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT,related_name='petty_expenses')
     amount_toman = models.PositiveBigIntegerField(validators=[MinValueValidator(1)])
