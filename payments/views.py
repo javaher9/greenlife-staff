@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import Sum, Q
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -168,3 +168,15 @@ def answer_clarification(request,pk):
         p.save(update_fields=['state','clarification_assignee'])
         PaymentEvent.objects.create(payment=p,actor=request.user,action='clarification_answered')
     return redirect('payments_workspace')
+
+@login_required
+def receipt(request,pk):
+    p=get_object_or_404(PaymentRequest,pk=pk,state='paid')
+    if not executive(request.user) and request.user.pk not in (p.requester_id,p.assigned_to_id):
+        raise PermissionDenied()
+    if not p.payment_receipt:
+        raise Http404()
+    response=FileResponse(p.payment_receipt.open('rb'),as_attachment=True)
+    response['Cache-Control']='no-store, private'
+    response['X-Content-Type-Options']='nosniff'
+    return response
