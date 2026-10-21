@@ -11,6 +11,7 @@ from django.utils import timezone
 from .device_booking_models import DeviceSessionBooking
 from .models import AuditLog, Branch, VisitAppointment
 from .sms import SmsGatewayError, send_sms
+from intake.models import IntakeInvitation
 
 
 _ALLOWED_ROLES={'call_center','receptionist','consultant','doctor','admin','manager','internal_manager'}
@@ -60,7 +61,15 @@ def _visit_state(item,now):
             return 'overdue','زمان مراجعه گذشته',True
         return 'booked','رزرو شده',False
     if item.status=='arrived' and item.care_stage=='doctor':
-        return 'doctor','پذیرش شد · در انتظار پزشک',False
+        invitation = getattr(item, 'intake_invitation', None)
+        if invitation:
+            if invitation.completed_at:
+                return 'intake_completed','اطلاعات اولیه تکمیل شد · آماده آنالیز',False
+            if invitation.started_at:
+                return 'intake_started','در حال تکمیل فرم اطلاعات اولیه',False
+            if invitation.sent_at:
+                return 'intake_sent','لینک فرم ارسال شد · در انتظار تکمیل',False
+        return 'arrived','پذیرش شد',False
     if item.care_stage=='consultant':
         return 'consultant','ویزیت پزشک انجام شد · نزد مشاور',False
     if item.care_stage=='payment':
@@ -93,7 +102,7 @@ def _visit_queryset(request,profile,branch):
             VisitAppointment.objects
             .filter(appointment_date__range=(today,today+timedelta(days=1)))
             .filter(Q(lead__assigned_to=profile) | Q(created_by=request.user,source='call_center'))
-            .select_related('branch','lead')
+            .select_related('branch','lead','intake_invitation')
             .order_by('appointment_date','appointment_time','id')
             .distinct()
         )

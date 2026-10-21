@@ -1,6 +1,8 @@
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
+from intake.models import IntakeInvitation
+from .intake_summary import compact_medical_summary
 from django.contrib import messages
 from django.contrib.messages import get_messages
 from django.conf import settings
@@ -557,7 +559,10 @@ def doctor_dashboard(request):
             'photo':patient.photo,
         }
 
+    latest_intake = IntakeInvitation.objects.filter(appointment=selected,completed_at__isnull=False).first() if selected else None
+    medical_intake_summary = compact_medical_summary(latest_intake.answers if latest_intake else {})
     return render(request,'core/doctor/dashboard.html',{
+        'medical_intake_summary':medical_intake_summary,
         'doctor_profile':profile,
         'doctor_name':request.user.get_full_name() or request.user.username,
         'doctor_branch':branch,
