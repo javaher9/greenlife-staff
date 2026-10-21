@@ -1,4 +1,4 @@
-{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+{% extends 'core/base.html' %}{% load jalali_tags payment_queue %}{% block content %}
 <style>
 .finance-entry-shell{display:grid;gap:14px}
 .finance-entry-form{position:relative}
@@ -71,6 +71,7 @@
 </style>
 
 <div class="finance-entry-shell">
+{% approved_payment_queue %}
 <section class="hero">
   <div class="fin-hero-copy"><span class="eyebrow">ثبت فروش شعبه</span><h1>ثبت فروش و پرداخت</h1><p>مبلغ دریافتی و پکیج/خدمت را ثبت کنید؛ فروش افسریه از مراجعه مستقیم شعبه جدا می‌شود.</p></div>
   {% if user.profile.role == 'consultant' %}<a class="fin-back" href="{% url 'consultant_sales_outcomes' %}">← بازگشت به پنل مشاور</a>{% endif %}
