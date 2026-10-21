@@ -52,7 +52,7 @@ class DietPreviewExtrasTests(TestCase):
         self.assertEqual(text.count('<h2>سهمیه و مواد آزاد</h2>'),1)
         self.assertEqual(text.count('روغن زیتون سه قاشق'),1)
         self.assertIn('🎧',text)
-        self.assertNotIn('با هدفون گوش دهید',text)
+        self.assertIn('با هدفون گوش دهید',text)
 
     def test_exact_duplicate_is_hidden_but_distinct_advice_preserved(self):
         sections=[
