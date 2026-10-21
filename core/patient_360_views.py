@@ -18,6 +18,8 @@ from .models import (
 )
 from .sms import SmsGatewayError, send_sms
 from .jalali import format_jalali
+from intake.models import IntakeInvitation
+from .intake_summary import compact_medical_summary
 from .scan_analysis_display import scan_summary, scan_history_rows
 
 
@@ -492,7 +494,10 @@ def patient_360(request, pk):
         Q(contact_result__gt='') | ~Q(status='new')
     ).count()
 
+    latest_intake = IntakeInvitation.objects.filter(appointment_id__in=appointment_ids, completed_at__isnull=False).order_by('-completed_at').first()
+    medical_intake_summary = compact_medical_summary(latest_intake.answers if latest_intake else {}) if profile.role in {'doctor','admin','internal_manager'} else None
     context={
+        'medical_intake_summary':medical_intake_summary,
         'patient':patient,
         'can_view_full_phone':_can_view_full_phone(request,profile),
         'patient_phone_display':patient.phone if _can_view_full_phone(request,profile) else _masked_phone(patient.phone),
