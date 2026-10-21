@@ -554,6 +554,7 @@ class PatientDietProgram(models.Model):
     )
     STATUS=[('active','در حال اجرا'),('completed','تکمیل شده'),('paused','متوقف شده')]
     patient=models.ForeignKey(PatientProfile,on_delete=models.CASCADE,related_name='diet_programs')
+    catalog_item=models.ForeignKey('core.TreatmentCatalogItem',on_delete=models.SET_NULL,null=True,blank=True,related_name='patient_diet_programs')
     diet_name=models.CharField(max_length=160)
     recommendation_pack=models.CharField(max_length=160,blank=True)
     print_template=models.CharField(max_length=160,blank=True)
@@ -2162,3 +2163,4 @@ from .lead_routing_models import CallCenterRoutingDay
 from .marketing_worker_models import MarketingWorkerState
 
 from .customer_portal_models import (CustomerPortalMember, CustomerPortalOTP, CustomerServiceRequest, CustomerClubReferral, CustomerClubPoints, CustomerClubPolicy)
+from .diet_tracking_models import DietMealCheckin, DietFoodChange

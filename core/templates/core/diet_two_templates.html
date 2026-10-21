@@ -106,6 +106,7 @@ body{background:radial-gradient(ellipse at 12% 17%,#dcebdd 0,transparent 36%),ra
 /* The same slot-based non-food illustrations used by orange and 13-day diets. */
 .meal-photo{background:#f0f8f1}
 .meal-photo img.meal-time-icon{object-fit:contain;background:transparent;border:0;box-shadow:none;padding:5px;min-height:100px}
+.day-nav .fixed-chevron{display:block;width:9px;height:9px;border-top:3px solid currentColor;border-right:3px solid currentColor}.day-nav .right{transform:rotate(45deg)}.day-nav .left{transform:rotate(-135deg)}
 </style></head>
 <body class="{{ kind }}">
 <main class="container">
@@ -119,9 +120,9 @@ body{background:radial-gradient(ellipse at 12% 17%,#dcebdd 0,transparent 36%),ra
 {% if content.intro_warning %}<div class="warning">{{ content.intro_warning }}</div>{% endif %}
 {% if content.audio_url %}<section class="audio"><b><span aria-hidden="true">🎧</span> گوش دهید</b><audio controls preload="none" src="{{ content.audio_url }}"></audio></section>{% endif %}
 <nav class="day-nav" aria-label="انتخاب روز هفته">
- <button type="button" id="previous-day" aria-label="روز قبل">❯</button>
+ <button type="button" id="following-day" aria-label="روز بعد"><span class="fixed-chevron right" aria-hidden="true"></span></button>
  <select id="diet-day-picker" aria-label="روز مورد نظر">{% for day in days %}<option value="{{ day.number }}">{{ day.label }}</option>{% endfor %}</select>
- <button type="button" id="following-day" aria-label="روز بعد">❮</button>
+ <button type="button" id="previous-day" aria-label="روز قبل"><span class="fixed-chevron left" aria-hidden="true"></span></button>
 </nav>
 <div id="diet-week-days" class="days" aria-label="روزهای برنامه غذایی">
 {% for day in days %}

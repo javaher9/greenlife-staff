@@ -106,9 +106,9 @@ button,select{font:inherit}
 @media(max-width:390px){.orange-week .diet-info{padding:11px 10px}.orange-week .diet-info .diet-lines{font-size:12px}.orange-slogan .slogan-caption{width:39%}}
 
 /* Por-150 only: explicit outward arrows, no RTL mirrored glyphs */
-.orange-week .day-chevron{display:block;width:9px;height:9px;border-top:3px solid currentColor;border-right:3px solid currentColor}
-.orange-week .day-chevron.right{transform:rotate(45deg)}
-.orange-week .day-chevron.left{transform:rotate(-135deg)}
+.day-chevron{display:block;width:9px;height:9px;border-top:3px solid currentColor;border-right:3px solid currentColor}
+.day-chevron.right{transform:rotate(45deg)}
+.day-chevron.left{transform:rotate(-135deg)}
 .orange-week .diet-pick a{min-width:20px;min-height:24px;display:flex;justify-content:center;align-items:center}
 .orange-week .diet-card .diet-lines{font-size:14px;line-height:1.9}
 .orange-week.diet-enhanced .diet-lines{max-height:7.6em;overflow:hidden}
@@ -157,7 +157,7 @@ button,select{font:inherit}
  <div class="diet-pick">
   {% if orange_only %}
   {% if prev_day %}<a aria-label="روز قبل" href="?day={{ prev_day }}"><span class="day-chevron right" aria-hidden="true"></span></a>{% else %}<a class="off" aria-hidden="true"><span class="day-chevron right"></span></a>{% endif %}
-  {% else %}{% if prev_day %}<a aria-label="روز قبل" href="?day={{ prev_day }}">❯</a>{% else %}<a class="off" aria-hidden="true">❯</a>{% endif %}{% endif %}
+  {% else %}{% if next_day %}<a aria-label="روز بعد" href="?day={{ next_day }}"><span class="day-chevron right" aria-hidden="true"></span></a>{% else %}<a class="off" aria-hidden="true"><span class="day-chevron right"></span></a>{% endif %}{% endif %}
   {% if orange_only %}
   <form method="get" action=""><label for="orange-day" class="sr-only" style="position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden">روز هفته</label>
   <select id="orange-day" name="day" onchange="this.form.submit()" aria-label="انتخاب روز هفته">
@@ -166,7 +166,7 @@ button,select{font:inherit}
   {% else %}<span>▣ روز {{ day }} از {{ day_total }}</span>{% endif %}
   {% if orange_only %}
   {% if next_day %}<a aria-label="روز بعد" href="?day={{ next_day }}"><span class="day-chevron left" aria-hidden="true"></span></a>{% else %}<a class="off" aria-hidden="true"><span class="day-chevron left"></span></a>{% endif %}
-  {% else %}{% if next_day %}<a aria-label="روز بعد" href="?day={{ next_day }}">❮</a>{% else %}<a class="off" aria-hidden="true">❮</a>{% endif %}{% endif %}
+  {% else %}{% if prev_day %}<a aria-label="روز قبل" href="?day={{ prev_day }}"><span class="day-chevron left" aria-hidden="true"></span></a>{% else %}<a class="off" aria-hidden="true"><span class="day-chevron left"></span></a>{% endif %}{% endif %}
  </div>
 {% endif %}
 </header>
@@ -194,7 +194,7 @@ button,select{font:inherit}
  <div class="diet-pick orange-day-picker">
   {% if orange_only %}
   {% if next_day %}<a aria-label="روز بعد" href="?day={{ next_day }}"><span class="day-chevron right" aria-hidden="true"></span></a>{% else %}<a class="off" aria-hidden="true"><span class="day-chevron right"></span></a>{% endif %}
-  {% else %}{% if prev_day %}<a aria-label="روز قبل" href="?day={{ prev_day }}">❯</a>{% else %}<a class="off" aria-hidden="true">❯</a>{% endif %}{% endif %}
+  {% else %}{% if next_day %}<a aria-label="روز بعد" href="?day={{ next_day }}"><span class="day-chevron right" aria-hidden="true"></span></a>{% else %}<a class="off" aria-hidden="true"><span class="day-chevron right"></span></a>{% endif %}{% endif %}
   {% if orange_only %}
   <form method="get" action=""><label for="orange-day" class="sr-only" style="position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden">روز هفته</label>
   <select id="orange-day" name="day" onchange="this.form.submit()" aria-label="انتخاب روز هفته">
@@ -203,7 +203,7 @@ button,select{font:inherit}
   {% else %}<span>▣ روز {{ day }} از {{ day_total }}</span>{% endif %}
   {% if orange_only %}
   {% if prev_day %}<a aria-label="روز قبل" href="?day={{ prev_day }}"><span class="day-chevron left" aria-hidden="true"></span></a>{% else %}<a class="off" aria-hidden="true"><span class="day-chevron left"></span></a>{% endif %}
-  {% else %}{% if next_day %}<a aria-label="روز بعد" href="?day={{ next_day }}">❮</a>{% else %}<a class="off" aria-hidden="true">❮</a>{% endif %}{% endif %}
+  {% else %}{% if prev_day %}<a aria-label="روز قبل" href="?day={{ prev_day }}"><span class="day-chevron left" aria-hidden="true"></span></a>{% else %}<a class="off" aria-hidden="true"><span class="day-chevron left"></span></a>{% endif %}{% endif %}
  </div>
 {% endif %}
 <section class="diet-list" aria-label="وعده‌های روز">
@@ -245,7 +245,7 @@ button,select{font:inherit}
  {% if orange_only %}<a class="diet-action visit" href="{% url 'customer_request' 'visit' %}" aria-label="درخواست ویزیت پزشک"><b aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5v8a7 7 0 0 0 14 0V5M6 5h4M20 5h4M15 20v2a6 6 0 0 0 12 0v-2"/><circle cx="27" cy="18" r="3"/></svg></b>درخواست ویزیت</a>{% else %}<a class="diet-action visit" href="{% url 'appointment_schedule' %}"><b>▦</b>نوبت ویزیت جدید</a>{% endif %}
  {% if orange_only %}<a class="diet-action insta" href="https://www.instagram.com/greenlifeclinics/" target="_blank" rel="noopener noreferrer" aria-label="باز کردن اینستاگرام گرین‌لایف"><b aria-hidden="true"><svg viewBox="0 0 36 36" role="img" aria-label="Instagram" fill="none"><defs><linearGradient id="ig-orange-150" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#feda75"/><stop offset=".33" stop-color="#fa7e1e"/><stop offset=".62" stop-color="#d62976"/><stop offset="1" stop-color="#4f5bd5"/></linearGradient></defs><rect x="1" y="1" width="34" height="34" rx="9" fill="url(#ig-orange-150)"/><rect x="8" y="8" width="20" height="20" rx="6" stroke="white" stroke-width="2.5"/><circle cx="18" cy="18" r="5.2" stroke="white" stroke-width="2.5"/><circle cx="25" cy="11" r="1.7" fill="white"/></svg></b>اینستاگرام</a>{% else %}<a class="diet-action insta" href="https://www.instagram.com/greenlifeclinics/" target="_blank" rel="noopener noreferrer"><b>◎</b>اینستاگرام</a>{% endif %}
 </nav>
-{% if can_manage %}<div class="diet-admin"><a href="{% url 'treatment_content_manage' content.master_item_id %}">ویرایش این رژیم در تنظیمات</a></div>{% endif %}
+{% if can_manage %}<div class="diet-admin"><a href="{% url 'diet_companion_preview' content.master_item_id %}">همراه رژیم · ثبت وعده‌ها و نشان‌ها</a> · <a href="{% url 'treatment_content_manage' content.master_item_id %}">ویرایش این رژیم در تنظیمات</a></div>{% endif %}
 <nav class="diet-bottom" aria-label="پیمایش پایین">
  {% if orange_only %}<a href="{% url 'customer_club' %}"><span>⌂</span>خانه</a>{% else %}<a href="{% url 'referral_dashboard' %}"><span>⌂</span>خانه</a>{% endif %}
  {% if sample_legacy_id %}<a href="{% url 'excel_diet_sample_preview' sample_legacy_id %}?day={{ day }}" class="active"><span>♜</span>برنامه غذایی</a>{% else %}<a href="{% url 'diet_daily_preview' content.master_item_id %}?day={{ day }}" class="active"><span>♜</span>برنامه غذایی</a>{% endif %}

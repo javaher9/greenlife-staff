@@ -13,7 +13,7 @@ LABELS={'fasting':'ناشتا','breakfast':'صبحانه','snack_am':'میان�
         'pre_dinner':'قبل از شام','dinner':'شام','bedtime':'قبل از خواب','other':'توضیحات'}
 ICONS={'fasting':'◉','breakfast':'☀','snack_am':'☘','pre_lunch':'◌','lunch':'☀','snack_pm':'☕',
        'pre_dinner':'◌','dinner':'☾','bedtime':'☾','other':'✦'}
-DAY_TOKEN=r'(?:چهارشنبه|پنج\s*شنبه|سه\s*شنبه|دوشنبه|یکشنبه|شنبه|جمعه)'
+DAY_TOKEN=r'(?:چهار\s*شنبه|پنج\s*شنبه|سه\s*شنبه|دو\s*شنبه|یک\s*شنبه|شنبه|جمعه)'
 DAY_LINE=re.compile(r'^('+DAY_TOKEN+r'(?:\s*(?:و|،|,|/)\s*'+DAY_TOKEN+r')*)\s*([:：\-–])?\s*(.*)$')
 HEAD=re.compile(r'^(میان\s*وعده\s*(?:صبح|عصر|شب)?|ساعت\s*۱۰\s*صبح|ساعت\s*10\s*صبح|قبل\s*از\s*ناهار|قبل\s*از\s*شام|قبل\s*از\s*خواب|صبحانه|ناهار|عصرانه|شام|ناشتا|قبل\s*از\s*صبحانه|میان\s*صبح|نهار|صببحانه|صبح)\s*([:：\-–])?\s*(.*)$')
 ALTERNATIVE=re.compile(r'^\s*(?:یا|گزینه\s*(?:اول|دوم|1|2|۱|۲)\s*[:：]?)\s*$')
@@ -158,6 +158,10 @@ def build_orange_week(sections):
             # authored paragraph per day. Its day_number is authoritative;
             # never repeat that text across all seven weekdays.
             target_day=section.day_number if 1<=section.day_number<=7 else None
+            # A legacy block naming several weekdays is a whole-week source.
+            # Its unlabeled meals are shared; per-day Excel blocks stay isolated.
+            if len(days)>1:
+                target_day=None
             for slot,cards in shared.items():
                 if target_day: source_days[target_day][slot].extend(cards)
                 else: source_shared[slot].extend(cards)

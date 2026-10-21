@@ -51,7 +51,7 @@
 @media(max-width:680px){.tcm .template-meal-layout{grid-template-columns:1fr}.tcm .template-meal-layout .template-photo img{max-height:140px}}
 </style>
 <div class="tcm">
-  <p><a href="{% url 'treatment_content_library' %}">← کتابخانه پنج نمونه</a> · <a href="{% url 'treatment_content_preview' content.master_item_id %}">پیش‌نمایش متن اصلی</a> · {% if content.master_item.category == 'diet' and content.presentation_template != 'legacy' %}<a href="{% url 'diet_template_preview' content.master_item_id %}">پیش‌نمایش قالب انتخاب‌شده</a>{% endif %} · {% if content.master_item.category == 'diet' %}<a href="{% url 'diet_daily_preview' content.master_item_id %}">قالب جدید موبایل</a>{% endif %}</p>
+  <p><a href="{% url 'treatment_content_library' %}">← کتابخانه پنج نمونه</a> · <a href="{% url 'treatment_content_preview' content.master_item_id %}?source=1">پیش‌نمایش متن اصلی</a> · {% if content.master_item.category == 'diet' and content.presentation_template != 'legacy' %}<a href="{% url 'diet_template_preview' content.master_item_id %}">پیش‌نمایش قالب انتخاب‌شده</a>{% endif %} · {% if content.master_item.category == 'diet' %}<a href="{% url 'diet_daily_preview' content.master_item_id %}">قالب جدید موبایل</a>{% endif %}</p>
   <h1>مدیریت محتوا: {{ content.master_item.name }}</h1>
   <div class="panel">
     <p class="notice">این صفحه فقط متن و رسانه این محتوا را تغییر می‌دهد. عنوان ثابت و فهرست تجویز پزشک در بانک «خدمات و درمان‌ها» باقی می‌ماند.</p>

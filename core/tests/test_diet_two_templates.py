@@ -57,8 +57,7 @@ class TwoDietLayoutsTests(TestCase):
         self.assertIn('pre_dinner',common)
         self.assertIn('bedtime',common)
         self.assertIn('lunch',days[1])
-        # The approved Por-150 pilot intentionally uses the compact daily view.
-        # Exercise the separate generic 7-day view with the same source data.
+        # All weekly diets use the approved mobile day-by-day presentation.
         generic=TreatmentCatalogItem.objects.create(category='diet',name='Test-Weekly-Layout')
         generic_content=TreatmentRichContent.objects.create(
             master_item=generic,presentation_template='weekly',
@@ -71,17 +70,16 @@ class TwoDietLayoutsTests(TestCase):
         sunday=self.client.get(url+'?day=2')
         self.assertEqual(saturday.status_code,200)
         self.assertEqual(sunday.status_code,200)
-        self.assertContains(saturday,'صبحانه')
-        self.assertContains(saturday,'دو عدد هویج')
-        self.assertContains(saturday,'قبل از ناهار')
-        self.assertContains(saturday,'مرغ و سالاد')
+        for text in ('صبحانه','دو عدد هویج','قبل از ناهار','مرغ و سالاد'):
+            self.assertContains(saturday,text)
         self.assertNotContains(saturday,'ماهی و سالاد')
         self.assertContains(sunday,'ماهی و سالاد')
+        self.assertNotContains(sunday,'مرغ و سالاد')
         self.assertContains(saturday,'<option value="1"')
         self.assertContains(saturday,'<option value="7"')
         self.assertContains(saturday,'touchstart')
-        self.assertContains(saturday,'@media(max-width:390px)')
         self.assertContains(saturday,'@media print')
+        self.assertContains(saturday,'orange-week')
         self.assertNotContains(saturday,'دو عدد خرما')
 
     def test_ramadan_week_has_suhoor_iftar_late_iftar_and_no_duplicate_source(self):
