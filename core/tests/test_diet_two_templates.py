@@ -57,8 +57,7 @@ class TwoDietLayoutsTests(TestCase):
         self.assertIn('pre_dinner',common)
         self.assertIn('bedtime',common)
         self.assertIn('lunch',days[1])
-        # The approved Por-150 pilot intentionally uses the compact daily view.
-        # Exercise the separate generic 7-day view with the same source data.
+        # All weekly diets use the approved mobile day-by-day presentation.
         generic=TreatmentCatalogItem.objects.create(category='diet',name='Test-Weekly-Layout')
         generic_content=TreatmentRichContent.objects.create(
             master_item=generic,presentation_template='weekly',
@@ -66,18 +65,22 @@ class TwoDietLayoutsTests(TestCase):
         TreatmentRichSection.objects.create(
             content=generic_content,title=self.week_source.title,body=self.week_source.body,
         )
-        p=self.client.get(reverse('diet_template_preview',args=[generic.pk]))
-        self.assertEqual(p.status_code,200)
-        self.assertContains(p,'صبحانه')
-        self.assertContains(p,'دو عدد هویج')
-        self.assertContains(p,'قبل از ناهار')
-        self.assertContains(p,'مرغ و سالاد')
-        self.assertContains(p,'ماهی و سالاد')
-        self.assertContains(p,'data-day=',count=7)
-        self.assertContains(p,'touchstart')
-        self.assertContains(p,'@media(max-width:760px)')
-        self.assertContains(p,'@media print')
-        self.assertNotContains(p,'دو عدد خرما')
+        url=reverse('diet_template_preview',args=[generic.pk])
+        saturday=self.client.get(url+'?day=1')
+        sunday=self.client.get(url+'?day=2')
+        self.assertEqual(saturday.status_code,200)
+        self.assertEqual(sunday.status_code,200)
+        for text in ('صبحانه','دو عدد هویج','قبل از ناهار','مرغ و سالاد'):
+            self.assertContains(saturday,text)
+        self.assertNotContains(saturday,'ماهی و سالاد')
+        self.assertContains(sunday,'ماهی و سالاد')
+        self.assertNotContains(sunday,'مرغ و سالاد')
+        self.assertContains(saturday,'<option value="1"')
+        self.assertContains(saturday,'<option value="7"')
+        self.assertContains(saturday,'touchstart')
+        self.assertContains(saturday,'@media print')
+        self.assertContains(saturday,'orange-week')
+        self.assertNotContains(saturday,'دو عدد خرما')
 
     def test_ramadan_week_has_suhoor_iftar_late_iftar_and_no_duplicate_source(self):
         days=build_ramadan_week([self.ram_source,self.quota,self.explain])
