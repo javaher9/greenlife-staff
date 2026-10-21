@@ -4,7 +4,7 @@ from django.core.validators import MinValueValidator
 
 class PaymentRequest(models.Model):
     TYPES = [('payment','درخواست پرداخت'),('petty_cash','درخواست تنخواه')]
-    STATES = [('pending','در انتظار تأیید'),('approved','در صف پرداخت'),('rejected','رد شده'),('paid','پرداخت شده')]
+    STATES = [('pending','در انتظار تأیید'),('approved','در صف پرداخت'),('rejected','رد شده'),('needs_info','نیازمند توضیح بیشتر'),('paid','پرداخت شده')]
     CHANNELS = [('consultant','مشاور'),('accountant','حسابدار')]
     kind = models.CharField(max_length=16,choices=TYPES)
     amount_toman = models.PositiveBigIntegerField(validators=[MinValueValidator(1)])
@@ -19,6 +19,7 @@ class PaymentRequest(models.Model):
     channel = models.CharField(max_length=12,choices=CHANNELS,blank=True)
     assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT,null=True,blank=True,related_name='assigned_payments')
     approved_by = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT,null=True,blank=True,related_name='approved_payments')
+    clarification_assignee = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT,null=True,blank=True,related_name='payment_clarifications')
     approved_at = models.DateTimeField(null=True,blank=True)
     payment_reference = models.CharField(max_length=120,blank=True)
     payment_receipt = models.FileField(upload_to='payment_receipts/%Y/%m/',blank=True)
@@ -43,3 +44,11 @@ class PaymentEvent(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     class Meta:
         ordering = ['created_at']
+
+class PaymentClarification(models.Model):
+    payment=models.ForeignKey(PaymentRequest,on_delete=models.PROTECT,related_name='clarifications')
+    author=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT)
+    message=models.TextField()
+    created_at=models.DateTimeField(auto_now_add=True)
+    class Meta:
+        ordering=['created_at']
