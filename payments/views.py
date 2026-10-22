@@ -4,6 +4,8 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import Sum, Q
+from django.core.paginator import Paginator
+from django.utils.dateparse import parse_date
 from django.http import HttpResponseBadRequest, FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -21,7 +23,7 @@ def staff(user):
 class RequestForm(forms.ModelForm):
     class Meta:
         model=PaymentRequest
-        fields=['kind','amount_toman','description','recipient_name','recipient_iban','recipient_card']
+        fields=['kind','amount_toman','description','category','cost_owner','cost_center','due_date','recipient_name','recipient_iban','recipient_card']
         widgets={'description':forms.Textarea(attrs={'rows':2})}
     def clean_description(self):
         value=self.cleaned_data['description'].strip()
@@ -37,7 +39,7 @@ class RequestForm(forms.ModelForm):
 class ExpenseForm(forms.ModelForm):
     class Meta:
         model=PettyCashExpense
-        fields=['amount_toman','description','receipt']
+        fields=['amount_toman','description','category','cost_owner','cost_center','receipt']
     def clean_receipt(self):
         f=self.cleaned_data['receipt']
         if f.size > 10*1024*1024 or f.content_type not in ('image/jpeg','image/png','image/webp','application/pdf'):
@@ -180,3 +182,72 @@ def receipt(request,pk):
     response['Cache-Control']='no-store, private'
     response['X-Content-Type-Options']='nosniff'
     return response
+
+
+@login_required
+def expenses_dashboard(request):
+    """Executive-only expense ledger, independent from the existing income dashboard.
+
+    A petty-cash disbursement transfers funds to a holder; the actual
+    PettyCashExpense is the expense. Do not count both as operating costs.
+    """
+    if not executive(request.user):
+        raise PermissionDenied()
+
+    base_requests = PaymentRequest.objects.select_related('requester', 'assigned_to', 'branch')
+    base_expenses = PettyCashExpense.objects.select_related('holder', 'created_by')
+    def amount(qs):
+        return qs.aggregate(total=Sum('amount_toman'))['total'] or 0
+
+    summary = {
+        'pending': amount(base_requests.filter(state__in=['pending', 'needs_info'])),
+        'approved': amount(base_requests.filter(state='approved')),
+        'paid_transfers': amount(base_requests.filter(state='paid')),
+        'paid_costs': amount(base_requests.filter(state='paid', kind='payment')) + amount(base_expenses),
+        'petty_disbursed': amount(base_requests.filter(state='paid', kind='petty_cash')),
+        'petty_spent': amount(base_expenses),
+        'personal_costs': amount(base_requests.filter(state='paid', kind='payment', cost_owner='personal')) +
+                          amount(base_expenses.filter(cost_owner='personal')),
+    }
+
+    selected_category = request.GET.get('category', '')
+    selected_owner = request.GET.get('owner', '')
+    selected_status = request.GET.get('state', '')
+    query = request.GET.get('q', '').strip()[:150]
+    from_date = parse_date(request.GET.get('from', ''))
+    to_date = parse_date(request.GET.get('to', ''))
+    if selected_category:
+        base_requests = base_requests.filter(category=selected_category)
+        base_expenses = base_expenses.filter(category=selected_category)
+    if selected_owner:
+        base_requests = base_requests.filter(cost_owner=selected_owner)
+        base_expenses = base_expenses.filter(cost_owner=selected_owner)
+    if selected_status in ('pending','approved','needs_info','rejected','paid'):
+        base_requests = base_requests.filter(state=selected_status)
+        if selected_status != 'paid':
+            base_expenses = base_expenses.none()
+    if query:
+        base_requests = base_requests.filter(
+            Q(description__icontains=query) | Q(recipient_name__icontains=query) |
+            Q(cost_center__icontains=query) | Q(requester__username__icontains=query))
+        base_expenses = base_expenses.filter(
+            Q(description__icontains=query) | Q(cost_center__icontains=query) |
+            Q(holder__username__icontains=query))
+    if from_date:
+        base_requests = base_requests.filter(created_at__date__gte=from_date)
+        base_expenses = base_expenses.filter(created_at__date__gte=from_date)
+    if to_date:
+        base_requests = base_requests.filter(created_at__date__lte=to_date)
+        base_expenses = base_expenses.filter(created_at__date__lte=to_date)
+
+    requests_page = Paginator(base_requests.order_by('-created_at'), 50).get_page(request.GET.get('requests_page'))
+    petty_page = Paginator(base_expenses.order_by('-created_at'), 30).get_page(request.GET.get('petty_page'))
+    from .models import EXPENSE_CATEGORIES, COST_OWNERS
+    return render(request, 'payments/expenses_dashboard.html', {
+        'summary': summary, 'requests_page': requests_page, 'petty_page': petty_page,
+        'categories': EXPENSE_CATEGORIES, 'owners': COST_OWNERS,
+        'selected_category': selected_category, 'selected_owner': selected_owner,
+        'selected_status': selected_status, 'query': query,
+        'from_date': request.GET.get('from',''), 'to_date': request.GET.get('to',''),
+    })
+
