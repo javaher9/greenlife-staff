@@ -101,8 +101,8 @@ def review(request,pk):
             channel=request.POST.get('channel')
             if channel not in ('consultant','accountant'):
                 return HttpResponseBadRequest('مسیر پرداخت نامعتبر است.')
-            if channel=='consultant' and (not staff(assignee) or assignee.profile.role!='consultant'):
-                return HttpResponseBadRequest('پرداخت‌کننده باید مشاور فعال باشد.')
+            if channel=='consultant' and (not staff(assignee) or assignee.profile.role not in ('consultant','receptionist')):
+                return HttpResponseBadRequest('پرداخت‌کننده باید مشاور یا منشی فعال باشد.')
             if channel=='accountant' and not assignee.has_perm('payments.execute_official_payment'):
                 return HttpResponseBadRequest('مجوز پرداخت رسمی وجود ندارد.')
             p.state='approved'
@@ -147,7 +147,7 @@ def admin_dashboard(request):
         raise PermissionDenied()
     from django.contrib.auth.models import Permission
     requests=PaymentRequest.objects.select_related('requester','assigned_to','approved_by','beneficiary','branch')
-    consultants=User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant')
+    consultants=User.objects.filter(is_active=True,profile__is_active=True,profile__role__in=['consultant','receptionist'])
     accountants=User.objects.filter(is_active=True,user_permissions__codename='execute_official_payment').distinct()
     paid=requests.filter(state='paid')
     return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants,'staff_members':User.objects.filter(is_active=True,profile__is_active=True).order_by('first_name','last_name')})
