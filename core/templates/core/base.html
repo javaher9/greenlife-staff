@@ -650,7 +650,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
       <a href="/requests/">{% gl_t 'common.leave' %}</a>
       <a href="{% url 'staff_security' %}">{% gl_t 'shell.password_short' %}</a>
     {% endif %}
-    <a href="{% url 'payments_workspace' %}">درخواست پرداخت و تنخواه</a>
+    {% if executive_access or user.profile.role == "consultant" and user.profile.is_active %}<a href="{% url 'payments_workspace' %}">درخواست پرداخت و تنخواه</a>{% endif %}
     {% if executive_access %}<a href="{% url 'payments_admin' %}">حسابداری مدیریت</a>{% endif %}
     <a href="/profile/">{% gl_t 'common.profile' %}</a><a href="/logout/" class="sidebar-logout-link">{% gl_t 'common.logout' %}</a>
   </div>
