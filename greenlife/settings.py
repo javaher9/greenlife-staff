@@ -4,6 +4,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'dev-only-change-me')
 DEBUG = os.getenv('DEBUG', '0') == '1'
 EXECUTIVE_USERNAMES = {x.strip().lower() for x in os.getenv('EXECUTIVE_USERNAMES', 'drjavaherian').split(',') if x.strip()}
+# Confirmed executive account for the finance pilot; retain env-provided usernames.
+EXECUTIVE_USERNAMES.add('admin')
 LAN_MODE = os.getenv('LAN_MODE', '0') == '1'
 _WEAK_SECRET_KEYS = {
     '',
