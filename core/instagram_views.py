@@ -319,16 +319,21 @@ def instagram_operator_quick_lead(request, operator, token):
         raise Http404()
     if request.method not in ('GET', 'POST'):
         return HttpResponse(status=405)
-    aliases = ('راد', 'rad') if operator == 'rad' else ('عباسی', 'abbasi')
-    staff = None
+    # Resolve by exact normalized name tokens, never substring: 'rad' can
+    # match unrelated usernames and cause the ambiguous-profile 503.
+    import re
+    aliases = ('راد',) if operator == 'rad' else ('لاله', 'عباسی')
+    matches = []
     for profile in EmployeeProfile.objects.select_related('user').filter(is_active=True, user__is_active=True):
-        identity = ' '.join((profile.user.first_name, profile.user.last_name, profile.user.username)).lower().replace('ي', 'ی').replace('ك', 'ک')
-        if any(alias in identity for alias in aliases):
-            if staff is not None:
-                return HttpResponse('Ambiguous operator profile', status=503)
-            staff = profile
-    if staff is None:
-        return HttpResponse('Operator not active or not found', status=503)
+        user = profile.user
+        identity = ' '.join((user.first_name or '', user.last_name or '')).replace('ي', 'ی').replace('ك', 'ک')
+        words = set(re.split(r'[^\\w\\u0600-\\u06ff]+', identity))
+        if any(alias in words for alias in aliases):
+            matches.append(profile)
+    if len(matches) != 1:
+        # Never silently attribute a lead to a different staff account.
+        return HttpResponse('Operator identity requires administrator verification', status=503)
+    staff = matches[0]
     if request.method == 'POST':
         client_ip = (request.META.get('REMOTE_ADDR') or 'unknown')[:80]
         throttle_key = 'instagram-quick:' + hashlib.sha256((operator + ':' + client_ip).encode()).hexdigest()
