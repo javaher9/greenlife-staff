@@ -7,8 +7,8 @@
 <meta name="color-scheme" content="dark">
 <title>مالی | هزینه‌ها و پرداخت‌ها - گرین‌لایف</title>
 <style>
-:root{color-scheme:dark;--bg:#0b1020;--surface:#131b2d;--surface2:#19243a;--border:#28344c;--ink:#f3f6ff;--muted:#a0adc5;--accent:#9175ef;--green:#3bd2a2;--red:#ff8496}
-*{box-sizing:border-box}body{font:14px/1.8 Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink);margin:0}
+:root{color-scheme:dark;--bg:#0b1020;--surface:rgba(29,39,69,.78);--surface2:rgba(34,48,81,.82);--border:#526487;--ink:#ffffff;--muted:#d5dff2;--accent:#9175ef;--green:#3bd2a2;--red:#ff8496}
+*{box-sizing:border-box}body{font:14px/1.8 Tahoma,Arial,sans-serif;background:radial-gradient(circle at 8% 15%,#30204d 0%,transparent 34%),radial-gradient(circle at 90% 85%,#102c50 0%,transparent 36%),var(--bg);color:var(--ink);margin:0}
 a{color:#c1b0ff;text-decoration:none}button,input,select{font:inherit}
 .main{max-width:1600px;margin:auto;padding:22px}
 .nav{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:24px}
@@ -18,7 +18,7 @@ a{color:#c1b0ff;text-decoration:none}button,input,select{font:inherit}
 h1{font-size:27px;line-height:1.4;margin:0 0 6px}h2{font-size:17px;margin:0 0 14px}
 small,.muted{color:var(--muted)}.subtitle{color:var(--muted);margin-bottom:22px}
 .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}
-.card,.panel{background:linear-gradient(145deg,#172039,#10182a);border:1px solid var(--border);border-radius:17px;padding:18px}
+.card,.panel{background:linear-gradient(145deg,rgba(40,52,91,.88),rgba(21,31,58,.86));backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 12px 40px rgba(0,0,0,.22);border:1px solid var(--border);border-radius:17px;padding:18px}
 .card-label{color:var(--muted);font-size:12px}.card-value{font-size:25px;font-weight:800;margin-top:10px;font-variant-numeric:tabular-nums}
 .card small{font-size:11px}.green{color:var(--green)}.purple{color:#c0a6ff}.amber{color:#ffcb6b}
 .panel{margin:15px 0}.panel-h{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
@@ -26,10 +26,10 @@ button,.action{cursor:pointer;display:inline-block;background:#714ed0;color:whit
 .action.outline{background:transparent;border:1px solid #6c5d91;color:#d8cdff}
 .filter{display:grid;grid-template-columns:2fr repeat(4,minmax(110px,1fr)) 120px 120px auto;gap:8px;align-items:end}
 .filter label{font-size:12px;color:var(--muted);display:block}
-.filter input,.filter select{margin-top:5px;width:100%;background:#0d1527;color:var(--ink);border:1px solid #35435c;border-radius:9px;padding:10px}
+.filter input,.filter select{margin-top:5px;width:100%;background:#18243d;color:var(--ink);border:1px solid #35435c;border-radius:9px;padding:10px}
 .table-scroll{overflow-x:auto;max-width:100%}table{width:100%;border-collapse:collapse;min-width:1050px}
 th,td{text-align:right;padding:11px;border-bottom:1px solid #29364d;vertical-align:middle}
-th{font-size:12px;color:#a4b3ce;font-weight:500}td{font-size:13px}
+th{font-size:12px;color:#eff3ff;font-weight:500}td{font-size:13px}
 tbody tr:hover{background:#ffffff08}.amount{font-weight:800;font-variant-numeric:tabular-nums}
 .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;background:#2a3650;color:#d9e2f8;white-space:nowrap}
 .pill.paid{background:#153d37;color:#70edbb}.pill.pending,.pill.needs_info{background:#4e351b;color:#ffd38a}.pill.rejected{background:#4b2235;color:#ffb0b9}
