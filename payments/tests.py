@@ -14,8 +14,8 @@ class PaymentWorkflowTests(TestCase):
         cls.worker=User.objects.create_user(username='payments-worker',password='test-password')
         cls.other=User.objects.create_user(username='payments-other',password='test-password')
         branch=Branch.objects.create(name='Payment Test Branch')
-        EmployeeProfile.objects.create(user=cls.worker,branch=branch,role='consultant',is_active=True)
-        EmployeeProfile.objects.create(user=cls.other,branch=branch,role='consultant',is_active=True)
+        EmployeeProfile.objects.update_or_create(user=cls.worker,defaults={'branch':branch,'role':'consultant','is_active':True})
+        EmployeeProfile.objects.update_or_create(user=cls.other,defaults={'branch':branch,'role':'consultant','is_active':True})
         cls.branch=branch
 
     def _request(self):
