@@ -217,8 +217,13 @@ def expenses_dashboard(request):
     selected_owner = request.GET.get('owner', '')
     selected_status = request.GET.get('state', '')
     query = request.GET.get('q', '').strip()[:150]
-    from_date = parse_date(request.GET.get('from', ''))
-    to_date = parse_date(request.GET.get('to', ''))
+    def safe_date(key):
+        try:
+            return parse_date(request.GET.get(key, ''))
+        except ValueError:
+            return None
+    from_date = safe_date('from')
+    to_date = safe_date('to')
     if selected_category:
         base_requests = base_requests.filter(category=selected_category)
         base_expenses = base_expenses.filter(category=selected_category)
@@ -254,3 +259,15 @@ def expenses_dashboard(request):
         'from_date': request.GET.get('from',''), 'to_date': request.GET.get('to',''),
     })
 
+
+@login_required
+def petty_receipt(request, pk):
+    item = get_object_or_404(PettyCashExpense, pk=pk)
+    if not executive(request.user) and item.holder_id != request.user.pk:
+        raise PermissionDenied()
+    if not item.receipt:
+        raise Http404()
+    response = FileResponse(item.receipt.open('rb'), as_attachment=True)
+    response['Cache-Control'] = 'no-store, private'
+    response['X-Content-Type-Options'] = 'nosniff'
+    return response
