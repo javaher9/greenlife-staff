@@ -1,0 +1,116 @@
+{% load money_display %}
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>مالی | هزینه‌ها و پرداخت‌ها - گرین‌لایف</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--surface:#131b2d;--surface2:#19243a;--border:#28344c;--ink:#f3f6ff;--muted:#a0adc5;--accent:#9175ef;--green:#3bd2a2;--red:#ff8496}
+*{box-sizing:border-box}body{font:14px/1.8 Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink);margin:0}
+a{color:#c1b0ff;text-decoration:none}button,input,select{font:inherit}
+.main{max-width:1600px;margin:auto;padding:22px}
+.nav{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:24px}
+.logo{font-weight:800;font-size:20px;margin-inline-end:auto;color:#f9fbff}
+.chip{border:1px solid var(--border);padding:7px 12px;border-radius:10px;background:#182238}
+.chip.current{background:#4e348f;border-color:#7152b3;color:white}
+h1{font-size:27px;line-height:1.4;margin:0 0 6px}h2{font-size:17px;margin:0 0 14px}
+small,.muted{color:var(--muted)}.subtitle{color:var(--muted);margin-bottom:22px}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.card,.panel{background:linear-gradient(145deg,#172039,#10182a);border:1px solid var(--border);border-radius:17px;padding:18px}
+.card-label{color:var(--muted);font-size:12px}.card-value{font-size:25px;font-weight:800;margin-top:10px;font-variant-numeric:tabular-nums}
+.card small{font-size:11px}.green{color:var(--green)}.purple{color:#c0a6ff}.amber{color:#ffcb6b}
+.panel{margin:15px 0}.panel-h{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+button,.action{cursor:pointer;display:inline-block;background:#714ed0;color:white;border:0;padding:10px 16px;border-radius:11px;font-weight:700}
+.action.outline{background:transparent;border:1px solid #6c5d91;color:#d8cdff}
+.filter{display:grid;grid-template-columns:2fr repeat(4,minmax(110px,1fr)) 120px 120px auto;gap:8px;align-items:end}
+.filter label{font-size:12px;color:var(--muted);display:block}
+.filter input,.filter select{margin-top:5px;width:100%;background:#0d1527;color:var(--ink);border:1px solid #35435c;border-radius:9px;padding:10px}
+.table-scroll{overflow-x:auto;max-width:100%}table{width:100%;border-collapse:collapse;min-width:1050px}
+th,td{text-align:right;padding:11px;border-bottom:1px solid #29364d;vertical-align:middle}
+th{font-size:12px;color:#a4b3ce;font-weight:500}td{font-size:13px}
+tbody tr:hover{background:#ffffff08}.amount{font-weight:800;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;background:#2a3650;color:#d9e2f8;white-space:nowrap}
+.pill.paid{background:#153d37;color:#70edbb}.pill.pending,.pill.needs_info{background:#4e351b;color:#ffd38a}.pill.rejected{background:#4b2235;color:#ffb0b9}
+.note{padding:12px;border:1px solid #544666;border-radius:12px;color:#e4d5ff;background:#281e3e;margin:15px 0}
+.pager{display:flex;justify-content:center;gap:12px;align-items:center;margin:16px 0;color:var(--muted)}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+.footer{color:var(--muted);text-align:center;padding:18px;font-size:12px}
+@media(max-width:1100px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.filter{grid-template-columns:repeat(3,minmax(0,1fr))}.filter>div:first-child{grid-column:span 3}}
+@media(max-width:650px){.main{padding:12px}.logo{width:100%}.nav{gap:6px}.chip{font-size:12px}.cards{gap:8px}.card{padding:12px}.card-value{font-size:20px}.filter{grid-template-columns:repeat(2,minmax(0,1fr))}.filter>div:first-child{grid-column:span 2}.panel{padding:13px}h1{font-size:22px}}
+</style>
+</head>
+<body>
+<main class="main">
+<nav class="nav" aria-label="ناوبری مالی">
+ <span class="logo">GREEN LIFE · مدیریت مالی</span>
+ <a class="chip" href="{% url 'finance_dashboard' %}">مالی ـ درآمد</a>
+ <span class="chip current">مالی ـ هزینه‌ها</span>
+ <a class="chip" href="{% url 'payments_admin' %}">تأیید درخواست‌ها</a>
+ <a class="chip" href="{% url 'payments_workspace' %}">ثبت درخواست / تنخواه</a>
+</nav>
+<header class="panel-h">
+ <div><h1>هزینه‌ها و پرداخت‌ها</h1><div class="subtitle">گردش خروجی مالی، هزینه‌های شخصی و شرکتی، تنخواه و تمام درخواست‌ها — ویژه مدیریت</div></div>
+ <a class="action" href="{% url 'payments_workspace' %}">+ ثبت درخواست هزینه یا پرداخت</a>
+</header>
+<div class="cards">
+ <section class="card"><div class="card-label">در انتظار تأیید یا توضیح</div><div class="card-value amber">{{ summary.pending|million_toman }}</div><small>میلیون تومان</small></section>
+ <section class="card"><div class="card-label">تأییدشده، هنوز پرداخت‌نشده</div><div class="card-value purple">{{ summary.approved|million_toman }}</div><small>میلیون تومان</small></section>
+ <section class="card"><div class="card-label">مجموع انتقال وجه انجام‌شده</div><div class="card-value green">{{ summary.paid_transfers|million_toman }}</div><small>شامل شارژ تنخواه · میلیون تومان</small></section>
+ <section class="card"><div class="card-label">هزینه‌های قطعی ثبت‌شده</div><div class="card-value">{{ summary.paid_costs|million_toman }}</div><small>بدون دوباره‌شماری شارژ تنخواه · میلیون تومان</small></section>
+ <section class="card"><div class="card-label">تنخواه شارژ‌شده</div><div class="card-value">{{ summary.petty_disbursed|million_toman }}</div><small>میلیون تومان</small></section>
+ <section class="card"><div class="card-label">خرج واقعی تنخواه</div><div class="card-value">{{ summary.petty_spent|million_toman }}</div><small>میلیون تومان</small></section>
+ <section class="card"><div class="card-label">هزینه شخصی مدیر</div><div class="card-value purple">{{ summary.personal_costs|million_toman }}</div><small>فقط گزارش مدیریتی · میلیون تومان</small></section>
+ <section class="card"><div class="card-label">وضعیت طبقه‌بندی</div><div class="card-value">شرکتی / شخصی / پروژه</div><small>تفکیک برای گزارش حسابداری</small></section>
+</div>
+<div class="note">نکته: «متعلق به شرکت» به معنای تأیید مالیاتی نیست. پرداخت‌های شخصی در گزارش داخلی می‌مانند و نباید خودکار وارد هزینه‌های قابل قبول شرکت یا اظهارنامه شوند.</div>
+<section class="panel">
+ <h2>جست‌وجو و فیلتر تمام هزینه‌ها</h2>
+ <form method="get" class="filter">
+  <div><label>جست‌وجو در توضیحات، گیرنده و افراد<input name="q" value="{{ query }}" placeholder="مثلاً وکیل، تعمیر دستگاه، شعبه پونک"></label></div>
+  <div><label>موضوع هزینه<select name="category"><option value="">همه دسته‌ها</option>{% for key,title in categories %}<option value="{{ key }}" {% if key == selected_category %}selected{% endif %}>{{ title }}</option>{% endfor %}</select></label></div>
+  <div><label>متعلق به<select name="owner"><option value="">همه موارد</option>{% for key,title in owners %}<option value="{{ key }}" {% if key == selected_owner %}selected{% endif %}>{{ title }}</option>{% endfor %}</select></label></div>
+  <div><label>وضعیت<select name="state"><option value="">همه وضعیت‌ها</option><option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>در انتظار تأیید</option><option value="needs_info" {% if selected_status == 'needs_info' %}selected{% endif %}>نیازمند توضیح</option><option value="approved" {% if selected_status == 'approved' %}selected{% endif %}>در صف پرداخت</option><option value="paid" {% if selected_status == 'paid' %}selected{% endif %}>پرداخت‌شده</option><option value="rejected" {% if selected_status == 'rejected' %}selected{% endif %}>ردشده</option></select></label></div>
+  <div><label>از تاریخ میلادی<input type="date" name="from" value="{{ from_date }}"></label></div>
+  <div><label>تا تاریخ میلادی<input type="date" name="to" value="{{ to_date }}"></label></div>
+  <div><button type="submit">اعمال فیلتر</button></div>
+ </form>
+</section>
+<section class="panel">
+ <div class="panel-h"><h2>درخواست‌ها و پرداخت‌های خروجی</h2><small>همه وضعیت‌ها · صفحه‌بندی ۵۰ موردی</small></div>
+ <div class="table-scroll"><table><thead><tr><th>تاریخ</th><th>موضوع</th><th>دسته</th><th>متعلق به</th><th>مرکز / پروژه</th><th>درخواست‌کننده</th><th>گیرنده</th><th>مبلغ (میلیون)</th><th>وضعیت</th><th>مسئول پرداخت</th></tr></thead><tbody>
+ {% for p in requests_page %}
+ <tr>
+  <td>{{ p.created_at|date:"Y/m/d" }}</td><td>{{ p.description|truncatechars:75 }}{% if p.kind == 'petty_cash' %}<br><small>شارژ تنخواه (نه هزینه قطعی)</small>{% endif %}</td>
+  <td>{{ p.get_category_display }}</td><td>{{ p.get_cost_owner_display }}</td>
+  <td>{{ p.cost_center|default:p.branch|default:"—" }}</td>
+  <td>{{ p.requester.get_full_name|default:p.requester.username }}</td><td>{{ p.recipient_name|default:"—" }}</td>
+  <td class="amount">{{ p.amount_toman|million_toman }}</td>
+  <td><span class="pill {{ p.state }}">{{ p.get_state_display }}</span></td>
+  <td>{{ p.assigned_to.get_full_name|default:"—" }}</td>
+ </tr>
+ {% empty %}<tr><td colspan="10" class="empty">هیچ موردی مطابق فیلترها وجود ندارد.</td></tr>{% endfor %}
+ </tbody></table></div>
+ <div class="pager">
+ {% if requests_page.has_previous %}<a href="?q={{ query|urlencode }}&category={{ selected_category|urlencode }}&owner={{ selected_owner|urlencode }}&state={{ selected_status|urlencode }}&from={{ from_date|urlencode }}&to={{ to_date|urlencode }}&requests_page={{ requests_page.previous_page_number }}">صفحه قبل</a>{% endif %}
+ <span>صفحه {{ requests_page.number }} از {{ requests_page.paginator.num_pages }}</span>
+ {% if requests_page.has_next %}<a href="?q={{ query|urlencode }}&category={{ selected_category|urlencode }}&owner={{ selected_owner|urlencode }}&state={{ selected_status|urlencode }}&from={{ from_date|urlencode }}&to={{ to_date|urlencode }}&requests_page={{ requests_page.next_page_number }}">صفحه بعد</a>{% endif %}
+ </div>
+</section>
+<section class="panel">
+ <div class="panel-h"><h2>هزینه‌های واقعی تنخواه با رسید</h2><small>اینها هزینه‌اند؛ شارژ تنخواه بالا فقط انتقال وجه است.</small></div>
+ <div class="table-scroll"><table><thead><tr><th>تاریخ</th><th>شرح هزینه</th><th>دسته</th><th>متعلق به</th><th>مرکز / پروژه</th><th>دارنده تنخواه</th><th>مبلغ (میلیون)</th></tr></thead><tbody>
+ {% for e in petty_page %}<tr><td>{{ e.created_at|date:"Y/m/d" }}</td><td>{{ e.description|truncatechars:100 }}</td><td>{{ e.get_category_display }}</td><td>{{ e.get_cost_owner_display }}</td><td>{{ e.cost_center|default:"—" }}</td><td>{{ e.holder.get_full_name|default:e.holder.username }}</td><td class="amount">{{ e.amount_toman|million_toman }}</td></tr>
+ {% empty %}<tr><td colspan="7" class="empty">هزینه ثبت‌شده‌ای وجود ندارد.</td></tr>{% endfor %}
+ </tbody></table></div>
+ <div class="pager">
+ {% if petty_page.has_previous %}<a href="?q={{ query|urlencode }}&category={{ selected_category|urlencode }}&owner={{ selected_owner|urlencode }}&state={{ selected_status|urlencode }}&from={{ from_date|urlencode }}&to={{ to_date|urlencode }}&petty_page={{ petty_page.previous_page_number }}">صفحه قبل</a>{% endif %}
+ <span>صفحه {{ petty_page.number }} از {{ petty_page.paginator.num_pages }}</span>
+ {% if petty_page.has_next %}<a href="?q={{ query|urlencode }}&category={{ selected_category|urlencode }}&owner={{ selected_owner|urlencode }}&state={{ selected_status|urlencode }}&from={{ from_date|urlencode }}&to={{ to_date|urlencode }}&petty_page={{ petty_page.next_page_number }}">صفحه بعد</a>{% endif %}
+ </div>
+</section>
+<div class="footer">گرین‌لایف · صفحه مستقل هزینه‌ها · داده‌های درآمد و صفحه «مالی ـ درآمد» تغییر نکرده‌اند.</div>
+</main>
+</body>
+</html>
