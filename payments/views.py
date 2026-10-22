@@ -82,7 +82,7 @@ def workspace(request):
     expenses=PettyCashExpense.objects.filter(holder=request.user)
     received=PaymentRequest.objects.filter(kind='petty_cash',beneficiary=request.user,state='paid').aggregate(x=Sum('amount_toman'))['x'] or 0
     spent=expenses.aggregate(x=Sum('amount_toman'))['x'] or 0
-    return render(request,'payments/workspace.html',dict(form=form,expense_form=expense_form,queue=queue,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,is_executive=executive(request.user)))
+    return render(request,'payments/workspace.html',dict(form=form,expense_form=expense_form,queue=queue,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,is_executive=executive(request.user), can_submit=staff(request.user) or executive(request.user)))
 
 @login_required
 @require_POST
