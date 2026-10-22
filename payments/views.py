@@ -16,7 +16,7 @@ def executive(user):
 
 def staff(user):
     p=getattr(user,'profile',None)
-    return bool(p and p.is_active and user.is_active)
+    return bool(user.is_active and p and p.is_active and p.role == 'consultant')
 
 class RequestForm(forms.ModelForm):
     class Meta:
@@ -99,9 +99,9 @@ def review(request,pk):
         elif action=='approve':
             assignee=get_object_or_404(User,pk=request.POST.get('assigned_to'),is_active=True)
             channel=request.POST.get('channel')
-            if channel not in ('consultant','accountant'):
+            if channel != 'consultant':
                 return HttpResponseBadRequest('مسیر پرداخت نامعتبر است.')
-            if channel=='consultant' and (not staff(assignee) or assignee.profile.role not in ('consultant','receptionist')):
+            if channel=='consultant' and (not staff(assignee) or assignee.profile.role != 'consultant'):
                 return HttpResponseBadRequest('پرداخت‌کننده باید مشاور یا منشی فعال باشد.')
             if channel=='accountant' and not assignee.has_perm('payments.execute_official_payment'):
                 return HttpResponseBadRequest('مجوز پرداخت رسمی وجود ندارد.')
@@ -147,10 +147,10 @@ def admin_dashboard(request):
         raise PermissionDenied()
     from django.contrib.auth.models import Permission
     requests=PaymentRequest.objects.select_related('requester','assigned_to','approved_by','beneficiary','branch')
-    consultants=User.objects.filter(is_active=True,profile__is_active=True,profile__role__in=['consultant','receptionist'])
-    accountants=User.objects.filter(is_active=True,user_permissions__codename='execute_official_payment').distinct()
+    consultants=User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant')
+    accountants=User.objects.none()
     paid=requests.filter(state='paid')
-    return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants,'staff_members':User.objects.filter(is_active=True,profile__is_active=True).order_by('first_name','last_name')})
+    return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants,'staff_members':User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant').order_by('first_name','last_name')})
 
 @login_required
 @require_POST
