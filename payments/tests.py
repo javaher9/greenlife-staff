@@ -151,3 +151,16 @@ class PaymentWorkflowTests(TestCase):
         self.assertEqual(result.status_code,200)
         self.assertContains(result,'Legal personal')
         self.assertNotContains(result,'Company supplies')
+
+    def test_invalid_date_filters_do_not_crash(self):
+        self.client.force_login(self.executive)
+        result=self.client.get(reverse('payments_expenses')+'?from=2026-02-31')
+        self.assertEqual(result.status_code,200)
+
+    def test_other_user_cannot_read_petty_receipt(self):
+        item=PettyCashExpense.objects.create(
+            holder=self.worker,created_by=self.worker,amount_toman=100000,
+            description='Sample expense',receipt='petty_expenses/private.pdf')
+        self.client.force_login(self.other)
+        result=self.client.get(reverse('payments_petty_receipt',args=[item.pk]))
+        self.assertEqual(result.status_code,403)
