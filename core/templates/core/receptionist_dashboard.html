@@ -1,4 +1,4 @@
-{% load static jalali_tags staff_i18n privacy_filters %}
+{% load static jalali_tags staff_i18n privacy_filters payment_queue %}
 <!doctype html>
 <html lang="{{ ui_language|default:'fa' }}" dir="{{ ui_direction|default:'rtl' }}">
 <head>
@@ -186,6 +186,7 @@
   </aside>
 
   <main class="main">
+    {% approved_payment_queue %}
     <header class="top">
       <div class="hello"><h1>{% gl_t 'rec.greeting' name=user.first_name|default:user.username %}</h1><p>{% if profile.branch %}{{ profile.branch }}{% else %}{% gl_t "rec.center" %}{% endif %} · {{ jalali_dashboard_date }}</p></div>
       <label class="search"><span>⌕</span><input id="rec-live-search" autocomplete="off" placeholder="{% gl_t 'rec.search' %}"></label>
