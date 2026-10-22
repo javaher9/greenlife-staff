@@ -24,7 +24,8 @@ class RequestForm(forms.ModelForm):
     class Meta:
         model=PaymentRequest
         fields=['kind','amount_toman','description','category','cost_owner','cost_center','due_date','recipient_name','recipient_iban','recipient_card']
-        widgets={'description':forms.Textarea(attrs={'rows':2})}
+        labels={'kind':'نوع درخواست','amount_toman':'مبلغ (تومان)','description':'شرح و علت پرداخت','category':'موضوع هزینه','cost_owner':'متعلق به','cost_center':'مرکز هزینه / پروژه (اختیاری)','due_date':'مهلت پرداخت','recipient_name':'نام گیرنده','recipient_iban':'شماره شبا','recipient_card':'شماره کارت'}
+        widgets={'description':forms.Textarea(attrs={'rows':2}),'due_date':forms.DateInput(attrs={'type':'date'})}
     def clean_description(self):
         value=self.cleaned_data['description'].strip()
         if len(value)<10:
@@ -40,6 +41,8 @@ class ExpenseForm(forms.ModelForm):
     class Meta:
         model=PettyCashExpense
         fields=['amount_toman','description','category','cost_owner','cost_center','receipt']
+        labels={'amount_toman':'مبلغ خرج‌شده (تومان)','description':'شرح هزینه','category':'موضوع هزینه','cost_owner':'متعلق به','cost_center':'مرکز هزینه / پروژه (اختیاری)','receipt':'فاکتور یا رسید'}
+        widgets={'description':forms.Textarea(attrs={'rows':2})}
     def clean_receipt(self):
         f=self.cleaned_data['receipt']
         if f.size > 10*1024*1024 or f.content_type not in ('image/jpeg','image/png','image/webp','application/pdf'):
