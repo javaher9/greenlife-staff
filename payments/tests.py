@@ -164,3 +164,27 @@ class PaymentWorkflowTests(TestCase):
         self.client.force_login(self.other)
         result=self.client.get(reverse('payments_petty_receipt',args=[item.pk]))
         self.assertEqual(result.status_code,403)
+
+    def test_named_staff_can_only_complete_own_assigned_payment(self):
+        self.other.profile.role='quality_control'
+        self.other.profile.save(update_fields=['role'])
+        p=self._request()
+        self.client.force_login(self.executive)
+        approved=self.client.post(reverse('payments_review',args=[p.pk]),{
+            'action':'approve','channel':'staff','assigned_to':self.other.pk})
+        self.assertEqual(approved.status_code,302)
+        self.client.force_login(self.other)
+        self.assertEqual(self.client.get(reverse('payments_workspace')).status_code,200)
+        denied=self.client.post(reverse('payments_workspace'),{
+            'operation':'request','req-kind':'payment','req-amount_toman':'1000000',
+            'req-description':'Should be disallowed'})
+        self.assertEqual(denied.status_code,403)
+        self.assertEqual(PaymentRequest.objects.filter(requester=self.other).count(),0)
+        other_request=self._request()
+        other_request.state='approved'
+        other_request.assigned_to=self.worker
+        other_request.channel='staff'
+        other_request.save()
+        forbidden=self.client.post(reverse('payments_complete',args=[other_request.pk]),{
+            'reference':'NO','receipt':SimpleUploadedFile('other.pdf',b'%PDF-1.4 test',content_type='application/pdf')})
+        self.assertEqual(forbidden.status_code,404)
