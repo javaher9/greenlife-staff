@@ -17,6 +17,8 @@ urlpatterns=[
     path('api/instagram/callback/',instagram_api_views.instagram_oauth_callback,name='instagram_oauth_callback'),
     path('api/instagram/webhook/',instagram_api_views.instagram_webhook,name='instagram_webhook'),
     path('instagram/',instagram_views.instagram_lead,name='instagram_lead'),
+    # Lightweight public entry: reuse the verified CRM intake, consent and duplicate checks.
+    path('instagram/fast/',instagram_views.instagram_lead,name='instagram_fast_lead'),
     path('telegram/',instagram_views.telegram_lead,name='telegram_lead'),
     path('instagram/manual/',instagram_views.instagram_manual_lead,name='instagram_manual_lead'),
     path('instagram/entry/<slug:operator>/<str:token>/',instagram_views.instagram_operator_quick_lead,name='instagram_operator_quick_lead'),
