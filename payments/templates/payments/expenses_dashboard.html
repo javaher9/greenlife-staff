@@ -39,9 +39,15 @@ tbody tr:hover{background:#ffffff08}.amount{font-weight:800;font-variant-numeric
 .footer{color:var(--muted);text-align:center;padding:18px;font-size:12px}
 @media(max-width:1100px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.filter{grid-template-columns:repeat(3,minmax(0,1fr))}.filter>div:first-child{grid-column:span 3}}
 @media(max-width:650px){.main{padding:12px}.logo{width:100%}.nav{gap:6px}.chip{font-size:12px}.cards{gap:8px}.card{padding:12px}.card-value{font-size:20px}.filter{grid-template-columns:repeat(2,minmax(0,1fr))}.filter>div:first-child{grid-column:span 2}.panel{padding:13px}h1{font-size:22px}}
+
+/* Dedicated RTL premium sidebar: always anchored to the right on desktop. */
+.side-nav{position:fixed;right:0;top:0;bottom:0;width:232px;background:linear-gradient(165deg,rgba(26,29,56,.97),rgba(15,20,40,.98));border-left:1px solid #586388;padding:22px 13px;z-index:15;overflow:auto;backdrop-filter:blur(20px)}
+.side-title{font-size:18px;font-weight:800;padding:12px;color:#fff}.side-nav a{display:block;padding:12px;margin:5px 0;border-radius:10px;color:#edf1ff;font-weight:700}.side-nav a:hover,.side-nav a.active{background:#53368a;color:#fff}.main{margin-right:232px;max-width:none}.side-subtitle{margin-top:30px;color:#d7e4fa;font-size:12px;padding:10px}
+@media(max-width:850px){.side-nav{position:static;width:auto;display:flex;flex-wrap:wrap;gap:4px;padding:8px;border-left:0;border-bottom:1px solid #586388}.side-nav a{padding:7px 10px}.side-title{width:100%;padding:2px 8px}.side-subtitle{display:none}.main{margin-right:0}}
 </style>
 </head>
 <body>
+<aside class="side-nav" aria-label="منوی مدیریت مالی"><div class="side-title">Green Life · مالی</div><a href="/">داشبورد</a><a href="{% url 'finance_dashboard' %}">مالی ـ درآمد</a><a class="active" href="{% url 'payments_expenses' %}">مالی ـ هزینه‌ها</a><a href="{% url 'payments_admin' %}">تأییدها و ارجاع پرداخت</a><a href="{% url 'payments_workspace' %}">تنخواه و درخواست‌ها</a><div class="side-subtitle">گزارش هزینه‌های شرکت، شخصی، کمپ و دشت عروس در یک دفتر مدیریتی</div></aside>
 <main class="main">
 <nav class="nav" aria-label="ناوبری مالی">
  <span class="logo">GREEN LIFE · مدیریت مالی</span>
