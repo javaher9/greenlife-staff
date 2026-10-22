@@ -40,7 +40,7 @@
         <div class="tick">✓</div>
         <h1>لید ثبت شد</h1>
         <p class="lead">این شماره با برچسب «اینستاگرام - دستی» وارد صف کال‌سنتر شد.</p>
-        <a class="again" href="{% url 'instagram_manual_lead' %}">ثبت شماره بعدی</a>
+        <a class="again" href="{% if operator_quick_link %}{{ request.path }}{% else %}{% url 'instagram_manual_lead' %}{% endif %}">ثبت شماره بعدی</a>
       </div>
     {% else %}
       <div class="badge">اینستاگرام - دستی</div>
@@ -53,7 +53,7 @@
         <label class="field"><span>توضیحات <b style="color:#c83e51">*</b></span>{{ form.interested_service }}{% for error in form.interested_service.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <button class="btn" id="manualSubmitBtn" type="submit">ثبت در App</button>
       </form>
-      <div class="hint">ثبت‌کننده: <strong>{{ request.user.get_full_name|default:request.user.username }}</strong> · نام ثبت‌کننده به‌صورت خودکار در سابقه لید ذخیره می‌شود.</div>
+      <div class="hint">ثبت‌کننده: <strong>{% if operator_quick_link %}{{ operator_name }}{% else %}{{ request.user.get_full_name|default:request.user.username }}{% endif %}</strong> · نام ثبت‌کننده به‌صورت خودکار در سابقه لید ذخیره می‌شود.</div>
     {% endif %}
   </section>
 </main>
