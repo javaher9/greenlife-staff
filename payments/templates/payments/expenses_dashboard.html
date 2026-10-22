@@ -54,6 +54,7 @@ tbody tr:hover{background:#ffffff08}.amount{font-weight:800;font-variant-numeric
  <div><h1>هزینه‌ها و پرداخت‌ها</h1><div class="subtitle">گردش خروجی مالی، هزینه‌های شخصی و شرکتی، تنخواه و تمام درخواست‌ها — ویژه مدیریت</div></div>
  <a class="action" href="{% url 'payments_workspace' %}">+ ثبت درخواست هزینه یا پرداخت</a>
 </header>
+<div class="muted" style="margin:8px 2px 12px">آمار بالای صفحه مربوط به تمام رکوردهای ثبت‌شده است؛ فیلترهای پایین فقط جدول‌ها را تغییر می‌دهند.</div>
 <div class="cards">
  <section class="card"><div class="card-label">در انتظار تأیید یا توضیح</div><div class="card-value amber">{{ summary.pending|million_toman }}</div><small>میلیون تومان</small></section>
  <section class="card"><div class="card-label">تأییدشده، هنوز پرداخت‌نشده</div><div class="card-value purple">{{ summary.approved|million_toman }}</div><small>میلیون تومان</small></section>
@@ -79,7 +80,7 @@ tbody tr:hover{background:#ffffff08}.amount{font-weight:800;font-variant-numeric
 </section>
 <section class="panel">
  <div class="panel-h"><h2>درخواست‌ها و پرداخت‌های خروجی</h2><small>همه وضعیت‌ها · صفحه‌بندی ۵۰ موردی</small></div>
- <div class="table-scroll"><table><thead><tr><th>تاریخ</th><th>موضوع</th><th>دسته</th><th>متعلق به</th><th>مرکز / پروژه</th><th>درخواست‌کننده</th><th>گیرنده</th><th>مبلغ (میلیون)</th><th>وضعیت</th><th>مسئول پرداخت</th></tr></thead><tbody>
+ <div class="table-scroll"><table><thead><tr><th>تاریخ</th><th>موضوع</th><th>دسته</th><th>متعلق به</th><th>مرکز / پروژه</th><th>درخواست‌کننده</th><th>گیرنده</th><th>مبلغ (میلیون)</th><th>وضعیت</th><th>مسئول پرداخت</th><th>رسید</th></tr></thead><tbody>
  {% for p in requests_page %}
  <tr>
   <td>{{ p.created_at|date:"Y/m/d" }}</td><td>{{ p.description|truncatechars:75 }}{% if p.kind == 'petty_cash' %}<br><small>شارژ تنخواه (نه هزینه قطعی)</small>{% endif %}</td>
@@ -88,7 +89,7 @@ tbody tr:hover{background:#ffffff08}.amount{font-weight:800;font-variant-numeric
   <td>{{ p.requester.get_full_name|default:p.requester.username }}</td><td>{{ p.recipient_name|default:"—" }}</td>
   <td class="amount">{{ p.amount_toman|million_toman }}</td>
   <td><span class="pill {{ p.state }}">{{ p.get_state_display }}</span></td>
-  <td>{{ p.assigned_to.get_full_name|default:"—" }}</td>
+  <td>{{ p.assigned_to.get_full_name|default:"—" }}</td><td>{% if p.state == "paid" and p.payment_receipt %}<a href="{% url 'payments_receipt' p.pk %}">مشاهده</a>{% else %}—{% endif %}</td>
  </tr>
  {% empty %}<tr><td colspan="10" class="empty">هیچ موردی مطابق فیلترها وجود ندارد.</td></tr>{% endfor %}
  </tbody></table></div>
@@ -100,8 +101,8 @@ tbody tr:hover{background:#ffffff08}.amount{font-weight:800;font-variant-numeric
 </section>
 <section class="panel">
  <div class="panel-h"><h2>هزینه‌های واقعی تنخواه با رسید</h2><small>اینها هزینه‌اند؛ شارژ تنخواه بالا فقط انتقال وجه است.</small></div>
- <div class="table-scroll"><table><thead><tr><th>تاریخ</th><th>شرح هزینه</th><th>دسته</th><th>متعلق به</th><th>مرکز / پروژه</th><th>دارنده تنخواه</th><th>مبلغ (میلیون)</th></tr></thead><tbody>
- {% for e in petty_page %}<tr><td>{{ e.created_at|date:"Y/m/d" }}</td><td>{{ e.description|truncatechars:100 }}</td><td>{{ e.get_category_display }}</td><td>{{ e.get_cost_owner_display }}</td><td>{{ e.cost_center|default:"—" }}</td><td>{{ e.holder.get_full_name|default:e.holder.username }}</td><td class="amount">{{ e.amount_toman|million_toman }}</td></tr>
+ <div class="table-scroll"><table><thead><tr><th>تاریخ</th><th>شرح هزینه</th><th>دسته</th><th>متعلق به</th><th>مرکز / پروژه</th><th>دارنده تنخواه</th><th>مبلغ (میلیون)</th><th>رسید</th></tr></thead><tbody>
+ {% for e in petty_page %}<tr><td>{{ e.created_at|date:"Y/m/d" }}</td><td>{{ e.description|truncatechars:100 }}</td><td>{{ e.get_category_display }}</td><td>{{ e.get_cost_owner_display }}</td><td>{{ e.cost_center|default:"—" }}</td><td>{{ e.holder.get_full_name|default:e.holder.username }}</td><td class="amount">{{ e.amount_toman|million_toman }}</td><td><a href="{% url 'payments_petty_receipt' e.pk %}">مشاهده</a></td></tr>
  {% empty %}<tr><td colspan="7" class="empty">هزینه ثبت‌شده‌ای وجود ندارد.</td></tr>{% endfor %}
  </tbody></table></div>
  <div class="pager">
