@@ -1,0 +1,16 @@
+<section class="panel" style="margin:12px 0;padding:14px;border-radius:16px">
+<h3 style="margin:0 0 8px">پرداخت‌های شرکت که مدیریت تأیید کرده است</h3>
+<p style="font-size:12px;opacity:.8">این پرداخت‌ها جدا از مبالغی هستند که مشتری به شرکت می‌پردازد.</p>
+{% for p in items %}
+<div style="border:1px solid #d4dde5;border-radius:12px;padding:12px;margin:8px 0">
+<strong>{{ p.description }} — {{ p.amount_toman }} تومان</strong>
+<div>گیرنده: {{ p.recipient_name|default:"تنخواه پرسنل" }} | کارت: {{ p.recipient_card }} | شبا: {{ p.recipient_iban }}</div>
+<form method="post" action="{% url 'payments_complete' p.pk %}" enctype="multipart/form-data" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+{% csrf_token %}
+<input required name="reference" placeholder="شماره پیگیری بانک" aria-label="شماره پیگیری">
+<input required type="file" name="receipt" accept="image/*,application/pdf" aria-label="رسید بانکی">
+<button type="submit">ثبت پرداخت انجام‌شده</button>
+</form>
+</div>
+{% empty %}<p>مورد تأییدشده‌ای برای پرداخت در صف شما نیست.</p>{% endfor %}
+</section>
