@@ -296,3 +296,85 @@ def instagram_manual_lead(request):
         'form': form,
         'completed': completed,
     })
+
+
+# Separate restricted entry links for Instagram operators. Only SHA-256 digests
+# are stored in source; the link tokens themselves are not stored here.
+_INSTAGRAM_OPERATOR_LINKS = {
+    'rad': 'cdc539a40d6cafe33dd4cfe260fb9c65d01d0384726376f92d7acbd3b5024014',
+    'laleh': 'e3f1e2df4096a639df35d4b3019c555ce5c33f02ab2e0397aa63d64c7d552471',
+}
+
+
+def instagram_operator_quick_lead(request, operator, token):
+    """Dedicated no-login entry for authorized Instagram lead registrars."""
+    import hashlib
+    import hmac
+    from django.core.cache import cache
+    from django.http import Http404, HttpResponse
+    from django.views.decorators.cache import never_cache
+
+    digest = _INSTAGRAM_OPERATOR_LINKS.get(operator)
+    if not digest or not hmac.compare_digest(hashlib.sha256(token.encode()).hexdigest(), digest):
+        raise Http404()
+    if request.method not in ('GET', 'POST'):
+        return HttpResponse(status=405)
+    aliases = ('راد', 'rad') if operator == 'rad' else ('عباسی', 'abbasi')
+    staff = None
+    for profile in EmployeeProfile.objects.select_related('user').filter(is_active=True, user__is_active=True):
+        identity = ' '.join((profile.user.first_name, profile.user.last_name, profile.user.username)).lower().replace('ي', 'ی').replace('ك', 'ک')
+        if any(alias in identity for alias in aliases):
+            if staff is not None:
+                return HttpResponse('Ambiguous operator profile', status=503)
+            staff = profile
+    if staff is None:
+        return HttpResponse('Operator not active or not found', status=503)
+    if request.method == 'POST':
+        client_ip = (request.META.get('REMOTE_ADDR') or 'unknown')[:80]
+        throttle_key = 'instagram-quick:' + hashlib.sha256((operator + ':' + client_ip).encode()).hexdigest()
+        attempts = cache.get(throttle_key, 0)
+        if attempts >= 40:
+            return HttpResponse('Too many requests. Try later.', status=429)
+        cache.set(throttle_key, attempts + 1, timeout=3600)
+    post_data = None
+    if request.method == 'POST':
+        post_data = request.POST.copy()
+        post_data['consent'] = 'on'
+        if not post_data.get('instagram_page'):
+            post_data['instagram_page'] = INSTAGRAM_DEFAULT_PAGE
+    form = InstagramManualLeadForm(post_data, initial={'instagram_page': INSTAGRAM_DEFAULT_PAGE})
+    completed = False
+    if request.method == 'POST' and form.is_valid():
+        data = form.cleaned_data
+        page_slug, page_label = _instagram_page_source(data.get('instagram_page'))
+        staff_name = staff.user.get_full_name() or staff.user.username
+        try:
+            lead = ReferralLead.objects.create(
+                referrer=_instagram_source_profile(),
+                full_name=data['full_name'].strip(),
+                phone=data['phone'],
+                interested_service=(data.get('interested_service') or '').strip(),
+                status='new',
+                source='panel',
+                source_url='instagram/operator/' + operator + '/',
+                notes=f'اینستاگرام - دستی | پیج: {page_label} | [instagram_page:{page_slug}] | ثبت از دایرکت توسط {staff_name}',
+                created_by=staff.user,
+            )
+        except DuplicateLeadError:
+            form.add_error('phone', LEAD_DUPLICATE_MESSAGE)
+        else:
+            _assign_instagram_lead(
+                lead,
+                group_name=INSTAGRAM_MANUAL_GROUP_NAME,
+                notification_title='لید جدید اینستاگرام - دستی',
+            )
+            completed = True
+            form = InstagramManualLeadForm(initial={'instagram_page': INSTAGRAM_DEFAULT_PAGE})
+    response = render(request, 'core/instagram_manual_lead.html', {
+        'form': form, 'completed': completed,
+        'operator_quick_link': True, 'operator_name': staff.user.get_full_name() or staff.user.username,
+    })
+    response['Cache-Control'] = 'no-store'
+    response['Referrer-Policy'] = 'no-referrer'
+    response['X-Robots-Tag'] = 'noindex, nofollow'
+    return response
