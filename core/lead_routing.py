@@ -26,8 +26,8 @@ OPEN_ROUTING_STATUSES = ('new', 'contacted', 'appointment')
 PENDING_MORNING_RELEASE_HOUR = 10
 PENDING_MORNING_RELEASE_MINUTE = 15
 
-# Fixed equal-weight rotation requested by management. The order itself is the
-# policy: Narges -> Banafsha -> Yasaman -> Khorshidi -> repeat. Absent operators
+# Equal-weight rotation requested by management. Laleh is reinstated as
+# the fifth eligible operator, subject to normal attendance/leave checks. Absent operators
 # are skipped; when they later check in they join the same rotation without any
 # catch-up burst.
 ROTATION_OPERATOR_IDENTITIES = (
@@ -35,18 +35,18 @@ ROTATION_OPERATOR_IDENTITIES = (
     ('حدیث توانا', 'توانا', 'hadis tavana', 'tavana', 'بنفشه', 'banafsha', 'banafsheh'),
     ('زهرا آزادی', 'آزادی', 'zahra azadi', 'azadi', 'یاسمن', 'yasaman'),
     ('محمد صالحی', 'صالحی', 'mohammad salehi', 'salehi', 'خورشیدی', 'khorshidi'),
+    ('شیما عباسی', 'عباسی', 'shima abbasi', 'abbasi', 'لاله', 'laleh'),
 )
 
-# Management routing policy (2026-10-03): Kamelya and Laleh must not receive
-# any new lead until further notice. Existing ownership is deliberately kept.
+# Management routing policy: Kamelya remains blocked; Laleh was reinstated
+# on 2026-10-22. Existing ownership is deliberately kept.
 # Match both real staff identities and the flower aliases used in call-center
 # screens.
 BLOCKED_OPERATOR_IDENTITIES = (
     'پریسا کلکلی', 'کلکلی', 'kolkoli', 'kalakali', 'کاملیا',
-    'شیما عباسی', 'عباسی', 'abbasi', 'لاله',
 )
 
-# All four rotation operators now have exactly the same routing weight.
+# All eligible rotation operators have exactly the same routing weight.
 REDUCED_OPERATOR_WEIGHT_RULES = ()
 KHORSHIDI_POLICY_NOTICE = ''
 
