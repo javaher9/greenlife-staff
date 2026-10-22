@@ -327,7 +327,7 @@ def instagram_operator_quick_lead(request, operator, token):
     for profile in EmployeeProfile.objects.select_related('user').filter(is_active=True, user__is_active=True):
         user = profile.user
         identity = ' '.join((user.first_name or '', user.last_name or '')).replace('ي', 'ی').replace('ك', 'ک')
-        words = set(re.split(r'[^\\w\\u0600-\\u06ff]+', identity))
+        words = set(identity.split())
         if any(alias in words for alias in aliases):
             matches.append(profile)
     if len(matches) != 1:
