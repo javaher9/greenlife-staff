@@ -7,4 +7,5 @@ urlpatterns=[
  path('clarification/<int:pk>/answer/',views.answer_clarification,name='payments_clarification_answer'),
  path('receipt/<int:pk>/',views.receipt,name='payments_receipt'),
  path('admin/',views.admin_dashboard,name='payments_admin'),
+ path('expenses/',views.expenses_dashboard,name='payments_expenses'),
 ]
