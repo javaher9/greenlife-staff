@@ -73,3 +73,23 @@ class PaymentWorkflowTests(TestCase):
             'reference':'DUPLICATE','receipt':SimpleUploadedFile('proof.pdf',b'%PDF-1.4\nabc',content_type='application/pdf')})
         self.assertEqual(r.status_code,400)
         self.assertEqual(PaymentEvent.objects.filter(payment=p,action='paid').count(),0)
+
+    def test_other_staff_role_cannot_open_payment_workspace(self):
+        self.other.profile.role='receptionist'
+        self.other.profile.save(update_fields=['role'])
+        self.client.force_login(self.other)
+        response=self.client.get(reverse('payments_workspace'))
+        self.assertEqual(response.status_code,403)
+
+    def test_consultant_can_open_payment_workspace(self):
+        self.client.force_login(self.worker)
+        self.assertEqual(self.client.get(reverse('payments_workspace')).status_code,200)
+
+    def test_accountant_channel_disabled_during_pilot(self):
+        p=self._request()
+        self.client.force_login(self.executive)
+        r=self.client.post(reverse('payments_review',args=[p.pk]),{
+            'action':'approve','channel':'accountant','assigned_to':self.worker.pk})
+        self.assertEqual(r.status_code,400)
+        p.refresh_from_db()
+        self.assertEqual(p.state,'pending')
