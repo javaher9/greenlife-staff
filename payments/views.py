@@ -20,6 +20,9 @@ def staff(user):
     p=getattr(user,'profile',None)
     return bool(user.is_active and p and p.is_active and p.role == 'consultant')
 
+def assigned_operator(user):
+    return bool(user.is_authenticated and user.is_active and PaymentRequest.objects.filter(assigned_to=user, state='approved').exists())
+
 class RequestForm(forms.ModelForm):
     class Meta:
         model=PaymentRequest
@@ -51,10 +54,12 @@ class ExpenseForm(forms.ModelForm):
 
 @login_required
 def workspace(request):
-    if not staff(request.user) and not executive(request.user):
+    if not staff(request.user) and not executive(request.user) and not assigned_operator(request.user):
         raise PermissionDenied()
     form=RequestForm(request.POST or None,prefix='req')
     expense_form=ExpenseForm(request.POST or None,request.FILES or None,prefix='exp')
+    if request.method=='POST' and not (staff(request.user) or executive(request.user)):
+        raise PermissionDenied()
     if request.method=='POST':
         if request.POST.get('operation')=='request' and form.is_valid():
             obj=form.save(commit=False)
@@ -104,12 +109,12 @@ def review(request,pk):
         elif action=='approve':
             assignee=get_object_or_404(User,pk=request.POST.get('assigned_to'),is_active=True)
             channel=request.POST.get('channel')
-            if channel != 'consultant':
+            if channel not in ('consultant', 'staff'):
                 return HttpResponseBadRequest('مسیر پرداخت نامعتبر است.')
             if channel=='consultant' and (not staff(assignee) or assignee.profile.role != 'consultant'):
                 return HttpResponseBadRequest('پرداخت‌کننده باید مشاور یا منشی فعال باشد.')
-            if channel=='accountant' and not assignee.has_perm('payments.execute_official_payment'):
-                return HttpResponseBadRequest('مجوز پرداخت رسمی وجود ندارد.')
+            if channel=='staff' and not assignee.is_active:
+                return HttpResponseBadRequest('مسئول پرداخت فعال نیست.')
             p.state='approved'
             p.channel=channel
             p.assigned_to=assignee
@@ -124,13 +129,13 @@ def review(request,pk):
 @login_required
 @require_POST
 def mark_paid(request,pk):
-    if not staff(request.user) and not executive(request.user):
+    if not request.user.is_authenticated or not request.user.is_active:
         raise PermissionDenied()
     with transaction.atomic():
         p=get_object_or_404(PaymentRequest.objects.select_for_update(),pk=pk,assigned_to=request.user)
         if p.state!='approved':
             return HttpResponseBadRequest('این درخواست در صف شما نیست.')
-        if p.channel=='accountant' and not request.user.has_perm('payments.execute_official_payment'):
+        if p.channel not in ('consultant','staff'):
             raise PermissionDenied()
         reference=request.POST.get('reference','').strip()
         receipt=request.FILES.get('receipt')
@@ -154,8 +159,9 @@ def admin_dashboard(request):
     requests=PaymentRequest.objects.select_related('requester','assigned_to','approved_by','beneficiary','branch')
     consultants=User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant')
     accountants=User.objects.none()
+    operators=User.objects.filter(is_active=True, profile__is_active=True).order_by('first_name','last_name')
     paid=requests.filter(state='paid')
-    return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants,'staff_members':User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant').order_by('first_name','last_name')})
+    return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants,'operators':operators,'staff_members':User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant').order_by('first_name','last_name')})
 
 @login_required
 @require_POST
