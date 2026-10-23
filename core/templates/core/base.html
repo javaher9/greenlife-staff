@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700;800&display=swap">
   <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v41.0.0">
   <link rel="stylesheet" href="{% static 'core/sidebar-system.css' %}?v=v1">
-  <link rel="stylesheet" href="{% static 'core/executive-nav-v1.css' %}?v=6">
+  <link rel="stylesheet" href="{% static 'core/executive-nav-v1.css' %}?v=7">
   <link rel="stylesheet" href="{% static 'core/referral.css' %}?v=v40.3.3">
   <link rel="stylesheet" href="{% static 'core/ui-readability-v41.css' %}?v=v41.0.0">
   <link rel="stylesheet" href="{% static 'core/noto-sans-referral-preview.css' %}?v=2">
@@ -659,7 +659,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     <div class="gl-quick-shortcuts-row">
       <a class="gl-quick-orb gl-quick-leads" href="{% url 'lead_management_dashboard' %}?shortcut=1" title="لیدها" aria-label="لیدها"><span class="gl-orb-symbol" aria-hidden="true">◎</span><span>لید</span></a>
       <a class="gl-quick-orb gl-quick-income" href="{% url 'finance_dashboard' %}?shortcut=1" title="درآمد" aria-label="درآمد"><span class="gl-orb-symbol" aria-hidden="true">↗</span><span>درآمد</span></a>
-      <a class="gl-quick-orb gl-quick-targets" href="{% url 'sales_targets_dashboard' %}" title="تارگت‌های فروش" aria-label="تارگت‌های فروش"><span class="gl-orb-symbol" aria-hidden="true">◎</span><span>تارگت</span></a>
+      <a class="gl-quick-orb gl-quick-targets" href="{% url 'sales_targets_dashboard' %}?shortcut=1" title="تارگت‌های فروش" aria-label="تارگت‌های فروش"><span class="gl-orb-symbol" aria-hidden="true">◎</span><span>تارگت</span></a>
     </div>
   </section>
   {% endif %}
