@@ -133,10 +133,14 @@ def sales_targets_dashboard(request):
                     target_two_percent=amount("target_two_percent"),
                     updated_by=user,
                 )
-                form_policy.full_clean()
+                # Validate updates against the existing row, not as a new
+                # conflicting monthly policy (unique year/month constraint).
+                form_policy.full_clean(exclude=["id", "period_year", "period_month"])
                 edited = request.POST.getlist("subject")
-                if len(edited) != len(set(edited)) or set(edited) != set(valid_subjects):
-                    raise ValidationError("لیست افراد یا مراکز تغییر کرده است. صفحه را دوباره باز کنید.")
+                if len(edited) != len(set(edited)) or not edited or any(s not in valid_subjects for s in edited):
+                    raise ValidationError("فهرست تنظیمات نامعتبر است؛ صفحه را تازه‌سازی کنید.")
+                # Staff may be added/removed while the manager edits. Do not
+                # reject all floors simply because the live roster changed.
                 records = []
                 for subject in edited:
                     entered = (request.POST.get(f"floor_{subject}") or "").replace(",", "").strip()
@@ -153,7 +157,10 @@ def sales_targets_dashboard(request):
                         scope=scope, branch=branch, employee=employee,
                         updated_by=user, **values,
                     )
-                    obj.full_clean(exclude=["key"])  # update of an existing unique monthly subject is valid
+                    try:
+                        obj.full_clean(exclude=["key"])
+                    except ValidationError as err:
+                        raise ValidationError(f"خطا در کف فروش {subject}: {err}")
                     records.append((obj.key, dict(
                         period_year=jy, period_month=jm, scope=scope, branch=branch,
                         employee=employee, updated_by=user, **values,
@@ -170,7 +177,7 @@ def sales_targets_dashboard(request):
                     )
                     for key, defaults in records:
                         SalesTargetBand.objects.update_or_create(key=key, defaults=defaults)
-                messages.success(request, f"همه تغییرات ذخیره شدند؛ {len(records)} کف فروش و درصدهای عمومی به‌روزرسانی شد.")
+                messages.success(request, f"تغییرات با موفقیت ذخیره شد؛ {len(records)} کف فروش و درصدهای عمومی به‌روزرسانی شدند.")
             elif action == "set_policy":
                 candidate = TargetPercentPolicy(
                     period_year=jy, period_month=jm,
@@ -179,7 +186,7 @@ def sales_targets_dashboard(request):
                     target_two_percent=amount("target_two_percent"),
                     updated_by=user,
                 )
-                candidate.full_clean()
+                candidate.full_clean(exclude=["id", "period_year", "period_month"])
                 TargetPercentPolicy.objects.update_or_create(
                     period_year=jy, period_month=jm,
                     defaults={
@@ -219,8 +226,10 @@ def sales_targets_dashboard(request):
                 messages.success(request, "کف فروش ذخیره شد؛ سه مرز دیگر خودکار محاسبه شدند.")
             else:
                 raise ValidationError("درخواست نامعتبر است.")
-        except (InvalidOperation, ValidationError, ValueError, TypeError):
-            messages.error(request, "عددهای معتبر و مثبت وارد کن. درصد سنگین کمتر از ۱۰۰، تارگت ۱ بیشتر از ۱۰۰ و تارگت ۲ بالاتر از تارگت ۱ باشد.")
+        except ValidationError as exc:
+            messages.error(request, "تارگت ذخیره نشد: " + "؛ ".join(exc.messages))
+        except (InvalidOperation, ValueError, TypeError):
+            messages.error(request, "تارگت ذخیره نشد: عدد واردشده نامعتبر است. مقدارهای مثبت و درصدهای مرتب وارد کنید.")
         return HttpResponseRedirect(f"{reverse('sales_targets_dashboard')}?year={jy}&month={jm}&edit=1")
 
     configs = SalesTargetBand.objects.filter(period_year=jy, period_month=jm)
