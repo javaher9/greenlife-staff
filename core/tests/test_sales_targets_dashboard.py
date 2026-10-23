@@ -96,6 +96,38 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertEqual(self.client.get(self.url).context["target_policy"].target_one_percent, Decimal("145"))
         self.assertEqual(SalesTargetBand.objects.count(), 1)
 
+    def test_bulk_save_replaces_8000_with_7000_and_updates_sliders(self):
+        base={"year":self.year,"month":self.month,"action":"set_floor","subject":"overall","sales_floor":"8000"}
+        self.client.post(self.url,base)
+        page=self.client.get(self.url+"?edit=1")
+        subjects=[row["key"] for row in page.context["edit_rows"]]
+        form={"year":str(self.year),"month":str(self.month),"action":"save_all",
+              "heavy_percent":"65","target_one_percent":"135","target_two_percent":"175",
+              "subject":subjects,"floor_overall":"7000"}
+        res=self.client.post(self.url,form)
+        self.assertEqual(res.status_code,302)
+        page=self.client.get(self.url+"?edit=1")
+        self.assertEqual(page.context["overall"]["plan"].sales_floor,Decimal("7000"))
+        self.assertEqual(page.context["overall"]["plan"].heavy_limit,Decimal("4550"))
+        self.assertEqual(page.context["overall"]["plan"].target_one,Decimal("9450"))
+        self.assertEqual(page.context["overall"]["plan"].target_two,Decimal("12250"))
+        self.assertContains(page,'name="action" value="save_all"')
+        self.assertContains(page,'type="range"')
+        self.assertContains(page,'ذخیره همه تغییرات')
+        self.assertEqual(SalesTargetBand.objects.get(key=f"{self.year}-{self.month:02d}:overall").sales_floor,Decimal("7000"))
+
+    def test_invalid_bulk_percent_rolls_back_floor_and_policy(self):
+        self.client.post(self.url,{"year":self.year,"month":self.month,
+              "action":"set_floor","subject":"overall","sales_floor":"8000"})
+        subjects=[row["key"] for row in self.client.get(self.url).context["edit_rows"]]
+        res=self.client.post(self.url,{"year":self.year,"month":self.month,"action":"save_all",
+             "subject":subjects,"floor_overall":"7000","heavy_percent":"95",
+             "target_one_percent":"190","target_two_percent":"150"})
+        self.assertEqual(res.status_code,302)
+        page=self.client.get(self.url)
+        self.assertEqual(page.context["overall"]["plan"].sales_floor,Decimal("8000"))
+        self.assertEqual(page.context["target_policy"].target_one_percent,Decimal("130"))
+
     def test_personal_sales_targets_are_read_only_and_not_shared(self):
         self.client.post(self.url, {
             "year":self.year, "month":self.month, "action":"set_floor",
