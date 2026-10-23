@@ -73,3 +73,15 @@ class InstagramAgentApiSecurityTests(SimpleTestCase):
         ))
         self.assertEqual(response.status_code, 422)
         self.assertEqual(json.loads(response.content)["status"], "invalid_event_id")
+
+    @patch.dict("os.environ", {"INSTAGRAM_AGENT_API_KEY": "x" * 40})
+    @patch("core.instagram_agent_api.ReferralLead")
+    def test_event_replay_returns_original_lead(self, referral_lead):
+        referral_lead.objects.filter.return_value.only.return_value.first.return_value.pk = 42
+        response = instagram_agent_lead_api(self.request(
+            {"source_page": "greenlifeclinics", "contact_consent": True,
+             "external_event_id": "event-12345678"},
+            "Bearer " + "x" * 40,
+        ))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(json.loads(response.content), {"status": "already_processed", "lead_id": 42})
