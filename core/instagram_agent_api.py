@@ -2,6 +2,8 @@
 import json
 import os
 import hmac
+import re
+from django.db import connection, transaction
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -39,12 +41,20 @@ def instagram_agent_lead_api(request):
         return JsonResponse({"status": "invalid_source_page"}, status=422)
     if data.get("contact_consent") is not True:
         return JsonResponse({"status": "consent_required"}, status=422)
+    event_id = data.get("external_event_id")
+    if not isinstance(event_id, str) or not re.fullmatch(r"[A-Za-z0-9_.:-]{8,96}", event_id):
+        return JsonResponse({"status": "invalid_event_id"}, status=422)
+    event_key = "ig-agent:" + event_id
     form = InstagramLeadForm({
         "full_name": data.get("full_name", ""),
         "phone": data.get("phone", ""),
         "interested_service": data.get("interested_service", ""),
         "consent": "on",
     })
+    # Replays should return the original outcome even when the phone now exists.
+    prior = ReferralLead.objects.filter(crm_id=event_key).only("pk").first()
+    if prior:
+        return JsonResponse({"status": "already_processed", "lead_id": prior.pk}, status=200)
     if not form.is_valid():
         # Existing duplicate detection lives in InstagramLeadForm.clean_phone.
         # Avoid echoing submitted personal information in error responses.
@@ -54,17 +64,30 @@ def instagram_agent_lead_api(request):
         return JsonResponse({"status": "validation_error", "fields": list(form.errors.keys())}, status=422)
     cleaned = form.cleaned_data
     slug, label = _instagram_page_source(page)
-    try:
-        lead = ReferralLead.objects.create(
-            referrer=_instagram_source_profile(),
-            full_name=cleaned["full_name"].strip(),
-            phone=cleaned["phone"],
-            interested_service=(cleaned.get("interested_service") or "").strip(),
-            status="new",
-            source="link",
-            notes=f"Instagram Agent API | پیج: {label} | [channel:instagram] | [instagram_page:{slug}]",
-        )
-    except DuplicateLeadError:
-        return JsonResponse({"status": "duplicate_phone"}, status=409)
-    _assign_instagram_lead(lead)
+    # Serialize same-event requests across workers on PostgreSQL.
+    # The existing ReferralLead.save() separately serializes duplicate phones.
+    with transaction.atomic():
+        if connection.vendor == "postgresql":
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT pg_advisory_xact_lock(hashtext(%s)::bigint)",
+                    ["greenlife-instagram-event:" + event_key],
+                )
+        prior = ReferralLead.objects.filter(crm_id=event_key).only("pk").first()
+        if prior:
+            return JsonResponse({"status": "already_processed", "lead_id": prior.pk}, status=200)
+        try:
+            lead = ReferralLead.objects.create(
+                referrer=_instagram_source_profile(),
+                full_name=cleaned["full_name"].strip(),
+                phone=cleaned["phone"],
+                interested_service=(cleaned.get("interested_service") or "").strip(),
+                status="new",
+                source="link",
+                crm_id=event_key,
+                notes=f"Instagram Agent API | پیج: {label} | [channel:instagram] | [instagram_page:{slug}]",
+            )
+        except DuplicateLeadError:
+            return JsonResponse({"status": "duplicate_phone"}, status=409)
+        _assign_instagram_lead(lead)
     return JsonResponse({"status": "created", "lead_id": lead.pk}, status=201)
