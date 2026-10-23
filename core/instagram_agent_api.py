@@ -1,0 +1,63 @@
+"""Authenticated Instagram lead intake. Disabled until an integration secret is configured."""
+import json
+import os
+import hmac
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+
+from .instagram_views import (
+    InstagramLeadForm, INSTAGRAM_PAGE_SOURCES, _instagram_page_source,
+    _instagram_source_profile, _assign_instagram_lead,
+)
+from .models import ReferralLead, DuplicateLeadError
+
+
+@csrf_exempt
+@require_POST
+def instagram_agent_lead_api(request):
+    # This endpoint uses bearer authentication rather than browser cookies.
+    secret = os.environ.get("INSTAGRAM_AGENT_API_KEY", "")
+    if len(secret) < 32:
+        return JsonResponse({"status": "disabled"}, status=503)
+    supplied = request.headers.get("Authorization", "")
+    if not hmac.compare_digest(supplied, "Bearer " + secret):
+        return JsonResponse({"status": "unauthorized"}, status=401)
+    if len(request.body) > 8192:
+        return JsonResponse({"status": "payload_too_large"}, status=413)
+    try:
+        data = json.loads(request.body)
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse({"status": "invalid_json"}, status=400)
+    if not isinstance(data, dict):
+        return JsonResponse({"status": "invalid_payload"}, status=400)
+    page = str(data.get("source_page", ""))
+    if page not in INSTAGRAM_PAGE_SOURCES:
+        return JsonResponse({"status": "invalid_source_page"}, status=422)
+    if data.get("contact_consent") is not True:
+        return JsonResponse({"status": "consent_required"}, status=422)
+    form = InstagramLeadForm({
+        "full_name": data.get("full_name", ""),
+        "phone": data.get("phone", ""),
+        "interested_service": data.get("interested_service", ""),
+        "consent": "on",
+    })
+    if not form.is_valid():
+        return JsonResponse({"status": "validation_error", "errors": form.errors.get_json_data()}, status=422)
+    cleaned = form.cleaned_data
+    slug, label = _instagram_page_source(page)
+    try:
+        lead = ReferralLead.objects.create(
+            referrer=_instagram_source_profile(),
+            full_name=cleaned["full_name"].strip(),
+            phone=cleaned["phone"],
+            interested_service=(cleaned.get("interested_service") or "").strip(),
+            status="new",
+            source="link",
+            notes=f"Instagram Agent API | پیج: {label} | [channel:instagram] | [instagram_page:{slug}]",
+        )
+    except DuplicateLeadError:
+        return JsonResponse({"status": "duplicate_phone"}, status=409)
+    _assign_instagram_lead(lead)
+    return JsonResponse({"status": "created", "lead_id": lead.pk}, status=201)
