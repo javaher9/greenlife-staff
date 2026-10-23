@@ -220,6 +220,7 @@ def sales_targets_dashboard(request):
         day=TruncDate("occurred_at"),
     ).values("day").annotate(value=Sum("amount")).order_by("day"))
     daily_map = {r["day"]: _money(r["value"]) for r in daily}
+    has_sales = any(amount > ZERO for amount in daily_map.values())
     running = ZERO
     trend = []
     max_trend = max(total, overall["plan"].target_two if overall["plan"] else ZERO, Decimal("1"))
@@ -249,6 +250,7 @@ def sales_targets_dashboard(request):
         "overall":overall, "branches":financial_cards,
         "flower_cards":flower_cards, "consultant_cards":consultant_cards,
         "total":total, "projection":projection,
+        "has_sales":has_sales, "is_first_days":start_date <= today < start_date + timedelta(days=3),
         "shortfall":max(ZERO, (overall["plan"].target_one-total)) if overall["plan"] else None,
         "ranking":ranking, "warnings":warnings, "trend":trend,
         "deposit_count":deposit_count, "edit_rows":edit_rows,

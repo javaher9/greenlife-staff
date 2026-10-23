@@ -67,6 +67,47 @@ body.gl-page-sales_targets_dashboard .app-main{background:radial-gradient(circle
 @media(max-width:1350px){.st-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.st-four{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:820px){.st-main-row,.st-foot{grid-template-columns:1fr}.st-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.st-persons{grid-template-columns:repeat(3,minmax(0,1fr))}.st-edit-caption{display:none}}
 @media(max-width:550px){.st-four{grid-template-columns:1fr}.st-persons{grid-template-columns:repeat(2,minmax(0,1fr))}.st-panel{padding:10px}.st-edit-row{display:flex;flex-wrap:wrap}.st-edit-row label{width:100%}.st-edit-row input{width:calc(50% - 4px)}.st-kpi{min-height:89px}.st-head{align-items:stretch}}
+
+/* Target page legibility overrides against global executive theme styles. */
+body.gl-page-sales_targets_dashboard .app-main .st,
+body.gl-page-sales_targets_dashboard .app-main .st .st-panel,
+body.gl-page-sales_targets_dashboard .app-main .st .st-kpi,
+body.gl-page-sales_targets_dashboard .app-main .st .st-branch,
+body.gl-page-sales_targets_dashboard .app-main .st .st-person {color:#edf7ff!important;opacity:1!important}
+body.gl-page-sales_targets_dashboard .app-main .st h1,
+body.gl-page-sales_targets_dashboard .app-main .st h2,
+body.gl-page-sales_targets_dashboard .app-main .st h3,
+body.gl-page-sales_targets_dashboard .app-main .st .st-title h2,
+body.gl-page-sales_targets_dashboard .app-main .st .st-kpi strong,
+body.gl-page-sales_targets_dashboard .app-main .st .st-stats strong,
+body.gl-page-sales_targets_dashboard .app-main .st .st-list-row,
+body.gl-page-sales_targets_dashboard .app-main .st .st-list-row b,
+body.gl-page-sales_targets_dashboard .app-main .st .st-person-name {color:#f3fbff!important;opacity:1!important;text-shadow:none!important}
+body.gl-page-sales_targets_dashboard .app-main .st .st-kpi small,
+body.gl-page-sales_targets_dashboard .app-main .st .st-stats small,
+body.gl-page-sales_targets_dashboard .app-main .st .st-sub,
+body.gl-page-sales_targets_dashboard .app-main .st .st-hint {color:#b9d3e6!important;opacity:1!important}
+body.gl-page-sales_targets_dashboard .app-main .st .st-status.heavy{color:#ff6787!important}
+body.gl-page-sales_targets_dashboard .app-main .st .st-status.light{color:#ffd45d!important}
+body.gl-page-sales_targets_dashboard .app-main .st .st-status.neutral{color:#46ecc3!important}
+body.gl-page-sales_targets_dashboard .app-main .st .st-status.one{color:#61caff!important}
+body.gl-page-sales_targets_dashboard .app-main .st .st-status.two{color:#c490ff!important}
+body.gl-page-sales_targets_dashboard .app-main .st .st-status.unset{color:#bed6e9!important}
+body.gl-page-sales_targets_dashboard .app-main .st .st-rank{color:#4be6b6!important}
+.st-note{display:flex;align-items:center;gap:9px;justify-content:space-between;flex-wrap:wrap;padding:13px 15px;background:linear-gradient(110deg,#13334b,#13344d);border:1px solid #3b8b96;border-radius:13px;margin:0 0 13px;font-size:12px;line-height:1.9;color:#e7f8ff!important}
+.st-note strong{color:#f2fcff!important}
+.st-note a{white-space:nowrap}
+.st-chart-wrap{position:relative}
+.st-graph-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:7px;background:linear-gradient(90deg,#10273cd6,#152f49e8);font-size:12px;color:#f1faff;text-align:center;padding:14px}
+.st-graph-empty .st-sub{font-size:11px}
+.st-graph-empty a{color:#3fe9bc!important;text-decoration:underline}
+.st-meter svg{filter:drop-shadow(0 5px 12px #0003)}
+.st-levels{gap:10px}
+.st-person{padding:12px 8px 10px}
+.st-person .st-meter{max-width:154px}
+.st-inline-guide{font-size:11px;color:#a9cadd}
+.st-source-note{font-size:11px;line-height:1.8;color:#c1d7e7;border:1px dashed #456986;background:#092237;padding:8px 11px;border-radius:10px;margin-top:7px}
+
 </style>
 <div class="st">
  <div class="st-head">
@@ -78,20 +119,26 @@ body.gl-page-sales_targets_dashboard .app-main{background:radial-gradient(circle
    <a href="?year={{ period_year }}&month={{ period_month }}&edit=1#st-settings" class="st-button primary">⚙ تنظیم تارگت‌ها</a>
   </div>
  </div>
+ <div class="st-note">
+  <div><strong>وضعیت ماه {{ period_label }}:</strong> {% if configured_count == 0 %}هنوز هیچ کف فروش یا تارگتی برای این ماه ثبت نشده است. برای دیدن عقربه‌های واقعی، مرزهای تارگت را در تنظیمات وارد کن.{% else %}برای {{ configured_count }} مورد، هدف ماهانه تعریف شده است. وضعیت جریمه صرفاً هشدار است و تا پایان ماه قطعی نیست.{% endif %}</div>
+  {% if configured_count == 0 %}<a class="st-button primary" href="?year={{ period_year }}&month={{ period_month }}&edit=1#st-settings">⚙ تعریف تارگت‌ها</a>{% endif %}
+ </div>
  <section class="st-panel">
   <div class="st-title"><h2>خلاصه مالی و تحقق فروش</h2><span class="st-sub">میلیون تومان</span></div>
   <div class="st-kpis">
-    <div class="st-kpi"><small>فروش تحقق‌یافته مراکز</small><strong>{{ total|floatformat:0 }}</strong><small>رسیدهای تأییدشده</small></div>
+    <div class="st-kpi"><small>فروش ثبت‌شده در اپ</small><strong>{{ total|floatformat:0 }}</strong><small>دریافت‌های دستی تأییدشده مراکز</small></div>
     <div class="st-kpi"><small>تارگت ۱ مراکز</small><strong>{% if overall.plan %}{{ overall.plan.target_one|floatformat:0 }}{% else %}—{% endif %}</strong><small>هدف اول ماه</small></div>
     <div class="st-kpi"><small>درصد تحقق تا تارگت ۲</small><strong>{% if overall.percentage != None %}{{ overall.percentage }}%{% else %}—{% endif %}</strong><small>{{ overall.status }}</small></div>
-    <div class="st-kpi"><small>پیش‌بینی پایان ماه</small><strong>{% if projection != None %}{{ projection|floatformat:0 }}{% else %}—{% endif %}</strong><small>بر مبنای روند جاری</small></div>
+    <div class="st-kpi"><small>پیش‌بینی پایان ماه</small><strong>{% if projection != None %}{{ projection|floatformat:0 }}{% else %}—{% endif %}</strong><small>{% if projection != None %}بر مبنای روند جاری{% else %}داده کافی موجود نیست{% endif %}</small></div>
     <div class="st-kpi"><small>فاصله تا تارگت ۱</small><strong>{% if shortfall != None %}{{ shortfall|floatformat:0 }}{% else %}—{% endif %}</strong><small>مبلغ باقیمانده</small></div>
   </div>
  </section>
+ <div class="st-source-note">منبع این نسخه: دریافت‌های دستی تأییدشده در اپ. دریافتی‌های CRM به دلیل احتمال هم‌پوشانی در عدد بالا جمع نشده‌اند؛ صفر لزوماً به معنی صفر بودن کل درآمد مجموعه نیست.</div>
  <div class="st-main-row">
    <section class="st-panel">
     <div class="st-title"><h2>روند تجمعی فروش ماه</h2><span class="st-sub">هر ستون یک روز شمسی</span></div>
-    <div class="st-graph">{% for day in trend %}<span style="height:{{ day.height|floatformat:2 }}%" title="روز {{ day.day }}: {{ day.amount|floatformat:0 }} میلیون تومان"></span>{% endfor %}</div>
+    <div class="st-chart-wrap"><div class="st-graph">{% for day in trend %}<span style="height:{{ day.height|floatformat:"2u" }}%" title="روز {{ day.day }}: {{ day.amount|floatformat:0 }} میلیون تومان"></span>{% endfor %}</div>
+    {% if not has_sales %}<div class="st-graph-empty"><strong>برای ماه انتخاب‌شده فروش تأییدشده‌ای در منبع این نمودار ثبت نشده است.</strong><span class="st-sub">{% if is_first_days %}این ماه تازه شروع شده است. {% endif %}ماه قبل را برای مقایسه انتخاب کن.</span><a href="?year={{ prev_year }}&month={{ prev_month }}">مشاهده ماه قبل ←</a></div>{% endif %}</div>
    </section>
    <section class="st-panel">
     <div class="st-title"><h2>تحقق کل مراکز</h2><span class="st-sub">{{ overall.status }}</span></div>
@@ -127,18 +174,6 @@ body.gl-page-sales_targets_dashboard .app-main{background:radial-gradient(circle
    </article>
   {% endfor %}
   </div>
- </section>
- <section class="st-panel">
-   <div class="st-title"><h2>◉ مشاورین فروش شعب</h2><span class="st-sub">{{ consultant_cards|length }} نفر — عکس پرسنلی کنار تارگت</span></div>
-   <div class="st-persons">
-    {% for p in consultant_cards %}
-     <article class="st-person">
-      <div class="st-person-header"><span class="st-avatar">{% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.label }}" loading="lazy">{% else %}{{ p.label|first }}{% endif %}</span><div><div class="st-person-name" title="{{ p.label }}">{{ p.label }}</div><small class="st-sub">{{ p.group }}</small></div></div>
-      <div class="st-meter" data-value="{{ p.value }}" data-heavy="{{ p.plan.heavy_limit|default_if_none:'' }}" data-floor="{{ p.plan.sales_floor|default_if_none:'' }}" data-one="{{ p.plan.target_one|default_if_none:'' }}" data-two="{{ p.plan.target_two|default_if_none:'' }}"></div>
-      <div class="st-status {{ p.level }}">{{ p.status }}</div>
-     </article>
-    {% empty %}<div class="st-empty">مشاور فعال در شعب موجود نیست.</div>{% endfor %}
-   </div>
  </section>
  <section class="st-panel">
    <div class="st-title"><h2>◉ فروش گل‌های کال‌سنتر</h2><span class="st-sub">{{ flower_cards|length }} نفر — فروش تأییدشده منتسب به هر گل</span></div>
@@ -194,29 +229,33 @@ body.gl-page-sales_targets_dashboard .app-main{background:radial-gradient(circle
  function polar(deg,r){return [110+r*Math.cos(deg*Math.PI/180),111+r*Math.sin(deg*Math.PI/180)];}
  function arc(a,b,r){const [x1,y1]=polar(a,r),[x2,y2]=polar(b,r);return "M "+x1.toFixed(2)+" "+y1.toFixed(2)+" A "+r+" "+r+" 0 "+(b-a>180?1:0)+" 1 "+x2.toFixed(2)+" "+y2.toFixed(2);}
  function fmt(n){return Number(n).toLocaleString("en-US",{maximumFractionDigits:1});}
+ const colors=["#fc4768","#f5bc31","#1fd8a5","#2caeff","#a96bfa"];
  document.querySelectorAll(".st .st-meter").forEach(box=>{
-   let value=Math.max(0,Number(box.dataset.value)||0);
-   let t=[Number(box.dataset.heavy),Number(box.dataset.floor),Number(box.dataset.one),Number(box.dataset.two)];
+   const value=Math.max(0,Number(box.dataset.value)||0);
+   const t=["heavy","floor","one","two"].map(k=>box.dataset[k]&&Number(box.dataset[k]));
    const ready=t.every(Number.isFinite)&&t[0]>0&&t[0]<t[1]&&t[1]<t[2]&&t[2]<t[3];
-   const upper=ready?Math.max(t[3]*1.24,value):Math.max(value,1);
-   const svg=elem("svg",{viewBox:"0 0 220 184",role:"img","aria-label":ready?("فروش "+fmt(value)+" از تارگت "+fmt(t[3])):"تارگت تنظیم نشده"});
-   if(ready){
-     const edges=[0,t[0],t[1],t[2],t[3],upper],colors=["#fb466c","#fcca3b","#20deac","#29bfff","#a36dff"];
-     for(let i=0;i<5;i++){
-       const a=155+230*edges[i]/upper, b=155+230*edges[i+1]/upper;
-       if(b-a>1.5)svg.appendChild(elem("path",{d:arc(a+Math.min(2,(b-a)/5),b-Math.min(2,(b-a)/5),78),fill:"none",stroke:colors[i],"stroke-width":"18","stroke-linecap":"round"}));
-     }
-     const angle=155+230*Math.min(value/upper,1);
-     const [px,py]=polar(angle,84),[mx,my]=polar(angle,44);
-     svg.appendChild(elem("path",{d:"M "+mx+" "+my+" L "+px+" "+py,stroke:"#f2fbff","stroke-width":"6","stroke-linecap":"round",fill:"none"}));
-     svg.appendChild(elem("circle",{cx:px,cy:py,r:"7",fill:"#10324b",stroke:"#eefaff","stroke-width":"4"}));
-     const percentage=Math.round(100*value/t[3]);
-     svg.appendChild(elem("text",{x:110,y:113,fill:"#e9faff","font-size":"23","text-anchor":"middle","font-family":"Arial,Tahoma","font-weight":"bold"},percentage+"%"));
-   }else{
-     svg.appendChild(elem("path",{d:arc(155,385,78),fill:"none",stroke:"#3e5974","stroke-width":"18","stroke-dasharray":"13 4"}));
-     svg.appendChild(elem("text",{x:110,y:112,fill:"#b4cbd8","font-size":"18","text-anchor":"middle","font-family":"Tahoma"},"—"));
+   const upper=ready?Math.max(t[3]*1.20,value):1;
+   const svg=elem("svg",{viewBox:"0 0 220 190",role:"img","aria-label":ready?("فروش "+fmt(value)+" از تارگت دوم "+fmt(t[3])):"نمای پنج سطح رنگی؛ هنوز تارگت تنظیم نشده"});
+   // Color bands remain visible even before thresholds are configured.
+   // In that state equal-size sectors are illustrative, never actual targets.
+   const edges=ready?[0,t[0],t[1],t[2],t[3],upper]:[0,.20,.40,.60,.80,1];
+   for(let i=0;i<5;i++){
+     const a=130+280*edges[i]/upper, b=130+280*edges[i+1]/upper;
+     const gap=Math.min(2.5,(b-a)/6);
+     if(b-a>1.5)svg.appendChild(elem("path",{d:arc(a+gap,b-gap,78),fill:"none",stroke:colors[i],"stroke-width":"17","stroke-linecap":"round"}));
    }
-   svg.appendChild(elem("text",{x:110,y:143,fill:"#dfedfc","font-size":"12","text-anchor":"middle","font-family":"Arial,Tahoma"},fmt(value)+" M"));
+   // Never show a needle at an invented level when no configuration exists.
+   if(ready){
+     const angle=130+280*Math.min(value/upper,1);
+     const [px,py]=polar(angle,84),[mx,my]=polar(angle,40);
+     svg.appendChild(elem("path",{d:"M "+mx+" "+my+" L "+px+" "+py,stroke:"#edfaff","stroke-width":"7","stroke-linecap":"round",fill:"none"}));
+     svg.appendChild(elem("circle",{cx:px,cy:py,r:"9",fill:"#12354c",stroke:"#edfaff","stroke-width":"4"}));
+     svg.appendChild(elem("text",{x:110,y:108,fill:"#f1fbff","font-size":"23","text-anchor":"middle","font-family":"Arial,Tahoma","font-weight":"bold"},Math.round(100*value/t[3])+"%"));
+   }else{
+     svg.appendChild(elem("text",{x:110,y:108,fill:"#ebf7ff","font-size":"22","text-anchor":"middle","font-family":"Arial,Tahoma","font-weight":"bold"},"—"));
+     svg.appendChild(elem("text",{x:110,y:125,fill:"#c6d9e9","font-size":"10","text-anchor":"middle","font-family":"Tahoma"},"بدون تارگت"));
+   }
+   svg.appendChild(elem("text",{x:110,y:148,fill:"#e0f4ff","font-size":"13","text-anchor":"middle","font-family":"Arial,Tahoma","direction":"ltr"},fmt(value)));
    box.appendChild(svg);
  });
 })();

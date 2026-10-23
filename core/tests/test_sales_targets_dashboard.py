@@ -52,6 +52,26 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertNotContains(response, ">ارومیه<")
         self.assertContains(response, "تارگت تنظیم نشده")
 
+    def test_compact_branch_only_layout_and_target_free_color_legend(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "تارگت فروش مراکز و کال‌سنتر")
+        self.assertContains(response, "مشاورین نیاوران تست")
+        self.assertNotContains(response, "◉ مشاورین فروش شعب")
+        self.assertContains(response, "◉ فروش گل‌های کال‌سنتر")
+        self.assertContains(response, "هنوز هیچ کف فروش یا تارگتی")
+        self.assertContains(response, 'const colors=["#fc4768"')
+        self.assertFalse(response.context["has_sales"])
+        self.assertTrue(response.context["branches"][0]["people"])
+
+    def test_sales_trend_empty_state_changes_when_real_sale_exists(self):
+        empty = self.client.get(self.url)
+        self.assertContains(empty, "فروش تأییدشده‌ای در منبع این نمودار ثبت نشده است")
+        self._transaction("100000000", recorded=self.consultant)
+        paid = self.client.get(self.url)
+        self.assertTrue(paid.context["has_sales"])
+        self.assertNotContains(paid, "فروش تأییدشده‌ای در منبع این نمودار ثبت نشده است")
+
     def test_valid_and_invalid_thresholds_and_monthly_isolation(self):
         values = dict(year=self.year, month=self.month, subject=f"branch:{self.branch.pk}",
                       heavy_limit="100", sales_floor="200", target_one="300", target_two="450")
