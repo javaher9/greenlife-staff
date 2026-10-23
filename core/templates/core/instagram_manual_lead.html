@@ -46,6 +46,7 @@
       <div class="badge">اینستاگرام - دستی</div>
       <h1>ثبت لید از دایرکت</h1>
       <p class="lead">شماره‌ای را که مخاطب در دایرکت فرستاده اینجا وارد کنید تا مستقیم وارد App و صف کال‌سنتر شود.</p>
+      {% if form.errors %}<div role="alert" style="padding:12px;margin-bottom:12px;background:#fff0f1;color:#a32c40;border:2px solid #c83e51;border-radius:12px;font-size:16px">ثبت انجام نشد. خطاهای فرم را اصلاح کنید.{{ form.non_field_errors }}</div>{% endif %}
       <form method="post" id="manualInstagramForm">{% csrf_token %}
         <label class="field"><span>نام / آیدی اینستاگرام</span>{{ form.full_name }}{% for error in form.full_name.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <label class="field"><span>{{ form.phone.label }}</span>{{ form.phone }}{% for error in form.phone.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
@@ -73,7 +74,7 @@
     if(form)form.addEventListener('submit',normalizePhone,true);
     normalizePhone();
   }
-  if(form&&btn){form.addEventListener('submit',function(){if(!form.checkValidity())return;btn.disabled=true;btn.textContent='در حال ثبت...';});}
+  if(form&&btn){form.addEventListener('submit',function(){if(!form.checkValidity())return;btn.textContent='در حال ارسال...';});}
 })();
 </script>
 </body>
