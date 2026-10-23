@@ -108,8 +108,6 @@ def sales_targets_dashboard(request):
         valid_subjects[f"branch:{b.pk}"] = ("branch", b, None)
     for p in flowers:
         valid_subjects[f"flower:{p.user_id}"] = ("flower", None, p.user)
-    for p in consultants:
-        valid_subjects[f"consultant:{p.user_id}"] = ("consultant", p.branch, p.user)
 
     policy = TargetPercentPolicy.objects.filter(period_year=jy, period_month=jm).first()
     if policy is None:
@@ -336,7 +334,6 @@ def sales_targets_dashboard(request):
         for key, label, scope in (
             [("overall", "مجموع مراکز", "کل"), ("call_center", "کال‌سنتر ـ بیعانه", "کال‌سنتر")]
             + [(f"branch:{b.pk}", b.name, "مرکز") for b in branches]
-            + [(f"consultant:{p.user_id}", p.user.get_full_name() or p.user.username, "مشاور") for p in consultants]
             + [(f"flower:{p.user_id}", call_center_display_name(p.user), "گل") for p in flowers]
         )
     ]
@@ -370,6 +367,10 @@ def my_sales_targets(request):
     policy = TargetPercentPolicy.objects.filter(period_year=jy, period_month=jm).first()
     if policy is None:
         policy = TargetPercentPolicy(period_year=jy, period_month=jm)
+    # Consultants are represented by their branch target, not a second
+    # independently configurable target. Keep old rows intact for audit.
+    if profile.role == "consultant" and profile.branch_id:
+        key = f"branch:{profile.branch_id}"
     saved = SalesTargetBand.objects.filter(key=f"{period}:{key}").first()
     plan = None
     if saved:
