@@ -1,0 +1,14 @@
+/* GreenLife unified navigation v1 — scoped to grouped executive sidebar. */
+.gl-grouped-nav{--nav-ink:#ecf5f2;--nav-sub:#10171b;--nav-edge:rgba(255,255,255,.16);display:flex!important;flex-direction:column!important;gap:8px!important}
+.gl-grouped-nav .gl-nav-group{margin:0!important;border:0!important;min-width:0}
+.gl-grouped-nav .gl-nav-group>summary{display:flex!important;align-items:center!important;gap:12px!important;min-height:53px!important;padding:12px 14px!important;border-radius:15px!important;cursor:pointer!important;list-style:none!important;background:linear-gradient(110deg,rgba(27,102,80,.43),rgba(56,79,114,.35))!important;border:1px solid var(--nav-edge)!important;box-shadow:inset 0 1px rgba(255,255,255,.17),0 5px 14px rgba(0,0,0,.13)!important;color:var(--nav-ink)!important;font-size:15px!important;font-weight:800!important;letter-spacing:0!important;backdrop-filter:blur(9px)}
+.gl-grouped-nav .gl-nav-group>summary::-webkit-details-marker{display:none}
+.gl-grouped-nav .gl-nav-group>summary .nav-ico{width:29px!important;min-width:29px!important;height:29px!important;color:#b1f4d1!important;font-size:20px!important}
+.gl-grouped-nav .gl-nav-group>summary .settings-caret{margin-right:auto!important;font-size:16px!important;color:#d2dfd8!important}
+.gl-grouped-nav .gl-nav-group[open]>summary{background:linear-gradient(110deg,rgba(20,130,91,.68),rgba(37,74,97,.48))!important;border-color:rgba(101,222,166,.52)!important}
+.gl-grouped-nav .gl-nav-group .gl-nav-children{display:grid!important;gap:3px!important;margin:5px 5px 3px!important;padding:9px 8px!important;background:#e8eceb!important;border:1px solid #cbd3d0!important;border-radius:13px!important;box-shadow:inset 0 2px 5px rgba(13,28,21,.06)!important}
+.gl-grouped-nav .gl-nav-children>a{display:flex!important;align-items:center!important;gap:10px!important;min-height:40px!important;padding:9px 10px!important;border:0!important;border-radius:9px!important;background:transparent!important;color:#222d2a!important;font-size:13px!important;font-weight:700!important;text-decoration:none!important;text-shadow:none!important;box-shadow:none!important;direction:rtl!important}
+.gl-grouped-nav .gl-nav-children>a .nav-ico{width:22px!important;min-width:22px!important;height:22px!important;background:transparent!important;color:#667570!important;font-size:15px!important;text-shadow:none!important}
+.gl-grouped-nav .gl-nav-children>a:hover,.gl-grouped-nav .gl-nav-children>a:focus-visible{background:#fff!important;color:#0b5e42!important}
+.gl-grouped-nav .gl-nav-children>a.is-active{background:#fff!important;color:#07613d!important;box-shadow:inset -3px 0 #149568!important}
+@media(max-width:800px){.gl-grouped-nav .gl-nav-group>summary{min-height:49px!important}.gl-grouped-nav .gl-nav-children>a{min-height:44px!important}}
