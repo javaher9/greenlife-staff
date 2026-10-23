@@ -2164,3 +2164,6 @@ from .marketing_worker_models import MarketingWorkerState
 
 from .customer_portal_models import (CustomerPortalMember, CustomerPortalOTP, CustomerServiceRequest, CustomerClubReferral, CustomerClubPoints, CustomerClubPolicy)
 from .diet_tracking_models import DietMealCheckin, DietFoodChange
+
+# Registered separately to keep the main model module stable.
+from .sales_target_models import SalesTargetBand
