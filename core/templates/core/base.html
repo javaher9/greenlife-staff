@@ -399,6 +399,9 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     <a href="{% url 'staff_security' %}"><span class="nav-ico">⚿</span><span>امنیت حساب</span></a>
     <a href="/logout/"><span class="nav-ico">↪</span><span>خروج</span></a>
     {% else %}
+    {% if executive_access or user.is_superuser or user.profile.role == 'admin' or user.profile.role == 'internal_manager' %}
+    <a href="{% url 'sales_targets_dashboard' %}" class="{% if request.resolver_match.url_name == 'sales_targets_dashboard' %}is-active{% endif %}"><span class="nav-ico">◎</span><span>تارگت‌های فروش</span></a>
+    {% endif %}
     {% if executive_access or user.is_superuser or user.profile.role == 'admin' %}
     <details class="gl-settings-menu gl-marketing-main-menu" {% if request.resolver_match.url_name == 'lead_command_center' or request.resolver_match.url_name == 'referral_lead_list' or request.resolver_match.url_name == 'website_lead_settings' or request.resolver_match.url_name == 'instagram_settings' or request.resolver_match.url_name == 'bulk_sms_groups' %}open{% endif %}>
       <summary><span class="nav-ico">◈</span><span>مارکتینگ</span><span class="settings-caret">⌄</span></summary>
@@ -656,7 +659,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     <div class="gl-quick-shortcuts-row">
       <a class="gl-quick-orb gl-quick-leads" href="{% url 'lead_management_dashboard' %}" title="لیدها" aria-label="لیدها"><span class="gl-orb-symbol" aria-hidden="true">◎</span><span>لید</span></a>
       <a class="gl-quick-orb gl-quick-income" href="{% url 'finance_dashboard' %}" title="درآمد" aria-label="درآمد"><span class="gl-orb-symbol" aria-hidden="true">↗</span><span>درآمد</span></a>
-      <span class="gl-quick-orb gl-quick-targets" aria-label="تارگت‌ها، به‌زودی" title="تارگت‌ها، به‌زودی"><span class="gl-orb-symbol" aria-hidden="true">◎</span><span>تارگت</span></span>
+      <a class="gl-quick-orb gl-quick-targets" href="{% url 'sales_targets_dashboard' %}" title="تارگت‌های فروش" aria-label="تارگت‌های فروش"><span class="gl-orb-symbol" aria-hidden="true">◎</span><span>تارگت</span></a>
     </div>
   </section>
   {% endif %}
