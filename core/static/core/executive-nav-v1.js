@@ -15,8 +15,13 @@ function run(){const nav=document.querySelector(".app-sidebar .app-nav");if(!nav
 const source=[...nav.children];const links=[];
 for(const el of source){if(el.matches("a[href]")&&!el.classList.contains("mobile-more-toggle")&&el.getAttribute("href")!=="#")links.push(el);
 else if(el.matches("details.gl-settings-menu"))links.push(...el.querySelectorAll(".gl-settings-submenu > a[href]"));}
+/* Move only authorized executive payment links into the central menu.
+   Do not alter permission checks: links are rendered server-side first. */
+const footer=document.querySelector(".app-sidebar .sidebar-footer");
+const footerFinance=footer?[...footer.querySelectorAll('a[href]')].filter(a=>/\/payments\//.test(a.getAttribute("href")||"")):[];
+links.push(...footerFinance);
 const seen=new Set(),byGroup=new Map(GROUPS.map(([name])=>[name,[]]));
-for(const a of links){if(a.closest(".mobile-more-menu"))continue;const href=a.getAttribute("href");if(!href||href==="#")continue;const norm=href.replace(/#.*$/,"");if(seen.has(norm))continue;seen.add(norm);byGroup.get(classify(a)).push(a)}
+for(const a of links){if(a.closest(".mobile-more-menu"))continue;const href=a.getAttribute("href");if(!href||href==="#")continue;const norm=href.replace(/#.*$/,"");if(seen.has(norm)){if(footerFinance.includes(a))a.remove();continue;}seen.add(norm);byGroup.get(classify(a)).push(a)}
 const region=document.createDocumentFragment();for(const [name,ico] of GROUPS){const items=byGroup.get(name);if(!items.length)continue;const det=document.createElement("details");det.className="gl-nav-group";const summary=document.createElement("summary");summary.innerHTML='<span class="nav-ico" aria-hidden="true">'+ico+'</span><span>'+name+'</span><span class="settings-caret" aria-hidden="true">⌄</span>';det.appendChild(summary);const wrap=document.createElement("div");wrap.className="gl-nav-children";for(const a of items)wrap.appendChild(a);det.appendChild(wrap);if(items.some(a=>a.classList.contains("is-active")||a.getAttribute("href")===location.pathname))det.open=true;region.appendChild(det)}
 const previous=document.createElement("div");previous.hidden=true;previous.className="gl-legacy-menu-backup";for(const el of [...nav.children])previous.appendChild(el);nav.appendChild(previous);nav.appendChild(region);nav.classList.add("gl-grouped-nav");nav.dataset.grouped="1";nav.querySelectorAll(".gl-nav-group").forEach(item=>item.addEventListener("toggle",()=>{if(item.open)nav.querySelectorAll(".gl-nav-group").forEach(other=>{if(other!==item)other.open=false})}));}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",run);else run();
