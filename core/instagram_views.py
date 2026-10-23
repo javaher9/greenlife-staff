@@ -375,6 +375,10 @@ def instagram_operator_quick_lead(request, operator, token):
             )
             completed = True
             form = InstagramManualLeadForm(initial={'instagram_page': INSTAGRAM_DEFAULT_PAGE})
+    # For quick links, always return an explicit result and preserve submitted data
+    # on validation failure; do not modify the authenticated CRM intake.
+    if request.method == 'POST' and not completed and not form.errors:
+        form.add_error(None, 'ثبت تایید نشد؛ لطفا اطلاعات را بررسی کنید و دوباره تلاش کنید.')
     response = render(request, 'core/instagram_manual_lead.html', {
         'form': form, 'completed': completed,
         'operator_quick_link': True, 'operator_name': staff.user.get_full_name() or staff.user.username,
