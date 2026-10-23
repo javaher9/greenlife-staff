@@ -63,13 +63,24 @@ def _new_code():
             return code
 
 
-def _ensure_profile(user):
+def _yasaman_member_only(user):
+    employee=getattr(user, 'profile', None)
+    return bool(
+        user.is_active and employee and employee.is_active
+        and employee.role=='call_center'
+        and (user.first_name or '').strip().replace('ي','ی')=='زهرا'
+        and (user.last_name or '').strip().replace('ي','ی')=='آزادی'
+    )
+
+
+def _ensure_profile(user, *, member_only=False):
     employee=getattr(user,'profile',None)
-    if employee is not None and not getattr(employee,'sales_network_enabled',True):
+    special_member_access=member_only and _yasaman_member_only(user)
+    if employee is not None and not getattr(employee,'sales_network_enabled',True) and not special_member_access:
         raise PermissionDenied('دسترسی شبکه فروش برای این کاربر غیرفعال است.')
     if _role(user)=='referral_supervisor':
         raise PermissionDenied('ناظر شبکه فروش فقط به داشبورد آماری دسترسی دارد.')
-    if _role(user)=='call_center':
+    if _role(user)=='call_center' and not special_member_access:
         raise PermissionDenied('دسترسی شبکه معرفی برای این نقش فعال نیست.')
     profile, _=ReferralProfile.objects.get_or_create(
         user=user,
@@ -403,9 +414,10 @@ def referral_network(request):
 
 @login_required
 def referral_member_create(request):
-    current=_ensure_profile(request.user)
+    current=_ensure_profile(request.user, member_only=True)
     allowed=_visible_profiles(request,current)
-    sponsor_id=request.POST.get('sponsor') or request.GET.get('sponsor') or current.pk
+    sponsor_id=(current.pk if _yasaman_member_only(request.user) else
+                (request.POST.get('sponsor') or request.GET.get('sponsor') or current.pk))
     sponsor=get_object_or_404(allowed,pk=sponsor_id)
     if sponsor.level>=2:
         messages.error(request,'این فرد در سطح دوم است و امکان ساخت سطح سوم وجود ندارد.')
