@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700;800&display=swap">
   <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v41.0.0">
   <link rel="stylesheet" href="{% static 'core/sidebar-system.css' %}?v=v1">
+  <link rel="stylesheet" href="{% static 'core/executive-nav-v1.css' %}?v=1">
   <link rel="stylesheet" href="{% static 'core/referral.css' %}?v=v40.3.3">
   <link rel="stylesheet" href="{% static 'core/ui-readability-v41.css' %}?v=v41.0.0">
   <link rel="stylesheet" href="{% static 'core/noto-sans-referral-preview.css' %}?v=2">
@@ -372,7 +373,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
 </style>
 
 </head>
-<body class="gl-app {% if request.resolver_match.url_name == 'patient_360' or request.resolver_match.url_name == 'patient_360_from_appointment' or request.resolver_match.url_name == 'patient_360_from_lead' %}gl-patient360-workspace{% else %}gl-premium-dark{% endif %} gl-lang-{{ ui_language|default:'fa' }} gl-dir-{{ ui_direction|default:'rtl' }} gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'doctor' or user.profile.role == 'receptionist' or user.profile.role == 'quality_control' %}gl-role-employee{% endif %} {% if user.profile.role == 'call_center' %}gl-role-call-center{% endif %} {% if user.profile.role == 'consultant' %}gl-role-consultant{% endif %} {% if user.profile.role == 'receptionist' %}gl-role-receptionist{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
+<body class="{% if executive_access or user.profile.role == 'admin' %}gl-executive-nav-enabled {% endif %}gl-app {% if request.resolver_match.url_name == 'patient_360' or request.resolver_match.url_name == 'patient_360_from_appointment' or request.resolver_match.url_name == 'patient_360_from_lead' %}gl-patient360-workspace{% else %}gl-premium-dark{% endif %} gl-lang-{{ ui_language|default:'fa' }} gl-dir-{{ ui_direction|default:'rtl' }} gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'doctor' or user.profile.role == 'receptionist' or user.profile.role == 'quality_control' %}gl-role-employee{% endif %} {% if user.profile.role == 'call_center' %}gl-role-call-center{% endif %} {% if user.profile.role == 'consultant' %}gl-role-consultant{% endif %} {% if user.profile.role == 'receptionist' %}gl-role-receptionist{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
 {% if request.session.impersonator_user_id %}
 <div class="impersonation-banner"><span>{% gl_t 'shell.impersonating' name=user.get_full_name|default:user.username %}</span><form method="post" action="{% url 'impersonate_return' %}">{% csrf_token %}<button type="submit">{% gl_t 'shell.back_admin' %}</button></form></div>
 {% endif %}
@@ -967,4 +968,5 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
   new MutationObserver(list=>{list.forEach(x=>x.addedNodes.forEach(n=>{if(n.nodeType===1)scan(n)}));}).observe(document.documentElement,{childList:true,subtree:true});
 })();
 </script>
+<script src="{% static 'core/executive-nav-v1.js' %}?v=1" defer></script>
 </body></html>
