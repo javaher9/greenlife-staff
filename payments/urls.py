@@ -9,4 +9,5 @@ urlpatterns=[
  path('petty-receipt/<int:pk>/',views.petty_receipt,name='payments_petty_receipt'),
  path('admin/',views.admin_dashboard,name='payments_admin'),
  path('expenses/',views.expenses_dashboard,name='payments_expenses'),
+ path('accounting/',views.accounting_hub,name='payments_accounting'),
 ]
