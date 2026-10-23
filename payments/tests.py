@@ -188,3 +188,30 @@ class PaymentWorkflowTests(TestCase):
         forbidden=self.client.post(reverse('payments_complete',args=[other_request.pk]),{
             'reference':'NO','receipt':SimpleUploadedFile('other.pdf',b'%PDF-1.4 test',content_type='application/pdf')})
         self.assertEqual(forbidden.status_code,404)
+
+    def test_paid_only_delegate_keeps_private_history_access(self):
+        payment=PaymentRequest.objects.create(
+            kind='payment',amount_toman=3000000,description='Completed task',
+            requester=self.executive,assigned_to=self.other,
+            state='paid',channel='staff',payment_reference='OK-33')
+        self.client.force_login(self.other)
+        response=self.client.get(reverse('payments_workspace'))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'Completed task')
+        self.assertEqual(list(response.context['queue']),[])
+        self.assertEqual(response.context['completed'][0].pk,payment.pk)
+
+    def test_delegate_cannot_see_another_persons_paid_history(self):
+        PaymentRequest.objects.create(
+            kind='payment',amount_toman=3000000,description='Private completed payment',
+            requester=self.executive,assigned_to=self.worker,
+            state='paid',channel='staff',payment_reference='PRIVATE')
+        PaymentRequest.objects.create(
+            kind='payment',amount_toman=2000000,description='Own completed payment',
+            requester=self.executive,assigned_to=self.other,
+            state='paid',channel='staff',payment_reference='PUBLIC')
+        self.client.force_login(self.other)
+        response=self.client.get(reverse('payments_workspace'))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'Own completed payment')
+        self.assertNotContains(response,'Private completed payment')
