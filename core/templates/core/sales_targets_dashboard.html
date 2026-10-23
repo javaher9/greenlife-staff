@@ -137,7 +137,7 @@ body.gl-page-sales_targets_dashboard .app-main .st .st-rank{color:#4be6b6!import
  <div class="st-main-row">
    <section class="st-panel">
     <div class="st-title"><h2>روند تجمعی فروش ماه</h2><span class="st-sub">هر ستون یک روز شمسی</span></div>
-    <div class="st-chart-wrap"><div class="st-graph">{% for day in trend %}<span style="height:{{ day.height|floatformat:2 }}%" title="روز {{ day.day }}: {{ day.amount|floatformat:0 }} میلیون تومان"></span>{% endfor %}</div>
+    <div class="st-chart-wrap"><div class="st-graph">{% for day in trend %}<span style="height:{{ day.height|floatformat:"2u" }}%" title="روز {{ day.day }}: {{ day.amount|floatformat:0 }} میلیون تومان"></span>{% endfor %}</div>
     {% if not has_sales %}<div class="st-graph-empty"><strong>برای ماه انتخاب‌شده فروش تأییدشده‌ای در منبع این نمودار ثبت نشده است.</strong><span class="st-sub">{% if is_first_days %}این ماه تازه شروع شده است. {% endif %}ماه قبل را برای مقایسه انتخاب کن.</span><a href="?year={{ prev_year }}&month={{ prev_month }}">مشاهده ماه قبل ←</a></div>{% endif %}</div>
    </section>
    <section class="st-panel">
