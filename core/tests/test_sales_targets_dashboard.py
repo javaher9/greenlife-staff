@@ -130,8 +130,9 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertEqual(response.context["flower_cards"][0]["plan"].sales_floor,Decimal("150"))
         payload["floor_call_center"] = "350"
         payload[f"floor_flower:{self.flower.pk}"] = "125"
-        self.client.post(self.url,payload)
-        self.assertEqual(SalesTargetBand.objects.get(key=f"{self.year}-{self.month:02d}:call_center").sales_floor,Decimal("350"))
+        response = self.client.post(self.url,payload,follow=True)
+        feedback = [str(m) for m in list(response.context["messages"])]
+        self.assertEqual(SalesTargetBand.objects.get(key=f"{self.year}-{self.month:02d}:call_center").sales_floor,Decimal("350"), feedback)
         self.assertEqual(SalesTargetBand.objects.get(key=f"{self.year}-{self.month:02d}:flower:{self.flower.pk}").sales_floor,Decimal("125"))
 
     def test_bulk_callcenter_edit_survives_changed_staff_roster(self):
