@@ -146,6 +146,54 @@ body.gl-page-sales_targets_dashboard .app-main .st .st-rank{color:#4be6b6!import
 .st .st-avatar img{width:100%;height:100%;object-fit:cover;display:block}
 .st-person .st-person-name{font-size:15px;font-weight:800;line-height:1.45;text-align:center;color:#f3fbff!important}
 
+
+/* KPI-inspired dark glass treatment: scoped strictly to target screen. */
+body.gl-page-sales_targets_dashboard,
+body.gl-page-sales_targets_dashboard .app-main{
+ background:radial-gradient(ellipse at 50% -20%,#123149 0%,#071923 42%,#06131a 100%)!important;
+}
+.st{color:#f2faff!important}
+.st .st-panel{
+ background:linear-gradient(135deg,rgba(21,46,61,.78),rgba(8,25,35,.88))!important;
+ border:1px solid rgba(143,207,226,.19)!important;
+ box-shadow:0 12px 29px rgba(1,10,18,.36),inset 0 1px rgba(207,242,255,.07)!important;
+ backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+ border-radius:19px;
+}
+.st .st-branch{
+ background:linear-gradient(147deg,rgba(22,55,75,.8),rgba(9,28,42,.9))!important;
+ border:1px solid rgba(139,208,227,.19)!important;
+ box-shadow:inset 0 1px rgba(226,250,255,.065),0 7px 17px rgba(0,8,20,.23)!important;
+ backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+ border-radius:15px;padding:14px;
+}
+.st .st-person{
+ background:linear-gradient(145deg,rgba(19,53,70,.82),rgba(8,29,42,.92))!important;
+ border:1px solid rgba(130,204,220,.17)!important;
+ box-shadow:inset 0 1px rgba(223,248,255,.055),0 6px 16px rgba(1,9,18,.22)!important;
+ backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+ border-radius:14px;
+}
+.st .st-kpi,.st .st-slider-field{
+ background:linear-gradient(145deg,rgba(23,56,72,.7),rgba(9,29,42,.88))!important;
+ border-color:rgba(120,196,218,.22)!important;
+ box-shadow:inset 0 1px rgba(230,250,255,.06);
+}
+.st .st-title{padding:2px 0 11px;border-bottom:1px solid rgba(122,197,218,.12);margin-bottom:14px}
+.st .st-title h2{font-size:17px!important;letter-spacing:.05px;color:#f4fcff!important}
+.st .st-sub,.st .st-hint,.st .st-mini,.st .st-branch .st-stats small{color:#c0d8e4!important;opacity:1!important}
+.st .st-status{font-size:11px}
+.st .st-person-name{color:#f6fcff!important;font-weight:900}
+.st .st-stats{border-top:1px solid rgba(136,202,226,.16)}
+.st .st-stats strong{font-size:16px}
+.st .st-foot .st-list-row{border-bottom-color:rgba(126,199,217,.15)}
+.st .st-foot .st-panel{min-height:175px}
+.st .st-note{background:linear-gradient(120deg,rgba(18,62,74,.88),rgba(10,34,49,.87));border-color:rgba(75,175,180,.37)}
+.st .st-source-note{background:rgba(10,36,47,.68);border-color:rgba(119,195,216,.28)}
+.st .st-meter svg{filter:drop-shadow(0 4px 8px rgba(0,0,0,.22))}
+@media(prefers-reduced-motion:no-preference){.st .st-branch,.st .st-person{transition:border-color .18s ease,box-shadow .18s ease}.st .st-branch:hover,.st .st-person:hover{border-color:rgba(115,225,220,.38)!important;box-shadow:0 10px 24px rgba(0,9,18,.3)!important}}
+@media(max-width:700px){.st .st-panel{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}}
+
 </style>
 <div class="st">
  <div class="st-head">
@@ -294,14 +342,14 @@ body.gl-page-sales_targets_dashboard .app-main .st .st-rank{color:#4be6b6!import
    const edges=ready?[0,t[0],t[1],t[2],t[3],upper]:[0,.20,.40,.60,.80,1];
    for(let i=0;i<5;i++){
      const a=130+280*edges[i]/upper, b=130+280*edges[i+1]/upper;
-     const gap=Math.min(2.5,(b-a)/6);
-     if(b-a>1.5)svg.appendChild(elem("path",{d:arc(a+gap,b-gap,78),fill:"none",stroke:colors[i],"stroke-width":"17","stroke-linecap":"round"}));
+     const gap=Math.min(0.72,(b-a)/8);
+     if(b-a>1.5)svg.appendChild(elem("path",{d:arc(a+gap,b-gap,78),fill:"none",stroke:colors[i],"stroke-width":"22","stroke-linecap":"butt"}));
    }
    // Never show a needle at an invented level when no configuration exists.
    if(ready){
      const angle=130+280*Math.min(value/upper,1);
      const [px,py]=polar(angle,84),[mx,my]=polar(angle,40);
-     svg.appendChild(elem("path",{d:"M "+mx+" "+my+" L "+px+" "+py,stroke:"#edfaff","stroke-width":"7","stroke-linecap":"round",fill:"none"}));
+     svg.appendChild(elem("path",{d:"M "+mx+" "+my+" L "+px+" "+py,stroke:"#edfaff","stroke-width":"7.5","stroke-linecap":"round",fill:"none"}));
      svg.appendChild(elem("circle",{cx:px,cy:py,r:"9",fill:"#12354c",stroke:"#edfaff","stroke-width":"4"}));
      svg.appendChild(elem("text",{x:110,y:108,fill:"#f1fbff","font-size":"23","text-anchor":"middle","font-family":"Arial,Tahoma","font-weight":"bold"},Math.round(100*value/t[3])+"%"));
    }else{
