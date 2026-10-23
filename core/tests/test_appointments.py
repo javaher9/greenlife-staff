@@ -166,12 +166,12 @@ class SharedAppointmentTests(TestCase):
     def test_receptionist_dashboard_sees_only_own_branch_real_appointments(self):
         VisitAppointment.objects.create(
             branch=self.niavaran,full_name='مراجعه نیاوران',phone='09121110000',
-            service='لاغری',appointment_date=self.day,appointment_time=time(13,0),
+            service='لاغری',appointment_date=timezone.localdate(),appointment_time=time(13,0),
             source='call_center',created_by=self.operator,
         )
         VisitAppointment.objects.create(
             branch=self.poonak,full_name='مراجعه پونک',phone='09122220000',
-            service='پوست',appointment_date=self.day,appointment_time=time(13,15),
+            service='پوست',appointment_date=timezone.localdate(),appointment_time=time(13,15),
             source='call_center',created_by=self.operator,
         )
         self.client.force_login(self.receptionist)
