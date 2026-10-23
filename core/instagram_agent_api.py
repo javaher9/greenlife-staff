@@ -45,16 +45,16 @@ def instagram_agent_lead_api(request):
     if not isinstance(event_id, str) or not re.fullmatch(r"[A-Za-z0-9_.:-]{8,96}", event_id):
         return JsonResponse({"status": "invalid_event_id"}, status=422)
     event_key = "ig-agent:" + event_id
+    # Check idempotency before validating a phone that may now be a duplicate.
+    prior = ReferralLead.objects.filter(crm_id=event_key).only("pk").first()
+    if prior:
+        return JsonResponse({"status": "already_processed", "lead_id": prior.pk}, status=200)
     form = InstagramLeadForm({
         "full_name": data.get("full_name", ""),
         "phone": data.get("phone", ""),
         "interested_service": data.get("interested_service", ""),
         "consent": "on",
     })
-    # Replays should return the original outcome even when the phone now exists.
-    prior = ReferralLead.objects.filter(crm_id=event_key).only("pk").first()
-    if prior:
-        return JsonResponse({"status": "already_processed", "lead_id": prior.pk}, status=200)
     if not form.is_valid():
         # Existing duplicate detection lives in InstagramLeadForm.clean_phone.
         # Avoid echoing submitted personal information in error responses.
