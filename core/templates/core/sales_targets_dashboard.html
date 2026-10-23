@@ -176,18 +176,6 @@ body.gl-page-sales_targets_dashboard .app-main .st .st-rank{color:#4be6b6!import
   </div>
  </section>
  <section class="st-panel">
-   <div class="st-title"><h2>◉ مشاورین فروش شعب</h2><span class="st-sub">{{ consultant_cards|length }} نفر — عکس پرسنلی کنار تارگت</span></div>
-   <div class="st-persons">
-    {% for p in consultant_cards %}
-     <article class="st-person">
-      <div class="st-person-header"><span class="st-avatar">{% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.label }}" loading="lazy">{% else %}{{ p.label|first }}{% endif %}</span><div><div class="st-person-name" title="{{ p.label }}">{{ p.label }}</div><small class="st-sub">{{ p.group }}</small></div></div>
-      <div class="st-meter" data-value="{{ p.value }}" data-heavy="{{ p.plan.heavy_limit|default_if_none:'' }}" data-floor="{{ p.plan.sales_floor|default_if_none:'' }}" data-one="{{ p.plan.target_one|default_if_none:'' }}" data-two="{{ p.plan.target_two|default_if_none:'' }}"></div>
-      <div class="st-status {{ p.level }}">{{ p.status }}</div>
-     </article>
-    {% empty %}<div class="st-empty">مشاور فعال در شعب موجود نیست.</div>{% endfor %}
-   </div>
- </section>
- <section class="st-panel">
    <div class="st-title"><h2>◉ فروش گل‌های کال‌سنتر</h2><span class="st-sub">{{ flower_cards|length }} نفر — فروش تأییدشده منتسب به هر گل</span></div>
    <div class="st-persons">
    {% for p in flower_cards %}
