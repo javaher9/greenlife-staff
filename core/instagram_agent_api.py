@@ -11,7 +11,7 @@ from .instagram_views import (
     InstagramLeadForm, INSTAGRAM_PAGE_SOURCES, _instagram_page_source,
     _instagram_source_profile, _assign_instagram_lead,
 )
-from .models import ReferralLead, DuplicateLeadError
+from .models import ReferralLead, DuplicateLeadError, LEAD_DUPLICATE_MESSAGE
 
 
 @csrf_exempt
@@ -24,6 +24,8 @@ def instagram_agent_lead_api(request):
     supplied = request.headers.get("Authorization", "")
     if not hmac.compare_digest(supplied, "Bearer " + secret):
         return JsonResponse({"status": "unauthorized"}, status=401)
+    if request.content_type != "application/json":
+        return JsonResponse({"status": "unsupported_media_type"}, status=415)
     if len(request.body) > 8192:
         return JsonResponse({"status": "payload_too_large"}, status=413)
     try:
@@ -44,7 +46,12 @@ def instagram_agent_lead_api(request):
         "consent": "on",
     })
     if not form.is_valid():
-        return JsonResponse({"status": "validation_error", "errors": form.errors.get_json_data()}, status=422)
+        # Existing duplicate detection lives in InstagramLeadForm.clean_phone.
+        # Avoid echoing submitted personal information in error responses.
+        phone_errors = form.errors.get("phone", [])
+        if any(str(error) == str(LEAD_DUPLICATE_MESSAGE) for error in phone_errors):
+            return JsonResponse({"status": "duplicate_phone"}, status=409)
+        return JsonResponse({"status": "validation_error", "fields": list(form.errors.keys())}, status=422)
     cleaned = form.cleaned_data
     slug, label = _instagram_page_source(page)
     try:
