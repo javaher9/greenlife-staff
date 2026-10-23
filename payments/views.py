@@ -277,3 +277,11 @@ def petty_receipt(request, pk):
     response['Cache-Control'] = 'no-store, private'
     response['X-Content-Type-Options'] = 'nosniff'
     return response
+
+
+@login_required
+def accounting_hub(request):
+    """Executive-only management accounting entry, not an accounting ledger."""
+    if not executive(request.user):
+        raise PermissionDenied()
+    return render(request, 'payments/accounting_hub.html')
