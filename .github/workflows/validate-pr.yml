@@ -377,7 +377,7 @@ jobs:
       - name: Django system check
         run: python manage.py check
       - name: diets regression tests
-        run: python manage.py test core.tests.test_treatment_excel_all_import core.tests.test_treatment_excel_weekly_import core.tests.test_excel_diet_four_formats core.tests.test_diet_two_templates core.tests.test_diet_daily core.tests.test_treatment_content_samples core.tests.test_meal_slot_icons core.tests.test_diet_preview_extras core.tests.test_excel_diet_sample_previews --verbosity 2
+        run: python manage.py test core.tests.test_treatment_excel_all_import core.tests.test_treatment_excel_weekly_import core.tests.test_diet_four_formats core.tests.test_diet_two_templates core.tests.test_diet_daily core.tests.test_treatment_content_samples core.tests.test_meal_slot_icons core.tests.test_diet_preview_extras core.tests.test_excel_diet_sample_previews --verbosity 2
   role-regressions:
     runs-on: ubuntu-latest
     timeout-minutes: 18
