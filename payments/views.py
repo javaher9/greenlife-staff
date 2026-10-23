@@ -2,7 +2,7 @@ from django import forms
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import transaction
+from django.db import transaction, models
 from django.db.models import Sum, Q
 from django.core.paginator import Paginator
 from django.utils.dateparse import parse_date
@@ -53,16 +53,44 @@ class ExpenseForm(forms.ModelForm):
         return f
 
 
+PAYMENT_ASSIGNEES = (
+    ('sadeghi', 'آقای صادقی', ('صادقی', 'sadeghi')),
+    ('naderi', 'آقای نادری', ('نادری', 'naderi')),
+    ('moradi', 'خانم مرادی', ('مرادی', 'moradi')),
+    ('hosseini', 'خانم حسینی · حسابدار', ('حسینی', 'hosseini')),
+    ('memari', 'خانم مرجان معماری · مشاور پونک', ('معماری', 'memari', 'memary')),
+)
+
+def five_payment_assignees():
+    """Only uniquely identified active employee accounts, never sales-network members."""
+    candidates=User.objects.filter(is_active=True,profile__is_active=True).select_related('profile')
+    results=[]
+    for slug,title,aliases in PAYMENT_ASSIGNEES:
+        matched=[]
+        for user in candidates:
+            full=' '.join([user.first_name or '',user.last_name or '',user.username or '']).replace('ي','ی').replace('ك','ک').lower()
+            if any(alias.lower() in full for alias in aliases):
+                if slug=='memari' and not ('مرجان' in full or 'marjan' in full):
+                    continue
+                if slug=='hosseini' and not ('زینب' in full or 'zeinab' in full or 'zeynab' in full or 'حسابدار' in (user.profile.job_title or '')):
+                    continue
+                matched.append(user)
+        if len(matched)==1:
+            results.append((slug,title,matched[0]))
+    return results
+
 class ExecutiveQuickPaymentForm(forms.Form):
     amount_million=forms.DecimalField(label='مبلغ (میلیون تومان)',min_value=0.001,max_digits=14,decimal_places=3,widget=forms.NumberInput(attrs={'step':'0.001','placeholder':'مثلاً ۳۲'}))
     description=forms.CharField(label='شرح پرداخت',max_length=500,widget=forms.Textarea(attrs={'rows':2,'placeholder':'بابت چه کاری؟'}))
-    assigned_to=forms.ModelChoiceField(label='مسئول پرداخت',queryset=User.objects.none(),empty_label='انتخاب مسئول')
+    assigned_to=forms.ModelChoiceField(label='مسئول پرداخت',queryset=User.objects.none(),widget=forms.RadioSelect)
+    priority=forms.ChoiceField(label='اولویت',choices=PaymentRequest.PRIORITIES,initial='normal')
     recipient_name=forms.CharField(label='نام گیرنده',max_length=160)
     recipient_iban=forms.CharField(label='شماره شبا',max_length=34,required=False)
     recipient_card=forms.CharField(label='شماره کارت',max_length=24,required=False)
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
-        self.fields['assigned_to'].queryset=User.objects.filter(is_active=True,profile__is_active=True).distinct().order_by('first_name','last_name')
+        self.assignees=five_payment_assignees()
+        self.fields['assigned_to'].queryset=User.objects.filter(pk__in=[user.pk for _,_,user in self.assignees])
     def clean(self):
         cleaned=super().clean()
         if not cleaned.get('recipient_iban') and not cleaned.get('recipient_card'):
@@ -86,6 +114,7 @@ def executive_quick_payment(request):
                 approved_at=timezone.now(),
                 assigned_to=form.cleaned_data['assigned_to'],
                 channel='staff',
+                priority=form.cleaned_data['priority'],
                 recipient_name=form.cleaned_data['recipient_name'],
                 recipient_iban=form.cleaned_data['recipient_iban'],
                 recipient_card=form.cleaned_data['recipient_card'],
@@ -93,7 +122,7 @@ def executive_quick_payment(request):
             PaymentEvent.objects.create(payment=item,actor=request.user,action='created',notes='دستور مستقیم مدیریت')
             PaymentEvent.objects.create(payment=item,actor=request.user,action='approve',notes='تأیید مستقیم مدیریت')
         return redirect('payments_expenses')
-    return render(request,'payments/executive_quick_payment.html',{'form':form})
+    return render(request,'payments/executive_quick_payment.html',{'form':form,'assignees':form.assignees,'missing_count':5-len(form.assignees)})
 
 @login_required
 def workspace(request):
@@ -120,7 +149,7 @@ def workspace(request):
             entry.save()
             return redirect('payments_workspace')
     clarifications=PaymentRequest.objects.filter(state='needs_info',clarification_assignee=request.user).prefetch_related('clarifications')
-    queue=PaymentRequest.objects.filter(state='approved',assigned_to=request.user).select_related('requester').order_by('due_date','-created_at')
+    queue=PaymentRequest.objects.filter(state='approved',assigned_to=request.user).select_related('requester').order_by(models.Case(models.When(priority='urgent',then=0),models.When(priority='today',then=1),models.When(priority='normal',then=2),default=3,output_field=models.IntegerField()),'due_date','-created_at')
     completed=PaymentRequest.objects.filter(state='paid',assigned_to=request.user).select_related('requester').order_by('-paid_at')[:40]
     mine=PaymentRequest.objects.filter(requester=request.user)[:30]
     expenses=PettyCashExpense.objects.filter(holder=request.user)
