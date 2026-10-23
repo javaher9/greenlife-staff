@@ -35,6 +35,7 @@ from . import sales_target_views
 from .mcp import mcp_endpoint
 urlpatterns=[
 path('sales-targets/',sales_target_views.sales_targets_dashboard,name='sales_targets_dashboard'),
+path('my-sales-targets/',sales_target_views.my_sales_targets,name='my_sales_targets'),
 path('customer/diets/',diet_companion_views.customer_diets,name='customer_diets'),
 path('customer/diets/<int:pk>/',diet_companion_views.customer_diet,name='customer_diet'),
 path('customer/diets/<int:pk>/log/',diet_companion_views.customer_diet_log,name='customer_diet_log'),
