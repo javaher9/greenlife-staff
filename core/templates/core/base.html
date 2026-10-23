@@ -575,7 +575,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>{% gl_t 'shell.change_password' %}</span></a>
     {% endif %}
     {% if user.profile.role == 'employee' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>{% gl_t 'shell.reports' %}</span></a>{% endif %}
-    {% if user.profile.role == 'admin' or user.profile.role == 'manager' %}<a href="/finance/"><span class="nav-ico">▧</span><span>{% gl_t 'common.finance' %}</span></a>{% endif %}
+    {% if user.profile.role == 'admin' or user.profile.role == 'manager' %}<a href="/finance/" class="{% if request.path == '/finance/' %}is-active{% endif %}"><span class="nav-ico">▧</span><span>درآمد</span></a>{% endif %}
     {% if executive_access %}
     <a href="{% url 'payments_expenses' %}" class="{% if request.resolver_match.url_name == 'payments_expenses' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>هزینه‌ها</span></a>
     <a href="{% url 'payments_accounting' %}" class="{% if request.resolver_match.url_name == 'payments_accounting' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>حسابداری</span></a>
