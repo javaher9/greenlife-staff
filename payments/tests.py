@@ -218,8 +218,12 @@ class PaymentWorkflowTests(TestCase):
 
     def test_executive_quick_instruction_directly_assigns_approved_payment(self):
         self.client.force_login(self.executive)
+        self.worker.first_name='خانم'
+        self.worker.last_name='مرادی'
+        self.worker.save()
         res=self.client.post(reverse('payments_executive_quick'),{
             'amount_million':'32',
+            'priority':'urgent',
             'description':'Device maintenance',
             'assigned_to':self.worker.pk,
             'recipient_name':'Example Recipient',
@@ -229,9 +233,19 @@ class PaymentWorkflowTests(TestCase):
         order=PaymentRequest.objects.get(description='Device maintenance')
         self.assertEqual(order.amount_toman,32000000)
         self.assertEqual(order.state,'approved')
+        self.assertEqual(order.priority,'urgent')
         self.assertEqual(order.assigned_to,self.worker)
         self.assertEqual(order.approved_by,self.executive)
 
     def test_nonexecutive_cannot_create_direct_payment(self):
         self.client.force_login(self.worker)
         self.assertEqual(self.client.get(reverse('payments_executive_quick')).status_code,403)
+
+    def test_only_five_named_active_staff_can_receive_direct_orders(self):
+        from .views import ExecutiveQuickPaymentForm
+        self.worker.first_name='خانم'
+        self.worker.last_name='مرادی'
+        self.worker.save()
+        form=ExecutiveQuickPaymentForm()
+        self.assertEqual(list(form.fields['assigned_to'].queryset.values_list('pk',flat=True)),[self.worker.pk])
+        self.assertFalse(form.fields['assigned_to'].queryset.filter(pk=self.other.pk).exists())
