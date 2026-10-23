@@ -83,7 +83,7 @@ body.gl-executive-nav-enabled a.gl-quick-orb:hover{transform:translateY(-3px);bo
 body.gl-executive-nav-enabled a.gl-quick-orb:focus-visible{outline:2px solid white;outline-offset:3px}
 body.gl-executive-nav-enabled .gl-quick-leads{background:radial-gradient(circle at 35% 22%,#8daaff,#6653ce 58%,#343175)}
 body.gl-executive-nav-enabled .gl-quick-income{background:radial-gradient(circle at 35% 22%,#67f4c1,#199774 56%,#0b5446)}
-body.gl-executive-nav-enabled .gl-quick-targets{background:radial-gradient(circle at 35% 22%,#83734e,#51493b 60%,#34343a);color:#c9c4b9!important;border-color:#635d52;opacity:.53;cursor:not-allowed}
+body.gl-executive-nav-enabled .gl-quick-targets{background:radial-gradient(circle at 35% 22%,#7abbe6,#2a77aa 60%,#163e63);color:#fff!important;border-color:rgba(220,242,255,.58);opacity:1!important;cursor:pointer!important}
 @media(max-width:800px){body.gl-executive-nav-enabled .gl-quick-shortcuts{display:none!important}}
 
 /* v5: larger, vertical 3D owner shortcuts. */
@@ -113,7 +113,7 @@ body.gl-executive-nav-enabled .gl-quick-orb{
 body.gl-executive-nav-enabled .gl-quick-orb:before{display:none!important}
 body.gl-executive-nav-enabled .gl-quick-leads{background-color:#5a4bbd!important}
 body.gl-executive-nav-enabled .gl-quick-income{background-color:#13866c!important}
-body.gl-executive-nav-enabled .gl-quick-targets{background-color:#4b4b49!important}
+body.gl-executive-nav-enabled .gl-quick-targets{background-color:#2479ae!important;opacity:1!important;cursor:pointer!important}
 body.gl-executive-nav-enabled a.gl-quick-orb:hover{
  transform:translateY(-1px)!important;
  box-shadow:inset 0 2px 0 rgba(255,255,255,.42),inset 0 -3px 0 rgba(0,0,0,.27),0 5px 0 #101820,0 9px 14px rgba(0,0,0,.29)!important;

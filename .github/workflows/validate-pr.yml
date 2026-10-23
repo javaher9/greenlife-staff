@@ -451,7 +451,7 @@ jobs:
       - name: Django system check and target regressions
         run: |
           python manage.py check
-          python manage.py test core.tests.test_sales_targets_dashboard --verbosity 2
+          python manage.py test core.tests.test_sales_targets_dashboard core.tests.test_target_quick_shortcut --verbosity 2
 
   deployment-safety:
     runs-on: ubuntu-latest
