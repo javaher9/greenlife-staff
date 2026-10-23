@@ -116,6 +116,36 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertContains(page,'ذخیره همه تغییرات')
         self.assertEqual(SalesTargetBand.objects.get(key=f"{self.year}-{self.month:02d}:overall").sales_floor,Decimal("7000"))
 
+    def test_bulk_call_center_and_flower_goals_are_saved(self):
+        response = self.client.get(self.url+"?edit=1")
+        subjects = [row["key"] for row in response.context["edit_rows"]]
+        payload = {"year":self.year,"month":self.month,"action":"save_all",
+                   "heavy_percent":"70","target_one_percent":"130","target_two_percent":"160",
+                   "subject":subjects,"floor_call_center":"400",
+                   f"floor_flower:{self.flower.pk}":"150"}
+        response = self.client.post(self.url,payload)
+        self.assertEqual(response.status_code,302)
+        response = self.client.get(self.url+"?edit=1")
+        self.assertEqual(response.context["branches"][-1]["plan"].sales_floor,Decimal("400"))
+        self.assertEqual(response.context["flower_cards"][0]["plan"].sales_floor,Decimal("150"))
+        payload["floor_call_center"] = "350"
+        payload[f"floor_flower:{self.flower.pk}"] = "125"
+        self.client.post(self.url,payload)
+        self.assertEqual(SalesTargetBand.objects.get(key=f"{self.year}-{self.month:02d}:call_center").sales_floor,Decimal("350"))
+        self.assertEqual(SalesTargetBand.objects.get(key=f"{self.year}-{self.month:02d}:flower:{self.flower.pk}").sales_floor,Decimal("125"))
+
+    def test_bulk_callcenter_edit_survives_changed_staff_roster(self):
+        # An extra active employee can appear after a form was opened.
+        previous = [row["key"] for row in self.client.get(self.url).context["edit_rows"]]
+        extra = get_user_model().objects.create_user(username="new_callcenter",password="test-secret")
+        EmployeeProfile.objects.update_or_create(user=extra,defaults={"role":"call_center","branch":self.branch})
+        payload={"year":self.year,"month":self.month,"action":"save_all","subject":previous,
+                 "floor_call_center":"800","heavy_percent":"70",
+                 "target_one_percent":"130","target_two_percent":"160"}
+        res=self.client.post(self.url,payload)
+        self.assertEqual(res.status_code,302)
+        self.assertEqual(SalesTargetBand.objects.get(key=f"{self.year}-{self.month:02d}:call_center").sales_floor,Decimal("800"))
+
     def test_invalid_bulk_percent_rolls_back_floor_and_policy(self):
         self.client.post(self.url,{"year":self.year,"month":self.month,
               "action":"set_floor","subject":"overall","sales_floor":"8000"})
