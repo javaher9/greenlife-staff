@@ -74,7 +74,45 @@
     if(form)form.addEventListener('submit',normalizePhone,true);
     normalizePhone();
   }
-  if(form&&btn){form.addEventListener('submit',function(){if(!form.checkValidity())return;btn.textContent='در حال ارسال...';});}
+  if(form&&btn&&form.closest('main')&&document.querySelector('[name="csrfmiddlewaretoken"]')){
+    var status=document.createElement('div');
+    status.setAttribute('role','status');
+    status.style.cssText='display:none;margin:12px 0;padding:14px;border-radius:12px;font-size:16px;font-weight:bold;line-height:1.8';
+    form.parentNode.insertBefore(status,form);
+    form.addEventListener('submit',async function(event){
+      if(!form.checkValidity())return;
+      event.preventDefault();
+      var original=btn.textContent;
+      btn.disabled=true;
+      btn.textContent='در حال ارسال...';
+      status.style.display='block';
+      status.style.background='#eaf7f1';
+      status.style.color='#17603e';
+      status.textContent='در حال بررسی پاسخ سرور؛ تا دریافت تأیید، این لید ثبت‌شده محسوب نمی‌شود.';
+      try{
+        var response=await fetch(form.action||location.href,{method:'POST',body:new FormData(form),credentials:'same-origin',redirect:'follow',headers:{'X-Requested-With':'XMLHttpRequest'},cache:'no-store'});
+        var html=await response.text();
+        var doc=new DOMParser().parseFromString(html,'text/html');
+        var success=doc.querySelector('.success');
+        var returnedForm=doc.querySelector('#manualInstagramForm');
+        if(response.ok&&success){
+          form.closest('.card').innerHTML=success.outerHTML;
+          return;
+        }
+        if(response.ok&&returnedForm){
+          var errors=Array.from(doc.querySelectorAll('.error,[role="alert"]')).map(function(e){return e.textContent.trim();}).filter(Boolean);
+          status.style.background='#fff0f1';status.style.color='#9c2639';
+          status.textContent=errors.length?errors.join(' | '):'سرور ثبت را تأیید نکرد. اطلاعات شما حفظ شده است؛ لطفاً بررسی کنید.';
+        }else{
+          status.style.background='#fff0f1';status.style.color='#9c2639';
+          status.textContent='ثبت تأیید نشد (کد '+response.status+'). اطلاعات حفظ شده است. از داخل اپ ثبت کنید.';
+        }
+      }catch(error){
+        status.style.background='#fff0f1';status.style.color='#9c2639';
+        status.textContent='ارتباط با سرور برقرار نشد. اطلاعات حفظ شده است؛ از داخل اپ ثبت کنید.';
+      }finally{btn.disabled=false;btn.textContent=original;}
+    });
+  }
 })();
 </script>
 </body>
