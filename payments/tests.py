@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from core.models import Branch, EmployeeProfile
 from .models import PaymentRequest, PaymentEvent, PettyCashExpense
 
@@ -188,3 +189,29 @@ class PaymentWorkflowTests(TestCase):
         forbidden=self.client.post(reverse('payments_complete',args=[other_request.pk]),{
             'reference':'NO','receipt':SimpleUploadedFile('other.pdf',b'%PDF-1.4 test',content_type='application/pdf')})
         self.assertEqual(forbidden.status_code,404)
+
+    def test_accounting_hub_is_executive_only(self):
+        self.client.force_login(self.worker)
+        self.assertEqual(self.client.get(reverse('accounting_overview')).status_code,403)
+        self.client.force_login(self.executive)
+        response=self.client.get(reverse('accounting_overview'))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'حسابداری و تحلیل مالی')
+
+    def test_accounting_hub_counts_actual_cost_not_petty_funding(self):
+        PaymentRequest.objects.create(
+            kind='payment',amount_toman=12000000,description='Company expense',
+            requester=self.worker,branch=self.branch,state='paid',
+            category='supplies',cost_owner='company',paid_at=timezone.now())
+        PaymentRequest.objects.create(
+            kind='petty_cash',amount_toman=6000000,description='Fund advance',
+            requester=self.worker,beneficiary=self.worker,branch=self.branch,state='paid',
+            cost_owner='company',paid_at=timezone.now())
+        PettyCashExpense.objects.create(
+            holder=self.worker,created_by=self.worker,amount_toman=2000000,
+            description='Petty purchase',category='supplies',
+            cost_owner='company',receipt='petty_expenses/demo.pdf')
+        self.client.force_login(self.executive)
+        response=self.client.get(reverse('accounting_overview'))
+        self.assertEqual(response.context['monthly_total'],14000000)
+        self.assertEqual(response.context['company_total'],14000000)
