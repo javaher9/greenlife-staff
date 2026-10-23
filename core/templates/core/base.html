@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700;800&display=swap">
   <link rel="stylesheet" href="{% static 'core/app.css' %}?v=v41.0.0">
   <link rel="stylesheet" href="{% static 'core/sidebar-system.css' %}?v=v1">
-  <link rel="stylesheet" href="{% static 'core/executive-nav-v1.css' %}?v=3">
+  <link rel="stylesheet" href="{% static 'core/executive-nav-v1.css' %}?v=4">
   <link rel="stylesheet" href="{% static 'core/referral.css' %}?v=v40.3.3">
   <link rel="stylesheet" href="{% static 'core/ui-readability-v41.css' %}?v=v41.0.0">
   <link rel="stylesheet" href="{% static 'core/noto-sans-referral-preview.css' %}?v=2">
@@ -650,6 +650,16 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     {% endif %}
     {% endif %}{# restricted quality-control role menu #}
   </nav>
+  {% if executive_access %}
+  <section class="gl-quick-shortcuts" aria-label="میانبرهای مدیریتی">
+    <div class="gl-quick-shortcuts-title">دسترسی سریع</div>
+    <div class="gl-quick-shortcuts-row">
+      <a class="gl-quick-orb gl-quick-leads" href="{% url 'lead_management_dashboard' %}" title="لیدها" aria-label="لیدها"><span class="gl-orb-symbol" aria-hidden="true">◎</span><span>لید</span></a>
+      <a class="gl-quick-orb gl-quick-income" href="{% url 'finance_dashboard' %}" title="درآمد" aria-label="درآمد"><span class="gl-orb-symbol" aria-hidden="true">↗</span><span>درآمد</span></a>
+      <span class="gl-quick-orb gl-quick-targets" aria-label="تارگت‌ها، به‌زودی" title="تارگت‌ها، به‌زودی"><span class="gl-orb-symbol" aria-hidden="true">◎</span><span>تارگت</span></span>
+    </div>
+  </section>
+  {% endif %}
   <div class="sidebar-footer">
     {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'doctor' or user.profile.role == 'receptionist' %}
       <a href="/requests/">{% gl_t 'common.leave' %}</a>
