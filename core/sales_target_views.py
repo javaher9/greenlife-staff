@@ -2,6 +2,7 @@
 from collections import defaultdict
 from datetime import datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
+from types import SimpleNamespace
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -16,7 +17,7 @@ from django.utils import timezone
 from .call_center_identity import call_center_display_name
 from .jalali import gregorian_to_jalali, jalali_to_gregorian
 from .models import Branch, EmployeeProfile, FinancialTransaction
-from .sales_target_models import SalesTargetBand
+from .sales_target_models import SalesTargetBand, TargetPercentPolicy
 
 MILLION_TOMAN_RIAL = Decimal("10000000")
 ZERO = Decimal("0")
@@ -109,42 +110,80 @@ def sales_targets_dashboard(request):
     for p in consultants:
         valid_subjects[f"consultant:{p.user_id}"] = ("consultant", p.branch, p.user)
 
+    policy = TargetPercentPolicy.objects.filter(period_year=jy, period_month=jm).first()
+    if policy is None:
+        policy = TargetPercentPolicy(period_year=jy, period_month=jm)
     if request.method == "POST":
-        subject = (request.POST.get("subject") or "").strip()
-        if subject not in valid_subjects:
-            messages.error(request, "مورد انتخاب‌شده معتبر یا فعال نیست.")
-        else:
-            try:
-                def amount(name):
-                    value = (request.POST.get(name) or "").replace(",", "").strip()
-                    return Decimal(value)
-                values = {
-                    "heavy_limit": amount("heavy_limit"),
-                    "sales_floor": amount("sales_floor"),
-                    "target_one": amount("target_one"),
-                    "target_two": amount("target_two"),
-                }
+        action = (request.POST.get("action") or "set_floor").strip()
+        try:
+            def amount(name):
+                result = Decimal((request.POST.get(name) or "").replace(",", "").strip())
+                if not result.is_finite():
+                    raise InvalidOperation()
+                return result
+
+            if action == "set_policy":
+                candidate = TargetPercentPolicy(
+                    period_year=jy, period_month=jm,
+                    heavy_percent=amount("heavy_percent"),
+                    target_one_percent=amount("target_one_percent"),
+                    target_two_percent=amount("target_two_percent"),
+                    updated_by=user,
+                )
+                candidate.full_clean()
+                TargetPercentPolicy.objects.update_or_create(
+                    period_year=jy, period_month=jm,
+                    defaults={
+                        "heavy_percent":candidate.heavy_percent,
+                        "target_one_percent":candidate.target_one_percent,
+                        "target_two_percent":candidate.target_two_percent,
+                        "updated_by":user,
+                    },
+                )
+                messages.success(request, "درصدها ذخیره شدند؛ محدوده‌های رنگی تمام عقربه‌ها بر اساس درصدهای جدید محاسبه می‌شوند.")
+            elif action == "set_floor":
+                subject = (request.POST.get("subject") or "").strip()
+                if subject not in valid_subjects:
+                    raise ValidationError("فروشنده یا مرکز معتبر نیست.")
+                floor = amount("sales_floor")
+                if floor <= 0:
+                    raise ValidationError("کف فروش باید بزرگ‌تر از صفر باشد.")
+                values = dict(zip(
+                    ("heavy_limit","sales_floor","target_one","target_two"),
+                    policy.bands(floor),
+                ))
                 scope, branch, employee = valid_subjects[subject]
                 band = SalesTargetBand(
                     key=f"{period}:{subject}", period_year=jy, period_month=jm,
                     scope=scope, branch=branch, employee=employee,
                     updated_by=user, **values,
                 )
-                band.full_clean(exclude=["key"])
+                band.full_clean()
                 SalesTargetBand.objects.update_or_create(
-                    key=band.key, defaults={
+                    key=band.key,
+                    defaults={
                         "period_year":jy, "period_month":jm, "scope":scope,
-                        "branch":branch, "employee":employee, "updated_by":user,
-                        **values,
+                        "branch":branch, "employee":employee,
+                        "updated_by":user, **values,
                     },
                 )
-                messages.success(request, "مرزهای فروش ذخیره شد؛ اعداد پاداش و جریمه صرفاً نمایشی هستند.")
-            except (InvalidOperation, ValidationError, ValueError, TypeError):
-                messages.error(request, "۴ عدد مثبت و صعودی وارد کنید: جریمه سنگین < کف فروش < تارگت ۱ < تارگت ۲.")
+                messages.success(request, "کف فروش ذخیره شد؛ سه مرز دیگر خودکار محاسبه شدند.")
+            else:
+                raise ValidationError("درخواست نامعتبر است.")
+        except (InvalidOperation, ValidationError, ValueError, TypeError):
+            messages.error(request, "عددهای معتبر و مثبت وارد کن. درصد سنگین کمتر از ۱۰۰، تارگت ۱ بیشتر از ۱۰۰ و تارگت ۲ بالاتر از تارگت ۱ باشد.")
         return HttpResponseRedirect(f"{reverse('sales_targets_dashboard')}?year={jy}&month={jm}&edit=1")
 
     configs = SalesTargetBand.objects.filter(period_year=jy, period_month=jm)
-    plans = {x.key.removeprefix(period + ":"): x for x in configs}
+    # Calculate at read time as well: updating global percentages immediately
+    # changes the actual boundaries, colors, and needle positions everywhere.
+    plans = {}
+    for stored in configs:
+        heavy, floor, one, two = policy.bands(stored.sales_floor)
+        plans[stored.key.removeprefix(period + ":")] = SimpleNamespace(
+            heavy_limit=heavy, sales_floor=floor,
+            target_one=one, target_two=two,
+        )
 
     start = timezone.make_aware(datetime.combine(start_date, time.min))
     end = timezone.make_aware(datetime.combine(end_date, time.min))
@@ -256,4 +295,64 @@ def sales_targets_dashboard(request):
         "deposit_count":deposit_count, "edit_rows":edit_rows,
         "edit_mode":request.GET.get("edit") == "1",
         "configured_count":len(plans), "person_count":len(all_people),
+        "target_policy":policy,
+    })
+
+
+@login_required
+def my_sales_targets(request):
+    """Read-only personal sales goals; monthly statuses only, no daily penalties."""
+    profile = getattr(request.user, "profile", None)
+    if not profile or not profile.is_active or profile.role not in ("call_center", "consultant"):
+        raise PermissionDenied("این صفحه مختص گل‌های کال‌سنتر و مشاوران فروش است.")
+    # Staff must never choose another person's ID.
+    jy, jm, start_date, end_date, today = _month_params(request)
+    period = f"{jy}-{jm:02d}"
+    key = f"{'flower' if profile.role == 'call_center' else 'consultant'}:{request.user.pk}"
+    policy = TargetPercentPolicy.objects.filter(period_year=jy, period_month=jm).first()
+    if policy is None:
+        policy = TargetPercentPolicy(period_year=jy, period_month=jm)
+    saved = SalesTargetBand.objects.filter(key=f"{period}:{key}").first()
+    plan = None
+    if saved:
+        heavy, floor, one, two = policy.bands(saved.sales_floor)
+        plan = SimpleNamespace(heavy_limit=heavy, sales_floor=floor, target_one=one, target_two=two)
+    period_start = timezone.make_aware(datetime.combine(start_date, time.min))
+    period_end = timezone.make_aware(datetime.combine(end_date, time.min))
+    today_start = timezone.make_aware(datetime.combine(today, time.min))
+    tomorrow_start = today_start + timedelta(days=1)
+    receipts = FinancialTransaction.objects.filter(
+        source="manual", entry_type="inc", review_status="approved",
+        occurred_at__gte=period_start, occurred_at__lt=period_end,
+    )
+    if profile.role == "call_center":
+        receipts = receipts.annotate(seller=Coalesce(
+            "call_center_owner_id", "appointment__lead__first_appointment_by_id",
+        ))
+        display_name = call_center_display_name(request.user)
+    else:
+        receipts = receipts.annotate(seller=Coalesce(
+            "appointment__consultation_plan__consultant_id", "recorded_by_id",
+        ))
+        display_name = request.user.get_full_name() or request.user.username
+    mine = receipts.filter(seller=request.user.pk)
+    monthly = _money(mine.aggregate(value=Sum("amount"))["value"])
+    daily = _money(mine.filter(occurred_at__gte=today_start, occurred_at__lt=tomorrow_start).aggregate(value=Sum("amount"))["value"])
+    days = (end_date - start_date).days
+    daily_floor = (plan.sales_floor / Decimal(days)).quantize(Decimal("0.01")) if plan else None
+    upper_percent = policy.target_two_percent * Decimal("1.20")
+    segments = [
+        policy.heavy_percent, Decimal("100") - policy.heavy_percent,
+        policy.target_one_percent - Decimal("100"),
+        policy.target_two_percent - policy.target_one_percent,
+        upper_percent - policy.target_two_percent,
+    ]
+    # Daily target is deliberately indicative and never a penalty decision.
+    row = _gauge_row(key, display_name, monthly, {key:plan} if plan else {})
+    return render(request, "core/my_sales_targets.html", {
+        "row":row, "period_label":f"{jy}/{jm:02d}", "monthly":monthly,
+        "daily":daily, "daily_floor":daily_floor, "days":days,
+        "is_flower":profile.role=="call_center", "plan":plan,
+        "policy":policy, "segments":segments, "avatar":profile.avatar.url if profile.avatar else "",
+        "source_note":"فقط دریافت‌های دستی تأییدشده منتسب به حساب شما در این گزارش نمایش داده شده‌اند.",
     })

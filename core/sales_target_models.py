@@ -40,3 +40,31 @@ class SalesTargetBand(models.Model):
 
     def __str__(self):
         return f"{self.key}: {self.sales_floor} / {self.target_one} / {self.target_two}"
+
+class TargetPercentPolicy(models.Model):
+    """Global monthly percentages of the sales floor, shared across all sales scopes."""
+    period_year = models.PositiveSmallIntegerField()
+    period_month = models.PositiveSmallIntegerField()
+    heavy_percent = models.DecimalField(max_digits=6, decimal_places=2, default=70)
+    target_one_percent = models.DecimalField(max_digits=6, decimal_places=2, default=130)
+    target_two_percent = models.DecimalField(max_digits=6, decimal_places=2, default=160)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+")
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["period_year", "period_month"], name="unique_sales_target_percent_month")]
+
+    def clean(self):
+        super().clean()
+        p = (self.heavy_percent, self.target_one_percent, self.target_two_percent)
+        if any(x is None or not x.is_finite() for x in p) or not (Decimal("0") < p[0] < Decimal("100") < p[1] < p[2] <= Decimal("1000")):
+            raise ValidationError("درصدها باید این ترتیب را داشته باشند: ۰ < پایان جریمه سنگین < ۱۰۰ < تارگت ۱ < تارگت ۲ (حداکثر ۱۰۰۰).")
+
+    def bands(self, floor):
+        """Return monetary boundaries in millions; recomputed from the current policy."""
+        return (
+            (floor * self.heavy_percent / Decimal("100")).quantize(Decimal("0.01")),
+            floor,
+            (floor * self.target_one_percent / Decimal("100")).quantize(Decimal("0.01")),
+            (floor * self.target_two_percent / Decimal("100")).quantize(Decimal("0.01")),
+        )

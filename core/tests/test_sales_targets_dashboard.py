@@ -72,19 +72,55 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertTrue(paid.context["has_sales"])
         self.assertNotContains(paid, "فروش تأییدشده‌ای در منبع این نمودار ثبت نشده است")
 
-    def test_valid_and_invalid_thresholds_and_monthly_isolation(self):
-        values = dict(year=self.year, month=self.month, subject=f"branch:{self.branch.pk}",
-                      heavy_limit="100", sales_floor="200", target_one="300", target_two="450")
-        self.assertEqual(self.client.post(self.url, values).status_code, 302)
-        target = SalesTargetBand.objects.get(key=f"{self.year}-{self.month:02d}:branch:{self.branch.pk}")
-        self.assertEqual(target.target_two, Decimal("450"))
+    def test_single_floor_policy_edit_and_dynamic_band_recalculation(self):
+        floor = dict(year=self.year, month=self.month, action="set_floor",
+                     subject=f"branch:{self.branch.pk}", sales_floor="200")
+        self.assertEqual(self.client.post(self.url, floor).status_code, 302)
+        item = SalesTargetBand.objects.get()
+        self.assertEqual(item.sales_floor, Decimal("200"))
+        response = self.client.get(self.url)
+        self.assertEqual(response.context["branches"][0]["plan"].target_one, Decimal("260"))
+        self.assertEqual(response.context["branches"][0]["plan"].target_two, Decimal("320"))
+        percent = dict(year=self.year, month=self.month, action="set_policy",
+                       heavy_percent="55", target_one_percent="145", target_two_percent="190")
+        self.assertEqual(self.client.post(self.url, percent).status_code, 302)
+        response = self.client.get(self.url)
+        plan = response.context["branches"][0]["plan"]
+        self.assertEqual(plan.heavy_limit, Decimal("110"))
+        self.assertEqual(plan.sales_floor, Decimal("200"))
+        self.assertEqual(plan.target_one, Decimal("290"))
+        self.assertEqual(plan.target_two, Decimal("380"))
+        # Policy is global; old saved target values must not override it.
+        self.assertEqual(SalesTargetBand.objects.get().target_one, Decimal("260"))
+        self.client.post(self.url, {**percent, "target_one_percent":"200"})
+        self.assertEqual(self.client.get(self.url).context["target_policy"].target_one_percent, Decimal("145"))
         self.assertEqual(SalesTargetBand.objects.count(), 1)
-        self.client.post(self.url, {**values, "sales_floor":"500"})
+
+    def test_personal_sales_targets_are_read_only_and_not_shared(self):
+        self.client.post(self.url, {
+            "year":self.year, "month":self.month, "action":"set_floor",
+            "subject":f"flower:{self.flower.pk}", "sales_floor":"300",
+        })
+        self._transaction("40000000", description="بیعانه", origin="afsariyeh", owner=self.flower)
+        self._transaction("100000000", recorded=self.consultant)
+        personal_url = reverse("my_sales_targets")
+        self.client.force_login(self.flower)
+        view = self.client.get(personal_url)
+        self.assertEqual(view.status_code, 200)
+        self.assertContains(view, "تارگت امروز")
+        self.assertEqual(view.context["monthly"], Decimal("4.00"))
+        self.assertEqual(view.context["plan"].sales_floor, Decimal("300"))
+        self.assertContains(view, "هیچ جریمه‌ای")
+        self.assertEqual(self.client.get(self.url).status_code, 403)
+        self.client.force_login(self.consultant)
+        other = self.client.get(personal_url)
+        self.assertEqual(other.status_code, 200)
+        self.assertIsNone(other.context["plan"])
+        self.assertEqual(other.context["monthly"], Decimal("10.00"))
+        self.assertEqual(self.client.post(personal_url, {"sales_floor":"1"}).status_code, 200)
         self.assertEqual(SalesTargetBand.objects.count(), 1)
-        self.assertEqual(SalesTargetBand.objects.get(pk=target.pk).target_two, Decimal("450"))
-        self.client.post(self.url, {**values, "target_two":"600"})
-        self.assertEqual(SalesTargetBand.objects.get(pk=target.pk).target_two, Decimal("600"))
-        self.assertEqual(SalesTargetBand.objects.count(), 1)
+        self.client.force_login(self.staff)
+        self.assertEqual(self.client.get(personal_url).status_code, 403)
 
     def test_call_center_deposit_only_counts_explicit_deposit_transactions(self):
         self._transaction("40000000", description="بیعانه", origin="afsariyeh", owner=self.flower)

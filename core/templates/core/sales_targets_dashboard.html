@@ -108,6 +108,9 @@ body.gl-page-sales_targets_dashboard .app-main .st .st-rank{color:#4be6b6!import
 .st-inline-guide{font-size:11px;color:#a9cadd}
 .st-source-note{font-size:11px;line-height:1.8;color:#c1d7e7;border:1px dashed #456986;background:#092237;padding:8px 11px;border-radius:10px;margin-top:7px}
 
+
+.st-settings .st-edit-row .st-stats{border:0;margin:0;padding:4px!important}.st-settings .st-edit-row .st-stats strong{color:#e5f7ff!important}.st-settings .st-edit-row label{color:#f0fbff}
+@media(max-width:700px){.st-settings .st-edit-row{display:flex!important;flex-wrap:wrap!important}.st-settings .st-edit-row>label{width:100%}.st-settings .st-edit-row>input,.st-settings .st-edit-row>.st-stats{flex:1 1 75px;min-width:70px}.st-settings .st-edit-row>button{flex:0 1 auto}}
 </style>
 <div class="st">
  <div class="st-head">
@@ -202,23 +205,33 @@ body.gl-page-sales_targets_dashboard .app-main .st .st-rank{color:#4be6b6!import
   </section>
  </div>
  <section id="st-settings" class="st-panel st-settings">
-   <div class="st-title"><h2>⚙ تنظیم کف فروش، تارگت ۱ و تارگت ۲</h2><a class="st-button" href="?year={{ period_year }}&month={{ period_month }}{% if not edit_mode %}&edit=1{% endif %}#st-settings">{% if edit_mode %}بستن تنظیمات{% else %}نمایش تنظیمات{% endif %}</a></div>
-   {% if edit_mode %}
-    <div class="st-hint">اعداد برحسب میلیون تومان هستند. «پایان سنگین» مرز ورود به جریمه سبک است؛ «کف فروش» پایان جریمه سبک و آغاز نرمال است؛ سپس تارگت ۱ و تارگت ۲.</div>
-    <div class="st-edit-caption"><span>فرد / مرکز</span><span>پایان سنگین</span><span>کف فروش</span><span>تارگت ۱</span><span>تارگت ۲</span><span>ذخیره</span></div>
-    {% for r in edit_rows %}
-    <form class="st-edit-row" method="post" action="{% url 'sales_targets_dashboard' %}">
-      {% csrf_token %}
-      <input type="hidden" name="year" value="{{ period_year }}"><input type="hidden" name="month" value="{{ period_month }}"><input type="hidden" name="subject" value="{{ r.key }}">
-      <label>{{ r.label }} <small class="st-sub">({{ r.scope }})</small></label>
-      <input type="number" inputmode="decimal" name="heavy_limit" aria-label="پایان جریمه سنگین {{ r.label }}" placeholder="سنگین" min="0.01" step="0.01" required value="{{ r.band.heavy_limit|default_if_none:'' }}">
-      <input type="number" inputmode="decimal" name="sales_floor" aria-label="کف فروش {{ r.label }}" placeholder="کف" min="0.01" step="0.01" required value="{{ r.band.sales_floor|default_if_none:'' }}">
-      <input type="number" inputmode="decimal" name="target_one" aria-label="تارگت ۱ {{ r.label }}" placeholder="هدف ۱" min="0.01" step="0.01" required value="{{ r.band.target_one|default_if_none:'' }}">
-      <input type="number" inputmode="decimal" name="target_two" aria-label="تارگت ۲ {{ r.label }}" placeholder="هدف ۲" min="0.01" step="0.01" required value="{{ r.band.target_two|default_if_none:'' }}">
-      <button type="submit" class="st-button primary">ذخیره</button>
-    </form>
-    {% endfor %}
-   {% endif %}
+ <div class="st-title"><h2>⚙ تنظیم کف فروش و درصدهای مشترک</h2><a class="st-button" href="?year={{ period_year }}&month={{ period_month }}{% if not edit_mode %}&edit=1{% endif %}#st-settings">{% if edit_mode %}بستن تنظیمات{% else %}نمایش تنظیمات{% endif %}</a></div>
+ {% if edit_mode %}
+ <div class="st-hint">فقط کف فروش هر نفر/مرکز را تعیین کن. این سه درصد برای همه اعمال می‌شوند و تغییرشان مرز رنگ‌های تمام عقربه‌ها را تغییر می‌دهد. تنظیمات برای ماه {{ period_label }} است؛ روی حقوق یا پاداش پرداختی تغییری انجام نمی‌دهد.</div>
+ <form method="post" action="{% url 'sales_targets_dashboard' %}" class="st-edit-row" style="grid-template-columns:1.4fr repeat(3,minmax(90px,1fr)) 85px">
+ {% csrf_token %}
+ <input type="hidden" name="year" value="{{ period_year }}"><input type="hidden" name="month" value="{{ period_month }}"><input type="hidden" name="action" value="set_policy">
+ <label>درصدهای عمومی <small class="st-sub">(کف فروش = 100%)</small></label>
+ <input type="number" name="heavy_percent" step="0.01" min="0.01" max="99.99" required value="{{ target_policy.heavy_percent|stringformat:'f' }}" aria-label="پایان جریمه سنگین درصد" title="پایان قرمز، ورود به زرد">
+ <input type="number" name="target_one_percent" step="0.01" min="100.01" max="999" required value="{{ target_policy.target_one_percent|stringformat:'f' }}" aria-label="شروع تارگت یک درصد" title="شروع آبی">
+ <input type="number" name="target_two_percent" step="0.01" min="100.02" max="1000" required value="{{ target_policy.target_two_percent|stringformat:'f' }}" aria-label="شروع تارگت دو درصد" title="شروع بنفش">
+ <button class="st-button primary" type="submit">ثبت درصدها</button>
+ </form>
+ <div class="st-hint">قرمز: 0 تا پایان سنگین · زرد: تا کف فروش 100٪ · سبز: تا تارگت ۱ · آبی: تا تارگت ۲ · بنفش: بعد از تارگت ۲</div>
+ <div class="st-edit-caption" style="grid-template-columns:1.6fr 1fr 1fr 1fr 1fr 85px"><span>مرکز / فروشنده</span><span>پایان سنگین (خودکار)</span><span>کف فروش (ورودی)</span><span>تارگت ۱ (خودکار)</span><span>تارگت ۲ (خودکار)</span><span>ذخیره</span></div>
+ {% for r in edit_rows %}
+ <form class="st-edit-row" method="post" action="{% url 'sales_targets_dashboard' %}" style="grid-template-columns:1.6fr 1fr 1fr 1fr 1fr 85px">
+ {% csrf_token %}
+ <input type="hidden" name="year" value="{{ period_year }}"><input type="hidden" name="month" value="{{ period_month }}"><input type="hidden" name="action" value="set_floor"><input type="hidden" name="subject" value="{{ r.key }}">
+ <label>{{ r.label }} <small class="st-sub">({{ r.scope }})</small></label>
+ <span class="st-stats"><strong>{% if r.band %}{{ r.band.heavy_limit|floatformat:0 }}{% else %}—{% endif %}</strong></span>
+ <input type="number" name="sales_floor" placeholder="کف فروش" step="0.01" min="0.01" required value="{{ r.band.sales_floor|default_if_none:'' }}" aria-label="کف فروش {{ r.label }}">
+ <span class="st-stats"><strong>{% if r.band %}{{ r.band.target_one|floatformat:0 }}{% else %}—{% endif %}</strong></span>
+ <span class="st-stats"><strong>{% if r.band %}{{ r.band.target_two|floatformat:0 }}{% else %}—{% endif %}</strong></span>
+ <button class="st-button primary" type="submit">ذخیره</button>
+ </form>
+ {% endfor %}
+ {% endif %}
  </section>
  <div class="st-hint">مبنای نمایش: دریافت‌های دستی با وضعیت تأییدشده؛ برای جلوگیری از دوباره‌شماری، مبالغ ورودی CRM به این نسخه اضافه نشده‌اند. تارگت‌های خالی، «—» نمایش داده می‌شوند. آمار صرفاً گزارش فروش است و با KPI عملکرد پرسنل ترکیب نشده است.</div>
 </div>
