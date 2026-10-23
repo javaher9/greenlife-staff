@@ -64,3 +64,12 @@ class InstagramAgentApiSecurityTests(SimpleTestCase):
             HTTP_AUTHORIZATION="Bearer " + "x" * 40,
         )
         self.assertEqual(instagram_agent_lead_api(request).status_code, 400)
+
+    @patch.dict("os.environ", {"INSTAGRAM_AGENT_API_KEY": "x" * 40})
+    def test_requires_event_id(self):
+        response = instagram_agent_lead_api(self.request(
+            {"source_page": "greenlifeclinics", "contact_consent": True},
+            "Bearer " + "x" * 40,
+        ))
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(json.loads(response.content)["status"], "invalid_event_id")
