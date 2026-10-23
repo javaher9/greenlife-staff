@@ -35,3 +35,37 @@ background:#234438!important;color:#aaf0c8!important;box-shadow:inset -3px 0 #35
 }
 body.gl-executive-nav-enabled .sidebar-footer{padding-top:12px!important}
 body.gl-executive-nav-enabled .sidebar-footer a{font-size:12px!important}
+
+/* v3 — compact purple-edged submenu cards; main group styling unchanged. */
+body.gl-executive-nav-enabled .gl-grouped-nav .gl-nav-group .gl-nav-children{
+  margin:7px 10px 9px!important;
+  padding:8px 7px!important;
+  background:linear-gradient(150deg,#201c30,#151924)!important;
+  border:1px solid rgba(168,132,228,.60)!important;
+  border-radius:12px!important;
+  box-shadow:inset 0 1px rgba(198,176,238,.08),0 4px 15px rgba(23,11,40,.20)!important;
+}
+body.gl-executive-nav-enabled .gl-grouped-nav .gl-nav-children>a{
+  min-height:38px!important;
+  padding:7px 9px!important;
+  font-size:12.5px!important;
+  border:1px solid rgba(155,126,207,.22)!important;
+  border-radius:8px!important;
+  background:rgba(143,106,190,.045)!important;
+  color:#e4ddec!important;
+}
+body.gl-executive-nav-enabled .gl-grouped-nav .gl-nav-children>a:hover,
+body.gl-executive-nav-enabled .gl-grouped-nav .gl-nav-children>a:focus-visible{
+  background:rgba(118,85,172,.22)!important;
+  border-color:rgba(187,150,240,.65)!important;
+  color:#fff!important;
+}
+body.gl-executive-nav-enabled .gl-grouped-nav .gl-nav-children>a.is-active{
+  background:rgba(101,65,153,.35)!important;
+  border-color:#b293e9!important;
+  color:#f5eaff!important;
+  box-shadow:inset -3px 0 #b293e9!important;
+}
+@media(max-width:800px){
+ body.gl-executive-nav-enabled .gl-grouped-nav .gl-nav-children>a{min-height:43px!important}
+}
