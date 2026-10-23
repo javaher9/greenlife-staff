@@ -1,0 +1,59 @@
+{% extends "core/base.html" %}
+{% block content %}
+<style>
+.my-target{direction:rtl;max-width:900px;margin:auto;padding:18px;color:#f0faff}
+.my-target .panel{border:1px solid #315674;background:linear-gradient(130deg,#19374f,#0d1c32);border-radius:18px;padding:20px;margin:14px 0}
+.my-target h1,.my-target h2{color:#f3fcff!important}
+.my-target .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.my-target .value{font-size:32px;font-weight:900;color:#fff;font-family:Arial,Tahoma,sans-serif}
+.my-target small,.my-target p{color:#c0d9eb}
+.my-target .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.my-target .stats>div{padding:12px;border-radius:12px;background:#12344c;text-align:center}
+.my-target .stats strong{display:block;font-size:20px;color:#f2faff}
+.my-target .ring{height:17px;border-radius:50px;display:flex;overflow:hidden;gap:3px;margin:16px 0}
+.my-target .ring span{height:100%;min-width:2px}
+.my-target .notice{color:#e6faff;background:#153c4b;border:1px solid #2f8190;border-radius:12px;padding:12px;line-height:2}
+.my-target .name{display:flex;align-items:center;gap:10px}
+.my-target img{width:44px;height:44px;object-fit:cover;border-radius:50%;border:2px solid #2ce1b0}
+@media(max-width:620px){.my-target .cards{grid-template-columns:1fr}.my-target .stats{grid-template-columns:1fr 1fr}}
+</style>
+<div class="my-target">
+ <div class="name">
+ {% if avatar %}<img src="{{ avatar }}" alt="عکس پرسنلی">{% endif %}
+ <div><h1>تارگت فروش من</h1><p>{{ row.label }} — {% if is_flower %}گل کال‌سنتر{% else %}مشاور مرکز{% endif %} — ماه {{ period_label }}</p></div>
+ </div>
+ <div class="notice"><strong>مهم:</strong> تارگت روزانه فقط راهنمای پیشرفت است و هیچ جریمه‌ای برای آن در نظر گرفته نشده است. ملاک بررسی وضعیت جریمه یا پاداش، فروش نهایی ماه است. این صفحه هیچ کسری یا پرداختی انجام نمی‌دهد.</div>
+ <div class="cards">
+   <section class="panel">
+      <h2>تارگت امروز</h2><small>هدف روزانه راهنما = کف فروش ماه ÷ {{ days }} روز</small>
+      <div class="value">{% if daily_floor != None %}{{ daily_floor|floatformat:2 }}{% else %}—{% endif %}</div><small>میلیون تومان</small>
+      <p>فروش ثبت‌شده امروز: <strong>{{ daily|floatformat:2 }}</strong> میلیون تومان</p>
+      <p>{% if not plan %}کف فروش این ماه هنوز توسط مدیریت تعیین نشده است.{% else %}این عدد فقط برای برنامه‌ریزی روزانه است؛ جریمه روزانه نداریم.{% endif %}</p>
+   </section>
+   <section class="panel">
+      <h2>تارگت ماه</h2><small>وضعیت ماهانه: {{ row.status }}</small>
+      <div class="value">{% if plan %}{{ plan.sales_floor|floatformat:2 }}{% else %}—{% endif %}</div><small>کف فروش ماه (میلیون تومان)</small>
+      <p>فروش ثبت‌شده ماه: <strong>{{ monthly|floatformat:2 }}</strong> میلیون تومان</p>
+      <div class="ring" aria-label="پنج سطح فروش؛ قرمز، زرد، سبز، آبی و بنفش">
+       <span style="background:#f25370;flex:{{ policy.heavy_percent|stringformat:'f' }}"></span>
+       <span style="background:#f2be39;flex:1"></span>
+       <span style="background:#1fdbac;flex:1"></span>
+       <span style="background:#27aefd;flex:1"></span>
+       <span style="background:#a76dfa;flex:1"></span>
+      </div>
+      <p>{% if plan %}درصد تحقق تا تارگت ۲: <strong>{{ row.percentage }}%</strong>{% else %}تارگت‌های ماه هنوز تنظیم نشده‌اند.{% endif %}</p>
+   </section>
+ </div>
+ <section class="panel">
+ <h2>سطوح تارگت ماهانه</h2>
+ <div class="stats">
+ <div><small>پایان جریمه سنگین</small><strong>{% if plan %}{{ plan.heavy_limit|floatformat:2 }}{% else %}—{% endif %}</strong></div>
+ <div><small>کف فروش</small><strong>{% if plan %}{{ plan.sales_floor|floatformat:2 }}{% else %}—{% endif %}</strong></div>
+ <div><small>تارگت ۱</small><strong>{% if plan %}{{ plan.target_one|floatformat:2 }}{% else %}—{% endif %}</strong></div>
+ <div><small>تارگت ۲</small><strong>{% if plan %}{{ plan.target_two|floatformat:2 }}{% else %}—{% endif %}</strong></div>
+ </div>
+ <p>مبالغ برحسب میلیون تومان هستند. مرزها طبق درصدهای تنظیم‌شده توسط مدیریت به‌روزرسانی می‌شوند.</p>
+ </section>
+ <p>{{ source_note }}</p>
+</div>
+{% endblock %}
