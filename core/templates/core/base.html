@@ -399,6 +399,9 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     <a href="{% url 'staff_security' %}"><span class="nav-ico">⚿</span><span>امنیت حساب</span></a>
     <a href="/logout/"><span class="nav-ico">↪</span><span>خروج</span></a>
     {% else %}
+    {% if user.profile.is_active and user.profile.role == 'call_center' or user.profile.is_active and user.profile.role == 'consultant' %}
+    <a href="{% url 'my_sales_targets' %}" class="{% if request.resolver_match.url_name == 'my_sales_targets' %}is-active{% endif %}"><span class="nav-ico">◎</span><span>تارگت‌های من</span></a>
+    {% endif %}
     {% if executive_access or user.is_superuser or user.profile.role == 'admin' or user.profile.role == 'internal_manager' %}
     <a href="{% url 'sales_targets_dashboard' %}" class="{% if request.resolver_match.url_name == 'sales_targets_dashboard' %}is-active{% endif %}"><span class="nav-ico">◎</span><span>تارگت‌های فروش</span></a>
     {% endif %}
