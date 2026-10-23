@@ -215,3 +215,23 @@ class PaymentWorkflowTests(TestCase):
         self.assertEqual(response.status_code,200)
         self.assertContains(response,'Own completed payment')
         self.assertNotContains(response,'Private completed payment')
+
+    def test_executive_quick_instruction_directly_assigns_approved_payment(self):
+        self.client.force_login(self.executive)
+        res=self.client.post(reverse('payments_executive_quick'),{
+            'amount_million':'32',
+            'description':'Device maintenance',
+            'assigned_to':self.worker.pk,
+            'recipient_name':'Example Recipient',
+            'recipient_iban':'IR123456789012345678901234',
+        })
+        self.assertEqual(res.status_code,302)
+        order=PaymentRequest.objects.get(description='Device maintenance')
+        self.assertEqual(order.amount_toman,32000000)
+        self.assertEqual(order.state,'approved')
+        self.assertEqual(order.assigned_to,self.worker)
+        self.assertEqual(order.approved_by,self.executive)
+
+    def test_nonexecutive_cannot_create_direct_payment(self):
+        self.client.force_login(self.worker)
+        self.assertEqual(self.client.get(reverse('payments_executive_quick')).status_code,403)
