@@ -29,7 +29,8 @@ COST_OWNERS = [
 class PaymentRequest(models.Model):
     TYPES = [('payment','درخواست پرداخت'),('petty_cash','درخواست تنخواه')]
     STATES = [('pending','در انتظار تأیید'),('approved','در صف پرداخت'),('rejected','رد شده'),('needs_info','نیازمند توضیح بیشتر'),('paid','پرداخت شده')]
-    CHANNELS = [('consultant','مشاور'),('accountant','حسابدار')]
+    CHANNELS = [('consultant','مشاور'),('accountant','حسابدار'),('staff','کارمند منتخب')]
+    PRIORITIES = [('urgent','فوری'),('today','امروز'),('normal','عادی'),('low','کم‌اولویت')]
     kind = models.CharField(max_length=16,choices=TYPES)
     amount_toman = models.PositiveBigIntegerField(validators=[MinValueValidator(1)])
     description = models.TextField()
@@ -37,6 +38,7 @@ class PaymentRequest(models.Model):
     cost_owner = models.CharField(max_length=20, choices=COST_OWNERS, default='unspecified', db_index=True)
     cost_center = models.CharField(max_length=160, blank=True)
     due_date = models.DateField(null=True, blank=True)
+    priority = models.CharField(max_length=12, choices=PRIORITIES, default='normal', db_index=True)
     recipient_name = models.CharField(max_length=160,blank=True)
     recipient_iban = models.CharField(max_length=34,blank=True)
     recipient_card = models.CharField(max_length=24,blank=True)
