@@ -1,4 +1,6 @@
 {% extends 'core/base.html' %}{% load jalali_tags staff_i18n %}{% block content %}
+{% if user.first_name == 'زهرا' and user.last_name == 'آزادی' %}<div style="direction:rtl;padding:10px 14px"><a href="{% url 'referral_member_create' %}" style="display:block;text-align:center;padding:14px;border-radius:12px;background:#147b59;color:white;font-size:17px;font-weight:bold;text-decoration:none">＋ افزودن عضو شبکه فروش</a></div>{% endif %}
+
 <style>
 .ccx{--ink:#1d2d3f;--muted:#667587;--line:#dfe7eb;--page:#f4f7f8;--card:#fff;--green:#18865f;--green2:#e9f7f0;--amber:#a96d12;--amber2:#fff5df;--red:#b5415b;--red2:#fff0f3;--purple:#684995;--purple2:#f4eefb;--blue:#3e6fae;--blue2:#edf4ff;max-width:1880px;margin:0 auto 70px;direction:rtl;color:var(--ink);font-family:Tahoma,"Noto Sans Arabic",sans-serif;display:grid;gap:12px}
 .ccx *{box-sizing:border-box}.ccx a{text-decoration:none}.ccx-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 26px rgba(31,52,67,.05)}
