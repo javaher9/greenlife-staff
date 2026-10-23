@@ -21,7 +21,7 @@ def staff(user):
     return bool(user.is_active and p and p.is_active and p.role == 'consultant')
 
 def assigned_operator(user):
-    return bool(user.is_authenticated and user.is_active and PaymentRequest.objects.filter(assigned_to=user, state='approved').exists())
+    return bool(user.is_authenticated and user.is_active and PaymentRequest.objects.filter(assigned_to=user, state__in=('approved','paid')).exists())
 
 class RequestForm(forms.ModelForm):
     class Meta:
@@ -77,12 +77,13 @@ def workspace(request):
             entry.save()
             return redirect('payments_workspace')
     clarifications=PaymentRequest.objects.filter(state='needs_info',clarification_assignee=request.user).prefetch_related('clarifications')
-    queue=PaymentRequest.objects.filter(state='approved',assigned_to=request.user).select_related('requester')
+    queue=PaymentRequest.objects.filter(state='approved',assigned_to=request.user).select_related('requester').order_by('due_date','-created_at')
+    completed=PaymentRequest.objects.filter(state='paid',assigned_to=request.user).select_related('requester').order_by('-paid_at')[:40]
     mine=PaymentRequest.objects.filter(requester=request.user)[:30]
     expenses=PettyCashExpense.objects.filter(holder=request.user)
     received=PaymentRequest.objects.filter(kind='petty_cash',beneficiary=request.user,state='paid').aggregate(x=Sum('amount_toman'))['x'] or 0
     spent=expenses.aggregate(x=Sum('amount_toman'))['x'] or 0
-    return render(request,'payments/workspace.html',dict(form=form,expense_form=expense_form,queue=queue,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,is_executive=executive(request.user), can_submit=staff(request.user) or executive(request.user)))
+    return render(request,'payments/workspace.html',dict(form=form,expense_form=expense_form,queue=queue,completed=completed,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,is_executive=executive(request.user), can_submit=staff(request.user) or executive(request.user)))
 
 @login_required
 @require_POST
