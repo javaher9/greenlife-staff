@@ -297,3 +297,55 @@ def sales_targets_dashboard(request):
         "configured_count":len(plans), "person_count":len(all_people),
         "target_policy":policy,
     })
+
+
+@login_required
+def my_sales_targets(request):
+    """Read-only personal sales goals; monthly statuses only, no daily penalties."""
+    profile = getattr(request.user, "profile", None)
+    if not profile or not profile.is_active or profile.role not in ("call_center", "consultant"):
+        raise PermissionDenied("این صفحه مختص گل‌های کال‌سنتر و مشاوران فروش است.")
+    # Staff must never choose another person's ID.
+    jy, jm, start_date, end_date, today = _month_params(request)
+    period = f"{jy}-{jm:02d}"
+    key = f"{'flower' if profile.role == 'call_center' else 'consultant'}:{request.user.pk}"
+    policy = TargetPercentPolicy.objects.filter(period_year=jy, period_month=jm).first()
+    if policy is None:
+        policy = TargetPercentPolicy(period_year=jy, period_month=jm)
+    saved = SalesTargetBand.objects.filter(key=f"{period}:{key}").first()
+    plan = None
+    if saved:
+        heavy, floor, one, two = policy.bands(saved.sales_floor)
+        plan = SimpleNamespace(heavy_limit=heavy, sales_floor=floor, target_one=one, target_two=two)
+    period_start = timezone.make_aware(datetime.combine(start_date, time.min))
+    period_end = timezone.make_aware(datetime.combine(end_date, time.min))
+    today_start = timezone.make_aware(datetime.combine(today, time.min))
+    tomorrow_start = today_start + timedelta(days=1)
+    receipts = FinancialTransaction.objects.filter(
+        source="manual", entry_type="inc", review_status="approved",
+        occurred_at__gte=period_start, occurred_at__lt=period_end,
+    )
+    if profile.role == "call_center":
+        receipts = receipts.annotate(seller=Coalesce(
+            "call_center_owner_id", "appointment__lead__first_appointment_by_id",
+        ))
+        display_name = call_center_display_name(request.user)
+    else:
+        receipts = receipts.annotate(seller=Coalesce(
+            "appointment__consultation_plan__consultant_id", "recorded_by_id",
+        ))
+        display_name = request.user.get_full_name() or request.user.username
+    mine = receipts.filter(seller=request.user.pk)
+    monthly = _money(mine.aggregate(value=Sum("amount"))["value"])
+    daily = _money(mine.filter(occurred_at__gte=today_start, occurred_at__lt=tomorrow_start).aggregate(value=Sum("amount"))["value"])
+    days = (end_date - start_date).days
+    daily_floor = (plan.sales_floor / Decimal(days)).quantize(Decimal("0.01")) if plan else None
+    # Daily target is deliberately indicative and never a penalty decision.
+    row = _gauge_row(key, display_name, monthly, {key:plan} if plan else {})
+    return render(request, "core/my_sales_targets.html", {
+        "row":row, "period_label":f"{jy}/{jm:02d}", "monthly":monthly,
+        "daily":daily, "daily_floor":daily_floor, "days":days,
+        "is_flower":profile.role=="call_center", "plan":plan,
+        "policy":policy, "avatar":profile.avatar.url if profile.avatar else "",
+        "source_note":"فقط دریافت‌های دستی تأییدشده منتسب به حساب شما در این گزارش نمایش داده شده‌اند.",
+    })
