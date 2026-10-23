@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import transaction
 from django.db.models import Sum, Q
 from django.db.models.functions import TruncDate, Coalesce
 from django.http import HttpResponseRedirect
@@ -122,7 +123,55 @@ def sales_targets_dashboard(request):
                     raise InvalidOperation()
                 return result
 
-            if action == "set_policy":
+            if action == "save_all":
+                # Validate ALL submitted changes before writing anything. A missing
+                # or duplicate subject cannot silently replace someone else's floor.
+                form_policy = TargetPercentPolicy(
+                    period_year=jy, period_month=jm,
+                    heavy_percent=amount("heavy_percent"),
+                    target_one_percent=amount("target_one_percent"),
+                    target_two_percent=amount("target_two_percent"),
+                    updated_by=user,
+                )
+                form_policy.full_clean()
+                edited = request.POST.getlist("subject")
+                if len(edited) != len(set(edited)) or set(edited) != set(valid_subjects):
+                    raise ValidationError("لیست افراد یا مراکز تغییر کرده است. صفحه را دوباره باز کنید.")
+                records = []
+                for subject in edited:
+                    entered = (request.POST.get(f"floor_{subject}") or "").replace(",", "").strip()
+                    if not entered:
+                        continue  # no existing target is created from empty input
+                    floor = Decimal(entered)
+                    if not floor.is_finite() or floor <= 0:
+                        raise ValidationError("کف فروش همه ردیف‌های پرشده باید مثبت باشد.")
+                    bounds = form_policy.bands(floor)
+                    scope, branch, employee = valid_subjects[subject]
+                    values = dict(zip(("heavy_limit", "sales_floor", "target_one", "target_two"), bounds))
+                    obj = SalesTargetBand(
+                        key=f"{period}:{subject}", period_year=jy, period_month=jm,
+                        scope=scope, branch=branch, employee=employee,
+                        updated_by=user, **values,
+                    )
+                    obj.full_clean()
+                    records.append((obj.key, dict(
+                        period_year=jy, period_month=jm, scope=scope, branch=branch,
+                        employee=employee, updated_by=user, **values,
+                    )))
+                with transaction.atomic():
+                    TargetPercentPolicy.objects.update_or_create(
+                        period_year=jy, period_month=jm,
+                        defaults={
+                            "heavy_percent":form_policy.heavy_percent,
+                            "target_one_percent":form_policy.target_one_percent,
+                            "target_two_percent":form_policy.target_two_percent,
+                            "updated_by":user,
+                        },
+                    )
+                    for key, defaults in records:
+                        SalesTargetBand.objects.update_or_create(key=key, defaults=defaults)
+                messages.success(request, f"همه تغییرات ذخیره شدند؛ {len(records)} کف فروش و درصدهای عمومی به‌روزرسانی شد.")
+            elif action == "set_policy":
                 candidate = TargetPercentPolicy(
                     period_year=jy, period_month=jm,
                     heavy_percent=amount("heavy_percent"),
