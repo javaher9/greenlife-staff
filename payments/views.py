@@ -52,6 +52,49 @@ class ExpenseForm(forms.ModelForm):
             raise ValidationError('فرمت یا حجم رسید مجاز نیست.')
         return f
 
+
+class ExecutiveQuickPaymentForm(forms.Form):
+    amount_million=forms.DecimalField(label='مبلغ (میلیون تومان)',min_value=0.001,max_digits=14,decimal_places=3,widget=forms.NumberInput(attrs={'step':'0.001','placeholder':'مثلاً ۳۲'}))
+    description=forms.CharField(label='شرح پرداخت',max_length=500,widget=forms.Textarea(attrs={'rows':2,'placeholder':'بابت چه کاری؟'}))
+    assigned_to=forms.ModelChoiceField(label='مسئول پرداخت',queryset=User.objects.none(),empty_label='انتخاب مسئول')
+    recipient_name=forms.CharField(label='نام گیرنده',max_length=160)
+    recipient_iban=forms.CharField(label='شماره شبا',max_length=34,required=False)
+    recipient_card=forms.CharField(label='شماره کارت',max_length=24,required=False)
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.fields['assigned_to'].queryset=User.objects.filter(is_active=True,profile__is_active=True).distinct().order_by('first_name','last_name')
+    def clean(self):
+        cleaned=super().clean()
+        if not cleaned.get('recipient_iban') and not cleaned.get('recipient_card'):
+            raise ValidationError('شماره کارت یا شبا را وارد کنید.')
+        return cleaned
+
+@login_required
+def executive_quick_payment(request):
+    if not executive(request.user):
+        raise PermissionDenied()
+    form=ExecutiveQuickPaymentForm(request.POST or None)
+    if request.method=='POST' and form.is_valid():
+        with transaction.atomic():
+            item=PaymentRequest.objects.create(
+                kind='payment',
+                amount_toman=int(form.cleaned_data['amount_million'] * 1000000),
+                description=form.cleaned_data['description'],
+                requester=request.user,
+                state='approved',
+                approved_by=request.user,
+                approved_at=timezone.now(),
+                assigned_to=form.cleaned_data['assigned_to'],
+                channel='staff',
+                recipient_name=form.cleaned_data['recipient_name'],
+                recipient_iban=form.cleaned_data['recipient_iban'],
+                recipient_card=form.cleaned_data['recipient_card'],
+            )
+            PaymentEvent.objects.create(payment=item,actor=request.user,action='created',notes='دستور مستقیم مدیریت')
+            PaymentEvent.objects.create(payment=item,actor=request.user,action='approve',notes='تأیید مستقیم مدیریت')
+        return redirect('payments_expenses')
+    return render(request,'payments/executive_quick_payment.html',{'form':form})
+
 @login_required
 def workspace(request):
     if not staff(request.user) and not executive(request.user) and not assigned_operator(request.user):
