@@ -161,9 +161,11 @@ def sales_targets_dashboard(request):
         income.annotate(seller_id=Coalesce(
             "appointment__consultation_plan__consultant_id", "recorded_by_id",
         )).values("seller_id").annotate(amount=Sum("amount"))}
-    by_flower = {r["call_center_owner_id"]: _money(r["amount"]) for r in income.filter(
-        call_center_owner__isnull=False
-    ).values("call_center_owner_id").annotate(amount=Sum("amount"))}
+    # The first booking owner is the fallback for historical rows.
+    by_flower = {r["flower_id"]: _money(r["amount"]) for r in
+        income.annotate(flower_id=Coalesce(
+            "call_center_owner_id", "appointment__lead__first_appointment_by_id",
+        )).filter(flower_id__isnull=False).values("flower_id").annotate(amount=Sum("amount"))}
     total = _money(income.filter(branch__in=branches).aggregate(value=Sum("amount"))["value"])
 
     # This is intentionally conservative: only explicitly identified deposit
