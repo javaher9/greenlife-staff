@@ -135,11 +135,7 @@ def sales_targets_dashboard(request):
                 )
                 # Validate updates against the existing row, not as a new
                 # conflicting monthly policy (unique year/month constraint).
-                form_policy.pk = getattr(
-                    TargetPercentPolicy.objects.filter(period_year=jy, period_month=jm).first(),
-                    "pk", None,
-                )
-                form_policy.full_clean()
+                form_policy.full_clean(exclude=["id", "period_year", "period_month"])
                 edited = request.POST.getlist("subject")
                 if len(edited) != len(set(edited)) or not edited or any(s not in valid_subjects for s in edited):
                     raise ValidationError("فهرست تنظیمات نامعتبر است؛ صفحه را تازه‌سازی کنید.")
@@ -190,11 +186,7 @@ def sales_targets_dashboard(request):
                     target_two_percent=amount("target_two_percent"),
                     updated_by=user,
                 )
-                candidate.pk = getattr(
-                    TargetPercentPolicy.objects.filter(period_year=jy, period_month=jm).first(),
-                    "pk", None,
-                )
-                candidate.full_clean()
+                candidate.full_clean(exclude=["id", "period_year", "period_month"])
                 TargetPercentPolicy.objects.update_or_create(
                     period_year=jy, period_month=jm,
                     defaults={
