@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - feature/instagram-agent-api
+  pull_request:
+    paths:
+      - "core/instagram_agent_api.py"
+      - "core/test_instagram_agent_api.py"
+      - "core/urls.py"
+      - ".github/workflows/instagram-agent-tests.yml"
   workflow_dispatch:
 
 jobs:
