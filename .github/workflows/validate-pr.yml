@@ -8,9 +8,9 @@ permissions:
   contents: read
 
 jobs:
-  receptionist-regression:
+  payments:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     services:
       postgres:
         image: postgres:17
@@ -41,54 +41,201 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Compile changed application
-        run: python -m compileall -q core greenlife
-      - name: Production deployment shell syntax gate
-        run: bash -n scripts/deploy_runner.sh
       - name: Django system check
         run: python manage.py check
-      - name: Validate new payment approval and queue workflows
+      - name: payments regression tests
         run: python manage.py test payments.tests --verbosity 2
-      - name: Verify all 46 XLSX diets before activating imports
-        run: python manage.py test core.tests.test_treatment_excel_all_import core.tests.test_treatment_excel_weekly_import --verbosity 2
-      - name: Test safe 34-weekly-diet XLSX import
-        run: python manage.py test core.tests.test_treatment_excel_weekly_import --verbosity 2
-      - name: Verify two read-only Excel diet previews
-        run: python manage.py test core.tests.test_excel_diet_sample_previews --verbosity 2
-      - name: Validate blank thirteen-day meal suppression
-        run: python manage.py test core.tests.test_diet_four_formats --verbosity 2
-      - name: Test corrected Keto-Fast first day and day plaques
-        run: python manage.py test core.tests.test_diet_four_formats --verbosity 2
-      - name: Check 13-day mint plaques and related diet formats
-        run: python manage.py test core.tests.test_diet_four_formats --verbosity 2
-      - name: Thirteen-day mobile preview focused regression
-        run: python manage.py test core.tests.test_diet_four_formats --verbosity 2
-      - name: Consultant narrow-screen light UI smoke test
-        run: python manage.py test core.tests.test_consultant_mobile_style --verbosity 2
-      - name: Phone staff chat light-theme smoke test
-        run: python manage.py test core.tests.test_shared_chat_mobile_light --verbosity 2
-      - name: Quality command center permissions and live source regression
-        run: python manage.py test core.tests.test_quality_command_center --verbosity 2
-      - name: Lead command CRM counting and privacy regression
-        run: python manage.py test core.tests.test_lead_command_live --verbosity 2
-      - name: SMS group audiences and permissions
-        run: python manage.py test core.tests.test_bulk_sms_audiences --verbosity 2
-      - name: Approved bulk SMS dispatch, opt-out and safety regression
-        run: python manage.py test core.tests.test_bulk_sms_dispatch --verbosity 2
-      - name: Doctor and patient 360 six-scan metrics regression
-        run: python manage.py test core.tests.test_six_scan_display core.tests.test_doctor_dashboard core.tests.test_patient_360 --verbosity 2
-      - name: Device bank and treatment editing focused regression tests
-        run: python manage.py test core.tests.test_unified_device_pricing core.tests.test_treatment_catalog_settings --verbosity 2
-      - name: Legacy MHTML five-item content, media and doctor-preview regression
-        run: python manage.py test core.tests.test_treatment_content_samples --verbosity 2
-      - name: Shared meal-time icon assets and dietary rendering regression
-        run: python manage.py test core.tests.test_meal_slot_icons --verbosity 2
-      - name: Diet preview notes, quotas and headphone regression
-        run: python manage.py test core.tests.test_diet_preview_extras --verbosity 2
-      - name: Weekly and Ramadan diet template regression tests
-        run: python manage.py test core.tests.test_diet_two_templates core.tests.test_diet_daily --verbosity 2
-      - name: Thirteen-day, text diet, new draft and CRM transfer regression
-        run: python manage.py test core.tests.test_diet_four_formats core.tests.test_diet_two_templates core.tests.test_diet_daily --verbosity 2
-      - name: Receptionist, call center, finance and lead-ingest regression tests
-        run: python manage.py test core.tests.test_receptionist_role core.tests.test_doctor_dashboard core.tests.test_unified_device_pricing core.tests.test_treatment_catalog_settings core.tests.test_treatment_master_data core.tests.test_patient_360 core.tests.test_call_center_role core.tests.test_call_center_kpis core.tests.test_appointment_payment_visibility core.tests.test_telegram_lead core.tests.test_instagram_page_sources core.tests.test_consultant_finance core.tests.test_lead_ingest core.tests.test_unified_lead_routing core.tests.test_server_health --verbosity 2
-
+  appointments-leads:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: greenlife
+          POSTGRES_USER: greenlife
+          POSTGRES_PASSWORD: test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U greenlife -d greenlife"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DEBUG: "1"
+      SECRET_KEY: "test-only-strong-secret-key-for-ci-receptionist-panel"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
+      POSTGRES_DB: greenlife
+      POSTGRES_USER: greenlife
+      POSTGRES_PASSWORD: test-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Django system check
+        run: python manage.py check
+      - name: appointments-leads regression tests
+        run: python manage.py test core.tests.test_appointments core.tests.test_unified_lead_routing core.tests.test_lead_ingest core.tests.test_server_health --verbosity 2
+  reception-finance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: greenlife
+          POSTGRES_USER: greenlife
+          POSTGRES_PASSWORD: test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U greenlife -d greenlife"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DEBUG: "1"
+      SECRET_KEY: "test-only-strong-secret-key-for-ci-receptionist-panel"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
+      POSTGRES_DB: greenlife
+      POSTGRES_USER: greenlife
+      POSTGRES_PASSWORD: test-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Django system check
+        run: python manage.py check
+      - name: reception-finance regression tests
+        run: python manage.py test core.tests.test_receptionist_role core.tests.test_call_center_role core.tests.test_call_center_kpis core.tests.test_appointment_payment_visibility core.tests.test_consultant_finance core.tests.test_telegram_lead core.tests.test_instagram_page_sources --verbosity 2
+  doctor-device:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: greenlife
+          POSTGRES_USER: greenlife
+          POSTGRES_PASSWORD: test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U greenlife -d greenlife"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DEBUG: "1"
+      SECRET_KEY: "test-only-strong-secret-key-for-ci-receptionist-panel"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
+      POSTGRES_DB: greenlife
+      POSTGRES_USER: greenlife
+      POSTGRES_PASSWORD: test-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Django system check
+        run: python manage.py check
+      - name: doctor-device regression tests
+        run: python manage.py test core.tests.test_doctor_dashboard core.tests.test_six_scan_display core.tests.test_patient_360 core.tests.test_unified_device_pricing core.tests.test_treatment_catalog_settings core.tests.test_treatment_master_data --verbosity 2
+  diets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: greenlife
+          POSTGRES_USER: greenlife
+          POSTGRES_PASSWORD: test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U greenlife -d greenlife"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DEBUG: "1"
+      SECRET_KEY: "test-only-strong-secret-key-for-ci-receptionist-panel"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
+      POSTGRES_DB: greenlife
+      POSTGRES_USER: greenlife
+      POSTGRES_PASSWORD: test-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Django system check
+        run: python manage.py check
+      - name: diets regression tests
+        run: python manage.py test core.tests.test_treatment_excel_all_import core.tests.test_treatment_excel_weekly_import core.tests.test_excel_diet_sample_previews core.tests.test_diet_four_formats core.tests.test_diet_two_templates core.tests.test_diet_daily core.tests.test_treatment_content_samples core.tests.test_meal_slot_icons core.tests.test_diet_preview_extras --verbosity 2
+  role-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: greenlife
+          POSTGRES_USER: greenlife
+          POSTGRES_PASSWORD: test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U greenlife -d greenlife"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DEBUG: "1"
+      SECRET_KEY: "test-only-strong-secret-key-for-ci-receptionist-panel"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
+      POSTGRES_DB: greenlife
+      POSTGRES_USER: greenlife
+      POSTGRES_PASSWORD: test-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Django system check
+        run: python manage.py check
+      - name: role-regressions regression tests
+        run: python manage.py test core.tests.test_consultant_mobile_style core.tests.test_shared_chat_mobile_light core.tests.test_quality_command_center core.tests.test_lead_command_live core.tests.test_bulk_sms_audiences core.tests.test_bulk_sms_dispatch --verbosity 2
+  deployment-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Compile application modules
+        run: python -m compileall -q core greenlife payments
+      - name: Production deployment shell syntax gate
+        run: bash -n scripts/deploy_runner.sh
