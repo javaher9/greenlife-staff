@@ -6,5 +6,7 @@ urlpatterns=[
  path('complete/<int:pk>/',views.mark_paid,name='payments_complete'),
  path('clarification/<int:pk>/answer/',views.answer_clarification,name='payments_clarification_answer'),
  path('receipt/<int:pk>/',views.receipt,name='payments_receipt'),
+ path('petty-receipt/<int:pk>/',views.petty_receipt,name='payments_petty_receipt'),
  path('admin/',views.admin_dashboard,name='payments_admin'),
+ path('expenses/',views.expenses_dashboard,name='payments_expenses'),
 ]

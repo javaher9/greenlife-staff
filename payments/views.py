@@ -4,6 +4,8 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import Sum, Q
+from django.core.paginator import Paginator
+from django.utils.dateparse import parse_date
 from django.http import HttpResponseBadRequest, FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -18,11 +20,15 @@ def staff(user):
     p=getattr(user,'profile',None)
     return bool(user.is_active and p and p.is_active and p.role == 'consultant')
 
+def assigned_operator(user):
+    return bool(user.is_authenticated and user.is_active and PaymentRequest.objects.filter(assigned_to=user, state='approved').exists())
+
 class RequestForm(forms.ModelForm):
     class Meta:
         model=PaymentRequest
-        fields=['kind','amount_toman','description','recipient_name','recipient_iban','recipient_card']
-        widgets={'description':forms.Textarea(attrs={'rows':2})}
+        fields=['kind','amount_toman','description','category','cost_owner','cost_center','due_date','recipient_name','recipient_iban','recipient_card']
+        labels={'kind':'نوع درخواست','amount_toman':'مبلغ (تومان)','description':'شرح و علت پرداخت','category':'موضوع هزینه','cost_owner':'متعلق به','cost_center':'مرکز هزینه / پروژه (اختیاری)','due_date':'مهلت پرداخت','recipient_name':'نام گیرنده','recipient_iban':'شماره شبا','recipient_card':'شماره کارت'}
+        widgets={'description':forms.Textarea(attrs={'rows':2}),'due_date':forms.DateInput(attrs={'type':'date'})}
     def clean_description(self):
         value=self.cleaned_data['description'].strip()
         if len(value)<10:
@@ -37,7 +43,9 @@ class RequestForm(forms.ModelForm):
 class ExpenseForm(forms.ModelForm):
     class Meta:
         model=PettyCashExpense
-        fields=['amount_toman','description','receipt']
+        fields=['amount_toman','description','category','cost_owner','cost_center','receipt']
+        labels={'amount_toman':'مبلغ خرج‌شده (تومان)','description':'شرح هزینه','category':'موضوع هزینه','cost_owner':'متعلق به','cost_center':'مرکز هزینه / پروژه (اختیاری)','receipt':'فاکتور یا رسید'}
+        widgets={'description':forms.Textarea(attrs={'rows':2})}
     def clean_receipt(self):
         f=self.cleaned_data['receipt']
         if f.size > 10*1024*1024 or f.content_type not in ('image/jpeg','image/png','image/webp','application/pdf'):
@@ -46,10 +54,12 @@ class ExpenseForm(forms.ModelForm):
 
 @login_required
 def workspace(request):
-    if not staff(request.user) and not executive(request.user):
+    if not staff(request.user) and not executive(request.user) and not assigned_operator(request.user):
         raise PermissionDenied()
     form=RequestForm(request.POST or None,prefix='req')
     expense_form=ExpenseForm(request.POST or None,request.FILES or None,prefix='exp')
+    if request.method=='POST' and not (staff(request.user) or executive(request.user)):
+        raise PermissionDenied()
     if request.method=='POST':
         if request.POST.get('operation')=='request' and form.is_valid():
             obj=form.save(commit=False)
@@ -72,7 +82,7 @@ def workspace(request):
     expenses=PettyCashExpense.objects.filter(holder=request.user)
     received=PaymentRequest.objects.filter(kind='petty_cash',beneficiary=request.user,state='paid').aggregate(x=Sum('amount_toman'))['x'] or 0
     spent=expenses.aggregate(x=Sum('amount_toman'))['x'] or 0
-    return render(request,'payments/workspace.html',dict(form=form,expense_form=expense_form,queue=queue,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,is_executive=executive(request.user)))
+    return render(request,'payments/workspace.html',dict(form=form,expense_form=expense_form,queue=queue,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,is_executive=executive(request.user), can_submit=staff(request.user) or executive(request.user)))
 
 @login_required
 @require_POST
@@ -99,12 +109,12 @@ def review(request,pk):
         elif action=='approve':
             assignee=get_object_or_404(User,pk=request.POST.get('assigned_to'),is_active=True)
             channel=request.POST.get('channel')
-            if channel != 'consultant':
+            if channel not in ('consultant', 'staff'):
                 return HttpResponseBadRequest('مسیر پرداخت نامعتبر است.')
             if channel=='consultant' and (not staff(assignee) or assignee.profile.role != 'consultant'):
                 return HttpResponseBadRequest('پرداخت‌کننده باید مشاور یا منشی فعال باشد.')
-            if channel=='accountant' and not assignee.has_perm('payments.execute_official_payment'):
-                return HttpResponseBadRequest('مجوز پرداخت رسمی وجود ندارد.')
+            if channel=='staff' and not assignee.is_active:
+                return HttpResponseBadRequest('مسئول پرداخت فعال نیست.')
             p.state='approved'
             p.channel=channel
             p.assigned_to=assignee
@@ -119,13 +129,13 @@ def review(request,pk):
 @login_required
 @require_POST
 def mark_paid(request,pk):
-    if not staff(request.user) and not executive(request.user):
+    if not request.user.is_authenticated or not request.user.is_active:
         raise PermissionDenied()
     with transaction.atomic():
         p=get_object_or_404(PaymentRequest.objects.select_for_update(),pk=pk,assigned_to=request.user)
         if p.state!='approved':
             return HttpResponseBadRequest('این درخواست در صف شما نیست.')
-        if p.channel=='accountant' and not request.user.has_perm('payments.execute_official_payment'):
+        if p.channel not in ('consultant','staff'):
             raise PermissionDenied()
         reference=request.POST.get('reference','').strip()
         receipt=request.FILES.get('receipt')
@@ -149,8 +159,9 @@ def admin_dashboard(request):
     requests=PaymentRequest.objects.select_related('requester','assigned_to','approved_by','beneficiary','branch')
     consultants=User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant')
     accountants=User.objects.none()
+    operators=User.objects.filter(is_active=True, profile__is_active=True).order_by('first_name','last_name')
     paid=requests.filter(state='paid')
-    return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants,'staff_members':User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant').order_by('first_name','last_name')})
+    return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants,'operators':operators,'staff_members':User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant').order_by('first_name','last_name')})
 
 @login_required
 @require_POST
@@ -179,4 +190,90 @@ def receipt(request,pk):
     response=FileResponse(p.payment_receipt.open('rb'),as_attachment=True)
     response['Cache-Control']='no-store, private'
     response['X-Content-Type-Options']='nosniff'
+    return response
+
+
+@login_required
+def expenses_dashboard(request):
+    """Executive-only expense ledger, independent from the existing income dashboard.
+
+    A petty-cash disbursement transfers funds to a holder; the actual
+    PettyCashExpense is the expense. Do not count both as operating costs.
+    """
+    if not executive(request.user):
+        raise PermissionDenied()
+
+    base_requests = PaymentRequest.objects.select_related('requester', 'assigned_to', 'branch')
+    base_expenses = PettyCashExpense.objects.select_related('holder', 'created_by')
+    def amount(qs):
+        return qs.aggregate(total=Sum('amount_toman'))['total'] or 0
+
+    summary = {
+        'pending': amount(base_requests.filter(state__in=['pending', 'needs_info'])),
+        'approved': amount(base_requests.filter(state='approved')),
+        'paid_transfers': amount(base_requests.filter(state='paid')),
+        'paid_costs': amount(base_requests.filter(state='paid', kind='payment')) + amount(base_expenses),
+        'petty_disbursed': amount(base_requests.filter(state='paid', kind='petty_cash')),
+        'petty_spent': amount(base_expenses),
+        'personal_costs': amount(base_requests.filter(state='paid', kind='payment', cost_owner='personal')) +
+                          amount(base_expenses.filter(cost_owner='personal')),
+    }
+
+    selected_category = request.GET.get('category', '')
+    selected_owner = request.GET.get('owner', '')
+    selected_status = request.GET.get('state', '')
+    query = request.GET.get('q', '').strip()[:150]
+    def safe_date(key):
+        try:
+            return parse_date(request.GET.get(key, ''))
+        except ValueError:
+            return None
+    from_date = safe_date('from')
+    to_date = safe_date('to')
+    if selected_category:
+        base_requests = base_requests.filter(category=selected_category)
+        base_expenses = base_expenses.filter(category=selected_category)
+    if selected_owner:
+        base_requests = base_requests.filter(cost_owner=selected_owner)
+        base_expenses = base_expenses.filter(cost_owner=selected_owner)
+    if selected_status in ('pending','approved','needs_info','rejected','paid'):
+        base_requests = base_requests.filter(state=selected_status)
+        if selected_status != 'paid':
+            base_expenses = base_expenses.none()
+    if query:
+        base_requests = base_requests.filter(
+            Q(description__icontains=query) | Q(recipient_name__icontains=query) |
+            Q(cost_center__icontains=query) | Q(requester__username__icontains=query))
+        base_expenses = base_expenses.filter(
+            Q(description__icontains=query) | Q(cost_center__icontains=query) |
+            Q(holder__username__icontains=query))
+    if from_date:
+        base_requests = base_requests.filter(created_at__date__gte=from_date)
+        base_expenses = base_expenses.filter(created_at__date__gte=from_date)
+    if to_date:
+        base_requests = base_requests.filter(created_at__date__lte=to_date)
+        base_expenses = base_expenses.filter(created_at__date__lte=to_date)
+
+    requests_page = Paginator(base_requests.order_by('-created_at'), 50).get_page(request.GET.get('requests_page'))
+    petty_page = Paginator(base_expenses.order_by('-created_at'), 30).get_page(request.GET.get('petty_page'))
+    from .models import EXPENSE_CATEGORIES, COST_OWNERS
+    return render(request, 'payments/expenses_dashboard.html', {
+        'summary': summary, 'requests_page': requests_page, 'petty_page': petty_page,
+        'categories': EXPENSE_CATEGORIES, 'owners': COST_OWNERS,
+        'selected_category': selected_category, 'selected_owner': selected_owner,
+        'selected_status': selected_status, 'query': query,
+        'from_date': request.GET.get('from',''), 'to_date': request.GET.get('to',''),
+    })
+
+
+@login_required
+def petty_receipt(request, pk):
+    item = get_object_or_404(PettyCashExpense, pk=pk)
+    if not executive(request.user) and item.holder_id != request.user.pk:
+        raise PermissionDenied()
+    if not item.receipt:
+        raise Http404()
+    response = FileResponse(item.receipt.open('rb'), as_attachment=True)
+    response['Cache-Control'] = 'no-store, private'
+    response['X-Content-Type-Options'] = 'nosniff'
     return response

@@ -5,7 +5,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from core.models import Branch, EmployeeProfile
-from .models import PaymentRequest, PaymentEvent
+from .models import PaymentRequest, PaymentEvent, PettyCashExpense
 
 class PaymentWorkflowTests(TestCase):
     @classmethod
@@ -93,3 +93,98 @@ class PaymentWorkflowTests(TestCase):
         self.assertEqual(r.status_code,400)
         p.refresh_from_db()
         self.assertEqual(p.state,'pending')
+
+    def test_expense_ledger_is_executive_only(self):
+        self.client.force_login(self.worker)
+        self.assertEqual(self.client.get(reverse('payments_expenses')).status_code, 403)
+        self.client.force_login(self.executive)
+        self.assertEqual(self.client.get(reverse('payments_expenses')).status_code, 200)
+
+    def test_personal_legal_request_is_classified(self):
+        self.client.force_login(self.executive)
+        result = self.client.post(reverse('payments_workspace'), {
+            'operation': 'request',
+            'req-kind': 'payment',
+            'req-amount_toman': 12000000,
+            'req-description': 'حق الزحمه وکیل برای پرونده شخصی',
+            'req-category': 'legal',
+            'req-cost_owner': 'personal',
+            'req-cost_center': 'پرونده شخصی',
+            'req-recipient_name': 'وکیل',
+            'req-recipient_card': '1234567890123456',
+        })
+        self.assertEqual(result.status_code, 302)
+        obj = PaymentRequest.objects.get(requester=self.executive)
+        self.assertEqual(obj.category, 'legal')
+        self.assertEqual(obj.cost_owner, 'personal')
+        self.assertEqual(obj.state, 'pending')
+
+    def test_petty_funding_not_double_counted_as_expense(self):
+        PaymentRequest.objects.create(
+            kind='payment',amount_toman=10000000,description='Office expense',
+            requester=self.worker,branch=self.branch,state='paid',
+            category='supplies',cost_owner='company')
+        PaymentRequest.objects.create(
+            kind='petty_cash',amount_toman=5000000,description='Petty cash funding',
+            requester=self.worker,beneficiary=self.worker,branch=self.branch,
+            state='paid',cost_owner='company')
+        PettyCashExpense.objects.create(
+            holder=self.worker,created_by=self.worker,amount_toman=2000000,
+            description='Actual petty purchase',category='supplies',
+            cost_owner='company',receipt='petty_expenses/test-proof.pdf')
+        self.client.force_login(self.executive)
+        resp=self.client.get(reverse('payments_expenses'))
+        self.assertEqual(resp.status_code,200)
+        self.assertEqual(resp.context['summary']['paid_transfers'],15000000)
+        self.assertEqual(resp.context['summary']['paid_costs'],12000000)
+        self.assertEqual(resp.context['summary']['petty_spent'],2000000)
+
+    def test_ledger_can_filter_by_ownership(self):
+        personal=PaymentRequest.objects.create(
+            kind='payment',amount_toman=3000000,description='Legal personal',
+            category='legal',cost_owner='personal',requester=self.worker)
+        company=PaymentRequest.objects.create(
+            kind='payment',amount_toman=5000000,description='Company supplies',
+            category='supplies',cost_owner='company',requester=self.worker)
+        self.client.force_login(self.executive)
+        result=self.client.get(reverse('payments_expenses')+'?owner=personal')
+        self.assertEqual(result.status_code,200)
+        self.assertContains(result,'Legal personal')
+        self.assertNotContains(result,'Company supplies')
+
+    def test_invalid_date_filters_do_not_crash(self):
+        self.client.force_login(self.executive)
+        result=self.client.get(reverse('payments_expenses')+'?from=2026-02-31')
+        self.assertEqual(result.status_code,200)
+
+    def test_other_user_cannot_read_petty_receipt(self):
+        item=PettyCashExpense.objects.create(
+            holder=self.worker,created_by=self.worker,amount_toman=100000,
+            description='Sample expense',receipt='petty_expenses/private.pdf')
+        self.client.force_login(self.other)
+        result=self.client.get(reverse('payments_petty_receipt',args=[item.pk]))
+        self.assertEqual(result.status_code,403)
+
+    def test_named_staff_can_only_complete_own_assigned_payment(self):
+        self.other.profile.role='quality_control'
+        self.other.profile.save(update_fields=['role'])
+        p=self._request()
+        self.client.force_login(self.executive)
+        approved=self.client.post(reverse('payments_review',args=[p.pk]),{
+            'action':'approve','channel':'staff','assigned_to':self.other.pk})
+        self.assertEqual(approved.status_code,302)
+        self.client.force_login(self.other)
+        self.assertEqual(self.client.get(reverse('payments_workspace')).status_code,200)
+        denied=self.client.post(reverse('payments_workspace'),{
+            'operation':'request','req-kind':'payment','req-amount_toman':'1000000',
+            'req-description':'Should be disallowed'})
+        self.assertEqual(denied.status_code,403)
+        self.assertEqual(PaymentRequest.objects.filter(requester=self.other).count(),0)
+        other_request=self._request()
+        other_request.state='approved'
+        other_request.assigned_to=self.worker
+        other_request.channel='staff'
+        other_request.save()
+        forbidden=self.client.post(reverse('payments_complete',args=[other_request.pk]),{
+            'reference':'NO','receipt':SimpleUploadedFile('other.pdf',b'%PDF-1.4 test',content_type='application/pdf')})
+        self.assertEqual(forbidden.status_code,404)

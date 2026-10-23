@@ -247,7 +247,7 @@ class UnifiedLeadRoutingTests(TestCase):
         self.assertEqual(lead.assigned_to_id,self.operators[1].id)
         self.assertIsNotNone(lead.assigned_at)
 
-    def test_website_leads_never_go_to_kamelya_or_laleh(self):
+    def test_website_leads_skip_kamelya_but_allow_laleh(self):
         self._check_in(*range(6))
         assigned=[]
         for index in range(20, 32):
@@ -264,14 +264,15 @@ class UnifiedLeadRoutingTests(TestCase):
             self.assertIsNotNone(operator)
             assigned.append(operator.id)
 
-        blocked={self.operators[3].id,self.operators[5].id}
+        blocked={self.operators[3].id}
         self.assertTrue(blocked.isdisjoint(set(assigned)))
-        allowed={self.operators[i].id for i in (0,1,2,4)}
+        allowed={self.operators[i].id for i in (0,1,2,4,5)}
         self.assertTrue(set(assigned).issubset(allowed))
+        self.assertIn(self.operators[5].id,assigned)
 
-    def test_kamelya_and_laleh_never_receive_leads_from_any_channel(self):
+    def test_kamelya_blocked_laleh_reinstated_for_referrals(self):
         self._check_in(*range(6))
-        blocked={self.operators[3].id,self.operators[5].id}
+        blocked={self.operators[3].id}
         assigned=[]
         for index in range(60, 84):
             lead=self._new_lead(index)
@@ -284,7 +285,7 @@ class UnifiedLeadRoutingTests(TestCase):
         self.assertEqual(operator_policy_notice(khorshidi),'')
         self.assertEqual(operator_policy_notice(self.operators[0]),'')
 
-    def test_website_lead_waits_if_only_kamelya_and_laleh_are_present(self):
+    def test_website_lead_routes_to_laleh_if_only_kamelya_and_laleh_present(self):
         self._keep_only(3,5)
         self._check_in(3,5)
         lead=ReferralLead.objects.create(
@@ -297,11 +298,11 @@ class UnifiedLeadRoutingTests(TestCase):
             notes='[channel:website]',
         )
 
-        self.assertIsNone(assign_external_lead(lead,'website'))
+        self.assertEqual(assign_external_lead(lead,'website').id,self.operators[5].id)
         lead.refresh_from_db()
-        self.assertIsNone(lead.assigned_to_id)
+        self.assertEqual(lead.assigned_to_id,self.operators[5].id)
 
-    def test_pending_website_leads_also_skip_kamelya_and_laleh(self):
+    def test_pending_website_leads_skip_kamelya_and_allow_laleh(self):
         self._check_in(*range(6))
         leads=[]
         for index in range(40,46):
@@ -317,7 +318,7 @@ class UnifiedLeadRoutingTests(TestCase):
 
         released=release_pending_leads_if_ready(force=True)
         self.assertEqual(released,6)
-        blocked={self.operators[3].id,self.operators[5].id}
+        blocked={self.operators[3].id}
         for lead in leads:
             lead.refresh_from_db()
             self.assertIsNotNone(lead.assigned_to_id)

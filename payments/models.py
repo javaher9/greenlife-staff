@@ -2,6 +2,30 @@ from django.conf import settings
 from django.db import models
 from django.core.validators import MinValueValidator
 
+
+EXPENSE_CATEGORIES = [
+    ('unspecified', 'دسته‌بندی‌نشده'),
+    ('legal', 'وکیل و امور حقوقی'),
+    ('salaries', 'حقوق و مزایا'),
+    ('commission', 'پورسانت'),
+    ('advertising', 'تبلیغات و بازاریابی'),
+    ('equipment', 'تجهیزات و دستگاه‌ها'),
+    ('supplies', 'خرید و ملزومات'),
+    ('rent', 'اجاره و ساختمان'),
+    ('utilities', 'آب، برق و خدمات'),
+    ('transport', 'حمل‌ونقل و سفر'),
+    ('projects', 'پروژه و سرمایه‌گذاری'),
+    ('personal', 'هزینه شخصی'),
+    ('other', 'سایر'),
+]
+COST_OWNERS = [
+    ('unspecified', 'تعیین‌نشده'),
+    ('company', 'شرکت'),
+    ('personal', 'شخصی مدیر'),
+    ('project', 'پروژه'),
+    ('other', 'سایر / خارج از شرکت'),
+]
+
 class PaymentRequest(models.Model):
     TYPES = [('payment','درخواست پرداخت'),('petty_cash','درخواست تنخواه')]
     STATES = [('pending','در انتظار تأیید'),('approved','در صف پرداخت'),('rejected','رد شده'),('needs_info','نیازمند توضیح بیشتر'),('paid','پرداخت شده')]
@@ -9,6 +33,10 @@ class PaymentRequest(models.Model):
     kind = models.CharField(max_length=16,choices=TYPES)
     amount_toman = models.PositiveBigIntegerField(validators=[MinValueValidator(1)])
     description = models.TextField()
+    category = models.CharField(max_length=24, choices=EXPENSE_CATEGORIES, default='unspecified', db_index=True)
+    cost_owner = models.CharField(max_length=20, choices=COST_OWNERS, default='unspecified', db_index=True)
+    cost_center = models.CharField(max_length=160, blank=True)
+    due_date = models.DateField(null=True, blank=True)
     recipient_name = models.CharField(max_length=160,blank=True)
     recipient_iban = models.CharField(max_length=34,blank=True)
     recipient_card = models.CharField(max_length=24,blank=True)
@@ -33,6 +61,9 @@ class PettyCashExpense(models.Model):
     holder = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT,related_name='petty_expenses')
     amount_toman = models.PositiveBigIntegerField(validators=[MinValueValidator(1)])
     description = models.TextField()
+    category = models.CharField(max_length=24, choices=EXPENSE_CATEGORIES, default='unspecified', db_index=True)
+    cost_owner = models.CharField(max_length=20, choices=COST_OWNERS, default='unspecified', db_index=True)
+    cost_center = models.CharField(max_length=160, blank=True)
     receipt = models.FileField(upload_to='petty_expenses/%Y/%m/')
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT,related_name='recorded_petty_expenses')
     created_at = models.DateTimeField(auto_now_add=True)
