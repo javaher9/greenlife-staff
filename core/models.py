@@ -2166,4 +2166,4 @@ from .customer_portal_models import (CustomerPortalMember, CustomerPortalOTP, Cu
 from .diet_tracking_models import DietMealCheckin, DietFoodChange
 
 # Registered separately to keep the main model module stable.
-from .sales_target_models import SalesTargetBand
+from .sales_target_models import SalesTargetBand, TargetPercentPolicy
