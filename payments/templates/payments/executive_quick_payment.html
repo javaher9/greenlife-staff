@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>دستور پرداخت مدیریت</title><style>
+body{margin:0;background:#0d1429;color:#fff;font:16px/1.8 Tahoma,sans-serif}
+main{max-width:680px;margin:30px auto;padding:20px;background:#233150;border:1px solid #687ba5;border-radius:20px}
+input,select,textarea{box-sizing:border-box;display:block;width:100%;background:#101a31;color:#fff;border:1px solid #8593b3;border-radius:10px;padding:12px;font:inherit}
+label{display:block;margin-top:12px}button{background:#6c4dbb;color:white;border:0;border-radius:12px;padding:13px;width:100%;font:inherit;font-weight:bold}
+a{color:#cbbcff}.errorlist{color:#ffbec6}
+</style></head><body><main><a href="{% url 'payments_expenses' %}">بازگشت به هزینه‌ها</a><h1>دستور پرداخت مدیریت</h1><p>بدون تأیید مجدد؛ مستقیم به مسئول منتخب ارجاع می‌شود.</p><form method="post">{% csrf_token %}{{ form.as_p }}<button>تأیید و ارجاع پرداخت</button></form></main></body></html>
