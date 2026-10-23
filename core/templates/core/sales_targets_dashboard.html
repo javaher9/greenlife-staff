@@ -1,0 +1,224 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<style>
+/* Executive-only targets UI. Scoped to this page to prevent changes elsewhere. */
+body.gl-page-sales_targets_dashboard{background:#061325!important;color:#ebf6ff!important;color-scheme:dark}
+body.gl-page-sales_targets_dashboard .app-main{background:radial-gradient(circle at 50% 0,#12304b,#071326 60%)!important;color:#eaf7ff!important}
+.st{direction:rtl;max-width:1750px;margin:0 auto;padding:4px 6px 32px;color:#eaf7ff}
+.st *{box-sizing:border-box}
+.st a{text-decoration:none;color:inherit}
+.st-head,.st-between{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.st-head{flex-wrap:wrap;margin:4px 0 15px}
+.st h1{font-size:clamp(24px,2.3vw,34px);font-weight:900;margin:0;color:#effcff}
+.st-sub{font-size:11px;color:#98b8cf}
+.st-controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.st-button{display:inline-flex;align-items:center;justify-content:center;border:1px solid #3b607b;background:#122a43;color:#ecfaff!important;border-radius:10px;padding:9px 13px;min-height:37px;font-size:12px;font-weight:800}
+.st-button.primary{background:linear-gradient(110deg,#087c9f,#06d7a5);border-color:#14baac;color:#06192a!important}
+.st-panel{background:linear-gradient(135deg,#152d49,#0c1a31);border:1px solid #294a67;border-radius:18px;padding:14px;margin-bottom:12px;min-width:0;box-shadow:0 5px 17px #02081745}
+.st-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;flex-wrap:wrap}
+.st-title h2{font-size:16px;font-weight:900;margin:0;color:#f0fcff}
+.st-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.st-kpi{padding:12px;border-radius:12px;background:#122941;border:1px solid #30516d;display:flex;flex-direction:column;gap:8px;min-height:100px}
+.st-kpi:nth-child(1){background:linear-gradient(120deg,#063e49,#14314a)}
+.st-kpi:nth-child(4){background:linear-gradient(120deg,#2f253e,#14314a)}
+.st-kpi:nth-child(5){background:linear-gradient(120deg,#3c2138,#14314a)}
+.st-kpi small{font-size:11px;color:#b7d4e4}
+.st-kpi strong{font-size:clamp(21px,2.3vw,34px);font-family:Arial,Tahoma,sans-serif;direction:ltr;display:inline-block;text-align:right;font-weight:900}
+.st-main-row{display:grid;grid-template-columns:1.3fr .7fr;gap:12px}
+.st-graph{height:160px;display:flex;align-items:end;gap:2px;border-bottom:1px solid #3e6880;padding:7px 0 0;background:repeating-linear-gradient(to top,transparent,transparent 38px,#56708b30 39px,#56708b30 40px)}
+.st-graph span{flex:1;min-width:3px;max-width:50px;background:linear-gradient(#2df4c2,#0d7097);border-radius:5px 5px 0 0}
+.st-four{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.st-branch{border-radius:15px;padding:12px;background:linear-gradient(145deg,#163652,#0c2039);border:1px solid #37607c;min-width:0}
+.st-branch h3{font-size:17px;margin:0;font-weight:900}
+.st-mini{font-size:10px;color:#a5c4da}
+.st-metric{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.st-meter{display:block;max-width:224px;width:100%;margin:auto;min-height:120px}
+.st-branch .st-meter{max-width:190px}
+.st-meter svg{width:100%;display:block;overflow:visible}
+.st-stats{display:flex;align-items:center;justify-content:space-evenly;gap:8px;margin-top:2px;padding:9px 0;border-top:1px solid #34536c;text-align:center}
+.st-stats small{font-size:10px;color:#91b6ce;display:block;margin-bottom:4px}
+.st-stats strong{font:800 15px Arial,Tahoma,sans-serif;direction:ltr;display:inline-block}
+.st-levels{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap;font-size:10px;color:#b4cada}
+.st-levels b{width:8px;height:8px;display:inline-block;border-radius:50%;margin-left:4px}
+.st-avatars{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-top:10px}
+.st-avatar{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:2px solid #3aabc1;background:#163f58;border-radius:50%;overflow:hidden;font-size:11px;color:#e5f8ff;font-weight:900;flex-shrink:0}
+.st-avatar img{width:100%;height:100%;object-fit:cover}
+.st-avatar-label{font-size:10px;color:#c9dfed;white-space:nowrap}
+.st-persons{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px}
+.st-person{padding:9px 7px;border:1px solid #2c506f;border-radius:12px;background:#102944;text-align:center;min-width:0}
+.st-person .st-avatar{width:36px;height:36px}
+.st-person-header{display:flex;align-items:center;gap:7px;justify-content:center}
+.st-person-name{font-size:11px;font-weight:900;color:#e8f7ff;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.st-person .st-meter{max-width:140px;min-height:95px}
+.st-status{font-size:10px;font-weight:800}.st-status.heavy{color:#ff5a80}.st-status.light{color:#ffcf4b}.st-status.neutral{color:#24e5b7}.st-status.one{color:#41beff}.st-status.two{color:#bb76ff}.st-status.unset{color:#adc4d8}
+.st-foot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.st-list-row{display:flex;justify-content:space-between;gap:8px;align-items:center;border-bottom:1px solid #2b4c65;padding:8px 0;font-size:12px}
+.st-list-row:last-child{border-bottom:0}
+.st-rank{color:#32e0b1}
+.st-alert{color:#ffc3d1}
+.st-hint{color:#98b8ca;font-size:11px;line-height:1.9}
+.st-settings{margin-top:14px}
+.st-edit-row{display:grid;grid-template-columns:minmax(145px,1.4fr) repeat(4,minmax(70px,1fr)) 72px;gap:7px;align-items:center;background:#112c45;border:1px solid #2a4f69;padding:9px;border-radius:10px;margin-bottom:8px}
+.st-edit-row input{width:100%;padding:8px 5px;direction:ltr;text-align:center;border:1px solid #416783;border-radius:8px;background:#061a30;color:#eafcff;min-width:0}
+.st-edit-row label{font-size:11px;font-weight:800}
+.st-edit-caption{display:grid;grid-template-columns:minmax(145px,1.4fr) repeat(4,minmax(70px,1fr)) 72px;gap:7px;color:#a6bbce;font-size:10px;padding:8px}
+.st-empty{padding:13px;text-align:center;color:#a5bbce;font-size:12px;border:1px dashed #375b75;border-radius:10px}
+.st-number{font-family:Arial,Tahoma,sans-serif;direction:ltr;unicode-bidi:isolate;display:inline-block}
+@media(max-width:1350px){.st-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.st-four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:820px){.st-main-row,.st-foot{grid-template-columns:1fr}.st-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.st-persons{grid-template-columns:repeat(3,minmax(0,1fr))}.st-edit-caption{display:none}}
+@media(max-width:550px){.st-four{grid-template-columns:1fr}.st-persons{grid-template-columns:repeat(2,minmax(0,1fr))}.st-panel{padding:10px}.st-edit-row{display:flex;flex-wrap:wrap}.st-edit-row label{width:100%}.st-edit-row input{width:calc(50% - 4px)}.st-kpi{min-height:89px}.st-head{align-items:stretch}}
+</style>
+<div class="st">
+ <div class="st-head">
+  <div><h1>◎ تارگت‌های فروش</h1><div class="st-sub">داشبورد مدیریتی اهداف ماه {{ period_label }} — فقط فروش، بدون KPI عملکردی</div></div>
+  <div class="st-controls">
+   <a href="?year={{ prev_year }}&month={{ prev_month }}" class="st-button" aria-label="ماه قبل">❮</a>
+   <span class="st-button">{{ period_label }}</span>
+   <a href="?year={{ next_year }}&month={{ next_month }}" class="st-button" aria-label="ماه بعد">❯</a>
+   <a href="?year={{ period_year }}&month={{ period_month }}&edit=1#st-settings" class="st-button primary">⚙ تنظیم تارگت‌ها</a>
+  </div>
+ </div>
+ <section class="st-panel">
+  <div class="st-title"><h2>خلاصه مالی و تحقق فروش</h2><span class="st-sub">میلیون تومان</span></div>
+  <div class="st-kpis">
+    <div class="st-kpi"><small>فروش تحقق‌یافته مراکز</small><strong>{{ total|floatformat:0 }}</strong><small>رسیدهای تأییدشده</small></div>
+    <div class="st-kpi"><small>تارگت ۱ مراکز</small><strong>{% if overall.plan %}{{ overall.plan.target_one|floatformat:0 }}{% else %}—{% endif %}</strong><small>هدف اول ماه</small></div>
+    <div class="st-kpi"><small>درصد تحقق تا تارگت ۲</small><strong>{% if overall.percentage != None %}{{ overall.percentage }}%{% else %}—{% endif %}</strong><small>{{ overall.status }}</small></div>
+    <div class="st-kpi"><small>پیش‌بینی پایان ماه</small><strong>{% if projection != None %}{{ projection|floatformat:0 }}{% else %}—{% endif %}</strong><small>بر مبنای روند جاری</small></div>
+    <div class="st-kpi"><small>فاصله تا تارگت ۱</small><strong>{% if shortfall != None %}{{ shortfall|floatformat:0 }}{% else %}—{% endif %}</strong><small>مبلغ باقیمانده</small></div>
+  </div>
+ </section>
+ <div class="st-main-row">
+   <section class="st-panel">
+    <div class="st-title"><h2>روند تجمعی فروش ماه</h2><span class="st-sub">هر ستون یک روز شمسی</span></div>
+    <div class="st-graph">{% for day in trend %}<span style="height:{{ day.height|floatformat:2 }}%" title="روز {{ day.day }}: {{ day.amount|floatformat:0 }} میلیون تومان"></span>{% endfor %}</div>
+   </section>
+   <section class="st-panel">
+    <div class="st-title"><h2>تحقق کل مراکز</h2><span class="st-sub">{{ overall.status }}</span></div>
+    <div class="st-meter" data-value="{{ overall.value }}" data-heavy="{{ overall.plan.heavy_limit|default_if_none:'' }}" data-floor="{{ overall.plan.sales_floor|default_if_none:'' }}" data-one="{{ overall.plan.target_one|default_if_none:'' }}" data-two="{{ overall.plan.target_two|default_if_none:'' }}"></div>
+    <div class="st-levels"><span><b style="background:#ff466b"></b>سنگین</span><span><b style="background:#ffd14e"></b>سبک</span><span><b style="background:#20dcb0"></b>نرمال</span><span><b style="background:#26b7ff"></b>۱</span><span><b style="background:#a966f5"></b>۲</span></div>
+   </section>
+ </div>
+ <section class="st-panel">
+  <div class="st-title">
+   <h2>⌖ تارگت فروش مراکز و کال‌سنتر</h2>
+   <span class="st-sub">اولویت نمایش: مراکز فروش، سپس مجموع بیعانه‌های کال‌سنتر</span>
+  </div>
+  <div class="st-four">
+  {% for b in branches %}
+   <article class="st-branch">
+    <div class="st-between"><h3>{{ b.label }}</h3><span class="st-status {{ b.level }}">{{ b.status }}</span></div>
+    <div class="st-meter" data-value="{{ b.value }}" data-heavy="{{ b.plan.heavy_limit|default_if_none:'' }}" data-floor="{{ b.plan.sales_floor|default_if_none:'' }}" data-one="{{ b.plan.target_one|default_if_none:'' }}" data-two="{{ b.plan.target_two|default_if_none:'' }}"></div>
+    <div class="st-stats">
+     <div><small>فروش</small><strong>{{ b.value|floatformat:0 }}</strong></div>
+     <div><small>تارگت ۱</small><strong>{% if b.plan %}{{ b.plan.target_one|floatformat:0 }}{% else %}—{% endif %}</strong></div>
+     <div><small>تارگت ۲</small><strong>{% if b.plan %}{{ b.plan.target_two|floatformat:0 }}{% else %}—{% endif %}</strong></div>
+    </div>
+    {% if b.people %}
+     <div class="st-avatars">
+      {% for p in b.people|slice:":8" %}
+       <span title="{{ p.label }} · {{ p.value|floatformat:0 }}" class="st-avatar">{% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.label }}" loading="lazy">{% else %}{{ p.label|first }}{% endif %}</span>
+      {% endfor %}
+      <span class="st-avatar-label">مشاورین {{ b.label }}</span>
+     </div>
+    {% elif b.key == "call_center" %}
+     <div class="st-hint">بیعانه‌های مشخص‌شده در دریافت‌های تأییدشده: {{ deposit_count }} رسید</div>
+    {% endif %}
+   </article>
+  {% endfor %}
+  </div>
+ </section>
+ <section class="st-panel">
+   <div class="st-title"><h2>◉ مشاورین فروش شعب</h2><span class="st-sub">{{ consultant_cards|length }} نفر — عکس پرسنلی کنار تارگت</span></div>
+   <div class="st-persons">
+    {% for p in consultant_cards %}
+     <article class="st-person">
+      <div class="st-person-header"><span class="st-avatar">{% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.label }}" loading="lazy">{% else %}{{ p.label|first }}{% endif %}</span><div><div class="st-person-name" title="{{ p.label }}">{{ p.label }}</div><small class="st-sub">{{ p.group }}</small></div></div>
+      <div class="st-meter" data-value="{{ p.value }}" data-heavy="{{ p.plan.heavy_limit|default_if_none:'' }}" data-floor="{{ p.plan.sales_floor|default_if_none:'' }}" data-one="{{ p.plan.target_one|default_if_none:'' }}" data-two="{{ p.plan.target_two|default_if_none:'' }}"></div>
+      <div class="st-status {{ p.level }}">{{ p.status }}</div>
+     </article>
+    {% empty %}<div class="st-empty">مشاور فعال در شعب موجود نیست.</div>{% endfor %}
+   </div>
+ </section>
+ <section class="st-panel">
+   <div class="st-title"><h2>◉ فروش گل‌های کال‌سنتر</h2><span class="st-sub">{{ flower_cards|length }} نفر — فروش تأییدشده منتسب به هر گل</span></div>
+   <div class="st-persons">
+   {% for p in flower_cards %}
+    <article class="st-person">
+     <div class="st-person-header"><span class="st-avatar">{% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.label }}" loading="lazy">{% else %}{{ p.label|first }}{% endif %}</span><div class="st-person-name" title="{{ p.label }}">{{ p.label }}</div></div>
+     <div class="st-meter" data-value="{{ p.value }}" data-heavy="{{ p.plan.heavy_limit|default_if_none:'' }}" data-floor="{{ p.plan.sales_floor|default_if_none:'' }}" data-one="{{ p.plan.target_one|default_if_none:'' }}" data-two="{{ p.plan.target_two|default_if_none:'' }}"></div>
+     <div class="st-status {{ p.level }}">{{ p.status }}</div>
+    </article>
+   {% empty %}<div class="st-empty">گل فعال در کال‌سنتر موجود نیست.</div>{% endfor %}
+   </div>
+ </section>
+ <div class="st-foot">
+  <section class="st-panel"><div class="st-title"><h2>🏆 برترین فروشندگان</h2></div>
+   {% for p in ranking %}<div class="st-list-row"><span>{{ forloop.counter }}. {{ p.label }}</span><b class="st-rank">{{ p.percentage }}%</b></div>{% empty %}<div class="st-empty">پس از تعیین تارگت‌ها، رتبه‌بندی فعال می‌شود.</div>{% endfor %}
+  </section>
+  <section class="st-panel"><div class="st-title"><h2>⚠ هشدارهای فروش</h2></div>
+   {% for p in warnings|slice:":7" %}<div class="st-list-row"><span>{{ p.label }}</span><b class="st-status {{ p.level }}">{{ p.status }}</b></div>{% empty %}<div class="st-empty">هشدار فروشی در اهداف تنظیم‌شده ثبت نشده است.</div>{% endfor %}
+  </section>
+  <section class="st-panel"><div class="st-title"><h2>راهنمای مدیریتی</h2></div>
+   <div class="st-list-row"><span>تارگت‌های تنظیم‌شده</span><b>{{ configured_count }}</b></div>
+   <div class="st-list-row"><span>پرسنل فعال فروش</span><b>{{ person_count }}</b></div>
+   <div class="st-list-row"><span>کارت مجزای کال‌سنتر</span><b>بیعانه‌ها</b></div>
+   <div class="st-hint">جریمه و پاداش در این صفحه فقط وضعیت هستند؛ هیچ کسر حقوق یا پرداخت جایزه به‌طور خودکار انجام نمی‌شود.</div>
+  </section>
+ </div>
+ <section id="st-settings" class="st-panel st-settings">
+   <div class="st-title"><h2>⚙ تنظیم کف فروش، تارگت ۱ و تارگت ۲</h2><a class="st-button" href="?year={{ period_year }}&month={{ period_month }}{% if not edit_mode %}&edit=1{% endif %}#st-settings">{% if edit_mode %}بستن تنظیمات{% else %}نمایش تنظیمات{% endif %}</a></div>
+   {% if edit_mode %}
+    <div class="st-hint">اعداد برحسب میلیون تومان هستند. «پایان سنگین» مرز ورود به جریمه سبک است؛ «کف فروش» پایان جریمه سبک و آغاز نرمال است؛ سپس تارگت ۱ و تارگت ۲.</div>
+    <div class="st-edit-caption"><span>فرد / مرکز</span><span>پایان سنگین</span><span>کف فروش</span><span>تارگت ۱</span><span>تارگت ۲</span><span>ذخیره</span></div>
+    {% for r in edit_rows %}
+    <form class="st-edit-row" method="post" action="{% url 'sales_targets_dashboard' %}">
+      {% csrf_token %}
+      <input type="hidden" name="year" value="{{ period_year }}"><input type="hidden" name="month" value="{{ period_month }}"><input type="hidden" name="subject" value="{{ r.key }}">
+      <label>{{ r.label }} <small class="st-sub">({{ r.scope }})</small></label>
+      <input type="number" inputmode="decimal" name="heavy_limit" aria-label="پایان جریمه سنگین {{ r.label }}" placeholder="سنگین" min="0.01" step="0.01" required value="{{ r.band.heavy_limit|default_if_none:'' }}">
+      <input type="number" inputmode="decimal" name="sales_floor" aria-label="کف فروش {{ r.label }}" placeholder="کف" min="0.01" step="0.01" required value="{{ r.band.sales_floor|default_if_none:'' }}">
+      <input type="number" inputmode="decimal" name="target_one" aria-label="تارگت ۱ {{ r.label }}" placeholder="هدف ۱" min="0.01" step="0.01" required value="{{ r.band.target_one|default_if_none:'' }}">
+      <input type="number" inputmode="decimal" name="target_two" aria-label="تارگت ۲ {{ r.label }}" placeholder="هدف ۲" min="0.01" step="0.01" required value="{{ r.band.target_two|default_if_none:'' }}">
+      <button type="submit" class="st-button primary">ذخیره</button>
+    </form>
+    {% endfor %}
+   {% endif %}
+ </section>
+ <div class="st-hint">مبنای نمایش: دریافت‌های دستی با وضعیت تأییدشده؛ برای جلوگیری از دوباره‌شماری، مبالغ ورودی CRM به این نسخه اضافه نشده‌اند. تارگت‌های خالی، «—» نمایش داده می‌شوند. آمار صرفاً گزارش فروش است و با KPI عملکرد پرسنل ترکیب نشده است.</div>
+</div>
+<script>
+(function(){
+ const ns="http://www.w3.org/2000/svg";
+ function elem(tag,attrs,text){const x=document.createElementNS(ns,tag);Object.entries(attrs||{}).forEach(([k,v])=>x.setAttribute(k,v));if(text!=null)x.textContent=text;return x;}
+ function polar(deg,r){return [110+r*Math.cos(deg*Math.PI/180),111+r*Math.sin(deg*Math.PI/180)];}
+ function arc(a,b,r){const [x1,y1]=polar(a,r),[x2,y2]=polar(b,r);return "M "+x1.toFixed(2)+" "+y1.toFixed(2)+" A "+r+" "+r+" 0 "+(b-a>180?1:0)+" 1 "+x2.toFixed(2)+" "+y2.toFixed(2);}
+ function fmt(n){return Number(n).toLocaleString("en-US",{maximumFractionDigits:1});}
+ document.querySelectorAll(".st .st-meter").forEach(box=>{
+   let value=Math.max(0,Number(box.dataset.value)||0);
+   let t=[Number(box.dataset.heavy),Number(box.dataset.floor),Number(box.dataset.one),Number(box.dataset.two)];
+   const ready=t.every(Number.isFinite)&&t[0]>0&&t[0]<t[1]&&t[1]<t[2]&&t[2]<t[3];
+   const upper=ready?Math.max(t[3]*1.24,value):Math.max(value,1);
+   const svg=elem("svg",{viewBox:"0 0 220 184",role:"img","aria-label":ready?("فروش "+fmt(value)+" از تارگت "+fmt(t[3])):"تارگت تنظیم نشده"});
+   if(ready){
+     const edges=[0,t[0],t[1],t[2],t[3],upper],colors=["#fb466c","#fcca3b","#20deac","#29bfff","#a36dff"];
+     for(let i=0;i<5;i++){
+       const a=155+230*edges[i]/upper, b=155+230*edges[i+1]/upper;
+       if(b-a>1.5)svg.appendChild(elem("path",{d:arc(a+Math.min(2,(b-a)/5),b-Math.min(2,(b-a)/5),78),fill:"none",stroke:colors[i],"stroke-width":"18","stroke-linecap":"round"}));
+     }
+     const angle=155+230*Math.min(value/upper,1);
+     const [px,py]=polar(angle,84),[mx,my]=polar(angle,44);
+     svg.appendChild(elem("path",{d:"M "+mx+" "+my+" L "+px+" "+py,stroke:"#f2fbff","stroke-width":"6","stroke-linecap":"round",fill:"none"}));
+     svg.appendChild(elem("circle",{cx:px,cy:py,r:"7",fill:"#10324b",stroke:"#eefaff","stroke-width":"4"}));
+     const percentage=Math.round(100*value/t[3]);
+     svg.appendChild(elem("text",{x:110,y:113,fill:"#e9faff","font-size":"23","text-anchor":"middle","font-family":"Arial,Tahoma","font-weight":"bold"},percentage+"%"));
+   }else{
+     svg.appendChild(elem("path",{d:arc(155,385,78),fill:"none",stroke:"#3e5974","stroke-width":"18","stroke-dasharray":"13 4"}));
+     svg.appendChild(elem("text",{x:110,y:112,fill:"#b4cbd8","font-size":"18","text-anchor":"middle","font-family":"Tahoma"},"—"));
+   }
+   svg.appendChild(elem("text",{x:110,y:143,fill:"#dfedfc","font-size":"12","text-anchor":"middle","font-family":"Arial,Tahoma"},fmt(value)+" M"));
+   box.appendChild(svg);
+ });
+})();
+</script>
+{% endblock %}
