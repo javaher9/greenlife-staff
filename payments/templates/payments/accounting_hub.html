@@ -1,0 +1,28 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<style>
+.accounting-hub{max-width:1250px;margin:auto;padding:16px;color:#f3f7f4}
+.accounting-hub .ah-head{background:linear-gradient(125deg,#14382e,#192f43);border:1px solid #3b6956;border-radius:20px;padding:23px}
+.accounting-hub h1{font-size:27px;margin:0 0 8px}.accounting-hub h2{font-size:18px;margin:0 0 14px}.accounting-hub p{color:#d3e3d9!important;margin:0}
+.accounting-hub .ah-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:17px}
+.accounting-hub .ah-card{background:#192a33;border:1px solid #405861;border-radius:17px;padding:20px}
+.accounting-hub .ah-card a{display:inline-block;margin-top:15px;color:#b9f4d5!important;font-weight:800}
+.accounting-hub .ah-note{margin-top:17px;border:1px solid #5b6573;border-radius:13px;padding:15px;background:#24303d;color:#dae4e8}
+.accounting-hub .ah-status{display:inline-block;padding:5px 10px;margin-top:10px;border-radius:999px;border:1px solid #81909c;color:#e2e8ed;font-size:12px}
+@media(max-width:650px){.accounting-hub .ah-grid{grid-template-columns:1fr}.accounting-hub{padding:5px}.accounting-hub h1{font-size:23px}}
+</style>
+<section class="accounting-hub" dir="rtl">
+ <header class="ah-head">
+  <h1>حسابداری</h1>
+  <p>مرکز جمع‌بندی مالی مدیران گرین‌لایف؛ مرتبط با درآمد و هزینه‌های موجود در اپ اصلی.</p>
+  <span class="ah-status">مرحله طراحی و اتصال حسابداری</span>
+ </header>
+ <div class="ah-grid">
+  <article class="ah-card"><h2>درآمدها</h2><p>دسترسی به گزارش درآمد، ثبت‌ها و وضعیت مالی فروش.</p><a href="{% url 'finance_dashboard' %}">مشاهده درآمد ←</a></article>
+  <article class="ah-card"><h2>هزینه‌ها</h2><p>هزینه‌های شرکتی، شخصی و پروژه‌ای، به همراه وضعیت پرداخت.</p><a href="{% url 'payments_expenses' %}">مشاهده هزینه‌ها ←</a></article>
+  <article class="ah-card"><h2>تأیید و پرداخت</h2><p>درخواست‌ها و پرداخت‌های نیازمند بررسی مدیریت.</p><a href="{% url 'payments_admin' %}">صف پرداخت‌ها ←</a></article>
+  <article class="ah-card"><h2>گزارش‌های حسابداری</h2><p>تراز آزمایشی، سود و زیان، ترازنامه و پیش‌نویس اظهارنامه پس از تکمیل ثبت اسناد و تطبیق داده‌ها فعال خواهند شد.</p><span class="ah-status">هنوز آماده استفاده نیست</span></article>
+ </div>
+ <p class="ah-note">این صفحه گزارش مدیریتی است و جایگزین اپ مستقل حسابدار نیست. ارسال داده به سامانه مؤدیان، سند حسابداری و اظهارنامه مالیاتی در این مرحله پیاده‌سازی نشده‌اند. اطلاعات شخصی مدیر نیز نباید به حسابدار منتقل شوند.</p>
+</section>
+{% endblock %}
