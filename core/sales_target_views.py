@@ -91,7 +91,7 @@ def sales_targets_dashboard(request):
     period = f"{jy}-{jm:02d}"
 
     # Inactive branches (including closed Urmia) are intentionally omitted.
-    branches = list(Branch.objects.filter(is_active=True).exclude(name__icontains="ارومیه").order_by("name"))
+    branches = list(Branch.objects.filter(is_active=True).filter(Q(country__code="IR") | Q(country__isnull=True)).exclude(name__icontains="ارومیه").exclude(name__icontains="افسریه").order_by("name"))
     profiles = list(EmployeeProfile.objects.filter(
         is_active=True, user__is_active=True, role__in=("call_center", "consultant"),
     ).select_related("user", "branch").order_by("user__first_name", "user__last_name", "user__username"))
