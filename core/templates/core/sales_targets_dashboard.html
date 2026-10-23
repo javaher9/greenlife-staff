@@ -111,6 +111,21 @@ body.gl-page-sales_targets_dashboard .app-main .st .st-rank{color:#4be6b6!import
 
 .st-settings .st-edit-row .st-stats{border:0;margin:0;padding:4px!important}.st-settings .st-edit-row .st-stats strong{color:#e5f7ff!important}.st-settings .st-edit-row label{color:#f0fbff}
 @media(max-width:700px){.st-settings .st-edit-row{display:flex!important;flex-wrap:wrap!important}.st-settings .st-edit-row>label{width:100%}.st-settings .st-edit-row>input,.st-settings .st-edit-row>.st-stats{flex:1 1 75px;min-width:70px}.st-settings .st-edit-row>button{flex:0 1 auto}}
+
+.st .st-percent-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0 15px}
+.st .st-slider-field{padding:14px;border:1px solid #426780;background:#102e46;border-radius:12px;display:grid;gap:10px;color:#f2fbff}
+.st .st-slider-field label{display:flex;justify-content:space-between;gap:8px;font-weight:800;font-size:12px;color:#f2fbff!important}
+.st .st-slider-field label b{color:#58eac8!important}
+.st .st-slider-field input[type=range]{width:100%;accent-color:#2ce4bc;cursor:pointer}
+.st .st-slider-field input[type=number]{width:100%;background:#071928;color:#f9fcff;border:1px solid #6587a2;border-radius:8px;padding:9px;direction:ltr;font:700 16px Arial}
+.st .st-bulk-row{grid-template-columns:minmax(170px,1.5fr) repeat(4,minmax(95px,1fr))!important;color:#f4fbff!important}
+.st .st-bulk-row label,.st .st-bulk-row .st-auto{color:#f1faff!important;font-weight:750;font-size:13px}
+.st .st-bulk-row .st-auto{text-align:center}
+.st .st-bulk-row .st-floor-input{background:#061928!important;border-color:#4b91ac!important;color:#f9fcff!important;font:800 16px Arial}
+.st .st-save-bar{position:sticky;bottom:6px;display:flex;gap:16px;align-items:center;justify-content:space-between;border-radius:13px;padding:14px;background:#0e3447;border:1px solid #25bda6;box-shadow:0 6px 25px #0008;color:#eafffa;z-index:5;margin-top:16px}
+.st .st-save-bar .st-button{min-width:190px}
+.st .st-bulk-guide{color:#d0e6f2!important;font-size:12px;padding:10px 0}
+@media(max-width:850px){.st .st-percent-grid{grid-template-columns:1fr}.st .st-bulk-row{display:grid!important;grid-template-columns:repeat(4,1fr)!important}.st .st-bulk-row>label{grid-column:1/-1}.st .st-save-bar{flex-wrap:wrap}}
 </style>
 <div class="st">
  <div class="st-head">
@@ -205,32 +220,37 @@ body.gl-page-sales_targets_dashboard .app-main .st .st-rank{color:#4be6b6!import
   </section>
  </div>
  <section id="st-settings" class="st-panel st-settings">
- <div class="st-title"><h2>⚙ تنظیم کف فروش و درصدهای مشترک</h2><a class="st-button" href="?year={{ period_year }}&month={{ period_month }}{% if not edit_mode %}&edit=1{% endif %}#st-settings">{% if edit_mode %}بستن تنظیمات{% else %}نمایش تنظیمات{% endif %}</a></div>
+ <div class="st-title"><h2>⚙ تنظیم تارگت‌های ماه {{ period_label }}</h2><a class="st-button" href="?year={{ period_year }}&month={{ period_month }}{% if not edit_mode %}&edit=1{% endif %}#st-settings">{% if edit_mode %}بستن تنظیمات{% else %}نمایش تنظیمات{% endif %}</a></div>
  {% if edit_mode %}
- <div class="st-hint">فقط کف فروش هر نفر/مرکز را تعیین کن. این سه درصد برای همه اعمال می‌شوند و تغییرشان مرز رنگ‌های تمام عقربه‌ها را تغییر می‌دهد. تنظیمات برای ماه {{ period_label }} است؛ روی حقوق یا پاداش پرداختی تغییری انجام نمی‌دهد.</div>
- <form method="post" action="{% url 'sales_targets_dashboard' %}" class="st-edit-row" style="grid-template-columns:1.4fr repeat(3,minmax(90px,1fr)) 85px">
+ <form id="st-bulk-form" method="post" action="{% url 'sales_targets_dashboard' %}">
  {% csrf_token %}
- <input type="hidden" name="year" value="{{ period_year }}"><input type="hidden" name="month" value="{{ period_month }}"><input type="hidden" name="action" value="set_policy">
- <label>درصدهای عمومی <small class="st-sub">(کف فروش = 100%)</small></label>
- <input type="number" name="heavy_percent" step="0.01" min="0.01" max="99.99" required value="{{ target_policy.heavy_percent|stringformat:'f' }}" aria-label="پایان جریمه سنگین درصد" title="پایان قرمز، ورود به زرد">
- <input type="number" name="target_one_percent" step="0.01" min="100.01" max="999" required value="{{ target_policy.target_one_percent|stringformat:'f' }}" aria-label="شروع تارگت یک درصد" title="شروع آبی">
- <input type="number" name="target_two_percent" step="0.01" min="100.02" max="1000" required value="{{ target_policy.target_two_percent|stringformat:'f' }}" aria-label="شروع تارگت دو درصد" title="شروع بنفش">
- <button class="st-button primary" type="submit">ثبت درصدها</button>
- </form>
- <div class="st-hint">قرمز: 0 تا پایان سنگین · زرد: تا کف فروش 100٪ · سبز: تا تارگت ۱ · آبی: تا تارگت ۲ · بنفش: بعد از تارگت ۲</div>
- <div class="st-edit-caption" style="grid-template-columns:1.6fr 1fr 1fr 1fr 1fr 85px"><span>مرکز / فروشنده</span><span>پایان سنگین (خودکار)</span><span>کف فروش (ورودی)</span><span>تارگت ۱ (خودکار)</span><span>تارگت ۲ (خودکار)</span><span>ذخیره</span></div>
+ <input type="hidden" name="year" value="{{ period_year }}"><input type="hidden" name="month" value="{{ period_month }}"><input type="hidden" name="action" value="save_all">
+ <div class="st-hint">فقط کف فروش را وارد کن؛ باقی مقادیر خودکار محاسبه می‌شوند. با جابه‌جایی اسلایدرها، نسبت رنگ‌های عقربه نیز پس از ذخیره تغییر می‌کند.</div>
+ <div class="st-percent-grid">
+  <div class="st-slider-field"><label for="st-heavy">پایان جریمه سنگین <b id="st-heavy-value"></b></label>
+  <input id="st-heavy" type="range" min="5" max="95" step="1" value="{{ target_policy.heavy_percent|stringformat:'.0f' }}" data-bind="heavy_percent">
+  <input name="heavy_percent" type="number" min="0.01" max="99.99" step="0.01" value="{{ target_policy.heavy_percent|stringformat:'.2f' }}" required aria-label="درصد جریمه سنگین"></div>
+  <div class="st-slider-field"><label for="st-one">شروع تارگت ۱ <b id="st-one-value"></b></label>
+  <input id="st-one" type="range" min="101" max="300" step="1" value="{{ target_policy.target_one_percent|stringformat:'.0f' }}" data-bind="target_one_percent">
+  <input name="target_one_percent" type="number" min="100.01" max="999" step="0.01" value="{{ target_policy.target_one_percent|stringformat:'.2f' }}" required aria-label="درصد تارگت اول"></div>
+  <div class="st-slider-field"><label for="st-two">شروع تارگت ۲ <b id="st-two-value"></b></label>
+  <input id="st-two" type="range" min="102" max="500" step="1" value="{{ target_policy.target_two_percent|stringformat:'.0f' }}" data-bind="target_two_percent">
+  <input name="target_two_percent" type="number" min="100.02" max="1000" step="0.01" value="{{ target_policy.target_two_percent|stringformat:'.2f' }}" required aria-label="درصد تارگت دوم"></div>
+ </div>
+ <div class="st-bulk-guide">قرمز: جریمه سنگین · زرد: جریمه سبک · سبز: نرمال · آبی: تارگت ۱ · بنفش: تارگت ۲</div>
+ <div class="st-edit-caption st-bulk-row"><span>مرکز / فروشنده</span><span>پایان قرمز</span><span>کف فروش (ورودی)</span><span>تارگت ۱</span><span>تارگت ۲</span></div>
  {% for r in edit_rows %}
- <form class="st-edit-row" method="post" action="{% url 'sales_targets_dashboard' %}" style="grid-template-columns:1.6fr 1fr 1fr 1fr 1fr 85px">
- {% csrf_token %}
- <input type="hidden" name="year" value="{{ period_year }}"><input type="hidden" name="month" value="{{ period_month }}"><input type="hidden" name="action" value="set_floor"><input type="hidden" name="subject" value="{{ r.key }}">
- <label>{{ r.label }} <small class="st-sub">({{ r.scope }})</small></label>
- <span class="st-stats"><strong>{% if r.band %}{{ r.band.heavy_limit|floatformat:0 }}{% else %}—{% endif %}</strong></span>
- <input type="number" name="sales_floor" placeholder="کف فروش" step="0.01" min="0.01" required value="{{ r.band.sales_floor|default_if_none:'' }}" aria-label="کف فروش {{ r.label }}">
- <span class="st-stats"><strong>{% if r.band %}{{ r.band.target_one|floatformat:0 }}{% else %}—{% endif %}</strong></span>
- <span class="st-stats"><strong>{% if r.band %}{{ r.band.target_two|floatformat:0 }}{% else %}—{% endif %}</strong></span>
- <button class="st-button primary" type="submit">ذخیره</button>
- </form>
+ <div class="st-edit-row st-bulk-row">
+  <input type="hidden" name="subject" value="{{ r.key }}">
+  <label>{{ r.label }} <small class="st-sub">({{ r.scope }})</small></label>
+  <output class="st-auto" data-boundary="heavy">{% if r.band %}{{ r.band.heavy_limit|floatformat:0 }}{% else %}—{% endif %}</output>
+  <input type="number" class="st-floor-input" name="floor_{{ r.key }}" placeholder="کف فروش" step="0.01" min="0.01" value="{% if r.band %}{{ r.band.sales_floor|stringformat:'.2f' }}{% endif %}" aria-label="کف فروش {{ r.label }}">
+  <output class="st-auto" data-boundary="one">{% if r.band %}{{ r.band.target_one|floatformat:0 }}{% else %}—{% endif %}</output>
+  <output class="st-auto" data-boundary="two">{% if r.band %}{{ r.band.target_two|floatformat:0 }}{% else %}—{% endif %}</output>
+ </div>
  {% endfor %}
+ <div class="st-save-bar"><span id="st-save-status">تغییرات را تنظیم کن و سپس همه را با هم ذخیره کن.</span><button class="st-button primary" type="submit">✓ ذخیره همه تغییرات</button></div>
+ </form>
  {% endif %}
  </section>
  <div class="st-hint">مبنای نمایش: دریافت‌های دستی با وضعیت تأییدشده؛ برای جلوگیری از دوباره‌شماری، مبالغ ورودی CRM به این نسخه اضافه نشده‌اند. تارگت‌های خالی، «—» نمایش داده می‌شوند. آمار صرفاً گزارش فروش است و با KPI عملکرد پرسنل ترکیب نشده است.</div>
@@ -273,4 +293,32 @@ body.gl-page-sales_targets_dashboard .app-main .st .st-rank{color:#4be6b6!import
  });
 })();
 </script>
-{% endblock %}
+<script>
+(function(){
+ const form=document.getElementById("st-bulk-form");if(!form)return;
+ const fields=["heavy_percent","target_one_percent","target_two_percent"];
+ const fmt=n=>Number(n.toFixed(2)).toLocaleString("en-US",{maximumFractionDigits:2});
+ function update(){
+  const [heavy,one,two]=fields.map(k=>Number(form.elements[k].value));
+  const good=heavy>0&&heavy<100&&one>100&&two>one;
+  const status=document.getElementById("st-save-status");
+  status.textContent=good?"پیش‌نمایش محاسبه‌شده؛ برای ثبت نهایی «ذخیره همه تغییرات» را بزن.":"درصدها باید به ترتیب صحیح باشند: سنگین کمتر از ۱۰۰، تارگت ۱ بیشتر از ۱۰۰ و تارگت ۲ بزرگ‌تر از تارگت ۱.";
+  for(const [k,value] of fields.map((k,i)=>[k,[heavy,one,two][i]])){const span=document.getElementById(k==="heavy_percent"?"st-heavy-value":k==="target_one_percent"?"st-one-value":"st-two-value");if(span)span.textContent=fmt(value)+"%";}
+  for(const row of form.querySelectorAll(".st-edit-row")){
+   const floor=Number(row.querySelector(".st-floor-input").value);
+   for(const [k,multiplier] of [["heavy",heavy],["one",one],["two",two]]){
+    row.querySelector('[data-boundary="'+k+'"]').textContent=good&&floor>0?fmt(floor*multiplier/100):"—";
+   }
+  }
+ }
+ for(const slider of form.querySelectorAll('input[type="range"]')){
+  const number=form.elements[slider.dataset.bind];
+  slider.addEventListener("input",()=>{number.value=slider.value;update();});
+  number.addEventListener("input",()=>{if(Number(number.value)>=Number(slider.min)&&Number(number.value)<=Number(slider.max))slider.value=number.value;update();});
+ }
+ for(const floor of form.querySelectorAll(".st-floor-input"))floor.addEventListener("input",update);
+ form.addEventListener("submit",e=>{const h=Number(form.elements.heavy_percent.value),o=Number(form.elements.target_one_percent.value),t=Number(form.elements.target_two_percent.value);if(!(h>0&&h<100&&o>100&&t>o)){e.preventDefault();update();}});
+ update();
+})();
+</script>
+{% endblock %{% endblock %}
