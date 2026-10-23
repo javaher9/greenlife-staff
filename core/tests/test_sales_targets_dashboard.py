@@ -116,6 +116,20 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertContains(page,'ذخیره همه تغییرات')
         self.assertEqual(SalesTargetBand.objects.get(key=f"{self.year}-{self.month:02d}:overall").sales_floor,Decimal("7000"))
 
+    def test_consultant_settings_are_not_duplicated_and_personal_uses_branch_floor(self):
+        page = self.client.get(self.url+"?edit=1")
+        keys = [x["key"] for x in page.context["edit_rows"]]
+        self.assertNotIn(f"consultant:{self.consultant.pk}", keys)
+        self.assertIn(f"branch:{self.branch.pk}", keys)
+        self.client.post(self.url, {
+            "year": self.year, "month": self.month, "action": "set_floor",
+            "subject": f"branch:{self.branch.pk}", "sales_floor": "4500",
+        })
+        self.client.force_login(self.consultant)
+        own = self.client.get(reverse("my_sales_targets"))
+        self.assertEqual(own.status_code, 200)
+        self.assertEqual(own.context["plan"].sales_floor, Decimal("4500"))
+
     def test_bulk_call_center_and_flower_goals_are_saved(self):
         response = self.client.get(self.url+"?edit=1")
         subjects = [row["key"] for row in response.context["edit_rows"]]
