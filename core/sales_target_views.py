@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Sum, Q
-from django.db.models.functions import TruncDate
+from django.db.models.functions import TruncDate, Coalesce
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
@@ -155,7 +155,12 @@ def sales_targets_dashboard(request):
         occurred_at__gte=start, occurred_at__lt=end,
     )
     by_branch = {r["branch_id"]: _money(r["amount"]) for r in income.values("branch_id").annotate(amount=Sum("amount"))}
-    by_consultant = {r["recorded_by_id"]: _money(r["amount"]) for r in income.values("recorded_by_id").annotate(amount=Sum("amount"))}
+    # The consultant owns the finalized consultation; a receptionist can record
+    # the money on their behalf. Use the plan consultant first, then recorder.
+    by_consultant = {r["seller_id"]: _money(r["amount"]) for r in
+        income.annotate(seller_id=Coalesce(
+            "appointment__consultation_plan__consultant_id", "recorded_by_id",
+        )).values("seller_id").annotate(amount=Sum("amount"))}
     by_flower = {r["call_center_owner_id"]: _money(r["amount"]) for r in income.filter(
         call_center_owner__isnull=False
     ).values("call_center_owner_id").annotate(amount=Sum("amount"))}
