@@ -153,7 +153,7 @@ def sales_targets_dashboard(request):
                         scope=scope, branch=branch, employee=employee,
                         updated_by=user, **values,
                     )
-                    obj.full_clean()
+                    obj.full_clean(exclude=["key"])  # update of an existing unique monthly subject is valid
                     records.append((obj.key, dict(
                         period_year=jy, period_month=jm, scope=scope, branch=branch,
                         employee=employee, updated_by=user, **values,
