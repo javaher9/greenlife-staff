@@ -35,11 +35,11 @@
       <div class="value">{% if plan %}{{ plan.sales_floor|floatformat:2 }}{% else %}—{% endif %}</div><small>کف فروش ماه (میلیون تومان)</small>
       <p>فروش ثبت‌شده ماه: <strong>{{ monthly|floatformat:2 }}</strong> میلیون تومان</p>
       <div class="ring" aria-label="پنج سطح فروش؛ قرمز، زرد، سبز، آبی و بنفش">
-       <span style="background:#f25370;flex:{{ policy.heavy_percent|stringformat:'f' }}"></span>
-       <span style="background:#f2be39;flex:1"></span>
-       <span style="background:#1fdbac;flex:1"></span>
-       <span style="background:#27aefd;flex:1"></span>
-       <span style="background:#a76dfa;flex:1"></span>
+       <span style="background:#f25370;flex:{{ segments.0|stringformat:'f' }}"></span>
+       <span style="background:#f2be39;flex:{{ segments.1|stringformat:'f' }}"></span>
+       <span style="background:#1fdbac;flex:{{ segments.2|stringformat:'f' }}"></span>
+       <span style="background:#27aefd;flex:{{ segments.3|stringformat:'f' }}"></span>
+       <span style="background:#a76dfa;flex:{{ segments.4|stringformat:'f' }}"></span>
       </div>
       <p>{% if plan %}درصد تحقق تا تارگت ۲: <strong>{{ row.percentage }}%</strong>{% else %}تارگت‌های ماه هنوز تنظیم نشده‌اند.{% endif %}</p>
    </section>
