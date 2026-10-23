@@ -277,3 +277,38 @@ def petty_receipt(request, pk):
     response['Cache-Control'] = 'no-store, private'
     response['X-Content-Type-Options'] = 'nosniff'
     return response
+
+@login_required
+def accounting_overview(request):
+    """Executive management accounting hub. No tax/accountant-only disclosure."""
+    if not executive(request.user):
+        raise PermissionDenied()
+    from django.db.models import Count
+    from django.db.models.functions import TruncMonth
+    today = timezone.localdate()
+    current_month = today.replace(day=1)
+    outgoing = PaymentRequest.objects.filter(state='paid',kind='payment')
+    petty_actual = PettyCashExpense.objects.all()
+    monthly_outgoing = outgoing.filter(paid_at__date__gte=current_month)
+    monthly_petty = petty_actual.filter(created_at__date__gte=current_month)
+    def total(qs):
+        return qs.aggregate(amount=Sum('amount_toman'))['amount'] or 0
+    personal = total(monthly_outgoing.filter(cost_owner='personal')) + total(monthly_petty.filter(cost_owner='personal'))
+    company = total(monthly_outgoing.filter(cost_owner='company')) + total(monthly_petty.filter(cost_owner='company'))
+    project = total(monthly_outgoing.filter(cost_owner='project')) + total(monthly_petty.filter(cost_owner='project'))
+    uncategorized = total(monthly_outgoing.filter(cost_owner='unspecified')) + total(monthly_petty.filter(cost_owner='unspecified'))
+    categories = list(monthly_outgoing.values('category').annotate(amount=Sum('amount_toman')).order_by('-amount')[:8])
+    owners = dict(PaymentRequest._meta.get_field('cost_owner').choices)
+    category_names = dict(PaymentRequest._meta.get_field('category').choices)
+    for item in categories:
+        item['name'] = category_names.get(item['category'], item['category'])
+    return render(request, 'payments/accounting_overview.html', {
+        'current_month':current_month,
+        'company_total':company,'personal_total':personal,'project_total':project,
+        'unclassified_total':uncategorized,
+        'pending_total':total(PaymentRequest.objects.filter(state='pending')),
+        'payment_count':PaymentRequest.objects.filter(state='paid').count(),
+        'petty_total':total(monthly_petty),
+        'monthly_total':total(monthly_outgoing) + total(monthly_petty),
+        'categories':categories,
+    })
