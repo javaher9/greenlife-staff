@@ -340,12 +340,19 @@ def my_sales_targets(request):
     daily = _money(mine.filter(occurred_at__gte=today_start, occurred_at__lt=tomorrow_start).aggregate(value=Sum("amount"))["value"])
     days = (end_date - start_date).days
     daily_floor = (plan.sales_floor / Decimal(days)).quantize(Decimal("0.01")) if plan else None
+    upper_percent = policy.target_two_percent * Decimal("1.20")
+    segments = [
+        policy.heavy_percent, Decimal("100") - policy.heavy_percent,
+        policy.target_one_percent - Decimal("100"),
+        policy.target_two_percent - policy.target_one_percent,
+        upper_percent - policy.target_two_percent,
+    ]
     # Daily target is deliberately indicative and never a penalty decision.
     row = _gauge_row(key, display_name, monthly, {key:plan} if plan else {})
     return render(request, "core/my_sales_targets.html", {
         "row":row, "period_label":f"{jy}/{jm:02d}", "monthly":monthly,
         "daily":daily, "daily_floor":daily_floor, "days":days,
         "is_flower":profile.role=="call_center", "plan":plan,
-        "policy":policy, "avatar":profile.avatar.url if profile.avatar else "",
+        "policy":policy, "segments":segments, "avatar":profile.avatar.url if profile.avatar else "",
         "source_note":"فقط دریافت‌های دستی تأییدشده منتسب به حساب شما در این گزارش نمایش داده شده‌اند.",
     })
