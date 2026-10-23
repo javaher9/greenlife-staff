@@ -25,9 +25,9 @@ class SalesTargetsDashboardTests(TestCase):
         )
         cls.branch = Branch.objects.create(name="نیاوران تست", is_active=True)
         cls.closed = Branch.objects.create(name="ارومیه", is_active=False)
-        EmployeeProfile.objects.create(user=cls.staff, role="employee", branch=cls.branch)
-        EmployeeProfile.objects.create(user=cls.consultant, role="consultant", branch=cls.branch)
-        EmployeeProfile.objects.create(user=cls.flower, role="call_center", branch=cls.branch)
+        EmployeeProfile.objects.update_or_create(user=cls.staff, defaults={"role":"employee","branch":cls.branch})
+        EmployeeProfile.objects.update_or_create(user=cls.consultant, defaults={"role":"consultant","branch":cls.branch})
+        EmployeeProfile.objects.update_or_create(user=cls.flower, defaults={"role":"call_center","branch":cls.branch})
 
     def setUp(self):
         self.client.force_login(self.admin)
