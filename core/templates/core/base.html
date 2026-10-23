@@ -574,7 +574,18 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     <a href="{% url 'staff_security' %}" class="{% if request.resolver_match.url_name == 'staff_security' %}is-active{% endif %}"><span class="nav-ico">⚿</span><span>{% gl_t 'shell.change_password' %}</span></a>
     {% endif %}
     {% if user.profile.role == 'employee' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>{% gl_t 'shell.reports' %}</span></a>{% endif %}
-    {% if user.profile.role == 'admin' or user.profile.role == 'manager' %}<a href="/finance/"><span class="nav-ico">▧</span><span>{% gl_t 'common.finance' %}</span></a>{% endif %}
+    {% if user.profile.role == 'admin' or user.profile.role == 'manager' or executive_access %}
+    <details class="gl-settings-menu gl-finance-menu" {% if request.path|slice:':9' == '/finance/' or request.path|slice:':10' == '/payments/' or request.path|slice:':12' == '/accounting/' %}open{% endif %}>
+      <summary><span class="nav-ico">▧</span><span>مالی</span><span class="settings-caret">⌄</span></summary>
+      <div class="gl-settings-submenu">
+        <a href="{% url 'finance_dashboard' %}" class="{% if request.path == '/finance/' %}is-active{% endif %}"><span class="nav-ico">↗</span><span>مالی ـ درآمد</span></a>
+        {% if executive_access %}
+        <a href="{% url 'payments_expenses' %}" class="{% if request.path == '/payments/expenses/' %}is-active{% endif %}"><span class="nav-ico">↘</span><span>مالی ـ هزینه‌ها</span></a>
+        <a href="{% url 'accounting_overview' %}" class="{% if request.path == '/accounting/' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>حسابداری ـ جامع</span></a>
+        {% endif %}
+      </div>
+    </details>
+    {% endif %}
     {% if user.profile.role == 'admin' %}<a href="{% url 'payroll_dashboard' %}" class="{% if request.resolver_match.url_name == 'payroll_dashboard' %}is-active{% endif %}"><span class="nav-ico">¤</span><span>{% gl_t 'shell.payroll' %}</span></a>{% endif %}
     {% if user.profile.role != 'admin' %}<a href="/notifications/" class="notifications-nav employee-bottom-nav {% if request.path|slice:':15' == '/notifications/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 6.2-3 7-3 9h18c0-2-3-2.8-3-9Zm-8 11h4a2 2 0 0 1-4 0Z"/></svg></span><span>{% gl_t 'common.notifications' %}</span></a>{% endif %}
 
