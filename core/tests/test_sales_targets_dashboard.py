@@ -116,6 +116,18 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertContains(page,'ذخیره همه تغییرات')
         self.assertEqual(SalesTargetBand.objects.get(key=f"{self.year}-{self.month:02d}:overall").sales_floor,Decimal("7000"))
 
+    def test_center_and_flower_photos_but_no_aggregate_callcenter_photo(self):
+        page = self.client.get(self.url)
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'b.key != "call_center" and b.people', count=0)
+        template = page.templates[-1]
+        from pathlib import Path
+        from django.conf import settings
+        source = (Path(settings.BASE_DIR) / "core/templates/core/sales_targets_dashboard.html").read_text()
+        self.assertIn('{% if b.key != "call_center" and b.people %}', source)
+        self.assertIn('<div class="st-person-header"><div class="st-person-name"', source)
+        self.assertIn('alt="{{ p.label }}"', source)
+
     def test_consultant_settings_are_not_duplicated_and_personal_uses_branch_floor(self):
         page = self.client.get(self.url+"?edit=1")
         keys = [x["key"] for x in page.context["edit_rows"]]

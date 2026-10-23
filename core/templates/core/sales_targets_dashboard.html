@@ -126,6 +126,17 @@ body.gl-page-sales_targets_dashboard .app-main .st .st-rank{color:#4be6b6!import
 .st .st-save-bar .st-button{min-width:190px}
 .st .st-bulk-guide{color:#d0e6f2!important;font-size:12px;padding:10px 0}
 @media(max-width:850px){.st .st-percent-grid{grid-template-columns:1fr}.st .st-bulk-row{display:grid!important;grid-template-columns:repeat(4,1fr)!important}.st .st-bulk-row>label{grid-column:1/-1}.st .st-save-bar{flex-wrap:wrap}}
+
+/* Consistent top headers: centered names with small real staff portraits. */
+.st-branch .st-between{position:relative;min-height:42px;justify-content:center;padding:0 55px}
+.st-branch .st-between h3{color:#f3fbff!important;text-align:center;line-height:1.5}
+.st-branch .st-between .st-status{position:absolute;inset-inline-end:0;top:8px;font-size:10px}
+.st-branch .st-between .st-header-photo{position:absolute;inset-inline-start:0;top:0}
+.st-header-photo .st-avatar{width:34px;height:34px}
+.st-person .st-person-header{position:relative;justify-content:center;min-height:40px;padding:0 42px}
+.st-person .st-person-name{text-align:center;white-space:normal;line-height:1.5}
+.st-person .st-person-header .st-avatar{position:absolute;inset-inline-start:0;top:0}
+
 </style>
 <div class="st">
  <div class="st-head">
@@ -172,7 +183,7 @@ body.gl-page-sales_targets_dashboard .app-main .st .st-rank{color:#4be6b6!import
   <div class="st-four">
   {% for b in branches %}
    <article class="st-branch">
-    <div class="st-between"><h3>{{ b.label }}</h3><span class="st-status {{ b.level }}">{{ b.status }}</span></div>
+    <div class="st-between"><h3>{{ b.label }}</h3><span class="st-status {{ b.level }}">{{ b.status }}</span>{% if b.key != "call_center" and b.people %}<span class="st-header-photo">{% with p=b.people.0 %}<span class="st-avatar" title="{{ p.label }}">{% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.label }}" loading="lazy">{% else %}{{ p.label|first }}{% endif %}</span>{% endwith %}</span>{% endif %}</div>
     <div class="st-meter" data-value="{{ b.value }}" data-heavy="{{ b.plan.heavy_limit|default_if_none:'' }}" data-floor="{{ b.plan.sales_floor|default_if_none:'' }}" data-one="{{ b.plan.target_one|default_if_none:'' }}" data-two="{{ b.plan.target_two|default_if_none:'' }}"></div>
     <div class="st-stats">
      <div><small>فروش</small><strong>{{ b.value|floatformat:0 }}</strong></div>
@@ -198,7 +209,7 @@ body.gl-page-sales_targets_dashboard .app-main .st .st-rank{color:#4be6b6!import
    <div class="st-persons">
    {% for p in flower_cards %}
     <article class="st-person">
-     <div class="st-person-header"><span class="st-avatar">{% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.label }}" loading="lazy">{% else %}{{ p.label|first }}{% endif %}</span><div class="st-person-name" title="{{ p.label }}">{{ p.label }}</div></div>
+     <div class="st-person-header"><div class="st-person-name" title="{{ p.label }}">{{ p.label }}</div><span class="st-avatar">{% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.label }}" loading="lazy">{% else %}{{ p.label|first }}{% endif %}</span></div>
      <div class="st-meter" data-value="{{ p.value }}" data-heavy="{{ p.plan.heavy_limit|default_if_none:'' }}" data-floor="{{ p.plan.sales_floor|default_if_none:'' }}" data-one="{{ p.plan.target_one|default_if_none:'' }}" data-two="{{ p.plan.target_two|default_if_none:'' }}"></div>
      <div class="st-status {{ p.level }}">{{ p.status }}</div>
     </article>
