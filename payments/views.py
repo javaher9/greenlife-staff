@@ -29,6 +29,21 @@ class RequestForm(forms.ModelForm):
         fields=['kind','amount_toman','description','category','cost_owner','cost_center','due_date','recipient_name','recipient_iban','recipient_card']
         labels={'kind':'نوع درخواست','amount_toman':'مبلغ (تومان)','description':'شرح و علت پرداخت','category':'موضوع هزینه','cost_owner':'متعلق به','cost_center':'مرکز هزینه / پروژه (اختیاری)','due_date':'مهلت پرداخت','recipient_name':'نام گیرنده','recipient_iban':'شماره شبا','recipient_card':'شماره کارت'}
         widgets={'description':forms.Textarea(attrs={'rows':2}),'due_date':forms.DateInput(attrs={'type':'date'})}
+    def __init__(self, *args, **kwargs):
+        # The staff UI submits amounts in millions; existing API/test clients can still use toman.
+        if args and args[0] is not None and 'req-amount_million' in args[0]:
+            data=args[0].copy()
+            try:
+                from decimal import Decimal
+                million=Decimal(str(data.get('req-amount_million','')).replace(',','').strip())
+                if not million.is_finite() or million <= 0 or million * 1000000 != int(million * 1000000):
+                    raise ValueError()
+                data['req-amount_toman']=str(int(million*1000000))
+            except (ValueError,ArithmeticError):
+                data['req-amount_toman']=''
+            args=(data,)+args[1:]
+        super().__init__(*args,**kwargs)
+
     def clean_description(self):
         value=self.cleaned_data['description'].strip()
         if len(value)<10:
@@ -46,6 +61,21 @@ class ExpenseForm(forms.ModelForm):
         fields=['amount_toman','description','category','cost_owner','cost_center','receipt']
         labels={'amount_toman':'مبلغ خرج‌شده (تومان)','description':'شرح هزینه','category':'موضوع هزینه','cost_owner':'متعلق به','cost_center':'مرکز هزینه / پروژه (اختیاری)','receipt':'فاکتور یا رسید'}
         widgets={'description':forms.Textarea(attrs={'rows':2})}
+    def __init__(self, *args, **kwargs):
+        # The staff UI submits amounts in millions; existing API/test clients can still use toman.
+        if args and args[0] is not None and 'exp-amount_million' in args[0]:
+            data=args[0].copy()
+            try:
+                from decimal import Decimal
+                million=Decimal(str(data.get('exp-amount_million','')).replace(',','').strip())
+                if not million.is_finite() or million <= 0 or million * 1000000 != int(million * 1000000):
+                    raise ValueError()
+                data['exp-amount_toman']=str(int(million*1000000))
+            except (ValueError,ArithmeticError):
+                data['exp-amount_toman']=''
+            args=(data,)+args[1:]
+        super().__init__(*args,**kwargs)
+
     def clean_receipt(self):
         f=self.cleaned_data['receipt']
         if f.size > 10*1024*1024 or f.content_type not in ('image/jpeg','image/png','image/webp','application/pdf'):
@@ -180,7 +210,7 @@ def workspace(request):
     expenses=PettyCashExpense.objects.filter(holder=request.user)
     received=PaymentRequest.objects.filter(kind='petty_cash',beneficiary=request.user,state='paid').aggregate(x=Sum('amount_toman'))['x'] or 0
     spent=expenses.aggregate(x=Sum('amount_toman'))['x'] or 0
-    return render(request,'payments/workspace.html',dict(form=form,expense_form=expense_form,queue=queue,completed=completed,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,is_executive=executive(request.user), can_submit=staff(request.user) or executive(request.user)))
+    return render(request,'payments/workspace.html',dict(form=form,expense_form=expense_form,queue=queue,completed=completed,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,has_petty_cash=(received>0 or spent>0),is_executive=executive(request.user), can_submit=staff(request.user) or executive(request.user)))
 
 @login_required
 @require_POST
