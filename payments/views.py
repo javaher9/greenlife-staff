@@ -225,6 +225,17 @@ def workspace(request):
 
 @login_required
 @require_POST
+def payment_approved_assignees():
+    """Only explicitly designated Green Life payment operators, never the whole workforce."""
+    names=('حسینی','نادری','مرادی','معماری','صادقی','hosseini','hossaini','naderi','moradi','memari','sadeghi')
+    match=Q(pk__in=[])
+    for name in names:
+        match |= Q(last_name__icontains=name) | Q(first_name__icontains=name)
+    return User.objects.filter(is_active=True,profile__is_active=True).filter(match).exclude(profile__role__in=('referrer','referral_supervisor','scan_station')).select_related('profile','profile__branch').distinct().order_by('last_name','first_name')
+
+
+@login_required
+@require_POST
 def review(request,pk):
     if not executive(request.user):
         raise PermissionDenied()
@@ -234,10 +245,13 @@ def review(request,pk):
             return HttpResponseBadRequest('این درخواست قبلاً بررسی شده است.')
         action=request.POST.get('action')
         if action=='reject':
+            note=request.POST.get('reason','').strip()
+            if len(note)<5:
+                return HttpResponseBadRequest('علت رد درخواست الزامی است (حداقل ۵ حرف).')
             p.state='rejected'
         elif action=='needs_info':
             note=request.POST.get('question','').strip()
-            assignee=get_object_or_404(User,pk=request.POST.get('clarification_assignee') or p.requester_id,is_active=True)
+            assignee=p.requester
             if len(note)<5:
                 return HttpResponseBadRequest('سؤال توضیحی الزامی است.')
             if not staff(assignee) and not executive(assignee):
@@ -246,7 +260,7 @@ def review(request,pk):
             p.clarification_assignee=assignee
             PaymentClarification.objects.create(payment=p,author=request.user,message=note)
         elif action=='approve':
-            assignee=get_object_or_404(User,pk=request.POST.get('assigned_to'),is_active=True)
+            assignee=get_object_or_404(payment_approved_assignees(),pk=request.POST.get('assigned_to'))
             channel=request.POST.get('channel')
             if channel not in ('consultant', 'staff'):
                 return HttpResponseBadRequest('مسیر پرداخت نامعتبر است.')
@@ -262,7 +276,7 @@ def review(request,pk):
         else:
             return HttpResponseBadRequest('عملیات نامعتبر است.')
         p.save()
-        PaymentEvent.objects.create(payment=p,actor=request.user,action=action)
+        PaymentEvent.objects.create(payment=p,actor=request.user,action=action,notes=(note[:250] if action in ('reject','needs_info') else ''))
     return redirect('payments_admin')
 
 @login_required
@@ -298,7 +312,7 @@ def admin_dashboard(request):
     requests=PaymentRequest.objects.select_related('requester','assigned_to','approved_by','beneficiary','branch')
     consultants=User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant')
     accountants=User.objects.none()
-    operators=User.objects.filter(is_active=True, profile__is_active=True).order_by('first_name','last_name')
+    operators=payment_approved_assignees()
     paid=requests.filter(state='paid')
     return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants,'operators':operators,'staff_members':User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant').order_by('first_name','last_name'),'permission_profiles': __import__('core.models',fromlist=['EmployeeProfile']).EmployeeProfile.objects.filter(is_active=True,user__is_active=True).exclude(role__in=['referrer','scan_station']).filter(~Q(role='employee') | Q(branch__isnull=False) | (Q(employee_code__isnull=False) & ~Q(employee_code='')) | ~Q(job_title='')).select_related('user','branch').order_by('user__first_name','user__last_name'),})
 
