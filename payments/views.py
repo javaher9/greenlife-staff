@@ -18,7 +18,7 @@ def executive(user):
 
 def staff(user):
     p=getattr(user,'profile',None)
-    return bool(user.is_active and p and p.is_active and p.role == 'consultant')
+    return bool(user.is_active and p and p.is_active and (p.role == 'consultant' or p.can_request_payments))
 
 def assigned_operator(user):
     return bool(user.is_authenticated and user.is_active and PaymentRequest.objects.filter(assigned_to=user, state__in=('approved','paid')).exists())
@@ -96,6 +96,23 @@ class ExecutiveQuickPaymentForm(forms.Form):
         if not cleaned.get('recipient_iban') and not cleaned.get('recipient_card'):
             raise ValidationError('شماره کارت یا شبا را وارد کنید.')
         return cleaned
+
+@login_required
+def request_permission_settings(request):
+    if not executive(request.user):
+        raise PermissionDenied()
+    from core.models import EmployeeProfile
+    if request.method=='POST':
+        try:
+            profile_id=int(request.POST.get('profile_id',''))
+        except (ValueError,TypeError):
+            return HttpResponseBadRequest('شناسه نامعتبر است')
+        profile=get_object_or_404(EmployeeProfile,pk=profile_id,is_active=True,user__is_active=True)
+        profile.can_request_payments=request.POST.get('enabled')=='1'
+        profile.save(update_fields=['can_request_payments'])
+        return redirect('payments_request_permissions')
+    profiles=EmployeeProfile.objects.filter(is_active=True,user__is_active=True).select_related('user','branch').order_by('user__first_name','user__last_name')
+    return render(request,'payments/request_permissions.html',{'profiles':profiles})
 
 @login_required
 def executive_quick_payment(request):
