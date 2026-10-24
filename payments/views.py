@@ -217,7 +217,7 @@ def workspace(request):
     clarifications=PaymentRequest.objects.filter(state='needs_info',clarification_assignee=request.user).prefetch_related('clarifications')
     queue=PaymentRequest.objects.filter(state='approved',assigned_to=request.user).select_related('requester').order_by(models.Case(models.When(priority='urgent',then=0),models.When(priority='today',then=1),models.When(priority='normal',then=2),default=3,output_field=models.IntegerField()),'due_date','-created_at')
     completed=PaymentRequest.objects.filter(state='paid',assigned_to=request.user).select_related('requester').order_by('-paid_at')[:40]
-    mine=PaymentRequest.objects.filter(requester=request.user)[:30]
+    mine=PaymentRequest.objects.filter(requester=request.user).prefetch_related('events')[:30]
     expenses=PettyCashExpense.objects.filter(holder=request.user)
     received=PaymentRequest.objects.filter(kind='petty_cash',beneficiary=request.user,state='paid').aggregate(x=Sum('amount_toman'))['x'] or 0
     spent=expenses.aggregate(x=Sum('amount_toman'))['x'] or 0
