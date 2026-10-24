@@ -117,8 +117,8 @@ def request_permission_settings(request):
         profile=get_object_or_404(workforce,pk=profile_id)
         profile.can_request_payments=request.POST.get('enabled')=='1'
         profile.save(update_fields=['can_request_payments'])
-        return redirect('payments_expenses')
-    return redirect('payments_expenses')
+        return redirect('payments_admin')
+    return redirect('payments_admin')
 
 @login_required
 @login_required
@@ -258,7 +258,7 @@ def admin_dashboard(request):
     accountants=User.objects.none()
     operators=User.objects.filter(is_active=True, profile__is_active=True).order_by('first_name','last_name')
     paid=requests.filter(state='paid')
-    return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants,'operators':operators,'staff_members':User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant').order_by('first_name','last_name')})
+    return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants,'operators':operators,'staff_members':User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant').order_by('first_name','last_name'),'permission_profiles':__import__('core.models',fromlist=['EmployeeProfile']).EmployeeProfile.objects.filter(is_active=True,user__is_active=True).exclude(role__in=['referrer','referral_supervisor','scan_station']).filter(Q(role__in=['consultant','internal_manager','manager','quality_control','doctor','receptionist','call_center']) | (Q(role='employee',employee_code__isnull=False) & ~Q(employee_code=''))).select_related('user','branch').order_by('user__first_name','user__last_name'),})
 
 @login_required
 @require_POST
@@ -359,8 +359,7 @@ def expenses_dashboard(request):
         'categories': EXPENSE_CATEGORIES, 'owners': COST_OWNERS,
         'selected_category': selected_category, 'selected_owner': selected_owner,
         'selected_status': selected_status, 'query': query,
-        'from_date': request.GET.get('from',''), 'to_date': request.GET.get('to',''),
-        'permission_profiles': __import__('core.models',fromlist=['EmployeeProfile']).EmployeeProfile.objects.filter(is_active=True,user__is_active=True).exclude(role__in=['referrer','referral_supervisor','scan_station']).filter(Q(role__in=['consultant','internal_manager','manager','quality_control','doctor','receptionist','call_center']) | (Q(role='employee',employee_code__isnull=False) & ~Q(employee_code=''))).select_related('user','branch').order_by('user__first_name','user__last_name'),
+        'from_date': request.GET.get('from',''), 'to_date': request.GET.get('to','')
     })
 
 
