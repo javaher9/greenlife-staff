@@ -166,6 +166,8 @@ class PaymentWorkflowTests(TestCase):
         self.assertEqual(result.status_code,403)
 
     def test_named_staff_can_only_complete_own_assigned_payment(self):
+        self.other.last_name='مرادی'
+        self.other.save(update_fields=['last_name'])
         self.other.profile.role='quality_control'
         self.other.profile.save(update_fields=['role'])
         p=self._request()
