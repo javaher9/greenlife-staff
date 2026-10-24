@@ -185,8 +185,17 @@ def executive_quick_payment(request):
 def workspace(request):
     if not staff(request.user) and not executive(request.user) and not assigned_operator(request.user):
         raise PermissionDenied()
-    form=RequestForm(request.POST or None,prefix='req')
-    expense_form=ExpenseForm(request.POST or None,request.FILES or None,prefix='exp')
+    operation=request.POST.get('operation') if request.method=='POST' else None
+    form=RequestForm(request.POST if operation=='request' else None,prefix='req')
+    expense_form=ExpenseForm(request.POST if operation=='expense' else None,request.FILES if operation=='expense' else None,prefix='exp')
+    previous_recipient=(PaymentRequest.objects.filter(requester=request.user)
+        .exclude(recipient_name='').order_by('-created_at').first())
+    if previous_recipient and not form.is_bound:
+        form.initial.update({
+            'recipient_name':previous_recipient.recipient_name,
+            'recipient_card':previous_recipient.recipient_card,
+            'recipient_iban':previous_recipient.recipient_iban,
+        })
     if request.method=='POST' and not (staff(request.user) or executive(request.user)):
         raise PermissionDenied()
     if request.method=='POST':
@@ -212,7 +221,7 @@ def workspace(request):
     expenses=PettyCashExpense.objects.filter(holder=request.user)
     received=PaymentRequest.objects.filter(kind='petty_cash',beneficiary=request.user,state='paid').aggregate(x=Sum('amount_toman'))['x'] or 0
     spent=expenses.aggregate(x=Sum('amount_toman'))['x'] or 0
-    return render(request,'payments/workspace.html',dict(form=form,expense_form=expense_form,queue=queue,completed=completed,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,has_petty_cash=(received>0 or spent>0),is_executive=executive(request.user), can_submit=staff(request.user) or executive(request.user)))
+    return render(request,'payments/workspace.html',dict(submit_operation=operation,posted_million=request.POST.get('req-amount_million','') if operation=='request' else '',posted_exp_million=request.POST.get('exp-amount_million','') if operation=='expense' else '',form=form,expense_form=expense_form,queue=queue,completed=completed,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,has_petty_cash=(received>0 or spent>0),is_executive=executive(request.user), can_submit=staff(request.user) or executive(request.user)))
 
 @login_required
 @require_POST
