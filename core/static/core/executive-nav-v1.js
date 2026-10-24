@@ -42,6 +42,12 @@ for(const a of financeItems){
     const label=document.createElement("span");
     label.className="gl-finance-label";
     label.textContent=rule[2];
+    if(icon && /^\\/payments\\/admin\\/?$/.test(pathname)){
+      icon.textContent="✓";
+      icon.setAttribute("aria-hidden","true");
+      icon.style.fontWeight="900";
+      icon.style.fontSize="19px";
+    }
     a.replaceChildren(...(icon?[icon]:[]),label);
   }
   a.dataset.finRank=String(rule?rule[1]:9);
