@@ -15,6 +15,7 @@ from . import bulk_sms_views
 from . import sms_center_views
 from . import task_management_views
 from . import lead_command_views
+from . import instagram_agent_api
 from . import lead_management_views
 from . import doctor_views
 from . import treatment_content_views
@@ -34,6 +35,7 @@ from . import quality_command_views
 from . import sales_target_views
 from .mcp import mcp_endpoint
 urlpatterns=[
+path('api/integrations/instagram/leads/', instagram_agent_api.instagram_agent_lead_api, name='instagram_agent_lead_api'),
 path('sales-targets/',sales_target_views.sales_targets_dashboard,name='sales_targets_dashboard'),
 path('my-sales-targets/',sales_target_views.my_sales_targets,name='my_sales_targets'),
 path('customer/diets/',diet_companion_views.customer_diets,name='customer_diets'),

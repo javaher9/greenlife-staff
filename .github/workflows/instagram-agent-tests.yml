@@ -1,0 +1,50 @@
+name: Instagram Agent API tests
+
+on:
+  push:
+    branches:
+      - feature/instagram-agent-api
+  pull_request:
+    paths:
+      - "core/instagram_agent_api.py"
+      - "core/test_instagram_agent_api.py"
+      - "core/urls.py"
+      - ".github/workflows/instagram-agent-tests.yml"
+  workflow_dispatch:
+
+jobs:
+  django-instagram-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      SECRET_KEY: test-only-not-for-production
+      DEBUG: "0"
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Django system check
+        run: python manage.py check
+      - name: Instagram API tests
+        run: python manage.py test core.test_instagram_agent_api --verbosity 2

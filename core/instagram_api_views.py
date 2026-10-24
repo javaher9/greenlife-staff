@@ -158,36 +158,34 @@ def _post_json_with_pinned_ip(url,data,ip,timeout=25):
 
 
 def _complete_instagram_oauth(data):
-    # First try normal DNS. If the on-prem resolver fails for both Railway
-    # hostnames, resolve the bridge with DNS-over-HTTPS and connect directly
-    # to that IP while preserving TLS SNI/Host verification.
-    last_dns_error=None
-    for base in (INSTAGRAM_BRIDGE_BASE,INSTAGRAM_BRIDGE_FALLBACK):
-        try:
-            return _post_json(base+'/meta/oauth-complete',data)
-        except URLError as exc:
-            reason=getattr(exc,'reason',None)
-            if isinstance(reason,socket.gaierror):
-                last_dns_error=exc
-                continue
-            raise
-
-    for base in (INSTAGRAM_BRIDGE_BASE,INSTAGRAM_BRIDGE_FALLBACK):
-        host=urlsplit(base).hostname
-        if not host:
-            continue
-        try:
-            for ip in _resolve_a_via_doh(host):
-                try:
-                    return _post_json_with_pinned_ip(base+'/meta/oauth-complete',data,ip)
-                except (OSError,ssl.SSLError,TimeoutError):
-                    continue
-        except URLError:
-            continue
-
-    if last_dns_error is not None:
-        raise last_dns_error
-    raise RuntimeError('No Instagram OAuth bridge is reachable')
+    """Exchange the authorization code directly with Meta, without Railway."""
+    short = _post_form(INSTAGRAM_TOKEN_URL, {
+        'client_id': data['app_id'],
+        'client_secret': data['app_secret'],
+        'grant_type': 'authorization_code',
+        'redirect_uri': data['redirect_uri'],
+        'code': data['code'],
+    })
+    token = str(short.get('access_token') or '')
+    if not token:
+        raise ValueError('Instagram did not return an access token.')
+    long = _get_json(INSTAGRAM_GRAPH_BASE + '/access_token', {
+        'grant_type': 'ig_exchange_token',
+        'client_secret': data['app_secret'],
+        'access_token': token,
+    })
+    long_token = str(long.get('access_token') or token)
+    profile = _get_json(INSTAGRAM_GRAPH_BASE + '/me', {
+        'fields': 'user_id,username',
+        'access_token': long_token,
+    })
+    return {
+        'ok': True,
+        'access_token': long_token,
+        'user_id': str(profile.get('user_id') or short.get('user_id') or ''),
+        'username': str(profile.get('username') or ''),
+        'expires_in': int(long.get('expires_in') or short.get('expires_in') or 0),
+    }
 
 
 def _get_json(url,params,timeout=20):
@@ -234,7 +232,7 @@ def instagram_settings(request):
     response=render(request,'core/instagram_settings.html',{
         'config':config,
         'redirect_uri':_redirect_uri(request),
-        'webhook_uri':INSTAGRAM_BRIDGE_BASE+'/meta/webhook',
+        'webhook_uri':_webhook_uri(request),
         'direct_auth_url':direct_auth_url,
         'has_app_secret':bool(config.app_secret_cipher),
         'has_verify_token':bool(config.verify_token_cipher),
