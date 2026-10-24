@@ -8,7 +8,7 @@
 @media(min-width:700px) and (max-width:1180px){.personnel-card-actions{grid-template-columns:repeat(3,minmax(0,1fr))}.personnel-card-actions a{min-height:29px;font-size:9px;padding:4px 3px!important}}
 @media(max-width:699px){.personnel-card-actions{grid-template-columns:repeat(3,minmax(0,1fr))}.personnel-card-actions a{font-size:10px}}
 </style>
-<section class="personnel-page">
+<section class="personnel-page">{% if can_manage %}<div style="margin:8px 0"><a href="{% url 'staff_panel_preview' %}" style="display:inline-block;padding:10px 17px;border-radius:12px;background:#293d5a;color:#fff;text-decoration:none">◫ دیدن صفحات پرسنل</a></div>{% endif %}
   <div class="personnel-summary">
     <div class="personnel-summary-title">پرسنل</div>
     <div class="personnel-summary-stats">
