@@ -556,12 +556,13 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
       <summary><span class="nav-ico">♙</span><span>{% gl_t 'common.staff' %}</span><span class="settings-caret">⌄</span></summary>
       <div class="gl-settings-submenu">
         <a href="/employees/"><span class="nav-ico">♙</span><span>{% gl_t 'shell.staff_list' %}</span></a>
+        {% if executive_access or user.is_superuser %}<a href="{% url 'staff_panel_preview' %}" class="{% if request.resolver_match.url_name == 'staff_panel_preview' %}is-active{% endif %}"><span class="nav-ico">◫</span><span>دیدن صفحات پرسنل</span></a>{% endif %}
         <a href="/blackboard/" class="{% if '/blackboard/' in request.path %}is-active{% endif %}"><span class="nav-ico">▰</span><span>{% gl_t 'shell.staff_blackboard' %}</span></a>
         <a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>{% gl_t 'shell.staff_reports' %}</span></a>
       </div>
     </details>
     {% else %}
-    <a href="/employees/"><span class="nav-ico">♙</span><span>{% gl_t 'common.staff' %}</span></a>
+    <a href="/employees/"><span class="nav-ico">♙</span><span>{% gl_t 'common.staff' %}</span></a>{% if executive_access or user.is_superuser %}<a href="{% url 'staff_panel_preview' %}"><span class="nav-ico">◫</span><span>دیدن صفحات پرسنل</span></a>{% endif %}
     {% endif %}
     {% if user.profile.role == 'internal_manager' %}<a href="{% url 'shift_today_bulk' %}" class="{% if request.resolver_match.url_name == 'shift_today_bulk' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'shell.work_hours' %}</span></a>{% endif %}
     {% if user.profile.sales_network_enabled %}
