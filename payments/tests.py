@@ -253,8 +253,9 @@ class PaymentWorkflowTests(TestCase):
     def test_selected_employee_can_request_after_executive_grant(self):
         from django.urls import reverse
         self.other.profile.role='employee'
+        self.other.profile.employee_code='EMP-PAY-TEST'
         self.other.profile.can_request_payments=False
-        self.other.profile.save(update_fields=['role','can_request_payments'])
+        self.other.profile.save(update_fields=['role','employee_code','can_request_payments'])
         self.client.force_login(self.other)
         self.assertEqual(self.client.get(reverse('payments_workspace')).status_code,403)
         self.client.force_login(self.executive)
