@@ -223,8 +223,6 @@ def workspace(request):
     spent=expenses.aggregate(x=Sum('amount_toman'))['x'] or 0
     return render(request,'payments/workspace.html',dict(submit_operation=operation,posted_million=request.POST.get('req-amount_million','') if operation=='request' else '',posted_exp_million=request.POST.get('exp-amount_million','') if operation=='expense' else '',form=form,expense_form=expense_form,queue=queue,completed=completed,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,has_petty_cash=(received>0 or spent>0),is_executive=executive(request.user), can_submit=staff(request.user) or executive(request.user)))
 
-@login_required
-@require_POST
 def payment_approved_assignees():
     """Only explicitly designated Green Life payment operators, never the whole workforce."""
     names=('حسینی','نادری','مرادی','معماری','صادقی','hosseini','hossaini','naderi','moradi','memari','sadeghi')
