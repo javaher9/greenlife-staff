@@ -583,6 +583,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     {% if user.profile.role == 'employee' %}<a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>{% gl_t 'shell.reports' %}</span></a>{% endif %}
     {% if user.profile.role == 'admin' or user.profile.role == 'manager' %}<a href="/finance/" class="{% if request.path == '/finance/' %}is-active{% endif %}"><span class="nav-ico">▧</span><span>درآمد</span></a>{% endif %}
     {% if executive_access %}
+    <a href="{% url 'payments_request_permissions' %}"><span class="nav-ico">♙</span><span>مجوز درخواست پرداخت</span></a>
     <a href="{% url 'payments_executive_quick' %}" class="{% if request.resolver_match.url_name == 'payments_executive_quick' %}is-active{% endif %}"><span class="nav-ico">＋</span><span>دستور پرداخت مدیریت</span></a>
     <a href="{% url 'payments_expenses' %}" class="{% if request.resolver_match.url_name == 'payments_expenses' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>هزینه‌ها</span></a>
     <a href="{% url 'payments_accounting' %}" class="{% if request.resolver_match.url_name == 'payments_accounting' %}is-active{% endif %}"><span class="nav-ico">▤</span><span>حسابداری</span></a>
@@ -672,7 +673,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
       <a href="/requests/">{% gl_t 'common.leave' %}</a>
       <a href="{% url 'staff_security' %}">{% gl_t 'shell.password_short' %}</a>
     {% endif %}
-    {% if executive_access or user.profile.role == "consultant" and user.profile.is_active %}<a href="{% url 'payments_workspace' %}">درخواست پرداخت و تنخواه</a>{% endif %}
+    {% if executive_access or user.profile.is_active and user.profile.role == "consultant" or user.profile.is_active and user.profile.can_request_payments %}<a href="{% url 'payments_workspace' %}"><span class="nav-ico">▣</span> درخواست پرداخت</a>{% endif %}
     {% if executive_access %}<a href="{% url 'payments_expenses' %}">مالی ـ هزینه‌ها</a><a href="{% url 'payments_admin' %}">تأیید درخواست‌های پرداخت</a>{% endif %}
     <a href="/profile/">{% gl_t 'common.profile' %}</a><a href="/logout/" class="sidebar-logout-link">{% gl_t 'common.logout' %}</a>
   </div>
