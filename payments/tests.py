@@ -11,7 +11,7 @@ class PaymentWorkflowTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.executive=User.objects.create_user(username=next(iter(settings.EXECUTIVE_USERNAMES)),password='test-password')
-        cls.worker=User.objects.create_user(username='payments-worker',password='test-password')
+        cls.worker=User.objects.create_user(username='payments-worker',password='test-password',last_name='نادری')
         cls.other=User.objects.create_user(username='payments-other',password='test-password')
         branch=Branch.objects.create(name='Payment Test Branch')
         EmployeeProfile.objects.update_or_create(user=cls.worker,defaults={'branch':branch,'role':'consultant','is_active':True})
@@ -166,6 +166,8 @@ class PaymentWorkflowTests(TestCase):
         self.assertEqual(result.status_code,403)
 
     def test_named_staff_can_only_complete_own_assigned_payment(self):
+        self.other.last_name='مرادی'
+        self.other.save(update_fields=['last_name'])
         self.other.profile.role='quality_control'
         self.other.profile.save(update_fields=['role'])
         p=self._request()
@@ -341,3 +343,36 @@ class PaymentWorkflowTests(TestCase):
         response=self.client.get(reverse('payments_workspace'))
         self.assertContains(response,'Previous Vendor')
         self.assertContains(response,'1234567890123456')
+
+    def test_reject_requires_reason_and_records_it(self):
+        p=self._request()
+        self.client.force_login(self.executive)
+        bad=self.client.post(reverse('payments_review',args=[p.pk]),{'action':'reject'})
+        self.assertEqual(bad.status_code,400)
+        p.refresh_from_db()
+        self.assertEqual(p.state,'pending')
+        ok=self.client.post(reverse('payments_review',args=[p.pk]),{'action':'reject','reason':'مدرک پرداخت ناقص است'})
+        self.assertEqual(ok.status_code,302)
+        p.refresh_from_db()
+        self.assertEqual(p.state,'rejected')
+        self.assertEqual(p.events.filter(action='reject').latest('pk').notes,'مدرک پرداخت ناقص است')
+
+    def test_needs_info_always_goes_to_original_requester(self):
+        p=self._request()
+        self.client.force_login(self.executive)
+        res=self.client.post(reverse('payments_review',args=[p.pk]),{
+            'action':'needs_info','question':'فاکتور خرید را ارسال کنید',
+            'clarification_assignee':self.other.pk})
+        self.assertEqual(res.status_code,302)
+        p.refresh_from_db()
+        self.assertEqual(p.state,'needs_info')
+        self.assertEqual(p.clarification_assignee,self.worker)
+
+    def test_cannot_assign_payment_to_nonapproved_worker(self):
+        p=self._request()
+        self.client.force_login(self.executive)
+        res=self.client.post(reverse('payments_review',args=[p.pk]),{
+            'action':'approve','channel':'staff','assigned_to':self.other.pk})
+        self.assertEqual(res.status_code,404)
+        p.refresh_from_db()
+        self.assertEqual(p.state,'pending')
