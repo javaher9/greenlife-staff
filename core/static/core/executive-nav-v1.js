@@ -26,9 +26,9 @@ for(const a of links){if(a.closest(".mobile-more-menu"))continue;const href=a.ge
 const financeRules=[
   [/^\/finance\/?$/,0,"درآمد"],
   [/^\/payments\/expenses\/?$/,1,"هزینه‌ها"],
-  [/^\/payments\/executive\/new\/?$/,2,"دستور پرداخت"],
-  [/^\/payments\/accounting\/?$/,3,"حسابداری"],
-  [/^\/payments\/?$/,4,"درخواست پرداخت"],
+  [/^\/payments\/executive\/new\/?$/,3,"دستور پرداخت"],
+  [/^\/payments\/accounting\/?$/,2,"حسابداری"],
+  [/^\/payments\/?$/,4,"پیگیری پرداخت‌ها"],
   [/^\/payments\/admin\/?$/,5,"تأیید پرداخت‌ها"]
 ];
 const financeItems=byGroup.get("مالی")||[];
