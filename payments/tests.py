@@ -271,3 +271,27 @@ class PaymentWorkflowTests(TestCase):
         self.client.force_login(self.worker)
         self.assertEqual(self.client.get(reverse('payments_request_permissions')).status_code,403)
         self.assertEqual(self.client.post(reverse('payments_request_permissions'),{'profile_id':self.other.profile.pk,'enabled':'1'}).status_code,403)
+
+    def test_worker_submits_million_toman_ui_amount(self):
+        self.client.force_login(self.worker)
+        response=self.client.post(reverse('payments_workspace'),{
+            'operation':'request','req-kind':'payment','req-amount_million':'32.5',
+            'req-description':'خرید ملزومات ضروری برای شعبه',
+            'req-category':'supplies','req-cost_owner':'company',
+            'req-recipient_name':'Supplier','req-recipient_card':'1234567890123456',
+        })
+        self.assertEqual(response.status_code,302)
+        req=PaymentRequest.objects.filter(requester=self.worker).latest('pk')
+        self.assertEqual(req.amount_toman,32500000)
+        self.assertEqual(req.state,'pending')
+
+    def test_malformed_million_amount_is_rejected(self):
+        self.client.force_login(self.worker)
+        response=self.client.post(reverse('payments_workspace'),{
+            'operation':'request','req-kind':'payment','req-amount_million':'abc',
+            'req-description':'خرید ملزومات ضروری برای شعبه',
+            'req-category':'supplies','req-cost_owner':'company',
+            'req-recipient_card':'1234567890123456',
+        })
+        self.assertEqual(response.status_code,200)
+        self.assertFalse(PaymentRequest.objects.filter(requester=self.worker).exists())
