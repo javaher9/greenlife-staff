@@ -51,6 +51,8 @@ class RequestForm(forms.ModelForm):
         return value
     def clean(self):
         d=super().clean()
+        if d.get('kind')=='payment' and not d.get('recipient_name'):
+            raise ValidationError('نام دریافت‌کننده برای درخواست پرداخت الزامی است.')
         if d.get('kind')=='payment' and not (d.get('recipient_iban') or d.get('recipient_card')):
             raise ValidationError('شماره کارت یا شبا الزامی است.')
         return d
