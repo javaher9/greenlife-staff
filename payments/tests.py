@@ -249,3 +249,24 @@ class PaymentWorkflowTests(TestCase):
         form=ExecutiveQuickPaymentForm()
         self.assertEqual(list(form.fields['assigned_to'].queryset.values_list('pk',flat=True)),[self.worker.pk])
         self.assertFalse(form.fields['assigned_to'].queryset.filter(pk=self.other.pk).exists())
+
+    def test_selected_employee_can_request_after_executive_grant(self):
+        from django.urls import reverse
+        self.other.profile.role='employee'
+        self.other.profile.can_request_payments=False
+        self.other.profile.save(update_fields=['role','can_request_payments'])
+        self.client.force_login(self.other)
+        self.assertEqual(self.client.get(reverse('payments_workspace')).status_code,403)
+        self.client.force_login(self.executive)
+        response=self.client.post(reverse('payments_request_permissions'),{'profile_id':self.other.profile.pk,'enabled':'1'})
+        self.assertEqual(response.status_code,302)
+        self.other.profile.refresh_from_db()
+        self.assertTrue(self.other.profile.can_request_payments)
+        self.client.force_login(self.other)
+        self.assertEqual(self.client.get(reverse('payments_workspace')).status_code,200)
+
+    def test_worker_cannot_grant_payment_request_permission(self):
+        from django.urls import reverse
+        self.client.force_login(self.worker)
+        self.assertEqual(self.client.get(reverse('payments_request_permissions')).status_code,403)
+        self.assertEqual(self.client.post(reverse('payments_request_permissions'),{'profile_id':self.other.profile.pk,'enabled':'1'}).status_code,403)
