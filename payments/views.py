@@ -102,18 +102,25 @@ def request_permission_settings(request):
     if not executive(request.user):
         raise PermissionDenied()
     from core.models import EmployeeProfile
+    # Restrict grants to real employed staff, never referral/sales-network members.
+    workforce=EmployeeProfile.objects.filter(is_active=True,user__is_active=True).exclude(
+        role__in=['referrer','referral_supervisor','scan_station']
+    ).filter(
+        Q(role__in=['consultant','internal_manager','manager','quality_control','doctor','receptionist','call_center']) |
+        Q(role='employee',employee_code__isnull=False) & ~Q(employee_code='')
+    ).select_related('user','branch').order_by('user__first_name','user__last_name')
     if request.method=='POST':
         try:
             profile_id=int(request.POST.get('profile_id',''))
         except (ValueError,TypeError):
             return HttpResponseBadRequest('شناسه نامعتبر است')
-        profile=get_object_or_404(EmployeeProfile,pk=profile_id,is_active=True,user__is_active=True)
+        profile=get_object_or_404(workforce,pk=profile_id)
         profile.can_request_payments=request.POST.get('enabled')=='1'
         profile.save(update_fields=['can_request_payments'])
-        return redirect('payments_request_permissions')
-    profiles=EmployeeProfile.objects.filter(is_active=True,user__is_active=True).select_related('user','branch').order_by('user__first_name','user__last_name')
-    return render(request,'payments/request_permissions.html',{'profiles':profiles})
+        return redirect('payments_expenses')
+    return redirect('payments_expenses')
 
+@login_required
 @login_required
 def executive_quick_payment(request):
     if not executive(request.user):
@@ -353,6 +360,7 @@ def expenses_dashboard(request):
         'selected_category': selected_category, 'selected_owner': selected_owner,
         'selected_status': selected_status, 'query': query,
         'from_date': request.GET.get('from',''), 'to_date': request.GET.get('to',''),
+        'permission_profiles': __import__('core.models',fromlist=['EmployeeProfile']).EmployeeProfile.objects.filter(is_active=True,user__is_active=True).exclude(role__in=['referrer','referral_supervisor','scan_station']).filter(Q(role__in=['consultant','internal_manager','manager','quality_control','doctor','receptionist','call_center']) | (Q(role='employee',employee_code__isnull=False) & ~Q(employee_code=''))).select_related('user','branch').order_by('user__first_name','user__last_name'),
     })
 
 
