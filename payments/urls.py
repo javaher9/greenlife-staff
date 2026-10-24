@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 urlpatterns=[
  path('',views.workspace,name='payments_workspace'),
+ path('permissions/',views.request_permission_settings,name='payments_request_permissions'),
  path('executive/new/',views.executive_quick_payment,name='payments_executive_quick'),
  path('review/<int:pk>/',views.review,name='payments_review'),
  path('complete/<int:pk>/',views.mark_paid,name='payments_complete'),
