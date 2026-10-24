@@ -295,3 +295,15 @@ class PaymentWorkflowTests(TestCase):
         })
         self.assertEqual(response.status_code,200)
         self.assertFalse(PaymentRequest.objects.filter(requester=self.worker).exists())
+
+    def test_staff_payment_requires_recipient_name(self):
+        self.client.force_login(self.worker)
+        response=self.client.post(reverse('payments_workspace'),{
+            'operation':'request','req-kind':'payment','req-amount_million':'3',
+            'req-description':'خرید ملزومات ضروری برای شعبه',
+            'req-category':'supplies','req-cost_owner':'company',
+            'req-recipient_card':'1234567890123456',
+        })
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'نام دریافت‌کننده برای درخواست پرداخت الزامی است')
+        self.assertFalse(PaymentRequest.objects.filter(requester=self.worker).exists())
