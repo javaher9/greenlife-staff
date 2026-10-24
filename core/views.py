@@ -478,6 +478,19 @@ def credential_reveal(request,pk,kind):
 
 
 @credential_admin_required
+def staff_panel_preview(request):
+    """Standalone staff panel switcher without showing or changing credentials."""
+    profiles=(EmployeeProfile.objects.exclude(role='referrer')
+        .filter(is_active=True,user__is_active=True)
+        .exclude(role='admin')
+        .select_related('user','branch')
+        .order_by('branch__name','user__last_name','user__first_name'))
+    response=render(request,'core/staff_panel_preview.html',{'profiles':profiles})
+    response['Cache-Control']='no-store, private'
+    return response
+
+
+@credential_admin_required
 def impersonate_start(request,pk):
     if request.method!='POST':
         return redirect('credential_settings')
