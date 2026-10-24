@@ -104,10 +104,11 @@ def request_permission_settings(request):
     from core.models import EmployeeProfile
     # Restrict grants to real employed staff, never referral/sales-network members.
     workforce=EmployeeProfile.objects.filter(is_active=True,user__is_active=True).exclude(
-        role__in=['referrer','referral_supervisor','scan_station']
+        role__in=['referrer','scan_station']
     ).filter(
-        Q(role__in=['consultant','internal_manager','manager','quality_control','doctor','receptionist','call_center']) |
-        Q(role='employee',employee_code__isnull=False) & ~Q(employee_code='')
+        ~Q(role='employee') | Q(branch__isnull=False) |
+        (Q(employee_code__isnull=False) & ~Q(employee_code='')) |
+        ~Q(job_title='')
     ).select_related('user','branch').order_by('user__first_name','user__last_name')
     if request.method=='POST':
         try:
@@ -258,7 +259,7 @@ def admin_dashboard(request):
     accountants=User.objects.none()
     operators=User.objects.filter(is_active=True, profile__is_active=True).order_by('first_name','last_name')
     paid=requests.filter(state='paid')
-    return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants,'operators':operators,'staff_members':User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant').order_by('first_name','last_name'),'permission_profiles':__import__('core.models',fromlist=['EmployeeProfile']).EmployeeProfile.objects.filter(is_active=True,user__is_active=True).exclude(role__in=['referrer','referral_supervisor','scan_station']).filter(Q(role__in=['consultant','internal_manager','manager','quality_control','doctor','receptionist','call_center']) | (Q(role='employee',employee_code__isnull=False) & ~Q(employee_code=''))).select_related('user','branch').order_by('user__first_name','user__last_name'),})
+    return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants,'operators':operators,'staff_members':User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant').order_by('first_name','last_name'),'permission_profiles': __import__('core.models',fromlist=['EmployeeProfile']).EmployeeProfile.objects.filter(is_active=True,user__is_active=True).exclude(role__in=['referrer','scan_station']).filter(~Q(role='employee') | Q(branch__isnull=False) | (Q(employee_code__isnull=False) & ~Q(employee_code='')) | ~Q(job_title='')).select_related('user','branch').order_by('user__first_name','user__last_name'),})
 
 @login_required
 @require_POST
