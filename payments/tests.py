@@ -307,3 +307,37 @@ class PaymentWorkflowTests(TestCase):
         self.assertEqual(response.status_code,200)
         self.assertContains(response,'نام دریافت‌کننده برای درخواست پرداخت الزامی است')
         self.assertFalse(PaymentRequest.objects.filter(requester=self.worker).exists())
+
+    def test_petty_cash_request_does_not_require_recipient_bank_details(self):
+        self.client.force_login(self.worker)
+        response=self.client.post(reverse('payments_workspace'),{
+            'operation':'request','req-kind':'petty_cash','req-amount_million':'4',
+            'req-description':'درخواست تنخواه برای تهیه اقلام مصرفی شعبه',
+            'req-category':'supplies','req-cost_owner':'company',
+        })
+        self.assertEqual(response.status_code,302)
+        req=PaymentRequest.objects.filter(requester=self.worker).latest('pk')
+        self.assertEqual(req.kind,'petty_cash')
+        self.assertEqual(req.amount_toman,4000000)
+        self.assertEqual(req.state,'pending')
+
+    def test_invalid_request_keeps_million_amount_and_shows_errors(self):
+        self.client.force_login(self.worker)
+        response=self.client.post(reverse('payments_workspace'),{
+            'operation':'request','req-kind':'payment','req-amount_million':'5.5',
+            'req-description':'خرید ملزومات ضروری شعبه با هماهنگی مدیر',
+            'req-category':'supplies','req-cost_owner':'company',
+        })
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'درخواست ثبت نشد')
+        self.assertContains(response,'value="5.5"')
+        self.assertFalse(PaymentRequest.objects.filter(requester=self.worker).exists())
+
+    def test_recipient_details_prefilled_from_own_previous_request(self):
+        PaymentRequest.objects.create(kind='payment',amount_toman=2500000,
+            description='Prior vendor payment',requester=self.worker,branch=self.branch,
+            recipient_name='Previous Vendor',recipient_card='1234567890123456')
+        self.client.force_login(self.worker)
+        response=self.client.get(reverse('payments_workspace'))
+        self.assertContains(response,'Previous Vendor')
+        self.assertContains(response,'1234567890123456')
