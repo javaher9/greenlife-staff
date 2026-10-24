@@ -42,7 +42,7 @@ for(const a of financeItems){
     const label=document.createElement("span");
     label.className="gl-finance-label";
     label.textContent=rule[2];
-    if(icon && /^\\/payments\\/admin\\/?$/.test(pathname)){
+    if(icon && (pathname === "/payments/admin/" || pathname === "/payments/admin")){
       icon.textContent="✓";
       icon.setAttribute("aria-hidden","true");
       icon.style.fontWeight="900";
