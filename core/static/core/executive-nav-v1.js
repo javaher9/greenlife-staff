@@ -36,8 +36,13 @@ for(const a of financeItems){
   const pathname=new URL(a.href,location.href).pathname;
   const rule=financeRules.find(([regex])=>regex.test(pathname));
   if(rule){
-    const label=a.querySelector("span:last-child");
-    if(label)label.textContent=rule[2];else a.textContent=rule[2];
+    /* Preserve the icon, replace the entire label content (including loose
+       Django-rendered text nodes) so labels never overlap or duplicate. */
+    const icon=a.querySelector(".nav-ico");
+    const label=document.createElement("span");
+    label.className="gl-finance-label";
+    label.textContent=rule[2];
+    a.replaceChildren(...(icon?[icon]:[]),label);
   }
   a.dataset.finRank=String(rule?rule[1]:9);
 }
