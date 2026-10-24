@@ -22,25 +22,24 @@ const footerFinance=footer?[...footer.querySelectorAll('a[href]')].filter(a=>/\/
 links.push(...footerFinance);
 const seen=new Set(),byGroup=new Map(GROUPS.map(([name])=>[name,[]]));
 for(const a of links){if(a.closest(".mobile-more-menu"))continue;const href=a.getAttribute("href");if(!href||href==="#")continue;const norm=href.replace(/#.*$/,"");if(seen.has(norm)){if(footerFinance.includes(a))a.remove();continue;}seen.add(norm);byGroup.get(classify(a)).push(a)}
-/* Finance submenu: explicit order and labels; only existing permission-granted anchors. */
-const financeOrder=[
+/* Finance display order is configured centrally; original links and permissions are preserved. */
+const financeRules=[
   [/^\/finance\/?$/,0,"درآمد"],
   [/^\/payments\/expenses\/?$/,1,"هزینه‌ها"],
-  [/^\/payments\/admin\/?$/,2,"دستور پرداخت"],
+  [/^\/payments\/executive-quick\/?$/,2,"دستور پرداخت"],
   [/^\/payments\/accounting\/?$/,3,"حسابداری"],
-  [/^\/payments\/?$/,4,"درخواست پرداخت"]
+  [/^\/payments\/?$/,4,"درخواست پرداخت"],
+  [/^\/payments\/admin\/?$/,5,"تأیید پرداخت‌ها"]
 ];
 const financeItems=byGroup.get("مالی")||[];
 for(const a of financeItems){
- const pathname=new URL(a.href,location.href).pathname;
- const rule=financeOrder.find(([regex])=>regex.test(pathname));
- if(rule){const label=a.querySelector("span:last-child");if(label)label.textContent=rule[2];else a.textContent=rule[2];}
- if(/^\/payments\/admin\/?$/.test(pathname))a.dataset.finRank="2";
- else if(/^\/payments\/?$/.test(pathname))a.dataset.finRank="4";
- else if(/^\/payments\/expenses\/?$/.test(pathname))a.dataset.finRank="1";
- else if(/^\/payments\/accounting\/?$/.test(pathname))a.dataset.finRank="3";
- else if(/^\/finance\/?$/.test(pathname))a.dataset.finRank="0";
- else a.dataset.finRank="8";
+  const pathname=new URL(a.href,location.href).pathname;
+  const rule=financeRules.find(([regex])=>regex.test(pathname));
+  if(rule){
+    const label=a.querySelector("span:last-child");
+    if(label)label.textContent=rule[2];else a.textContent=rule[2];
+  }
+  a.dataset.finRank=String(rule?rule[1]:9);
 }
 financeItems.sort((a,b)=>Number(a.dataset.finRank)-Number(b.dataset.finRank));
 const region=document.createDocumentFragment();for(const [name,ico] of GROUPS){const items=byGroup.get(name);if(!items.length)continue;const det=document.createElement("details");det.className="gl-nav-group";const summary=document.createElement("summary");summary.innerHTML='<span class="nav-ico" aria-hidden="true">'+ico+'</span><span>'+name+'</span><span class="settings-caret" aria-hidden="true">⌄</span>';det.appendChild(summary);const wrap=document.createElement("div");wrap.className="gl-nav-children";for(const a of items)wrap.appendChild(a);det.appendChild(wrap);if(!new URLSearchParams(location.search).has("shortcut") && items.some(a=>a.classList.contains("is-active")||a.getAttribute("href")===location.pathname))det.open=true;region.appendChild(det)}
