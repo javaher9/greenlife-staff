@@ -605,7 +605,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
         <strong>{% if user.profile.role == 'employee' %}{% gl_t 'shell.more_menu' %}{% else %}{% gl_t 'shell.full_menu' %}{% endif %}</strong>
         <button type="button" class="mobile-more-close" aria-label="{% gl_t 'shell.close' %}">×</button>
       </div>
-      <div class="mobile-more-links">
+      <div class="mobile-more-links">{% if executive_access or user.profile.can_request_payments or user.profile.can_execute_payments or user.profile.can_manage_petty_cash or user.profile.can_claim_personal_expense %}<a href="{% url 'payments_workspace' %}"><span>▣</span>مالی · درخواست‌ها و پرداخت‌های من</a>{% endif %}
         {% if user.profile.role == 'employee' %}
           <a href="/requests/"><span>◷</span>{% gl_t 'shell.leave_mission' %}</a>
           <a href="{% url 'staff_security' %}"><span>⚿</span>{% gl_t 'shell.change_password_pin' %}</a>
@@ -673,7 +673,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
       <a href="/requests/">{% gl_t 'common.leave' %}</a>
       <a href="{% url 'staff_security' %}">{% gl_t 'shell.password_short' %}</a>
     {% endif %}
-    {% if executive_access or user.profile.is_active and user.profile.role == "consultant" or user.profile.is_active and user.profile.can_request_payments %}<a href="{% url 'payments_workspace' %}"><span class="nav-ico">▣</span> درخواست پرداخت</a>{% endif %}
+    {% if executive_access or user.profile.is_active and user.profile.can_request_payments or user.profile.is_active and user.profile.can_execute_payments or user.profile.is_active and user.profile.can_manage_petty_cash or user.profile.is_active and user.profile.can_claim_personal_expense %}<details class="gl-settings-menu"><summary><span class="nav-ico">▣</span><span>مالی</span><span class="settings-caret">⌄</span></summary><div class="gl-settings-submenu">{% if executive_access or user.profile.can_request_payments or user.profile.can_claim_personal_expense %}<a href="{% url 'payments_workspace' %}#requestPanel">درخواست‌های من</a>{% endif %}{% if executive_access or user.profile.can_execute_payments %}<a href="{% url 'payments_workspace' %}#assignedPayments">پرداخت‌های من</a>{% endif %}{% if executive_access or user.profile.can_manage_petty_cash %}<a href="{% url 'payments_workspace' %}#expensePanel">تنخواه من</a>{% endif %}</div></details>{% endif %}
     {% if executive_access %}<a href="{% url 'payments_expenses' %}">مالی ـ هزینه‌ها</a><a href="{% url 'payments_admin' %}">تأیید درخواست‌های پرداخت</a>{% endif %}
     <a href="/profile/">{% gl_t 'common.profile' %}</a><a href="/logout/" class="sidebar-logout-link">{% gl_t 'common.logout' %}</a>
   </div>
