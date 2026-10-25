@@ -51,6 +51,19 @@ _RESERVED_KEYS = {
 }
 
 
+def _digital_assistant_request(request):
+    """Identify only requests authenticated with the separate assistant token."""
+    supplied = (request.headers.get('X-Lead-Token') or
+                request.headers.get('X-API-Key') or '').strip()
+    auth = request.headers.get('Authorization', '')
+    if auth.lower().startswith('bearer '):
+        supplied = auth[7:].strip()
+    digest = os.getenv('DIGITAL_ASSISTANT_LEAD_TOKEN_SHA256', '').strip()
+    return bool(supplied and digest and hmac.compare_digest(
+        hashlib.sha256(supplied.encode('utf-8')).hexdigest(), digest
+    ))
+
+
 def _authorized(request):
     supplied = request.headers.get('X-Lead-Token', '').strip()
     if not supplied:
@@ -62,6 +75,15 @@ def _authorized(request):
         supplied = request.GET.get('token', '').strip()
     if not supplied:
         return False
+
+    # Independent digital-assistant credential; never rotate the website key.
+    # Provision a random token in the server environment and store only its
+    # SHA-256 digest in DIGITAL_ASSISTANT_LEAD_TOKEN_SHA256.
+    assistant_digest = os.getenv('DIGITAL_ASSISTANT_LEAD_TOKEN_SHA256', '').strip()
+    if assistant_digest:
+        supplied_digest = hashlib.sha256(supplied.encode('utf-8')).hexdigest()
+        if hmac.compare_digest(supplied_digest, assistant_digest):
+            return True
 
     # Primary source of truth: the dedicated Website Leads settings in Staff App.
     # If a DB key exists, the enable/disable switch is authoritative and legacy
@@ -191,6 +213,17 @@ def _utm_from_url(source_url):
         if values:
             result[key] = str(values[0])[:120]
     return result
+
+
+def _digital_assistant_user():
+    user, _ = User.objects.get_or_create(
+        username='lead-digital-assistant',
+        defaults={'first_name': 'دستیار', 'last_name': 'دیجیتال', 'is_active': False},
+    )
+    if user.has_usable_password():
+        user.set_unusable_password()
+        user.save(update_fields=['password'])
+    return user
 
 
 def _source_profile(channel):
@@ -346,7 +379,13 @@ def ingest_lead(request):
     if not isinstance(payload, dict):
         return JsonResponse({'ok': False, 'error': 'invalid_payload'}, status=400)
 
+    is_digital_assistant = _digital_assistant_request(request)
     data = _merged_payload(payload)
+    if is_digital_assistant:
+        data['source'] = 'instagram'
+        data['source_url'] = 'https://www.instagram.com/greenlifeclinics/'
+        data['form_name'] = 'دستیار دیجیتال'
+        data['campaign'] = 'instagram-digital-assistant'
     if _honeypot_triggered(data):
         return JsonResponse({'ok': False, 'error': 'spam_rejected'}, status=400)
     phone = _phone_value(data)
@@ -429,6 +468,8 @@ def ingest_lead(request):
     website_meta = {key: value for key, value in website_meta.items() if value}
 
     notes_parts = [' '.join(meta)]
+    if is_digital_assistant:
+        notes_parts.append('روش ثبت: دستیار دیجیتال | پیج: greenlifeclinics')
     message = _lookup(data, aliases=('notes', 'message'), contains=('message', 'پیام', 'توضیح'), limit=2500)
     if message:
         notes_parts.append(message)
@@ -446,6 +487,7 @@ def ingest_lead(request):
             source='link',
             source_url=source_url,
             notes=notes,
+            created_by=_digital_assistant_user() if is_digital_assistant else None,
         )
     except DuplicateLeadError as exc:
         existing=exc.existing_lead or ReferralLead.recent_duplicate_for_phone(phone)
