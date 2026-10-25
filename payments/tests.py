@@ -419,3 +419,25 @@ class PaymentWorkflowTests(TestCase):
         self.assertEqual(claim.amount_toman,12000000)
         self.assertEqual(claim.state,'pending')
         self.assertTrue(claim.personal_expense_receipt)
+
+    def test_generic_request_cannot_bypass_personal_expense_permission(self):
+        self.client.force_login(self.worker)
+        self.worker.profile.can_claim_personal_expense=False
+        self.worker.profile.save(update_fields=['can_claim_personal_expense'])
+        response=self.client.post(reverse('payments_workspace'),{
+            'operation':'request','req-kind':'personal_expense',
+            'req-amount_million':'12','req-description':'خرید ملزومات از جیب خودم برای مرکز',
+            'req-category':'supplies','req-cost_owner':'company'})
+        self.assertEqual(response.status_code,400)
+        self.assertFalse(PaymentRequest.objects.filter(kind='personal_expense',requester=self.worker).exists())
+
+    def test_disabled_delegate_cannot_be_approved_or_see_quick_payment(self):
+        p=self._request()
+        self.worker.profile.can_execute_payments=False
+        self.worker.profile.save(update_fields=['can_execute_payments'])
+        self.client.force_login(self.executive)
+        res=self.client.post(reverse('payments_review',args=[p.pk]),{
+            'action':'approve','channel':'staff','assigned_to':self.worker.pk})
+        self.assertEqual(res.status_code,404)
+        p.refresh_from_db()
+        self.assertEqual(p.state,'pending')
