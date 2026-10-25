@@ -63,6 +63,15 @@ def _authorized(request):
     if not supplied:
         return False
 
+    # Independent digital-assistant credential; never rotate the website key.
+    # Provision a random token in the server environment and store only its
+    # SHA-256 digest in DIGITAL_ASSISTANT_LEAD_TOKEN_SHA256.
+    assistant_digest = os.getenv('DIGITAL_ASSISTANT_LEAD_TOKEN_SHA256', '').strip()
+    if assistant_digest:
+        supplied_digest = hashlib.sha256(supplied.encode('utf-8')).hexdigest()
+        if hmac.compare_digest(supplied_digest, assistant_digest):
+            return True
+
     # Primary source of truth: the dedicated Website Leads settings in Staff App.
     # If a DB key exists, the enable/disable switch is authoritative and legacy
     # environment variables cannot bypass it.
