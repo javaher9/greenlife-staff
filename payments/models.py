@@ -27,7 +27,7 @@ COST_OWNERS = [
 ]
 
 class PaymentRequest(models.Model):
-    TYPES = [('payment','درخواست پرداخت'),('petty_cash','درخواست تنخواه')]
+    TYPES = [('payment','درخواست پرداخت'),('petty_cash','درخواست تنخواه'),('personal_expense','هزینه پرداخت‌شده از حساب شخصی')]
     STATES = [('pending','در انتظار تأیید'),('approved','در صف پرداخت'),('rejected','رد شده'),('needs_info','نیازمند توضیح بیشتر'),('paid','پرداخت شده')]
     CHANNELS = [('consultant','مشاور'),('accountant','حسابدار'),('staff','کارمند منتخب')]
     PRIORITIES = [('urgent','فوری'),('today','امروز'),('normal','عادی'),('low','کم‌اولویت')]
@@ -53,6 +53,7 @@ class PaymentRequest(models.Model):
     approved_at = models.DateTimeField(null=True,blank=True)
     payment_reference = models.CharField(max_length=120,blank=True)
     payment_receipt = models.FileField(upload_to='payment_receipts/%Y/%m/',blank=True)
+    personal_expense_receipt=models.FileField(upload_to='personal_expenses/%Y/%m/',blank=True)
     paid_at = models.DateTimeField(null=True,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     class Meta:
