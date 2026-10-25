@@ -18,7 +18,7 @@ def executive(user):
 
 def staff(user):
     p=getattr(user,'profile',None)
-    return bool(user.is_active and p and p.is_active and (p.role == 'consultant' or p.can_request_payments))
+    return bool(user.is_active and p and p.is_active and p.can_request_payments)
 
 def assigned_operator(user):
     return bool(user.is_authenticated and user.is_active and PaymentRequest.objects.filter(assigned_to=user, state__in=('approved','paid')).exists())
@@ -148,8 +148,12 @@ def request_permission_settings(request):
         except (ValueError,TypeError):
             return HttpResponseBadRequest('شناسه نامعتبر است')
         profile=get_object_or_404(workforce,pk=profile_id)
-        profile.can_request_payments=request.POST.get('enabled')=='1'
-        profile.save(update_fields=['can_request_payments'])
+        permission=request.POST.get('permission','can_request_payments')
+        allowed=('can_request_payments','can_execute_payments','can_manage_petty_cash','can_claim_personal_expense')
+        if permission not in allowed:
+            return HttpResponseBadRequest('نوع مجوز مالی نامعتبر است.')
+        setattr(profile,permission,request.POST.get('enabled')=='1')
+        profile.save(update_fields=[permission])
         return redirect('payments_admin')
     return redirect('payments_admin')
 
@@ -183,7 +187,7 @@ def executive_quick_payment(request):
 
 @login_required
 def workspace(request):
-    if not staff(request.user) and not executive(request.user) and not assigned_operator(request.user):
+    if not staff(request.user) and not executive(request.user) and not assigned_operator(request.user) and not getattr(getattr(request.user,'profile',None),'can_manage_petty_cash',False) and not getattr(getattr(request.user,'profile',None),'can_claim_personal_expense',False):
         raise PermissionDenied()
     operation=request.POST.get('operation') if request.method=='POST' else None
     form=RequestForm(request.POST if operation=='request' else None,prefix='req')
@@ -196,10 +200,14 @@ def workspace(request):
             'recipient_card':previous_recipient.recipient_card,
             'recipient_iban':previous_recipient.recipient_iban,
         })
-    if request.method=='POST' and not (staff(request.user) or executive(request.user)):
+    if request.method=='POST' and not (staff(request.user) or executive(request.user) or (operation=='expense' and getattr(request.user.profile,'can_manage_petty_cash',False)) or (operation=='request' and getattr(request.user.profile,'can_manage_petty_cash',False)) or (operation=='personal_expense' and getattr(request.user.profile,'can_claim_personal_expense',False))):
         raise PermissionDenied()
     if request.method=='POST':
-        if request.POST.get('operation')=='request' and form.is_valid():
+        if operation=='request' and request.POST.get('req-kind')=='petty_cash' and not executive(request.user) and not getattr(request.user.profile,'can_manage_petty_cash',False):
+            raise PermissionDenied()
+        if operation=='request' and request.POST.get('req-kind')!='petty_cash' and not (staff(request.user) or executive(request.user)):
+            raise PermissionDenied()
+        if operation=='request' and form.is_valid():
             obj=form.save(commit=False)
             obj.requester=request.user
             obj.branch=getattr(getattr(request.user,'profile',None),'branch',None)
@@ -208,7 +216,9 @@ def workspace(request):
             obj.save()
             PaymentEvent.objects.create(payment=obj,actor=request.user,action='created')
             return redirect('payments_workspace')
-        if request.POST.get('operation')=='expense' and expense_form.is_valid():
+        if operation=='expense' and not (executive(request.user) or getattr(request.user.profile,'can_manage_petty_cash',False)):
+            raise PermissionDenied()
+        if operation=='expense' and expense_form.is_valid():
             entry=expense_form.save(commit=False)
             entry.holder=request.user
             entry.created_by=request.user
@@ -221,7 +231,7 @@ def workspace(request):
     expenses=PettyCashExpense.objects.filter(holder=request.user)
     received=PaymentRequest.objects.filter(kind='petty_cash',beneficiary=request.user,state='paid').aggregate(x=Sum('amount_toman'))['x'] or 0
     spent=expenses.aggregate(x=Sum('amount_toman'))['x'] or 0
-    return render(request,'payments/workspace.html',dict(submit_operation=operation,posted_million=request.POST.get('req-amount_million','') if operation=='request' else '',posted_exp_million=request.POST.get('exp-amount_million','') if operation=='expense' else '',form=form,expense_form=expense_form,queue=queue,completed=completed,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,has_petty_cash=(received>0 or spent>0),is_executive=executive(request.user), can_submit=staff(request.user) or executive(request.user)))
+    return render(request,'payments/workspace.html',dict(can_request=staff(request.user) or executive(request.user),can_petty=executive(request.user) or getattr(getattr(request.user,'profile',None),'can_manage_petty_cash',False), can_personal=executive(request.user) or getattr(getattr(request.user,'profile',None),'can_claim_personal_expense',False),submit_operation=operation,posted_million=request.POST.get('req-amount_million','') if operation=='request' else '',posted_exp_million=request.POST.get('exp-amount_million','') if operation=='expense' else '',form=form,expense_form=expense_form,queue=queue,completed=completed,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,has_petty_cash=(received>0 or spent>0),is_executive=executive(request.user), can_submit=staff(request.user) or executive(request.user)))
 
 def payment_approved_assignees():
     """Only explicitly designated Green Life payment operators, never the whole workforce."""
@@ -262,9 +272,9 @@ def review(request,pk):
             channel=request.POST.get('channel')
             if channel not in ('consultant', 'staff'):
                 return HttpResponseBadRequest('مسیر پرداخت نامعتبر است.')
-            if channel=='consultant' and (not staff(assignee) or assignee.profile.role != 'consultant'):
+            if channel=='consultant' and (assignee.profile.role != 'consultant' or not assignee.profile.can_execute_payments):
                 return HttpResponseBadRequest('پرداخت‌کننده باید مشاور یا منشی فعال باشد.')
-            if channel=='staff' and not assignee.is_active:
+            if channel=='staff' and not (getattr(getattr(assignee,'profile',None),'can_execute_payments',False)):
                 return HttpResponseBadRequest('مسئول پرداخت فعال نیست.')
             p.state='approved'
             p.channel=channel
@@ -287,6 +297,8 @@ def mark_paid(request,pk):
         if p.state!='approved':
             return HttpResponseBadRequest('این درخواست در صف شما نیست.')
         if p.channel not in ('consultant','staff'):
+            raise PermissionDenied()
+        if not executive(request.user) and not getattr(getattr(request.user,'profile',None),'can_execute_payments',False):
             raise PermissionDenied()
         reference=request.POST.get('reference','').strip()
         receipt=request.FILES.get('receipt')
