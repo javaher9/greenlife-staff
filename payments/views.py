@@ -318,6 +318,22 @@ def review(request,pk):
 
 @login_required
 @require_POST
+def reassign_payment(request,pk):
+    if not executive(request.user):
+        raise PermissionDenied()
+    with transaction.atomic():
+        payment=get_object_or_404(PaymentRequest.objects.select_for_update(),pk=pk,state='approved')
+        assignee=get_object_or_404(payment_approved_assignees(),pk=request.POST.get('assigned_to'))
+        previous=payment.assigned_to_id
+        payment.assigned_to=assignee
+        payment.channel='staff'
+        payment.save(update_fields=['assigned_to','channel'])
+        PaymentEvent.objects.create(payment=payment,actor=request.user,action='reassigned',notes=f'{previous} → {assignee.pk}')
+    return redirect('payments_admin')
+
+
+@login_required
+@require_POST
 def mark_paid(request,pk):
     if not request.user.is_authenticated or not request.user.is_active:
         raise PermissionDenied()
