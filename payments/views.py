@@ -213,8 +213,13 @@ def workspace(request):
             'recipient_card':previous_recipient.recipient_card,
             'recipient_iban':previous_recipient.recipient_iban,
         })
-    if request.method=='POST' and not (staff(request.user) or executive(request.user) or (operation=='expense' and getattr(request.user.profile,'can_manage_petty_cash',False)) or (operation=='request' and getattr(request.user.profile,'can_manage_petty_cash',False)) or (operation=='personal_expense' and getattr(request.user.profile,'can_claim_personal_expense',False))):
-        raise PermissionDenied()
+    if request.method=='POST':
+        if operation=='personal_expense' and not (executive(request.user) or getattr(getattr(request.user,'profile',None),'can_claim_personal_expense',False)):
+            raise PermissionDenied()
+        if operation=='expense' and not (executive(request.user) or getattr(getattr(request.user,'profile',None),'can_manage_petty_cash',False)):
+            raise PermissionDenied()
+        if operation not in ('request','expense','personal_expense'):
+            return HttpResponseBadRequest('عملیات مالی نامعتبر است.')
     if request.method=='POST':
         if operation=='request' and request.POST.get('req-kind') not in ('payment','petty_cash'):
             return HttpResponseBadRequest('نوع درخواست نامعتبر است.')
