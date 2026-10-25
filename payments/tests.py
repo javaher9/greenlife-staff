@@ -172,7 +172,9 @@ class PaymentWorkflowTests(TestCase):
         self.other.last_name='مرادی'
         self.other.save(update_fields=['last_name'])
         self.other.profile.role='quality_control'
-        self.other.profile.save(update_fields=['role'])
+        self.other.profile.can_request_payments=False
+        self.other.profile.can_manage_petty_cash=False
+        self.other.profile.save(update_fields=['role','can_request_payments','can_manage_petty_cash'])
         p=self._request()
         self.client.force_login(self.executive)
         approved=self.client.post(reverse('payments_review',args=[p.pk]),{
