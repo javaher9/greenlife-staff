@@ -1,4 +1,4 @@
-{% load static jalali_tags staff_i18n %}<!doctype html>
+{% load static jalali_tags staff_i18n finance_alerts %}<!doctype html>
 <html lang="{{ ui_language|default:'fa' }}" dir="{{ ui_direction|default:'rtl' }}" class="{% if user.is_authenticated and user.profile.role == 'call_center' %}gl-call-center-html{% endif %}">
 <head>
   <meta charset="utf-8">
@@ -372,7 +372,20 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
 }
 </style>
 
-</head>
+<style>
+.gl-staff-finance-menu{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important}
+.gl-staff-finance-menu>summary{display:flex!important;width:100%!important;min-height:46px;box-sizing:border-box!important;align-items:center!important;cursor:pointer!important;touch-action:manipulation!important;pointer-events:auto!important;position:relative!important;z-index:2}
+.gl-staff-finance-menu>summary>span{pointer-events:none}
+.gl-staff-finance-menu .gl-settings-submenu{width:100%;box-sizing:border-box}
+.gl-home-payment-alert{display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;text-decoration:none!important;direction:rtl;margin:9px 0 16px;padding:14px 15px;background:linear-gradient(110deg,#233a50,#213c43);border:1px solid #7ac4b1;border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,.15);color:#fff!important;-webkit-text-fill-color:#fff!important}
+.gl-home-payment-alert-icon{display:grid;place-items:center;width:39px;height:39px;flex-shrink:0;background:#315e59;border-radius:12px;font-size:21px}
+.gl-home-payment-alert-copy{display:flex;flex:1;flex-direction:column;gap:2px;min-width:0}
+.gl-home-payment-alert-copy strong{font-size:15px!important;font-weight:900!important;color:#fff!important;-webkit-text-fill-color:#fff!important;line-height:1.7}
+.gl-home-payment-alert-copy small{font-size:12px!important;color:#dcefea!important;-webkit-text-fill-color:#dcefea!important;font-weight:650}
+.gl-home-payment-alert-count{padding:4px 10px;border-radius:999px;font-weight:900;background:#7158ba;color:#fff!important;-webkit-text-fill-color:#fff!important}
+.gl-home-payment-alert-arrow{font-size:20px;color:#fff}
+@media(max-width:650px){.gl-home-payment-alert{gap:9px;padding:12px}.gl-home-payment-alert-copy strong{font-size:13px!important}.gl-home-payment-alert-copy small{font-size:11px!important}}
+</style></head>
 <body class="{% if executive_access or user.profile.role == 'admin' %}gl-executive-nav-enabled {% endif %}gl-app {% if request.resolver_match.url_name == 'patient_360' or request.resolver_match.url_name == 'patient_360_from_appointment' or request.resolver_match.url_name == 'patient_360_from_lead' %}gl-patient360-workspace{% else %}gl-premium-dark{% endif %} gl-lang-{{ ui_language|default:'fa' }} gl-dir-{{ ui_direction|default:'rtl' }} gl-page-{{ request.resolver_match.url_name|default:'unknown' }} {% if user.is_authenticated %}gl-authenticated {% if user.profile.role == 'employee' or user.profile.role == 'call_center' or user.profile.role == 'consultant' or user.profile.role == 'doctor' or user.profile.role == 'receptionist' or user.profile.role == 'quality_control' %}gl-role-employee{% endif %} {% if user.profile.role == 'call_center' %}gl-role-call-center{% endif %} {% if user.profile.role == 'consultant' %}gl-role-consultant{% endif %} {% if user.profile.role == 'receptionist' %}gl-role-receptionist{% endif %}{% else %}gl-guest{% endif %} {% if request.resolver_match.url_name == 'branch_live_dashboard' %}gl-manager-dashboard{% endif %}">
 {% if request.session.impersonator_user_id %}
 <div class="impersonation-banner"><span>{% gl_t 'shell.impersonating' name=user.get_full_name|default:user.username %}</span><form method="post" action="{% url 'impersonate_return' %}">{% csrf_token %}<button type="submit">{% gl_t 'shell.back_admin' %}</button></form></div>
@@ -390,7 +403,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
   {% if user.is_superuser or user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' or 'کنترل کیفیت' in user.profile.job_title %}
     <a href="{% url 'quality_command_center' %}" class="{% if request.resolver_match.url_name == 'quality_command_center' %}is-active{% endif %}"><span class="nav-ico">◉</span><span>اتاق فرمان کنترل کیفیت</span></a>
     {% endif %}
-    {% if executive_access or user.profile.is_active and user.profile.can_request_payments or user.profile.is_active and user.profile.can_execute_payments or user.profile.is_active and user.profile.can_manage_petty_cash or user.profile.is_active and user.profile.can_claim_personal_expense %}<details class="gl-settings-menu"><summary><span class="nav-ico">▣</span><span>مالی</span><span class="settings-caret">⌄</span></summary><div class="gl-settings-submenu">{% if executive_access or user.profile.can_request_payments or user.profile.can_claim_personal_expense %}<a href="{% url 'payments_workspace' %}#requestPanel">درخواست‌های من</a>{% endif %}{% if executive_access or user.profile.can_execute_payments %}<a href="{% url 'payments_workspace' %}#assignedPayments">پرداخت‌های من</a>{% endif %}{% if executive_access or user.profile.can_manage_petty_cash %}<a href="{% url 'payments_workspace' %}#expensePanel">تنخواه من</a>{% endif %}</div></details>{% endif %}
+    {% if executive_access or user.profile.is_active and user.profile.can_request_payments or user.profile.is_active and user.profile.can_execute_payments or user.profile.is_active and user.profile.can_manage_petty_cash or user.profile.is_active and user.profile.can_claim_personal_expense %}<details class="gl-settings-menu gl-staff-finance-menu"><summary role="button" aria-label="باز کردن منوی مالی"><span class="nav-ico">▣</span><span>مالی</span><span class="settings-caret">⌄</span></summary><div class="gl-settings-submenu">{% if executive_access or user.profile.can_request_payments or user.profile.can_claim_personal_expense %}<a href="{% url 'payments_workspace' %}#requestPanel">درخواست‌های من</a>{% endif %}{% if executive_access or user.profile.can_execute_payments %}<a href="{% url 'payments_workspace' %}#assignedPayments">پرداخت‌های من</a>{% endif %}{% if executive_access or user.profile.can_manage_petty_cash %}<a href="{% url 'payments_workspace' %}#expensePanel">تنخواه من</a>{% endif %}</div></details>{% endif %}
     {% if user.profile.role == 'quality_control' %}
     <a href="/" class="qc-personal-mobile-link"><span class="nav-ico">⌂</span><span>خانه شخصی</span></a>
     <a href="/attendance/" class="qc-personal-mobile-link"><span class="nav-ico">◷</span><span>ثبت ورود و خروج</span></a>
@@ -717,7 +730,18 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     <a href="{% url 'management_alert_center' %}" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid #c9ddd3;background:#f7fbf9;color:#155e43;border-radius:12px;text-decoration:none;font-weight:800;font-size:13px" aria-label="باز کردن مرکز هشدارها">🔔 هشدارها و اقدامات ←</a>
   </div>
   {% endif %}
-  {% block content %}{% endblock %}
+  {% if request.path == '/' and user.is_authenticated and user.profile.is_active and user.profile.can_execute_payments and user.profile.role != 'consultant' and user.profile.role != 'quality_control' %}
+  {% open_payment_count user as pending_finance %}
+  {% if pending_finance %}
+  <a class="gl-home-payment-alert" href="{% url 'payments_workspace' %}#assignedPayments" aria-label="{{ pending_finance }} دستور پرداخت در انتظار؛ مشاهده و اقدام">
+    <span class="gl-home-payment-alert-icon" aria-hidden="true">▣</span>
+    <span class="gl-home-payment-alert-copy"><strong>{{ pending_finance }} دستور پرداخت نیازمند اقدام شماست</strong><small>برای مشاهده دستور و ثبت رسید پرداخت، اینجا بزنید</small></span>
+    <span class="gl-home-payment-alert-count">{{ pending_finance }}</span>
+    <span class="gl-home-payment-alert-arrow" aria-hidden="true">←</span>
+  </a>
+  {% endif %}
+{% endif %}
+{% block content %}{% endblock %}
 </main>
 {% if user.is_authenticated and user.profile.role == 'call_center' %}
 <a class="cc-direct-side-entry {% if request.resolver_match.url_name == 'instagram_manual_lead' %}is-active{% endif %}" href="{% url 'instagram_manual_lead' %}" aria-label="ثبت لید از دایرکت اینستاگرام">
