@@ -57,6 +57,18 @@ class RequestForm(forms.ModelForm):
             raise ValidationError('شماره کارت یا شبا الزامی است.')
         return d
 
+class PersonalExpenseForm(forms.Form):
+    amount_million=forms.DecimalField(label='مبلغ (میلیون تومان)',min_value=0.000001,decimal_places=6,max_digits=15)
+    description=forms.CharField(label='شرح هزینه شخصی',min_length=10,widget=forms.Textarea(attrs={'rows':2}))
+    category=forms.ChoiceField(label='موضوع هزینه',choices=__import__('payments.models',fromlist=['EXPENSE_CATEGORIES']).EXPENSE_CATEGORIES)
+    receipt=forms.FileField(label='فاکتور یا رسید پرداخت')
+    def clean_receipt(self):
+        file=self.cleaned_data['receipt']
+        if file.size > 10*1024*1024 or file.content_type not in ('image/jpeg','image/png','image/webp','application/pdf'):
+            raise ValidationError('رسید باید PDF یا تصویر، حداکثر ۱۰ مگابایت باشد.')
+        return file
+
+
 class ExpenseForm(forms.ModelForm):
     class Meta:
         model=PettyCashExpense
@@ -192,6 +204,7 @@ def workspace(request):
     operation=request.POST.get('operation') if request.method=='POST' else None
     form=RequestForm(request.POST if operation=='request' else None,prefix='req')
     expense_form=ExpenseForm(request.POST if operation=='expense' else None,request.FILES if operation=='expense' else None,prefix='exp')
+    personal_form=PersonalExpenseForm(request.POST if operation=='personal_expense' else None,request.FILES if operation=='personal_expense' else None,prefix='personal')
     previous_recipient=(PaymentRequest.objects.filter(requester=request.user)
         .exclude(recipient_name='').order_by('-created_at').first())
     if previous_recipient and not form.is_bound:
@@ -203,6 +216,14 @@ def workspace(request):
     if request.method=='POST' and not (staff(request.user) or executive(request.user) or (operation=='expense' and getattr(request.user.profile,'can_manage_petty_cash',False)) or (operation=='request' and getattr(request.user.profile,'can_manage_petty_cash',False)) or (operation=='personal_expense' and getattr(request.user.profile,'can_claim_personal_expense',False))):
         raise PermissionDenied()
     if request.method=='POST':
+        if operation=='personal_expense' and personal_form.is_valid():
+            data=personal_form.cleaned_data
+            amount=int(data['amount_million']*1000000)
+            if amount<=0:
+                return HttpResponseBadRequest('مبلغ نامعتبر است.')
+            claim=PaymentRequest.objects.create(kind='personal_expense',amount_toman=amount,description=data['description'],category=data['category'],requester=request.user,beneficiary=request.user,branch=getattr(request.user.profile,'branch',None),recipient_name=request.user.get_full_name() or request.user.username,personal_expense_receipt=data['receipt'])
+            PaymentEvent.objects.create(payment=claim,actor=request.user,action='created',notes='هزینه شخصی؛ نیازمند بررسی و تأیید مدیریت')
+            return redirect('payments_workspace')
         if operation=='request' and request.POST.get('req-kind')=='petty_cash' and not executive(request.user) and not getattr(request.user.profile,'can_manage_petty_cash',False):
             raise PermissionDenied()
         if operation=='request' and request.POST.get('req-kind')!='petty_cash' and not (staff(request.user) or executive(request.user)):
@@ -231,7 +252,7 @@ def workspace(request):
     expenses=PettyCashExpense.objects.filter(holder=request.user)
     received=PaymentRequest.objects.filter(kind='petty_cash',beneficiary=request.user,state='paid').aggregate(x=Sum('amount_toman'))['x'] or 0
     spent=expenses.aggregate(x=Sum('amount_toman'))['x'] or 0
-    return render(request,'payments/workspace.html',dict(can_request=staff(request.user) or executive(request.user),can_petty=executive(request.user) or getattr(getattr(request.user,'profile',None),'can_manage_petty_cash',False), can_personal=executive(request.user) or getattr(getattr(request.user,'profile',None),'can_claim_personal_expense',False),submit_operation=operation,posted_million=request.POST.get('req-amount_million','') if operation=='request' else '',posted_exp_million=request.POST.get('exp-amount_million','') if operation=='expense' else '',form=form,expense_form=expense_form,queue=queue,completed=completed,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,has_petty_cash=(received>0 or spent>0),is_executive=executive(request.user), can_submit=staff(request.user) or executive(request.user)))
+    return render(request,'payments/workspace.html',dict(personal_form=personal_form,can_request=staff(request.user) or executive(request.user),can_petty=executive(request.user) or getattr(getattr(request.user,'profile',None),'can_manage_petty_cash',False), can_personal=executive(request.user) or getattr(getattr(request.user,'profile',None),'can_claim_personal_expense',False),submit_operation=operation,posted_million=request.POST.get('req-amount_million','') if operation=='request' else '',posted_exp_million=request.POST.get('exp-amount_million','') if operation=='expense' else '',form=form,expense_form=expense_form,queue=queue,completed=completed,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,has_petty_cash=(received>0 or spent>0),is_executive=executive(request.user), can_submit=staff(request.user) or executive(request.user)))
 
 def payment_approved_assignees():
     """Only explicitly designated Green Life payment operators, never the whole workforce."""
