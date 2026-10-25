@@ -9,6 +9,18 @@ def preserve_existing_access(apps, schema_editor):
     EmployeeProfile.objects.filter(user_id__in=assigned_ids).update(can_execute_payments=True)
     # Existing consultants are permitted to complete payments, retaining their live workflow.
     EmployeeProfile.objects.filter(role='consultant',is_active=True).update(can_execute_payments=True)
+    # Retain live payment responsibility for the five previously authorized operators.
+    for profile in EmployeeProfile.objects.filter(is_active=True,user__is_active=True).select_related('user').exclude(role__in=('referrer','referral_supervisor','scan_station')):
+        name=' '.join((profile.user.first_name or '',profile.user.last_name or '',profile.user.username or '')).replace('ي','ی').replace('ك','ک').lower()
+        known=(('صادقی' in name or 'sadeghi' in name)
+               or ('نادری' in name or 'naderi' in name)
+               or ('مرادی' in name or 'moradi' in name)
+               or (('معماری' in name or 'memari' in name) and ('مرجان' in name or 'marjan' in name))
+               or (('حسینی' in name or 'hosseini' in name) and ('زینب' in name or 'zeinab' in name or 'zeynab' in name or 'حسابدار' in (profile.job_title or ''))))
+        if known and not profile.can_execute_payments:
+            profile.can_execute_payments=True
+            profile.save(update_fields=['can_execute_payments'])
+
 
 
 class Migration(migrations.Migration):
