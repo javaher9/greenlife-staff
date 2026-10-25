@@ -114,6 +114,9 @@ class EmployeeProfile(models.Model):
     birth_date=models.DateField(null=True,blank=True)
     avatar=models.ImageField(upload_to='avatars/',null=True,blank=True)
     can_request_payments=models.BooleanField(default=False,help_text='اجازه ثبت درخواست پرداخت و تنخواه توسط مدیریت')
+    can_execute_payments=models.BooleanField(default=False,help_text='اجازه اجرای دستور پرداخت ارجاع‌شده')
+    can_manage_petty_cash=models.BooleanField(default=False,help_text='اجازه درخواست تنخواه و ثبت هزینه آن')
+    can_claim_personal_expense=models.BooleanField(default=False,help_text='اجازه ثبت هزینه پرداخت‌شده از حساب شخصی برای بازپرداخت')
     can_register_instagram_dm_lead=models.BooleanField(
         default=False,
         help_text='اجازه ثبت دستی لیدهایی که شماره‌شان از دایرکت اینستاگرام دریافت شده است.',
