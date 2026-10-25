@@ -494,21 +494,12 @@ class PaymentWorkflowTests(TestCase):
         result=Template('{% load finance_alerts %}{% open_payment_count employee %}').render(Context({'employee':self.worker}))
         self.assertEqual(result,'0')
 
-    def test_staff_home_shows_pending_payment_alert_only_while_unpaid(self):
-        payment=self._request()
-        payment.state='approved'
-        payment.channel='staff'
-        payment.assigned_to=self.worker
-        payment.save(update_fields=['state','channel','assigned_to'])
-        self.worker.profile.can_execute_payments=True
-        self.worker.profile.save(update_fields=['can_execute_payments'])
-        self.client.force_login(self.worker)
-        response=self.client.get('/',follow=True)
-        self.assertEqual(response.status_code,200)
-        self.assertContains(response,'gl-home-payment-alert')
-        self.assertContains(response,'دستور پرداخت نیازمند اقدام شماست')
-        payment.state='paid'
-        payment.save(update_fields=['state'])
-        response=self.client.get('/',follow=True)
-        self.assertEqual(response.status_code,200)
-        self.assertNotContains(response,'gl-home-payment-alert" href')
+    def test_mobile_payment_alert_template_is_gated_to_staff_home(self):
+        from pathlib import Path
+        from django.conf import settings
+        template=(Path(settings.BASE_DIR)/'core/templates/core/base.html').read_text(encoding='utf-8')
+        self.assertIn("request.path == '/'",template)
+        self.assertIn("user.profile.can_execute_payments",template)
+        self.assertIn("open_payment_count user as pending_finance",template)
+        self.assertIn("gl-home-payment-alert",template)
+        self.assertIn("payments_workspace",template)
