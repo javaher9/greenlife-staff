@@ -12,7 +12,7 @@
 <button class="primary" id="checkoutBtn" name="action" value="checkout" data-geofence="{% if geofence_enabled %}1{% else %}0{% endif %}">{% gl_t 'att.record_out' %}</button>
 {% else %}<span class="badge done">{% gl_t 'att.complete' %}</span>{% endif %}
 </form>
-{% if geofence_enabled and not record.check_in %}<small class="muted" id="geoStatus">📍 {% gl_t 'att.geo_required' radius=geofence_radius %}</small>{% endif %}
+{% if geofence_enabled and not record.check_out %}<small class="muted" id="geoStatus" role="status" aria-live="polite">📍 {% gl_t 'att.geo_required' radius=geofence_radius %}</small>{% endif %}
 {% if record.check_in_location_status == 'verified' %}<small class="badge done">📍 {% gl_t 'att.geo_ok' %}{% if record.check_in_distance_m != None %} · {% gl_t 'att.distance' count=record.check_in_distance_m %}{% endif %}</small>{% endif %}</div></section>
 <section class="panel"><div class="sectionhead"><h2>{% gl_t 'att.last_31' %}</h2></div><div class="tablewrap"><table><tr><th>{% gl_t 'common.date' %}</th><th>{% gl_t 'att.check_in' %}</th><th>{% gl_t 'att.check_out' %}</th><th>{% gl_t 'att.status' %}</th><th>{% gl_t 'att.worked' %}</th></tr>{% for r in recent %}<tr><td>{{ r.date|jdate }}</td><td>{{ r.check_in|date:'H:i'|default:'—' }}</td><td>{{ r.check_out|date:'H:i'|default:'—' }}</td><td>{{ r.get_status_display }}</td><td>{% if r.worked_minutes != None %}{% gl_t 'att.minutes' count=r.worked_minutes %}{% else %}—{% endif %}</td></tr>{% empty %}<tr><td colspan="5">{% gl_t 'att.no_records' %}</td></tr>{% endfor %}</table></div></section>{% endblock %}
 
@@ -30,24 +30,43 @@
     if(locating) return;
     locating=true;
     const original=btn.textContent;
-    btn.disabled=true; btn.textContent='در حال بررسی موقعیت...';
+    btn.disabled=true;
+    btn.textContent='در حال دریافت موقعیت...';
+    if(status) status.textContent='📍 در حال دریافت موقعیت دقیق؛ لطفاً GPS دستگاه را روشن نگه دارید.';
+    function reset(message){
+      if(status) status.textContent=message;
+      btn.disabled=false;btn.textContent=original;locating=false;
+    }
+    if(!window.isSecureContext){
+      reset('دسترسی به موقعیت نیازمند اتصال امن HTTPS است. اپ را با آدرس اصلی https باز کنید.');
+      return;
+    }
     if(!navigator.geolocation){
-      if(status) status.textContent='مرورگر شما GPS را در اختیار سایت قرار نمی‌دهد.';
-      btn.disabled=false; btn.textContent=original; locating=false; return;
+      reset('مرورگر به موقعیت مکانی دسترسی ندارد. مجوز Location را در تنظیمات سایت بررسی کنید.');
+      return;
     }
     navigator.geolocation.getCurrentPosition(function(pos){
-      document.getElementById('attendanceLat').value=pos.coords.latitude;
-      document.getElementById('attendanceLon').value=pos.coords.longitude;
-      document.getElementById('attendanceAccuracy').value=pos.coords.accuracy;
-      btn.dataset.ready='1'; btn.disabled=false; btn.textContent=original; btn.click();
+      const coords=pos && pos.coords;
+      if(!coords || !Number.isFinite(coords.latitude) || !Number.isFinite(coords.longitude) || !Number.isFinite(coords.accuracy)){
+        reset('موقعیت معتبر دریافت نشد. GPS را روشن کنید و دوباره امتحان کنید.');return;
+      }
+      document.getElementById('attendanceLat').value=coords.latitude;
+      document.getElementById('attendanceLon').value=coords.longitude;
+      document.getElementById('attendanceAccuracy').value=coords.accuracy;
+      if(status) status.textContent='📍 موقعیت دریافت شد؛ در حال ثبت...';
+      btn.dataset.ready='1';
+      btn.disabled=false;
+      btn.textContent=original;
+      locating=false;
+      if(form.requestSubmit) form.requestSubmit(btn);
+      else btn.click();
     },function(err){
-      let msg='دسترسی موقعیت مکانی لازم است.';
-      if(err.code===1) msg='اجازه Location را برای این سایت فعال کنید.';
-      if(err.code===2) msg='موقعیت فعلی قابل دریافت نیست؛ GPS را روشن کنید.';
-      if(err.code===3) msg='دریافت موقعیت طول کشید؛ دوباره امتحان کنید.';
-      if(status) status.textContent=msg;
-      btn.disabled=false; btn.textContent=original; locating=false;
-    },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+      let msg='دسترسی به موقعیت مکانی برقرار نشد.';
+      if(err && err.code===1) msg='مجوز Location این سایت مسدود است؛ از تنظیمات سایت آن را روی Allow قرار دهید.';
+      if(err && err.code===2) msg='GPS نتوانست موقعیت را تشخیص دهد؛ Location دستگاه را روشن کنید و نزدیک پنجره امتحان کنید.';
+      if(err && err.code===3) msg='دریافت GPS بیش از حد طول کشید؛ دوباره امتحان کنید.';
+      reset(msg);
+    },{enableHighAccuracy:true,timeout:20000,maximumAge:0});
   });
 })();
 </script>
