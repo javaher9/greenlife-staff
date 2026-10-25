@@ -283,7 +283,7 @@ def review(request,pk):
             assignee=p.requester
             if len(note)<5:
                 return HttpResponseBadRequest('سؤال توضیحی الزامی است.')
-            if not staff(assignee) and not executive(assignee):
+            if not assignee.is_active:
                 raise PermissionDenied()
             p.state='needs_info'
             p.clarification_assignee=assignee
@@ -372,6 +372,19 @@ def receipt(request,pk):
     if not p.payment_receipt:
         raise Http404()
     response=FileResponse(p.payment_receipt.open('rb'),as_attachment=True)
+    response['Cache-Control']='no-store, private'
+    response['X-Content-Type-Options']='nosniff'
+    return response
+
+
+@login_required
+def personal_expense_receipt(request,pk):
+    p=get_object_or_404(PaymentRequest,pk=pk,kind='personal_expense')
+    if not executive(request.user) and request.user.pk not in (p.requester_id,p.assigned_to_id):
+        raise PermissionDenied()
+    if not p.personal_expense_receipt:
+        raise Http404()
+    response=FileResponse(p.personal_expense_receipt.open('rb'),as_attachment=True)
     response['Cache-Control']='no-store, private'
     response['X-Content-Type-Options']='nosniff'
     return response
