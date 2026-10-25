@@ -441,3 +441,26 @@ class PaymentWorkflowTests(TestCase):
         self.assertEqual(res.status_code,404)
         p.refresh_from_db()
         self.assertEqual(p.state,'pending')
+
+    def test_executive_can_reassign_outstanding_payment_to_enabled_delegate(self):
+        p=self._request()
+        p.state='approved'
+        p.assigned_to=self.worker
+        p.channel='staff'
+        p.save(update_fields=['state','assigned_to','channel'])
+        self.other.first_name='خانم'
+        self.other.last_name='مرادی'
+        self.other.save(update_fields=['first_name','last_name'])
+        self.other.profile.can_execute_payments=True
+        self.other.profile.save(update_fields=['can_execute_payments'])
+        self.client.force_login(self.executive)
+        result=self.client.post(reverse('payments_reassign',args=[p.pk]),{'assigned_to':self.other.pk})
+        self.assertEqual(result.status_code,302)
+        p.refresh_from_db()
+        self.assertEqual(p.assigned_to_id,self.other.pk)
+        self.assertEqual(p.state,'approved')
+        self.assertTrue(p.events.filter(action='reassigned').exists())
+        p.state='paid'
+        p.save(update_fields=['state'])
+        denied=self.client.post(reverse('payments_reassign',args=[p.pk]),{'assigned_to':self.worker.pk})
+        self.assertEqual(denied.status_code,404)
