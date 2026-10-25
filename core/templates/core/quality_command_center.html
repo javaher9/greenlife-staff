@@ -5,7 +5,7 @@
 {% if user.profile.can_execute_payments %}
 <section class="qc-payment-alert {% if pending_finance %}qc-payment-alert-active{% endif %}" aria-label="دستورهای پرداخت من">
   <span class="qc-payment-symbol" aria-hidden="true">▣</span>
-  <div><strong>دستورهای پرداخت من</strong><p>{% if pending_finance %}{{ pending_finance }} دستور پرداخت در انتظار اقدام شماست{% else %}فعلاً دستور پرداختی در انتظار نیست{% endif %}</p></div>
+  <div class="qc-payment-copy"><strong>دستورهای پرداخت من</strong><p>{% if pending_finance %}{{ pending_finance }} دستور پرداخت در انتظار اقدام شماست{% else %}فعلاً دستور پرداختی در انتظار نیست{% endif %}</p></div>
   {% if pending_finance %}<b class="qc-payment-count">{{ pending_finance }}</b>{% endif %}
   <a href="{% url 'payments_workspace' %}#assignedPayments">{% if pending_finance %}مشاهده و اقدام{% else %}کارتابل پرداخت{% endif %} ←</a>
 </section>
@@ -13,8 +13,12 @@
 <style>
 .qc-payment-alert{display:flex;align-items:center;gap:12px;padding:11px 16px;margin:0 0 12px;border:1px solid rgba(119,151,187,.25);border-radius:15px;background:rgba(22,39,60,.74);color:#d9e8f8;direction:rtl}
 .qc-payment-alert .qc-payment-symbol{width:35px;height:35px;border-radius:10px;display:grid;place-items:center;background:#243b55}
-.qc-payment-alert div{flex:1;min-width:0}.qc-payment-alert strong{font-size:14px}.qc-payment-alert p{font-size:12px;opacity:.85;margin:1px 0}
-.qc-payment-alert a{color:#c6e5ff;border:1px solid #53738c;border-radius:9px;text-decoration:none;padding:7px 11px;font-size:12px;font-weight:800}
+.qc-payment-alert .qc-payment-copy{flex:1;min-width:0;text-align:right;color:#f7fbff!important;-webkit-text-fill-color:#f7fbff!important}
+.qc-payment-alert .qc-payment-copy strong{display:block;color:#fff!important;-webkit-text-fill-color:#fff!important;font-size:16px!important;font-weight:900!important;line-height:1.8;letter-spacing:0}
+.qc-payment-alert .qc-payment-copy p{color:#deebfa!important;-webkit-text-fill-color:#deebfa!important;font-size:13px!important;font-weight:600!important;opacity:1!important;margin:1px 0;line-height:1.8}
+.qc-payment-alert .qc-payment-symbol{color:#fff!important;-webkit-text-fill-color:#fff!important;font-size:18px}
+.qc-payment-alert .qc-payment-count{color:#fff!important;-webkit-text-fill-color:#fff!important;font-weight:900}
+.qc-payment-alert a{color:#fff!important;-webkit-text-fill-color:#fff!important;background:#334d76;border:1px solid #53738c;border-radius:9px;text-decoration:none;padding:7px 11px;font-size:12px;font-weight:800}
 .qc-payment-alert-active{background:linear-gradient(100deg,#22365a,#273b4d);border-color:#b0a1ef;box-shadow:0 0 0 1px rgba(167,150,255,.12)}
 .qc-payment-count{background:#7656cf;color:white;border-radius:999px;min-width:27px;height:27px;text-align:center;line-height:27px}
 @media(max-width:550px){.qc-payment-alert{flex-wrap:wrap}.qc-payment-alert a{margin-right:auto}}
