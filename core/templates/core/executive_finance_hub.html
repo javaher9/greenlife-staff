@@ -1,0 +1,30 @@
+{% load static %}
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>حسابداری مدیریت | گرین‌لایف</title>
+<style>
+:root{color-scheme:dark;--bg:#080d18;--pane:#111b2d;--edge:#34445d;--text:#eef4fc;--mute:#a9b6cc;--violet:#a969fa;--green:#3ee0a1}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 90% 0%,#30204d 0,transparent 38%),var(--bg);font-family:Tahoma,Arial,sans-serif;color:var(--text)}.layout{max-width:1600px;margin:auto;display:grid;grid-template-columns:245px minmax(0,1fr);min-height:100vh}.side{padding:26px 16px;background:#0c1321;border-left:1px solid var(--edge)}.brand{font-size:24px;font-weight:800;color:var(--green);margin-bottom:28px}.nav a,.tile{display:block;color:inherit;text-decoration:none;border:1px solid transparent;border-radius:16px;padding:15px;margin-bottom:9px}.nav a:hover,.nav a:focus-visible,.tile:hover,.tile:focus-visible{border-color:var(--violet);background:#29203f;outline:none}.nav .current{background:#382152;border-color:#8650c7}.main{padding:28px}.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}.sub,.hint{color:var(--mute);line-height:1.8}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:23px}.tile{background:linear-gradient(140deg,#1b2440,#121a2a);border:1px solid var(--edge);min-height:148px;padding:20px;position:relative}.tile strong{display:block;font-size:19px;margin-bottom:13px}.tile .action{color:var(--green);font-size:13px}.tile .hint{font-size:13px}.pending .action{color:#d7b0ff}.tag{display:inline-block;border:1px solid #61517c;padding:6px 12px;border-radius:24px;font-size:12px;color:#dcc9ff}.section{margin-top:27px}.note{border:1px solid #4a3f64;background:#211d35;padding:16px;border-radius:14px;color:#e6d9f4;line-height:1.9}@media(max-width:950px){.layout{grid-template-columns:1fr}.side{padding:14px}.nav{display:flex;overflow:auto;gap:6px}.nav a{flex-shrink:0}.brand{margin-bottom:9px}.main{padding:18px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.grid{grid-template-columns:1fr}.tile{min-height:110px}}@media(prefers-reduced-motion:no-preference){.tile{transition:background .15s,border-color .15s}}
+</style>
+</head><body><div class="layout">
+<aside class="side"><div class="brand">گرین‌لایف <span class="tag">مدیرعامل</span></div><nav class="nav" aria-label="ناوبری مالی"><a class="current" href="{% url 'executive_finance_hub' %}">داشبورد مالی</a><a href="{% url 'finance_dashboard' %}">حسابداری و اسناد</a><a href="{% url 'analytics_dashboard' %}">تحلیل عملکرد</a><a href="{% url 'payroll_dashboard' %}">حقوق و پرسنل</a><a href="{% url 'management_alert_center' %}">هشدارها</a><a href="{% url 'dashboard' %}">بازگشت به مدیریت</a></nav></aside>
+<main class="main"><header class="top"><div><h1>حسابداری مدیریت</h1><p class="sub">مرکز فرماندهی مالی — نسخه ابتدایی ناوبری امن و قابل کلیک</p></div><span class="tag">نمایش محرمانه مدیرعامل</span></header>
+<div class="note" role="status">در این نسخه هیچ عدد مالی تخمینی یا آزمایشی نمایش داده نمی‌شود. کارت‌های فعال به صفحات موجود می‌روند؛ برای تحلیل‌های جدید اتصال داده و کنترل سطح دسترسی جداگانه لازم است.</div>
+<section class="grid" aria-label="صفحات مالی">
+<a class="tile" href="{% url 'finance_dashboard' %}"><strong>درآمد و دریافت‌ها</strong><span class="hint">گردش و تراکنش‌های ثبت‌شده در حسابداری فعلی</span><p class="action">ورود به صفحه ←</p></a>
+<a class="tile" href="{% url 'finance_dashboard' %}"><strong>هزینه‌ها و اسناد</strong><span class="hint">ثبت، بررسی و کنترل اسناد در صفحه موجود</span><p class="action">ورود به صفحه ←</p></a>
+<a class="tile" href="{% url 'analytics_dashboard' %}"><strong>عملکرد و سودآوری</strong><span class="hint">گزارش‌های تحلیلی موجود؛ سود خالص نیازمند تطبیق داده‌هاست</span><p class="action">مشاهده تحلیل‌ها ←</p></a>
+<a class="tile" href="{% url 'payroll_dashboard' %}"><strong>حقوق و پرسنل</strong><span class="hint">ورود به سامانه حقوق موجود</span><p class="action">ورود به صفحه ←</p></a>
+<a class="tile" href="{% url 'management_alert_center' %}"><strong>هشدارها و اقدامات</strong><span class="hint">مشاهده مرکز هشدار موجود</span><p class="action">بررسی هشدارها ←</p></a>
+<a class="tile" href="{% url 'sales_targets_dashboard' %}"><strong>تارگت فروش شعب</strong><span class="hint">مقایسه عملکرد با اهداف فروش</span><p class="action">نمایش تارگت‌ها ←</p></a>
+</section>
+<h2 class="section" id="future">صفحات تخصصی در نقشه توسعه</h2>
+<section class="grid" aria-label="قابلیت‌های در دست توسعه">
+<div class="tile pending"><strong>نقدینگی و بانک‌ها</strong><p class="hint">به اتصال و تطبیق حساب‌های بانکی نیاز دارد</p><span class="action">هنوز فعال نیست</span></div>
+<div class="tile pending"><strong>سهم شرکت و مریم</strong><p class="hint">مبنای محاسبه باید از قرارداد تأییدشده خوانده شود</p><span class="action">هنوز فعال نیست</span></div>
+<div class="tile pending"><strong>تحلیل هوشمند AI</strong><p class="hint">فقط پس از ایجاد API امن و استفاده از اعداد واقعی</p><span class="action">هنوز فعال نیست</span></div>
+<div class="tile pending"><strong>تنخواه و تسویه</strong><p class="hint">ریزبینی اسناد و وضعیت تسویه هر پرسنل</p><span class="action">هنوز فعال نیست</span></div>
+<div class="tile pending"><strong>مغایرت‌ها و حسابرسی</strong><p class="hint">گزارش تغییرات و کنترل دسترسی‌های فنی</p><span class="action">هنوز فعال نیست</span></div>
+<div class="tile pending"><strong>پیش‌بینی جریان نقدی</strong><p class="hint">پس از اتصال داده‌های تعهدات و وصولی‌ها</p><span class="action">هنوز فعال نیست</span></div>
+</section></main></div></body></html>
