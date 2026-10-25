@@ -14,8 +14,8 @@ class PaymentWorkflowTests(TestCase):
         cls.worker=User.objects.create_user(username='payments-worker',password='test-password',last_name='نادری')
         cls.other=User.objects.create_user(username='payments-other',password='test-password')
         branch=Branch.objects.create(name='Payment Test Branch')
-        EmployeeProfile.objects.update_or_create(user=cls.worker,defaults={'branch':branch,'role':'consultant','is_active':True})
-        EmployeeProfile.objects.update_or_create(user=cls.other,defaults={'branch':branch,'role':'consultant','is_active':True})
+        EmployeeProfile.objects.update_or_create(user=cls.worker,defaults={'branch':branch,'role':'consultant','is_active':True,'can_request_payments':True,'can_execute_payments':True,'can_manage_petty_cash':True})
+        EmployeeProfile.objects.update_or_create(user=cls.other,defaults={'branch':branch,'role':'consultant','is_active':True,'can_request_payments':True,'can_execute_payments':True,'can_manage_petty_cash':True})
         cls.branch=branch
 
     def _request(self):
@@ -76,7 +76,10 @@ class PaymentWorkflowTests(TestCase):
 
     def test_other_staff_role_cannot_open_payment_workspace(self):
         self.other.profile.role='receptionist'
-        self.other.profile.save(update_fields=['role'])
+        self.other.profile.can_request_payments=False
+        self.other.profile.can_execute_payments=False
+        self.other.profile.can_manage_petty_cash=False
+        self.other.profile.save(update_fields=['role','can_request_payments','can_execute_payments','can_manage_petty_cash'])
         self.client.force_login(self.other)
         response=self.client.get(reverse('payments_workspace'))
         self.assertEqual(response.status_code,403)
@@ -257,7 +260,9 @@ class PaymentWorkflowTests(TestCase):
         self.other.profile.role='employee'
         self.other.profile.employee_code='EMP-PAY-TEST'
         self.other.profile.can_request_payments=False
-        self.other.profile.save(update_fields=['role','employee_code','can_request_payments'])
+        self.other.profile.can_manage_petty_cash=False
+        self.other.profile.can_execute_payments=False
+        self.other.profile.save(update_fields=['role','employee_code','can_request_payments','can_manage_petty_cash','can_execute_payments'])
         self.client.force_login(self.other)
         self.assertEqual(self.client.get(reverse('payments_workspace')).status_code,403)
         self.client.force_login(self.executive)
