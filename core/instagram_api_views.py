@@ -294,7 +294,7 @@ def instagram_oauth_start(request):
     auth_url=INSTAGRAM_OAUTH_URL+'?'+urlencode(query)
     # Some reverse-proxy stacks rewrite external Location headers. Return a tiny
     # navigation document so the browser itself performs the absolute jump to Instagram.
-    safe_url=escape(auth_url, quote=True)
+    safe_url=escape(auth_url)
     script_url=json.dumps(auth_url)
     return HttpResponse(
         '<!doctype html><html><head><meta charset="utf-8">'
