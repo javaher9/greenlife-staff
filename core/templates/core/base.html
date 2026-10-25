@@ -397,9 +397,6 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     <span><b>GreenLife</b><small>STAFF APP</small></span>
   </div>
   <nav class="app-nav">
-  {% if user.is_authenticated and user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' or user.profile.role == 'call_center' or user.profile.role == 'consultant' %}
-    <a href="{% url 'staff_customer_requests' %}" class="{% if request.resolver_match.url_name == 'staff_customer_requests' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>درخواست‌های مشتریان</span></a>
-  {% endif %}
   {% if user.is_superuser or user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' or 'کنترل کیفیت' in user.profile.job_title %}
     <a href="{% url 'quality_command_center' %}" class="{% if request.resolver_match.url_name == 'quality_command_center' %}is-active{% endif %}"><span class="nav-ico">◉</span><span>اتاق فرمان کنترل کیفیت</span></a>
     {% endif %}
@@ -671,6 +668,14 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     {% endif %}
     {% endif %}
     {% endif %}{# restricted quality-control role menu #}
+  {% if user.is_authenticated and user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' or user.profile.role == 'call_center' or user.profile.role == 'consultant' %}
+    <details class="gl-settings-menu gl-customer-club-menu" {% if request.resolver_match.url_name == 'staff_customer_requests' %}open{% endif %}>
+      <summary><span class="nav-ico">♧</span><span>باشگاه مشتریان</span><span class="settings-caret">⌄</span></summary>
+      <div class="gl-settings-submenu">
+        <a href="{% url 'staff_customer_requests' %}" class="{% if request.resolver_match.url_name == 'staff_customer_requests' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>درخواست‌های مشتریان</span></a>
+      </div>
+    </details>
+  {% endif %}
   </nav>
   {% if executive_access %}
   <section class="gl-quick-shortcuts" aria-label="میانبرهای مدیریتی">
