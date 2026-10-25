@@ -14,8 +14,8 @@ class PaymentWorkflowTests(TestCase):
         cls.worker=User.objects.create_user(username='payments-worker',password='test-password',last_name='نادری')
         cls.other=User.objects.create_user(username='payments-other',password='test-password')
         branch=Branch.objects.create(name='Payment Test Branch')
-        EmployeeProfile.objects.update_or_create(user=cls.worker,defaults={'branch':branch,'role':'consultant','is_active':True})
-        EmployeeProfile.objects.update_or_create(user=cls.other,defaults={'branch':branch,'role':'consultant','is_active':True})
+        EmployeeProfile.objects.update_or_create(user=cls.worker,defaults={'branch':branch,'role':'consultant','is_active':True,'can_request_payments':True,'can_execute_payments':True,'can_manage_petty_cash':True})
+        EmployeeProfile.objects.update_or_create(user=cls.other,defaults={'branch':branch,'role':'consultant','is_active':True,'can_request_payments':True,'can_execute_payments':True,'can_manage_petty_cash':True})
         cls.branch=branch
 
     def _request(self):
@@ -76,7 +76,10 @@ class PaymentWorkflowTests(TestCase):
 
     def test_other_staff_role_cannot_open_payment_workspace(self):
         self.other.profile.role='receptionist'
-        self.other.profile.save(update_fields=['role'])
+        self.other.profile.can_request_payments=False
+        self.other.profile.can_execute_payments=False
+        self.other.profile.can_manage_petty_cash=False
+        self.other.profile.save(update_fields=['role','can_request_payments','can_execute_payments','can_manage_petty_cash'])
         self.client.force_login(self.other)
         response=self.client.get(reverse('payments_workspace'))
         self.assertEqual(response.status_code,403)
@@ -169,7 +172,9 @@ class PaymentWorkflowTests(TestCase):
         self.other.last_name='مرادی'
         self.other.save(update_fields=['last_name'])
         self.other.profile.role='quality_control'
-        self.other.profile.save(update_fields=['role'])
+        self.other.profile.can_request_payments=False
+        self.other.profile.can_manage_petty_cash=False
+        self.other.profile.save(update_fields=['role','can_request_payments','can_manage_petty_cash'])
         p=self._request()
         self.client.force_login(self.executive)
         approved=self.client.post(reverse('payments_review',args=[p.pk]),{
@@ -257,7 +262,9 @@ class PaymentWorkflowTests(TestCase):
         self.other.profile.role='employee'
         self.other.profile.employee_code='EMP-PAY-TEST'
         self.other.profile.can_request_payments=False
-        self.other.profile.save(update_fields=['role','employee_code','can_request_payments'])
+        self.other.profile.can_manage_petty_cash=False
+        self.other.profile.can_execute_payments=False
+        self.other.profile.save(update_fields=['role','employee_code','can_request_payments','can_manage_petty_cash','can_execute_payments'])
         self.client.force_login(self.other)
         self.assertEqual(self.client.get(reverse('payments_workspace')).status_code,403)
         self.client.force_login(self.executive)
@@ -376,3 +383,84 @@ class PaymentWorkflowTests(TestCase):
         self.assertEqual(res.status_code,404)
         p.refresh_from_db()
         self.assertEqual(p.state,'pending')
+
+    def test_executive_can_toggle_each_financial_permission(self):
+        self.client.force_login(self.executive)
+        for permission in ('can_request_payments','can_execute_payments','can_manage_petty_cash','can_claim_personal_expense'):
+            res=self.client.post(reverse('payments_request_permissions'),{
+                'profile_id':self.other.profile.pk,'permission':permission,'enabled':'1'})
+            self.assertEqual(res.status_code,302)
+            self.other.profile.refresh_from_db()
+            self.assertTrue(getattr(self.other.profile,permission))
+            off=self.client.post(reverse('payments_request_permissions'),{
+                'profile_id':self.other.profile.pk,'permission':permission,'enabled':'0'})
+            self.assertEqual(off.status_code,302)
+            self.other.profile.refresh_from_db()
+            self.assertFalse(getattr(self.other.profile,permission))
+
+    def test_personal_expense_claim_requires_permission_and_receipt(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.other.profile.can_claim_personal_expense=False
+        self.other.profile.save(update_fields=['can_claim_personal_expense'])
+        data={'operation':'personal_expense','personal-amount_million':'12',
+              'personal-description':'خرید ملزومات با حساب شخصی برای مرکز',
+              'personal-category':'supplies'}
+        self.client.force_login(self.other)
+        self.assertEqual(self.client.post(reverse('payments_workspace'),data).status_code,403)
+        self.other.profile.can_claim_personal_expense=True
+        self.other.profile.save(update_fields=['can_claim_personal_expense'])
+        no_receipt=self.client.post(reverse('payments_workspace'),data)
+        self.assertEqual(no_receipt.status_code,200)
+        self.assertFalse(PaymentRequest.objects.filter(requester=self.other,kind='personal_expense').exists())
+        data['personal-receipt']=SimpleUploadedFile('purchase.pdf',b'%PDF-1.4 test',content_type='application/pdf')
+        ok=self.client.post(reverse('payments_workspace'),data)
+        self.assertEqual(ok.status_code,302)
+        claim=PaymentRequest.objects.get(requester=self.other,kind='personal_expense')
+        self.assertEqual(claim.amount_toman,12000000)
+        self.assertEqual(claim.state,'pending')
+        self.assertTrue(claim.personal_expense_receipt)
+
+    def test_generic_request_cannot_bypass_personal_expense_permission(self):
+        self.client.force_login(self.worker)
+        self.worker.profile.can_claim_personal_expense=False
+        self.worker.profile.save(update_fields=['can_claim_personal_expense'])
+        response=self.client.post(reverse('payments_workspace'),{
+            'operation':'request','req-kind':'personal_expense',
+            'req-amount_million':'12','req-description':'خرید ملزومات از جیب خودم برای مرکز',
+            'req-category':'supplies','req-cost_owner':'company'})
+        self.assertEqual(response.status_code,400)
+        self.assertFalse(PaymentRequest.objects.filter(kind='personal_expense',requester=self.worker).exists())
+
+    def test_disabled_delegate_cannot_be_approved_or_see_quick_payment(self):
+        p=self._request()
+        self.worker.profile.can_execute_payments=False
+        self.worker.profile.save(update_fields=['can_execute_payments'])
+        self.client.force_login(self.executive)
+        res=self.client.post(reverse('payments_review',args=[p.pk]),{
+            'action':'approve','channel':'staff','assigned_to':self.worker.pk})
+        self.assertEqual(res.status_code,404)
+        p.refresh_from_db()
+        self.assertEqual(p.state,'pending')
+
+    def test_executive_can_reassign_outstanding_payment_to_enabled_delegate(self):
+        p=self._request()
+        p.state='approved'
+        p.assigned_to=self.worker
+        p.channel='staff'
+        p.save(update_fields=['state','assigned_to','channel'])
+        self.other.first_name='خانم'
+        self.other.last_name='مرادی'
+        self.other.save(update_fields=['first_name','last_name'])
+        self.other.profile.can_execute_payments=True
+        self.other.profile.save(update_fields=['can_execute_payments'])
+        self.client.force_login(self.executive)
+        result=self.client.post(reverse('payments_reassign',args=[p.pk]),{'assigned_to':self.other.pk})
+        self.assertEqual(result.status_code,302)
+        p.refresh_from_db()
+        self.assertEqual(p.assigned_to_id,self.other.pk)
+        self.assertEqual(p.state,'approved')
+        self.assertTrue(p.events.filter(action='reassigned').exists())
+        p.state='paid'
+        p.save(update_fields=['state'])
+        denied=self.client.post(reverse('payments_reassign',args=[p.pk]),{'assigned_to':self.worker.pk})
+        self.assertEqual(denied.status_code,404)
