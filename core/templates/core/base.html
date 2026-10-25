@@ -1,4 +1,4 @@
-{% load static jalali_tags staff_i18n %}<!doctype html>
+{% load static jalali_tags staff_i18n payment_access %}<!doctype html>
 <html lang="{{ ui_language|default:'fa' }}" dir="{{ ui_direction|default:'rtl' }}" class="{% if user.is_authenticated and user.profile.role == 'call_center' %}gl-call-center-html{% endif %}">
 <head>
   <meta charset="utf-8">
@@ -673,6 +673,8 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
       <a href="/requests/">{% gl_t 'common.leave' %}</a>
       <a href="{% url 'staff_security' %}">{% gl_t 'shell.password_short' %}</a>
     {% endif %}
+    {% assigned_payment_count user as delegated_payment_count %}
+    {% if delegated_payment_count %}<a href="{% url 'payments_workspace' %}" style="display:flex;align-items:center;gap:8px;color:#d1ffe6;font-weight:bold"><span class="nav-ico">▣</span> پرداخت‌های ارجاعی من ({{ delegated_payment_count }})</a>{% endif %}
     {% if executive_access or user.profile.is_active and user.profile.role == "consultant" or user.profile.is_active and user.profile.can_request_payments %}<a href="{% url 'payments_workspace' %}"><span class="nav-ico">▣</span> درخواست پرداخت</a>{% endif %}
     {% if executive_access %}<a href="{% url 'payments_expenses' %}">مالی ـ هزینه‌ها</a><a href="{% url 'payments_admin' %}">تأیید درخواست‌های پرداخت</a>{% endif %}
     <a href="/profile/">{% gl_t 'common.profile' %}</a><a href="/logout/" class="sidebar-logout-link">{% gl_t 'common.logout' %}</a>
