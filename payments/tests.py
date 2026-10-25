@@ -464,3 +464,32 @@ class PaymentWorkflowTests(TestCase):
         p.save(update_fields=['state'])
         denied=self.client.post(reverse('payments_reassign',args=[p.pk]),{'assigned_to':self.worker.pk})
         self.assertEqual(denied.status_code,404)
+
+    def test_approved_queue_has_prominent_payment_amount_and_count(self):
+        p=self._request()
+        p.state='approved'
+        p.channel='staff'
+        p.assigned_to=self.worker
+        p.save(update_fields=['state','channel','assigned_to'])
+        self.client.force_login(self.worker)
+        response=self.client.get(reverse('payments_workspace'))
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'دستورهای پرداخت من')
+        self.assertContains(response,'payment-inbox-count')
+        self.assertContains(response,'payment-amount')
+
+    def test_payment_indicator_counts_only_own_open_assignments(self):
+        from django.template import Context, Template
+        p=self._request()
+        p.state='approved'
+        p.channel='staff'
+        p.assigned_to=self.worker
+        p.save(update_fields=['state','channel','assigned_to'])
+        self.worker.profile.can_execute_payments=True
+        self.worker.profile.save(update_fields=['can_execute_payments'])
+        result=Template('{% load finance_alerts %}{% open_payment_count employee %}').render(Context({'employee':self.worker}))
+        self.assertEqual(result,'1')
+        p.state='paid'
+        p.save(update_fields=['state'])
+        result=Template('{% load finance_alerts %}{% open_payment_count employee %}').render(Context({'employee':self.worker}))
+        self.assertEqual(result,'0')
