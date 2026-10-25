@@ -10,7 +10,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.utils.html import format_html
 
-from .models import Task, ReferralLead, ReferralProfile
+from .models import Task, ReferralLead, ReferralProfile, CustomerServiceRequest
 from .views import role_of
 
 
@@ -36,6 +36,25 @@ def collect_alerts(user):
             f"/tasks/{task.pk}/", "danger" if days >= 3 else "warning",
             task.assigned_to.get_full_name() or task.assigned_to.username,
         ))
+    # Customer-club requests: same role/branch/kind scoping as the staff queue.
+    # Only pending requests are counted; completed bookings never trigger alerts.
+    if role in ("admin", "internal_manager", "manager", "call_center", "consultant"):
+        pending = CustomerServiceRequest.objects.filter(status="pending")
+        profile = getattr(user, "profile", None)
+        if role == "call_center":
+            pending = pending.filter(kind="visit")
+        elif role == "consultant":
+            pending = pending.filter(kind="device", branch_id=profile.branch_id) if profile and profile.branch_id else pending.none()
+        elif role == "manager":
+            pending = pending.filter(branch_id=profile.branch_id) if profile and profile.branch_id else pending.none()
+        count = pending.count()
+        if count:
+            alerts.append(_item(
+                "customer-requests-pending", "درخواست‌های مشتریان در انتظار رسیدگی",
+                f"{count} درخواست جدید در صف · برای مشاهده و پیگیری کلیک کنید",
+                "/staff/customer-requests/?status=pending",
+                "warning", "مسئول مربوطه",
+            ))
     # Sales network: organization-level target, never attributed to individuals.
     if role in ("admin", "internal_manager", "referral_supervisor"):
         start = timezone.make_aware(datetime.combine(today, time.min),
