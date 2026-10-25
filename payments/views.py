@@ -318,6 +318,42 @@ def review(request,pk):
 
 @login_required
 @require_POST
+def executive_edit_pending_payment(request, pk):
+    """Executive-only corrections before approval; keep an immutable audit event."""
+    if not executive(request.user):
+        raise PermissionDenied()
+    from decimal import Decimal, InvalidOperation
+    with transaction.atomic():
+        payment = get_object_or_404(PaymentRequest.objects.select_for_update(), pk=pk)
+        if payment.state != 'pending':
+            return HttpResponseBadRequest('فقط درخواست‌های در انتظار تأیید قابل اصلاح هستند.')
+        raw = request.POST.get('amount_million', '').strip().replace(',', '')
+        try:
+            million = Decimal(raw)
+            toman = million * Decimal('1000000')
+            if not million.is_finite() or toman != int(toman) or not (1 <= toman <= 9223372036854775807):
+                raise ValueError()
+        except (InvalidOperation, ValueError, OverflowError):
+            return HttpResponseBadRequest('مبلغ معتبر به میلیون تومان وارد کنید.')
+        description = request.POST.get('description', '').strip()
+        recipient_name = request.POST.get('recipient_name', '').strip()
+        recipient_iban = request.POST.get('recipient_iban', '').strip()
+        recipient_card = request.POST.get('recipient_card', '').strip()
+        if len(description) < 10 or len(recipient_name) > 160 or len(recipient_iban) > 34 or len(recipient_card) > 24:
+            return HttpResponseBadRequest('شرح یا اطلاعات گیرنده نامعتبر است.')
+        if payment.kind == 'payment' and (not recipient_name or not (recipient_iban or recipient_card)):
+            return HttpResponseBadRequest('نام گیرنده و شماره کارت یا شبا الزامی است.')
+        before = (payment.amount_toman, payment.description, payment.recipient_name, payment.recipient_iban, payment.recipient_card)
+        after = (int(toman), description, recipient_name, recipient_iban, recipient_card)
+        if before != after:
+            payment.amount_toman, payment.description, payment.recipient_name, payment.recipient_iban, payment.recipient_card = after
+            payment.save(update_fields=['amount_toman','description','recipient_name','recipient_iban','recipient_card'])
+            import json
+            PaymentEvent.objects.create(payment=payment, actor=request.user, action='executive_edit', notes=json.dumps({'before': before, 'after': after}, ensure_ascii=False)[:250])
+    return redirect('payments_admin')
+
+@login_required
+@require_POST
 def reassign_payment(request,pk):
     if not executive(request.user):
         raise PermissionDenied()
