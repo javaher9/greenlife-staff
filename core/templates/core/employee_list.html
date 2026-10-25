@@ -40,6 +40,7 @@
         <a class="mini" href="{% url 'employee_task_create' employee.pk %}">وظیفه</a>
         <a class="mini" href="{% url 'personnel_action_add' employee.pk %}">اقدام</a>
         <a class="mini" href="{% url 'employee_360' employee.pk %}">عملکرد</a>
+        {% if executive_access or user.is_superuser %}<a class="mini" href="{% url 'payments_admin' %}#finance-person-{{ employee.pk }}">دسترسی مالی</a>{% endif %}
       </div>
     </article>
     {% empty %}<div class="personnel-empty">هنوز پرسنلی ثبت نشده است.</div>{% endfor %}
