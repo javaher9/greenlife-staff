@@ -107,7 +107,7 @@ PAYMENT_ASSIGNEES = (
 
 def five_payment_assignees():
     """Only uniquely identified active employee accounts, never sales-network members."""
-    candidates=User.objects.filter(is_active=True,profile__is_active=True).select_related('profile')
+    candidates=User.objects.filter(is_active=True,profile__is_active=True,profile__can_execute_payments=True).select_related('profile')
     results=[]
     for slug,title,aliases in PAYMENT_ASSIGNEES:
         matched=[]
@@ -166,7 +166,8 @@ def request_permission_settings(request):
             return HttpResponseBadRequest('نوع مجوز مالی نامعتبر است.')
         setattr(profile,permission,request.POST.get('enabled')=='1')
         profile.save(update_fields=[permission])
-        return redirect('payments_admin')
+        from django.urls import reverse
+        return redirect(f'{reverse("payments_admin")}#finance-person-{profile.pk}')
     return redirect('payments_admin')
 
 @login_required
@@ -267,7 +268,7 @@ def payment_approved_assignees():
     match=Q(pk__in=[])
     for name in names:
         match |= Q(last_name__icontains=name) | Q(first_name__icontains=name)
-    return User.objects.filter(is_active=True,profile__is_active=True).filter(match).exclude(profile__role__in=('referrer','referral_supervisor','scan_station')).select_related('profile','profile__branch').distinct().order_by('last_name','first_name')
+    return User.objects.filter(is_active=True,profile__is_active=True,profile__can_execute_payments=True).filter(match).exclude(profile__role__in=('referrer','referral_supervisor','scan_station')).select_related('profile','profile__branch').distinct().order_by('last_name','first_name')
 
 
 @login_required
