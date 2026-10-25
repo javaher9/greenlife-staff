@@ -245,6 +245,36 @@ def instagram_settings(request):
 
 @_executive_required
 @require_GET
+def instagram_oauth_health(request):
+    try:
+        config=InstagramIntegrationSettings.load()
+        state=_issue_oauth_state(request)
+        auth_url=INSTAGRAM_OAUTH_URL+'?'+urlencode({
+            'client_id':config.app_id,
+            'redirect_uri':_redirect_uri(request),
+            'response_type':'code',
+            'scope':','.join(INSTAGRAM_SCOPES),
+            'state':state,
+            'force_reauth':'true',
+        })
+        parsed=urlsplit(auth_url)
+        return JsonResponse({
+            'ok':True,
+            'configured':bool(config.is_configured),
+            'authorize_host':parsed.hostname,
+            'redirect_uri':_redirect_uri(request),
+            'state_valid':_consume_oauth_state(request,state),
+        })
+    except Exception as exc:
+        return JsonResponse({
+            'ok':False,
+            'error_type':type(exc).__name__,
+            'error':str(exc)[:300],
+        },status=500)
+
+
+@_executive_required
+@require_GET
 def instagram_oauth_start(request):
     config=InstagramIntegrationSettings.load()
     if not config.is_configured:
