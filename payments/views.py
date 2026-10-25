@@ -148,7 +148,7 @@ def request_permission_settings(request):
     from core.models import EmployeeProfile
     # Restrict grants to real employed staff, never referral/sales-network members.
     workforce=EmployeeProfile.objects.filter(is_active=True,user__is_active=True).exclude(
-        role__in=['referrer','scan_station']
+        role__in=['referrer','referral_supervisor','scan_station']
     ).filter(
         ~Q(role='employee') | Q(branch__isnull=False) |
         (Q(employee_code__isnull=False) & ~Q(employee_code='')) |
@@ -216,6 +216,8 @@ def workspace(request):
     if request.method=='POST' and not (staff(request.user) or executive(request.user) or (operation=='expense' and getattr(request.user.profile,'can_manage_petty_cash',False)) or (operation=='request' and getattr(request.user.profile,'can_manage_petty_cash',False)) or (operation=='personal_expense' and getattr(request.user.profile,'can_claim_personal_expense',False))):
         raise PermissionDenied()
     if request.method=='POST':
+        if operation=='request' and request.POST.get('req-kind') not in ('payment','petty_cash'):
+            return HttpResponseBadRequest('نوع درخواست نامعتبر است.')
         if operation=='personal_expense' and personal_form.is_valid():
             data=personal_form.cleaned_data
             amount=int(data['amount_million']*1000000)
