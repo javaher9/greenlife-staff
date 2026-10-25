@@ -376,3 +376,19 @@ class PaymentWorkflowTests(TestCase):
         self.assertEqual(res.status_code,404)
         p.refresh_from_db()
         self.assertEqual(p.state,'pending')
+
+    def test_assigned_payment_visible_in_staff_navigation(self):
+        self.other.profile.role='quality_control'
+        self.other.profile.save(update_fields=['role'])
+        p=self._request()
+        p.assigned_to=self.other
+        p.state='approved'
+        p.channel='staff'
+        p.save(update_fields=['assigned_to','state','channel'])
+        self.client.force_login(self.other)
+        home=self.client.get('/')
+        self.assertEqual(home.status_code,200)
+        self.assertContains(home,'پرداخت‌های ارجاعی من (1)')
+        work=self.client.get(reverse('payments_workspace'))
+        self.assertEqual(work.status_code,200)
+        self.assertContains(work,'Approved supplier payout')
