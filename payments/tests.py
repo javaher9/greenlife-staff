@@ -503,12 +503,12 @@ class PaymentWorkflowTests(TestCase):
         self.worker.profile.can_execute_payments=True
         self.worker.profile.save(update_fields=['can_execute_payments'])
         self.client.force_login(self.worker)
-        response=self.client.get('/')
+        response=self.client.get('/',follow=True)
         self.assertEqual(response.status_code,200)
         self.assertContains(response,'gl-home-payment-alert')
         self.assertContains(response,'دستور پرداخت نیازمند اقدام شماست')
         payment.state='paid'
         payment.save(update_fields=['state'])
-        response=self.client.get('/')
+        response=self.client.get('/',follow=True)
         self.assertEqual(response.status_code,200)
         self.assertNotContains(response,'gl-home-payment-alert" href')
