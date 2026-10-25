@@ -5,6 +5,7 @@ def preserve_existing_access(apps, schema_editor):
     EmployeeProfile=apps.get_model('core','EmployeeProfile')
     PaymentRequest=apps.get_model('payments','PaymentRequest')
     EmployeeProfile.objects.filter(role='consultant',is_active=True).update(can_request_payments=True,can_manage_petty_cash=True)
+    EmployeeProfile.objects.filter(can_request_payments=True,is_active=True).update(can_manage_petty_cash=True)
     assigned_ids=PaymentRequest.objects.filter(state='approved',assigned_to_id__isnull=False).values_list('assigned_to_id',flat=True).distinct()
     EmployeeProfile.objects.filter(user_id__in=assigned_ids).update(can_execute_payments=True)
     # Existing consultants are permitted to complete payments, retaining their live workflow.
