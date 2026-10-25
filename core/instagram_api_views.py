@@ -106,13 +106,24 @@ def _post_json(url,data,timeout=25):
 
 
 def _resolve_a_via_doh(host, timeout=8):
-    # The clinic's on-prem DNS can intermittently fail for public hosts.
-    # Query Cloudflare DNS over HTTPS by IP so this recovery path itself
-    # does not depend on the system resolver.
-    query='https://1.1.1.1/dns-query?'+urlencode({'name':host,'type':'A'})
-    req=Request(query,headers={'Accept':'application/dns-json','Host':'cloudflare-dns.com'})
-    with urlopen(req,timeout=timeout) as response:
-        payload=json.loads(response.read().decode('utf-8') or '{}')
+    # Resolve through Cloudflare by connecting to its IP directly.  Using
+    # urllib against https://1.1.1.1 can still fail in some proxy/DNS stacks;
+    # this path never invokes the system resolver and preserves TLS SNI.
+    path='/dns-query?'+urlencode({'name':host,'type':'A'})
+    conn=_PinnedHTTPSConnection('cloudflare-dns.com','1.1.1.1',timeout=timeout)
+    try:
+        conn.request('GET',path,headers={
+            'Host':'cloudflare-dns.com',
+            'Accept':'application/dns-json',
+            'Connection':'close',
+        })
+        response=conn.getresponse()
+        raw=response.read()
+        if response.status<200 or response.status>=300:
+            raise URLError(f'DoH HTTP {response.status}')
+        payload=json.loads(raw.decode('utf-8') or '{}')
+    finally:
+        conn.close()
     answers=payload.get('Answer') or []
     ips=[str(row.get('data') or '').strip() for row in answers if row.get('type')==1]
     if not ips:
