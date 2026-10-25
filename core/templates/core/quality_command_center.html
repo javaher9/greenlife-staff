@@ -1,6 +1,24 @@
 {% extends 'core/base.html' %}
+{% load finance_alerts %}
 {% block content %}
+{% open_payment_count user as pending_finance %}
+{% if user.profile.can_execute_payments %}
+<section class="qc-payment-alert {% if pending_finance %}qc-payment-alert-active{% endif %}" aria-label="دستورهای پرداخت من">
+  <span class="qc-payment-symbol" aria-hidden="true">▣</span>
+  <div><strong>دستورهای پرداخت من</strong><p>{% if pending_finance %}{{ pending_finance }} دستور پرداخت در انتظار اقدام شماست{% else %}فعلاً دستور پرداختی در انتظار نیست{% endif %}</p></div>
+  {% if pending_finance %}<b class="qc-payment-count">{{ pending_finance }}</b>{% endif %}
+  <a href="{% url 'payments_workspace' %}#assignedPayments">{% if pending_finance %}مشاهده و اقدام{% else %}کارتابل پرداخت{% endif %} ←</a>
+</section>
+{% endif %}
 <style>
+.qc-payment-alert{display:flex;align-items:center;gap:12px;padding:11px 16px;margin:0 0 12px;border:1px solid rgba(119,151,187,.25);border-radius:15px;background:rgba(22,39,60,.74);color:#d9e8f8;direction:rtl}
+.qc-payment-alert .qc-payment-symbol{width:35px;height:35px;border-radius:10px;display:grid;place-items:center;background:#243b55}
+.qc-payment-alert div{flex:1;min-width:0}.qc-payment-alert strong{font-size:14px}.qc-payment-alert p{font-size:12px;opacity:.85;margin:1px 0}
+.qc-payment-alert a{color:#c6e5ff;border:1px solid #53738c;border-radius:9px;text-decoration:none;padding:7px 11px;font-size:12px;font-weight:800}
+.qc-payment-alert-active{background:linear-gradient(100deg,#22365a,#273b4d);border-color:#b0a1ef;box-shadow:0 0 0 1px rgba(167,150,255,.12)}
+.qc-payment-count{background:#7656cf;color:white;border-radius:999px;min-width:27px;height:27px;text-align:center;line-height:27px}
+@media(max-width:550px){.qc-payment-alert{flex-wrap:wrap}.qc-payment-alert a{margin-right:auto}}
+
 body.gl-page-quality_command_center .app-main{max-width:none!important;overflow-x:hidden!important}
 .qc-commander{--qc-bg:#071622;--qc-card:#102637;--qc-line:rgba(151,208,239,.20);--qc-text:#f7fcff;--qc-muted:#b1c7d8;direction:rtl;color:var(--qc-text)!important;font-family:Tahoma,"Noto Sans Arabic",Arial,sans-serif;background:radial-gradient(circle at 10% 5%,rgba(18,124,157,.17),transparent 35%),linear-gradient(145deg,#071623,#0c1a2b);border:1px solid rgba(84,165,204,.16);border-radius:22px;padding:17px;margin:-2px -3px 20px;min-width:0}
 .qc-commander *{box-sizing:border-box}
