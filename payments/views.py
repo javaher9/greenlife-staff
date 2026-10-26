@@ -318,6 +318,56 @@ def review(request,pk):
 
 @login_required
 @require_POST
+def executive_change_unpaid(request, pk):
+    """Executive-only correction/cancellation; paid payments are immutable."""
+    if not executive(request.user):
+        raise PermissionDenied()
+    from decimal import Decimal, InvalidOperation
+    action = request.POST.get('action')
+    if action not in ('edit', 'cancel'):
+        return HttpResponseBadRequest('عملیات نامعتبر است.')
+    with transaction.atomic():
+        p = get_object_or_404(PaymentRequest.objects.select_for_update(), pk=pk)
+        if p.state not in ('pending', 'approved'):
+            return HttpResponseBadRequest('فقط درخواست‌های پرداخت‌نشده قابل اصلاح یا لغو هستند.')
+        if p.paid_at or p.payment_reference or p.payment_receipt:
+            return HttpResponseBadRequest('این درخواست دارای سابقه پرداخت است.')
+        if action == 'cancel':
+            reason = request.POST.get('reason', '').strip()
+            if len(reason) < 5:
+                return HttpResponseBadRequest('علت لغو باید حداقل ۵ حرف باشد.')
+            previous = p.state
+            p.state = 'rejected'
+            p.assigned_to = None
+            p.channel = ''
+            p.save(update_fields=['state', 'assigned_to', 'channel'])
+            PaymentEvent.objects.create(payment=p, actor=request.user, action='executive_cancel',
+                                        notes=f'{previous}: {reason}'[:250])
+        else:
+            raw = request.POST.get('amount_million', '').strip().replace(',', '')
+            try:
+                million = Decimal(raw)
+                toman = million * Decimal(1000000)
+            except (InvalidOperation, ValueError):
+                return HttpResponseBadRequest('مبلغ نامعتبر است.')
+            if not million.is_finite() or toman != toman.to_integral_value() or not (0 < toman < 9223372036854775808):
+                return HttpResponseBadRequest('مبلغ باید مثبت و به میلیون تومان باشد.')
+            description = request.POST.get('description', '').strip()
+            if not description or len(description) > 2000:
+                return HttpResponseBadRequest('شرح معتبر وارد کنید.')
+            before_amount = p.amount_toman
+            before_description = p.description
+            p.amount_toman = int(toman)
+            p.description = description
+            p.save(update_fields=['amount_toman', 'description'])
+            PaymentEvent.objects.create(payment=p, actor=request.user, action='executive_edit',
+                                        notes=(f'amount: {before_amount} -> {p.amount_toman}; '
+                                               f'description: {before_description[:45]} -> {description[:45]}')[:250])
+    return redirect('payments_workspace')
+
+
+@login_required
+@require_POST
 def reassign_payment(request,pk):
     if not executive(request.user):
         raise PermissionDenied()
