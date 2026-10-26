@@ -1,5 +1,6 @@
 {% extends 'core/base.html' %}{% load jalali_tags privacy_filters %}
 {% block content %}
+{% if medical_intake_summary %}<section style="background:#fff;border:1px solid #dce8df;border-radius:16px;padding:16px;margin:12px 0;color:#244433"><strong>خلاصه پزشکی فرم اولیه</strong>{% for label, items in medical_intake_summary.sections.items %}<p><strong>{{ label }}:</strong> {{ items|join:'، ' }}</p>{% endfor %}{% if medical_intake_summary.screening_incomplete %}<p style="color:#b36b10">سابقه پزشکی فرم اولیه تکمیل نشده است.</p>{% endif %}</section>{% endif %}
 <style>
 .p360{max-width:1760px;margin:12px auto 38px;padding:10px;display:grid;gap:13px;direction:rtl;color:#203f39}
 .p360 *{box-sizing:border-box}
