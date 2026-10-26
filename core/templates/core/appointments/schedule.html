@@ -382,7 +382,7 @@ body.gl-role-receptionist.gl-page-appointment_schedule .schedule7 .s7-controls{b
               {% if appointment_role == 'receptionist' %}
               <div class="s7-buttons">
                 {% if row.appointment.status == 'booked' %}<form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'arrived' %}">{% csrf_token %}<button class="s7-arrive">مراجعه کرد</button></form>{% endif %}
-                {% if row.appointment.status != 'completed' %}<form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'completed' %}">{% csrf_token %}<button class="s7-complete">انجام شد</button></form>{% endif %}
+                {% if row.appointment.status == 'arrived' %}<form method="post" action="{% url 'intake_send_link' row.appointment.pk %}">{% csrf_token %}<button type="submit" class="s7-arrive" title="پس از گرفتن عکس و تأیید پذیرش">ارسال لینک فرم اولیه</button></form>{% endif %}{% if row.appointment.status != 'completed' %}<form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'completed' %}">{% csrf_token %}<button class="s7-complete">انجام شد</button></form>{% endif %}
                 <form method="post" action="{% url 'receptionist_appointment_status' row.appointment.pk 'cancelled' %}">{% csrf_token %}<button class="s7-cancel">لغو</button></form>
               </div>
               {% endif %}

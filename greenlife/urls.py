@@ -35,6 +35,7 @@ urlpatterns=[
     path('referrals/leads/<int:pk>/manage/',lead_action_views.management_lead_follow_up,name='management_lead_follow_up'),
     path('consultant/sales/',consultant_sales_views.consultant_sales_outcomes,name='consultant_sales_outcomes'),
     path('',include('public_network.urls')),
+    path('',include('intake.urls')),
     path('',include('core.urls')),
 ]
 if settings.DEBUG: urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
