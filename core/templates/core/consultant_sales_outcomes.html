@@ -516,34 +516,125 @@
 }
 
 
+/* Compact target meters reuse the executive SVG needle and five-color scale.
+   Page scoped: no changes to other roles, buttons, or target dashboard. */
+body.gl-page-consultant_sales_outcomes .care .care-hero{
+  display:grid!important;grid-template-columns:minmax(0,1fr) minmax(345px,370px)!important;
+  direction:rtl;align-items:center!important;justify-content:stretch!important;
+  gap:17px!important;padding:15px 24px!important;min-height:164px!important;
+}
+body.gl-page-consultant_sales_outcomes .care-hero-primary{
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+  min-width:0;gap:13px;position:relative;z-index:3;
+}
+body.gl-page-consultant_sales_outcomes .care-hero-primary .care-hero-copy{max-width:100%;text-align:right}
+body.gl-page-consultant_sales_outcomes .care-hero-primary .care-shortcuts{
+  align-self:flex-start!important;justify-content:flex-start!important;flex-wrap:wrap;
+  gap:8px!important;margin:0!important;max-width:100%;
+}
+body.gl-page-consultant_sales_outcomes .care-hero-primary .care-shortcuts a{
+  min-width:0!important;min-height:37px!important;padding:8px 10px!important;
+  font-size:10px!important;white-space:nowrap;
+}
+body.gl-page-consultant_sales_outcomes .care-hero .hero-botanical{opacity:.16!important;width:30%}
+body.gl-page-consultant_sales_outcomes .care-target-widget{
+  position:relative;z-index:3;direction:rtl;color:#2f544c;
+  border:1px solid #d4e5de;border-radius:17px;background:rgba(255,255,255,.92);
+  box-shadow:0 5px 18px rgba(33,93,72,.065);padding:8px 11px 7px;min-width:0;
+}
+body.gl-page-consultant_sales_outcomes .care-target-heading{
+  font-size:11px;font-weight:950;color:#205a48;display:flex;align-items:center;
+  justify-content:space-between;gap:8px;margin-bottom:2px;
+}
+body.gl-page-consultant_sales_outcomes .care-target-heading small{
+  font-size:9px;color:#7a958c;font-weight:700;
+}
+body.gl-page-consultant_sales_outcomes .care-target-pair{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
+}
+body.gl-page-consultant_sales_outcomes .care-target-unit{
+  display:flex;flex-direction:column;align-items:center;min-width:0;gap:1px;
+}
+body.gl-page-consultant_sales_outcomes .care-target-title{
+  font-size:10px;color:#4d7168;font-weight:900;
+}
+body.gl-page-consultant_sales_outcomes .care-target-meter{
+  width:128px;max-width:100%;height:93px;display:flex;align-items:center;justify-content:center;
+}
+body.gl-page-consultant_sales_outcomes .care-target-meter svg{width:100%;height:100%;overflow:visible;display:block}
+body.gl-page-consultant_sales_outcomes .care-target-state{
+  display:inline-flex;align-items:center;justify-content:center;min-width:92px;
+  border-radius:8px;padding:2px 6px;font-weight:900;font-size:9px;line-height:1.55;
+}
+body.gl-page-consultant_sales_outcomes .care-target-state.mt-red{background:#fff0f1;color:#bd334e}
+body.gl-page-consultant_sales_outcomes .care-target-state.mt-orange{background:#fff5df;color:#a66a12}
+body.gl-page-consultant_sales_outcomes .care-target-state.mt-yellow{background:#eaf7ff;color:#176ea6}
+body.gl-page-consultant_sales_outcomes .care-target-state.mt-green{background:#f2eaff;color:#7850ae}
+body.gl-page-consultant_sales_outcomes .care-target-unset{font-size:11px;padding:22px 3px;text-align:center;color:#657d77}
+body.gl-page-consultant_sales_outcomes .care-target-legend{
+  display:flex;justify-content:center;align-items:center;gap:7px;flex-wrap:wrap;
+  border-top:1px solid #e9f0ed;margin-top:5px;padding-top:6px;font-size:8px;
+  color:#607a71;font-weight:850;
+}
+body.gl-page-consultant_sales_outcomes .care-target-legend span{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+body.gl-page-consultant_sales_outcomes .care-target-legend i{display:inline-block;width:7px;height:7px;border-radius:50%}
+body.gl-page-consultant_sales_outcomes .care-target-legend .mt-red{background:#fc4768}
+body.gl-page-consultant_sales_outcomes .care-target-legend .mt-orange{background:#f5bc31}
+body.gl-page-consultant_sales_outcomes .care-target-legend .mt-yellow{background:#2caeff}
+body.gl-page-consultant_sales_outcomes .care-target-legend .mt-green{background:#a96bfa}
+@media(max-width:1120px){
+  body.gl-page-consultant_sales_outcomes .care .care-hero{
+    grid-template-columns:minmax(0,1fr) minmax(295px,330px)!important;gap:10px!important;padding:13px 17px!important;
+  }
+  body.gl-page-consultant_sales_outcomes .care-hero-primary .care-shortcuts a{font-size:9px!important;padding:8px!important}
+}
+@media(max-width:880px){
+  body.gl-page-consultant_sales_outcomes .care .care-hero{grid-template-columns:minmax(0,1fr)!important;gap:10px!important}
+  body.gl-page-consultant_sales_outcomes .care-target-widget{max-width:390px;width:100%;justify-self:start}
+}
+@media(max-width:550px){
+  body.gl-page-consultant_sales_outcomes .care-hero-primary .care-shortcuts{width:100%!important}
+  body.gl-page-consultant_sales_outcomes .care-hero-primary .care-shortcuts a{flex:1 1 43%;white-space:normal;text-align:center}
+  body.gl-page-consultant_sales_outcomes .care-target-widget{max-width:none}
+}
+
 .patient-mini-avatar{width:34px;height:34px;border-radius:50%;overflow:hidden;display:grid;place-items:center;flex:0 0 34px;background:linear-gradient(135deg,#eaf7f1,#f0ebfb);border:2px solid #fff;box-shadow:0 0 0 1px #dce7e3;color:#6953a8;font-size:11px;font-weight:950}.patient-mini-avatar.large{width:46px;height:46px;flex-basis:46px}.patient-mini-avatar img{width:100%;height:100%;object-fit:cover}.queue-row{grid-template-columns:34px minmax(0,1fr) auto!important;align-items:center}.patient-bar-person{display:flex;align-items:center;gap:11px}
 </style>
 <div class="care">
   <section class="care-hero">
     <div class="hero-botanical" aria-hidden="true"><span class="stem"></span><span class="leaf l1"></span><span class="leaf l2"></span><span class="leaf l3"></span><span class="leaf l4"></span></div>
-    <div class="care-hero-copy"><div class="care-kicker">{% gl_t 'con.eyebrow' %}</div><h1>{% gl_t 'con.title' %}</h1><p>{% gl_t 'con.intro' %}</p></div>
-    <div class="care-shortcuts"><a href="{% url 'device_booking_schedule' %}">▣ {% gl_t 'con.device_appointments' %}</a><a href="{% url 'internal_messages' %}">◌ {% gl_t 'con.staff_chat' %}</a><a href="{% url 'consultant_expense_entry' %}">＋ {% gl_t 'con.add_expense' %}</a><a href="{% url 'finance_entry' %}">▤ {% gl_t 'con.add_payment' %}</a></div>
+    <div class="care-hero-primary">
+      <div class="care-hero-copy"><div class="care-kicker">{% gl_t 'con.eyebrow' %}</div><h1>{% gl_t 'con.title' %}</h1><p>{% gl_t 'con.intro' %}</p></div>
+      <div class="care-shortcuts"><a href="{% url 'device_booking_schedule' %}">▣ {% gl_t 'con.device_appointments' %}</a><a href="{% url 'internal_messages' %}">◌ {% gl_t 'con.staff_chat' %}</a><a href="{% url 'consultant_expense_entry' %}">＋ {% gl_t 'con.add_expense' %}</a><a href="{% url 'finance_entry' %}">▤ {% gl_t 'con.add_payment' %}</a></div>
+    </div>
+    {% if branch_target %}
+    <aside class="care-target-widget" aria-label="درصد تحقق تارگت مرکز {{ branch_target.branch }}">
+      <div class="care-target-heading">تارگت {{ branch_target.branch }} <small>فقط درصد تحقق</small></div>
+      {% if branch_target.configured %}
+      <div class="care-target-pair">
+        <div class="care-target-unit"><span class="care-target-title">روزانه</span>
+          <div class="care-target-meter" data-percent="{{ branch_target.daily.percent }}"
+            data-heavy="{{ branch_target.bands.heavy }}" data-floor="{{ branch_target.bands.floor }}"
+            data-one="{{ branch_target.bands.one }}" data-two="{{ branch_target.bands.two }}"
+            aria-label="تارگت روزانه {{ branch_target.daily.percent }} درصد"></div>
+          <span class="care-target-state mt-{{ branch_target.daily.color }}">{{ branch_target.daily.status }}</span>
+        </div>
+        <div class="care-target-unit"><span class="care-target-title">ماهانه</span>
+          <div class="care-target-meter" data-percent="{{ branch_target.monthly.percent }}"
+            data-heavy="{{ branch_target.bands.heavy }}" data-floor="{{ branch_target.bands.floor }}"
+            data-one="{{ branch_target.bands.one }}" data-two="{{ branch_target.bands.two }}"
+            aria-label="تارگت ماهانه {{ branch_target.monthly.percent }} درصد"></div>
+          <span class="care-target-state mt-{{ branch_target.monthly.color }}">{{ branch_target.monthly.status }}</span>
+        </div>
+      </div>
+      {% else %}<div class="care-target-unset">تارگت این ماه هنوز تنظیم نشده است.</div>{% endif %}
+      <div class="care-target-legend" aria-label="راهنمای وضعیت">
+        <span><i class="mt-red"></i>جریمه سنگین</span><span><i class="mt-orange"></i>کف فروش</span>
+        <span><i class="mt-yellow"></i>تارگت ۱</span><span><i class="mt-green"></i>تارگت ۲</span>
+      </div>
+    </aside>
+    {% endif %}
   </section>
-<style>
-.consultant-mini-target{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 13px;margin:0 0 10px;border:1px solid #3c5067;border-radius:13px;background:#142332;color:#f1f6fc;max-width:590px}
-.consultant-mini-target .mt-branch{font-size:11px;font-weight:800;white-space:nowrap}
-.consultant-mini-target .mt-item{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11px}
-.consultant-mini-target .mt-item strong{font-size:17px;direction:ltr}
-.consultant-mini-target .mt-status{border-radius:7px;padding:3px 7px;font-size:10px;font-weight:800}
-.consultant-mini-target .mt-red{background:#61232f;color:#ffadb9}.consultant-mini-target .mt-orange{background:#553b1f;color:#ffd098}.consultant-mini-target .mt-yellow{background:#504819;color:#ffe87a}.consultant-mini-target .mt-green{background:#124e38;color:#9af0bd}
-.consultant-mini-target .mt-key{display:flex;gap:7px;flex-wrap:wrap;font-size:9px;color:#abc3d5}
-@media(max-width:550px){.consultant-mini-target{max-width:100%;padding:9px}.consultant-mini-target .mt-branch{flex-basis:100%}}
-</style>
-{% if branch_target %}
-<div class="consultant-mini-target" aria-label="تارگت روزانه و ماهانه مرکز شما">
-  <span class="mt-branch">تارگت {{ branch_target.branch }}</span>
-  {% if branch_target.configured %}
-  <span class="mt-item">روزانه <strong>{{ branch_target.daily.percent }}%</strong><span class="mt-status mt-{{ branch_target.daily.color }}">{{ branch_target.daily.status }}</span></span>
-  <span class="mt-item">ماهانه <strong>{{ branch_target.monthly.percent }}%</strong><span class="mt-status mt-{{ branch_target.monthly.color }}">{{ branch_target.monthly.status }}</span></span>
-  {% else %}<span class="mt-item">تارگت این ماه تنظیم نشده</span>{% endif %}
-  <span class="mt-key">🔴 جریمه سنگین · 🟠 کف فروش · 🟡 تارگت ۱ · 🟢 تارگت ۲</span>
-</div>
-{% endif %}
   <section class="care-metrics" aria-label="{% gl_t 'con.work_status' %}">
     <div class="care-metric"><small>{% gl_t 'con.today_appointments' %}</small><strong>{{ kpis.appointments_today }}</strong><em>{% gl_t 'con.branch_cases' %}</em><span class="metric-ico">✓</span></div>
     <div class="care-metric"><small>{% gl_t 'con.waiting_consult' %}</small><strong>{{ kpis.awaiting_consultation }}</strong><em>{% gl_t 'con.ready_package' %}</em><span class="metric-ico">●</span></div>
@@ -620,4 +711,49 @@
 })();
 </script>
 <!-- deploy retry after proxy/healthcheck recovery -->
+
+<script>
+/* Same polar/arc/needle construction used by the executive targets page.
+   Receives only percentages: never inserts sales amounts into the DOM. */
+(function(){
+  const root=document.querySelector("body.gl-page-consultant_sales_outcomes .care-target-widget");
+  if(!root)return;
+  const ns="http://www.w3.org/2000/svg";
+  function elem(tag,attrs,content){
+    const el=document.createElementNS(ns,tag);
+    Object.entries(attrs||{}).forEach(([k,v])=>el.setAttribute(k,v));
+    if(content!=null)el.textContent=content;
+    return el;
+  }
+  function polar(deg,r){return [110+r*Math.cos(deg*Math.PI/180),111+r*Math.sin(deg*Math.PI/180)];}
+  function arc(a,b,r){
+    const [x1,y1]=polar(a,r),[x2,y2]=polar(b,r);
+    return "M "+x1.toFixed(2)+" "+y1.toFixed(2)+" A "+r+" "+r+" 0 "+(b-a>180?1:0)+" 1 "+x2.toFixed(2)+" "+y2.toFixed(2);
+  }
+  const colors=["#fc4768","#f5bc31","#1fd8a5","#2caeff","#a96bfa"];
+  root.querySelectorAll(".care-target-meter").forEach(box=>{
+    const value=Math.max(0,Number(box.dataset.percent)||0);
+    const t=["heavy","floor","one","two"].map(k=>Number(box.dataset[k]));
+    const ready=t.every(Number.isFinite)&&t[0]>0&&t[0]<t[1]&&t[1]<t[2]&&t[2]===100;
+    const svg=elem("svg",{viewBox:"0 0 220 160",role:"img","aria-label":box.getAttribute("aria-label")||"درصد تحقق تارگت"});
+    if(!ready){
+      svg.appendChild(elem("text",{x:110,y:106,fill:"#56776e","font-size":23,"text-anchor":"middle"},"—"));
+      box.replaceChildren(svg);return;
+    }
+    const upper=Math.max(120,value);
+    const edges=[0,...t,upper];
+    for(let i=0;i<5;i++){
+      const a=130+280*edges[i]/upper,b=130+280*edges[i+1]/upper;
+      const gap=Math.min(.72,(b-a)/8);
+      if(b-a>1.5)svg.appendChild(elem("path",{d:arc(a+gap,b-gap,78),fill:"none",stroke:colors[i],"stroke-width":22,"stroke-linecap":"butt"}));
+    }
+    const angle=130+280*Math.min(value/upper,1);
+    const [px,py]=polar(angle,84),[mx,my]=polar(angle,40);
+    svg.appendChild(elem("path",{d:"M "+mx+" "+my+" L "+px+" "+py,stroke:"#edfaff","stroke-width":7.5,"stroke-linecap":"round",fill:"none"}));
+    svg.appendChild(elem("circle",{cx:px,cy:py,r:9,fill:"#12354c",stroke:"#edfaff","stroke-width":4}));
+    svg.appendChild(elem("text",{x:110,y:108,fill:"#244f49","font-size":25,"text-anchor":"middle","font-family":"Arial,Tahoma","font-weight":"bold"},Math.round(value)+"%"));
+    box.replaceChildren(svg);
+  });
+})();
+</script>
 {% endblock %}
