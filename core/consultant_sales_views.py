@@ -49,12 +49,15 @@ def _consultant_branch_target(profile):
     daily=Decimal(base.filter(occurred_at__date=today).aggregate(total=Sum('amount'))['total'] or 0)/Decimal('10000000')
     days=Decimal((end-start).days)
     def gauge(amount, divisor):
-        thresholds=[x/divisor for x in (heavy,one,two)]
+        # Use the same five target levels as the executive dashboard.
+        # The daily thresholds are indicative; no penalty is finalized daily.
+        thresholds=[x/divisor for x in (heavy,floor,one,two)]
         if amount<thresholds[0]: status,color='جریمه سنگین','red'
-        elif amount<thresholds[1]: status,color='کف فروش','orange'
-        elif amount<thresholds[2]: status,color='تارگت ۱','yellow'
-        else: status,color='تارگت ۲','green'
-        return {'percent':min(999,int(amount*100/thresholds[2])) if thresholds[2]>0 else 0,
+        elif amount<thresholds[1]: status,color='جریمه سبک','yellow'
+        elif amount<thresholds[2]: status,color='کف فروش','green'
+        elif amount<thresholds[3]: status,color='تارگت ۱','blue'
+        else: status,color='تارگت ۲','purple'
+        return {'percent':min(999,int(amount*100/thresholds[3])) if thresholds[3]>0 else 0,
                 'status':status,'color':color}
     # Relative thresholds only: no financial amount is sent to the consultant HTML.
     # ASCII decimal strings: Django's Persian locale must not turn gauge data
