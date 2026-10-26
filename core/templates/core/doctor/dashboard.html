@@ -331,6 +331,18 @@ html,body{background:#0a1520!important}
 @media(min-width:821px){.doctor-workspace .appt-rail{min-width:0!important}.doctor-workspace .appt-list{overflow-x:hidden!important}}
 
 .doctor-content-preview{display:inline-block;margin-top:7px;padding:6px 10px;color:#246f56!important;background:#e7f5ed;border:1px solid #b9dccb;border-radius:9px;font-size:11px;font-weight:900;text-decoration:none}
+
+/* Keep every daily summary tile readable in the light doctor workspace. */
+  .doctor-workspace .sum-box:nth-child(5){
+    background:linear-gradient(145deg,#eaf3ff,#f5f9ff)!important;
+    border:1px solid #d7e5f4!important;
+  }
+  .doctor-workspace .sum-box:nth-child(5) :is(b,small){color:#355f8a!important}
+  .doctor-workspace .sum-box:nth-child(6){
+    background:linear-gradient(145deg,#e7f5ed,#f4fbf7)!important;
+    border:1px solid #d3e9dc!important;
+  }
+  .doctor-workspace .sum-box:nth-child(6) :is(b,small){color:#276b4e!important}
 </style>
 </head>
 <body>
@@ -342,7 +354,7 @@ html,body{background:#0a1520!important}
       <a class="active" href="#doctor-top"><span class="doctor-side-ico">⌂</span><span>{% gl_t 'doc.dashboard' %}</span></a>
       <a href="#appointments"><span class="doctor-side-ico">▣</span><span>{% gl_t 'doc.today_appointments' %}</span></a>
       <a href="#" data-open-live-chat><span class="doctor-side-ico">✉</span><span>{% gl_t 'doc.chat' %}</span></a>
-      <a href="#diet-panel"><span class="doctor-side-ico">◈</span><span>{% gl_t 'doc.case_treatment' %}</span></a>
+      <a href="{% if patient %}#diet-panel{% else %}#appointments{% endif %}"><span class="doctor-side-ico">◈</span><span>{% gl_t 'doc.case_treatment' %}</span></a>
     </nav>
     <div class="doctor-side-foot">
       {% if executive_doctor_mode %}<a href="/my-office/"><span class="doctor-side-ico">↩</span><span>{% gl_t 'doc.back_management' %}</span></a>{% else %}<a href="/profile/"><span class="doctor-side-ico">◉</span><span>{% gl_t 'common.profile' %}</span></a>{% endif %}
@@ -353,7 +365,7 @@ html,body{background:#0a1520!important}
     <section class="doctor-card doctor-intro">
       <div class="doctor-intro-avatar">{% if doctor_profile.avatar %}<img src="{{ doctor_profile.avatar.url }}" alt="عکس پزشک">{% else %}✚{% endif %}</div>
       <div><h1>سلام دکتر {{ doctor_name }}</h1><p>به پنل تخصصی پزشکی گرین‌لایف خوش آمدید.</p><div class="doctor-intro-tags"><span>شعبه: {{ doctor_branch|default:"انتخاب نشده" }}</span><span>{{ today|jdate_en }}</span><span>نوبت‌های امروز: {{ appointment_stats.total }}</span></div></div>
-      <div class="doctor-quick"><a href="#appointments">نوبت‌ها</a><a href="#diet-panel">پرونده و درمان</a><button type="button" data-open-live-chat>چت پرسنل</button></div>
+      <div class="doctor-quick"><a href="#appointments">نوبت‌ها</a><a href="{% if patient %}#diet-panel{% else %}#appointments{% endif %}">پرونده و درمان</a><button type="button" data-open-live-chat>چت پرسنل</button></div>
     </section>
     <header class="doctor-shellbar">
       <div class="doctor-shell-title">
@@ -657,5 +669,5 @@ function doctorContentPreview(select,linkId){
  if(href)link.setAttribute('href',href);else link.removeAttribute('href');
 }
 </script>
-{% if medical_intake_summary %}<aside style="position:fixed;bottom:12px;right:12px;z-index:10;background:#fff;border:1px solid #cce3d5;padding:12px;border-radius:13px;max-width:300px;box-shadow:0 3px 14px #0002;color:#274638"><strong>خلاصه پزشکی فرم اولیه</strong>{% for label, items in medical_intake_summary.sections.items %}<p style="margin:5px 0">{{ label }}: {{ items|join:'، ' }}</p>{% endfor %}{% if medical_intake_summary.screening_incomplete %}<p>سابقه پزشکی هنوز تکمیل نشده است.</p>{% endif %}</aside>{% endif %}</body>
+{% if patient and medical_intake_summary %}<aside style="position:fixed;bottom:12px;right:12px;z-index:10;background:#fff;border:1px solid #cce3d5;padding:12px;border-radius:13px;max-width:300px;box-shadow:0 3px 14px #0002;color:#274638"><strong>خلاصه پزشکی فرم اولیه</strong>{% for label, items in medical_intake_summary.sections.items %}<p style="margin:5px 0">{{ label }}: {{ items|join:'، ' }}</p>{% endfor %}{% if medical_intake_summary.screening_incomplete %}<p>سابقه پزشکی هنوز تکمیل نشده است.</p>{% endif %}</aside>{% endif %}</body>
 </html>
