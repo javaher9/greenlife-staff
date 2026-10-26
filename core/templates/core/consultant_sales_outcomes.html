@@ -765,6 +765,22 @@ body.gl-app.gl-authenticated.gl-page-consultant_sales_outcomes .app-main .care .
 body.gl-app.gl-authenticated.gl-page-consultant_sales_outcomes .app-main .care .care-metric{min-height:108px!important}
 body.gl-app.gl-authenticated.gl-page-consultant_sales_outcomes .app-main .care :is(.item,.add-row){grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
+
+/* Keep the five target labels on one line inside the compact consultant widget. */
+body.gl-app.gl-authenticated.gl-page-consultant_sales_outcomes .app-main .care .care-target-widget{
+  width:100%!important;max-width:370px!important;justify-self:stretch!important;
+}
+body.gl-app.gl-authenticated.gl-page-consultant_sales_outcomes .app-main .care .care-target-heading{
+  display:block!important;text-align:center!important;margin-bottom:4px!important;
+}
+body.gl-app.gl-authenticated.gl-page-consultant_sales_outcomes .app-main .care .care-target-legend{
+  display:flex!important;flex-wrap:nowrap!important;justify-content:space-between!important;
+  gap:3px!important;white-space:nowrap!important;font-size:8px!important;
+}
+body.gl-app.gl-authenticated.gl-page-consultant_sales_outcomes .app-main .care .care-target-legend span{
+  flex:none!important;white-space:nowrap!important;
+}
+
 </style>
 <div class="care">
   <section class="care-hero">
@@ -775,7 +791,7 @@ body.gl-app.gl-authenticated.gl-page-consultant_sales_outcomes .app-main .care :
     </div>
     {% if branch_target %}
     <aside class="care-target-widget" aria-label="درصد تحقق تارگت مرکز {{ branch_target.branch }}">
-      <div class="care-target-heading">تارگت {{ branch_target.branch }} <small>فقط درصد تحقق</small></div>
+      <div class="care-target-heading">تارگت {{ branch_target.branch }}</div>
       {% if branch_target.configured %}
       <div class="care-target-pair">
         <div class="care-target-unit"><span class="care-target-title">روزانه</span>
