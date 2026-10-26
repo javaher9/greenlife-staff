@@ -57,9 +57,15 @@ def _consultant_branch_target(profile):
         return {'percent':min(999,int(amount*100/thresholds[2])) if thresholds[2]>0 else 0,
                 'status':status,'color':color}
     # Relative thresholds only: no financial amount is sent to the consultant HTML.
-    bands={'heavy':round(float(heavy*100/two),4),
-           'floor':round(float(floor*100/two),4),
-           'one':round(float(one*100/two),4),'two':100}
+    # ASCII decimal strings: Django's Persian locale must not turn gauge data
+    # into localized decimals that JavaScript Number() cannot parse.
+    # This is percentage-only: raw sales amounts never leave this view.
+    bands={
+        'heavy':format(heavy*Decimal('100')/two,'.8f'),
+        'floor':format(floor*Decimal('100')/two,'.8f'),
+        'one':format(one*Decimal('100')/two,'.8f'),
+        'two':'100',
+    }
     return {'configured':True,'branch':profile.branch.name,'bands':bands,
             'daily':gauge(daily,days),'monthly':gauge(monthly,Decimal('1'))}
 
