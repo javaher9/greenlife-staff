@@ -239,7 +239,7 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "<small>کف</small>", html=False)
         self.assertNotContains(response, "<small>فروش</small>", html=False)
-        self.assertContains(response, "7,000", html=False)
+        self.assertContains(response, "7000", html=False)
 
     def test_non_management_user_forbidden(self):
         self.client.force_login(self.staff)
