@@ -1,4 +1,4 @@
-{% extends 'core/base.html' %}{% load jalali_tags staff_i18n privacy_filters %}{% block content %}
+{% extends 'core/base.html' %}{% load jalali_tags staff_i18n privacy_filters l10n %}{% block content %}
 <style>
 .care{display:grid;gap:14px}.care-hero{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:18px 20px;border:1px solid #31465a;border-radius:20px;background:linear-gradient(145deg,#182838,#111d2a);box-shadow:0 14px 34px rgba(0,0,0,.16)}.care-hero h1{margin:2px 0 5px;font-size:22px;color:#fff}.care-hero p{margin:0;color:#a9bac9;font-size:11px}.care-count{min-width:70px;text-align:center;padding:12px;border-radius:15px;background:#20374a;border:1px solid #3b5870}.care-count strong{display:block;font-size:24px;color:#fff}.care-count span{font-size:9px;color:#a7b8c7}
 .care-grid{display:grid;grid-template-columns:minmax(280px,.72fr) minmax(0,1.7fr);gap:14px}.queue,.workspace{border:1px solid #2e4254;border-radius:18px;background:#111d29;overflow:hidden}.care-head{padding:13px 15px;border-bottom:1px solid #263949;display:flex;justify-content:space-between;align-items:center}.care-head h2{margin:0;font-size:14px;color:#fff}.care-head small{color:#8fa4b7;font-size:9px}.queue-list{padding:8px;display:grid;gap:6px;max-height:72vh;overflow:auto}.queue-row{display:grid;grid-template-columns:1fr auto;gap:10px;padding:11px;border:1px solid #263a4b;border-radius:12px;background:#152431;text-decoration:none;color:#eaf2f8}.queue-row:hover,.queue-row.active{border-color:#526e85;background:#1a2c3a}.queue-row strong{display:block;font-size:11px}.queue-row small{display:block;margin-top:3px;color:#91a5b5;font-size:8px}.queue-row time{font-size:8px;color:#bdaeff}.empty{padding:26px;text-align:center;color:#879caf;font-size:10px}
@@ -516,6 +516,101 @@
 }
 
 
+
+/* Consultant light theme: protect card gutters from the global dark shell.
+   All selectors are scoped to THIS page; other staff pages are untouched. */
+body.gl-premium-dark.gl-page-consultant_sales_outcomes,
+body.gl-premium-dark.gl-page-consultant_sales_outcomes .app-main,
+body.gl-page-consultant_sales_outcomes main.app-main{
+  background:#f4f8f7!important;background-image:none!important;color-scheme:light!important;
+}
+body.gl-premium-dark.gl-page-consultant_sales_outcomes::before,
+body.gl-premium-dark.gl-page-consultant_sales_outcomes .app-main::before{
+  display:none!important;content:none!important;
+}
+body.gl-page-consultant_sales_outcomes .care{
+  background:#f4f8f7!important;gap:11px!important;
+  padding:8px!important;border-radius:18px;
+}
+body.gl-page-consultant_sales_outcomes .care .care-metrics,
+body.gl-page-consultant_sales_outcomes .care .care-grid{gap:11px!important}
+body.gl-page-consultant_sales_outcomes .care .care-metric,
+body.gl-page-consultant_sales_outcomes .care .queue,
+body.gl-page-consultant_sales_outcomes .care .workspace,
+body.gl-page-consultant_sales_outcomes .care .care-rail{
+  border-color:#dcebe5!important;
+  box-shadow:0 7px 19px rgba(43,95,76,.045)!important;
+}
+/* Lower, horizontal header: keep the existing buttons in their original order. */
+body.gl-page-consultant_sales_outcomes .care .care-hero{
+  min-height:0!important;
+  padding:10px 19px!important;
+  gap:12px!important;
+  align-items:center!important;
+}
+body.gl-page-consultant_sales_outcomes .care-hero-primary{
+  gap:5px!important;
+}
+body.gl-page-consultant_sales_outcomes .care .care-hero h1{
+  margin:3px 0!important;font-size:clamp(19px,1.85vw,25px)!important;
+  line-height:1.35!important;
+}
+body.gl-page-consultant_sales_outcomes .care .care-hero p{
+  margin:0!important;line-height:1.55!important;font-size:10px!important;
+}
+body.gl-page-consultant_sales_outcomes .care-hero-primary .care-shortcuts{
+  margin-top:2px!important;align-self:flex-start!important;
+  gap:6px!important;
+}
+body.gl-page-consultant_sales_outcomes .care-hero-primary .care-shortcuts a{
+  min-height:32px!important;padding:6px 10px!important;
+  border-radius:10px!important;line-height:1.4!important;
+}
+body.gl-page-consultant_sales_outcomes .care-target-widget{
+  padding:5px 10px 5px!important;
+  border-radius:13px!important;
+  box-shadow:0 3px 11px rgba(33,93,72,.055)!important;
+}
+body.gl-page-consultant_sales_outcomes .care-target-heading{
+  font-size:10px!important;margin:0!important;
+}
+body.gl-page-consultant_sales_outcomes .care-target-heading small{
+  font-size:8px!important;
+}
+body.gl-page-consultant_sales_outcomes .care-target-title{font-size:9px!important}
+body.gl-page-consultant_sales_outcomes .care-target-unit{gap:0!important}
+body.gl-page-consultant_sales_outcomes .care-target-meter{
+  height:70px!important;width:125px!important;max-width:100%!important;
+  position:relative;
+}
+body.gl-page-consultant_sales_outcomes .care-target-fallback{
+  color:#205a48;font-size:17px;font-weight:950;
+}
+body.gl-page-consultant_sales_outcomes .care-target-meter svg{
+  width:100%!important;height:100%!important;
+}
+body.gl-page-consultant_sales_outcomes .care-target-state{
+  min-width:80px!important;font-size:8px!important;
+  padding:1px 6px!important;
+}
+body.gl-page-consultant_sales_outcomes .care-target-legend{
+  font-size:8px!important;padding-top:4px!important;
+  margin-top:4px!important;gap:5px!important;
+}
+@media(max-width:880px){
+  body.gl-page-consultant_sales_outcomes .care .care-hero{
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:7px!important;padding:10px 13px!important;
+  }
+  body.gl-page-consultant_sales_outcomes .care-target-widget{
+    justify-self:stretch!important;max-width:365px!important;width:100%;
+  }
+}
+@media(max-width:550px){
+  body.gl-page-consultant_sales_outcomes .care-target-widget{max-width:100%!important}
+  body.gl-page-consultant_sales_outcomes .care .care-metrics{gap:8px!important}
+}
+
 /* Compact target meters reuse the executive SVG needle and five-color scale.
    Page scoped: no changes to other roles, buttons, or target dashboard. */
 body.gl-page-consultant_sales_outcomes .care .care-hero{
@@ -613,17 +708,17 @@ body.gl-page-consultant_sales_outcomes .care-target-legend .mt-green{background:
       {% if branch_target.configured %}
       <div class="care-target-pair">
         <div class="care-target-unit"><span class="care-target-title">روزانه</span>
-          <div class="care-target-meter" data-percent="{{ branch_target.daily.percent }}"
+          <div class="care-target-meter" data-percent="{{ branch_target.daily.percent|unlocalize }}"
             data-heavy="{{ branch_target.bands.heavy }}" data-floor="{{ branch_target.bands.floor }}"
             data-one="{{ branch_target.bands.one }}" data-two="{{ branch_target.bands.two }}"
-            aria-label="تارگت روزانه {{ branch_target.daily.percent }} درصد"></div>
+            aria-label="تارگت روزانه {{ branch_target.daily.percent }} درصد"><span class="care-target-fallback">{{ branch_target.daily.percent }}%</span></div>
           <span class="care-target-state mt-{{ branch_target.daily.color }}">{{ branch_target.daily.status }}</span>
         </div>
         <div class="care-target-unit"><span class="care-target-title">ماهانه</span>
-          <div class="care-target-meter" data-percent="{{ branch_target.monthly.percent }}"
+          <div class="care-target-meter" data-percent="{{ branch_target.monthly.percent|unlocalize }}"
             data-heavy="{{ branch_target.bands.heavy }}" data-floor="{{ branch_target.bands.floor }}"
             data-one="{{ branch_target.bands.one }}" data-two="{{ branch_target.bands.two }}"
-            aria-label="تارگت ماهانه {{ branch_target.monthly.percent }} درصد"></div>
+            aria-label="تارگت ماهانه {{ branch_target.monthly.percent }} درصد"><span class="care-target-fallback">{{ branch_target.monthly.percent }}%</span></div>
           <span class="care-target-state mt-{{ branch_target.monthly.color }}">{{ branch_target.monthly.status }}</span>
         </div>
       </div>
@@ -732,12 +827,19 @@ body.gl-page-consultant_sales_outcomes .care-target-legend .mt-green{background:
   }
   const colors=["#fc4768","#f5bc31","#1fd8a5","#2caeff","#a96bfa"];
   root.querySelectorAll(".care-target-meter").forEach(box=>{
-    const value=Math.max(0,Number(box.dataset.percent)||0);
-    const t=["heavy","floor","one","two"].map(k=>Number(box.dataset[k]));
-    const ready=t.every(Number.isFinite)&&t[0]>0&&t[0]<t[1]&&t[1]<t[2]&&t[2]===100;
+    const parsePercent=(raw)=>{
+      const normalized=String(raw??"").trim()
+        .replace(/[۰-۹]/g,ch=>String(ch.charCodeAt(0)-1776))
+        .replace(/[٠-٩]/g,ch=>String(ch.charCodeAt(0)-1632))
+        .replace(/٫/g,".").replace(/٬/g,"").replace(",",".");
+      return Number(normalized);
+    };
+    const value=Math.max(0,parsePercent(box.dataset.percent)||0);
+    const t=["heavy","floor","one","two"].map(k=>parsePercent(box.dataset[k]));
+    const ready=t.every(Number.isFinite)&&t[0]>0&&t[0]<t[1]&&t[1]<t[2]&&Math.abs(t[3]-100)<0.00001;
     const svg=elem("svg",{viewBox:"0 25 220 160",role:"img","aria-label":box.getAttribute("aria-label")||"درصد تحقق تارگت"});
     if(!ready){
-      svg.appendChild(elem("text",{x:110,y:106,fill:"#56776e","font-size":23,"text-anchor":"middle"},"—"));
+      svg.appendChild(elem("text",{x:110,y:106,fill:"#56776e","font-size":23,"text-anchor":"middle"},Math.round(value)+"%"));
       box.replaceChildren(svg);return;
     }
     const upper=Math.max(120,value);
