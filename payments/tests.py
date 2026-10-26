@@ -513,3 +513,60 @@ class PaymentWorkflowTests(TestCase):
         response=self.client.get('/',HTTP_USER_AGENT='Mozilla/5.0 (Linux; Android 14) Mobile')
         self.assertEqual(response.status_code,200)
         self.assertNotContains(response,'class="gl-home-payment-alert"')
+
+    def test_executive_can_edit_approved_unpaid_amount(self):
+        p=self._request()
+        p.state='approved'; p.assigned_to=self.worker; p.channel='staff'; p.save()
+        self.client.force_login(self.executive)
+        r=self.client.post(reverse('payments_executive_change',args=[p.pk]),
+                           {'action':'edit','amount_million':'12','description':'Updated training fee'})
+        self.assertEqual(r.status_code,302)
+        p.refresh_from_db()
+        self.assertEqual(p.amount_toman,12000000)
+        self.assertEqual(p.state,'approved')
+        self.assertEqual(p.assigned_to,self.worker)
+        self.assertTrue(PaymentEvent.objects.filter(payment=p,action='executive_edit').exists())
+
+    def test_executive_can_cancel_duplicate_without_deleting_history(self):
+        p=self._request()
+        p.state='approved';p.assigned_to=self.worker;p.channel='staff';p.save()
+        self.client.force_login(self.executive)
+        r=self.client.post(reverse('payments_executive_change',args=[p.pk]),
+                           {'action':'cancel','reason':'Duplicate entry'})
+        self.assertEqual(r.status_code,302)
+        p.refresh_from_db()
+        self.assertEqual(p.state,'rejected')
+        self.assertIsNone(p.assigned_to)
+        self.assertTrue(PaymentEvent.objects.filter(payment=p,action='executive_cancel').exists())
+
+    def test_staff_cannot_change_payment(self):
+        p=self._request()
+        self.client.force_login(self.worker)
+        r=self.client.post(reverse('payments_executive_change',args=[p.pk]),
+                           {'action':'edit','amount_million':'12','description':'Unauthorized'})
+        self.assertEqual(r.status_code,403)
+        p.refresh_from_db()
+        self.assertEqual(p.amount_toman,3000000)
+
+    def test_paid_payment_cannot_be_edited_or_cancelled(self):
+        p=self._request()
+        p.state='paid';p.payment_reference='BANK123';p.save()
+        self.client.force_login(self.executive)
+        for action in ('edit','cancel'):
+            r=self.client.post(reverse('payments_executive_change',args=[p.pk]),
+                               {'action':action,'amount_million':'12','description':'Change',
+                                'reason':'Duplicate entry'})
+            self.assertEqual(r.status_code,400)
+        p.refresh_from_db()
+        self.assertEqual(p.amount_toman,3000000)
+        self.assertEqual(p.state,'paid')
+
+    def test_invalid_amount_does_not_change_approved_payment(self):
+        p=self._request()
+        p.state='approved';p.save()
+        self.client.force_login(self.executive)
+        r=self.client.post(reverse('payments_executive_change',args=[p.pk]),
+                           {'action':'edit','amount_million':'-1','description':'Bad value'})
+        self.assertEqual(r.status_code,400)
+        p.refresh_from_db()
+        self.assertEqual(p.amount_toman,3000000)
