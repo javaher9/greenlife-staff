@@ -697,6 +697,62 @@ body.gl-page-consultant_sales_outcomes .care-target-legend{
 
 
 .patient-mini-avatar{width:34px;height:34px;border-radius:50%;overflow:hidden;display:grid;place-items:center;flex:0 0 34px;background:linear-gradient(135deg,#eaf7f1,#f0ebfb);border:2px solid #fff;box-shadow:0 0 0 1px #dce7e3;color:#6953a8;font-size:11px;font-weight:950}.patient-mini-avatar.large{width:46px;height:46px;flex-basis:46px}.patient-mini-avatar img{width:100%;height:100%;object-fit:cover}.queue-row{grid-template-columns:34px minmax(0,1fr) auto!important;align-items:center}.patient-bar-person{display:flex;align-items:center;gap:11px}
+
+/* Consultant operational light theme. Route scoped across desktop and mobile. */
+body.gl-page-consultant_sales_outcomes .app-main .care{color:#203e38!important;color-scheme:light!important}
+body.gl-page-consultant_sales_outcomes .app-main .care :is(h1,h2,h3,h4,strong,b,label){color:#203e38!important;-webkit-text-fill-color:currentColor!important;text-shadow:none!important;opacity:1!important}
+body.gl-page-consultant_sales_outcomes .app-main .care :is(p,small,em,.status-note,.empty,.original){color:#60766e!important;-webkit-text-fill-color:currentColor!important;opacity:1!important}
+body.gl-page-consultant_sales_outcomes .app-main .care :is(input:not([type=hidden]):not([type=checkbox]),select,textarea){background:#fff!important;background-image:none!important;color:#203e38!important;-webkit-text-fill-color:#203e38!important;border:1px solid #ccdcd4!important;border-radius:10px!important;box-shadow:0 1px 2px #183c2c05!important;min-width:0;min-height:40px;height:40px;padding:8px 11px!important;font-family:inherit!important;font-size:12px!important;line-height:1.6!important;transition:border-color .15s,box-shadow .15s}
+body.gl-page-consultant_sales_outcomes .app-main .care textarea{height:76px;resize:vertical}
+body.gl-page-consultant_sales_outcomes .app-main .care input::placeholder, body.gl-page-consultant_sales_outcomes .app-main .care textarea::placeholder{color:#7b8d85!important;-webkit-text-fill-color:#7b8d85!important;opacity:1!important}
+body.gl-page-consultant_sales_outcomes .app-main .care :is(input,select,textarea):focus-visible{outline:2px solid #208461!important;outline-offset:2px;border-color:#208461!important;box-shadow:0 0 0 4px #20846112!important}
+body.gl-page-consultant_sales_outcomes .app-main .care input[type=checkbox]{width:16px!important;height:16px!important;min-height:0;padding:0!important;accent-color:#208461}
+body.gl-page-consultant_sales_outcomes .app-main .care :is(.queue,.workspace,.care-rail,.recent,.gl-live-card){background:#fff!important;background-image:none!important;border:1px solid #d8e5df!important;border-radius:18px!important;box-shadow:0 4px 18px #214e3b06!important;min-width:0}
+body.gl-page-consultant_sales_outcomes .app-main .care :is(.care-head,.patient-bar,.gl-live-head){background:#f6faf8!important;background-image:none!important;border-color:#e1ebe5!important;padding:14px 16px!important;min-height:0!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .gl-live-head{display:flex!important;position:static!important;overflow:visible!important;height:auto!important;align-items:center!important;flex-wrap:wrap;gap:8px}
+body.gl-page-consultant_sales_outcomes .app-main .care .gl-live-title strong{display:block!important;font-size:13px!important;line-height:1.8!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .gl-live-title small{display:block;margin-top:3px}
+body.gl-page-consultant_sales_outcomes .app-main .care .gl-live-indicator{color:#168359!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .gl-live-refresh{color:#60766e!important;font-size:10px!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .doctor-box{background:#f7f4fc!important;border-color:#e4ddef!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .doctor-box h3{color:#644d85!important}
+body.gl-page-consultant_sales_outcomes .app-main .care :is(.item,.add-row){background:#f8fbf9!important;border-color:#dce7e0!important;padding:14px!important;gap:12px!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .item{grid-template-columns:minmax(130px,1.5fr) minmax(100px,1fr) 76px 120px!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .item label{font-size:11px!important;gap:6px!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .item-actions{align-items:center!important;justify-content:flex-end!important;gap:12px!important;align-self:end}
+body.gl-page-consultant_sales_outcomes .app-main .care .gl-money-unit-note{grid-column:1/-1!important;order:5!important;width:100%!important;min-width:0!important;background:#edf5f0!important;color:#506b5e!important;border:1px solid #dbe8df!important;padding:8px 11px!important;margin:0!important;border-radius:9px!important;font-size:10px!important;line-height:1.8!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .item .original{order:6!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .add-row{grid-template-columns:110px minmax(120px,1fr) minmax(100px,1fr)!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .plan-title{align-items:center!important;flex-wrap:wrap;gap:6px!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .final-box{background:#f6faf7!important;border-color:#dbe7df!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .total-card{background:#fff!important;border-color:#dce8df!important;padding:12px!important}
+body.gl-page-consultant_sales_outcomes .app-main .care :is(.save,.primary,.pay-self,.send-rec,.danger){min-height:40px!important;height:auto!important;padding:10px 14px!important;border-radius:10px!important;font-family:inherit!important;font-size:11px!important;font-weight:800!important;line-height:1.6!important;box-shadow:none!important}
+body.gl-page-consultant_sales_outcomes .app-main .care :is(.save,.primary,.pay-self){background:#207958!important;border:1px solid #207958!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .send-rec{background:#f0ecf8!important;border:1px solid #dbd3ed!important;color:#604a83!important;-webkit-text-fill-color:#604a83!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .danger{background:#fff1f1!important;border:1px solid #eed1d5!important;color:#a44152!important;-webkit-text-fill-color:#a44152!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .quick-action{background:#f4f9f6!important;background-image:none!important;border:1px solid #dce9e0!important;box-shadow:none!important;padding:12px!important;min-height:70px!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .quick-action strong{font-size:12px!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .quick-action small{font-size:10px!important}
+body.gl-page-consultant_sales_outcomes .app-main .care :is(button,a):focus-visible{outline:2px solid #208461!important;outline-offset:3px}
+body.gl-page-consultant_sales_outcomes .app-main .care .care-hero{background:linear-gradient(110deg,#eef8f2,#fff 68%,#f5f3fc)!important;border-color:#d1e4d8!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .care-target-meter{height:100px!important;width:136px!important;max-width:100%!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .care-target-unit:has(svg) > :is(.care-target-title,.care-target-state){display:none!important}
+body.gl-page-consultant_sales_outcomes header.topbar{background:#fff!important;background-image:none!important;border-bottom:1px solid #dfe9e3!important;color:#203e38!important;box-shadow:0 2px 12px #234c3906!important}
+body.gl-page-consultant_sales_outcomes header.topbar :is(.topbar-search,input){background:#f3f7f5!important;color:#36564b!important;-webkit-text-fill-color:#36564b!important;border-color:#dce7df!important}
+body.gl-page-consultant_sales_outcomes header.topbar :is(strong,.topbar-date){color:#294a3e!important;-webkit-text-fill-color:#294a3e!important}
+body.gl-page-consultant_sales_outcomes header.topbar .header-person span{color:#637c70!important}
+@media(max-width:1050px){
+body.gl-page-consultant_sales_outcomes .app-main .care .care-grid{grid-template-columns:minmax(0,1fr)!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .care-rail{grid-column:1/-1;min-height:0!important}
+}
+@media(max-width:700px){
+body.gl-page-consultant_sales_outcomes .app-main .care :is(.item,.add-row){grid-template-columns:repeat(2,minmax(0,1fr))!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .item-actions{grid-column:1/-1!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .final-form,body.gl-page-consultant_sales_outcomes .app-main .care .nosale form{grid-template-columns:minmax(0,1fr)!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .care-grid > aside{position:static!important;inset:auto!important;width:auto!important;min-height:0!important;height:auto!important}
+body.gl-page-consultant_sales_outcomes .app-main .care .care-target-widget{box-sizing:border-box!important}
+}
+
 </style>
 <div class="care">
   <section class="care-hero">
@@ -840,11 +896,18 @@ body.gl-page-consultant_sales_outcomes .care-target-legend{
     const value=Math.max(0,parsePercent(box.dataset.percent)||0);
     const t=["heavy","floor","one","two"].map(k=>parsePercent(box.dataset[k]));
     const ready=t.every(Number.isFinite)&&t[0]>0&&t[0]<t[1]&&t[1]<t[2]&&Math.abs(t[3]-100)<0.00001;
-    const svg=elem("svg",{viewBox:"0 25 220 160",role:"img","aria-label":box.getAttribute("aria-label")||"درصد تحقق تارگت"});
-    if(!ready){
-      svg.appendChild(elem("text",{x:110,y:106,fill:"#56776e","font-size":23,"text-anchor":"middle"},Math.round(value)+"%"));
-      box.replaceChildren(svg);return;
+    const svg=elem("svg",{viewBox:"0 15 220 180",role:"img","aria-label":box.getAttribute("aria-label")||"درصد تحقق تارگت"});
+    const unit=box.closest(".care-target-unit");
+    const title=unit.querySelector(".care-target-title").textContent.trim();
+    const state=unit.querySelector(".care-target-state");
+    const stateColors={red:"#bd334e",yellow:"#94600d",green:"#187550",blue:"#176ea6",purple:"#7850ae"};
+    const stateKey=Object.keys(stateColors).find(key=>state.classList.contains("mt-"+key));
+    function labels(){
+      svg.appendChild(elem("text",{x:110,y:79,fill:"#4d7168","font-size":17,"text-anchor":"middle","font-family":"Tahoma,Arial","font-weight":"bold"},title));
+      svg.appendChild(elem("text",{x:110,y:116,fill:"#244f49","font-size":29,"text-anchor":"middle","font-family":"Arial,Tahoma","font-weight":"bold"},Math.round(value)+"%"));
+      svg.appendChild(elem("text",{x:110,y:143,fill:stateColors[stateKey]||"#4d7168","font-size":15,"text-anchor":"middle","font-family":"Tahoma,Arial","font-weight":"bold"},state.textContent.trim()));
     }
+    if(!ready){labels();box.replaceChildren(svg);return;}
     const upper=Math.max(120,value);
     const edges=[0,...t,upper];
     for(let i=0;i<5;i++){
@@ -856,7 +919,7 @@ body.gl-page-consultant_sales_outcomes .care-target-legend{
     const [px,py]=polar(angle,84),[mx,my]=polar(angle,40);
     svg.appendChild(elem("path",{d:"M "+mx+" "+my+" L "+px+" "+py,stroke:"#edfaff","stroke-width":7.5,"stroke-linecap":"round",fill:"none"}));
     svg.appendChild(elem("circle",{cx:px,cy:py,r:9,fill:"#12354c",stroke:"#edfaff","stroke-width":4}));
-    svg.appendChild(elem("text",{x:110,y:108,fill:"#244f49","font-size":25,"text-anchor":"middle","font-family":"Arial,Tahoma","font-weight":"bold"},Math.round(value)+"%"));
+    labels();
     box.replaceChildren(svg);
   });
 })();
