@@ -735,7 +735,7 @@ body.gl-page-consultant_sales_outcomes .care-target-legend .mt-green{background:
     const value=Math.max(0,Number(box.dataset.percent)||0);
     const t=["heavy","floor","one","two"].map(k=>Number(box.dataset[k]));
     const ready=t.every(Number.isFinite)&&t[0]>0&&t[0]<t[1]&&t[1]<t[2]&&t[2]===100;
-    const svg=elem("svg",{viewBox:"0 0 220 160",role:"img","aria-label":box.getAttribute("aria-label")||"درصد تحقق تارگت"});
+    const svg=elem("svg",{viewBox:"0 25 220 160",role:"img","aria-label":box.getAttribute("aria-label")||"درصد تحقق تارگت"});
     if(!ready){
       svg.appendChild(elem("text",{x:110,y:106,fill:"#56776e","font-size":23,"text-anchor":"middle"},"—"));
       box.replaceChildren(svg);return;
