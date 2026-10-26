@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -15,11 +15,49 @@ from django.utils import timezone
 from .call_center_identity import call_center_display_name
 from .patient_ui import attach_patient_photos, patient_photo_url_for_phone
 from .device_pricing import device_unit_price
+from .sales_target_models import SalesTargetBand, TargetPercentPolicy
+from .jalali import gregorian_to_jalali, jalali_to_gregorian
+from datetime import datetime, time
 from .models import (
     ConsultationPlan, ConsultationPlanItem, DeviceBaseTariff, DeviceSessionBooking, EmployeeProfile, FinancialTransaction,
     PatientProfile, ReferralLead, StaffNotification, Task, TreatmentCatalogItem,
     VisitAppointment, normalize_lead_phone,
 )
+
+
+
+def _consultant_branch_target(profile):
+    """Only the authenticated consultant's branch; no client-selected branch."""
+    today=timezone.localdate()
+    jy,jm,_=gregorian_to_jalali(today.year,today.month,today.day)
+    start=datetime(*jalali_to_gregorian(jy,jm,1)).date()
+    ny,nm=(jy+1,1) if jm==12 else (jy,jm+1)
+    end=datetime(*jalali_to_gregorian(ny,nm,1)).date()
+    saved=SalesTargetBand.objects.filter(key=f'{jy}-{jm:02d}:branch:{profile.branch_id}',scope='branch',branch_id=profile.branch_id).first()
+    if not saved:
+        return {'configured':False,'branch':profile.branch.name}
+    policy=TargetPercentPolicy.objects.filter(period_year=jy,period_month=jm).first()
+    if policy is None:
+        policy=TargetPercentPolicy(period_year=jy,period_month=jm)
+    heavy,floor,one,two=policy.bands(saved.sales_floor)
+    base=FinancialTransaction.objects.filter(
+        branch_id=profile.branch_id,source='manual',entry_type='inc',
+        review_status='approved',occurred_at__gte=timezone.make_aware(datetime.combine(start,time.min)),
+        occurred_at__lt=timezone.make_aware(datetime.combine(end,time.min)),
+    )
+    monthly=Decimal(base.aggregate(total=Sum('amount'))['total'] or 0)/Decimal('10000000')
+    daily=Decimal(base.filter(occurred_at__date=today).aggregate(total=Sum('amount'))['total'] or 0)/Decimal('10000000')
+    days=Decimal((end-start).days)
+    def gauge(amount, divisor):
+        thresholds=[x/divisor for x in (heavy,one,two)]
+        if amount<thresholds[0]: status,color='جریمه سنگین','red'
+        elif amount<thresholds[1]: status,color='کف فروش','orange'
+        elif amount<thresholds[2]: status,color='تارگت ۱','yellow'
+        else: status,color='تارگت ۲','green'
+        return {'percent':min(999,int(amount*100/thresholds[2])) if thresholds[2]>0 else 0,
+                'status':status,'color':color}
+    return {'configured':True,'branch':profile.branch.name,
+            'daily':gauge(daily,days),'monthly':gauge(monthly,Decimal('1'))}
 
 
 def _consultant(request):
@@ -349,6 +387,7 @@ def consultant_sales_outcomes(request):
         'pending':pending,'selected':selected,'plan':plan,
         'plan_items':list(plan.items.all()) if plan else [],
         'doctor_notes':doctor_notes,'recent_paid':recent_paid,'kpis':kpis,
+        'branch_target':_consultant_branch_target(profile),
         'item_kinds':ConsultationPlanItem.KIND,
         'failure_reasons':[
             ('financial','مشکل مالی'),('side_effects','نگرانی از عوارض'),
