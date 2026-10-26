@@ -243,7 +243,7 @@ body.gl-page-sales_targets_dashboard .app-main{
     <div class="st-between"><h3>{{ b.label }}</h3><span class="st-status {{ b.level }}">{{ b.status }}</span>{% if b.key != "call_center" and b.people %}<span class="st-header-photo">{% with p=b.people.0 %}<span class="st-avatar" title="{{ p.label }}">{% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.label }}" loading="lazy">{% else %}{{ p.label|first }}{% endif %}</span>{% endwith %}</span>{% endif %}</div>
     <div class="st-meter" data-value="{{ b.value }}" data-heavy="{{ b.plan.heavy_limit|default_if_none:'' }}" data-floor="{{ b.plan.sales_floor|default_if_none:'' }}" data-one="{{ b.plan.target_one|default_if_none:'' }}" data-two="{{ b.plan.target_two|default_if_none:'' }}"></div>
     <div class="st-stats">
-     <div><small>فروش</small><strong>{{ b.value|floatformat:0 }}</strong></div>
+     <div><small>کف</small><strong>{% if b.plan %}{{ b.plan.sales_floor|floatformat:0 }}{% else %}—{% endif %}</strong></div>
      <div><small>تارگت ۱</small><strong>{% if b.plan %}{{ b.plan.target_one|floatformat:0 }}{% else %}—{% endif %}</strong></div>
      <div><small>تارگت ۲</small><strong>{% if b.plan %}{{ b.plan.target_two|floatformat:0 }}{% else %}—{% endif %}</strong></div>
     </div>
