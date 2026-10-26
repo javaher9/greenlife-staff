@@ -5,6 +5,7 @@ urlpatterns=[
  path('permissions/',views.request_permission_settings,name='payments_request_permissions'),
  path('executive/new/',views.executive_quick_payment,name='payments_executive_quick'),
  path('review/<int:pk>/',views.review,name='payments_review'),
+ path('executive/change/<int:pk>/',views.executive_change_unpaid,name='payments_executive_change'),
  path('complete/<int:pk>/',views.mark_paid,name='payments_complete'),
  path('reassign/<int:pk>/',views.reassign_payment,name='payments_reassign'),
  path('clarification/<int:pk>/answer/',views.answer_clarification,name='payments_clarification_answer'),
