@@ -577,6 +577,21 @@ def lead_management_dashboard(request):
     duplicate_phones=leads.exclude(phone='').values('phone').annotate(c=Count('id')).filter(c__gt=1).count()
     status_rows=_operational_status_rows(leads,total); source_rows=_channel_counts(leads); instagram_page_rows=_instagram_page_rows(leads)
 
+    # Count actual saved lead records, independently of call-center assignment.
+    # Repeat submissions accepted after the 24-hour deduplication window count normally.
+    registrar_rows=[]
+    registrar_stats=(leads.values('created_by_id','created_by__first_name','created_by__last_name','created_by__username')
+        .annotate(total=Count('id'),today=Count('id',filter=Q(created_at__date=today)),
+                  month=Count('id',filter=Q(created_at__date__gte=start_month)))
+        .order_by('-month','-today','-total'))
+    for item in registrar_stats:
+        first=(item['created_by__first_name'] or '').strip()
+        last=(item['created_by__last_name'] or '').strip()
+        username=item['created_by__username'] or ''
+        name=' '.join(filter(None,(first,last))) or username or 'نامشخص / ثبت خودکار'
+        registrar_rows.append({'id':item['created_by_id'],'name':name,'total':item['total'],
+                               'today':item['today'],'month':item['month']})
+
     operator_rows=[]
     operators=EmployeeProfile.objects.filter(role='call_center',is_active=True,user__is_active=True).select_related('user')
     for op in operators:
@@ -610,4 +625,4 @@ def lead_management_dashboard(request):
     attention_backlog=list(attention_backlog_qs.order_by('-created_at')[:15])
     for lead in recent: _enrich_referral_group_label(lead)
     integration_rows=[{'name':'Instagram Form','state':'connected','detail':'فرم فعلی مستقیماً وارد ReferralLead می‌شود.'},{'name':'Website','state':'ready','detail':'برای اتصال فرم سایت به ورودی یکپارچه آماده است.'},{'name':'CRM','state':'ready','detail':'وب‌هوک/API ورودی برای اتصال CRM طراحی شده است.'},{'name':'WhatsApp / Campaigns','state':'ready','detail':'قابل اتصال با source و UTM مستقل.'}]
-    return render(request,'core/lead_management_dashboard.html',{'lead_kpis':{'total':total,'today':today_count,'week':week_count,'month':month_count,'contacted':contacted_count,'appointments':appointment_count,'won':won_count,'conversion':conversion,'contact_rate':contact_rate,'unassigned':unassigned_count,'overdue':overdue_count,'untouched':untouched_count,'duplicates':duplicate_phones,'sales_amount':sales_amount,'instagram_sales_amount':instagram_sales_amount,'website_sales_amount':website_sales_amount},'status_rows':status_rows,'source_rows':source_rows,'instagram_page_rows':instagram_page_rows,'group_rows':group_rows,'operator_rows':operator_rows,'recent_leads':[FlowerLeadProxy(lead) for lead in recent],'attention_current':[AttentionLeadProxy(lead, now, today) for lead in attention_current],'attention_backlog':[AttentionLeadProxy(lead, now, today) for lead in attention_backlog],'attention_backlog_count':attention_backlog_count,'attention_total_count':len(attention_current)+attention_backlog_count,'integration_rows':integration_rows,'operators':[FlowerProfileProxy(op) for op in operators],'source_filter':source_filter,'status_filter':status_filter,'operator_filter':operator_filter,'market_filter':market_filter,'search_query':search_query,'status_choices':STATUS_FILTER_CHOICES,'market_counts':{'all':ReferralLead.objects.count(),'IR':ReferralLead.objects.filter(country__code='IR').count(),'TR':ReferralLead.objects.filter(country__code='TR').count()}})
+    return render(request,'core/lead_management_dashboard.html',{'lead_kpis':{'total':total,'today':today_count,'week':week_count,'month':month_count,'contacted':contacted_count,'appointments':appointment_count,'won':won_count,'conversion':conversion,'contact_rate':contact_rate,'unassigned':unassigned_count,'overdue':overdue_count,'untouched':untouched_count,'duplicates':duplicate_phones,'sales_amount':sales_amount,'instagram_sales_amount':instagram_sales_amount,'website_sales_amount':website_sales_amount},'status_rows':status_rows,'source_rows':source_rows,'instagram_page_rows':instagram_page_rows,'group_rows':group_rows,'operator_rows':operator_rows,'registrar_rows':registrar_rows,'recent_leads':[FlowerLeadProxy(lead) for lead in recent],'attention_current':[AttentionLeadProxy(lead, now, today) for lead in attention_current],'attention_backlog':[AttentionLeadProxy(lead, now, today) for lead in attention_backlog],'attention_backlog_count':attention_backlog_count,'attention_total_count':len(attention_current)+attention_backlog_count,'integration_rows':integration_rows,'operators':[FlowerProfileProxy(op) for op in operators],'source_filter':source_filter,'status_filter':status_filter,'operator_filter':operator_filter,'market_filter':market_filter,'search_query':search_query,'status_choices':STATUS_FILTER_CHOICES,'market_counts':{'all':ReferralLead.objects.count(),'IR':ReferralLead.objects.filter(country__code='IR').count(),'TR':ReferralLead.objects.filter(country__code='TR').count()}})
