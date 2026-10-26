@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -17,7 +17,7 @@ from .call_center_identity import (
 )
 from .models import AuditLog, EmployeeProfile, ReferralLead, ReferralSale, StaffNotification
 from .instagram_views import INSTAGRAM_PAGE_SOURCES
-from .jalali import gregorian_to_jalali
+from .jalali import gregorian_to_jalali, jalali_to_gregorian
 from .country_workspace import scoped_queryset
 
 
@@ -577,12 +577,23 @@ def lead_management_dashboard(request):
     duplicate_phones=leads.exclude(phone='').values('phone').annotate(c=Count('id')).filter(c__gt=1).count()
     status_rows=_operational_status_rows(leads,total); source_rows=_channel_counts(leads); instagram_page_rows=_instagram_page_rows(leads)
 
-    # Count actual saved lead records, independently of call-center assignment.
-    # Repeat submissions accepted after the 24-hour deduplication window count normally.
+    # Payroll review: count persisted lead records by their actual creator.
+    # This report never changes payroll or call-center assignment.
+    jy,jm,_=gregorian_to_jalali(today.year,today.month,today.day)
+    raw_period=(request.GET.get('registrar_month') or '').strip().translate(str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩','01234567890123456789'))
+    try:
+        selected_year,selected_month=map(int,raw_period.split('/'))
+        if not (1300 <= selected_year <= jy and 1 <= selected_month <= 12 and (selected_year,selected_month)<=(jy,jm)):
+            raise ValueError()
+    except (ValueError,TypeError):
+        selected_year,selected_month=jy,jm
+    start_g=date(*jalali_to_gregorian(selected_year,selected_month,1))
+    next_year,next_month=(selected_year+1,1) if selected_month==12 else (selected_year,selected_month+1)
+    end_g=date(*jalali_to_gregorian(next_year,next_month,1))
     registrar_rows=[]
     registrar_stats=(leads.values('created_by_id','created_by__first_name','created_by__last_name','created_by__username')
         .annotate(total=Count('id'),today=Count('id',filter=Q(created_at__date=today)),
-                  month=Count('id',filter=Q(created_at__date__gte=start_month)))
+                  month=Count('id',filter=Q(created_at__date__gte=start_g,created_at__date__lt=end_g)))
         .order_by('-month','-today','-total'))
     for item in registrar_stats:
         first=(item['created_by__first_name'] or '').strip()
@@ -591,6 +602,27 @@ def lead_management_dashboard(request):
         name=' '.join(filter(None,(first,last))) or username or 'نامشخص / ثبت خودکار'
         registrar_rows.append({'id':item['created_by_id'],'name':name,'total':item['total'],
                                'today':item['today'],'month':item['month']})
+    # The featured staff are fixed by business request, not automatically ranked.
+    featured_names=('فاطمه راد','شیما عباسی','نادری','admin')
+    def registrar_priority(row):
+        name=row['name'].replace('ي','ی').replace('ك','ک')
+        if 'راد' in name: return 0
+        if 'عباسی' in name or 'لاله' in name: return 1
+        if 'نادری' in name: return 2
+        if name.lower()=='admin' or 'ادمین' in name: return 3
+        return 4
+    registrar_featured=sorted((row for row in registrar_rows if registrar_priority(row)<4),key=registrar_priority)[:4]
+    registrar_month_options=[]
+    opt_y,opt_m=jy,jm
+    for _ in range(24):
+        registrar_month_options.append({'value':f'{opt_y:04d}/{opt_m:02d}','label':f'{opt_y:04d}/{opt_m:02d}'})
+        opt_y,opt_m=(opt_y-1,12) if opt_m==1 else (opt_y,opt_m-1)
+    try:
+        registrar_rate=max(0,min(int((request.GET.get('registrar_rate') or '8000').translate(str.maketrans('۰۱۲۳۴۵۶۷۸۹','0123456789'))),10000000))
+    except ValueError:
+        registrar_rate=8000
+    for row in registrar_rows:
+        row['estimated_bonus']=row['month']*registrar_rate
 
     operator_rows=[]
     operators=EmployeeProfile.objects.filter(role='call_center',is_active=True,user__is_active=True).select_related('user')
@@ -625,4 +657,4 @@ def lead_management_dashboard(request):
     attention_backlog=list(attention_backlog_qs.order_by('-created_at')[:15])
     for lead in recent: _enrich_referral_group_label(lead)
     integration_rows=[{'name':'Instagram Form','state':'connected','detail':'فرم فعلی مستقیماً وارد ReferralLead می‌شود.'},{'name':'Website','state':'ready','detail':'برای اتصال فرم سایت به ورودی یکپارچه آماده است.'},{'name':'CRM','state':'ready','detail':'وب‌هوک/API ورودی برای اتصال CRM طراحی شده است.'},{'name':'WhatsApp / Campaigns','state':'ready','detail':'قابل اتصال با source و UTM مستقل.'}]
-    return render(request,'core/lead_management_dashboard.html',{'lead_kpis':{'total':total,'today':today_count,'week':week_count,'month':month_count,'contacted':contacted_count,'appointments':appointment_count,'won':won_count,'conversion':conversion,'contact_rate':contact_rate,'unassigned':unassigned_count,'overdue':overdue_count,'untouched':untouched_count,'duplicates':duplicate_phones,'sales_amount':sales_amount,'instagram_sales_amount':instagram_sales_amount,'website_sales_amount':website_sales_amount},'status_rows':status_rows,'source_rows':source_rows,'instagram_page_rows':instagram_page_rows,'group_rows':group_rows,'operator_rows':operator_rows,'registrar_rows':registrar_rows,'recent_leads':[FlowerLeadProxy(lead) for lead in recent],'attention_current':[AttentionLeadProxy(lead, now, today) for lead in attention_current],'attention_backlog':[AttentionLeadProxy(lead, now, today) for lead in attention_backlog],'attention_backlog_count':attention_backlog_count,'attention_total_count':len(attention_current)+attention_backlog_count,'integration_rows':integration_rows,'operators':[FlowerProfileProxy(op) for op in operators],'source_filter':source_filter,'status_filter':status_filter,'operator_filter':operator_filter,'market_filter':market_filter,'search_query':search_query,'status_choices':STATUS_FILTER_CHOICES,'market_counts':{'all':ReferralLead.objects.count(),'IR':ReferralLead.objects.filter(country__code='IR').count(),'TR':ReferralLead.objects.filter(country__code='TR').count()}})
+    return render(request,'core/lead_management_dashboard.html',{'lead_kpis':{'total':total,'today':today_count,'week':week_count,'month':month_count,'contacted':contacted_count,'appointments':appointment_count,'won':won_count,'conversion':conversion,'contact_rate':contact_rate,'unassigned':unassigned_count,'overdue':overdue_count,'untouched':untouched_count,'duplicates':duplicate_phones,'sales_amount':sales_amount,'instagram_sales_amount':instagram_sales_amount,'website_sales_amount':website_sales_amount},'status_rows':status_rows,'source_rows':source_rows,'instagram_page_rows':instagram_page_rows,'group_rows':group_rows,'operator_rows':operator_rows,'registrar_rows':registrar_rows,'registrar_featured':registrar_featured,'registrar_month_options':registrar_month_options,'registrar_selected_month':f'{selected_year:04d}/{selected_month:02d}','registrar_rate':registrar_rate,'recent_leads':[FlowerLeadProxy(lead) for lead in recent],'attention_current':[AttentionLeadProxy(lead, now, today) for lead in attention_current],'attention_backlog':[AttentionLeadProxy(lead, now, today) for lead in attention_backlog],'attention_backlog_count':attention_backlog_count,'attention_total_count':len(attention_current)+attention_backlog_count,'integration_rows':integration_rows,'operators':[FlowerProfileProxy(op) for op in operators],'source_filter':source_filter,'status_filter':status_filter,'operator_filter':operator_filter,'market_filter':market_filter,'search_query':search_query,'status_choices':STATUS_FILTER_CHOICES,'market_counts':{'all':ReferralLead.objects.count(),'IR':ReferralLead.objects.filter(country__code='IR').count(),'TR':ReferralLead.objects.filter(country__code='TR').count()}})
