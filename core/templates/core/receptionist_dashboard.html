@@ -221,10 +221,10 @@
         {% for item in receptionist_payment_queue %}
         <div class="payment-row">
           <div class="patient-name-cell"><span class="patient-mini-avatar">{% if item.patient_photo_url %}<img src="{{ item.patient_photo_url }}" alt="">{% else %}<b>{{ item.patient_initial }}</b>{% endif %}</span><div><strong>{{ item.full_name }}</strong><small>{{ item.phone|mask_phone }} · {% gl_t "rec.consultant_label" name=item.consultation_plan.consultant.get_full_name|default:item.consultation_plan.consultant.username|default:"—" %}</small>
-            <small style="margin-top:5px;color:#33445e">{% for part in item.consultation_plan.items.all %}{% if part.included %}{{ part.title }}{% if part.area %} ({{ part.area }}){% endif %} · {% gl_t "rec.package_line" qty=part.quantity units=part.units_per_session price=part.unit_price_toman|floatformat:0 %}{% if not forloop.last %} | {% endif %}{% endif %}{% endfor %}</small>
+            <small style="margin-top:5px;color:#33445e">{% for part in item.consultation_plan.items.all %}{% if part.included %}{{ part.title }}{% if part.area %} ({{ part.area }}){% endif %} · {% gl_t "rec.package_line_million" qty=part.quantity units=part.units_per_session price=part.unit_price_toman|toman_million %}{% if not forloop.last %} | {% endif %}{% endif %}{% endfor %}</small>
             {% if item.consultation_plan.status == 'partial_paid' %}<small style="color:#a16909">{% gl_t 'rec.deposit_note' %}</small>{% endif %}
           </div></div>
-          <div class="payment-amount">{% gl_t "rec.amount_toman" amount=item.consultation_plan.final_amount_toman|floatformat:0 %} <small style="display:block;text-align:left">{% gl_t 'rec.total_package' %}</small></div>
+          <div class="payment-amount">{{ item.consultation_plan.final_amount_toman|toman_million }} {% gl_t "common.million_toman" %} <small style="display:block;text-align:left">{% gl_t 'rec.total_package' %}</small></div>
           <a class="payment-go" href="{% url 'finance_entry' %}?appointment={{ item.pk }}">{% gl_t "rec.record_payment" %}</a>
         </div>
         {% endfor %}

@@ -1117,15 +1117,15 @@ TR.update({'dash.to':'-'})
 EN.update({'dash.to':'to'})
 
 FA.update({
-    'rec.consultant_label':'مشاور: {name}','rec.package_line':'{qty} جلسه × {units} واحد · {price} تومان/واحد',
+    'rec.consultant_label':'مشاور: {name}','rec.package_line':'{qty} جلسه × {units} واحد · {price} تومان/واحد','rec.package_line_million':'{qty} جلسه × {units} واحد · {price} میلیون تومان/واحد',
     'rec.amount_toman':'{amount} تومان','rec.today_checkin':'✓ ورود امروز {time}',
 })
 TR.update({
-    'rec.consultant_label':'Danışman: {name}','rec.package_line':'{qty} seans × {units} birim · {price} toman/birim',
+    'rec.consultant_label':'Danışman: {name}','rec.package_line':'{qty} seans × {units} birim · {price} toman/birim','rec.package_line_million':'{qty} seans × {units} birim · {price} milyon toman/birim',
     'rec.amount_toman':'{amount} toman','rec.today_checkin':'✓ Bugünkü giriş {time}',
 })
 EN.update({
-    'rec.consultant_label':'Consultant: {name}','rec.package_line':'{qty} sessions × {units} units · {price} toman/unit',
+    'rec.consultant_label':'Consultant: {name}','rec.package_line':'{qty} sessions × {units} units · {price} toman/unit','rec.package_line_million':'{qty} sessions × {units} units · {price} million toman/unit',
     'rec.amount_toman':'{amount} toman','rec.today_checkin':'✓ Today’s check-in {time}',
 })
 
