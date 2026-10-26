@@ -229,6 +229,18 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertEqual(flower_row["value"], Decimal("13.00"))
         self.assertEqual(res.context["overall"]["value"], Decimal("18.00"))
 
+    def test_branch_cards_display_floor_not_duplicate_sale(self):
+        self.client.post(self.url, {
+            "year": self.year, "month": self.month,
+            "action": "set_floor", "subject": f"branch:{self.branch.pk}",
+            "sales_floor": "7000",
+        })
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "<small>کف</small>", html=False)
+        self.assertNotContains(response, "<small>فروش</small>", html=False)
+        self.assertContains(response, "7000", html=False)
+
     def test_non_management_user_forbidden(self):
         self.client.force_login(self.staff)
         response = self.client.get(self.url)
