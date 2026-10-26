@@ -157,7 +157,7 @@ FA = {
     'rec.flow_complete':'چرخه تکمیل','rec.cancel_confirm':'این نوبت لغو شود؟',
 
     # Consultant
-    'con.eyebrow':'GREENLIFE · میز کار مشاور','con.title':'پنل مشاوره و چرخه درمان',
+    'con.eyebrow':'میز کار مشاور','con.title':'پنل مشاوره و چرخه درمان',
     'con.intro':'صف بیماران، پکیج درمان، نوبت دستگاه و عملیات مالی در یک فضای کاری روشن، یکپارچه و سریع.',
     'con.device_appointments':'نوبت دستگاه‌ها','con.staff_chat':'چت پرسنل','con.add_expense':'ثبت هزینه','con.add_payment':'ثبت دریافت',
     'con.work_status':'وضعیت کاری مشاور','con.today_appointments':'نوبت‌های امروز','con.branch_cases':'پرونده‌های امروز شعبه',
@@ -382,7 +382,7 @@ TR = {
     'rec.completed_flow':'Tamamlandı','rec.checkin':'Kabul / Giriş','rec.patient_360':'360 Hasta Dosyası',
     'rec.flow_complete':'Süreç Tamamlandı','rec.cancel_confirm':'Bu randevu iptal edilsin mi?',
 
-    'con.eyebrow':'GREENLIFE · DANIŞMAN ÇALIŞMA ALANI','con.title':'Danışmanlık ve Tedavi Süreci',
+    'con.eyebrow':'DANIŞMAN ÇALIŞMA ALANI','con.title':'Danışmanlık ve Tedavi Süreci',
     'con.intro':'Hasta kuyruğu, tedavi paketi, cihaz randevusu ve finans işlemleri tek, hızlı ve açık bir çalışma alanında.',
     'con.device_appointments':'Cihaz Randevuları','con.staff_chat':'Personel Sohbeti','con.add_expense':'Gider Kaydı','con.add_payment':'Tahsilat Kaydı',
     'con.work_status':'Danışman Çalışma Durumu','con.today_appointments':'Bugünkü Randevular','con.branch_cases':'Şubenin Bugünkü Dosyaları',
@@ -600,7 +600,7 @@ EN.update({
     'rec.completed_flow':'Completed','rec.checkin':'Check In','rec.patient_360':'Patient 360',
     'rec.flow_complete':'Flow Complete','rec.cancel_confirm':'Cancel this appointment?',
 
-    'con.eyebrow':'GREENLIFE · CONSULTANT WORKSPACE','con.title':'Consultation & Treatment Workflow',
+    'con.eyebrow':'CONSULTANT WORKSPACE','con.title':'Consultation & Treatment Workflow',
     'con.intro':'Patient queue, treatment package, device booking, and financial operations in one clear, fast workspace.',
     'con.device_appointments':'Device Appointments','con.staff_chat':'Staff Chat','con.add_expense':'Add Expense','con.add_payment':'Add Payment',
     'con.work_status':'Consultant Work Status','con.today_appointments':"Today's Appointments",'con.branch_cases':"Today's Branch Cases",
