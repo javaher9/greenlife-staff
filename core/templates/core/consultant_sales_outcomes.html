@@ -524,6 +524,26 @@
     <div class="care-hero-copy"><div class="care-kicker">{% gl_t 'con.eyebrow' %}</div><h1>{% gl_t 'con.title' %}</h1><p>{% gl_t 'con.intro' %}</p></div>
     <div class="care-shortcuts"><a href="{% url 'device_booking_schedule' %}">▣ {% gl_t 'con.device_appointments' %}</a><a href="{% url 'internal_messages' %}">◌ {% gl_t 'con.staff_chat' %}</a><a href="{% url 'consultant_expense_entry' %}">＋ {% gl_t 'con.add_expense' %}</a><a href="{% url 'finance_entry' %}">▤ {% gl_t 'con.add_payment' %}</a></div>
   </section>
+<style>
+.consultant-mini-target{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 13px;margin:0 0 10px;border:1px solid #3c5067;border-radius:13px;background:#142332;color:#f1f6fc;max-width:590px}
+.consultant-mini-target .mt-branch{font-size:11px;font-weight:800;white-space:nowrap}
+.consultant-mini-target .mt-item{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11px}
+.consultant-mini-target .mt-item strong{font-size:17px;direction:ltr}
+.consultant-mini-target .mt-status{border-radius:7px;padding:3px 7px;font-size:10px;font-weight:800}
+.consultant-mini-target .mt-red{background:#61232f;color:#ffadb9}.consultant-mini-target .mt-orange{background:#553b1f;color:#ffd098}.consultant-mini-target .mt-yellow{background:#504819;color:#ffe87a}.consultant-mini-target .mt-green{background:#124e38;color:#9af0bd}
+.consultant-mini-target .mt-key{display:flex;gap:7px;flex-wrap:wrap;font-size:9px;color:#abc3d5}
+@media(max-width:550px){.consultant-mini-target{max-width:100%;padding:9px}.consultant-mini-target .mt-branch{flex-basis:100%}}
+</style>
+{% if branch_target %}
+<div class="consultant-mini-target" aria-label="تارگت روزانه و ماهانه مرکز شما">
+  <span class="mt-branch">تارگت {{ branch_target.branch }}</span>
+  {% if branch_target.configured %}
+  <span class="mt-item">روزانه <strong>{{ branch_target.daily.percent }}%</strong><span class="mt-status mt-{{ branch_target.daily.color }}">{{ branch_target.daily.status }}</span></span>
+  <span class="mt-item">ماهانه <strong>{{ branch_target.monthly.percent }}%</strong><span class="mt-status mt-{{ branch_target.monthly.color }}">{{ branch_target.monthly.status }}</span></span>
+  {% else %}<span class="mt-item">تارگت این ماه تنظیم نشده</span>{% endif %}
+  <span class="mt-key">🔴 جریمه سنگین · 🟠 کف فروش · 🟡 تارگت ۱ · 🟢 تارگت ۲</span>
+</div>
+{% endif %}
   <section class="care-metrics" aria-label="{% gl_t 'con.work_status' %}">
     <div class="care-metric"><small>{% gl_t 'con.today_appointments' %}</small><strong>{{ kpis.appointments_today }}</strong><em>{% gl_t 'con.branch_cases' %}</em><span class="metric-ico">✓</span></div>
     <div class="care-metric"><small>{% gl_t 'con.waiting_consult' %}</small><strong>{{ kpis.awaiting_consultation }}</strong><em>{% gl_t 'con.ready_package' %}</em><span class="metric-ico">●</span></div>
