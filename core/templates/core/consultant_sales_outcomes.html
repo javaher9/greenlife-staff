@@ -517,6 +517,88 @@
 
 
 
+/* Compact target meters reuse the executive SVG needle and five-color scale.
+   Page scoped: no changes to other roles, buttons, or target dashboard. */
+body.gl-page-consultant_sales_outcomes .care .care-hero{
+  display:grid!important;grid-template-columns:minmax(0,1fr) minmax(345px,370px)!important;
+  direction:rtl;align-items:center!important;justify-content:stretch!important;
+  gap:17px!important;padding:15px 24px!important;min-height:164px!important;
+}
+body.gl-page-consultant_sales_outcomes .care-hero-primary{
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+  min-width:0;gap:13px;position:relative;z-index:3;
+}
+body.gl-page-consultant_sales_outcomes .care-hero-primary .care-hero-copy{max-width:100%;text-align:right}
+body.gl-page-consultant_sales_outcomes .care-hero-primary .care-shortcuts{
+  align-self:flex-start!important;justify-content:flex-start!important;flex-wrap:wrap;
+  gap:8px!important;margin:0!important;max-width:100%;
+}
+body.gl-page-consultant_sales_outcomes .care-hero-primary .care-shortcuts a{
+  min-width:0!important;min-height:37px!important;padding:8px 10px!important;
+  font-size:10px!important;white-space:nowrap;
+}
+body.gl-page-consultant_sales_outcomes .care-hero .hero-botanical{opacity:.16!important;width:30%}
+body.gl-page-consultant_sales_outcomes .care-target-widget{
+  position:relative;z-index:3;direction:rtl;color:#2f544c;
+  border:1px solid #d4e5de;border-radius:17px;background:rgba(255,255,255,.92);
+  box-shadow:0 5px 18px rgba(33,93,72,.065);padding:8px 11px 7px;min-width:0;
+}
+body.gl-page-consultant_sales_outcomes .care-target-heading{
+  font-size:11px;font-weight:950;color:#205a48;display:flex;align-items:center;
+  justify-content:space-between;gap:8px;margin-bottom:2px;
+}
+body.gl-page-consultant_sales_outcomes .care-target-heading small{
+  font-size:9px;color:#7a958c;font-weight:700;
+}
+body.gl-page-consultant_sales_outcomes .care-target-pair{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
+}
+body.gl-page-consultant_sales_outcomes .care-target-unit{
+  display:flex;flex-direction:column;align-items:center;min-width:0;gap:1px;
+}
+body.gl-page-consultant_sales_outcomes .care-target-title{
+  font-size:10px;color:#4d7168;font-weight:900;
+}
+body.gl-page-consultant_sales_outcomes .care-target-meter{
+  width:128px;max-width:100%;height:93px;display:flex;align-items:center;justify-content:center;
+}
+body.gl-page-consultant_sales_outcomes .care-target-meter svg{width:100%;height:100%;overflow:visible;display:block}
+body.gl-page-consultant_sales_outcomes .care-target-state{
+  display:inline-flex;align-items:center;justify-content:center;min-width:92px;
+  border-radius:8px;padding:2px 6px;font-weight:900;font-size:9px;line-height:1.55;
+}
+body.gl-page-consultant_sales_outcomes .care-target-state.mt-red{background:#fff0f1;color:#bd334e}
+body.gl-page-consultant_sales_outcomes .care-target-state.mt-orange{background:#fff5df;color:#a66a12}
+body.gl-page-consultant_sales_outcomes .care-target-state.mt-yellow{background:#eaf7ff;color:#176ea6}
+body.gl-page-consultant_sales_outcomes .care-target-state.mt-green{background:#f2eaff;color:#7850ae}
+body.gl-page-consultant_sales_outcomes .care-target-unset{font-size:11px;padding:22px 3px;text-align:center;color:#657d77}
+body.gl-page-consultant_sales_outcomes .care-target-legend{
+  display:flex;justify-content:center;align-items:center;gap:7px;flex-wrap:wrap;
+  border-top:1px solid #e9f0ed;margin-top:5px;padding-top:6px;font-size:8px;
+  color:#607a71;font-weight:850;
+}
+body.gl-page-consultant_sales_outcomes .care-target-legend span{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+body.gl-page-consultant_sales_outcomes .care-target-legend i{display:inline-block;width:7px;height:7px;border-radius:50%}
+body.gl-page-consultant_sales_outcomes .care-target-legend .mt-red{background:#fc4768}
+body.gl-page-consultant_sales_outcomes .care-target-legend .mt-orange{background:#f5bc31}
+body.gl-page-consultant_sales_outcomes .care-target-legend .mt-yellow{background:#2caeff}
+body.gl-page-consultant_sales_outcomes .care-target-legend .mt-green{background:#a96bfa}
+@media(max-width:1120px){
+  body.gl-page-consultant_sales_outcomes .care .care-hero{
+    grid-template-columns:minmax(0,1fr) minmax(295px,330px)!important;gap:10px!important;padding:13px 17px!important;
+  }
+  body.gl-page-consultant_sales_outcomes .care-hero-primary .care-shortcuts a{font-size:9px!important;padding:8px!important}
+}
+@media(max-width:880px){
+  body.gl-page-consultant_sales_outcomes .care .care-hero{grid-template-columns:minmax(0,1fr)!important;gap:10px!important}
+  body.gl-page-consultant_sales_outcomes .care-target-widget{max-width:390px;width:100%;justify-self:start}
+}
+@media(max-width:550px){
+  body.gl-page-consultant_sales_outcomes .care-hero-primary .care-shortcuts{width:100%!important}
+  body.gl-page-consultant_sales_outcomes .care-hero-primary .care-shortcuts a{flex:1 1 43%;white-space:normal;text-align:center}
+  body.gl-page-consultant_sales_outcomes .care-target-widget{max-width:none}
+}
+
 /* Consultant light theme: protect card gutters from the global dark shell.
    All selectors are scoped to THIS page; other staff pages are untouched. */
 body.gl-premium-dark.gl-page-consultant_sales_outcomes,
@@ -611,87 +693,6 @@ body.gl-page-consultant_sales_outcomes .care-target-legend{
   body.gl-page-consultant_sales_outcomes .care .care-metrics{gap:8px!important}
 }
 
-/* Compact target meters reuse the executive SVG needle and five-color scale.
-   Page scoped: no changes to other roles, buttons, or target dashboard. */
-body.gl-page-consultant_sales_outcomes .care .care-hero{
-  display:grid!important;grid-template-columns:minmax(0,1fr) minmax(345px,370px)!important;
-  direction:rtl;align-items:center!important;justify-content:stretch!important;
-  gap:17px!important;padding:15px 24px!important;min-height:164px!important;
-}
-body.gl-page-consultant_sales_outcomes .care-hero-primary{
-  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
-  min-width:0;gap:13px;position:relative;z-index:3;
-}
-body.gl-page-consultant_sales_outcomes .care-hero-primary .care-hero-copy{max-width:100%;text-align:right}
-body.gl-page-consultant_sales_outcomes .care-hero-primary .care-shortcuts{
-  align-self:flex-start!important;justify-content:flex-start!important;flex-wrap:wrap;
-  gap:8px!important;margin:0!important;max-width:100%;
-}
-body.gl-page-consultant_sales_outcomes .care-hero-primary .care-shortcuts a{
-  min-width:0!important;min-height:37px!important;padding:8px 10px!important;
-  font-size:10px!important;white-space:nowrap;
-}
-body.gl-page-consultant_sales_outcomes .care-hero .hero-botanical{opacity:.16!important;width:30%}
-body.gl-page-consultant_sales_outcomes .care-target-widget{
-  position:relative;z-index:3;direction:rtl;color:#2f544c;
-  border:1px solid #d4e5de;border-radius:17px;background:rgba(255,255,255,.92);
-  box-shadow:0 5px 18px rgba(33,93,72,.065);padding:8px 11px 7px;min-width:0;
-}
-body.gl-page-consultant_sales_outcomes .care-target-heading{
-  font-size:11px;font-weight:950;color:#205a48;display:flex;align-items:center;
-  justify-content:space-between;gap:8px;margin-bottom:2px;
-}
-body.gl-page-consultant_sales_outcomes .care-target-heading small{
-  font-size:9px;color:#7a958c;font-weight:700;
-}
-body.gl-page-consultant_sales_outcomes .care-target-pair{
-  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
-}
-body.gl-page-consultant_sales_outcomes .care-target-unit{
-  display:flex;flex-direction:column;align-items:center;min-width:0;gap:1px;
-}
-body.gl-page-consultant_sales_outcomes .care-target-title{
-  font-size:10px;color:#4d7168;font-weight:900;
-}
-body.gl-page-consultant_sales_outcomes .care-target-meter{
-  width:128px;max-width:100%;height:93px;display:flex;align-items:center;justify-content:center;
-}
-body.gl-page-consultant_sales_outcomes .care-target-meter svg{width:100%;height:100%;overflow:visible;display:block}
-body.gl-page-consultant_sales_outcomes .care-target-state{
-  display:inline-flex;align-items:center;justify-content:center;min-width:92px;
-  border-radius:8px;padding:2px 6px;font-weight:900;font-size:9px;line-height:1.55;
-}
-body.gl-page-consultant_sales_outcomes .care-target-state.mt-red{background:#fff0f1;color:#bd334e}
-body.gl-page-consultant_sales_outcomes .care-target-state.mt-orange{background:#fff5df;color:#a66a12}
-body.gl-page-consultant_sales_outcomes .care-target-state.mt-yellow{background:#eaf7ff;color:#176ea6}
-body.gl-page-consultant_sales_outcomes .care-target-state.mt-green{background:#f2eaff;color:#7850ae}
-body.gl-page-consultant_sales_outcomes .care-target-unset{font-size:11px;padding:22px 3px;text-align:center;color:#657d77}
-body.gl-page-consultant_sales_outcomes .care-target-legend{
-  display:flex;justify-content:center;align-items:center;gap:7px;flex-wrap:wrap;
-  border-top:1px solid #e9f0ed;margin-top:5px;padding-top:6px;font-size:8px;
-  color:#607a71;font-weight:850;
-}
-body.gl-page-consultant_sales_outcomes .care-target-legend span{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
-body.gl-page-consultant_sales_outcomes .care-target-legend i{display:inline-block;width:7px;height:7px;border-radius:50%}
-body.gl-page-consultant_sales_outcomes .care-target-legend .mt-red{background:#fc4768}
-body.gl-page-consultant_sales_outcomes .care-target-legend .mt-orange{background:#f5bc31}
-body.gl-page-consultant_sales_outcomes .care-target-legend .mt-yellow{background:#2caeff}
-body.gl-page-consultant_sales_outcomes .care-target-legend .mt-green{background:#a96bfa}
-@media(max-width:1120px){
-  body.gl-page-consultant_sales_outcomes .care .care-hero{
-    grid-template-columns:minmax(0,1fr) minmax(295px,330px)!important;gap:10px!important;padding:13px 17px!important;
-  }
-  body.gl-page-consultant_sales_outcomes .care-hero-primary .care-shortcuts a{font-size:9px!important;padding:8px!important}
-}
-@media(max-width:880px){
-  body.gl-page-consultant_sales_outcomes .care .care-hero{grid-template-columns:minmax(0,1fr)!important;gap:10px!important}
-  body.gl-page-consultant_sales_outcomes .care-target-widget{max-width:390px;width:100%;justify-self:start}
-}
-@media(max-width:550px){
-  body.gl-page-consultant_sales_outcomes .care-hero-primary .care-shortcuts{width:100%!important}
-  body.gl-page-consultant_sales_outcomes .care-hero-primary .care-shortcuts a{flex:1 1 43%;white-space:normal;text-align:center}
-  body.gl-page-consultant_sales_outcomes .care-target-widget{max-width:none}
-}
 
 .patient-mini-avatar{width:34px;height:34px;border-radius:50%;overflow:hidden;display:grid;place-items:center;flex:0 0 34px;background:linear-gradient(135deg,#eaf7f1,#f0ebfb);border:2px solid #fff;box-shadow:0 0 0 1px #dce7e3;color:#6953a8;font-size:11px;font-weight:950}.patient-mini-avatar.large{width:46px;height:46px;flex-basis:46px}.patient-mini-avatar img{width:100%;height:100%;object-fit:cover}.queue-row{grid-template-columns:34px minmax(0,1fr) auto!important;align-items:center}.patient-bar-person{display:flex;align-items:center;gap:11px}
 </style>
