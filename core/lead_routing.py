@@ -27,6 +27,8 @@ PENDING_MORNING_RELEASE_HOUR = 10
 PENDING_MORNING_RELEASE_MINUTE = 15
 # Stop Friday duty-day live routing at night; retain new leads for Saturday.
 FRIDAY_LIVE_ROUTING_END = time(21, 0)
+# Attendance is not permission to receive overnight leads.
+DAILY_LEAD_ROUTING_START = time(8, 0)
 
 # Equal-weight rotation requested by management. Laleh is reinstated as
 # the fifth eligible operator, subject to normal attendance/leave checks. Absent operators
@@ -484,6 +486,8 @@ def release_pending_leads_if_ready(*, force=False, now=None):
     day = local_now.date()
     release_at = _release_time(local_now)
     friday = local_now.weekday() == 4
+    if local_now.time() < DAILY_LEAD_ROUTING_START:
+        return 0
     if friday and local_now.time() >= FRIDAY_LIVE_ROUTING_END:
         return 0
     eligible_ids = eligible_operator_user_ids(day, now=local_now)
@@ -609,6 +613,8 @@ def _live_assignment_allowed(now=None):
     is the only path that may release a morning lead.
     """
     local_now=timezone.localtime(now or timezone.now())
+    if local_now.time() < DAILY_LEAD_ROUTING_START:
+        return False
     if local_now.weekday()==4:
         return local_now.time() < FRIDAY_LIVE_ROUTING_END
     release_at=time(PENDING_MORNING_RELEASE_HOUR,PENDING_MORNING_RELEASE_MINUTE)
