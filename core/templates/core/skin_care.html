@@ -1,0 +1,77 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<style>
+body.gl-page-skin_care_home .app-main{background:#f4f8f7!important;background-image:none!important;color:#234638!important}
+.sc-wrap{font-family:Tahoma,"Noto Sans Arabic",sans-serif;max-width:1240px;margin:0 auto 45px;padding:12px 10px;color:#294438;direction:rtl}
+.sc-hero{background:linear-gradient(120deg,#e8f5ed,#fff);border:1px solid #d4e9df;border-radius:19px;padding:19px 23px;display:flex;justify-content:space-between;gap:15px;align-items:center}
+.sc-hero h1{font-size:25px;color:#19583f;margin:0 0 6px}.sc-hero p{font-size:12px;color:#58766b;line-height:1.9;margin:0}.sc-nav{background:#fff;border:1px solid #cee4d8;border-radius:10px;padding:10px 13px;color:#236a4c;text-decoration:none;font-size:12px;font-weight:850;white-space:nowrap}
+.sc-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
+.sc-stat,.sc-panel{background:#fff;border:1px solid #dce9e2;border-radius:17px;box-shadow:0 6px 22px rgba(37,85,57,.045)}
+.sc-stat{padding:15px 17px}.sc-stat span{font-size:11px;color:#6c857a}.sc-stat b{font:bold 26px Arial,Tahoma;direction:ltr;display:block;margin:7px 0 2px;color:#286c50}.sc-stat small{font-size:10px;color:#749287}.sc-stat.pending b{color:#ba8625}
+.sc-panel{padding:20px;margin-top:13px}.sc-head{font-size:16px;font-weight:950;color:#20543f;margin:0 0 13px}.sc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.sc-grid label{font-size:11px;display:grid;gap:7px;color:#3b6955;font-weight:850}.sc-grid :is(input,select,textarea){min-height:44px;width:100%;box-sizing:border-box;border:1px solid #cddfd5;border-radius:11px;padding:9px 11px;background:#fbfdfb;color:#223a30;font:13px Tahoma;outline:none;direction:rtl}
+.sc-grid input[type=number],.sc-grid input[type=text]{font-family:Tahoma,Arial}.sc-grid :is(input,select,textarea):focus{border-color:#5db98a;box-shadow:0 0 0 3px #dff5e8}
+.sc-grid .full{grid-column:1/-1}.sc-note{margin:11px 0;padding:10px 13px;background:#f1f9f4;border:1px solid #d6eade;border-radius:11px;font-size:11px;color:#3b6c53;line-height:1.9}
+.sc-submit{border:0;border-radius:11px;background:#247b53;color:#fff;padding:12px 25px;font:900 13px Tahoma;cursor:pointer}
+.sc-error,.sc-errors{font-size:11px;color:#b4474c}.sc-help{font-size:10px;color:#738b81;margin-top:5px;line-height:1.8}
+.sc-table{overflow-x:auto}.sc-table table{width:100%;border-collapse:collapse;min-width:760px;font-size:11px}.sc-table th{background:#eef7f1;color:#356b51;text-align:right;font-size:10px;padding:13px 10px}.sc-table td{border-bottom:1px solid #e4eee8;padding:11px 10px;color:#2b4e3c}.sc-table td.num{font:900 13px Arial,Tahoma;color:#235d44;direction:ltr;text-align:right}
+.sc-status{display:inline-block;border-radius:8px;background:#fff2dc;color:#a9761f;padding:4px 8px;font-size:10px;font-weight:900}.sc-status.approved{background:#e4f6ea;color:#167848}.sc-status.cancelled{background:#fff0f1;color:#ae3d4d}
+.sc-form-errors{background:#fff0f0;border:1px solid #efcdcf;color:#ad464a;border-radius:10px;padding:9px 12px;font-size:11px}
+@media(max-width:780px){.sc-hero{padding:14px;align-items:flex-start;flex-direction:column}.sc-stats{grid-template-columns:1fr 1fr}.sc-grid{grid-template-columns:1fr}.sc-grid .full{grid-column:1}.sc-stat b{font-size:21px}}
+@media(max-width:420px){.sc-wrap{padding:5px}.sc-stats{grid-template-columns:1fr}.sc-panel{padding:13px}.sc-hero h1{font-size:21px}}
+</style>
+<div class="sc-wrap">
+  <div class="sc-hero">
+    <div><h1>اسکین‌کر <small style="font-size:12px;color:#6b9984">SKIN CARE</small></h1>
+    <p>تسویه همکاری ۵۰–۵۰ با گرین‌لایف · ثبت سهم دریافتی، نه کل فروش · محاسبه با تومان</p></div>
+    <a class="sc-nav" href="{% url 'finance_dashboard' %}">مالی و درآمد ←</a>
+  </div>
+  {% if unconfigured %}
+    <div class="sc-panel"><h2 class="sc-head">کارشناس اسکین‌کر هنوز مجاز نشده است</h2>
+      <p style="color:#526c5d;font-size:12px;line-height:2">حساب پرسنلی خانم حداد باید در مدیریت پرسنل فعال، به یک شعبه متصل و مجوز «ثبت سهم اسکین‌کر» داشته باشد. برای جلوگیری از انتساب اشتباه، سیستم شخص دیگری را به‌جای ایشان انتخاب نمی‌کند.</p>
+    </div>
+  {% else %}
+  <div class="sc-stats">
+    <div class="sc-stat"><span>سهم وصول‌شده تأییدشده امروز</span><b>{{ today_confirmed_rial|million_toman }}</b><small>میلیون تومان · در درآمد کل محاسبه شده</small></div>
+    <div class="sc-stat pending"><span>واریزی‌های در انتظار تأیید</span><b>{{ pending_rial|million_toman }}</b><small>میلیون تومان · هنوز در درآمد کل نیست</small></div>
+    <div class="sc-stat"><span>نسبت همکاری</span><b>50 / 50</b><small>سهم خانم حداد و گرین‌لایف</small></div>
+  </div>
+  <section class="sc-panel">
+    <h2 class="sc-head">ثبت سهم اسکین‌کر</h2>
+    <div class="sc-note">مثال: اگر فروش خدمات امروز <b>60 میلیون تومان</b> بوده، سهم واریزی گرین‌لایف <b>30 میلیون تومان</b> است. در کادر مبلغ فقط <b>30000000</b> وارد کنید. این مبلغ پس از تأیید مالی فقط یک‌بار به درآمد نهایی اضافه می‌شود.</div>
+    {% if form.non_field_errors %}<div class="sc-form-errors">{{ form.non_field_errors }}</div>{% endif %}
+    <form method="post" enctype="multipart/form-data" id="skinCareForm">{% csrf_token %}
+      <input type="hidden" name="submission_token" value="{{ submission_token }}">
+      <div class="sc-grid">
+        <label>کارشناس اسکین‌کر {{ form.performer }} <span class="sc-error">{{ form.performer.errors }}</span></label>
+        <label>تاریخ خدمات (شمسی) {{ form.service_date }} <span class="sc-error">{{ form.service_date.errors }}</span></label>
+        <label>سهم واریزی گرین‌لایف (تومان) {{ form.company_share_toman }} <span class="sc-error">{{ form.company_share_toman.errors }}</span></label>
+        <label>مسیر واریز وجه {{ form.payment_method }} <span class="sc-error">{{ form.payment_method.errors }}</span></label>
+        <label>شماره پیگیری واریز {{ form.tracking_number }} <span class="sc-error">{{ form.tracking_number.errors }}</span></label>
+        <label>عکس رسید {{ form.receipt_image }} <span class="sc-error">{{ form.receipt_image.errors }}</span></label>
+        <label class="full">شرح خدمات / توضیح وجه نقد {{ form.description }} <span class="sc-error">{{ form.description.errors }}</span></label>
+      </div>
+      <p class="sc-help">برای پرداخت غیرنقدی، عکس رسید لازم است. تأیید نهایی و تطبیق با حساب بانکی توسط مدیریت مالی انجام می‌شود. ارسال فرم به‌تنهایی به‌معنای وصول قطعی نیست.</p>
+      <button type="submit" class="sc-submit" id="scSubmit">ثبت سهم و ارسال برای تأیید</button>
+    </form>
+  </section>
+  <section class="sc-panel">
+    <h2 class="sc-head">تاریخچه تسویه‌های اسکین‌کر</h2>
+    <div class="sc-table"><table><thead><tr><th>تاریخ خدمات</th><th>کارشناس</th><th>فروش معادل (میلیون)</th><th>سهم گرین‌لایف (میلیون)</th><th>روش دریافت</th><th>ثبت‌کننده</th><th>وضعیت تأیید</th></tr></thead>
+    <tbody>{% for x in entries %}
+      <tr><td>{{ x.service_date|jdate_en }}</td><td>{{ x.performer.user.get_full_name|default:x.performer.user.username }}</td>
+      <td class="num">{{ x.gross_equivalent_toman|toman_million }}</td><td class="num">{{ x.company_share_toman|toman_million }}</td>
+      <td>{{ x.payment_method }}{% if x.tracking_number %} · {{ x.tracking_number }}{% endif %}</td>
+      <td>{{ x.created_by.get_full_name|default:x.created_by.username }}</td>
+      <td><span class="sc-status {{ x.finance_transaction.review_status }}">{{ x.finance_transaction.get_review_status_display }}</span></td></tr>
+    {% empty %}<tr><td colspan="7">هنوز هیچ تسویه‌ای ثبت نشده است.</td></tr>{% endfor %}</tbody></table></div>
+  </section>
+  {% endif %}
+</div>
+<script>
+(function(){
+var f=document.getElementById('skinCareForm'),btn=document.getElementById('scSubmit');
+if(!f||!btn)return;
+f.addEventListener('submit',function(){if(!f.checkValidity())return;btn.disabled=true;btn.textContent='در حال ثبت...';});
+})();
+</script>
+{% endblock %}
