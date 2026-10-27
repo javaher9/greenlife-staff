@@ -73,6 +73,53 @@ def _consultant_branch_target(profile):
             'daily':gauge(daily,days),'monthly':gauge(monthly,Decimal('1'))}
 
 
+
+def _personal_consultant_performance(profile):
+    """Current Jalali-month consultation funnel, scoped to THIS consultant and branch.
+
+    Count actual consultation outcomes, not drafts, appointments belonging to
+    colleagues, or all branch receipts. A sale means a fully paid plan.
+    """
+    from .models import ConsultationPlan
+
+    today = timezone.localdate()
+    jy, jm, _ = gregorian_to_jalali(today.year, today.month, today.day)
+    start = datetime(*jalali_to_gregorian(jy, jm, 1)).date()
+    ny, nm = (jy + 1, 1) if jm == 12 else (jy, jm + 1)
+    end = datetime(*jalali_to_gregorian(ny, nm, 1)).date()
+
+    plans = ConsultationPlan.objects.filter(
+        consultant_id=profile.user_id,
+        appointment__branch_id=profile.branch_id,
+        appointment__appointment_date__gte=start,
+        appointment__appointment_date__lt=end,
+    ).exclude(appointment__status__in=('cancelled', 'no_show'))
+
+    # Merely opening a consultation page creates a draft; it is NOT a
+    # completed consultation. Only recorded outcomes count in the denominator.
+    outcome_states = ('no_sale', 'finalized', 'payment_pending', 'partial_paid', 'paid')
+    consultations = plans.filter(status__in=outcome_states).count()
+    proposals = plans.filter(
+        Q(finalized_at__isnull=False) |
+        Q(status__in=('finalized', 'payment_pending', 'partial_paid', 'paid'))
+    ).count()
+    sales = plans.filter(status='paid').count()
+
+    rate = round(sales * 100 / consultations) if consultations else None
+    scale = consultations or 1
+    return {
+        'consultations': consultations,
+        'proposals': proposals,
+        'sales': sales,
+        'conversion': rate,
+        'consultations_width': 100 if consultations else 0,
+        'proposals_width': round(proposals * 100 / scale),
+        'sales_width': round(sales * 100 / scale),
+        'has_data': bool(consultations),
+    }
+
+
+
 def _consultant(request):
     profile=getattr(request.user,'profile',None)
     return profile if profile and profile.role=='consultant' and profile.branch_id else None
@@ -401,6 +448,7 @@ def consultant_sales_outcomes(request):
         'plan_items':list(plan.items.all()) if plan else [],
         'doctor_notes':doctor_notes,'recent_paid':recent_paid,'kpis':kpis,
         'branch_target':_consultant_branch_target(profile),
+        'personal_performance':_personal_consultant_performance(profile),
         'item_kinds':ConsultationPlanItem.KIND,
         'failure_reasons':[
             ('financial','مشکل مالی'),('side_effects','نگرانی از عوارض'),
