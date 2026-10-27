@@ -174,7 +174,7 @@ def _app_revenue_snapshot(day, branch=None):
         qs = qs.filter(branch=branch)
 
     grouped = list(
-        qs.values('branch__name', 'occurred_at__date')
+        qs.annotate(finance_branch_name=_finance_branch_name()).values('finance_branch_name', 'occurred_at__date')
         .annotate(total=Sum('amount'), count=Count('id'))
         .order_by('occurred_at__date', 'branch__name')
     )
@@ -185,7 +185,7 @@ def _app_revenue_snapshot(day, branch=None):
     date_values = {}
     record_count = 0
     for row in grouped:
-        clinic = row.get('branch__name') or 'بدون شعبه'
+        clinic = row.get('finance_branch_name') or 'بدون شعبه'
         row_day = row.get('occurred_at__date')
         amount = _money(row.get('total'))
         count = int(row.get('count') or 0)
@@ -369,11 +369,11 @@ def finance_intelligence(context):
         row['height'] = max(3, _pct(row['amount'], trend_den)) if row['amount'] else 2
 
     # Branch distribution: fixed branch colors everywhere, independent of ranking.
-    branch_rows = list(income.values('branch__name').annotate(total=Sum('amount'), count=Count('id')).order_by('-total'))
+    branch_rows = list(income.annotate(finance_branch_name=_finance_branch_name()).values('finance_branch_name').annotate(total=Sum('amount'), count=Count('id')).order_by('-total'))
     for idx, row in enumerate(branch_rows):
         row['total'] = _money(row['total'])
         row['pct'] = _pct(row['total'], total)
-        row['label'] = row['branch__name'] or 'بدون شعبه'
+        row['label'] = row['finance_branch_name'] or 'بدون شعبه'
         row['color'] = BRANCH_PALETTE.get(row['label'], FALLBACK_CHART_COLORS[idx % len(FALLBACK_CHART_COLORS)])
     branch_donut = branch_rows[0]['pct'] if branch_rows else 0
     branch_gradient = _conic_gradient(branch_rows, total)
