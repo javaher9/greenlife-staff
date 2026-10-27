@@ -342,10 +342,27 @@ body.gl-role-receptionist.gl-page-appointment_schedule .schedule7 .s7-controls{b
     </div>
   </header>
 
+  {% if appointment_role == 'call_center' and not booking_lead %}
+  <div style="border:1px solid #cce8da;border-radius:14px;background:#eaf8f1;padding:12px 14px;margin-bottom:11px;color:#1d614a;line-height:1.8">
+    <strong style="font-size:12px">برای ثبت نوبت، ابتدا بیمار را از لیدهای خودتان انتخاب کنید.</strong>
+    <form method="get" style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:8px">
+      {% if schedule_branch %}<input type="hidden" name="branch" value="{{ schedule_branch.pk }}">{% endif %}
+      <input type="hidden" name="date" value="{{ schedule_date|date:'Y-m-d' }}">
+      <select name="lead" required style="flex:1 1 230px;min-width:180px;max-width:550px;padding:11px;border:1px solid #c4e1d2;border-radius:10px;background:#fff;color:#214437;font-size:12px">
+        <option value="">انتخاب بیمار از لیدهای من</option>
+        {% for lead in booking_candidates %}<option value="{{ lead.pk }}">{{ lead.full_name }} · {{ lead.phone }}</option>{% endfor %}
+      </select>
+      <button type="submit" style="border:0;border-radius:10px;padding:10px 15px;background:#236e52;color:#fff;font-weight:900;cursor:pointer">انتخاب و ثبت نوبت</button>
+    </form>
+    <div style="margin-top:5px;font-size:10px">
+      {% if not booking_candidates %}در حال حاضر لید قابل نوبت‌دهی به شما اختصاص نیافته است. از مدیر کال‌سنتر وضعیت تخصیص را بررسی کنید.{% else %}فقط لیدهایی که به شما اختصاص داده شده‌اند نمایش داده می‌شوند؛ بعد از انتخاب، ساعت آزاد را انتخاب کنید.{% endif %}
+    </div>
+  </div>
+  {% endif %}
   {% if booking_lead %}
   <section class="s7-booking-banner" id="s7BookingBanner">
     <div class="s7-booking-person"><span class="s7-booking-icon">＋</span><div class="s7-booking-copy"><strong>در حال ثبت نوبت برای {{ booking_lead.full_name }}</strong><span>{{ booking_lead.phone }}{% if booking_lead.interested_service %} · {{ booking_lead.interested_service }}{% endif %} · <b>روی یک ساعت آزاد کلیک کنید</b></span></div></div>
-    <div class="s7-booking-actions"><span class="s7-booking-success" id="s7BookingSuccess">✓ نوبت ثبت شد</span><a class="s7-booking-cancel" href="{% url 'appointment_schedule' %}{% if schedule_branch %}?branch={{ schedule_branch.pk }}{% endif %}">لغو انتخاب بیمار</a></div>
+    <div class="s7-booking-actions"><a class="s7-booking-cancel" href="{% url 'call_center_appointment_create' booking_lead.pk %}?simple=1" style="border-color:#b6dcc9;background:#e6f5ed;color:#18694b">ثبت نوبت با فرم ساده (موبایل)</a><span class="s7-booking-success" id="s7BookingSuccess">✓ نوبت ثبت شد</span><a class="s7-booking-cancel" href="{% url 'appointment_schedule' %}{% if schedule_branch %}?branch={{ schedule_branch.pk }}{% endif %}">لغو انتخاب بیمار</a></div>
   </section>
   {% endif %}
 
