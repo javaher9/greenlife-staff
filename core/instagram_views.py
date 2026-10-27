@@ -140,6 +140,12 @@ def _telegram_source_profile():
 def _assign_instagram_lead(lead, group_name=INSTAGRAM_GROUP_NAME, notification_title='لید جدید اینستاگرام'):
     candidates = EmployeeProfile.objects.filter(role='call_center', is_active=True, user__is_active=True)
     today = timezone.localdate()
+    # A remote operator on a declared break is unavailable for new DM leads;
+    # existing lead ownership is never moved or reassigned.
+    paused_users=Attendance.objects.filter(
+        date=today, break_started_at__isnull=False, check_out__isnull=True,
+    ).values_list('user_id',flat=True)
+    candidates=candidates.exclude(user_id__in=paused_users)
 
     # Friday routing is presence-driven: once a call-center operator checks in,
     # new Instagram/Telegram/manual leads go only to the operators currently at
