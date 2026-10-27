@@ -8,7 +8,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q, Sum, Case, When, Value, CharField
 from django.db.models.functions import Coalesce
 from django.db.models.functions import TruncDate
 from django.shortcuts import render
@@ -77,7 +77,7 @@ def executive_finance_hub(request):
     month_count = mt["count"]
 
     branches = list(
-        month.values("branch__name").annotate(
+        month.annotate(report_branch=Case(When(raw_data__payment_kind="call_center_deposit", then=Value("افسریه")), default="branch__name", output_field=CharField())).values("report_branch").annotate(
             income=Sum("amount", filter=Q(entry_type="inc")),
             expense=Sum("amount", filter=Q(entry_type="exp")),
         ).order_by("-income")[:8]
@@ -85,7 +85,7 @@ def executive_finance_hub(request):
     for item in branches:
         item["income_m"] = million_toman(item["income"])
         item["expense_m"] = million_toman(item["expense"])
-        item["name"] = item["branch__name"] or "بدون نام"
+        item["name"] = item["report_branch"] or "بدون نام"
 
     category_rows = list(
         month.filter(entry_type="exp").values("account_heading").annotate(
