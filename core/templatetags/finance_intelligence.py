@@ -142,7 +142,7 @@ def _million_toman_display(value):
     return rendered or '0'
 
 
-def _app_revenue_snapshot(day, branch=None):
+def _app_revenue_snapshot(day, branch=None, afsariyeh_only=False):
     """Build the current Jalali-month branch curve from finance entries recorded in Staff App.
 
     The legacy JSON snapshot stopped updating mid-month. From this point onward the
@@ -172,6 +172,8 @@ def _app_revenue_snapshot(day, branch=None):
     )
     if branch:
         qs = qs.filter(branch=branch)
+    if afsariyeh_only:
+        qs = qs.filter(raw_data__payment_kind=DEPOSIT_KIND)
 
     grouped = list(
         qs.annotate(finance_branch_name=_finance_branch_name()).values('finance_branch_name', 'occurred_at__date')
@@ -288,6 +290,7 @@ def finance_intelligence(context):
         branch = getattr(user.profile, 'branch', None)
     elif requested_branch.isdigit():
         branch = Branch.objects.filter(pk=int(requested_branch), is_active=True).first()
+    afsariyeh_only = requested_branch == AFSARIYEH_CODE and role != 'manager'
 
     flower_raw = (request.GET.get('flower') if request else '') or ''
     flower_id = int(flower_raw) if flower_raw.isdigit() else None
@@ -304,6 +307,8 @@ def finance_intelligence(context):
         review_status='approved', entry_type='inc', occurred_at__gte=start, occurred_at__lt=end,
     ).select_related('branch', 'call_center_owner', 'appointment__lead')
     income = _apply_transaction_filters(income, branch, flower_id, source, service)
+    if afsariyeh_only:
+        income = income.filter(raw_data__payment_kind=DEPOSIT_KIND)
 
     # Operational sales spectrum: a staff-recorded income is visible immediately
     # as a sale candidate while finance approval remains the source of truth for
@@ -317,6 +322,8 @@ def finance_intelligence(context):
     registered_income = _apply_transaction_filters(
         registered_income, branch, flower_id, source, service,
     )
+    if afsariyeh_only:
+        registered_income = registered_income.filter(raw_data__payment_kind=DEPOSIT_KIND)
     pending_income = registered_income.filter(review_status='pending')
 
     total = _money(income.aggregate(v=Sum('amount'))['v'])
@@ -361,6 +368,8 @@ def finance_intelligence(context):
             review_status='approved', entry_type='inc', occurred_at__gte=ds, occurred_at__lt=de,
         )
         q = _apply_transaction_filters(q, branch, flower_id, source, service)
+        if afsariyeh_only:
+            q = q.filter(raw_data__payment_kind=DEPOSIT_KIND)
         amount = _money(q.aggregate(v=Sum('amount'))['v'])
         trend_max = max(trend_max, amount)
         trend.append({'date': d, 'amount': amount, 'count': q.count()})
@@ -528,7 +537,7 @@ def finance_intelligence(context):
     if service:
         entries = entries.filter(sale_reason=service)
 
-    external_revenue = _app_revenue_snapshot(day, branch=branch)
+    external_revenue = _app_revenue_snapshot(day, branch=branch, afsariyeh_only=afsariyeh_only)
 
     return {
         'period': period, 'period_label': period_label, 'start': start, 'end': end,
@@ -542,7 +551,7 @@ def finance_intelligence(context):
         'lead_count': lead_count, 'appointment_count': appointment_count, 'visit_count': visit_count,
         'conversion': conversion, 'revenue_per_lead': revenue_per_lead,
         'trend': trend, 'branch_rows': branch_rows, 'branch_donut': branch_donut,
-        'branch_gradient': branch_gradient,
+        'branch_gradient': branch_gradient, 'afsariyeh_only': afsariyeh_only,
         'source_rows': source_rows, 'source_donut': source_donut, 'source_gradient': source_gradient,
         'service_rows': service_rows, 'uncategorized_count': uncategorized_count,
         'matrix_branches': branches, 'matrix_rows': matrix_rows,
