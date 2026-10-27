@@ -64,5 +64,10 @@ def sync_call_center_sale(transaction):
 
 @receiver(post_save, sender=FinancialTransaction, dispatch_uid='sync_call_center_sale_from_finance')
 def financial_transaction_saved(sender, instance, **kwargs):
-    if instance.entry_type=='inc' and instance.review_status=='approved' and instance.appointment_id:
+    if (
+        instance.entry_type=='inc'
+        and instance.review_status=='approved'
+        and instance.appointment_id
+        and (instance.raw_data or {}).get('payment_kind') != 'call_center_deposit'
+    ):
         sync_call_center_sale(instance)
