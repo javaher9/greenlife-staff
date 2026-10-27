@@ -23,7 +23,6 @@ def enable_unique_remote_laleh(apps, schema_editor):
         named = [
             p for p in candidates
             if 'عباسی' in words(p)
-            and p.can_register_instagram_dm_lead
         ]
     if len(named) == 1:
         Profile.objects.filter(pk=named[0].pk).update(remote_attendance_enabled=True)
