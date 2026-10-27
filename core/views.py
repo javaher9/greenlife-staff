@@ -1582,6 +1582,19 @@ def finance_dashboard(request):
     summary=finance_summary(day,branch)
     flower_sales=flower_sales_summary(timezone.localdate(),branch)
     visual_analytics=finance_visual_analytics(timezone.localdate(),branch)
+    # Same approved finance rows as the grand total; this is a breakdown,
+    # never an additional amount to sum on top of finance_summary.
+    jy,jm,_=gregorian_to_jalali(day.year,day.month,day.day)
+    start_skin=timezone.make_aware(datetime.combine(date(*jalali_to_gregorian(jy,jm,1)),time.min))
+    next_year,next_month=(jy+1,1) if jm==12 else (jy,jm+1)
+    end_skin=timezone.make_aware(datetime.combine(date(*jalali_to_gregorian(next_year,next_month,1)),time.min))
+    skin_qs=FinancialTransaction.objects.filter(
+        entry_type='inc',sale_reason='skin_care',
+        review_status='approved',occurred_at__gte=start_skin,occurred_at__lt=end_skin,
+    )
+    if branch:
+        skin_qs=skin_qs.filter(branch=branch)
+    skin_care_month_rial=skin_qs.aggregate(value=Sum('amount'))['value'] or 0
     ai_payload={
         'period':f"{visual_analytics['jalali_year']}/{visual_analytics['jalali_month']}",
         'branches':[{'name':x['branch__name'] or 'بدون شعبه','today':str(x['today']),'month':str(x['month']),'year':str(x['year']),'expense_month':str(x['expense_month'])} for x in visual_analytics['branches']],
@@ -1599,6 +1612,7 @@ def finance_dashboard(request):
         'summary':summary,'flower_sales':flower_sales,'visual_analytics':visual_analytics,
         'ai_insight':ai_insight,'ai_live':ai_live,
         'logs':logs,'selected':day,'manual_entries':entries[:100],
+        'skin_care_month_rial':skin_care_month_rial,
     })
 
 @finance_entry_required
