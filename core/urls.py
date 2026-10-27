@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import executive_finance_hub_views
+from . import skin_care_views
 from . import management_alert_views
 from . import action_center_views
 from . import camp_views
@@ -35,6 +36,7 @@ from . import quality_command_views
 from . import sales_target_views
 from .mcp import mcp_endpoint
 urlpatterns=[
+path('skin-care/',skin_care_views.skin_care_home,name='skin_care_home'),
 path('finance/executive/',executive_finance_hub_views.executive_finance_hub,name='executive_finance_hub'),
 path('sales-targets/',sales_target_views.sales_targets_dashboard,name='sales_targets_dashboard'),
 path('my-sales-targets/',sales_target_views.my_sales_targets,name='my_sales_targets'),
