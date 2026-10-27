@@ -50,8 +50,8 @@ class CallCenterDepositTests(TestCase):
     def receipt(self):
         return SimpleUploadedFile(
             "receipt.gif",
-            b"GIF87a\\x01\\x00\\x01\\x00\\x80\\x01\\x00\\x00\\x00\\x00ccc,"
-            b"\\x00\\x00\\x00\\x00\\x01\\x00\\x01\\x00\\x00\\x02\\x02D\\x01\\x00;",
+            b"GIF87a\x01\x00\x01\x00\x80\x01\x00\x00\x00\x00ccc,"
+            b"\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;",
             content_type="image/gif",
         )
 
@@ -71,7 +71,7 @@ class CallCenterDepositTests(TestCase):
 
     def test_registrar_sees_desktop_entry_and_phone_is_denied(self):
         self.client.force_login(self.naderi)
-        response = self.client.get("/quality-command/")
+        response = self.client.get("/quality-center/")
         # Some deployments use an alternate QC URL, so don't assume a route.
         self.assertIn(response.status_code, (200, 301, 302, 404))
         page = self.client.get(self.url, {"q": self.appt.phone})
