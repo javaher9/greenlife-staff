@@ -422,13 +422,14 @@ def finance_intelligence(context):
             'call_center_owner_id',
             'appointment__lead__first_appointment_by_id',
         ),
+        finance_branch_key=_finance_branch_key(),
     )
     matrix_grouped = list(
-        matrix_base.values('effective_flower_id', 'branch_id')
+        matrix_base.values('effective_flower_id', 'finance_branch_key')
         .annotate(total=Sum('amount')).order_by()
     )
     matrix_values = {
-        (r['effective_flower_id'], r['branch_id']): _money(r['total'])
+        (r['effective_flower_id'], r['finance_branch_key']): _money(r['total'])
         for r in matrix_grouped
     }
     active_flowers = list(EmployeeProfile.objects.filter(
@@ -451,7 +452,10 @@ def finance_intelligence(context):
     ).distinct().order_by('name'))
     if branch:
         branches = [b for b in branches if b.pk == branch.pk]
-    if any(row['branch_id'] is None for row in matrix_grouped):
+    if any(row['finance_branch_key'] == AFSARIYEH_CODE for row in matrix_grouped):
+        from types import SimpleNamespace
+        branches.append(SimpleNamespace(pk=AFSARIYEH_CODE, name=AFSARIYEH_LABEL))
+    if any(row['finance_branch_key'] is None for row in matrix_grouped):
         from types import SimpleNamespace
         branches.append(SimpleNamespace(pk=None, name='بدون شعبه'))
 
@@ -460,7 +464,7 @@ def finance_intelligence(context):
         cells = []
         row_total = ZERO
         for b in branches:
-            val = matrix_values.get((flower.user_id, b.pk), ZERO)
+            val = matrix_values.get((flower.user_id, str(b.pk) if b.pk is not None else None), ZERO)
             row_total += val
             cells.append({'branch': b, 'total': val})
         matrix_rows.append({
@@ -477,7 +481,7 @@ def finance_intelligence(context):
                 unassigned_by_branch.get(branch_id, ZERO) + amount
             )
     matrix_unassigned_cells = [
-        {'branch': b, 'total': unassigned_by_branch.get(b.pk, ZERO)}
+        {'branch': b, 'total': unassigned_by_branch.get(str(b.pk) if b.pk is not None else None, ZERO)}
         for b in branches
     ]
     matrix_unassigned_total = sum(
