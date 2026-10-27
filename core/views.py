@@ -1213,7 +1213,7 @@ def attendance(request):
     today=timezone.localdate()
     profile=getattr(request.user,'profile',None)
     branch=getattr(profile,'branch',None)
-    remote_mode=bool(profile and profile.is_active and profile.role=='consultant'
+    remote_mode=bool(profile and profile.is_active and profile.role=='call_center'
                      and getattr(profile,'remote_attendance_enabled',False))
     record=Attendance.objects.filter(user=request.user,date=today).first()
 
