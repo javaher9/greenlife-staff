@@ -3,6 +3,7 @@ from . import views
 urlpatterns=[
  path('',views.workspace,name='payments_workspace'),
  path('permissions/',views.request_permission_settings,name='payments_request_permissions'),
+ path('executive/recipients/save/',views.executive_save_recipient,name='payments_executive_recipient_save'),
  path('executive/new/',views.executive_quick_payment,name='payments_executive_quick'),
  path('review/<int:pk>/',views.review,name='payments_review'),
  path('executive/change/<int:pk>/',views.executive_change_unpaid,name='payments_executive_change'),
