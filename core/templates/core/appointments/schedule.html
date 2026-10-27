@@ -337,7 +337,7 @@ body.gl-role-receptionist.gl-page-appointment_schedule .schedule7 .s7-controls{b
   <header class="s7-head">
     <div><h1>برنامه نوبت‌دهی ۷ روزه</h1><p>{{ schedule_branch|default:'—' }} · جمعه در تقویم نمایش داده نمی‌شود · ساعت‌های 09:00 تا 18:00</p></div>
     <div class="s7-actions">
-      {% if appointment_role == 'receptionist' or appointment_role == 'consultant' %}<a class="primary" href="{% url 'receptionist_appointment_create' %}">＋ نوبت جدید بیمار</a>{% endif %}
+      {% if appointment_role == 'receptionist' %}<a class="primary" href="{% url 'receptionist_appointment_create' %}">＋ نوبت جدید</a>{% endif %}
       {% if appointment_role == 'call_center' %}<a href="{% url 'call_center_dashboard' %}">بازگشت به میز کار</a>{% else %}<a href="/">بازگشت</a>{% endif %}
     </div>
   </header>
@@ -353,7 +353,7 @@ body.gl-role-receptionist.gl-page-appointment_schedule .schedule7 .s7-controls{b
     <a class="s7-arrow" href="?{% if schedule_branch %}branch={{ schedule_branch.pk }}&{% endif %}date={{ schedule_prev|date:'Y-m-d' }}{% if booking_lead %}&lead={{ booking_lead.pk }}{% endif %}" aria-label="۷ روز قبل">‹</a>
     <form class="s7-filter" method="get">
       {% if booking_lead %}<input type="hidden" name="lead" value="{{ booking_lead.pk }}">{% endif %}
-      {% if appointment_role != 'receptionist' and appointment_role != 'consultant' %}
+      {% if appointment_role != 'receptionist' %}
       <label>شعبه<select name="branch">{% for b in appointment_branches %}<option value="{{ b.pk }}" {% if schedule_branch and b.pk == schedule_branch.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></label>
       {% endif %}
       <label>شروع بازه - تاریخ شمسی<input type="text" name="date" value="{{ schedule_start_jalali }}" inputmode="numeric" placeholder="1405/07/15"></label>
