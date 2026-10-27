@@ -23,7 +23,7 @@ body.gl-page-skin_care_home .app-main{background:#f4f8f7!important;background-im
   <div class="sc-hero">
     <div><h1>اسکین‌کر <small style="font-size:12px;color:#6b9984">SKIN CARE</small></h1>
     <p>تسویه همکاری ۵۰–۵۰ با گرین‌لایف · ثبت سهم دریافتی، نه کل فروش · محاسبه با تومان</p></div>
-    <a class="sc-nav" href="{% url 'finance_dashboard' %}">مالی و درآمد ←</a>
+    {% if is_manager %}<a class="sc-nav" href="{% url 'finance_dashboard' %}">مالی و درآمد ←</a>{% else %}<a class="sc-nav" href="/">بازگشت به صفحه من ←</a>{% endif %}
   </div>
   {% if unconfigured %}
     <div class="sc-panel"><h2 class="sc-head">کارشناس اسکین‌کر هنوز مجاز نشده است</h2>
