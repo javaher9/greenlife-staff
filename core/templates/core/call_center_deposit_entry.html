@@ -1,0 +1,60 @@
+{% extends 'core/base.html' %}
+{% load jalali_tags call_center_names %}
+{% block content %}
+<style>
+.ccdep-page{color:#f1f7ff;background:linear-gradient(145deg,#0c1d2b,#10283a);border:1px solid #416077;border-radius:18px;max-width:1100px;padding:25px;margin:10px auto;direction:rtl}
+.ccdep-page *{box-sizing:border-box}.ccdep-page h1{font-size:23px!important;color:#f5fffc!important;margin:4px 0 12px}.ccdep-page p,.ccdep-page small{color:#b5d0df}.ccdep-page .ccdep-panel{background:#102435;border:1px solid #37566d;border-radius:14px;padding:17px;margin:16px 0}
+.ccdep-page .ccdep-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.ccdep-page label{display:grid;gap:8px;color:#e3f7ff;font-size:13px;font-weight:850}
+.ccdep-page input,.ccdep-page select,.ccdep-page textarea{width:100%;border:1px solid #568098;border-radius:10px;padding:11px;background:#071b2a;color:white;min-height:43px;font-family:inherit;font-size:14px}
+.ccdep-page input:focus,.ccdep-page select:focus{outline:2px solid #52dab3}
+.ccdep-page .ccdep-btn{display:inline-block;border:1px solid #40a887;background:#12694f;color:white;border-radius:10px;padding:10px 19px;cursor:pointer;font-size:13px;font-weight:900;text-decoration:none}
+.ccdep-page .ccdep-btn.secondary{background:#19384b;border-color:#537b91}.ccdep-page .ccdep-help{font-size:12px;color:#bfd7e3;line-height:1.8}.ccdep-page .ccdep-table{overflow:auto}
+.ccdep-page table{width:100%;border-collapse:collapse}.ccdep-page th,.ccdep-page td{text-align:right;padding:10px;border-bottom:1px solid #37546a;font-size:12px;color:#eaf7ff}.ccdep-page th{color:#9fcee2}.ccdep-page .errorlist{color:#ffaeab}
+.ccdep-page .ccdep-options{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.ccdep-page .ccdep-options span{font-size:12px;border:1px solid #4a6a7b;border-radius:8px;padding:7px;color:#c6dbe8}
+@media(max-width:900px){.ccdep-page{display:none!important}}
+</style>
+<section class="ccdep-page" aria-label="ثبت بیعانه کال‌سنتر">
+  <h1>ثبت بیعانه کال‌سنتر</h1>
+  <p>ثبت توسط مسئول کنترل کیفیت کال‌سنتر · تأیید فقط توسط مدیرعامل · مبالغ بر حسب تومان</p>
+  <div class="ccdep-panel">
+    <form method="get">
+      <label>جست‌وجوی مراجعه‌کننده در نوبت‌های ثبت‌شده کال‌سنتر
+        <input type="search" name="q" value="{{ search }}" placeholder="شماره موبایل یا نام مراجعه‌کننده" required maxlength="80">
+      </label>
+      <p><button class="ccdep-btn secondary" type="submit">جست‌وجوی نوبت</button></p>
+    </form>
+    {% if search %}<div class="ccdep-options"><span>{{ matches|length }} نتیجه</span><span>نوبت باید قبلاً در کال‌سنتر ثبت شده باشد</span></div>{% endif %}
+    {% if matches %}<div class="ccdep-table"><table><thead><tr><th>نام</th><th>تلفن</th><th>شعبه</th><th>گل</th><th>شماره نوبت</th></tr></thead><tbody>
+      {% for a in matches %}<tr><td>{{ a.full_name }}</td><td>{{ a.phone }}</td><td>{{ a.branch.name }}</td><td>گل {% if a.lead.first_appointment_by %}{{ a.lead.first_appointment_by|flower_name }}{% else %}{{ a.created_by|flower_name }}{% endif %}</td><td>{{ a.pk }}</td></tr>{% endfor %}
+    </tbody></table></div>{% endif %}
+  </div>
+  <div class="ccdep-panel">
+    <h2>اطلاعات بیعانه</h2>
+    <p class="ccdep-help">ابتدا مراجعه‌کننده را جست‌وجو کنید، سپس نوبت مرتبط را انتخاب کنید. هر پرداخت ابتدا «در انتظار تأیید» ثبت می‌شود و در درآمد قطعی وارد نخواهد شد.</p>
+    <form method="post" enctype="multipart/form-data" id="ccdep-form">
+      {% csrf_token %}
+      {{ form.submission_token }}
+      {{ form.non_field_errors }}
+      <div class="ccdep-grid">
+        <label>{{ form.appointment.label }}{{ form.appointment }}{{ form.appointment.errors }}</label>
+        <label>{{ form.amount_toman.label }}{{ form.amount_toman }}{{ form.amount_toman.errors }}</label>
+        <label>{{ form.payment_method.label }}{{ form.payment_method }}{{ form.payment_method.errors }}</label>
+        <label>{{ form.tracking_number.label }}{{ form.tracking_number }}{{ form.tracking_number.errors }}</label>
+        <label>{{ form.receipt_image.label }}{{ form.receipt_image }}{{ form.receipt_image.errors }}</label>
+        <label>{{ form.description.label }}{{ form.description }}{{ form.description.errors }}</label>
+      </div>
+      <p><button class="ccdep-btn" id="ccdep-submit" type="submit">ثبت بیعانه و ارسال برای تأیید مدیرعامل</button></p>
+    </form>
+  </div>
+  <div class="ccdep-panel">
+    <h2>آخرین بیعانه‌های ثبت‌شده توسط شما</h2>
+    <div class="ccdep-table"><table><thead><tr><th>مراجع</th><th>شعبه</th><th>مبلغ (میلیون تومان)</th><th>وضعیت</th></tr></thead><tbody>
+      {% for x in recent %}<tr><td>{{ x.person_name }}</td><td>{{ x.branch.name }}</td><td>{{ x.amount|million_toman }}</td><td>{{ x.get_review_status_display }}</td></tr>{% empty %}<tr><td colspan="4">هنوز بیعانه‌ای ثبت نشده است.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+  <a class="ccdep-btn secondary" href="{% url 'quality_command_center' %}">بازگشت به داشبورد کنترل کیفیت</a>
+</section>
+<script>
+(function(){const f=document.getElementById('ccdep-form'),b=document.getElementById('ccdep-submit');if(!f||!b)return;f.addEventListener('submit',function(){if(!f.checkValidity())return;b.disabled=true;b.textContent='در حال ثبت…';});})();
+</script>
+{% endblock %}
