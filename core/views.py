@@ -1213,10 +1213,16 @@ def attendance(request):
     today=timezone.localdate()
     profile=getattr(request.user,'profile',None)
     branch=getattr(profile,'branch',None)
+    remote_mode=bool(profile and profile.is_active and profile.role=='consultant'
+                     and getattr(profile,'remote_attendance_enabled',False))
     record=Attendance.objects.filter(user=request.user,date=today).first()
 
     def verify_location():
         """Return (ok, message, metadata). GPS is required only when branch geofence is enabled."""
+        if remote_mode:
+            # Explicit admin-approved individual exemption; never apply to
+            # other consultants or on-site staff regardless of their device.
+            return True, '', {'status':'remote'}
         if not branch or not branch.geofence_enabled:
             return True, '', {'status':'legacy'}
         if branch.latitude is None or branch.longitude is None:
@@ -1272,14 +1278,14 @@ def attendance(request):
             now=timezone.now()
             if not record.check_in:
                 record.check_in=now
-                record.status=attendance_status_for(request.user,today,now)
+                record.status='present' if remote_mode else attendance_status_for(request.user,today,now)
                 record.check_in_location_status=meta.get('status','legacy')
                 if meta.get('lat') is not None:
                     record.check_in_latitude=meta['lat']
                     record.check_in_longitude=meta['lon']
                     record.check_in_accuracy_m=meta.get('accuracy')
                     record.check_in_distance_m=meta.get('distance')
-                if record.status=='present' and not ScoreEvent.objects.filter(
+                if not remote_mode and record.status=='present' and not ScoreEvent.objects.filter(
                     user=request.user,event_date=today,reason='attendance'
                 ).exists():
                     ScoreEvent.objects.create(
@@ -1305,7 +1311,7 @@ def attendance(request):
                         'server_time':record.check_in.isoformat() if record.check_in else None,
                     },record
                 )
-                messages.success(request,'ورود شما با تأیید موقعیت ثبت شد.' if branch and branch.geofence_enabled else 'ورود شما ثبت شد.')
+                messages.success(request,'شروع دورکاری شما ثبت شد.' if remote_mode else ('ورود شما با تأیید موقعیت ثبت شد.' if branch and branch.geofence_enabled else 'ورود شما ثبت شد.'))
             else:
                 messages.info(request,'ورود امروز قبلاً ثبت شده است.')
         elif action=='checkout':
@@ -1322,7 +1328,12 @@ def attendance(request):
                     )
                     messages.error(request,'خروج ثبت نشد: '+msg)
                     return redirect('attendance')
-                record.check_out=timezone.now()
+                now=timezone.now()
+                if remote_mode and record.break_started_at:
+                    delta=int((now-record.break_started_at).total_seconds()//60)
+                    record.break_total_minutes=(record.break_total_minutes or 0)+max(0,delta)
+                    record.break_started_at=None
+                record.check_out=now
                 record.save()
                 _attendance_audit(
                     request,'attendance_checkout','ثبت خروج',
@@ -1334,17 +1345,41 @@ def attendance(request):
                         'server_time':record.check_out.isoformat() if record.check_out else None,
                     },record
                 )
-                messages.success(request,'خروج شما با تأیید موقعیت ثبت شد.' if branch and branch.geofence_enabled else 'خروج شما ثبت شد.')
+                messages.success(request,'پایان دورکاری شما ثبت شد.' if remote_mode else ('خروج شما با تأیید موقعیت ثبت شد.' if branch and branch.geofence_enabled else 'خروج شما ثبت شد.'))
             else:
                 messages.info(request,'خروج امروز قبلاً ثبت شده است.')
+        elif action in ('break_start','break_end'):
+            if not remote_mode:
+                raise PermissionDenied('ثبت استراحت دورکاری فقط با مجوز فردی فعال است.')
+            record=Attendance.objects.filter(user=request.user,date=today).first()
+            if not record or not record.check_in or record.check_out:
+                messages.error(request,'برای ثبت استراحت، ابتدا شروع دورکاری امروز را ثبت کنید.')
+            elif action=='break_start':
+                if record.break_started_at:
+                    messages.info(request,'زمان استراحت از قبل شروع شده است.')
+                else:
+                    record.break_started_at=timezone.now()
+                    record.save(update_fields=['break_started_at','updated_at'])
+                    _attendance_audit(request,'remote_break_start','شروع استراحت دورکاری',{'remote':True},record)
+                    messages.success(request,'شروع استراحت ثبت شد.')
+            elif not record.break_started_at:
+                messages.info(request,'استراحت فعالی برای پایان دادن وجود ندارد.')
+            else:
+                now=timezone.now()
+                record.break_total_minutes=(record.break_total_minutes or 0)+max(0,int((now-record.break_started_at).total_seconds()//60))
+                record.break_started_at=None
+                record.save(update_fields=['break_total_minutes','break_started_at','updated_at'])
+                _attendance_audit(request,'remote_break_end','پایان استراحت دورکاری',{'remote':True,'break_total_minutes':record.break_total_minutes},record)
+                messages.success(request,'پایان استراحت ثبت شد.')
         return redirect('attendance')
 
     recent=Attendance.objects.filter(user=request.user).order_by('-date')[:31]
     return render(request,'core/attendance.html',{
         'record':record,'recent':recent,'today':today,
         'today_shift':shift_rule(request.user,today),'overtime':overtime_minutes(record),
-        'geofence_enabled':bool(branch and branch.geofence_enabled),
+        'geofence_enabled':bool(branch and branch.geofence_enabled and not remote_mode),
         'geofence_radius':getattr(branch,'attendance_radius_m',None),
+        'remote_mode':remote_mode,
     })
 
 @manager_required
