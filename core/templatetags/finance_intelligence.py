@@ -6,7 +6,7 @@ from pathlib import Path
 from django import template
 from django.conf import settings
 from django.db.models import Count, Sum, Q, Case, When, Value, CharField
-from django.db.models.functions import Coalesce
+from django.db.models.functions import Coalesce, Cast
 from django.utils import timezone
 
 from core.jalali import gregorian_to_jalali, jalali_to_gregorian
@@ -24,6 +24,25 @@ BRANCH_PALETTE = {
     'افسریه': '#ec4899',
     'بدون شعبه': '#94a3b8',
 }
+AFSARIYEH_CODE = 'afsariyeh'
+AFSARIYEH_LABEL = 'افسریه'
+DEPOSIT_KIND = 'call_center_deposit'
+
+
+def _finance_branch_name():
+    return Case(
+        When(raw_data__payment_kind=DEPOSIT_KIND, then=Value(AFSARIYEH_LABEL)),
+        default='branch__name', output_field=CharField(),
+    )
+
+
+def _finance_branch_key():
+    return Case(
+        When(raw_data__payment_kind=DEPOSIT_KIND, then=Value(AFSARIYEH_CODE)),
+        default=Cast('branch_id', output_field=CharField()), output_field=CharField(),
+    )
+
+
 FALLBACK_CHART_COLORS = ('#22d3ee', '#a3e635', '#f97316', '#c084fc', '#f43f5e')
 SOURCE_COLORS = {
     'link': '#10d39a',
