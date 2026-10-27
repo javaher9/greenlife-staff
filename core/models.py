@@ -121,6 +121,10 @@ class EmployeeProfile(models.Model):
         default=False,
         help_text='اجازه ثبت دستی لیدهایی که شماره‌شان از دایرکت اینستاگرام دریافت شده است.',
     )
+    remote_attendance_enabled=models.BooleanField(
+        default=False,
+        help_text='مجوز فردی دورکاری: ورود و خروج از راه دور بدون GPS شعبه، با ثبت استراحت. فقط برای مشاور.',
+    )
     can_send_marketing_sms=models.BooleanField(default=False,help_text='اجازه ارسال پیامک تکی و گروهی، بدون دسترسی به تنظیمات درگاه.')
     can_manage_call_center_groups=models.BooleanField(
         default=False,
@@ -399,6 +403,7 @@ class VisitAppointment(models.Model):
     SOURCE=[
         ('call_center','کال‌سنتر'),
         ('receptionist','منشی'),
+        ('consultant','مشاور'),
         ('admin','مدیریت'),
     ]
     lead=models.ForeignKey(
@@ -1155,6 +1160,8 @@ class Attendance(models.Model):
     date=models.DateField(default=timezone.localdate)
     check_in=models.DateTimeField(null=True,blank=True)
     check_out=models.DateTimeField(null=True,blank=True)
+    break_started_at=models.DateTimeField(null=True,blank=True)
+    break_total_minutes=models.PositiveIntegerField(default=0)
     status=models.CharField(max_length=12,choices=STATUS,default='present')
     note=models.CharField(max_length=250,blank=True)
     check_in_latitude=models.DecimalField(max_digits=9,decimal_places=6,null=True,blank=True)
@@ -1163,7 +1170,8 @@ class Attendance(models.Model):
     check_in_distance_m=models.PositiveIntegerField(null=True,blank=True)
     check_in_location_status=models.CharField(max_length=20,default='legacy',choices=[
         ('verified','تأیید موقعیت'),('outside','خارج محدوده'),('low_accuracy','دقت پایین'),
-        ('unavailable','موقعیت ناموجود'),('manual','ثبت دستی مدیر'),('legacy','قدیمی')
+        ('unavailable','موقعیت ناموجود'),('manual','ثبت دستی مدیر'),
+        ('remote','دورکاری مجاز'),('legacy','قدیمی')
     ])
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
@@ -1174,7 +1182,7 @@ class Attendance(models.Model):
     @property
     def worked_minutes(self):
         if not self.check_in or not self.check_out: return None
-        return max(0,int((self.check_out-self.check_in).total_seconds()//60))
+        return max(0,int((self.check_out-self.check_in).total_seconds()//60) - (self.break_total_minutes or 0))
 
 
 class ScoreEvent(models.Model):
