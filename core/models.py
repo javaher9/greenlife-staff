@@ -117,6 +117,10 @@ class EmployeeProfile(models.Model):
     can_execute_payments=models.BooleanField(default=False,help_text='اجازه اجرای دستور پرداخت ارجاع‌شده')
     can_manage_petty_cash=models.BooleanField(default=False,help_text='اجازه درخواست تنخواه و ثبت هزینه آن')
     can_claim_personal_expense=models.BooleanField(default=False,help_text='اجازه ثبت هزینه پرداخت‌شده از حساب شخصی برای بازپرداخت')
+    can_record_skin_care=models.BooleanField(
+        default=False,
+        help_text='مجوز اختصاصی ثبت سهم اسکین‌کر؛ تأیید نهایی همچنان با مدیریت مالی است.',
+    )
     can_register_instagram_dm_lead=models.BooleanField(
         default=False,
         help_text='اجازه ثبت دستی لیدهایی که شماره‌شان از دایرکت اینستاگرام دریافت شده است.',
@@ -1228,6 +1232,7 @@ class FinancialTransaction(models.Model):
         ('daya_package','پکیج دایا'),
         ('lipolytic','لیپولیتیک'),
         ('skin','پوست'),
+        ('skin_care','اسکین‌کر | سهم گرین‌لایف'),
         ('other','سایر'),
     ]
     SALE_ORIGIN=[
@@ -1288,6 +1293,38 @@ class FinancialTransaction(models.Model):
             models.UniqueConstraint(fields=['source','external_id'],name='uniq_finance_source_external',condition=models.Q(external_id__isnull=False)),
         ]
     def __str__(self): return f'{self.branch or "—"} - {self.amount}'
+
+
+class SkinCareSettlement(models.Model):
+    """One 50/50 skincare settlement, deposited to Green Life.
+
+    company_share_toman is the Green Life share, not provider gross sales.
+    One linked finance transaction prevents double-counting.
+    """
+    performer=models.ForeignKey(
+        EmployeeProfile,on_delete=models.PROTECT,related_name='skin_care_settlements',
+    )
+    branch=models.ForeignKey(Branch,on_delete=models.PROTECT,related_name='skin_care_settlements')
+    service_date=models.DateField(default=timezone.localdate,db_index=True)
+    company_share_toman=models.DecimalField(max_digits=16,decimal_places=0)
+    gross_equivalent_toman=models.DecimalField(max_digits=16,decimal_places=0)
+    payment_method=models.CharField(max_length=30)
+    tracking_number=models.CharField(max_length=100,blank=True)
+    receipt_image=models.ImageField(upload_to='finance/skin_care/%Y/%m/%d/',blank=True,null=True)
+    description=models.CharField(max_length=300,blank=True)
+    created_by=models.ForeignKey(
+        User,on_delete=models.PROTECT,related_name='entered_skin_care_settlements',
+    )
+    finance_transaction=models.OneToOneField(
+        FinancialTransaction,on_delete=models.PROTECT,related_name='skin_care_settlement',
+    )
+    created_at=models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering=['-service_date','-id']
+
+    def __str__(self):
+        return f'اسکین‌کر {self.service_date} | {self.company_share_toman} تومان'
 
 
 class PayrollRule(models.Model):
