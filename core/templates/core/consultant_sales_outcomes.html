@@ -963,7 +963,7 @@ body.gl-page-consultant_sales_outcomes .care-funnel-sale{background:#24aa7a}
       <div class="care-insights-heading"><strong>عملکرد من</strong><small>ماه جاری · فقط پرونده‌های من</small></div>
       <div class="care-insights-content">
         <div class="care-conversion" title="تعداد پکیج‌های تسویه‌شده تقسیم بر مشاوره‌های ثبت‌نتیجه‌شده همین ماه">
-          <div class="care-conversion-ring" style="--care-conversion:{{ personal_performance.conversion|default_if_none:'0' }}%;">
+          <div class="care-conversion-ring" style="--care-conversion:{{ personal_performance.conversion|default_if_none:'0'|unlocalize }}%;">
             <div class="care-conversion-core">
               <strong>{% if personal_performance.has_data %}{{ personal_performance.conversion }}٪{% else %}—{% endif %}</strong>
               <small>نرخ تبدیل</small>
@@ -975,15 +975,15 @@ body.gl-page-consultant_sales_outcomes .care-funnel-sale{background:#24aa7a}
           <div class="care-funnel-caption">قیف مشاوره من</div>
           <div class="care-funnel-stage">
             <div class="care-funnel-label"><span>مشاوره ثبت‌شده</span><strong>{{ personal_performance.consultations }}</strong></div>
-            <div class="care-funnel-track"><span class="care-funnel-consult" style="width:{{ personal_performance.consultations_width }}%"></span></div>
+            <div class="care-funnel-track"><span class="care-funnel-consult" style="width:{{ personal_performance.consultations_width|unlocalize }}%"></span></div>
           </div>
           <div class="care-funnel-stage">
             <div class="care-funnel-label"><span>پیشنهاد پکیج</span><strong>{{ personal_performance.proposals }}</strong></div>
-            <div class="care-funnel-track"><span class="care-funnel-proposal" style="width:{{ personal_performance.proposals_width }}%"></span></div>
+            <div class="care-funnel-track"><span class="care-funnel-proposal" style="width:{{ personal_performance.proposals_width|unlocalize }}%"></span></div>
           </div>
           <div class="care-funnel-stage">
             <div class="care-funnel-label"><span>فروش قطعی</span><strong>{{ personal_performance.sales }}</strong></div>
-            <div class="care-funnel-track"><span class="care-funnel-sale" style="width:{{ personal_performance.sales_width }}%"></span></div>
+            <div class="care-funnel-track"><span class="care-funnel-sale" style="width:{{ personal_performance.sales_width|unlocalize }}%"></span></div>
           </div>
         </div>
       </div>
