@@ -1,6 +1,18 @@
 {% extends 'core/base.html' %}
 {% load finance_alerts %}
 {% block content %}
+{% if show_call_center_deposit %}
+<section class="qc-deposit-action" aria-label="ثبت بیعانه کال‌سنتر">
+  <a href="{% url 'call_center_deposit_entry' %}"><strong>✦ ثبت بیعانه کال‌سنتر</strong><span>ثبت رسید و ارسال برای تأیید مدیرعامل</span></a>
+</section>
+<style>
+.qc-deposit-action{padding:12px;border-radius:15px;background:linear-gradient(100deg,#163c3a,#113048);border:1px solid #4dd4aa;margin:0 0 14px;direction:rtl}
+.qc-deposit-action a{display:flex;align-items:center;justify-content:space-between;gap:16px;text-decoration:none;color:#effff9!important}
+.qc-deposit-action strong{font-size:16px;font-weight:950;color:#f4fff9!important}
+.qc-deposit-action span{font-size:11px;color:#c1e4e1!important}
+@media(max-width:900px){.qc-deposit-action{display:none!important}}
+</style>
+{% endif %}
 {% open_payment_count user as pending_finance %}
 {% if user.profile.can_execute_payments %}
 <section class="qc-payment-alert {% if pending_finance %}qc-payment-alert-active{% endif %}" aria-label="دستورهای پرداخت من">

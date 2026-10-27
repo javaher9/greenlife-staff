@@ -1826,6 +1826,11 @@ def finance_entry(request):
 def finance_entry_review(request,pk,action):
     if request.method!='POST': return redirect('finance_dashboard')
     entry=get_object_or_404(FinancialTransaction,pk=pk,source='manual')
+    # Call-center deposits are approved exclusively by the business owner;
+    # recording QC staff and other finance roles have no review authority.
+    if (entry.raw_data or {}).get('payment_kind') == 'call_center_deposit':
+        if not _is_executive_user(request.user):
+            raise PermissionDenied('تأیید بیعانه کال‌سنتر فقط توسط مدیرعامل مجاز است.')
     if role_of(request.user)=='manager' and entry.branch_id!=request.user.profile.branch_id:
         messages.error(request,'این تراکنش مربوط به شعبه شما نیست.')
         return redirect('finance_dashboard')

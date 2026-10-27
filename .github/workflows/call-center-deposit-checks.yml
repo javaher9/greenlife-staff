@@ -1,0 +1,56 @@
+name: Call Center Deposit Regression
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'core/call_center_deposit_views.py'
+      - 'core/templates/core/call_center_deposit_entry.html'
+      - 'core/quality_command_views.py'
+      - 'core/executive_finance_hub_views.py'
+      - 'core/templates/core/executive_finance_hub.html'
+      - 'core/templates/core/quality_command_center.html'
+      - 'core/finance_attribution.py'
+      - 'core/tests/test_call_center_deposits.py'
+      - 'core/views.py'
+      - 'core/urls.py'
+      - '.github/workflows/call-center-deposit-checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  call-center-deposit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: greenlife
+          POSTGRES_USER: greenlife
+          POSTGRES_PASSWORD: test-password
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U greenlife -d greenlife"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DEBUG: '1'
+      SECRET_KEY: test-only-call-center-deposit-strong-secret
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      POSTGRES_DB: greenlife
+      POSTGRES_USER: greenlife
+      POSTGRES_PASSWORD: test-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: '5432'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m compileall -q core
+      - run: python manage.py check
+      - name: Deposit security, executive review, finance and flower regressions
+        run: python manage.py test core.tests.test_call_center_deposits core.tests.test_consultant_finance core.tests.test_finance_flower_matrix core.tests.test_call_center_sales_attribution --verbosity 2

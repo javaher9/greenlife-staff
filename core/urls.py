@@ -33,11 +33,13 @@ from . import patient_360_views
 from . import server_health_views
 from . import live_status_views
 from . import quality_command_views
+from . import call_center_deposit_views
 from . import sales_target_views
 from .mcp import mcp_endpoint
 urlpatterns=[
 path('skin-care/',skin_care_views.skin_care_home,name='skin_care_home'),
 path('finance/executive/',executive_finance_hub_views.executive_finance_hub,name='executive_finance_hub'),
+path('call-center/deposits/new/',call_center_deposit_views.call_center_deposit_entry,name='call_center_deposit_entry'),
 path('sales-targets/',sales_target_views.sales_targets_dashboard,name='sales_targets_dashboard'),
 path('my-sales-targets/',sales_target_views.my_sales_targets,name='my_sales_targets'),
 path('customer/diets/',diet_companion_views.customer_diets,name='customer_diets'),
