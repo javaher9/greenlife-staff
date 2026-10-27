@@ -14,9 +14,10 @@ from core.jalali import format_jalali
 from core.models import Branch, EmployeeProfile, FinancialTransaction, SkinCareSettlement
 
 
-GIF=(b'GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00'
-     b'!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00'
-     b'\x01\x00\x00\x02\x02D\x01\x00;')
+GIF=(
+    b'GIF87a\x01\x00\x01\x00\x80\x01\x00\x00\x00\x00ccc,'
+    b'\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;'
+)
 
 
 class SkinCareSettlementTests(TestCase):
@@ -70,11 +71,11 @@ class SkinCareSettlementTests(TestCase):
         self.assertEqual(tx.amount,Decimal('300000000'))  # stored in rial
         self.assertEqual(tx.sale_reason,'skin_care')
         self.assertEqual(tx.review_status,'pending')
-        self.assertEqual(finance_summary()['income_total'],0)
+        self.assertEqual(finance_summary()['total'],0)
 
         tx.review_status='approved'
         tx.save(update_fields=['review_status'])
-        self.assertEqual(finance_summary()['income_total'],Decimal('300000000'))
+        self.assertEqual(finance_summary()['total'],Decimal('300000000'))
 
     def test_duplicate_submission_cannot_double_count(self):
         payload={**self.payload(),'receipt_image':self.receipt()}
