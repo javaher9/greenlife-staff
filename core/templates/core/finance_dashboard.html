@@ -99,6 +99,10 @@ body.gl-page-finance_dashboard .msg.warning{
     {% if user.profile.role == 'admin' %}<form method="post" action="/finance/sync/">{% csrf_token %}<button class="fin44-sync">↻ همگام‌سازی CRM</button></form>{% endif %}
   </div>
 
+  <a href="{% url 'skin_care_home' %}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 11px;padding:12px 17px;border:1px solid rgba(50,206,143,.38);border-radius:13px;background:linear-gradient(110deg,rgba(21,85,62,.55),rgba(16,43,45,.62));color:#dcffec;text-decoration:none">
+    <span style="font:900 13px Tahoma">اسکین‌کر <small style="display:block;margin-top:5px;font-size:10px;font-weight:650;color:#add0c0">سهم ۵۰٪ گرین‌لایف · ثبت مستقل واریز · تجمیع خودکار پس از تأیید مالی</small></span>
+    <span style="display:flex;gap:12px;align-items:center"><span style="font:900 17px Arial,Tahoma;color:#9becbe">{{ skin_care_month_rial|million_toman }} <small style="font:10px Tahoma">میلیون تومان در ماه</small></span><b>بازکردن ←</b></span>
+  </a>
   <form method="get" class="fin44-filter">
     <div class="fin44-field"><label>تاریخ شمسی</label><input name="date" value="{{ summary.date }}"></div>
     <div class="fin44-field"><label>شعبه</label><select name="branch" {% if user.profile.role == 'manager' %}disabled{% endif %}><option value="">همه شعب</option>{% for b in intel.branches %}<option value="{{ b.id }}" {% if intel.branch.id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select>{% if user.profile.role == 'manager' %}<input type="hidden" name="branch" value="{{ intel.branch.id }}">{% endif %}</div>
