@@ -352,8 +352,15 @@ def build_quality_snapshot(user):
 @login_required
 def quality_command_center(request):
     snapshot = build_quality_snapshot(request.user)
+    from .call_center_deposit_views import is_deposit_registrar
+    from .views import _is_mobile_request
     response = render(
-        request, "core/quality_command_center.html", {"snapshot": snapshot}
+        request, "core/quality_command_center.html", {
+            "snapshot": snapshot,
+            "show_call_center_deposit": (
+                is_deposit_registrar(request.user) and not _is_mobile_request(request)
+            ),
+        },
     )
     response["Cache-Control"] = "private, no-store"
     return response
