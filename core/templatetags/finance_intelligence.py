@@ -5,7 +5,7 @@ from pathlib import Path
 
 from django import template
 from django.conf import settings
-from django.db.models import Count, Sum, Q
+from django.db.models import Count, Sum, Q, Case, When, Value, CharField
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
