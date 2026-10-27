@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -319,28 +320,44 @@ def instagram_operator_quick_lead(request, operator, token):
         raise Http404()
     if request.method not in ('GET', 'POST'):
         return HttpResponse(status=405)
-    # Resolve by exact normalized name tokens, never substring: 'rad' can
-    # match unrelated usernames and cause the ambiguous-profile 503.
-    import re
-    aliases = ('راد',) if operator == 'rad' else ('لاله', 'عباسی')
+    # Resolve unique staff identity without substring matches or guessing.
+    # Include the saved login name because some remote staff profiles have
+    # empty first/last-name fields. Ambiguous results remain blocked.
+    aliases = ('راد', 'rad') if operator == 'rad' else ('لاله', 'عباسی', 'laleh')
     matches = []
     for profile in EmployeeProfile.objects.select_related('user').filter(is_active=True, user__is_active=True):
         user = profile.user
-        identity = ' '.join((user.first_name or '', user.last_name or '')).replace('ي', 'ی').replace('ك', 'ک')
-        words = set(identity.split())
+        identity = ' '.join((user.first_name or '', user.last_name or '', user.username or ''))
+        words = set(identity.replace('ي', 'ی').replace('ك', 'ک').replace('_',' ').replace('-',' ').lower().split())
         if any(alias in words for alias in aliases):
             matches.append(profile)
     if len(matches) != 1:
-        # Never silently attribute a lead to a different staff account.
-        return HttpResponse('Operator identity requires administrator verification', status=503)
+        # Do not attribute a lead to someone else; show a useful Persian
+        # diagnostic so the issue is not mistaken for a device/network bug.
+        response = HttpResponse(
+            '<!doctype html><html lang="fa" dir="rtl"><meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width,initial-scale=1">'
+            '<body style="font:16px Tahoma;padding:28px;line-height:2;background:#f7faf8">'
+            '<h2>حساب ثبت‌کننده نیاز به بررسی مدیریت دارد</h2>'
+            '<p>لینک معتبر است، اما سیستم نتوانست حساب پرسنلی اختصاصی را '
+            'به‌صورت یکتا شناسایی کند. اطلاعاتی ارسال نشده است. '
+            'لطفاً با مدیر سامانه تماس بگیرید. (خطای ۵۰۳)</p>'
+            '</body></html>', status=503, content_type='text/html; charset=utf-8'
+        )
+        response['Cache-Control']='no-store'
+        return response
     staff = matches[0]
+    # Keep the security throttle, but avoid blocking legitimate staff after
+    # 40 manual entries (including invalid submissions) in a busy hour.
+    # The operator link remains authenticated by its high-entropy token + CSRF.
+    blocked = False
     if request.method == 'POST':
         client_ip = (request.META.get('REMOTE_ADDR') or 'unknown')[:80]
         throttle_key = 'instagram-quick:' + hashlib.sha256((operator + ':' + client_ip).encode()).hexdigest()
         attempts = cache.get(throttle_key, 0)
-        if attempts >= 40:
-            return HttpResponse('Too many requests. Try later.', status=429)
-        cache.set(throttle_key, attempts + 1, timeout=3600)
+        blocked = attempts >= 120
+        if not blocked:
+            cache.set(throttle_key, attempts + 1, timeout=3600)
     post_data = None
     if request.method == 'POST':
         post_data = request.POST.copy()
@@ -349,30 +366,40 @@ def instagram_operator_quick_lead(request, operator, token):
             post_data['instagram_page'] = INSTAGRAM_DEFAULT_PAGE
     form = InstagramManualLeadForm(post_data, initial={'instagram_page': INSTAGRAM_DEFAULT_PAGE})
     completed = False
-    if request.method == 'POST' and form.is_valid():
+    lead_id = None
+    assigned = False
+    if blocked:
+        form.add_error(None, 'تعداد تلاش‌های ثبت در این ساعت بیش از حد مجاز است. '
+                             'اطلاعات شما حفظ شده؛ کمی بعد دوباره ارسال کنید. (خطای ۴۲۹)')
+    elif request.method == 'POST' and form.is_valid():
         data = form.cleaned_data
         page_slug, page_label = _instagram_page_source(data.get('instagram_page'))
         staff_name = staff.user.get_full_name() or staff.user.username
         try:
-            lead = ReferralLead.objects.create(
-                referrer=_instagram_source_profile(),
-                full_name=data['full_name'].strip(),
-                phone=data['phone'],
-                interested_service=(data.get('interested_service') or '').strip(),
-                status='new',
-                source='panel',
-                source_url='instagram/operator/' + operator + '/',
-                notes=f'اینستاگرام - دستی | پیج: {page_label} | [instagram_page:{page_slug}] | ثبت از دایرکت توسط {staff_name}',
-                created_by=staff.user,
-            )
+            # A failed routing/notification step must not leave a partially
+            # created lead that fails as a duplicate when the operator retries.
+            with transaction.atomic():
+                lead = ReferralLead.objects.create(
+                    referrer=_instagram_source_profile(),
+                    full_name=data['full_name'].strip(),
+                    phone=data['phone'],
+                    interested_service=(data.get('interested_service') or '').strip(),
+                    status='new',
+                    source='panel',
+                    source_url='instagram/operator/' + operator + '/',
+                    notes=f'اینستاگرام - دستی | پیج: {page_label} | [instagram_page:{page_slug}] | ثبت از دایرکت توسط {staff_name}',
+                    created_by=staff.user,
+                )
+                assignment = _assign_instagram_lead(
+                    lead,
+                    group_name=INSTAGRAM_MANUAL_GROUP_NAME,
+                    notification_title='لید جدید اینستاگرام - دستی',
+                )
+                lead_id = lead.pk
+                assigned = assignment is not None
         except DuplicateLeadError:
             form.add_error('phone', LEAD_DUPLICATE_MESSAGE)
         else:
-            _assign_instagram_lead(
-                lead,
-                group_name=INSTAGRAM_MANUAL_GROUP_NAME,
-                notification_title='لید جدید اینستاگرام - دستی',
-            )
             completed = True
             form = InstagramManualLeadForm(initial={'instagram_page': INSTAGRAM_DEFAULT_PAGE})
     # For quick links, always return an explicit result and preserve submitted data
@@ -382,7 +409,8 @@ def instagram_operator_quick_lead(request, operator, token):
     response = render(request, 'core/instagram_manual_lead.html', {
         'form': form, 'completed': completed,
         'operator_quick_link': True, 'operator_name': staff.user.get_full_name() or staff.user.username,
-    })
+        'lead_reference': lead_id, 'lead_assigned': assigned,
+    }, status=429 if blocked else 200)
     response['Cache-Control'] = 'no-store'
     response['Referrer-Policy'] = 'no-referrer'
     response['X-Robots-Tag'] = 'noindex, nofollow'
