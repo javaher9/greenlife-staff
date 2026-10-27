@@ -118,7 +118,7 @@ def _money(value):
 
 
 def _million_toman_display(value):
-    millions = Decimal(str(value or 0)) / Decimal('1000000')
+    millions = Decimal(str(value or 0)) / Decimal('10000000')
     rendered = f'{millions.quantize(Decimal("0.001")):f}'.rstrip('0').rstrip('.')
     return rendered or '0'
 
@@ -194,6 +194,7 @@ def _app_revenue_snapshot(day, branch=None):
             'color': palette.get(name, fallback_colors[idx % len(fallback_colors)]),
         })
 
+    # Daily points are not cumulative. Each point contains only that day's sales.
     # Keep every calendar day from month start through the selected day on the
     # X axis. Missing days are explicit zeros, so new App entries extend the
     # existing curve instead of replacing sparse historical points.
