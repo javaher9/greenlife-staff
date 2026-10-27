@@ -9,12 +9,15 @@ from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q, Sum
+from django.db.models.functions import Coalesce
 from django.db.models.functions import TruncDate
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from .jalali import gregorian_to_jalali, jalali_to_gregorian
 from .models import FinancialTransaction
+from django.contrib.auth.models import User
+from .call_center_identity import call_center_display_name
 
 MILLION_TOMAN_RIALS = Decimal("10000000")
 
@@ -110,6 +113,56 @@ def executive_finance_hub(request):
         row["income_m"] = million_toman(row["income"])
         row["expense_m"] = million_toman(row["expense"])
 
+    # Call-center is a breakdown of approved income, never extra revenue.
+    call_center_income = month.filter(entry_type="inc").filter(
+        Q(call_center_owner__profile__role="call_center")
+        | Q(
+            call_center_owner__isnull=True,
+            appointment__lead__first_appointment_by__profile__role="call_center",
+        )
+    )
+    call_center_total_rial = (
+        call_center_income.aggregate(v=Sum("amount"))["v"] or Decimal("0")
+    )
+    flower_rows = list(
+        call_center_income.annotate(
+            flower_id=Coalesce(
+                "call_center_owner_id", "appointment__lead__first_appointment_by_id",
+            )
+        ).values("flower_id")
+        .annotate(amount=Sum("amount"), count=Count("pk"))
+        .order_by("-amount")
+    )
+    flowers_by_id = User.objects.in_bulk([
+        row["flower_id"] for row in flower_rows if row["flower_id"]
+    ])
+    largest = max(
+        (Decimal(row["amount"] or 0) for row in flower_rows),
+        default=Decimal("1"),
+    ) or Decimal("1")
+    for item in flower_rows:
+        member = flowers_by_id.get(item["flower_id"])
+        item["flower"] = (
+            call_center_display_name(member) if member else "گل تعیین‌نشده"
+        )
+        item["amount_m"] = million_toman(item["amount"])
+        item["height"] = round(Decimal(item["amount"] or 0) / largest * 100, 1)
+        item["percent"] = (
+            round(Decimal(item["amount"] or 0) / call_center_total_rial * 100, 1)
+            if call_center_total_rial else 0
+        )
+    approved_deposits = month.filter(
+        entry_type="inc", source="manual",
+        raw_data__payment_kind="call_center_deposit",
+    )
+    pending_deposits = pending.filter(
+        entry_type="inc", source="manual",
+        raw_data__payment_kind="call_center_deposit",
+    )
+    pending_deposit_rial = (
+        pending_deposits.aggregate(v=Sum("amount"))["v"] or Decimal("0")
+    )
+
     return render(request, "core/executive_finance_hub.html", {
         "month_title": f"{jy}/{jm:02d}",
         "month_count": month_count,
@@ -122,4 +175,12 @@ def executive_finance_hub(request):
         "branches": branches,
         "categories": category_rows,
         "daily": daily,
+        "call_center_total": million_toman(call_center_total_rial),
+        "call_center_flowers": flower_rows,
+        "deposit_approved_amount": million_toman(
+            approved_deposits.aggregate(v=Sum("amount"))["v"] or Decimal("0")
+        ),
+        "deposit_approved_count": approved_deposits.count(),
+        "deposit_pending_amount": million_toman(pending_deposit_rial),
+        "deposit_pending_count": pending_deposits.count(),
     })
