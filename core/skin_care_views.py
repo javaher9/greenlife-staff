@@ -214,9 +214,10 @@ def skin_care_home(request):
 
     entries=SkinCareSettlement.objects.filter(
         performer_id__in=allowed_ids,
-    ).select_related('performer__user','branch','finance_transaction','created_by')[:60]
+    ).select_related('performer__user','branch','finance_transaction','created_by')
     if role not in ('admin','internal_manager') and not request.user.is_superuser and profile.branch_id:
         entries=entries.filter(branch_id=profile.branch_id)
+    entries=entries[:60]
     today=timezone.localdate()
     start=timezone.make_aware(datetime.combine(today,time.min))
     end=start+timedelta(days=1)
