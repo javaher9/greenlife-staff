@@ -1585,9 +1585,9 @@ def finance_dashboard(request):
     # Same approved finance rows as the grand total; this is a breakdown,
     # never an additional amount to sum on top of finance_summary.
     jy,jm,_=gregorian_to_jalali(day.year,day.month,day.day)
-    start_skin=timezone.make_aware(datetime.combine(date(*jalali_to_gregorian(jy,jm,1)),time.min))
+    start_skin=timezone.make_aware(datetime.combine(date(*jalali_to_gregorian(jy,jm,1)),datetime.min.time()))
     next_year,next_month=(jy+1,1) if jm==12 else (jy,jm+1)
-    end_skin=timezone.make_aware(datetime.combine(date(*jalali_to_gregorian(next_year,next_month,1)),time.min))
+    end_skin=timezone.make_aware(datetime.combine(date(*jalali_to_gregorian(next_year,next_month,1)),datetime.min.time()))
     skin_qs=FinancialTransaction.objects.filter(
         entry_type='inc',sale_reason='skin_care',
         review_status='approved',occurred_at__gte=start_skin,occurred_at__lt=end_skin,
