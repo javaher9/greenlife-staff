@@ -123,7 +123,7 @@ class EmployeeProfile(models.Model):
     )
     remote_attendance_enabled=models.BooleanField(
         default=False,
-        help_text='مجوز فردی دورکاری: ورود و خروج از راه دور بدون GPS شعبه، با ثبت استراحت. فقط برای مشاور.',
+        help_text='مجوز فردی دورکاری: ورود و خروج از راه دور بدون GPS شعبه، با ثبت استراحت. فقط برای کال‌سنتر.',
     )
     can_send_marketing_sms=models.BooleanField(default=False,help_text='اجازه ارسال پیامک تکی و گروهی، بدون دسترسی به تنظیمات درگاه.')
     can_manage_call_center_groups=models.BooleanField(
