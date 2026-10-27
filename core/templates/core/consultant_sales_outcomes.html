@@ -841,6 +841,116 @@ body.gl-app.gl-authenticated.gl-page-consultant_sales_outcomes .app-main .care .
 body.gl-app.gl-authenticated.gl-page-consultant_sales_outcomes .app-main .care .care-rail-card{
   border-color:#e1e9e5!important;box-shadow:0 5px 17px rgba(32,72,60,.045)!important;
 }
+
+/* Personal consultant performance: scoped header slot only; no changes to
+   existing branch gauges, actions, appointment list, or financial workflow. */
+body.gl-app.gl-authenticated.gl-page-consultant_sales_outcomes .app-main .care .care-hero{
+  display:grid!important;direction:rtl!important;
+  grid-template-columns:minmax(240px,1fr) minmax(310px,1.08fr) minmax(305px,358px)!important;
+  grid-template-areas:"primary performance target"!important;
+  align-items:center!important;gap:12px!important;
+  padding:10px 16px!important;min-height:0!important;
+}
+body.gl-page-consultant_sales_outcomes .care-hero-primary{grid-area:primary!important;min-width:0!important}
+body.gl-page-consultant_sales_outcomes .care-personal-insights{grid-area:performance!important;min-width:0}
+body.gl-page-consultant_sales_outcomes .care .care-hero > .care-target-widget{grid-area:target!important;min-width:0!important}
+body.gl-app.gl-authenticated.gl-page-consultant_sales_outcomes .app-main .care .care-personal-insights{
+  position:relative;z-index:3;
+  background:rgba(255,255,255,.94)!important;
+  border:1px solid #dbe9e3!important;border-radius:15px!important;
+  box-shadow:0 5px 17px rgba(28,87,65,.05)!important;
+  padding:9px 12px!important;
+  color:#23453d!important;
+}
+body.gl-page-consultant_sales_outcomes .care-insights-heading{
+  display:flex;align-items:center;justify-content:space-between;gap:6px;
+  line-height:1.5;margin-bottom:5px;
+}
+body.gl-page-consultant_sales_outcomes .care-insights-heading strong{
+  color:#195f46!important;font-size:11px!important;font-weight:950!important;
+}
+body.gl-page-consultant_sales_outcomes .care-insights-heading small{
+  color:#668278!important;font-size:9px!important;white-space:nowrap;
+}
+body.gl-page-consultant_sales_outcomes .care-insights-content{
+  display:grid;grid-template-columns:102px minmax(0,1fr);direction:rtl;
+  gap:11px;align-items:center;min-width:0;
+}
+body.gl-page-consultant_sales_outcomes .care-conversion{
+  display:flex;align-items:center;flex-direction:column;gap:3px;min-width:0;
+}
+body.gl-page-consultant_sales_outcomes .care-conversion-ring{
+  width:88px;height:88px;flex:0 0 88px;
+  display:grid;place-items:center;position:relative;border-radius:50%;
+  background:conic-gradient(#24aa7a 0% var(--care-conversion),#e7efec var(--care-conversion) 100%);
+}
+body.gl-page-consultant_sales_outcomes .care-conversion-ring::before{
+  content:"";position:absolute;inset:11px;border-radius:50%;background:#fff;
+}
+body.gl-page-consultant_sales_outcomes .care-conversion-core{
+  position:relative;z-index:1;display:flex;align-items:center;flex-direction:column;gap:0;
+}
+body.gl-page-consultant_sales_outcomes .care-conversion-core strong{
+  font:950 21px Arial,Tahoma,sans-serif!important;direction:rtl;
+  color:#174936!important;-webkit-text-fill-color:#174936!important;
+}
+body.gl-page-consultant_sales_outcomes .care-conversion-core small{
+  font-size:9px!important;color:#536f64!important;white-space:nowrap;
+}
+body.gl-page-consultant_sales_outcomes .care-conversion-hint{
+  color:#789087!important;font-size:8px!important;white-space:nowrap;
+}
+body.gl-page-consultant_sales_outcomes .care-funnel{min-width:0;display:grid;gap:5px}
+body.gl-page-consultant_sales_outcomes .care-funnel-caption{
+  font-weight:900!important;color:#315b4e!important;font-size:10px!important;
+  white-space:nowrap;
+}
+body.gl-page-consultant_sales_outcomes .care-funnel-stage{min-width:0}
+body.gl-page-consultant_sales_outcomes .care-funnel-label{
+  display:flex;justify-content:space-between;gap:6px;align-items:center;
+  font-size:9px!important;color:#536f64!important;line-height:1.35;
+}
+body.gl-page-consultant_sales_outcomes .care-funnel-label span{
+  color:#536f64!important;white-space:nowrap;
+}
+body.gl-page-consultant_sales_outcomes .care-funnel-label strong{
+  font:900 12px Arial,Tahoma,sans-serif!important;
+  color:#23483d!important;-webkit-text-fill-color:#23483d!important;
+}
+body.gl-page-consultant_sales_outcomes .care-funnel-track{
+  width:100%;height:7px;border-radius:9px;background:#ecf1ef;
+  overflow:hidden;margin-top:2px;
+}
+body.gl-page-consultant_sales_outcomes .care-funnel-track > span{
+  display:block;height:100%;max-width:100%;min-width:0;border-radius:inherit;
+}
+body.gl-page-consultant_sales_outcomes .care-funnel-consult{background:#92b6c4}
+body.gl-page-consultant_sales_outcomes .care-funnel-proposal{background:#59a8d0}
+body.gl-page-consultant_sales_outcomes .care-funnel-sale{background:#24aa7a}
+@media(max-width:1240px){
+  body.gl-app.gl-authenticated.gl-page-consultant_sales_outcomes .app-main .care .care-hero{
+    grid-template-columns:minmax(0,1fr) minmax(290px,358px)!important;
+    grid-template-areas:"primary target" "performance performance"!important;
+  }
+  body.gl-page-consultant_sales_outcomes .care-personal-insights{
+    width:100%!important;max-width:530px!important;justify-self:start!important;
+  }
+}
+@media(max-width:850px){
+  body.gl-app.gl-authenticated.gl-page-consultant_sales_outcomes .app-main .care .care-hero{
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-areas:"primary" "target" "performance"!important;
+    gap:8px!important;
+  }
+  body.gl-page-consultant_sales_outcomes .care-personal-insights{
+    width:100%!important;max-width:470px!important;justify-self:stretch!important;
+  }
+}
+@media(max-width:410px){
+  body.gl-page-consultant_sales_outcomes .care-insights-content{grid-template-columns:91px minmax(0,1fr);gap:6px}
+  body.gl-page-consultant_sales_outcomes .care-personal-insights{padding:8px!important}
+}
+
 </style>
 <div class="care">
   <section class="care-hero">
@@ -848,6 +958,35 @@ body.gl-app.gl-authenticated.gl-page-consultant_sales_outcomes .app-main .care .
     <div class="care-hero-primary">
       <div class="care-hero-copy"><div class="care-kicker">{% gl_t 'con.eyebrow' %}</div><h1>{% gl_t 'con.title' %}</h1><p>{% gl_t 'con.intro' %}</p></div>
       <div class="care-shortcuts"><a href="{% url 'device_booking_schedule' %}">▣ {% gl_t 'con.device_appointments' %}</a><a href="{% url 'internal_messages' %}">◌ {% gl_t 'con.staff_chat' %}</a><a href="{% url 'consultant_expense_entry' %}">＋ {% gl_t 'con.add_expense' %}</a><a href="{% url 'finance_entry' %}">▤ {% gl_t 'con.add_payment' %}</a></div>
+    </div>
+    <div class="care-personal-insights" aria-label="عملکرد شخصی مشاور در ماه جاری">
+      <div class="care-insights-heading"><strong>عملکرد من</strong><small>ماه جاری · فقط پرونده‌های من</small></div>
+      <div class="care-insights-content">
+        <div class="care-conversion" title="تعداد پکیج‌های تسویه‌شده تقسیم بر مشاوره‌های ثبت‌نتیجه‌شده همین ماه">
+          <div class="care-conversion-ring" style="--care-conversion:{{ personal_performance.conversion|default_if_none:'0' }}%;">
+            <div class="care-conversion-core">
+              <strong>{% if personal_performance.has_data %}{{ personal_performance.conversion }}٪{% else %}—{% endif %}</strong>
+              <small>نرخ تبدیل</small>
+            </div>
+          </div>
+          <span class="care-conversion-hint">{% if personal_performance.has_data %}مشاوره ← تسویه{% else %}بدون نتیجه ثبت‌شده{% endif %}</span>
+        </div>
+        <div class="care-funnel" aria-label="قیف عملکرد مشاور">
+          <div class="care-funnel-caption">قیف مشاوره من</div>
+          <div class="care-funnel-stage">
+            <div class="care-funnel-label"><span>مشاوره ثبت‌شده</span><strong>{{ personal_performance.consultations }}</strong></div>
+            <div class="care-funnel-track"><span class="care-funnel-consult" style="width:{{ personal_performance.consultations_width }}%"></span></div>
+          </div>
+          <div class="care-funnel-stage">
+            <div class="care-funnel-label"><span>پیشنهاد پکیج</span><strong>{{ personal_performance.proposals }}</strong></div>
+            <div class="care-funnel-track"><span class="care-funnel-proposal" style="width:{{ personal_performance.proposals_width }}%"></span></div>
+          </div>
+          <div class="care-funnel-stage">
+            <div class="care-funnel-label"><span>فروش قطعی</span><strong>{{ personal_performance.sales }}</strong></div>
+            <div class="care-funnel-track"><span class="care-funnel-sale" style="width:{{ personal_performance.sales_width }}%"></span></div>
+          </div>
+        </div>
+      </div>
     </div>
     {% if branch_target %}
     <aside class="care-target-widget" aria-label="درصد تحقق تارگت مرکز {{ branch_target.branch }}">
