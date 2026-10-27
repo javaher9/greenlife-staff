@@ -33,6 +33,7 @@
     <p class="ccdep-help">ابتدا مراجعه‌کننده را جست‌وجو کنید، سپس نوبت مرتبط را انتخاب کنید. هر پرداخت ابتدا «در انتظار تأیید» ثبت می‌شود و در درآمد قطعی وارد نخواهد شد.</p>
     <form method="post" enctype="multipart/form-data" id="ccdep-form">
       {% csrf_token %}
+      <input type="hidden" name="q" value="{{ search }}">
       {{ form.submission_token }}
       {{ form.non_field_errors }}
       <div class="ccdep-grid">
