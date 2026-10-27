@@ -331,6 +331,24 @@ def instagram_operator_quick_lead(request, operator, token):
         words = set(identity.replace('ي', 'ی').replace('ك', 'ک').replace('_',' ').replace('-',' ').lower().split())
         if any(alias in words for alias in aliases):
             matches.append(profile)
+    if len(matches) > 1:
+        # A shared surname must not break the private Laleh/Rad link.
+        # Prefer the uniquely matching known full identity, then a uniquely
+        # authorized Instagram registrar; otherwise fail closed.
+        name_pair = ('فاطمه', 'راد') if operator == 'rad' else ('شیما', 'عباسی')
+        exact = []
+        for candidate in matches:
+            person = (' '.join((candidate.user.first_name or '', candidate.user.last_name or ''))
+                      .replace('ي', 'ی').replace('ك', 'ک').split())
+            if all(token in person for token in name_pair):
+                exact.append(candidate)
+        if len(exact) == 1:
+            matches = exact
+        elif not exact:
+            authorized = [candidate for candidate in matches
+                          if candidate.can_register_instagram_dm_lead]
+            if len(authorized) == 1:
+                matches = authorized
     if len(matches) != 1:
         # Do not attribute a lead to someone else; show a useful Persian
         # diagnostic so the issue is not mistaken for a device/network bug.
