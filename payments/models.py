@@ -86,3 +86,16 @@ class PaymentClarification(models.Model):
     created_at=models.DateTimeField(auto_now_add=True)
     class Meta:
         ordering=['created_at']
+
+
+class SavedPaymentRecipient(models.Model):
+    """Private executive address book; no payment amount is stored."""
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='saved_payment_recipients')
+    name = models.CharField(max_length=160)
+    iban = models.CharField(max_length=34, blank=True)
+    card = models.CharField(max_length=24, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name', 'pk']
+        indexes = [models.Index(fields=['owner', 'name'])]
