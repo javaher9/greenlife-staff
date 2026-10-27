@@ -20,7 +20,7 @@ from .jalali import format_jalali
 from .sms import send_appointment_confirmation
 
 
-ALLOWED_APPOINTMENT_ROLES={'admin','internal_manager','manager','call_center','receptionist'}
+ALLOWED_APPOINTMENT_ROLES={'admin','internal_manager','manager','call_center','receptionist','consultant'}
 
 def _queue_appointment_messages(appointment_id):
     """Honor configurable SMS rules without changing legacy booking delivery."""
@@ -151,6 +151,14 @@ def _can_edit_appointment(request, appointment):
         return True
     if role=='receptionist':
         return bool(profile and profile.branch_id==appointment.branch_id)
+    if role=='consultant':
+        # A consultant may only reschedule an appointment that they created
+        # in their own branch; the receptionist retains arrival/cancel controls.
+        return bool(
+            profile and profile.is_active
+            and profile.branch_id==appointment.branch_id
+            and appointment.created_by_id==request.user.pk
+        )
     if role=='call_center':
         lead=appointment.lead
         return bool(
@@ -237,8 +245,8 @@ def appointment_availability(request):
         return JsonResponse({'ok':False,'error':'branch and date are required'},status=400)
 
     branch=get_object_or_404(_clinic_branches(),pk=int(branch_id))
-    if _role(request.user)=='receptionist' and getattr(request.user.profile,'branch_id',None)!=branch.pk:
-        raise PermissionDenied('منشی فقط به نوبت‌های شعبه خودش دسترسی دارد.')
+    if _role(request.user) in ('receptionist','consultant') and getattr(request.user.profile,'branch_id',None)!=branch.pk:
+        raise PermissionDenied('شما فقط به نوبت‌های شعبه خودتان دسترسی دارید.')
     day=_parse_requested_date(raw_date)
     if day.weekday()==4:
         return JsonResponse({
@@ -279,10 +287,10 @@ def appointment_schedule(request):
             assigned_to=profile,
         )
 
-    if role=='receptionist':
+    if role in ('receptionist','consultant'):
         branch=getattr(profile,'branch',None)
-        if not branch:
-            raise PermissionDenied('برای منشی شعبه مشخص نشده است.')
+        if not profile or not profile.is_active or not branch or not branches.filter(pk=branch.pk).exists():
+            raise PermissionDenied('برای نوبت‌دهی، شعبه فعال کاربر باید مشخص باشد.')
     else:
         branch_id=(request.GET.get('branch') or '').strip()
         branch=branches.filter(pk=int(branch_id)).first() if branch_id.isdigit() else None
@@ -654,11 +662,13 @@ def _after_appointment_edit(appointment_id, *, old_branch_id, old_date, old_time
 
 @login_required
 def receptionist_appointment_create(request):
-    if _role(request.user)!='receptionist':
-        raise PermissionDenied('این بخش فقط برای منشی است.')
-    branch=getattr(request.user.profile,'branch',None)
-    if not branch:
-        raise PermissionDenied('برای منشی شعبه مشخص نشده است.')
+    role=_role(request.user)
+    if role not in ('receptionist','consultant'):
+        raise PermissionDenied('این بخش فقط برای منشی یا مشاور است.')
+    profile=getattr(request.user,'profile',None)
+    branch=getattr(profile,'branch',None)
+    if not profile or not profile.is_active or not branch or not _clinic_branches().filter(pk=branch.pk).exists():
+        raise PermissionDenied('برای ثبت نوبت، شعبه فعال کاربر باید مشخص باشد.')
 
     form=ReceptionistAppointmentForm(
         request.POST or None,
@@ -668,7 +678,7 @@ def receptionist_appointment_create(request):
     if request.method=='POST' and form.is_valid():
         item=form.save(commit=False)
         item.branch=branch
-        item.source='receptionist'
+        item.source='consultant' if role=='consultant' else 'receptionist'
         item.created_by=request.user
         try:
             with transaction.atomic():
