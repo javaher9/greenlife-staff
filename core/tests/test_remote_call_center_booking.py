@@ -1,5 +1,6 @@
 """Safety checks for call-center booking and individual remote attendance."""
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -97,6 +98,18 @@ class RemoteCallCenterAppointmentTests(TestCase):
         response=self.client.post(reverse('attendance'),{'action':'checkin'})
         self.assertEqual(response.status_code,302)
         self.assertFalse(Attendance.objects.filter(user=self.operator,date=timezone.localdate()).exists())
+
+    def test_remote_break_pauses_round_robin_and_resume_reenables(self):
+        from core.lead_routing import eligible_operator_user_ids
+        self.profile.branch=self.branch
+        self.profile.save(update_fields=['branch'])
+        self.client.post(reverse('attendance'), {'action':'checkin'})
+        with patch('core.lead_routing.expected_operator_user_ids', return_value={self.operator.pk}):
+            self.assertIn(self.operator.pk, eligible_operator_user_ids(timezone.localdate()))
+            self.client.post(reverse('attendance'), {'action':'break_start'})
+            self.assertNotIn(self.operator.pk, eligible_operator_user_ids(timezone.localdate()))
+            self.client.post(reverse('attendance'), {'action':'break_end'})
+            self.assertIn(self.operator.pk, eligible_operator_user_ids(timezone.localdate()))
 
     def test_consultant_cannot_use_call_center_remote_exemption(self):
         self.profile.branch=self.branch
