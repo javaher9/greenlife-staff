@@ -5,8 +5,8 @@ from pathlib import Path
 
 from django import template
 from django.conf import settings
-from django.db.models import Count, Sum, Q
-from django.db.models.functions import Coalesce
+from django.db.models import Count, Sum, Q, Case, When, Value, CharField
+from django.db.models.functions import Coalesce, Cast
 from django.utils import timezone
 
 from core.jalali import gregorian_to_jalali, jalali_to_gregorian
@@ -24,6 +24,25 @@ BRANCH_PALETTE = {
     'افسریه': '#ec4899',
     'بدون شعبه': '#94a3b8',
 }
+AFSARIYEH_CODE = 'afsariyeh'
+AFSARIYEH_LABEL = 'افسریه'
+DEPOSIT_KIND = 'call_center_deposit'
+
+
+def _finance_branch_name():
+    return Case(
+        When(raw_data__payment_kind=DEPOSIT_KIND, then=Value(AFSARIYEH_LABEL)),
+        default='branch__name', output_field=CharField(),
+    )
+
+
+def _finance_branch_key():
+    return Case(
+        When(raw_data__payment_kind=DEPOSIT_KIND, then=Value(AFSARIYEH_CODE)),
+        default=Cast('branch_id', output_field=CharField()), output_field=CharField(),
+    )
+
+
 FALLBACK_CHART_COLORS = ('#22d3ee', '#a3e635', '#f97316', '#c084fc', '#f43f5e')
 SOURCE_COLORS = {
     'link': '#10d39a',
@@ -123,7 +142,7 @@ def _million_toman_display(value):
     return rendered or '0'
 
 
-def _app_revenue_snapshot(day, branch=None):
+def _app_revenue_snapshot(day, branch=None, afsariyeh_only=False):
     """Build the current Jalali-month branch curve from finance entries recorded in Staff App.
 
     The legacy JSON snapshot stopped updating mid-month. From this point onward the
@@ -153,9 +172,11 @@ def _app_revenue_snapshot(day, branch=None):
     )
     if branch:
         qs = qs.filter(branch=branch)
+    if afsariyeh_only:
+        qs = qs.filter(raw_data__payment_kind=DEPOSIT_KIND)
 
     grouped = list(
-        qs.values('branch__name', 'occurred_at__date')
+        qs.annotate(finance_branch_name=_finance_branch_name()).values('finance_branch_name', 'occurred_at__date')
         .annotate(total=Sum('amount'), count=Count('id'))
         .order_by('occurred_at__date', 'branch__name')
     )
@@ -166,7 +187,7 @@ def _app_revenue_snapshot(day, branch=None):
     date_values = {}
     record_count = 0
     for row in grouped:
-        clinic = row.get('branch__name') or 'بدون شعبه'
+        clinic = row.get('finance_branch_name') or 'بدون شعبه'
         row_day = row.get('occurred_at__date')
         amount = _money(row.get('total'))
         count = int(row.get('count') or 0)
@@ -269,6 +290,7 @@ def finance_intelligence(context):
         branch = getattr(user.profile, 'branch', None)
     elif requested_branch.isdigit():
         branch = Branch.objects.filter(pk=int(requested_branch), is_active=True).first()
+    afsariyeh_only = requested_branch == AFSARIYEH_CODE and role != 'manager'
 
     flower_raw = (request.GET.get('flower') if request else '') or ''
     flower_id = int(flower_raw) if flower_raw.isdigit() else None
@@ -285,6 +307,8 @@ def finance_intelligence(context):
         review_status='approved', entry_type='inc', occurred_at__gte=start, occurred_at__lt=end,
     ).select_related('branch', 'call_center_owner', 'appointment__lead')
     income = _apply_transaction_filters(income, branch, flower_id, source, service)
+    if afsariyeh_only:
+        income = income.filter(raw_data__payment_kind=DEPOSIT_KIND)
 
     # Operational sales spectrum: a staff-recorded income is visible immediately
     # as a sale candidate while finance approval remains the source of truth for
@@ -298,6 +322,8 @@ def finance_intelligence(context):
     registered_income = _apply_transaction_filters(
         registered_income, branch, flower_id, source, service,
     )
+    if afsariyeh_only:
+        registered_income = registered_income.filter(raw_data__payment_kind=DEPOSIT_KIND)
     pending_income = registered_income.filter(review_status='pending')
 
     total = _money(income.aggregate(v=Sum('amount'))['v'])
@@ -342,6 +368,8 @@ def finance_intelligence(context):
             review_status='approved', entry_type='inc', occurred_at__gte=ds, occurred_at__lt=de,
         )
         q = _apply_transaction_filters(q, branch, flower_id, source, service)
+        if afsariyeh_only:
+            q = q.filter(raw_data__payment_kind=DEPOSIT_KIND)
         amount = _money(q.aggregate(v=Sum('amount'))['v'])
         trend_max = max(trend_max, amount)
         trend.append({'date': d, 'amount': amount, 'count': q.count()})
@@ -350,11 +378,11 @@ def finance_intelligence(context):
         row['height'] = max(3, _pct(row['amount'], trend_den)) if row['amount'] else 2
 
     # Branch distribution: fixed branch colors everywhere, independent of ranking.
-    branch_rows = list(income.values('branch__name').annotate(total=Sum('amount'), count=Count('id')).order_by('-total'))
+    branch_rows = list(income.annotate(finance_branch_name=_finance_branch_name()).values('finance_branch_name').annotate(total=Sum('amount'), count=Count('id')).order_by('-total'))
     for idx, row in enumerate(branch_rows):
         row['total'] = _money(row['total'])
         row['pct'] = _pct(row['total'], total)
-        row['label'] = row['branch__name'] or 'بدون شعبه'
+        row['label'] = row['finance_branch_name'] or 'بدون شعبه'
         row['color'] = BRANCH_PALETTE.get(row['label'], FALLBACK_CHART_COLORS[idx % len(FALLBACK_CHART_COLORS)])
     branch_donut = branch_rows[0]['pct'] if branch_rows else 0
     branch_gradient = _conic_gradient(branch_rows, total)
@@ -403,13 +431,14 @@ def finance_intelligence(context):
             'call_center_owner_id',
             'appointment__lead__first_appointment_by_id',
         ),
+        finance_branch_key=_finance_branch_key(),
     )
     matrix_grouped = list(
-        matrix_base.values('effective_flower_id', 'branch_id')
+        matrix_base.values('effective_flower_id', 'finance_branch_key')
         .annotate(total=Sum('amount')).order_by()
     )
     matrix_values = {
-        (r['effective_flower_id'], r['branch_id']): _money(r['total'])
+        (r['effective_flower_id'], r['finance_branch_key']): _money(r['total'])
         for r in matrix_grouped
     }
     active_flowers = list(EmployeeProfile.objects.filter(
@@ -432,7 +461,10 @@ def finance_intelligence(context):
     ).distinct().order_by('name'))
     if branch:
         branches = [b for b in branches if b.pk == branch.pk]
-    if any(row['branch_id'] is None for row in matrix_grouped):
+    if any(row['finance_branch_key'] == AFSARIYEH_CODE for row in matrix_grouped):
+        from types import SimpleNamespace
+        branches.append(SimpleNamespace(pk=AFSARIYEH_CODE, name=AFSARIYEH_LABEL))
+    if any(row['finance_branch_key'] is None for row in matrix_grouped):
         from types import SimpleNamespace
         branches.append(SimpleNamespace(pk=None, name='بدون شعبه'))
 
@@ -441,7 +473,7 @@ def finance_intelligence(context):
         cells = []
         row_total = ZERO
         for b in branches:
-            val = matrix_values.get((flower.user_id, b.pk), ZERO)
+            val = matrix_values.get((flower.user_id, str(b.pk) if b.pk is not None else None), ZERO)
             row_total += val
             cells.append({'branch': b, 'total': val})
         matrix_rows.append({
@@ -458,7 +490,7 @@ def finance_intelligence(context):
                 unassigned_by_branch.get(branch_id, ZERO) + amount
             )
     matrix_unassigned_cells = [
-        {'branch': b, 'total': unassigned_by_branch.get(b.pk, ZERO)}
+        {'branch': b, 'total': unassigned_by_branch.get(str(b.pk) if b.pk is not None else None, ZERO)}
         for b in branches
     ]
     matrix_unassigned_total = sum(
@@ -505,7 +537,7 @@ def finance_intelligence(context):
     if service:
         entries = entries.filter(sale_reason=service)
 
-    external_revenue = _app_revenue_snapshot(day, branch=branch)
+    external_revenue = _app_revenue_snapshot(day, branch=branch, afsariyeh_only=afsariyeh_only)
 
     return {
         'period': period, 'period_label': period_label, 'start': start, 'end': end,
@@ -519,7 +551,7 @@ def finance_intelligence(context):
         'lead_count': lead_count, 'appointment_count': appointment_count, 'visit_count': visit_count,
         'conversion': conversion, 'revenue_per_lead': revenue_per_lead,
         'trend': trend, 'branch_rows': branch_rows, 'branch_donut': branch_donut,
-        'branch_gradient': branch_gradient,
+        'branch_gradient': branch_gradient, 'afsariyeh_only': afsariyeh_only,
         'source_rows': source_rows, 'source_donut': source_donut, 'source_gradient': source_gradient,
         'service_rows': service_rows, 'uncategorized_count': uncategorized_count,
         'matrix_branches': branches, 'matrix_rows': matrix_rows,

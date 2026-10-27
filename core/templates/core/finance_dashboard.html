@@ -105,7 +105,7 @@ body.gl-page-finance_dashboard .msg.warning{
   </a>
   <form method="get" class="fin44-filter">
     <div class="fin44-field"><label>تاریخ شمسی</label><input name="date" value="{{ summary.date }}"></div>
-    <div class="fin44-field"><label>شعبه</label><select name="branch" {% if user.profile.role == 'manager' %}disabled{% endif %}><option value="">همه شعب</option>{% for b in intel.branches %}<option value="{{ b.id }}" {% if intel.branch.id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select>{% if user.profile.role == 'manager' %}<input type="hidden" name="branch" value="{{ intel.branch.id }}">{% endif %}</div>
+    <div class="fin44-field"><label>شعبه</label><select name="branch" {% if user.profile.role == 'manager' %}disabled{% endif %}><option value="">همه شعب</option>{% if user.profile.role != 'manager' %}<option value="afsariyeh" {% if intel.afsariyeh_only %}selected{% endif %}>افسریه</option>{% endif %}{% for b in intel.branches %}<option value="{{ b.id }}" {% if intel.branch.id == b.id %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select>{% if user.profile.role == 'manager' %}<input type="hidden" name="branch" value="{{ intel.branch.id }}">{% endif %}</div>
     <div class="fin44-field"><label>گل کال‌سنتر</label><select name="flower"><option value="">همه گل‌ها</option>{% for f in intel.flowers %}<option value="{{ f.user_id }}" {% if intel.flower_id == f.user_id %}selected{% endif %}>گل {{ f|flower_name }}</option>{% endfor %}</select></div>
     <div class="fin44-field"><label>منشأ لید</label><select name="source"><option value="">همه منشأها</option>{% for code,label in intel.source_options %}<option value="{{ code }}" {% if intel.source == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
     <div class="fin44-field"><label>خدمت</label><select name="service"><option value="">همه خدمات</option>{% for code,label in intel.service_options %}<option value="{{ code }}" {% if intel.service == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
@@ -128,7 +128,7 @@ body.gl-page-finance_dashboard .msg.warning{
   </div>
 
   <section class="fin44-panel fin44-chart-card">
-    <div class="fin44-chart-head"><div class="fin44-chart-title"><h2>منحنی درآمد روزانه شعب · غیرتجمعی</h2><small>مبلغ فروش هر روز، مستقل از روزهای قبل · فقط دریافت‌های تأییدشده App · نیاوران بنفش · پونک آبی · اصفهان سبز · ارومیه نارنجی · افسریه صورتی</small></div>{% if intel.external_revenue.available %}<div class="fin44-branch-legend" id="fin44BranchLegend"></div>{% endif %}</div>
+    <div class="fin44-chart-head"><div class="fin44-chart-title"><h2>منحنی درآمد روزانه شعب · غیرتجمعی</h2><small>مبلغ فروش هر روز، مستقل از روزهای قبل · فقط دریافت‌های تأییدشده App · نیاوران بنفش · پونک آبی · اصفهان سبز · ارومیه نارنجی · افسریه صورتی · بیعانه‌های تأییدشده</small></div>{% if intel.external_revenue.available %}<div class="fin44-branch-legend" id="fin44BranchLegend"></div>{% endif %}</div>
     {% if intel.external_revenue.available %}<div class="fin44-chart-wrap"><svg id="fin44BranchChart" viewBox="0 0 1000 240" preserveAspectRatio="none" role="img" aria-label="منحنی فروش روزانه شعب، بدون جمع تجمعی"></svg></div>{{ intel.external_revenue.chart_data|json_script:"fin44-branch-chart-data" }}{% else %}<div class="fin44-chart-empty"><b>هنوز فروش تأییدشده‌ای در ثبت مالی App برای این ماه وجود ندارد.</b><span>با ثبت و تأیید فروش جدید، منحنی شعب به‌صورت خودکار تا روز جاری ادامه پیدا می‌کند.</span></div>{% endif %}
   </section>
 
