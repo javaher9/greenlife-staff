@@ -75,6 +75,29 @@ class UnifiedLeadRoutingTests(TestCase):
         naive = datetime.combine(timezone.localdate(), time(hour, minute))
         return timezone.make_aware(naive, timezone.get_current_timezone())
 
+    def test_overnight_lead_waits_even_if_only_one_operator_remains_checked_in(self):
+        self._keep_only(5)  # Laleh is remotely present after midnight.
+        night=timezone.make_aware(datetime(2026, 10, 28, 1, 0),timezone.get_current_timezone())
+        with patch('django.utils.timezone.now',return_value=night):
+            self._check_in(5)
+            lead=self._new_lead(900)
+            self.assertIsNone(assign_referral_lead(lead))
+            self.assertEqual(release_pending_leads_if_ready(now=night),0)
+        lead.refresh_from_db()
+        self.assertIsNone(lead.assigned_to_id)
+        self.assertIsNone(lead.assigned_at)
+
+    def test_eight_am_begins_morning_queue_processing_not_night_assignment(self):
+        from core.lead_routing import _live_assignment_allowed
+        midnight=timezone.make_aware(datetime(2026,10,28,0,0),timezone.get_current_timezone())
+        before_open=timezone.make_aware(datetime(2026,10,28,7,59),timezone.get_current_timezone())
+        opened=timezone.make_aware(datetime(2026,10,28,8,0),timezone.get_current_timezone())
+        after_settlement=timezone.make_aware(datetime(2026,10,28,10,15),timezone.get_current_timezone())
+        self.assertFalse(_live_assignment_allowed(midnight))
+        self.assertFalse(_live_assignment_allowed(before_open))
+        self.assertFalse(_live_assignment_allowed(opened))
+        self.assertTrue(_live_assignment_allowed(after_settlement))
+
     def test_lead_waits_when_nobody_is_present(self):
         lead = self._new_lead(1)
         self.assertIsNone(assign_referral_lead(lead))
