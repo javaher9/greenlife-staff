@@ -570,3 +570,32 @@ class PaymentWorkflowTests(TestCase):
         self.assertEqual(r.status_code,400)
         p.refresh_from_db()
         self.assertEqual(p.amount_toman,3000000)
+
+
+class SavedPaymentRecipientTests(TestCase):
+    def setUp(self):
+        self.executive=User.objects.create_user(username=next(iter(settings.EXECUTIVE_USERNAMES)),password='pw')
+        self.other=User.objects.create_user(username='other-recipient-user',password='pw')
+
+    def test_executive_can_save_and_find_recipient(self):
+        from .models import SavedPaymentRecipient
+        self.client.force_login(self.executive)
+        response=self.client.post(reverse('payments_executive_recipient_save'),{'name':'سنا','iban':'IR123456789012345678901234','card':''})
+        self.assertEqual(response.status_code,302)
+        self.assertTrue(SavedPaymentRecipient.objects.filter(owner=self.executive,name='سنا').exists())
+        page=self.client.get(reverse('payments_executive_quick'))
+        self.assertContains(page,'سنا')
+
+    def test_other_user_cannot_save_or_read_executive_book(self):
+        from .models import SavedPaymentRecipient
+        SavedPaymentRecipient.objects.create(owner=self.executive,name='Private',card='1234567890123456')
+        self.client.force_login(self.other)
+        self.assertEqual(self.client.post(reverse('payments_executive_recipient_save'),{'name':'Test','card':'1234567890123456'}).status_code,403)
+        self.assertEqual(self.client.get(reverse('payments_executive_quick')).status_code,403)
+
+    def test_invalid_bank_details_not_saved(self):
+        from .models import SavedPaymentRecipient
+        self.client.force_login(self.executive)
+        response=self.client.post(reverse('payments_executive_recipient_save'),{'name':'سنا','iban':'IR123'})
+        self.assertEqual(response.status_code,400)
+        self.assertEqual(SavedPaymentRecipient.objects.count(),0)

@@ -11,7 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
-from .models import PaymentRequest, PaymentEvent, PettyCashExpense, PaymentClarification
+from .models import PaymentRequest, PaymentEvent, PettyCashExpense, PaymentClarification, SavedPaymentRecipient
 
 def executive(user):
     return user.is_authenticated and user.username.lower() in settings.EXECUTIVE_USERNAMES
@@ -196,7 +196,27 @@ def executive_quick_payment(request):
             PaymentEvent.objects.create(payment=item,actor=request.user,action='created',notes='دستور مستقیم مدیریت')
             PaymentEvent.objects.create(payment=item,actor=request.user,action='approve',notes='تأیید مستقیم مدیریت')
         return redirect('payments_expenses')
-    return render(request,'payments/executive_quick_payment.html',{'form':form,'assignees':form.assignees,'missing_count':5-len(form.assignees)})
+    saved_recipients = SavedPaymentRecipient.objects.filter(owner=request.user)
+    return render(request,'payments/executive_quick_payment.html',{'form':form,'assignees':form.assignees,'missing_count':5-len(form.assignees),'saved_recipients':saved_recipients})
+
+@login_required
+@require_POST
+def executive_save_recipient(request):
+    if not executive(request.user):
+        raise PermissionDenied()
+    name=request.POST.get('name','').strip()
+    iban=request.POST.get('iban','').strip().replace(' ','').upper()
+    card=request.POST.get('card','').strip().replace(' ','').replace('-','')
+    if not name or len(name)>160 or not (iban or card):
+        return HttpResponseBadRequest('نام و شماره شبا یا کارت الزامی است.')
+    if iban and (len(iban)!=26 or not iban.startswith('IR') or not iban[2:].isdigit()):
+        return HttpResponseBadRequest('شماره شبا باید IR و ۲۴ رقم باشد.')
+    if card and (len(card)!=16 or not card.isdigit()):
+        return HttpResponseBadRequest('شماره کارت باید ۱۶ رقم باشد.')
+    if SavedPaymentRecipient.objects.filter(owner=request.user,name=name,iban=iban,card=card).exists():
+        return redirect('payments_executive_quick')
+    SavedPaymentRecipient.objects.create(owner=request.user,name=name,iban=iban,card=card)
+    return redirect('payments_executive_quick')
 
 @login_required
 def workspace(request):
