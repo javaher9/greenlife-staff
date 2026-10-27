@@ -67,6 +67,9 @@
   {% endif %}
 
   <section class="gl-quick-actions">
+    {% if user.profile.role == 'consultant' %}
+    <a href="{% url 'receptionist_appointment_create' %}" class="gl-quick-card" style="background:#ebf8f1!important;color:#176c50!important;border:1px solid #bfe3d0!important"><span style="font-size:24px">▣</span><span>نوبت بیمار</span></a>
+    {% endif %}
     <a href="/attendance/" class="gl-quick-card gl-quick-attendance"><svg viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2h2V2Zm12 8H5v9h14v-9Zm-7 1a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7Zm0 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"/></svg><span>{% gl_t 'common.attendance' %}</span></a>
     <a href="/tasks/" class="gl-quick-card gl-quick-work"><svg viewBox="0 0 24 24"><path d="M9 3h6l1 2h3v17H5V5h3l1-2Zm1.2 2-.4 1h4.4l-.4-1h-3.6ZM8 10l2 2 4-4 1.4 1.4L10 14.8 6.6 11.4 8 10Zm0 6 2 2 4-4 1.4 1.4L10 20.8 6.6 17.4 8 16Z"/><circle class="gl-work-purple" cx="17.7" cy="17.8" r="1.35"/></svg><span>{% gl_t 'common.tasks' %}</span></a>
     <a href="/reports/new/" class="gl-quick-card"><svg viewBox="0 0 24 24"><path d="M12 15a4 4 0 0 0 4-4V5a4 4 0 1 0-8 0v6a4 4 0 0 0 4 4Zm-7-4h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.9V22h-2v-4.1A7 7 0 0 1 5 11Z"/></svg><span>{% gl_t 'dash.voice_report' %}</span></a>
