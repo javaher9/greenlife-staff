@@ -1,5 +1,5 @@
 {% extends 'core/base.html' %}{% load jalali_tags staff_i18n %}{% block content %}
-<section class="hero"><div><h1>{% gl_t 'att.title' %}</h1><p>{% gl_t 'att.shift_line' date=today|jdate name=today_shift.name %}{% if today_shift.start %} · {% gl_t 'att.shift_times' start=today_shift.start|time:'H:i' end=today_shift.end|time:'H:i' %}{% endif %}</p></div><div>{% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}<a class="primary" href="/attendance/team/">{% gl_t 'att.team_report' %}</a>{% endif %} <a class="primary" href="/attendance/corrections/new/">{% gl_t 'att.correction' %}</a></div></section>
+<section class="hero"><div><h1>{% gl_t 'att.title' %}</h1><p>{% if remote_mode %}دورکاری مجاز · تاریخ {{ today|jdate }} · زمان کار بر اساس شروع و پایان ثبت‌شده و استراحت‌ها محاسبه می‌شود{% else %}{% gl_t 'att.shift_line' date=today|jdate name=today_shift.name %}{% if today_shift.start %} · {% gl_t 'att.shift_times' start=today_shift.start|time:'H:i' end=today_shift.end|time:'H:i' %}{% endif %}{% endif %}</p></div><div>{% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}<a class="primary" href="/attendance/team/">{% gl_t 'att.team_report' %}</a>{% endif %} <a class="primary" href="/attendance/corrections/new/">{% gl_t 'att.correction' %}</a></div></section>
 <section class="panel"><div class="attendance-actions"><div><strong>{% gl_t 'att.check_in' %}:</strong> {% if record.check_in %}{{ record.check_in|date:'H:i' }}{% elif today_shift.voluntary_checkin %}{% gl_t 'common.not_set' %}{% elif today_shift.is_off %}{% gl_t 'att.not_working' %}{% else %}{% gl_t 'common.not_set' %}{% endif %}</div><div><strong>{% gl_t 'att.check_out' %}:</strong> {% if record.check_out %}{{ record.check_out|date:'H:i' }}{% else %}{% gl_t 'common.not_set' %}{% endif %}</div><div><strong>{% gl_t 'att.status' %}:</strong> {% if record %}{% gl_choice 'attendance_status' record.status record.get_status_display %}{% elif today_shift.voluntary_checkin %}{% gl_t 'att.voluntary' %}{% elif today_shift.is_off %}{% gl_t 'att.not_working' %}{% else %}—{% endif %}</div><div><strong>{% gl_t 'att.overtime' %}:</strong> {% gl_t 'att.minutes' count=overtime %}</div><form method="post" id="attendanceForm">{% csrf_token %}
 <input type="hidden" name="latitude" id="attendanceLat">
 <input type="hidden" name="longitude" id="attendanceLon">
@@ -11,7 +11,23 @@
 {% elif not record.check_out %}
 <button class="primary" id="checkoutBtn" name="action" value="checkout" data-geofence="{% if geofence_enabled %}1{% else %}0{% endif %}">{% gl_t 'att.record_out' %}</button>
 {% else %}<span class="badge done">{% gl_t 'att.complete' %}</span>{% endif %}
+{% if remote_mode and record.check_in and not record.check_out %}
+<div class="remote-break-controls" style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:12px">
+  {% if record.break_started_at %}
+    <button type="submit" name="action" value="break_end" class="primary" style="background:#def5e8!important;color:#176046!important;border:1px solid #a3d8bd!important">پایان استراحت و بازگشت به کار</button>
+    <span style="color:#a26a19;font-weight:800;font-size:12px">اکنون در زمان استراحت</span>
+  {% else %}
+    <button type="submit" name="action" value="break_start" class="primary" style="background:#fff4db!important;color:#855e18!important;border:1px solid #efd9aa!important">شروع استراحت</button>
+  {% endif %}
+</div>
+{% endif %}
 </form>
+{% if remote_mode %}
+  <div class="remote-attendance-notice" style="padding:12px 15px;margin-top:12px;background:#eef8f2;border:1px solid #d1e9dc;border-radius:13px;color:#315b48;font-size:12px;line-height:1.95">
+    <strong>شیوه دورکاری:</strong> فقط شروع کار، پایان کار و مدت استراحت ثبت می‌شود؛ GPS شعبه از شما درخواست نمی‌شود. این ثبت به‌معنای تأیید خودکار ساعات مفید یا حقوق نیست.
+    <span style="display:block;margin-top:5px">استراحت‌های ثبت‌شده امروز: <b>{{ record.break_total_minutes|default:0 }} دقیقه</b>{% if record.break_started_at %} · استراحت فعلی هنوز در جریان است{% endif %}</span>
+  </div>
+{% endif %}
 {% if geofence_enabled and not record.check_out %}<small class="muted" id="geoStatus" role="status" aria-live="polite">📍 {% gl_t 'att.geo_required' radius=geofence_radius %}</small>{% endif %}
 {% if record.check_in_location_status == 'verified' %}<small class="badge done">📍 {% gl_t 'att.geo_ok' %}{% if record.check_in_distance_m != None %} · {% gl_t 'att.distance' count=record.check_in_distance_m %}{% endif %}</small>{% endif %}</div></section>
 <section class="panel"><div class="sectionhead"><h2>{% gl_t 'att.last_31' %}</h2></div><div class="tablewrap"><table><tr><th>{% gl_t 'common.date' %}</th><th>{% gl_t 'att.check_in' %}</th><th>{% gl_t 'att.check_out' %}</th><th>{% gl_t 'att.status' %}</th><th>{% gl_t 'att.worked' %}</th></tr>{% for r in recent %}<tr><td>{{ r.date|jdate }}</td><td>{{ r.check_in|date:'H:i'|default:'—' }}</td><td>{{ r.check_out|date:'H:i'|default:'—' }}</td><td>{{ r.get_status_display }}</td><td>{% if r.worked_minutes != None %}{% gl_t 'att.minutes' count=r.worked_minutes %}{% else %}—{% endif %}</td></tr>{% empty %}<tr><td colspan="5">{% gl_t 'att.no_records' %}</td></tr>{% endfor %}</table></div></section>{% endblock %}
