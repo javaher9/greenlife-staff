@@ -403,7 +403,6 @@ class VisitAppointment(models.Model):
     SOURCE=[
         ('call_center','کال‌سنتر'),
         ('receptionist','منشی'),
-        ('consultant','مشاور'),
         ('admin','مدیریت'),
     ]
     lead=models.ForeignKey(
