@@ -130,7 +130,7 @@ def call_center_deposit_entry(request):
     if _is_mobile_request(request):
         raise PermissionDenied("ثبت بیعانه فقط در فضای دسکتاپ کال‌سنتر فعال است.")
 
-    search = (request.GET.get("q") or "").strip()[:80]
+    search = (request.GET.get("q") or request.POST.get("q") or "").strip()[:80]
     matches = []
     if search:
         matches = list(
@@ -146,6 +146,10 @@ def call_center_deposit_entry(request):
             ).order_by("-appointment_date", "-id")[:30]
         )
     form = CallCenterDepositForm(request.POST or None, request.FILES or None)
+    # Restrict appointment selection to actual search results (including POST).
+    form.fields["appointment"].queryset = VisitAppointment.objects.filter(
+        pk__in=[item.pk for item in matches],
+    ).select_related("lead__first_appointment_by", "created_by", "branch")
     if request.method == "POST" and form.is_valid():
         chosen = form.cleaned_data["appointment"]
         token = form.cleaned_data["submission_token"]
