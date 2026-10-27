@@ -272,6 +272,14 @@ def appointment_schedule(request):
 
     booking_lead=None
     booking_lead_id=(request.GET.get('lead') or '').strip()
+    # An operator opening the calendar without a selected patient previously
+    # only saw read-only slots. Offer a lead chooser for their OWN assigned cases.
+    booking_candidates=(
+        ReferralLead.objects.filter(assigned_to=profile)
+        .exclude(status__in=('won','lost'))
+        .order_by('-created_at','-id')[:150]
+        if role=='call_center' and profile else []
+    )
     if role=='call_center' and booking_lead_id.isdigit():
         booking_lead=get_object_or_404(
             ReferralLead.objects.select_related('assigned_to','referrer__user'),
@@ -353,6 +361,7 @@ def appointment_schedule(request):
         'schedule_prev':prev_start,
         'schedule_next':next_start,
         'booking_lead':booking_lead,
+        'booking_candidates':booking_candidates,
         'appointment_time_choices':visit_appointment_time_choices(),
     })
 
@@ -370,7 +379,7 @@ def call_center_appointment_create(request,pk):
 
     # The 7-day calendar is now the canonical booking surface. Keep POST support
     # for stale browser tabs, but never send new GET requests to the legacy form.
-    if request.method=='GET':
+    if request.method=='GET' and request.GET.get('simple')!='1':
         default_branch=_default_appointment_branch(_clinic_branches())
         query=f"lead={lead.pk}"
         if default_branch:
