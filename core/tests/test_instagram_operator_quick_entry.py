@@ -85,12 +85,26 @@ class InstagramOperatorQuickEntryTests(TestCase):
         self.assertContains(response, f"شماره پیگیری: {lead.pk}")
         self.assertContains(response, "اپراتور فعالی برای تخصیص پیدا نشد")
 
-    def test_identity_ambiguity_blocks_intake_without_wrong_attribution(self):
+    def test_same_surname_does_not_block_known_laleh_identity(self):
         other_user = User.objects.create_user(
             username="another-abbasi", first_name="سارا",
             last_name="عباسی", password="test"
         )
         EmployeeProfile.objects.create(user=other_user, branch=self.branch, role="employee")
+        response = self.post()
+        self.assertEqual(response.status_code, 200)
+        lead = ReferralLead.objects.get(phone="09129876543")
+        self.assertEqual(lead.created_by_id, self.user.pk)
+
+    def test_truly_ambiguous_full_identity_blocks_wrong_attribution(self):
+        other_user = User.objects.create_user(
+            username="another-shima-abbasi", first_name="شیما",
+            last_name="عباسی", password="test"
+        )
+        EmployeeProfile.objects.create(
+            user=other_user, branch=self.branch, role="employee",
+            can_register_instagram_dm_lead=True
+        )
         response = self.get()
         self.assertEqual(response.status_code, 503)
         self.assertContains(response, "حساب ثبت‌کننده نیاز به بررسی مدیریت دارد", status_code=503)
