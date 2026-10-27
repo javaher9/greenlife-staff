@@ -234,6 +234,7 @@ def eligible_operator_user_ids(day=None, *, now=None):
             check_in__isnull=False,
             check_in__lte=now or timezone.now(),
             check_out__isnull=True,
+            break_started_at__isnull=True,
             user__profile__role='call_center',
             user__profile__is_active=True,
             user__is_active=True,
