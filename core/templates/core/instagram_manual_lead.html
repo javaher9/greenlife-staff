@@ -39,7 +39,16 @@
       <div class="success">
         <div class="tick">✓</div>
         <h1>لید ثبت شد</h1>
-        <p class="lead">این شماره با برچسب «اینستاگرام - دستی» وارد صف کال‌سنتر شد.</p>
+        {% if operator_quick_link %}
+          {% if lead_reference %}<p class="lead" style="font-size:17px;color:#125f45;font-weight:900">شماره پیگیری: {{ lead_reference }}</p>{% endif %}
+          {% if lead_assigned %}
+            <p class="lead">لید با برچسب «اینستاگرام - دستی» ثبت و به صف کال‌سنتر تخصیص داده شد.</p>
+          {% else %}
+            <p class="lead" style="color:#966018;font-weight:800">لید در سامانه ذخیره شد، اما فعلاً اپراتور فعالی برای تخصیص پیدا نشد. شماره پیگیری را برای مدیر کال‌سنتر ارسال کنید.</p>
+          {% endif %}
+        {% else %}
+          <p class="lead">این شماره با برچسب «اینستاگرام - دستی» وارد صف کال‌سنتر شد.</p>
+        {% endif %}
         <a class="again" href="{% if operator_quick_link %}{{ request.path }}{% else %}{% url 'instagram_manual_lead' %}{% endif %}">ثبت شماره بعدی</a>
       </div>
     {% else %}
@@ -60,59 +69,35 @@
 </main>
 <script>
 (function(){
+  // Native browser POST is more reliable in Android/iOS webviews, desktops,
+  // and unstable VPN networks than intercepting submission with fetch().
+  // Django renders explicit validation errors or an actual success receipt.
   var form=document.getElementById('manualInstagramForm');
-  var btn=document.getElementById('manualSubmitBtn');
   var phone=document.querySelector('[name="phone"]');
-  if(phone){
-    function latinDigits(value){return String(value||'').replace(/[۰-۹٠-٩]/g,function(ch){var n=ch.charCodeAt(0);return String(n>=0x6F0&&n<=0x6F9?n-0x6F0:n-0x660);});}
-    function normalizePhone(){var clean=latinDigits(phone.value);if(clean!==phone.value){var pos=phone.selectionStart;phone.value=clean;try{if(pos!==null)phone.setSelectionRange(pos,pos)}catch(e){}}}
-    phone.setAttribute('inputmode','tel');phone.setAttribute('dir','ltr');
-    phone.setAttribute('autocomplete','tel');phone.style.direction='ltr';
-    phone.addEventListener('input',normalizePhone);
-    phone.addEventListener('paste',function(){setTimeout(normalizePhone,0)});
-    phone.addEventListener('blur',normalizePhone);
-    if(form)form.addEventListener('submit',normalizePhone,true);
-    normalizePhone();
-  }
-  if(form&&btn&&form.closest('main')&&document.querySelector('[name="csrfmiddlewaretoken"]')){
-    var status=document.createElement('div');
-    status.setAttribute('role','status');
-    status.style.cssText='display:none;margin:12px 0;padding:14px;border-radius:12px;font-size:16px;font-weight:bold;line-height:1.8';
-    form.parentNode.insertBefore(status,form);
-    form.addEventListener('submit',async function(event){
-      if(!form.checkValidity())return;
-      event.preventDefault();
-      var original=btn.textContent;
-      btn.disabled=true;
-      btn.textContent='در حال ارسال...';
-      status.style.display='block';
-      status.style.background='#eaf7f1';
-      status.style.color='#17603e';
-      status.textContent='در حال بررسی پاسخ سرور؛ تا دریافت تأیید، این لید ثبت‌شده محسوب نمی‌شود.';
-      try{
-        var response=await fetch(form.action||location.href,{method:'POST',body:new FormData(form),credentials:'same-origin',redirect:'follow',headers:{'X-Requested-With':'XMLHttpRequest'},cache:'no-store'});
-        var html=await response.text();
-        var doc=new DOMParser().parseFromString(html,'text/html');
-        var success=doc.querySelector('.success');
-        var returnedForm=doc.querySelector('#manualInstagramForm');
-        if(response.ok&&success){
-          form.closest('.card').innerHTML=success.outerHTML;
-          return;
-        }
-        if(response.ok&&returnedForm){
-          var errors=Array.from(doc.querySelectorAll('.error,[role="alert"]')).map(function(e){return e.textContent.trim();}).filter(Boolean);
-          status.style.background='#fff0f1';status.style.color='#9c2639';
-          status.textContent=errors.length?errors.join(' | '):'سرور ثبت را تأیید نکرد. اطلاعات شما حفظ شده است؛ لطفاً بررسی کنید.';
-        }else{
-          status.style.background='#fff0f1';status.style.color='#9c2639';
-          status.textContent='ثبت تأیید نشد (کد '+response.status+'). اطلاعات حفظ شده است. از داخل اپ ثبت کنید.';
-        }
-      }catch(error){
-        status.style.background='#fff0f1';status.style.color='#9c2639';
-        status.textContent='ارتباط با سرور برقرار نشد. اطلاعات حفظ شده است؛ از داخل اپ ثبت کنید.';
-      }finally{btn.disabled=false;btn.textContent=original;}
+  if(!phone)return;
+  function latinDigits(value){
+    return String(value||'').replace(/[۰-۹٠-٩]/g,function(ch){
+      var n=ch.charCodeAt(0);
+      return String(n>=0x6F0&&n<=0x6F9?n-0x6F0:n-0x660);
     });
   }
+  function normalizePhone(){
+    var clean=latinDigits(phone.value);
+    if(clean!==phone.value){
+      var pos=null;
+      try{pos=phone.selectionStart;}catch(err){}
+      phone.value=clean;
+      try{if(pos!==null)phone.setSelectionRange(pos,pos);}catch(err){}
+    }
+  }
+  phone.setAttribute('inputmode','tel');
+  phone.setAttribute('dir','ltr');
+  phone.setAttribute('autocomplete','tel');
+  phone.addEventListener('input',normalizePhone);
+  phone.addEventListener('paste',function(){setTimeout(normalizePhone,0)});
+  phone.addEventListener('blur',normalizePhone);
+  if(form)form.addEventListener('submit',normalizePhone,true);
+  normalizePhone();
 })();
 </script>
 </body>
