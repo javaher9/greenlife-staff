@@ -114,7 +114,7 @@ def executive_finance_hub(request):
         row["expense_m"] = million_toman(row["expense"])
 
     # Call-center is a breakdown of approved income, never extra revenue.
-    call_center_income = month.filter(entry_type="inc").filter(
+    call_center_income = month.filter(entry_type="inc").exclude(sale_reason="skin_care").filter(
         Q(call_center_owner__profile__role="call_center")
         | Q(
             call_center_owner__isnull=True,

@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw
 
 from core.finance import finance_summary
 from core.jalali import format_jalali
-from core.models import AuditLog, Branch, EmployeeProfile, FinancialTransaction, ReferralLead, ReferralProfile, VisitAppointment
+from core.models import AuditLog, Branch, EmployeeProfile, FinancialTransaction, ReferralLead, ReferralProfile, VisitAppointment, SkinCareSettlement
 from core.templatetags.jalali_tags import en_number, million_toman
 
 
@@ -111,6 +111,47 @@ class ConsultantFinanceEntryTests(TestCase):
         self.assertContains(response,'در حال ثبت…')
         self.assertContains(response,'ثبت‌های مالی امروز من')
         self.assertContains(response,'جمع · میلیون تومان')
+
+    def test_skincare_inline_records_company_share_once_without_flower(self):
+        haddad=self.make_user('skin-haddad-inline','employee',self.branch,'خانم','حداد')
+        performer=haddad.profile
+        performer.can_record_skin_care=True
+        performer.save(update_fields=['can_record_skin_care'])
+        self.client.force_login(self.consultant)
+        response=self.client.get('/finance/entry/')
+        self.assertContains(response,'کارشناس اسکین‌کر')
+        data=self.valid_payload(
+            sale_reason='skin_care',skin_care_performer=str(performer.pk),
+            person_name='',amount='300000000',service='',
+            tracking_number='SK-ONE-123',
+        )
+        response=self.client.post('/finance/entry/',data)
+        self.assertEqual(response.status_code,302)
+        receipt=FinancialTransaction.objects.get(source='manual')
+        self.assertEqual(receipt.sale_reason,'skin_care')
+        self.assertEqual(receipt.call_center_owner_id,None)
+        self.assertIsNone(receipt.appointment_id)
+        self.assertEqual(receipt.review_status,'pending')
+        self.assertEqual(receipt.amount,Decimal('300000000'))
+        self.assertEqual(SkinCareSettlement.objects.count(),1)
+        settlement=SkinCareSettlement.objects.get()
+        self.assertEqual(settlement.company_share_toman,Decimal('30000000'))
+        self.assertEqual(settlement.gross_equivalent_toman,Decimal('60000000'))
+        self.assertEqual(settlement.performer_id,performer.pk)
+        self.assertEqual(settlement.finance_transaction_id,receipt.pk)
+        self.assertEqual(finance_summary()['total'],0)
+
+    def test_skincare_inline_rejects_performer_from_another_branch(self):
+        haddad=self.make_user('other-skin-worker','employee',self.other_branch,'کارشناس','دیگر')
+        performer=haddad.profile
+        performer.can_record_skin_care=True
+        performer.save(update_fields=['can_record_skin_care'])
+        self.client.force_login(self.consultant)
+        response=self.client.post('/finance/entry/',self.valid_payload(
+            sale_reason='skin_care',skin_care_performer=str(performer.pk),
+        ))
+        self.assertEqual(response.status_code,200)
+        self.assertFalse(FinancialTransaction.objects.exists())
 
     def test_duplicate_submission_token_creates_only_one_transaction(self):
         self.client.force_login(self.consultant)

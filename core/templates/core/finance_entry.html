@@ -101,6 +101,7 @@
       <label>{{ form.person_name.label }}{{ form.person_name }}{{ form.person_name.errors }}</label>
       <label>{{ form.amount.label }}{{ form.amount }}{{ form.amount.errors }}</label>
       <label>{{ form.sale_reason.label }}{{ form.sale_reason }}{{ form.sale_reason.errors }}</label>
+      <label id="financeSkinCarePerformer" style="display:none">{{ form.skin_care_performer.label }}{{ form.skin_care_performer }}{{ form.skin_care_performer.errors }}</label>
       <label>{{ form.sale_origin.label }}{{ form.sale_origin }}{{ form.sale_origin.errors }}</label>
       <label>{{ form.payment_method.label }}{{ form.payment_method }}{{ form.payment_method.errors }}</label>
       <div class="fin-cash-fields" id="financeCashFields">
@@ -172,6 +173,9 @@
 <script>
 (function(){
   const form=document.getElementById('financeEntryForm');
+  const reason=document.getElementById('id_sale_reason'),skin=document.getElementById('financeSkinCarePerformer');
+  function showSkinCare(){if(!reason||!skin)return;const on=reason.value==='skin_care';skin.style.display=on?'grid':'none';const sel=skin.querySelector('select');if(sel)sel.required=on;}
+  if(reason){reason.addEventListener('change',showSkinCare);showSkinCare();}
   const button=document.getElementById('financeSubmitButton');
   const status=document.getElementById('financeSubmitStatus');
   if(!form||!button)return;
