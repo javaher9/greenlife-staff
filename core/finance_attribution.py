@@ -26,7 +26,7 @@ def sync_call_center_sale(transaction):
             appointment__lead_id=lead.pk,
             entry_type='inc',
             review_status='approved',
-        )
+        ).exclude(sale_reason='skin_care')
         .filter(
             # Preserve the immutable first-booking ownership rule.
             appointment__lead__first_appointment_by_id=owner_id,
