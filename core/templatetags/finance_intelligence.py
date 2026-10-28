@@ -427,9 +427,10 @@ def finance_intelligence(context):
     # the same branch, flower, source, service and period filters. Reports never
     # write attribution into historical receipts.
     matrix_base = income.annotate(
-        effective_flower_id=Coalesce(
-            'call_center_owner_id',
-            'appointment__lead__first_appointment_by_id',
+        effective_flower_id=Case(
+            When(sale_reason='skin_care',then=Value(None)),
+            default=Coalesce('call_center_owner_id','appointment__lead__first_appointment_by_id'),
+            output_field=CharField(),
         ),
         finance_branch_key=_finance_branch_key(),
     )
