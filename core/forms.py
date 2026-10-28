@@ -790,7 +790,8 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
         label='نوبت مرتبط',required=False,queryset=VisitAppointment.objects.none(),
         empty_label='مراجعه مستقیم شعبه (بدون نوبت افسریه)',
     )
-    sale_reason=forms.ChoiceField(label='علت فروش',choices=FinancialTransaction.SALE_REASON)
+    sale_reason=forms.ChoiceField(label='علت دریافت',choices=FinancialTransaction.SALE_REASON)
+    skin_care_performer=forms.ModelChoiceField(label='کارشناس اسکین‌کر',required=False,queryset=EmployeeProfile.objects.none())
     sale_origin=forms.ChoiceField(label='مبدأ فروش',choices=FinancialTransaction.SALE_ORIGIN)
     payment_method=forms.ChoiceField(label='روش پرداخت / مقصد واریز',choices=PAYMENT_METHODS)
     cash_currency=forms.ChoiceField(
@@ -838,6 +839,13 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
         self.fields['entry_type'].initial='inc'
         self.fields['sale_origin'].initial='branch_walk_in'
         if consultant_profile and consultant_profile.branch_id:
+            self.fields['skin_care_performer'].queryset=EmployeeProfile.objects.filter(
+                can_record_skin_care=True,is_active=True,user__is_active=True,
+                branch_id=consultant_profile.branch_id,
+            ).select_related('user')
+            if self.fields['skin_care_performer'].queryset.count()==1:
+                self.fields['skin_care_performer'].initial=self.fields['skin_care_performer'].queryset.first().pk
+        if consultant_profile and consultant_profile.branch_id:
             self.fields['appointment'].queryset=VisitAppointment.objects.filter(
                 branch_id=consultant_profile.branch_id,
             ).exclude(
@@ -847,12 +855,20 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
     def clean(self):
         data=super().clean()
         appointment=data.get('appointment')
+        if data.get('sale_reason')=='skin_care':
+            performer=data.get('skin_care_performer')
+            if not performer:
+                self.add_error('skin_care_performer','کارشناس اسکین‌کر را انتخاب کنید.')
+            else:
+                data['person_name']=performer.user.get_full_name() or performer.user.username
+            if appointment:
+                self.add_error('appointment','اسکین‌کر مستقل از نوبت و گل ثبت می‌شود؛ نوبت را خالی بگذارید.')
         if appointment:
             if not self.consultant_profile or appointment.branch_id!=self.consultant_profile.branch_id:
                 self.add_error('appointment','این نوبت متعلق به شعبه شما نیست.')
             data['sale_origin']='afsariyeh'
             data['person_name']=appointment.full_name
-        elif data.get('sale_origin')=='afsariyeh':
+        elif data.get('sale_origin')=='afsariyeh' and data.get('sale_reason')!='skin_care':
             self.add_error('appointment','برای فروش افسریه باید نوبت مرتبط را انتخاب کنید.')
         if data.get('sale_reason')=='other' and not (data.get('description') or '').strip():
             self.add_error('description','برای «سایر» توضیح کوتاه علت فروش الزامی است.')
