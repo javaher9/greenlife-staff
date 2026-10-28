@@ -7,6 +7,9 @@ on:
       - core/templates/core/skin_care.html
       - core/templates/core/base.html
       - core/tests/test_skin_care_settlement.py
+      - core/tests/test_consultant_finance.py
+      - core/forms.py
+      - core/views.py
       - .github/workflows/skin-care-consultant-checks.yml
 permissions:
   contents: read
@@ -44,4 +47,4 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt
       - run: python manage.py check
-      - run: python manage.py test core.tests.test_skin_care_settlement --verbosity 2
+      - run: python manage.py test core.tests.test_skin_care_settlement core.tests.test_consultant_finance --verbosity 2
