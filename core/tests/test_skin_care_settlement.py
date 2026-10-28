@@ -99,6 +99,39 @@ class SkinCareSettlementTests(TestCase):
         self.assertEqual(settlement.created_by,self.receptionist)
         self.assertEqual(settlement.performer,self.performer)
 
+    def test_consultant_can_record_same_branch_only_with_simple_form(self):
+        consultant=User.objects.create_user(username='skin-moradi-test',password='test')
+        EmployeeProfile.objects.update_or_create(
+            user=consultant,
+            defaults={'role':'consultant','branch':self.branch,'is_active':True},
+        )
+        self.client.force_login(consultant)
+        page=self.client.get(self.url)
+        self.assertEqual(page.status_code,200)
+        self.assertContains(page,'ثبت سهم اسکین‌کر')
+        self.assertNotContains(page,'تاریخچه تسویه‌های اسکین‌کر')
+        self.assertNotContains(page,'سهم وصول‌شده تأییدشده امروز')
+        response=self.client.post(self.url,{
+            **self.payload(),'receipt_image':self.receipt(),
+        })
+        self.assertEqual(response.status_code,302)
+        settlement=SkinCareSettlement.objects.get()
+        self.assertEqual(settlement.created_by,consultant)
+        self.assertEqual(settlement.performer,self.performer)
+        self.assertEqual(settlement.finance_transaction.review_status,'pending')
+
+    def test_consultant_cannot_record_for_another_branch(self):
+        consultant=User.objects.create_user(username='skin-other-consultant',password='test')
+        EmployeeProfile.objects.update_or_create(
+            user=consultant,
+            defaults={'role':'consultant','branch':self.second,'is_active':True},
+        )
+        self.client.force_login(consultant)
+        response=self.client.get(self.url)
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'کارشناس اسکین‌کر هنوز مجاز نشده است')
+        self.assertFalse(SkinCareSettlement.objects.exists())
+
     def test_unrelated_employee_cannot_open_skin_care(self):
         self.client.force_login(self.other)
         response=self.client.get(self.url)
