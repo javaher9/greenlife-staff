@@ -1686,6 +1686,7 @@ def finance_entry(request):
         obj.recorded_by=request.user
         appointment=form.cleaned_data.get('appointment')
         obj.appointment=appointment
+        is_skin_care=obj.sale_reason=='skin_care'
         obj.sale_origin='afsariyeh' if appointment else 'branch_walk_in'
         if appointment:
             obj.person_name=appointment.full_name
@@ -1695,6 +1696,11 @@ def finance_entry(request):
                     lead_id=appointment.lead_id,source='call_center',created_by__isnull=False,
                 ).order_by('created_at','id').values_list('created_by',flat=True).first() if appointment.lead_id else None)
             obj.call_center_owner_id=getattr(owner,'pk',owner) or appointment.created_by_id
+        if is_skin_care:
+            obj.call_center_owner_id=None
+            obj.appointment=None
+            obj.sale_origin='branch_walk_in'
+            obj.service='اسکین‌کر'
         obj.patient_ref=obj.person_name
         if not (obj.service or '').strip() and obj.sale_reason:
             obj.service=obj.get_sale_reason_display()
@@ -1702,7 +1708,9 @@ def finance_entry(request):
         obj.receipt_original_size=getattr(form,'receipt_original_size',0)
         obj.receipt_compressed_size=getattr(form,'receipt_compressed_size',0)
         obj.raw_data={
-            'entry_channel':f"staff_{role_of(request.user)}",
+            'entry_channel':'skin_care_50_50' if is_skin_care else f"staff_{role_of(request.user)}",
+            'share_percent':'50' if is_skin_care else None,
+            'performer_profile_id':form.cleaned_data['skin_care_performer'].pk if is_skin_care else None,
             'submission_token':submission_token,
             'sale_origin':obj.sale_origin,
             'appointment_id':appointment.pk if appointment else None,
@@ -1730,6 +1738,21 @@ def finance_entry(request):
                             messages.error(request,'مبلغ دریافتی از مانده پکیج بیشتر است؛ صفحه را تازه‌سازی کنید.')
                             return redirect(f"{reverse('finance_entry')}?appointment={appointment.pk}")
                 obj.save()
+                if is_skin_care:
+                    from .models import SkinCareSettlement
+                    from decimal import Decimal
+                    performer=form.cleaned_data['skin_care_performer']
+                    share=obj.amount/Decimal('10')
+                    SkinCareSettlement.objects.create(
+                        performer=performer,branch=profile.branch,
+                        service_date=tx_date,company_share_toman=share,
+                        gross_equivalent_toman=share*2,
+                        payment_method=obj.payment_method,
+                        tracking_number=obj.tracking_number,
+                        receipt_image=obj.receipt_image.name if obj.receipt_image else None,
+                        description=obj.description[:300],
+                        created_by=request.user,finance_transaction=obj,
+                    )
                 if appointment:
                     # A newly-entered receipt is still pending review. Do not mark
                     # the visit completed or the lead won until finance approves it.
