@@ -5,7 +5,7 @@ from pathlib import Path
 
 from django import template
 from django.conf import settings
-from django.db.models import Count, Sum, Q, Case, When, Value, CharField
+from django.db.models import Count, Sum, Q, Case, When, Value, CharField, IntegerField
 from django.db.models.functions import Coalesce, Cast
 from django.utils import timezone
 
@@ -254,6 +254,7 @@ def _apply_transaction_filters(qs, branch, flower_id, source, service):
     if branch:
         qs = qs.filter(branch=branch)
     if flower_id:
+        qs = qs.exclude(sale_reason='skin_care')
         # Use the stored owner first; legacy appointment receipts can derive the
         # immutable first-booking owner without altering finance records.
         qs = qs.filter(
@@ -430,7 +431,7 @@ def finance_intelligence(context):
         effective_flower_id=Case(
             When(sale_reason='skin_care',then=Value(None)),
             default=Coalesce('call_center_owner_id','appointment__lead__first_appointment_by_id'),
-            output_field=CharField(),
+            output_field=IntegerField(),
         ),
         finance_branch_key=_finance_branch_key(),
     )
