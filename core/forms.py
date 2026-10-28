@@ -907,6 +907,8 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
     def clean_person_name(self):
         value=(self.cleaned_data.get('person_name') or '').strip()
         appointment=self.cleaned_data.get('appointment')
+        if self.data.get('sale_reason')=='skin_care':
+            return value or 'اسکین‌کر'
         if appointment:
             return appointment.full_name
         if len(value)<2:
