@@ -104,13 +104,13 @@ def _allowed_performers(request):
         return EmployeeProfile.objects.filter(
             can_record_skin_care=True,is_active=True,user__is_active=True,
         ).select_related('user','branch').order_by('user__last_name','user__first_name')
-    if role in ('manager','receptionist') and profile.branch_id:
+    if role in ('manager','receptionist','consultant') and profile.branch_id:
         return EmployeeProfile.objects.filter(
             can_record_skin_care=True,is_active=True,user__is_active=True,branch_id=profile.branch_id,
         ).select_related('user','branch').order_by('user__last_name','user__first_name')
     if profile.can_record_skin_care:
         return EmployeeProfile.objects.filter(pk=profile.pk).select_related('user','branch')
-    raise PermissionDenied('ثبت اسکین‌کر فقط برای مسئول مجاز، منشی و مدیریت فعال است.')
+    raise PermissionDenied('ثبت اسکین‌کر فقط برای مشاور، منشی، مسئول مجاز و مدیریت فعال است.')
 
 
 @login_required
@@ -120,11 +120,12 @@ def skin_care_home(request):
     profile=request.user.profile
     role=profile.role
     is_manager=request.user.is_superuser or role in ('admin','manager','internal_manager')
+    is_consultant=role=='consultant'
     allowed_ids=list(allowed.values_list('pk',flat=True))
     if not allowed_ids:
         # Do not fabricate a staff identity, branch or financial attribution.
         return render(request,'core/skin_care.html',{
-            'unconfigured':True,'is_manager':is_manager,
+            'unconfigured':True,'is_manager':is_manager,'is_consultant':is_consultant,
             'entries':[],'form':None,
         })
 
@@ -230,7 +231,7 @@ def skin_care_home(request):
     confirmed=base.filter(review_status='approved',occurred_at__gte=start,occurred_at__lt=end)
     pending=base.filter(review_status='pending')
     return render(request,'core/skin_care.html',{
-        'form':form,'entries':entries,'is_manager':is_manager,
+        'form':form,'entries':entries,'is_manager':is_manager,'is_consultant':is_consultant,
         'submission_token':safe_token,
         'today_confirmed_rial':confirmed.aggregate(n=Sum('amount'))['n'] or 0,
         'pending_rial':pending.aggregate(n=Sum('amount'))['n'] or 0,

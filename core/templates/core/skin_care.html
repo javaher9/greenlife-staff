@@ -30,14 +30,14 @@ body.gl-page-skin_care_home .app-main{background:#f4f8f7!important;background-im
       <p style="color:#526c5d;font-size:12px;line-height:2">حساب پرسنلی خانم حداد باید در مدیریت پرسنل فعال، به یک شعبه متصل و مجوز «ثبت سهم اسکین‌کر» داشته باشد. برای جلوگیری از انتساب اشتباه، سیستم شخص دیگری را به‌جای ایشان انتخاب نمی‌کند.</p>
     </div>
   {% else %}
-  <div class="sc-stats">
+  {% if not is_consultant %}<div class="sc-stats">
     <div class="sc-stat"><span>سهم وصول‌شده تأییدشده امروز</span><b>{{ today_confirmed_rial|million_toman }}</b><small>میلیون تومان · در درآمد کل محاسبه شده</small></div>
     <div class="sc-stat pending"><span>واریزی‌های در انتظار تأیید</span><b>{{ pending_rial|million_toman }}</b><small>میلیون تومان · هنوز در درآمد کل نیست</small></div>
     <div class="sc-stat"><span>نسبت همکاری</span><b>50 / 50</b><small>سهم خانم حداد و گرین‌لایف</small></div>
-  </div>
+  </div>{% endif %}
   <section class="sc-panel">
     <h2 class="sc-head">ثبت سهم اسکین‌کر</h2>
-    <div class="sc-note">مثال: اگر فروش خدمات امروز <b>60 میلیون تومان</b> بوده، سهم واریزی گرین‌لایف <b>30 میلیون تومان</b> است. در کادر مبلغ فقط <b>30000000</b> وارد کنید. این مبلغ پس از تأیید مالی فقط یک‌بار به درآمد نهایی اضافه می‌شود.</div>
+    {% if not is_consultant %}<div class="sc-note">مثال: اگر فروش خدمات امروز <b>60 میلیون تومان</b> بوده، سهم واریزی گرین‌لایف <b>30 میلیون تومان</b> است. در کادر مبلغ فقط <b>30000000</b> وارد کنید. این مبلغ پس از تأیید مالی فقط یک‌بار به درآمد نهایی اضافه می‌شود.</div>{% endif %}
     {% if form.non_field_errors %}<div class="sc-form-errors">{{ form.non_field_errors }}</div>{% endif %}
     <form method="post" enctype="multipart/form-data" id="skinCareForm">{% csrf_token %}
       <input type="hidden" name="submission_token" value="{{ submission_token }}">
@@ -54,7 +54,7 @@ body.gl-page-skin_care_home .app-main{background:#f4f8f7!important;background-im
       <button type="submit" class="sc-submit" id="scSubmit">ثبت سهم و ارسال برای تأیید</button>
     </form>
   </section>
-  <section class="sc-panel">
+  {% if not is_consultant %}<section class="sc-panel">
     <h2 class="sc-head">تاریخچه تسویه‌های اسکین‌کر</h2>
     <div class="sc-table"><table><thead><tr><th>تاریخ خدمات</th><th>کارشناس</th><th>فروش معادل (میلیون)</th><th>سهم گرین‌لایف (میلیون)</th><th>روش دریافت</th><th>ثبت‌کننده</th><th>وضعیت تأیید</th></tr></thead>
     <tbody>{% for x in entries %}
@@ -64,7 +64,7 @@ body.gl-page-skin_care_home .app-main{background:#f4f8f7!important;background-im
       <td>{{ x.created_by.get_full_name|default:x.created_by.username }}</td>
       <td><span class="sc-status {{ x.finance_transaction.review_status }}">{{ x.finance_transaction.get_review_status_display }}</span></td></tr>
     {% empty %}<tr><td colspan="7">هنوز هیچ تسویه‌ای ثبت نشده است.</td></tr>{% endfor %}</tbody></table></div>
-  </section>
+  </section>{% endif %}
   {% endif %}
 </div>
 <script>

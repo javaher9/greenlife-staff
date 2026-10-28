@@ -1,0 +1,47 @@
+name: Skin Care Consultant Tests
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - core/skin_care_views.py
+      - core/templates/core/skin_care.html
+      - core/templates/core/base.html
+      - core/tests/test_skin_care_settlement.py
+      - .github/workflows/skin-care-consultant-checks.yml
+permissions:
+  contents: read
+jobs:
+  skin-care:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: greenlife
+          POSTGRES_USER: greenlife
+          POSTGRES_PASSWORD: test-password
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U greenlife -d greenlife"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DEBUG: '1'
+      SECRET_KEY: test-only-skin-care-regression-secret
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      POSTGRES_DB: greenlife
+      POSTGRES_USER: greenlife
+      POSTGRES_PASSWORD: test-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: '5432'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python manage.py check
+      - run: python manage.py test core.tests.test_skin_care_settlement --verbosity 2
