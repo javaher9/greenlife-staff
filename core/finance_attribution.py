@@ -69,5 +69,6 @@ def financial_transaction_saved(sender, instance, **kwargs):
         and instance.review_status=='approved'
         and instance.appointment_id
         and (instance.raw_data or {}).get('payment_kind') != 'call_center_deposit'
+        and instance.sale_reason != 'skin_care'
     ):
         sync_call_center_sale(instance)
