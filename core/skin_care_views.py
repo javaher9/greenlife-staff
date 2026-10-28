@@ -104,13 +104,13 @@ def _allowed_performers(request):
         return EmployeeProfile.objects.filter(
             can_record_skin_care=True,is_active=True,user__is_active=True,
         ).select_related('user','branch').order_by('user__last_name','user__first_name')
-    if role in ('manager','receptionist') and profile.branch_id:
+    if role in ('manager','receptionist','consultant') and profile.branch_id:
         return EmployeeProfile.objects.filter(
             can_record_skin_care=True,is_active=True,user__is_active=True,branch_id=profile.branch_id,
         ).select_related('user','branch').order_by('user__last_name','user__first_name')
     if profile.can_record_skin_care:
         return EmployeeProfile.objects.filter(pk=profile.pk).select_related('user','branch')
-    raise PermissionDenied('ثبت اسکین‌کر فقط برای مسئول مجاز، منشی و مدیریت فعال است.')
+    raise PermissionDenied('ثبت اسکین‌کر فقط برای مشاور، منشی، مسئول مجاز و مدیریت فعال است.')
 
 
 @login_required
