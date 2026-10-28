@@ -483,6 +483,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     <a href="{% url 'consultant_sales_outcomes' %}" class="nav-main {% if request.resolver_match.url_name == 'consultant_sales_outcomes' %}is-active{% endif %}"><span class="nav-ico">◈</span><span>{% gl_t 'shell.consultant_panel' %}</span></a>
     <a href="/" class="{% if request.path == '/' %}is-active{% endif %}"><span class="nav-ico">⌂</span><span>{% gl_t 'shell.staff_home' %}</span></a>
     <a href="/finance/entry/" class="consultant-finance-nav {% if request.path|slice:':15' == '/finance/entry/' %}is-active{% endif %}"><span class="nav-ico">▧</span><span>{% gl_t 'shell.finance_entry' %}</span></a>
+    <a href="{% url 'skin_care_home' %}" class="{% if request.resolver_match.url_name == 'skin_care_home' %}is-active{% endif %}"><span class="nav-ico">✧</span><span>ثبت اسکین‌کر</span></a>
     <a href="/attendance/" class="attendance-nav {% if request.path|slice:':12' == '/attendance/' %}is-active{% endif %}"><span class="nav-ico">◷</span><span>{% gl_t 'common.attendance' %}</span></a>
     <a href="/tasks/" class="{% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico">✓</span><span>{% gl_t 'common.tasks' %}</span></a>
     <a href="/reports/" class="{% if request.path|slice:':9' == '/reports/' %}is-active{% endif %}"><span class="nav-ico">▥</span><span>{% gl_t 'common.daily_report' %}</span></a>
