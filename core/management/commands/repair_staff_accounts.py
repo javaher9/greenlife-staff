@@ -38,7 +38,6 @@ class Command(BaseCommand):
             return 'raw'
         return 'encoded'
 
-    @transaction.atomic
     def handle(self, *args, **options):
         apply_repairs = options['apply']
         counts = {
@@ -50,31 +49,33 @@ class Command(BaseCommand):
             'passwords_hashed': 0,
         }
 
-        for user in User.objects.select_for_update().order_by('pk'):
-            counts['users'] += 1
-            if not EmployeeProfile.objects.filter(user=user).exists():
-                counts['missing_profiles'] += 1
-                if apply_repairs:
-                    EmployeeProfile.objects.create(
-                        user=user,
-                        role='admin' if user.is_superuser else 'employee',
-                        is_active=user.is_active,
-                    )
-                    counts['profiles_created'] += 1
-
-            password_state = self._password_state(user)
-            if password_state == 'raw':
-                counts['raw_passwords'] += 1
-                if apply_repairs:
-                    # Preserve the password the operator entered, but store it
-                    # with Django's configured one-way password hasher.
-                    raw_password = user.password
-                    user.set_password(raw_password)
-                    user.save(update_fields=['password'])
-                    counts['passwords_hashed'] += 1
-            elif password_state == 'unusable':
-                counts['unusable_passwords'] += 1
-
+        # Only account repairs are transactional; HTTP/session checks must run after commit.
+        with transaction.atomic():
+            for user in User.objects.select_for_update().order_by('pk'):
+                counts['users'] += 1
+                if not EmployeeProfile.objects.filter(user=user).exists():
+                    counts['missing_profiles'] += 1
+                    if apply_repairs:
+                        EmployeeProfile.objects.create(
+                            user=user,
+                            role='admin' if user.is_superuser else 'employee',
+                            is_active=user.is_active,
+                        )
+                        counts['profiles_created'] += 1
+    
+                password_state = self._password_state(user)
+                if password_state == 'raw':
+                    counts['raw_passwords'] += 1
+                    if apply_repairs:
+                        # Preserve the password the operator entered, but store it
+                        # with Django's configured one-way password hasher.
+                        raw_password = user.password
+                        user.set_password(raw_password)
+                        user.save(update_fields=['password'])
+                        counts['passwords_hashed'] += 1
+                elif password_state == 'unusable':
+                    counts['unusable_passwords'] += 1
+    
         mode = 'repair' if apply_repairs else 'audit'
         self.stdout.write(
             'Staff account integrity '
