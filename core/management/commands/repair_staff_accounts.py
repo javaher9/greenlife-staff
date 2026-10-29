@@ -38,8 +38,15 @@ class Command(BaseCommand):
             return 'raw'
         return 'encoded'
 
-    @transaction.atomic
     def handle(self, *args, **options):
+        # Keep repair writes atomic, but never exercise HTTP views within that
+        # transaction: view failures can poison PostgreSQL's transaction.
+        with transaction.atomic():
+            self._repair_accounts(options)
+        if options['verify_sessions']:
+            self._verify_sessions()
+
+    def _repair_accounts(self, options):
         apply_repairs = options['apply']
         counts = {
             'users': 0,
@@ -90,9 +97,6 @@ class Command(BaseCommand):
                 'Some accounts have intentionally unusable passwords; they were not reset automatically.'
             ))
 
-        if options['verify_sessions']:
-            self._verify_sessions()
-
     def _verify_sessions(self):
         checked = 0
         app_admin_checked = 0
@@ -138,7 +142,10 @@ class Command(BaseCommand):
                 except Exception as exc:
                     errors[type(exc).__name__] += 1
                 finally:
-                    client.session.flush()
+                    try:
+                        client.session.flush()
+                    except Exception as exc:
+                        errors[f'SESSION_CLEANUP_{type(exc).__name__}'] += 1
                 checked += 1
         finally:
             logging.disable(previous_disable)
