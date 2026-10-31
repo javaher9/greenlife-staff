@@ -28,6 +28,7 @@ from . import diet_template_views
 from . import payroll_views
 from . import device_booking_views
 from . import consultant_expense_views
+from . import body_progress_views
 from . import scan_station_views
 from . import patient_360_views
 from . import server_health_views
@@ -47,6 +48,9 @@ path('customer/diets/<int:pk>/',diet_companion_views.customer_diet,name='custome
 path('customer/diets/<int:pk>/log/',diet_companion_views.customer_diet_log,name='customer_diet_log'),
 path('treatment-content/<int:item_id>/companion/',diet_companion_views.companion_preview,name='diet_companion_preview'),
 path('scan/',scan_station_views.scan_station,name='scan_station'),
+path('scan/progress-photos/',body_progress_views.upload_progress_photos,name='body_progress_photo_upload'),
+path('customer/body/',body_progress_views.customer_body,name='customer_body'),
+path('customer/body/photo/<uuid:public_id>/',body_progress_views.customer_body_photo,name='customer_body_photo'),
 path('alerts/',management_alert_views.alert_center,name='management_alert_center'),
 path('api/alerts/management/',management_alert_views.alert_center_api,name='management_alert_api'),
 path('customer/login/',customer_portal_views.customer_login,name='customer_login'),

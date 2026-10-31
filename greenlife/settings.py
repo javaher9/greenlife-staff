@@ -60,3 +60,6 @@ DEFAULT_AUTO_FIELD='django.db.models.BigAutoField'
 LOGIN_URL='/login/'; LOGIN_REDIRECT_URL='/'; LOGOUT_REDIRECT_URL='/login/'
 SECURE_PROXY_SSL_HEADER=('HTTP_X_FORWARDED_PROTO','https')
 PUBLIC_BASE_URL = os.getenv('PUBLIC_BASE_URL','https://staff.greenlifeclinics.com').rstrip('/')
+
+# Activate only after the nginx private photo path has been applied and reloaded.
+BODY_PROGRESS_UPLOAD_ENABLED = os.getenv('BODY_PROGRESS_UPLOAD_ENABLED', '0') == '1'

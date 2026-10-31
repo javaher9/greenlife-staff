@@ -1,0 +1,102 @@
+{% load static %}
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>بدن من | GreenLife Me</title>
+<style>
+:root{--paper:#f8f6f0;--card:#fffdf9;--green:#31533b;--gold:#b89b68;--ink:#2a3c2f;--muted:#807d70;--line:#e9e3d7}
+*{box-sizing:border-box}
+body{margin:0;background:#eae6de;color:var(--ink);font-family:Vazirmatn,Tahoma,Arial,sans-serif}
+.page{max-width:530px;min-height:100vh;margin:0 auto;background:var(--paper);padding:0 16px 38px;box-shadow:0 10px 45px #5d55301a}
+header{height:77px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}
+.brand{font:600 30px Georgia,serif;color:var(--green);direction:ltr}
+header a{color:var(--green);text-decoration:none;font-size:12px}
+.hero{margin:19px 0;padding:22px;border-radius:24px;background:linear-gradient(125deg,#e8efe1,#f9f3e5 70%,#ebe3d2);border:1px solid #e7e5d7}
+.eyebrow{color:#94784a;font-size:10px;letter-spacing:1.8px}
+.hero h1{font-size:30px;margin:8px 0 4px;font-weight:700}
+.hero p{margin:0;color:#6c7467;font-size:12px;line-height:2}
+.section-title{margin:25px 1px 12px;font-size:17px;font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:21px;padding:17px;box-shadow:0 8px 20px #6256310a}
+.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.metric{background:#fffdf9;border:1px solid #e7e1d6;border-radius:18px;padding:16px}
+.metric small{display:block;color:var(--muted);font-size:11px;min-height:32px}
+.metric b{display:block;font-size:24px;color:var(--green);font-weight:700;direction:ltr;text-align:right}
+.metric em{font-size:10px;font-style:normal;color:#938c79}
+.delta{margin-top:13px;color:#5b6a55;font-size:12px}
+.chart{width:100%;height:170px;display:block}
+.chart-label{font-size:10px;color:#888674;text-align:center;margin-top:2px}
+.compare{margin-bottom:15px}
+.compare h3{font-size:13px;margin:0 0 13px}
+.photos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.photo-box{position:relative;aspect-ratio:3/4;background:#edeae2;border-radius:14px;overflow:hidden;display:flex;align-items:center;justify-content:center;color:#958d7a;font-size:11px;text-align:center}
+.photo-box img{height:100%;width:100%;object-fit:contain;background:#e9e9e6}
+.photo-box span{position:absolute;top:8px;right:8px;background:#fffdf5e8;border-radius:12px;padding:4px 9px;color:var(--green);font-size:10px}
+.history{border-collapse:collapse;width:100%;font-size:11px}
+.history th,.history td{padding:10px 6px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
+.history th{color:#786f5d;font-weight:700}
+.history td{color:#38513d}
+.history small{display:block;font-size:9px;color:#8e8978}
+.empty{padding:30px 15px;text-align:center;color:#80796b;font-size:13px;line-height:2.2}
+.notice{color:#877f70;font-size:11px;line-height:2;margin:16px 3px}
+footer{text-align:center;color:#7f8374;font:15px Georgia,serif;margin:27px 0 6px}
+@media(max-width:350px){.page{padding-left:10px;padding-right:10px}.metric b{font-size:21px}}
+</style>
+</head>
+<body>
+<main class="page">
+<header><a href="{% url 'customer_club' %}" aria-label="بازگشت">‹ بازگشت</a><div class="brand">GreenLife Me</div></header>
+<section class="hero"><div class="eyebrow">MY BODY JOURNEY</div><h1>بدن من</h1><p>{% if patient %}{{ patient.full_name }} · مسیر پیشرفت شخصی شما{% else %}پیشرفت شما اینجا ثبت خواهد شد{% endif %}</p></section>
+{% if latest %}
+<h2 class="section-title">آخرین آنالیز من</h2>
+<section class="metrics">
+{% for metric in metrics %}
+<div class="metric"><small>{{ metric.label }}</small><b>{% if metric.value is not None %}{{ metric.value }}{% else %}—{% endif %}</b><em>{{ metric.unit }}</em></div>
+{% endfor %}
+</section>
+{% if weight_change is not None %}<p class="delta">تغییر وزن نسبت به اولین اسکن: <b dir="ltr">{{ weight_change|stringformat:"+g" }} kg</b></p>{% endif %}
+{% if weight_series|length > 1 %}
+<h2 class="section-title">روند تغییر وزن</h2>
+<div class="card"><svg id="weight-chart" class="chart" viewBox="0 0 440 170" role="img" aria-label="نمودار وزن بر اساس اسکن‌های ثبت‌شده"></svg><p class="chart-label">اطلاعات واقعی اسکن‌ها؛ فاصله نقاط بر اساس ترتیب ثبت</p></div>
+{{ weight_series|json_script:"weight-series" }}
+{% endif %}
+{% else %}
+<div class="card empty">هنوز اسکن و آنالیزی در پرونده شما ثبت نشده است. بعد از اولین اسکن، نتایج اینجا ظاهر می‌شوند.</div>
+{% endif %}
+<h2 class="section-title">تصاویر پیشرفت من</h2>
+{% if pairs %}
+{% for pair in pairs %}
+<section class="card compare"><h3>نمای {{ pair.angle }}</h3>
+<div class="photos">
+<div class="photo-box">{% if pair.before %}<img src="{% url 'customer_body_photo' pair.before.public_id %}" alt="تصویر اولیه - {{ pair.angle }}" loading="lazy">{% else %}هنوز تصویری ثبت نشده{% endif %}<span>قبل</span></div>
+<div class="photo-box">{% if pair.after %}<img src="{% url 'customer_body_photo' pair.after.public_id %}" alt="تصویر پیگیری - {{ pair.angle }}" loading="lazy">{% else %}هنوز تصویری ثبت نشده{% endif %}<span>بعد</span></div>
+</div></section>
+{% endfor %}
+{% else %}
+<div class="card empty">تصاویر قبل و بعد پس از ثبت توسط پرسنل و تأیید رضایت شما، اینجا به‌صورت خصوصی نمایش داده می‌شوند.</div>
+{% endif %}
+{% if history %}
+<h2 class="section-title">سوابق اسکن و آنالیز</h2>
+<div class="card"><table class="history"><thead><tr><th>تاریخ</th><th>وزن</th><th>چربی</th><th>عضله</th></tr></thead><tbody>
+{% for row in history %}<tr><td>{{ row.date|date:"Y/m/d" }}</td>
+{% for metric in row.metrics %}{% if metric.key == 'weight_kg' or metric.key == 'fat_kg' or metric.key == 'skeletal_muscle_kg' %}<td>{% if metric.value is not None %}{{ metric.value }}{% else %}—{% endif %}</td>{% endif %}{% endfor %}
+</tr>{% endfor %}</tbody></table></div>
+{% endif %}
+<p class="notice">تمام نتایج از پرونده ثبت‌شده گرین‌لایف خوانده می‌شوند. عکس‌های پیشرفت فقط برای خود بیمار و کارکنان مجاز در دسترس‌اند.</p>
+<footer>GreenLife Me</footer>
+</main>
+<script>
+(function(){
+const element=document.getElementById('weight-series');
+if(!element)return;
+const data=JSON.parse(element.textContent);
+const svg=document.getElementById('weight-chart');
+const values=data.map(item=>item.weight);
+const low=Math.min(...values),high=Math.max(...values),span=Math.max(high-low,1);
+const pts=values.map((v,i)=>[26+(i*(388/Math.max(values.length-1,1))),148-((v-low)/span)*119]);
+const path=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+svg.innerHTML='<path d="'+path+'" fill="none" stroke="#51745b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'+pts.map((p,i)=>'<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4" fill="#b99b64"><title>'+data[i].day+' · '+data[i].weight+' kg</title></circle>').join('');
+})();
+</script>
+</body></html>
