@@ -3,6 +3,7 @@ from io import BytesIO
 from decimal import Decimal
 from PIL import Image, ImageOps, UnidentifiedImageError
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -20,7 +21,7 @@ from .models import BodyAnalysisRecord, BodyProgressPhoto, PatientProfile, Visit
 from .scan_analysis_display import SCAN_FIELDS, scan_summary, scan_value
 
 STAFF_PHOTO_ROLES = {'scan_station', 'receptionist', 'admin', 'internal_manager', 'manager'}
-MAX_UPLOAD_BYTES = 12 * 1024 * 1024
+MAX_UPLOAD_BYTES = 8 * 1024 * 1024
 ANGLES = dict(BodyProgressPhoto.ANGLE_CHOICES)
 PHASES = dict(BodyProgressPhoto.PHASE_CHOICES)
 
@@ -34,7 +35,7 @@ def _staff_scan_access(request):
 
 def _normalized_jpeg(uploaded):
     if uploaded.size > MAX_UPLOAD_BYTES:
-        raise ValueError('حجم هر تصویر نباید بیش از ۱۲ مگابایت باشد.')
+        raise ValueError('حجم هر تصویر نباید بیش از ۸ مگابایت باشد.')
     try:
         with Image.open(uploaded) as source:
             if source.format not in {'JPEG', 'PNG', 'WEBP'}:
@@ -64,6 +65,9 @@ def _normalized_jpeg(uploaded):
 @require_POST
 def upload_progress_photos(request):
     profile = _staff_scan_access(request)
+    if not getattr(settings, 'BODY_PROGRESS_UPLOAD_ENABLED', False):
+        messages.error(request, 'ثبت تصاویر تا تأیید حفاظت فضای ذخیره‌سازی سرور غیرفعال است.')
+        return redirect('scan_station')
     if request.POST.get('consent') != 'yes':
         messages.error(request, 'رضایت بیمار برای ثبت و نمایش خصوصی تصاویر الزامی است.')
         return redirect('scan_station')
