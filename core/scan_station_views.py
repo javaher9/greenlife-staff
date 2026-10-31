@@ -1,4 +1,5 @@
 from decimal import Decimal, InvalidOperation
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import render, redirect, get_object_or_404
@@ -70,4 +71,4 @@ def scan_station(request):
                 recorded_by=request.user)
             messages.success(request,'اسکن و آنالیز ثبت شد.')
             return redirect('scan_station')
-    return render(request,'core/scan_station.html',{'queue':queue,'staff':staff,'default_staff':default_staff,'branch':branch,'fields':FIELDS})
+    return render(request,'core/scan_station.html',{'queue':queue,'staff':staff,'default_staff':default_staff,'branch':branch,'fields':FIELDS,'body_progress_enabled':getattr(settings,'BODY_PROGRESS_UPLOAD_ENABLED',False)})
