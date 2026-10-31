@@ -14,7 +14,7 @@ from core.jalali import format_jalali
 
 from core.models import (
     BodyAnalysisRecord, Branch, CallCenterLeadGroup, EmployeeProfile,
-    ConsultationPlan, PatientCareNote, PatientDeviceProgram, PatientDietProgram,
+    ConsultationPlan, FinancialTransaction, PatientCareNote, PatientDeviceProgram, PatientDietProgram,
     PatientProfile, ReferralLead, StaffNotification, VisitAppointment,
 )
 from intake.models import IntakeInvitation
@@ -339,6 +339,12 @@ class SmartPatientJourneyE2ETest(TestCase):
             if next_day.weekday() == 4:
                 next_day += timedelta(days=1)
             self.client.force_login(self.receptionist)
+            payment_desk = self.client.get(reverse('dashboard'))
+            self.assertEqual(payment_desk.status_code, 200)
+            self.assertIn(appt.pk, [
+                item.pk for item in payment_desk.context['receptionist_payment_queue']
+            ])
+            self.assertContains(payment_desk, 'CoolTech Define')
             followup = self.client.post(reverse('receptionist_appointment_create'), {
                 'full_name': self.NAME,
                 'phone': self.PHONE,
@@ -357,8 +363,16 @@ class SmartPatientJourneyE2ETest(TestCase):
             self.assertEqual(next_visit.status, 'booked')
             self.assertEqual(appt.care_stage, 'payment')
             # Follow-up must resolve to the existing longitudinal profile.
+            followup_profile = self.client.get(
+                reverse('patient_360_from_appointment', args=[next_visit.pk])
+            )
+            self.assertRedirects(
+                followup_profile, reverse('patient_360', args=[patient.pk]),
+                fetch_redirect_response=False,
+            )
             self.assertEqual(PatientProfile.objects.filter(phone=self.PHONE).count(), 1)
             self.assertEqual(BodyAnalysisRecord.objects.filter(patient=patient).count(), 1)
+            self.assertFalse(FinancialTransaction.objects.exists())
 
             # All output messages are mocked, not sent. Appointment messages
             # registered through on_commit never touch a live provider in a test.
