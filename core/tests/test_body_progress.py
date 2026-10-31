@@ -80,6 +80,7 @@ class BodyProgressTests(TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertIn('body_progress_private/', photo.image.name)
 
+    @override_settings(BODY_PROGRESS_UPLOAD_ENABLED=True)
     def test_staff_requires_consent_and_real_arrived_appointment(self):
         appointment = VisitAppointment.objects.create(
             branch=self.branch, phone=self.mine.phone, full_name=self.mine.full_name,
