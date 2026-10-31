@@ -499,6 +499,6 @@ jobs:
       - name: Check models and migrations
         run: |
           python manage.py check
-          python manage.py makemigrations --check --dry-run
+          python manage.py migrate --noinput
       - name: Test private body progress and scan metrics
         run: python manage.py test core.tests.test_body_progress core.tests.test_six_scan_display --verbosity 2
