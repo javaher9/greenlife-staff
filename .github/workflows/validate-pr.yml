@@ -82,6 +82,8 @@ jobs:
         run: python manage.py check
       - name: appointments regression tests
         run: python manage.py test core.tests.test_appointments --verbosity 2
+      - name: Smart synthetic lead-to-intake-to-scan integration test
+        run: python manage.py test core.tests.test_smart_full_intake_scan_flow --verbosity 2
   lead-routing:
     runs-on: ubuntu-latest
     timeout-minutes: 18
