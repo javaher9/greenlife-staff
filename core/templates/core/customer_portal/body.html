@@ -46,7 +46,7 @@ footer{text-align:center;color:#7f8374;font:15px Georgia,serif;margin:27px 0 6px
 </head>
 <body>
 <main class="page">
-<header><a href="javascript:history.back()" aria-label="بازگشت">‹ بازگشت</a><div class="brand">GreenLife Me</div></header>
+<header><a href="{% url 'customer_club' %}" aria-label="بازگشت">‹ بازگشت</a><div class="brand">GreenLife Me</div></header>
 <section class="hero"><div class="eyebrow">MY BODY JOURNEY</div><h1>بدن من</h1><p>{% if patient %}{{ patient.full_name }} · مسیر پیشرفت شخصی شما{% else %}پیشرفت شما اینجا ثبت خواهد شد{% endif %}</p></section>
 {% if latest %}
 <h2 class="section-title">آخرین آنالیز من</h2>
