@@ -145,7 +145,7 @@ class SmartPatientJourneyE2ETest(TestCase):
             self.assertEqual(opened.status_code, 200)
             submitted = patient_browser.post(public_url, {
                 'reasons': ['کاهش وزن'],
-                'conditions': [],
+                'conditions': ['دیابت'],  # Synthetic positive history to verify physician visibility.
                 'safety_flags': [],
                 'medications': 'ندارد (فرضی)',
                 'allergies': 'ندارد (فرضی)',
@@ -216,7 +216,13 @@ class SmartPatientJourneyE2ETest(TestCase):
             self.assertEqual(physician.context['selected_appointment'].pk, appt.pk)
             self.assertEqual(physician.context['analysis_count'], 1)
             self.assertContains(physician, self.NAME)
-            self.assertContains(physician, 'کاهش وزن')
+            # The compact physician summary contains medical/safety history,
+            # not visit reasons. Verify the submitted positive history and
+            # completed screening survive the handoff to this appointment.
+            summary = physician.context['medical_intake_summary']
+            self.assertFalse(summary['screening_incomplete'])
+            self.assertEqual(summary['sections']['بیماری‌ها'], ['دیابت'])
+            self.assertContains(physician, 'دیابت')
 
             diet = self.client.post(reverse('doctor_action_api'), {
                 'action': 'diet', 'appointment_id': str(appt.pk),
