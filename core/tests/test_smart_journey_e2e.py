@@ -10,9 +10,11 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
+from core.jalali import format_jalali
 
 from core.models import (
     BodyAnalysisRecord, Branch, CallCenterLeadGroup, EmployeeProfile,
+    ConsultationPlan, PatientCareNote, PatientDeviceProgram, PatientDietProgram,
     PatientProfile, ReferralLead, StaffNotification, VisitAppointment,
 )
 from intake.models import IntakeInvitation
@@ -32,6 +34,8 @@ class SmartPatientJourneyE2ETest(TestCase):
         self.call_user = self._staff('smart-test-operator', 'call_center', self.call_branch)
         self.receptionist = self._staff('smart-test-reception', 'receptionist', self.branch)
         self.other_receptionist = self._staff('smart-test-poo', 'receptionist', self.other_branch)
+        self.doctor = self._staff('smart-test-doctor', 'doctor', self.branch)
+        self.consultant = self._staff('smart-test-consultant', 'consultant', self.branch)
 
     def _staff(self, username, role, branch):
         user = User.objects.create_user(username=username, password='test-only-password')
@@ -201,6 +205,155 @@ class SmartPatientJourneyE2ETest(TestCase):
                 measurements__scan_appointment_id=appt.pk,
             ).count(), 1)
             self.assertEqual(VisitAppointment.objects.filter(lead=lead).count(), 1)
+
+            # 9. Physician views the very same scan + completed intake, then
+            # prescribes synthetic diet, device sessions and clinical notes.
+            self.client.force_login(self.doctor)
+            physician = self.client.get(reverse('doctor_dashboard'), {
+                'appointment': str(appt.pk),
+            })
+            self.assertEqual(physician.status_code, 200)
+            self.assertEqual(physician.context['selected_appointment'].pk, appt.pk)
+            self.assertEqual(physician.context['analysis_count'], 1)
+            self.assertContains(physician, self.NAME)
+            self.assertContains(physician, 'کاهش وزن')
+
+            diet = self.client.post(reverse('doctor_action_api'), {
+                'action': 'diet', 'appointment_id': str(appt.pk),
+                'diet_name': 'رژیم آزمایشی استاندارد (تست هوشمند)',
+                'recommendation_pack': 'توصیه نمونه؛ فقط تست',
+                'print_template': 'نسخه تست',
+                'note': '[TEST] بدون تجویز بالینی واقعی',
+            })
+            self.assertEqual(diet.status_code, 200, diet.content[:1000])
+            self.assertTrue(diet.json()['ok'])
+            device = self.client.post(reverse('doctor_action_api'), {
+                'action': 'device', 'appointment_id': str(appt.pk),
+                'device_name': 'CoolTech Define', 'area': 'شکم و پهلو',
+                'sessions': '3', 'note': '[TEST] فقط نمایش گردش کار',
+            })
+            self.assertEqual(device.status_code, 200, device.content[:1000])
+            self.assertTrue(device.json()['ok'])
+            doctor_note = self.client.post(reverse('doctor_action_api'), {
+                'action': 'clinical_note', 'appointment_id': str(appt.pk),
+                'body': '[TEST] اندازه‌های آزمایشی اسکن بررسی شدند؛ پرونده غیرواقعی.',
+            })
+            self.assertEqual(doctor_note.status_code, 200, doctor_note.content[:1000])
+            self.assertTrue(doctor_note.json()['ok'])
+            self.assertTrue(PatientDietProgram.objects.filter(
+                patient=patient, appointment=appt, prescribed_by=self.doctor,
+            ).exists())
+            device_program = PatientDeviceProgram.objects.get(
+                patient=patient, appointment=appt, prescribed_by=self.doctor,
+            )
+            self.assertEqual(device_program.sessions_prescribed, 3)
+            self.assertTrue(PatientCareNote.objects.filter(
+                appointment=appt, author=self.doctor,
+            ).exists())
+
+            # 10. Actual physician REST handoff → consultant's own branch queue.
+            handoff = self.client.post(reverse('doctor_action_api'), {
+                'action': 'send_to_consultant',
+                'appointment_id': str(appt.pk),
+            })
+            self.assertEqual(handoff.status_code, 200, handoff.content[:1000])
+            self.assertTrue(handoff.json()['ok'])
+            appt.refresh_from_db()
+            self.assertEqual(appt.care_stage, 'consultant')
+            self.assertEqual(appt.doctor_completed_by, self.doctor)
+            self.assertTrue(StaffNotification.objects.filter(
+                user=self.consultant, notification_type='doctor_handoff',
+            ).exists())
+
+            # 11. Consultant sees both doctor recommendations and edits one
+            # fictitious line price, then finalizes the plan (no payment).
+            self.client.force_login(self.consultant)
+            consultant_url = reverse('consultant_sales_outcomes')
+            consultant_page = self.client.get(consultant_url, {
+                'appointment': str(appt.pk),
+            })
+            self.assertEqual(consultant_page.status_code, 200)
+            self.assertContains(consultant_page, self.NAME)
+            self.assertContains(consultant_page, 'CoolTech Define')
+            self.assertContains(consultant_page, 'رژیم آزمایشی')
+            plan = ConsultationPlan.objects.get(appointment=appt)
+            self.assertEqual(plan.items.filter(source='doctor').count(), 2)
+            device_line = plan.items.get(kind='device', source='doctor')
+            updated = self.client.post(consultant_url, {
+                'appointment_id': str(appt.pk),
+                'action': 'update_item',
+                'item_id': str(device_line.pk),
+                'title': device_line.title,
+                'area': 'شکم و پهلو',
+                'quantity': '3',
+                'unit_price_million': '1.5',
+                'units_per_session': '1',
+                'included': '1',
+                'item_note': '[TEST] تعرفه نمونه؛ هیچ مطالبه واقعی نیست',
+            })
+            self.assertEqual(updated.status_code, 302)
+            device_line.refresh_from_db()
+            self.assertEqual(device_line.quantity, 3)
+            self.assertEqual(int(device_line.unit_price_toman), 1500000)
+            finalized = self.client.post(consultant_url, {
+                'appointment_id': str(appt.pk),
+                'action': 'finalize',
+                'discount_million': '0',
+                'plan_note': '[TEST] پکیج ساختگی برای آزمون فرآیند',
+            })
+            self.assertEqual(finalized.status_code, 302)
+            plan.refresh_from_db()
+            self.assertEqual(plan.status, 'finalized')
+            self.assertEqual(plan.consultant, self.consultant)
+            self.assertGreater(plan.final_amount_toman, 0)
+
+            # 12. Send to receptionist for payment. Do not create any
+            # FinancialTransaction or transfer money.
+            sent_to_reception = self.client.post(consultant_url, {
+                'appointment_id': str(appt.pk),
+                'action': 'send_to_reception',
+            })
+            self.assertEqual(sent_to_reception.status_code, 302)
+            plan.refresh_from_db()
+            appt.refresh_from_db()
+            self.assertEqual(plan.status, 'payment_pending')
+            self.assertEqual(appt.care_stage, 'payment')
+            self.assertIsNotNone(plan.sent_to_reception_at)
+            self.assertTrue(StaffNotification.objects.filter(
+                user=self.receptionist, notification_type='consultant_payment',
+            ).exists())
+            self.assertFalse(StaffNotification.objects.filter(
+                user=self.other_receptionist, notification_type='consultant_payment',
+            ).exists())
+
+            # 13. Receptionist creates a real NEXT appointment for the same
+            # synthetic patient using the actual receptionist booking POST.
+            # The old visit stays untouched in payment stage.
+            next_day = day + timedelta(days=7)
+            if next_day.weekday() == 4:
+                next_day += timedelta(days=1)
+            self.client.force_login(self.receptionist)
+            followup = self.client.post(reverse('receptionist_appointment_create'), {
+                'full_name': self.NAME,
+                'phone': self.PHONE,
+                'service': 'پیگیری اسکن و مشاوره (آزمایشی)',
+                'appointment_date': format_jalali(next_day),
+                'appointment_time': '14:15',
+                'notes': '[TEST] مراجعه مجدد؛ هیچ بیمار واقعی',
+            })
+            self.assertEqual(followup.status_code, 302, followup.content[:1000])
+            next_visit = VisitAppointment.objects.exclude(pk=appt.pk).get(
+                full_name=self.NAME, phone=self.PHONE,
+            )
+            self.assertEqual(next_visit.appointment_date, next_day)
+            self.assertEqual(next_visit.branch, self.branch)
+            self.assertEqual(next_visit.source, 'receptionist')
+            self.assertEqual(next_visit.status, 'booked')
+            self.assertEqual(appt.care_stage, 'payment')
+            # Follow-up must resolve to the existing longitudinal profile.
+            self.assertEqual(PatientProfile.objects.filter(phone=self.PHONE).count(), 1)
+            self.assertEqual(BodyAnalysisRecord.objects.filter(patient=patient).count(), 1)
+
             # All output messages are mocked, not sent. Appointment messages
             # registered through on_commit never touch a live provider in a test.
             queued_sms.assert_not_called()
