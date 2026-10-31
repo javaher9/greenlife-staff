@@ -44,3 +44,5 @@ jobs:
         run: python manage.py makemigrations intake --check --dry-run
       - name: Test positive only summaries
         run: python manage.py test core.tests.test_intake_summary
+      - name: Test Smart full patient journey without live messages
+        run: python manage.py test core.tests.test_smart_journey_e2e --verbosity 2
