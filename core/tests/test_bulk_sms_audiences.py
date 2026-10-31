@@ -216,6 +216,16 @@ class BulkSmsAudienceTests(TestCase):
             'preset':'previous_month','event':'visit',
         })['count'],0)
 
+    def test_campaign_statuses_are_readable_in_persian(self):
+        page=self.client.get(reverse('bulk_sms_groups'))
+        self.assertEqual(page.status_code,200)
+        for label in ('پیش‌نویس','در صف ارسال','متوقف موقت','پایان‌یافته','لغوشده'):
+            self.assertContains(page,label)
+        self.assertContains(page,'bulk-campaign-status')
+        self.assertContains(page,"statusLabels[item.status]||'نامشخص'")
+        # The status is presented using textContent, never HTML injection.
+        self.assertContains(page,'statusBadge.textContent=')
+
     def test_ui_has_compound_and_zero_time_choices(self):
         response=self.client.get(reverse('bulk_sms_groups'))
         self.assertContains(response,'id="bulk-combine"')
