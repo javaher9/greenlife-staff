@@ -132,6 +132,11 @@
     text-align:right;overflow-wrap:anywhere;color:#d6e6e0
   }
   .bulk-campaign-table th{color:#aad2bf;font-weight:900}
+  .bulk-campaign-status{display:inline-flex;align-items:center;justify-content:center;min-height:27px;padding:3px 9px;border:1px solid #4a6870;border-radius:999px;background:#213b44;color:#eef6f6;font-size:11px;font-weight:800;white-space:nowrap}
+  .bulk-campaign-status.status-queued{background:#1d443d;border-color:#4c9d84;color:#d4f9e9}
+  .bulk-campaign-status.status-paused{background:#473a26;border-color:#a88a4b;color:#fff1cf}
+  .bulk-campaign-status.status-completed{background:#243d58;border-color:#598ebd;color:#dff0ff}
+  .bulk-campaign-status.status-cancelled{background:#472d39;border-color:#a76c84;color:#ffe5ee}
   .bulk-campaign-table .bulk-small{
     padding:5px 9px;margin:2px;border-radius:8px;font-size:10px;
     background:#24493c;color:#e5f8ee;width:auto
@@ -534,9 +539,20 @@
     const data=await r.json();if(!r.ok||!data.ok)throw Error('خواندن وضعیت کمپین‌ها انجام نشد');
     campaignsBody.replaceChildren();
     if(!data.campaigns.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=7;td.textContent='هنوز کمپین تأییدشده یا پیش‌نویس وجود ندارد.';tr.append(td);campaignsBody.append(tr);return;}
+    const statusLabels={
+      draft:'پیش‌نویس',queued:'در صف ارسال',paused:'متوقف موقت',
+      completed:'پایان‌یافته',cancelled:'لغوشده'
+    };
     for(const item of data.campaigns){
       const tr=document.createElement('tr');
-      [item.id,item.status,item.total,item.accepted,item.failed,item.skipped].forEach(value=>{
+      const numberCell=document.createElement('td');
+      numberCell.textContent=String(item.id);tr.append(numberCell);
+      const statusCell=document.createElement('td');
+      const statusBadge=document.createElement('span');
+      statusBadge.className='bulk-campaign-status'+(Object.prototype.hasOwnProperty.call(statusLabels,item.status)?' status-'+item.status:'');
+      statusBadge.textContent=statusLabels[item.status]||'نامشخص';
+      statusCell.append(statusBadge);tr.append(statusCell);
+      [item.total,item.accepted,item.failed,item.skipped].forEach(value=>{
         const td=document.createElement('td');td.textContent=String(value);tr.append(td);
       });
       const actions=document.createElement('td');
