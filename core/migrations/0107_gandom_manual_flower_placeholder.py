@@ -20,7 +20,6 @@ def ensure_gandom(apps, schema_editor):
     if User.objects.filter(username=username).exists():
         return
     user=User(username=username,first_name='گل',last_name='گندم',is_active=True)
-    user.set_unusable_password()
     user.save()
     EmployeeProfile.objects.create(user=user,role='call_center',is_active=True,job_title='گل گندم')
 
