@@ -414,7 +414,7 @@ jobs:
       - name: Django system check
         run: python manage.py check
       - name: role-regressions regression tests
-        run: python manage.py test core.tests.test_consultant_mobile_style core.tests.test_shared_chat_mobile_light core.tests.test_quality_command_center core.tests.test_lead_command_live core.tests.test_bulk_sms_audiences core.tests.test_bulk_sms_dispatch --verbosity 2
+        run: python manage.py test core.tests.test_consultant_mobile_style core.tests.test_shared_chat_mobile_light core.tests.test_notifications_readability core.tests.test_quality_command_center core.tests.test_lead_command_live core.tests.test_bulk_sms_audiences core.tests.test_bulk_sms_dispatch --verbosity 2
   sales-targets:
     runs-on: ubuntu-latest
     timeout-minutes: 18
