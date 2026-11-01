@@ -1,0 +1,44 @@
+{% extends 'core/base.html' %}{% block content %}
+<style>
+.gl-network-month{direction:rtl;max-width:1250px;margin:16px auto;padding:18px;color:#ecfdf5}
+.gl-network-month .panel{background:linear-gradient(145deg,#112a29,#10201f);border:1px solid #21574a;border-radius:17px;padding:18px;margin-bottom:14px}
+.gl-network-month h1{font-size:24px;margin:0 0 9px}.gl-network-month p{color:#a5c8c0;margin:5px 0 14px}
+.gl-network-month .filters{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+.gl-network-month label{display:grid;gap:5px;font-size:13px}.gl-network-month select,.gl-network-month button{padding:11px 15px;background:#1c3b37;color:#fff;border:1px solid #387265;border-radius:10px;font:inherit}
+.gl-network-month button{background:#087965;cursor:pointer}.gl-network-month .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.gl-network-month .metric{padding:16px;border-radius:13px;background:#15332e;border:1px solid #2a6458}.gl-network-month .metric strong{display:block;font-size:28px;color:#d8fff2;margin-top:5px}
+.gl-network-month table{width:100%;border-collapse:collapse;text-align:right}.gl-network-month th,.gl-network-month td{padding:13px 11px;border-bottom:1px solid #28564e}
+.gl-network-month th{color:#9de3d0;font-size:13px}.gl-network-month tbody tr:hover{background:#22423d}.gl-network-month .total{font-weight:800;color:#92e8cb}
+@media(max-width:600px){.gl-network-month{padding:9px}.gl-network-month .metric{padding:10px}.gl-network-month .metric strong{font-size:21px}.gl-network-month th,.gl-network-month td{padding:10px 6px;font-size:12px}}
+</style>
+<section class="gl-network-month">
+  <div class="panel">
+    <h1>عملکرد ماهانه شبکه فروش پرسنل</h1>
+    <p>همه پرسنل در یک نگاه؛ لیدهای ثبت‌شده و اعضای جدید شبکه در ماه شمسی انتخاب‌شده. زیرمجموعه‌های دو سطحی به پرسنل صاحب شبکه منتسب می‌شوند.</p>
+    <form method="get" class="filters">
+      <label>سال شمسی<select name="year">{% for y in years %}<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>{% endfor %}</select></label>
+      <label>ماه شمسی<select name="month">{% for number,name in months %}<option value="{{ number }}" {% if number == month %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></label>
+      <button type="submit">نمایش گزارش</button>
+    </form>
+  </div>
+  <div class="stats">
+    <div class="metric">مجموع لیدها<strong>{{ total_leads }}</strong></div>
+    <div class="metric">اعضای جدید<strong>{{ total_members }}</strong></div>
+    <div class="metric">جمع کل<strong>{{ total_all }}</strong></div>
+  </div>
+  <div class="panel" style="overflow-x:auto">
+    <table>
+      <thead><tr><th>ردیف</th><th>پرسنل</th><th>مجموعه</th><th>لید</th><th>عضو</th><th>جمع</th></tr></thead>
+      <tbody>
+      {% for item in rows %}<tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ item.person.user.get_full_name|default:item.person.user.username }}</td>
+        <td>{% if item.person.branch %}{{ item.person.branch.name }}{% else %}—{% endif %}</td>
+        <td>{{ item.leads }}</td><td>{{ item.members }}</td><td class="total">{{ item.total }}</td>
+      </tr>{% empty %}<tr><td colspan="6">پرسنلی یافت نشد.</td></tr>{% endfor %}
+      </tbody>
+      <tfoot><tr class="total"><td colspan="3">جمع</td><td>{{ total_leads }}</td><td>{{ total_members }}</td><td>{{ total_all }}</td></tr></tfoot>
+    </table>
+  </div>
+</section>
+{% endblock %}
