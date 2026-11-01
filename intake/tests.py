@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import time, timedelta
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
@@ -24,12 +24,15 @@ class IntakeLinkTests(TestCase):
                 'is_active': True,
             },
         )
+        appointment_date = timezone.localdate()
+        while appointment_date.weekday() == 4:
+            appointment_date += timedelta(days=1)
         self.appointment = VisitAppointment.objects.create(
             branch=self.branch,
             full_name='بیمار تست',
             phone='09120000000',
             service='آنالیز',
-            appointment_date=timezone.localdate(),
+            appointment_date=appointment_date,
             appointment_time=time(10, 0),
             status='arrived',
             source='receptionist',
@@ -51,4 +54,16 @@ class IntakeLinkTests(TestCase):
             message,
         )
         self.assertNotIn('app.greenlifeclinics.com', message)
+
+    def test_schedule_send_button_requests_resend(self):
+        response = self.client.get(
+            reverse('appointment_schedule'),
+            {'date': self.appointment.appointment_date.isoformat()},
+        )
+
+        self.assertContains(
+            response,
+            f'action="{reverse("intake_send_link", args=[self.appointment.pk])}"',
+        )
+        self.assertContains(response, 'name="resend" value="1"')
 
