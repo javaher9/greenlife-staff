@@ -369,6 +369,10 @@ def _next_no_burst_operator(operators, day):
     operators=list(operators)
     if not operators:
         return None
+    # A lone remotely present reduced-weight operator must not absorb all
+    # live leads. Keep them unassigned until the rest of the call center joins.
+    if len(operators) == 1 and _identity_matches(operators[0], REDUCED_OPERATOR_WEIGHT_RULES[0][0]):
+        return None
     stats=_assignment_stats(operators,day)
     for operator in _rotation_order(operators,day):
         if _reduced_operator_can_receive(operator,operators,stats):
