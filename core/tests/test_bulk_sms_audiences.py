@@ -88,6 +88,16 @@ class BulkSmsAudienceTests(TestCase):
         self.assertEqual(response.json()['count'],1)
         self.assertEqual(SmsMessageLog.objects.count(),0)
 
+    def test_tablet_layout_stacks_campaign_preview_without_overflow(self):
+        page=self.client.get(reverse('bulk_sms_groups'))
+        self.assertEqual(page.status_code,200)
+        # Verify the final override stacks the preview at tablet widths.
+        self.assertContains(page,'@media(min-width:1051px) and (max-width:1450px){')
+        self.assertContains(
+            page,
+            '@media(max-width:1050px){\n  .bulk-sms-page .bulk-sms-layout{grid-template-columns:minmax(0,1fr)}',
+        )
+
     def test_page_has_menu_and_grouping(self):
         response=self.client.get(reverse('bulk_sms_groups'))
         self.assertEqual(response.status_code,200)
