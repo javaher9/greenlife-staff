@@ -347,3 +347,27 @@ class QualityCommandCenterTests(TestCase):
         state, label, _, _ = _physical_state(self.device, [booked], set(), now)
         self.assertEqual(state, "busy")
         self.assertEqual(label, "جلسه ثبت‌شده")
+
+
+from pathlib import Path
+from django.template.loader import get_template
+from django.test import SimpleTestCase
+
+
+class QualityStaffChipReadabilityTests(SimpleTestCase):
+    """Guard the dense staff-chip typography without touching live attendance."""
+
+    def test_staff_status_text_is_not_eight_pixels(self):
+        html = Path(get_template("core/quality_command_center.html").origin.name).read_text(encoding="utf-8")
+        css = html.split("/* Dense two-up staff status:", 1)[1].split("</style>", 1)[0]
+        for selector in (
+            "body.gl-page-quality_command_center .qc-commander .qc-staff-person small",
+            "body.gl-page-quality_command_center .qc-commander .qc-staff-presence .qc-status",
+            "body.gl-page-quality_command_center .qc-commander .qc-staff-presence small",
+        ):
+            rule = css.split(selector + "{", 1)[1].split("}", 1)[0]
+            self.assertIn("font-size:10px!important", rule, selector)
+            self.assertNotIn("font-size:8px", rule, selector)
+        self.assertIn("grid-template-columns:repeat(2,minmax(0,1fr))!important", css)
+        self.assertIn("@media(max-width:420px)", css)
+        self.assertIn("grid-template-columns:minmax(0,1fr)!important", css)
