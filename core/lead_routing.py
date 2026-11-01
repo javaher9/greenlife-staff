@@ -52,7 +52,7 @@ BLOCKED_OPERATOR_IDENTITIES = (
 )
 
 # All eligible rotation operators have exactly the same routing weight.
-REDUCED_OPERATOR_WEIGHT_RULES = ()
+REDUCED_OPERATOR_WEIGHT_RULES = ((('شیما عباسی', 'عباسی', 'shima abbasi', 'abbasi', 'لاله', 'laleh'), 0.5),)
 KHORSHIDI_POLICY_NOTICE = ''
 
 
@@ -147,6 +147,21 @@ def _operators_for_channel(operators, channel):
         ranked.append((rank,operator.id,operator))
     ranked.sort(key=lambda row:(row[0],row[1]))
     return [operator for _rank,_id,operator in ranked]
+
+
+def _morning_quota(operator, opening_total):
+    """Laleh receives 10% of the overnight opening queue; others 20%."""
+    base = opening_total // 5
+    if _identity_matches(operator, REDUCED_OPERATOR_WEIGHT_RULES[0][0]):
+        return opening_total // 10
+    return base
+
+
+def _settlement_target(operator, total, expected):
+    """Weighted total target for the 10:15 morning settlement."""
+    weights = [0.5 if _identity_matches(op, REDUCED_OPERATOR_WEIGHT_RULES[0][0]) else 1.0 for op in expected]
+    own = 0.5 if _identity_matches(operator, REDUCED_OPERATOR_WEIGHT_RULES[0][0]) else 1.0
+    return total * own / sum(weights)
 
 
 def _recent_operator_metrics(operator, now=None):
@@ -354,6 +369,10 @@ def _next_no_burst_operator(operators, day):
     operators=list(operators)
     if not operators:
         return None
+    # A lone remotely present reduced-weight operator must not absorb all
+    # live leads. Keep them unassigned until the rest of the call center joins.
+    if len(operators) == 1 and _identity_matches(operators[0], REDUCED_OPERATOR_WEIGHT_RULES[0][0]):
+        return None
     stats=_assignment_stats(operators,day)
     for operator in _rotation_order(operators,day):
         if _reduced_operator_can_receive(operator,operators,stats):
@@ -541,7 +560,6 @@ def release_pending_leads_if_ready(*, force=False, now=None):
             counts[key] = counts.get(key, 0) + 1
 
     if not friday and local_now < release_at:
-        quota = len(state.opening_lead_ids) // 5
         opening_ids = set(state.opening_lead_ids)
         queue = [lead for lead in domestic if lead.pk in opening_ids]
         arrivals = dict(Attendance.objects.filter(
@@ -550,6 +568,7 @@ def release_pending_leads_if_ready(*, force=False, now=None):
         for operator in sorted(present, key=lambda op: (arrivals[op.user_id], op.pk)):
             if operator.pk in state.early_operator_ids:
                 continue
+            quota = _morning_quota(operator, len(state.opening_lead_ids))
             for lead in queue[:quota]:
                 assign(lead, operator, morning=True)
             queue = queue[quota:]
@@ -561,7 +580,7 @@ def release_pending_leads_if_ready(*, force=False, now=None):
             for lead in domestic:
                 if lead.created_at > release_at:
                     continue
-                operator = min(expected, key=lambda op: counts.get(str(op.pk), 0))
+                operator = min(expected, key=lambda op: (counts.get(str(op.pk), 0) / (0.5 if _identity_matches(op, REDUCED_OPERATOR_WEIGHT_RULES[0][0]) else 1.0), op.pk))
                 assign(lead, operator, morning=True)
             state.settled_at = local_now
         # Friday's entire queue, and post-cutoff leads on other days, follow
@@ -600,8 +619,9 @@ def operator_routing_summary(operator, now=None):
     if local_now >= _release_time(local_now):
         return 'تقسیم نهایی لیدهای صبح هنوز انجام نشده است؛ زمان مقرر 10:15.'
     if not state:
-        return 'سهم صبح: 20% از صف ابتدای کار پس از ثبت ورود؛ تسویه نهایی ساعت 10:15.'
-    quota = len(state.opening_lead_ids) // 5
+        share = '10%' if _identity_matches(operator, REDUCED_OPERATOR_WEIGHT_RULES[0][0]) else '20%'
+        return f'سهم صبح: {share} از صف ابتدای کار پس از ثبت ورود؛ تسویه نهایی ساعت 10:15.'
+    quota = _morning_quota(operator, len(state.opening_lead_ids))
     received = state.allocation_counts.get(str(operator.pk), 0)
     return f'سهم صبح شما: {quota} لید؛ دریافت‌شده: {received}؛ تسویه نهایی ساعت 10:15.'
 

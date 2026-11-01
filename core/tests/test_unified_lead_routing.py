@@ -320,7 +320,7 @@ class UnifiedLeadRoutingTests(TestCase):
         self.assertEqual(operator_policy_notice(khorshidi),'')
         self.assertEqual(operator_policy_notice(self.operators[0]),'')
 
-    def test_website_lead_routes_to_laleh_if_only_kamelya_and_laleh_present(self):
+    def test_website_lead_waits_if_only_kamelya_and_laleh_present(self):
         self._keep_only(3,5)
         self._check_in(3,5)
         lead=ReferralLead.objects.create(
@@ -333,9 +333,9 @@ class UnifiedLeadRoutingTests(TestCase):
             notes='[channel:website]',
         )
 
-        self.assertEqual(assign_external_lead(lead,'website').id,self.operators[5].id)
+        self.assertIsNone(assign_external_lead(lead,'website'))
         lead.refresh_from_db()
-        self.assertEqual(lead.assigned_to_id,self.operators[5].id)
+        self.assertIsNone(lead.assigned_to_id)
 
     def test_pending_website_leads_skip_kamelya_and_allow_laleh(self):
         self._check_in(*range(6))

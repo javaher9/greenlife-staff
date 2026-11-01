@@ -63,6 +63,24 @@ class MorningLeadDistributionTests(TestCase):
         counts = Counter(ReferralLead.objects.values_list('assigned_to_id', flat=True))
         return [counts[operator.pk] for operator in self.operators]
 
+    def test_remote_laleh_gets_half_morning_share(self):
+        self.leads(20)
+        self.arrive(4)
+        self.assertEqual(release_pending_leads_if_ready(), 2)
+        self.assertEqual(self.shares(), [0, 0, 0, 0, 2])
+        self.arrive(0)
+        self.assertEqual(release_pending_leads_if_ready(), 4)
+        self.assertEqual(self.shares(), [4, 0, 0, 0, 2])
+
+    def test_only_laleh_present_cannot_absorb_all_new_leads(self):
+        self.clock.return_value = self.at(11)
+        self.arrive(4)
+        # Keep other operators expected for the standard morning settlement.
+        fresh = self.leads(1, overnight=False)[0]
+        release_pending_leads_if_ready()
+        fresh.refresh_from_db()
+        self.assertIsNone(fresh.assigned_to_id)
+
     def test_each_arrival_receives_fixed_twenty_percent_only_once(self):
         self.leads(20)
         self.arrive(0)
