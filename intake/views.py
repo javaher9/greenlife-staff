@@ -64,7 +64,10 @@ def send_link(request, pk):
         appointment_date = appointment.appointment_date
     # SMS dispatch occurs only AFTER database commit; a failure does not revert reception.
     public_url = settings.PUBLIC_BASE_URL + reverse('intake_public_form', args=[token])
-    text = f'{name} عزیز، به گرین‌لایف خوش آمدید. لطفاً فرم اطلاعات اولیه را تکمیل کنید: {public_url}'
+    # Keep the intake invitation within one GSM-7 SMS segment. Long Persian
+    # messages containing a URL can be split into multiple segments or filtered
+    # by the carrier before reaching the handset.
+    text = f'GreenLife form: {public_url}'
     try:
         send_sms(phone, text, purpose='intake_link', created_by=request.user, appointment=appointment)
     except SmsGatewayError:

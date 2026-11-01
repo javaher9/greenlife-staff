@@ -49,11 +49,13 @@ class IntakeLinkTests(TestCase):
 
         self.assertRedirects(response, reverse('appointment_schedule'))
         message = mocked_send_sms.call_args.args[1]
+        self.assertTrue(message.startswith('GreenLife form: https://'))
         self.assertIn(
             'https://staff.greenlifeclinics.com/intake/form/',
             message,
         )
         self.assertNotIn('app.greenlifeclinics.com', message)
+        self.assertLessEqual(len(message), 160)
 
     def test_schedule_send_button_requests_resend(self):
         response = self.client.get(
