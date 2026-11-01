@@ -5,6 +5,7 @@ def _normalize(value):
 # Display aliases used only in call-center/lead contexts. Real staff names stay
 # untouched for personnel, credentials, attendance and administrative records.
 FLOWER_NAME_RULES = (
+    (('flower-gandom','گندم','gandom','gandam'), 'گندم'),
     (('محمد صالحی', 'صالحی', 'salehi'), 'خورشیدی'),
     (('فاطمه بابایی', 'بابایی', 'babaei', 'babayi', 'babaee'), 'نرگس'),
     (('حدیث توانا', 'توانا', 'tavana'), 'بنفشه'),
