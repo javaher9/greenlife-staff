@@ -75,6 +75,18 @@ class UnifiedLeadRoutingTests(TestCase):
         naive = datetime.combine(timezone.localdate(), time(hour, minute))
         return timezone.make_aware(naive, timezone.get_current_timezone())
 
+    def test_evening_leads_wait_after_eight_even_with_laleh_only(self):
+        self._keep_only(5)
+        self._check_in(5)
+        for hour, minute in ((20, 0), (20, 30), (23, 45)):
+            at=self._at(hour, minute)
+            with patch('django.utils.timezone.now', return_value=at):
+                lead=self._new_lead(hour * 100 + minute)
+                self.assertIsNone(assign_referral_lead(lead))
+                self.assertEqual(release_pending_leads_if_ready(now=at), 0)
+                lead.refresh_from_db()
+                self.assertIsNone(lead.assigned_to_id)
+
     def test_overnight_lead_waits_even_if_only_one_operator_remains_checked_in(self):
         self._keep_only(5)  # Laleh is remotely present after midnight.
         night=timezone.make_aware(datetime(2026, 10, 28, 1, 0),timezone.get_current_timezone())
