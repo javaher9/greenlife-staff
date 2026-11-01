@@ -365,7 +365,7 @@ class QualityStaffChipReadabilityTests(SimpleTestCase):
             "body.gl-page-quality_command_center .qc-commander .qc-staff-presence .qc-status",
             "body.gl-page-quality_command_center .qc-commander .qc-staff-presence small",
         ):
-            rule = css.split(selector + "{", 1)[1].split("}", 1)[0]
+            rule = css.rsplit(selector + "{", 1)[1].split("}", 1)[0]
             self.assertIn("font-size:10px!important", rule, selector)
             self.assertNotIn("font-size:8px", rule, selector)
         self.assertIn("grid-template-columns:repeat(2,minmax(0,1fr))!important", css)
