@@ -24,6 +24,22 @@ from .country_workspace import scoped_queryset
 ALLOWED_ROLES = ('admin', 'manager', 'internal_manager')
 OPEN_STATUSES = ('new', 'contacted', 'appointment')
 
+def _management_flower_candidates():
+    """Include Gandom in manual management choices, not automatic lead rotation."""
+    gandom=(Q(user__first_name__icontains='گندم') |
+            Q(user__last_name__icontains='گندم') |
+            Q(user__username__icontains='gandom') |
+            Q(user__username__icontains='gandam') |
+            Q(job_title__icontains='گندم'))
+    return EmployeeProfile.objects.filter(is_active=True,user__is_active=True).filter(
+        Q(role='call_center') | gandom
+    )
+
+
+def _management_flower_target(pk):
+    return _management_flower_candidates().filter(pk=pk).select_related('user').first()
+
+
 
 
 def _lead_hub_queryset(request, queryset):
@@ -416,9 +432,7 @@ def lead_attention_bulk_action(request):
     if not operator_id.isdigit():
         messages.warning(request, 'مسئول پیگیری را انتخاب کنید.')
         return redirect('lead_management_dashboard')
-    operator = EmployeeProfile.objects.filter(
-        pk=int(operator_id), role='call_center', is_active=True, user__is_active=True,
-    ).first()
+    operator = _management_flower_target(int(operator_id))
     if not operator:
         messages.error(request, 'اپراتور انتخاب‌شده فعال نیست.')
         return redirect('lead_management_dashboard')
@@ -458,9 +472,7 @@ def lead_reassign_operator(request, pk):
     if not operator_id.isdigit():
         return respond_error('گل جدید را انتخاب کنید.')
 
-    operator=EmployeeProfile.objects.filter(
-        pk=int(operator_id),role='call_center',is_active=True,user__is_active=True,
-    ).select_related('user').first()
+    operator=_management_flower_target(int(operator_id))
     if not operator:
         return respond_error('گل انتخاب‌شده فعال نیست.',404)
 
@@ -625,7 +637,7 @@ def lead_management_dashboard(request):
         row['estimated_bonus']=row['month']*registrar_rate
 
     operator_rows=[]
-    operators=EmployeeProfile.objects.filter(role='call_center',is_active=True,user__is_active=True).select_related('user')
+    operators=_management_flower_candidates().select_related('user')
     for op in operators:
         qs=leads.filter(assigned_to=op); op_total=qs.count(); op_success_ids=_successful_lead_ids(qs); op_won=qs.filter(pk__in=op_success_ids).count(); op_contacted=qs.filter(status__in=('contacted','appointment','visited','won','lost')).count()
         operator_rows.append({'id':op.id,'name':call_center_display_name(op),'total':op_total,'new':qs.filter(status='new').count(),'contacted':op_contacted,'open':qs.filter(status__in=OPEN_STATUSES).count(),'overdue':qs.filter(status__in=OPEN_STATUSES,next_follow_up__lt=today).count(),'appointments':qs.filter(status__in=('appointment','visited','won')).count(),'won':op_won,'contact_rate':round(op_contacted*100/op_total,1) if op_total else 0,'conversion':round(op_won*100/op_total,1) if op_total else 0})
