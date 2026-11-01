@@ -63,7 +63,7 @@ def send_link(request, pk):
         name = appointment.full_name
         appointment_date = appointment.appointment_date
     # SMS dispatch occurs only AFTER database commit; a failure does not revert reception.
-    public_url = 'https://app.greenlifeclinics.com' + reverse('intake_public_form', args=[token])
+    public_url = settings.PUBLIC_BASE_URL + reverse('intake_public_form', args=[token])
     text = f'{name} عزیز، به گرین‌لایف خوش آمدید. لطفاً فرم اطلاعات اولیه را تکمیل کنید: {public_url}'
     try:
         send_sms(phone, text, purpose='intake_link', created_by=request.user, appointment=appointment)
@@ -127,3 +127,4 @@ def intake_form(request, token):
     if invitation.completed_at:
         return render(request, 'intake/finished.html')
     return render(request, 'intake/form.html', {'invitation': invitation, 'conditions': LIMITED_CHOICES['conditions'], 'safety_flags': LIMITED_CHOICES['safety_flags']})
+
