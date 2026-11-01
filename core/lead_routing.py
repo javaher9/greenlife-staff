@@ -25,8 +25,9 @@ OPEN_ROUTING_STATUSES = ('new', 'contacted', 'appointment')
 # Friday retains the on-duty-only exception. Assigned leads never move.
 PENDING_MORNING_RELEASE_HOUR = 10
 PENDING_MORNING_RELEASE_MINUTE = 15
-# Stop Friday duty-day live routing at night; retain new leads for Saturday.
-FRIDAY_LIVE_ROUTING_END = time(21, 0)
+# No overnight automatic distribution on any day, even for remotely checked-in staff.
+# Queue leads from 20:00 until 08:00 for normal morning allocation.
+DAILY_LEAD_ROUTING_END = time(20, 0)
 # Attendance is not permission to receive overnight leads.
 DAILY_LEAD_ROUTING_START = time(8, 0)
 
@@ -488,7 +489,7 @@ def release_pending_leads_if_ready(*, force=False, now=None):
     friday = local_now.weekday() == 4
     if local_now.time() < DAILY_LEAD_ROUTING_START:
         return 0
-    if friday and local_now.time() >= FRIDAY_LIVE_ROUTING_END:
+    if local_now.time() >= DAILY_LEAD_ROUTING_END:
         return 0
     eligible_ids = eligible_operator_user_ids(day, now=local_now)
     expected_ids = expected_operator_user_ids(day)
@@ -613,10 +614,10 @@ def _live_assignment_allowed(now=None):
     is the only path that may release a morning lead.
     """
     local_now=timezone.localtime(now or timezone.now())
-    if local_now.time() < DAILY_LEAD_ROUTING_START:
+    if not (DAILY_LEAD_ROUTING_START <= local_now.time() < DAILY_LEAD_ROUTING_END):
         return False
     if local_now.weekday()==4:
-        return local_now.time() < FRIDAY_LIVE_ROUTING_END
+        return True
     release_at=time(PENDING_MORNING_RELEASE_HOUR,PENDING_MORNING_RELEASE_MINUTE)
     return local_now.time() >= release_at
 
