@@ -25,6 +25,24 @@ LIMITED_CHOICES = {
     'conditions': ['دیابت', 'کم‌کاری تیروئید', 'پرکاری تیروئید', 'فشار خون', 'بیماری قلبی', 'تشنج', 'بیماری کبد یا کلیه', 'جراحی مهم', 'سایر'],
     'safety_flags': ['بارداری', 'شیردهی', 'ضربان‌ساز قلب', 'سابقه واکنش شدید به درمان', 'سایر'],
 }
+WEIGHT_TERMS = ('لاغری', 'کاهش وزن', 'کاهش سایز', 'تناسب اندام', 'چربی سوز', 'چربی‌سوز', 'فرم دهی بدن', 'فرم‌دهی بدن')
+WEIGHT_FIELDS = {
+    'goal': ('کاهش وزن', 'کاهش سایز', 'کاهش وزن و سایز'),
+    'body_area': ('شکم و پهلو', 'ران و باسن', 'بازو', 'تمام بدن', 'سایر'),
+    'appetite': ('کم', 'معمولی', 'زیاد'),
+    'eating_habits': ('ریزه‌خواری', 'شیرینی و تنقلات', 'پرخوری', 'هیچ‌کدام'),
+    'activity': ('کم', 'متوسط', 'زیاد'),
+    'sleep': ('کمتر از ۶ ساعت', '۶ تا ۸ ساعت', 'بیشتر از ۸ ساعت', 'نامنظم'),
+    'previous_treatments': ('خیر', 'رژیم غذایی', 'دارو', 'دستگاه لاغری', 'جراحی', 'چند روش'),
+    'motivation': ('سلامتی', 'تناسب اندام و زیبایی', 'افزایش انرژی و تحرک', 'سایر'),
+}
+
+def _weight_appointment(appointment):
+    return any(term in (appointment.service or '') for term in WEIGHT_TERMS)
+
+def _intake_template(invitation):
+    return 'intake/weight_form.html' if _weight_appointment(invitation.appointment) else 'intake/form.html'
+
 def _digest(token):
     return hashlib.sha256(token.encode('utf-8')).hexdigest()
 
@@ -95,14 +113,34 @@ def intake_form(request, token):
     if request.method == 'POST':
         if invitation.completed_at:
             return render(request, 'intake/finished.html')
-        reasons = request.POST.getlist('reasons')
+        is_weight = _weight_appointment(invitation.appointment)
+        weight_answers = {}
+        if is_weight:
+            for field, allowed in WEIGHT_FIELDS.items():
+                value = request.POST.get(field, '').strip()
+                if value not in allowed:
+                    return render(request, _intake_template(invitation),
+                        {'error': 'لطفاً تمام پرسش‌های کاهش وزن را پاسخ دهید.', 'invitation': invitation,
+                         'conditions': LIMITED_CHOICES['conditions'], 'safety_flags': LIMITED_CHOICES['safety_flags']})
+                weight_answers[field] = value
+            try:
+                current_weight = float(request.POST.get('current_weight', ''))
+                target_weight = float(request.POST.get('target_weight', ''))
+            except (ValueError, TypeError):
+                current_weight = target_weight = 0
+            if not (20 <= current_weight <= 350 and 20 <= target_weight <= 350):
+                return render(request, _intake_template(invitation),
+                    {'error': 'وزن فعلی و وزن هدف باید معتبر باشند.', 'invitation': invitation,
+                     'conditions': LIMITED_CHOICES['conditions'], 'safety_flags': LIMITED_CHOICES['safety_flags']})
+            weight_answers.update({'current_weight': current_weight, 'target_weight': target_weight, 'form_version': 'weight-loss-v2'})
+        reasons = [weight_answers['goal']] if is_weight else request.POST.getlist('reasons')
         conditions = request.POST.getlist('conditions')
         flags = request.POST.getlist('safety_flags')
         medications = request.POST.get('medications', '').strip()[:1000]
         allergies = request.POST.get('allergies', '').strip()[:1000]
         comments = request.POST.get('comments', '').strip()[:1000]
         if not reasons or request.POST.get('consent') != 'on' or request.POST.get('screening_confirmed') != 'on':
-            return render(request, 'intake/form.html', {'error': 'علت مراجعه، تأیید بررسی سوابق بیماری و آگاهی از ثبت اطلاعات الزامی است.', 'invitation': invitation, 'conditions': LIMITED_CHOICES['conditions'], 'safety_flags': LIMITED_CHOICES['safety_flags']})
+            return render(request, _intake_template(invitation), {'error': 'علت مراجعه، تأیید بررسی سوابق بیماری و آگاهی از ثبت اطلاعات الزامی است.', 'invitation': invitation, 'conditions': LIMITED_CHOICES['conditions'], 'safety_flags': LIMITED_CHOICES['safety_flags']})
         if any(len(x) > 100 for x in reasons) or any(x not in LIMITED_CHOICES['conditions'] for x in conditions) or any(x not in LIMITED_CHOICES['safety_flags'] for x in flags):
             raise PermissionDenied('مقادیر فرم نامعتبر است.')
         with transaction.atomic():
@@ -113,6 +151,7 @@ def intake_form(request, token):
                 'reasons': reasons, 'conditions': conditions, 'safety_flags': flags,
                 'medications': medications, 'allergies': allergies, 'comments': comments,
                 'required_screening_complete': True,
+                **weight_answers,
             }
             locked.consent_version = CONSENT_VERSION
             locked.consent_at = timezone.now()
@@ -130,5 +169,5 @@ def intake_form(request, token):
         IntakeInvitation.objects.filter(pk=invitation.pk, started_at__isnull=True).update(started_at=now)
     if invitation.completed_at:
         return render(request, 'intake/finished.html')
-    return render(request, 'intake/form.html', {'invitation': invitation, 'conditions': LIMITED_CHOICES['conditions'], 'safety_flags': LIMITED_CHOICES['safety_flags']})
+    return render(request, _intake_template(invitation), {'invitation': invitation, 'conditions': LIMITED_CHOICES['conditions'], 'safety_flags': LIMITED_CHOICES['safety_flags']})
 
