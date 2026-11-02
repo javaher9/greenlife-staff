@@ -39,7 +39,8 @@ class WeightLossIntakeTests(TestCase):
         }
         response=self.client.post(self.url,data,secure=True,
             HTTP_HOST='app.greenlifeclinics.com',
-            HTTP_REFERER='https://app.greenlifeclinics.com'+self.url)
+            HTTP_REFERER='https://app.greenlifeclinics.com'+self.url,
+            HTTP_X_CSRFTOKEN=self.client.cookies['csrftoken'].value)
         self.assertEqual(response.status_code,200)
         self.invitation.refresh_from_db()
         self.assertIsNotNone(self.invitation.completed_at)
@@ -55,7 +56,8 @@ class WeightLossIntakeTests(TestCase):
               'screening_confirmed':'on','consent':'on'}
         response=self.client.post(self.url,data,secure=True,
             HTTP_HOST='app.greenlifeclinics.com',
-            HTTP_REFERER='https://app.greenlifeclinics.com'+self.url)
+            HTTP_REFERER='https://app.greenlifeclinics.com'+self.url,
+            HTTP_X_CSRFTOKEN=self.client.cookies['csrftoken'].value)
         self.assertEqual(response.status_code,200)
         self.invitation.refresh_from_db()
         self.assertIsNone(self.invitation.completed_at)
