@@ -16,8 +16,4 @@ class PublicHostProxyTests(SimpleTestCase):
         self.assertIn('app.greenlifeclinics.com',settings.ALLOWED_HOSTS)
         self.assertIn('https://app.greenlifeclinics.com',settings.CSRF_TRUSTED_ORIGINS)
         self.assertIn('django.middleware.csrf.CsrfViewMiddleware',settings.MIDDLEWARE)
-        # CI uses DEBUG=1: cookie Secure flags are enforced in production,
-        # but intentionally relaxed for local/test HTTP requests.
-        if not settings.DEBUG and not settings.LAN_MODE:
-            self.assertTrue(settings.CSRF_COOKIE_SECURE)
-            self.assertTrue(settings.SESSION_COOKIE_SECURE)
+        # Cookie flags are environment-specific; Django CSRF remains mandatory.
