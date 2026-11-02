@@ -13,7 +13,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
-from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 
 from core.models import AuditLog, EmployeeProfile, StaffNotification, VisitAppointment
 from core.sms import SmsGatewayError, send_sms
@@ -83,6 +83,7 @@ def send_link(request, pk):
 
 
 @never_cache
+@ensure_csrf_cookie
 @csrf_protect
 def intake_form(request, token):
     if len(token) < 32 or len(token) > 128:
