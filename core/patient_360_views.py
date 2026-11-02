@@ -498,6 +498,7 @@ def patient_360(request, pk):
     medical_intake_summary = compact_medical_summary(latest_intake.answers if latest_intake else {}) if profile.role in {'doctor','admin','internal_manager'} else None
     context={
         'medical_intake_summary':medical_intake_summary,
+        'complete_weight_intake': latest_intake.answers if latest_intake and latest_intake.answers.get('form_version') == 'weight-loss-v2' and profile.role in {'doctor','admin','internal_manager'} else None,
         'patient':patient,
         'can_view_full_phone':_can_view_full_phone(request,profile),
         'patient_phone_display':patient.phone if _can_view_full_phone(request,profile) else _masked_phone(patient.phone),
