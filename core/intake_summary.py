@@ -47,6 +47,18 @@ def compact_medical_summary(answers):
         "حساسیت‌ها": _items(answers.get("allergies")),
         "هشدارهای ایمنی": _items(answers.get("safety_flags")),
     }
+    # Weight-loss prompts support the physician's first-look overview.
+    if answers.get('form_version') == 'weight-loss-v2':
+        for label, key in (
+            ("هدف مراجعه", "goal"), ("ناحیه هدف", "body_area"),
+            ("وزن فعلی (کیلوگرم)", "current_weight"),
+            ("وزن هدف (کیلوگرم)", "target_weight"),
+            ("سابقه درمان لاغری", "previous_treatments"),
+            ("اشتها", "appetite"), ("عادت غذایی", "eating_habits"),
+            ("فعالیت", "activity"), ("خواب", "sleep"),
+        ):
+            if _meaningful(answers.get(key)):
+                sections[label] = _items(answers[key])
     return {
         "sections": {label: values for label, values in sections.items() if values},
         "screening_incomplete": answers.get("required_screening_complete") is not True,
