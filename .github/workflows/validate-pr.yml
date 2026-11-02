@@ -43,6 +43,8 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Django system check
         run: python manage.py check
+      - name: Public app hostname and CSRF proxy smoke tests
+        run: python manage.py test core.tests.test_public_host_proxy --verbosity 2
       - name: payments regression tests
         run: python manage.py test payments.tests --verbosity 2
   appointments:
