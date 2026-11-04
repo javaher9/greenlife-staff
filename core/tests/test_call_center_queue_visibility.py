@@ -66,6 +66,19 @@ class CallCenterQueueVisibilityTests(TestCase):
         self.assertEqual(response.status_code, 200)
         return response
 
+    def test_today_history_keeps_records_after_they_leave_work_queue(self):
+        current = self.fresh
+        ReferralLead.objects.filter(pk=current.pk).update(
+            status='contacted', contact_result='follow_up',
+            next_follow_up=self.now.date()+timedelta(days=5),
+        )
+        response=self.dashboard()
+        self.assertEqual(response.context['stats']['today'],1)
+        self.assertNotIn(current.pk,[row['lead'].pk for row in response.context['work_queue']])
+        self.assertIn(current.pk,[lead.pk for lead in response.context['today_assigned_history']])
+        self.assertContains(response,'id="ccxTodayHistory"')
+        self.assertContains(response,'همه لیدهای دریافتی امروز')
+
     def test_today_count_has_actual_row_after_more_than_250_old_leads(self):
         response = self.dashboard()
         self.assertEqual(response.context['stats']['today'], 1)
