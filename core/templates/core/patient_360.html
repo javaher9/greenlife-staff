@@ -5,13 +5,13 @@
 <strong>فرم کامل اطلاعات اولیه کاهش وزن</strong>
 <p>هدف مراجعه: {{ complete_weight_intake.goal }}</p><p>ناحیه موردنظر: {{ complete_weight_intake.body_area }}</p>
 <p>بیماری‌ها: {{ complete_weight_intake.conditions|join:'، '|default:'هیچ موردی انتخاب نشده' }}</p>
-<p>داروها: {{ complete_weight_intake.medications|default:'ثبت نشده' }}</p><p>حساسیت‌ها: {{ complete_weight_intake.allergies|default:'ثبت نشده' }}</p>
+<p>نوع جراحی: {{ complete_weight_intake.surgery_type|default:'ثبت نشده' }}</p><p>زمان جراحی: {{ complete_weight_intake.surgery_when|default:'ثبت نشده' }}</p><p>وضعیت بیماری‌ها: {{ complete_weight_intake.conditions_status|default:'ثبت نشده' }}</p><p>وضعیت ایمنی: {{ complete_weight_intake.safety_status|default:'ثبت نشده' }}</p><p>داروها: {{ complete_weight_intake.medications|default:'ثبت نشده' }}</p><p>حساسیت‌ها: {{ complete_weight_intake.allergies|default:'ثبت نشده' }}</p>
 <p>موارد ایمنی: {{ complete_weight_intake.safety_flags|join:'، '|default:'هیچ موردی انتخاب نشده' }}</p>
-<p>اشتها: {{ complete_weight_intake.appetite }}</p><p>عادت غذایی: {{ complete_weight_intake.eating_habits }}</p>
+<p>اشتها: {{ complete_weight_intake.appetite }}</p><p>عادت غذایی: {{ complete_weight_intake.eating_habits|join:'، ' }}</p>
 <p>فعالیت بدنی: {{ complete_weight_intake.activity }}</p><p>خواب: {{ complete_weight_intake.sleep }}</p>
 <p>سابقه روش‌های لاغری: {{ complete_weight_intake.previous_treatments }}</p>
 <p>وزن فعلی: {{ complete_weight_intake.current_weight }} کیلوگرم</p><p>وزن هدف: {{ complete_weight_intake.target_weight }} کیلوگرم</p>
-<p>انگیزه: {{ complete_weight_intake.motivation }}</p>
+<p>انگیزه: {{ complete_weight_intake.motivation }} {{ complete_weight_intake.motivation_other }}</p><p>سایر بیماری‌ها: {{ complete_weight_intake.conditions_other }}</p><p>سایر شرایط: {{ complete_weight_intake.safety_other }}</p><p>ناحیه دیگر: {{ complete_weight_intake.body_area_other }}</p>
 </section>
 {% endif %}
 {% if medical_intake_summary %}<section style="background:#fff;border:1px solid #dce8df;border-radius:16px;padding:16px;margin:12px 0;color:#244433"><strong>خلاصه پزشکی فرم اولیه</strong>{% for label, items in medical_intake_summary.sections.items %}<p><strong>{{ label }}:</strong> {{ items|join:'، ' }}</p>{% endfor %}{% if medical_intake_summary.screening_incomplete %}<p style="color:#b36b10">سابقه پزشکی فرم اولیه تکمیل نشده است.</p>{% endif %}</section>{% endif %}
