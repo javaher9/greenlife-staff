@@ -1313,6 +1313,19 @@ body.gl-page-call_center_dashboard .ccx .ccx-side-direct:focus{
     {% for group in groups %}<a href="?group={{ group.pk }}" class="{% if group_filter == group.pk|stringformat:'s' %}active{% endif %}">{{ group.name }} <b>{{ group.lead_count }}</b></a>{% endfor %}
   </nav>
 
+  <details class="ccx-card" id="ccxTodayHistory" style="padding:12px 15px;border:1px solid #dce8e5;border-radius:14px;background:#fff">
+    <summary style="cursor:pointer;font-weight:850;color:#263f51;font-size:13px">همه لیدهای دریافتی امروز — {{ today_assigned_count }} مورد <span style="font-size:11px;color:#667587;font-weight:500"> (شامل پیگیری‌شده، بسته‌شده و خارج از صف کار)</span></summary>
+    <div style="margin-top:10px;max-height:340px;overflow:auto;display:grid;gap:5px">
+      {% for item in today_assigned_history %}
+      <a href="{% url 'call_center_lead' item.pk %}" style="text-decoration:none;color:#253e50;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;background:#f5f8fa;border:1px solid #e3ebef;border-radius:9px">
+        <span><strong>{{ item.full_name }}</strong> <small style="color:#697b89">{{ item.phone }}</small></span>
+        <span style="color:#586d7f;font-size:11px">{{ item.get_status_display }} · {% if item.assigned_at %}{{ item.assigned_at|date:"H:i" }}{% else %}{{ item.created_at|date:"H:i" }}{% endif %}</span>
+      </a>
+      {% empty %}<p style="color:#6d7d8d">امروز هنوز لیدی برای شما ثبت نشده است.</p>{% endfor %}
+      {% if today_assigned_count > 250 %}<small style="color:#785b31">آخرین ۲۵۰ مورد نمایش داده شده است.</small>{% endif %}
+    </div>
+  </details>
+
   <div class="ccx-layout">
     <main class="ccx-main ccx-card">
       <header class="ccx-head"><div><h2>صف کار امروز</h2><p>از بالا به پایین؛ سیستم موارد عقب‌افتاده، پیگیری‌های امروز و لیدهای تازه را جلو می‌آورد.</p></div><button id="ccxNextLead" class="ccx-next-btn" type="button">بعدی ←</button></header>
