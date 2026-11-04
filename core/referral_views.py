@@ -1126,6 +1126,11 @@ def call_center_dashboard(request):
         Q(assigned_at__date=today) |
         Q(assigned_at__isnull=True,created_at__date=today)
     )
+    # Keep today's assigned records visible even after follow-up, closure or
+    # status changes remove them from the actionable work queue.
+    today_assigned_history=list(
+        today_leads.select_related('group').order_by('-assigned_at','-created_at','-id')[:250]
+    )
     month_leads=all_leads.filter(created_at__date__gte=month_start)
     month_total=month_leads.count()
     month_handled=month_leads.exclude(status='new').count()
@@ -1273,6 +1278,7 @@ def call_center_dashboard(request):
         'can_manage_groups':_can_manage_call_center_groups(request.user),
         'cockpit':cockpit,'work_queue':work_queue,'next_queue':next_queue,
         'queue_category_counts':category_counts,'upcoming_followups':upcoming_followups,
+        'today_assigned_history':today_assigned_history,'today_assigned_count':today_leads.count(),
     })
 
 
