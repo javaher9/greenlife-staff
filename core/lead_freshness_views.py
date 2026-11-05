@@ -32,7 +32,8 @@ def live_last_lead(request):
     qs = ReferralLead.objects.all()
     if branch_id:
         qs = qs.filter(assigned_to__branch_id=branch_id)
-    # Primary-key ordering avoids a full timestamp sort on every poll.\n    recent = qs.order_by("-pk").values("id", "created_at").first()
+    # Primary-key ordering avoids a full timestamp sort on every poll.
+    recent = qs.order_by("-pk").values("id", "created_at").first()
     now = timezone.now()
     active, started = _monitor_window(now)
     last = recent["created_at"] if recent else None
