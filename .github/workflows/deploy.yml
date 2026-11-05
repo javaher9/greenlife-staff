@@ -109,10 +109,26 @@ jobs:
 
           echo "Disk safety gate passed."
 
-      - name: Checkout approved main branch
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 2
+      # Actions/checkout downloads from codeload.github.com. The production
+      # runner intermittently cannot reach codeload and fails before any job
+      # steps run. Git fetch uses the standard GitHub endpoint instead.
+      - name: Checkout approved main branch (Git transport)
+        shell: bash
+        env:
+          CHECKOUT_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          cd "$GITHUB_WORKSPACE"
+          git init -q
+          repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
+          git remote remove origin >/dev/null 2>&1 || true
+          git remote add origin "$repo_url"
+          basic_auth="$(printf 'x-access-token:%s' "$CHECKOUT_TOKEN" | base64 | tr -d '\\n')"
+          GIT_TERMINAL_PROMPT=0 git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $basic_auth" fetch --no-tags --depth=2 origin "${GITHUB_SHA}"
+          git checkout --force --detach FETCH_HEAD
+          git clean -fdx -q
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          echo "Approved deployment SHA checked out."
 
       - name: Classify deployment change
         shell: bash
