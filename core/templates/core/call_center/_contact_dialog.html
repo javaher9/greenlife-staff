@@ -1,0 +1,12 @@
+<dialog class="lead-contact-dialog" id="leadContactDialog" aria-labelledby="leadContactTitle">
+  <form method="dialog" class="lead-contact-editor">
+    {% csrf_token %}
+    <header><h2 id="leadContactTitle">شماره‌های مراجع</h2><button type="button" data-contact-close aria-label="بستن">×</button></header>
+    <p>شمارهٔ اصلی برای تماس و واتساپ پیش‌فرض استفاده می‌شود.</p>
+    <div data-contact-fields></div>
+    <button type="button" data-contact-add>＋ شمارهٔ دیگر</button>
+    <p data-contact-message role="status" aria-live="polite"></p>
+    <details class="lead-contact-history"><summary>سابقهٔ ویرایش شماره‌ها</summary><div data-contact-history></div></details>
+    <footer><button type="button" data-contact-close>انصراف</button><button type="submit" data-contact-save>ذخیرهٔ شماره‌ها</button></footer>
+  </form>
+</dialog>

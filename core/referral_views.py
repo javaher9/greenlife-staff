@@ -1,3 +1,4 @@
+from .lead_contacts import create_with_contacts
 import csv
 import io
 import os
@@ -976,6 +977,7 @@ def call_center_dashboard(request):
             Q(status='appointment')
         )
         .select_related('country','assigned_to','group','referrer__user','created_by')
+        .prefetch_related('extra_phones')
         .order_by('assigned_at','created_at','id')
     )
 
@@ -1114,7 +1116,7 @@ def call_center_dashboard(request):
         if queue_filter!='all' and queue_filter not in item['categories'].split():
             continue
         haystack=' '.join(str(value or '') for value in (
-            lead.full_name,lead.phone,lead.alternate_phone,item['source_label'],
+            lead.full_name,' '.join(lead.contact_numbers),item['source_label'],
             lead.interested_service,lead.group.name if lead.group_id else '',
         )).casefold()
         if not search_key or search_key in haystack:
@@ -1641,7 +1643,7 @@ def call_center_lead_create(request):
         lead.assigned_at=timezone.now()
         lead.created_by=request.user
         lead.source='panel'
-        lead.save()
+        create_with_contacts(lead,form.cleaned_data.get('additional_phones',[]))
         messages.success(request,f'لید «{lead.full_name}» در گروه انتخابی ثبت شد و به خود شما اختصاص یافت.')
         return redirect(f"{reverse('call_center_dashboard')}?group={lead.group_id}")
     error=' '.join(message for messages_list in form.errors.values() for message in messages_list)
@@ -1668,7 +1670,7 @@ def call_center_direct_lead_create(request):
         direct_marker='[entry:direct]'
         lead.notes=f"{direct_marker}\n{lead.notes}".strip()
         try:
-            lead.save()
+            create_with_contacts(lead,form.cleaned_data.get('additional_phones',[]))
         except DuplicateLeadError as exc:
             existing=getattr(exc,'existing_lead',None)
             if existing:

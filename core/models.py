@@ -2,6 +2,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.db import connection, models, transaction
+from django.db.models import Q
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -307,6 +308,7 @@ class ReferralLead(models.Model):
     full_name=models.CharField(max_length=140)
     phone=models.CharField(max_length=30,db_index=True)
     alternate_phone=models.CharField(max_length=30,blank=True)
+    initial_description=models.TextField(null=True,blank=True,editable=False)
     interested_service=models.CharField(max_length=160,blank=True)
     status=models.CharField(max_length=20,choices=STATUS,default='new',db_index=True)
     contact_result=models.CharField(max_length=20,choices=CONTACT_RESULT,blank=True,db_index=True)
@@ -345,13 +347,13 @@ class ReferralLead(models.Model):
         )
         if exclude_pk:
             qs=qs.exclude(pk=exclude_pk)
-        direct=qs.filter(phone__in=variants).order_by('-created_at').first()
+        direct=qs.filter(Q(phone__in=variants)|Q(alternate_phone__in=variants)|Q(extra_phones__phone__in=variants)).order_by('-created_at').first()
         if direct:
             return direct
         # Fallback catches legacy formatting (Persian digits, spaces, dashes)
         # without requiring a data migration.
-        for lead in qs.only('id','phone','created_at').order_by('-created_at'):
-            if normalize_lead_phone(lead.phone)==canonical:
+        for lead in qs.only('id','phone','alternate_phone','created_at').order_by('-created_at'):
+            if canonical in (normalize_lead_phone(lead.phone),normalize_lead_phone(lead.alternate_phone)):
                 return lead
         return None
 
@@ -363,7 +365,32 @@ class ReferralLead(models.Model):
             if duplicate:
                 raise ValidationError({'phone':LEAD_DUPLICATE_MESSAGE})
 
+    @property
+    def contact_numbers(self):
+        values=[self.phone,self.alternate_phone]
+        if self.pk:
+            values.extend(item.phone for item in self.extra_phones.all())
+        return list(dict.fromkeys(normalize_lead_phone(value) for value in values if value))
+
+    @property
+    def registration_description(self):
+        from .lead_contacts import description_text
+        if self.initial_description is not None:
+            return self.initial_description
+        return description_text(self.interested_service,self.notes)
+
     def save(self,*args,**kwargs):
+        # Preserve registration text before follow-up forms replace notes.
+        if self.initial_description is None:
+            from .lead_contacts import description_text
+            original=None if self._state.adding else type(self).objects.filter(pk=self.pk).values('interested_service','notes','initial_description').first()
+            self.initial_description=(
+                original['initial_description'] if original and original['initial_description'] is not None
+                else description_text(original['interested_service'],original['notes']) if original
+                else description_text(self.interested_service,self.notes)
+            )
+            if kwargs.get('update_fields') is not None:
+                kwargs['update_fields']=set(kwargs['update_fields'])|{'initial_description'}
         self.phone=normalize_lead_phone(self.phone)
         if not (self._state.adding and self.phone):
             return super().save(*args,**kwargs)
@@ -388,6 +415,15 @@ class ReferralLead(models.Model):
         return super().save(*args,**kwargs)
 
     def __str__(self): return f'{self.full_name} - {self.phone}'
+
+
+class LeadContactPhone(models.Model):
+    lead=models.ForeignKey(ReferralLead,on_delete=models.CASCADE,related_name='extra_phones')
+    phone=models.CharField(max_length=30,db_index=True)
+
+    class Meta:
+        ordering=['id']
+        constraints=[models.UniqueConstraint(fields=['lead','phone'],name='unique_lead_contact_phone')]
 
 
 class VisitAppointment(models.Model):

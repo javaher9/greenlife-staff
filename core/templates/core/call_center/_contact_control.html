@@ -1,0 +1,8 @@
+<div class="lead-contact-control" data-contact-url="{% url 'call_center_lead_contacts' lead.pk %}">
+  <label class="lead-contact-choice"><span class="lead-sr-only">شماره برای تماس با {{ lead.full_name }}</span>
+    <select data-contact-select aria-label="شماره برای تماس با {{ lead.full_name }}">
+      {% for number in lead.contact_numbers %}<option value="{{ number }}">{{ number }}{% if forloop.first %} · اصلی{% endif %}</option>{% endfor %}
+    </select>
+  </label>
+  <button type="button" data-contact-edit aria-label="افزودن یا ویرایش شماره‌های {{ lead.full_name }}" title="افزودن یا ویرایش شماره‌ها">✎ <span>شماره‌ها</span></button>
+</div>

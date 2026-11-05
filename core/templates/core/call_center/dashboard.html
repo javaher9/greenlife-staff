@@ -1,4 +1,4 @@
-{% extends 'core/base.html' %}{% load jalali_tags staff_i18n %}{% block content %}
+{% extends 'core/base.html' %}{% load jalali_tags staff_i18n %}{% block content %}{% include "core/call_center/_contact_assets.html" %}
 {% if user.first_name == 'زهرا' and user.last_name == 'آزادی' %}<div style="direction:rtl;padding:10px 14px"><a href="{% url 'referral_member_create' %}" style="display:block;text-align:center;padding:14px;border-radius:12px;background:#147b59;color:white;font-size:17px;font-weight:bold;text-decoration:none">＋ افزودن عضو شبکه فروش</a></div>{% endif %}
 
 <style>
@@ -1354,13 +1354,15 @@ body.gl-page-call_center_dashboard .ccx .ccx-search-form button,.ccx-pagination 
           <div class="ccx-personcell">
             <div class="ccx-name-line"><strong data-lead-name data-name-label role="button" tabindex="0" title="برای ویرایش نام کلیک کنید">{{ row.lead.full_name }}</strong><span class="ccx-name-edit" role="button" tabindex="0" data-name-edit data-name-url="{% url 'call_center_lead_name_update' row.lead.pk %}" title="ویرایش نام">✎</span>{% if transfer_operators %}<button type="button" class="ccx-transfer-mini" data-transfer-open data-transfer-url="{% url 'call_center_lead_transfer' row.lead.pk %}" data-transfer-name="{{ row.lead.full_name|escape }}">⇄ انتقال گل</button>{% endif %}</div>
             <div class="ccx-name-editor"><input type="text" maxlength="140" value="{{ row.lead.full_name }}" aria-label="نام مراجع"><button class="ccx-name-save" type="button">ذخیره</button><button class="ccx-name-cancel" type="button">لغو</button></div>
-            <span class="ccx-phone">{{ row.lead.phone }}</span>
+            {% include "core/call_center/_contact_control.html" with lead=row.lead %}
             <div class="ccx-meta"><span class="ccx-source {{ row.source_key }}">{{ row.source_label }}</span>{% if row.lead.group %}<span class="ccx-group">{{ row.lead.group.name }}</span>{% endif %}</div>
           </div>
           <div class="ccx-time"><span>ورود</span><b>{% if row.received_day == today %}{{ row.received_at|date:"H:i" }}{% else %}{{ row.received_at|jdate }}{% endif %}</b></div>
           <span class="ccx-sla {{ row.sla_class }}">{{ row.sla_label }}</span>
           <div class="ccx-last"><strong>{{ row.last_action }}</strong>{{ row.last_action_at|date:"H:i" }}</div>
-          <div class="ccx-next-action">{{ row.next_action }}</div>
+          <div class="ccx-next-action{% if row.lead.registration_description %} ccx-registration-cell{% endif %}">
+            {% if row.lead.registration_description %}<details class="ccx-registration-note"><summary title="برای دیدن متن کامل کلیک کنید"><small>توضیحات · نمایش کامل ↕</small><span class="lead-description-preview">{{ row.lead.registration_description }}</span></summary></details>{% else %}{{ row.next_action }}{% endif %}
+          </div>
           <div class="ccx-actions">
             <a class="ccx-action call" href="tel:{{ row.lead.phone }}">☎ تماس</a>
             {% if row.wa_url %}<a class="ccx-action wa" href="{{ row.wa_url }}" target="_blank" rel="noopener">واتساپ</a>{% else %}<span class="ccx-action wa" style="opacity:.45">واتساپ</span>{% endif %}
@@ -1786,4 +1788,5 @@ body.gl-page-call_center_dashboard .ccx .ccx-search-form button,.ccx-pagination 
 
 })();
 </script>
+{% include "core/call_center/_contact_dialog.html" %}
 {% endblock %}

@@ -1,0 +1,6 @@
+<div class="lead-extra-fields">
+  <label for="{{ form.additional_phones.id_for_label }}">شماره‌های دیگر</label>
+  {{ form.additional_phones }}
+  {% for error in form.additional_phones.errors %}<p class="lead-contact-error">{{ error }}</p>{% endfor %}
+  <small>هر شماره در یک خط؛ همهٔ شماره‌ها در همین پرونده ثبت می‌شوند.</small>
+</div>

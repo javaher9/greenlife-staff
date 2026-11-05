@@ -30,6 +30,7 @@
     .btn{height:60px;font-size:18px}.hint{font-size:12px}.error{font-size:13px}
     @media(max-width:480px){body{align-items:flex-start;padding-top:22px}.card{padding:23px 17px 19px;border-radius:24px}}
   </style>
+{% include "core/call_center/_contact_assets.html" %}
 </head>
 <body>
 <main class="wrap">
@@ -59,6 +60,7 @@
       <form method="post" id="manualInstagramForm">{% csrf_token %}
         <label class="field"><span>نام / آیدی اینستاگرام</span>{{ form.full_name }}{% for error in form.full_name.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <label class="field"><span>{{ form.phone.label }}</span>{{ form.phone }}{% for error in form.phone.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
+        {% include "core/call_center/_extra_phones.html" %}
         <label class="field"><span>{{ form.instagram_page.label }}</span>{{ form.instagram_page }}{% for error in form.instagram_page.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <label class="field"><span>توضیحات <b style="color:#c83e51">*</b></span>{{ form.interested_service }}{% for error in form.interested_service.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <button class="btn" id="manualSubmitBtn" type="submit">ثبت در App</button>

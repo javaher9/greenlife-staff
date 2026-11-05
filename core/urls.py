@@ -1,3 +1,4 @@
+from . import lead_contact_views
 from django.urls import path
 from . import views
 from . import executive_finance_hub_views
@@ -98,6 +99,7 @@ path('call-center/',referral_views.call_center_dashboard,name='call_center_dashb
 path('call-center/groups/new/',referral_views.call_center_group_create,name='call_center_group_create'),path('call-center/quick-message/',referral_views.call_center_quick_message,name='call_center_quick_message'),path('call-center/notebook/',referral_views.call_center_notebook,name='call_center_notebook'),path('call-center/today-appointments/live/',referral_views.call_center_today_appointments_live,name='call_center_today_appointments_live'),
 path('call-center/leads/new/',referral_views.call_center_lead_create,name='call_center_lead_create'),path('call-center/leads/direct/new/',referral_views.call_center_direct_lead_create,name='call_center_direct_lead_create'),
 path('call-center/leads/<int:pk>/',referral_views.call_center_lead,name='call_center_lead'),
+path('call-center/leads/<int:pk>/phones/',lead_contact_views.lead_contacts,name='call_center_lead_contacts'),
 path('call-center/leads/<int:pk>/name/',referral_views.call_center_lead_name_update,name='call_center_lead_name_update'),
 path('call-center/leads/<int:pk>/transfer/',referral_views.call_center_lead_transfer,name='call_center_lead_transfer'),
 path('call-center/leads/<int:pk>/appointment/',appointment_views.call_center_appointment_create,name='call_center_appointment_create'),

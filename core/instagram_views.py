@@ -1,3 +1,5 @@
+from .lead_contacts import create_with_contacts
+from .lead_phone_forms import LeadPhonesCreateMixin
 from django import forms
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -63,7 +65,7 @@ class InstagramLeadForm(forms.Form):
         return value
 
 
-class InstagramManualLeadForm(InstagramLeadForm):
+class InstagramManualLeadForm(LeadPhonesCreateMixin,InstagramLeadForm):
     # Required for every staff user, including admins/superusers. Keeping this
     # validation in the form prevents bypassing the requirement by posting
     # directly to the endpoint.
@@ -277,7 +279,7 @@ def instagram_manual_lead(request):
         page_slug, page_label = _instagram_page_source(data.get('instagram_page'))
         staff_name = request.user.get_full_name() or request.user.username
         try:
-            lead = ReferralLead.objects.create(
+            lead = ReferralLead(
                 referrer=_instagram_source_profile(),
                 full_name=data['full_name'].strip(),
                 phone=data['phone'],
@@ -288,6 +290,7 @@ def instagram_manual_lead(request):
                 notes=f'اینستاگرام - دستی | پیج: {page_label} | [instagram_page:{page_slug}] | ثبت از دایرکت توسط {staff_name}',
                 created_by=request.user,
             )
+            create_with_contacts(lead,data.get('additional_phones',[]))
         except DuplicateLeadError:
             form.add_error('phone', LEAD_DUPLICATE_MESSAGE)
         else:

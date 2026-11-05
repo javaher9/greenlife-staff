@@ -1,3 +1,4 @@
+from .lead_phone_forms import LeadPhonesCreateMixin
 from io import BytesIO
 from datetime import time
 from string import Formatter
@@ -475,7 +476,7 @@ class CallCenterLeadForm(forms.ModelForm):
         return self.cleaned_data.get('group')
 
 
-class CallCenterDirectLeadForm(forms.ModelForm):
+class CallCenterDirectLeadForm(LeadPhonesCreateMixin,forms.ModelForm):
     class Meta:
         model=ReferralLead
         fields=['full_name','phone','group','interested_service','notes']
@@ -521,7 +522,7 @@ class CallCenterDirectLeadForm(forms.ModelForm):
         return value
 
 
-class CallCenterLeadCreateForm(forms.ModelForm):
+class CallCenterLeadCreateForm(LeadPhonesCreateMixin,forms.ModelForm):
     class Meta:
         model=ReferralLead
         fields=['full_name','phone','group','interested_service','notes']

@@ -1,0 +1,34 @@
+.lead-contact-control{display:flex;align-items:center;gap:5px;min-width:0;margin-top:5px}
+.lead-contact-choice{min-width:0;flex:1}
+.lead-contact-control select{width:100%;min-width:0!important;height:30px!important;padding:3px 5px!important;border:1px solid #d7e1e5!important;border-radius:8px!important;background:#f8fbfa!important;color:#334e60!important;font:700 10px Tahoma!important;direction:ltr;text-align:left}
+.lead-contact-control button{flex:none;border:1px solid #d8c8e7!important;background:#f5effb!important;color:#684995!important;border-radius:8px!important;padding:5px!important;font:700 10px Tahoma!important;cursor:pointer}
+.lead-sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.lead-contact-dialog{box-sizing:border-box;width:min(560px,calc(100vw - 28px));max-height:85vh;overflow:auto;padding:20px;border:1px solid #d7e1e5;border-radius:18px;background:#fff;color:#263e50;box-shadow:0 18px 60px #162c4930;direction:rtl;font:12px/1.8 Tahoma}
+.lead-contact-dialog::backdrop{background:#15263766}
+.lead-contact-dialog header,.lead-contact-dialog footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.lead-contact-dialog h2{color:#263e50!important;font:800 17px Tahoma!important;margin:0}
+.lead-contact-dialog p,.lead-contact-dialog small{color:#526779!important}
+.lead-contact-dialog button,.lead-extra-fields button{border:1px solid #d8c8e7!important;border-radius:9px!important;background:#f4eef9!important;color:#65478d!important;padding:7px 10px!important;font:700 11px Tahoma!important;cursor:pointer;box-shadow:none!important}
+.lead-contact-dialog [data-contact-save]{background:#e7f5ee!important;color:#176e4f!important;border-color:#c7e2d4!important}
+.lead-contact-dialog button:disabled{opacity:.5;cursor:wait}
+.lead-phone-edit-row{display:flex;gap:7px;align-items:center;margin:10px 0;min-width:0}
+.lead-phone-edit-row label{display:flex;gap:4px;align-items:center;white-space:nowrap;color:#526779;font:11px Tahoma}
+.lead-phone-edit-row input[type=radio]{width:16px!important;height:16px!important;margin:0!important}
+.lead-phone-edit-row input[type=tel]{flex:1;min-width:0!important;width:100%;height:40px!important;border:1px solid #d3e0e4!important;border-radius:9px!important;background:#fff!important;color:#263e50!important;direction:ltr;font:13px Tahoma!important;padding:7px!important}
+.lead-contact-error,[data-contact-message]{color:#a63c56!important;font-size:11px}
+.lead-contact-history{margin:15px 0;padding:10px;border-radius:10px;background:#f7faf9;border:1px solid #e2eae6}
+.lead-contact-history summary{cursor:pointer}
+.lead-contact-history article{border-bottom:1px solid #e0e8e5;padding:8px 0;overflow-wrap:anywhere}
+.lead-contact-history bdi{font-size:11px}
+.lead-extra-fields{grid-column:1/-1;color:#526779;font:11px/1.8 Tahoma}
+.lead-extra-fields textarea{width:100%;box-sizing:border-box;background:#fff!important;color:#263e50!important;border:1px solid #d3e0e4!important;border-radius:9px;padding:9px}
+.ccx-registration-note{min-width:0;border:1px solid #e2e9e6;background:#f7faf8;border-radius:9px;padding:7px 9px;color:#40596a;font:11px/1.8 Tahoma;overflow-wrap:anywhere}
+.ccx-registration-note summary{list-style:none;cursor:pointer}
+.ccx-registration-note summary::-webkit-details-marker{display:none}
+.ccx-registration-note .lead-description-preview{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;white-space:pre-line;max-height:3.6em}
+.ccx-registration-note[open] .lead-description-preview{-webkit-line-clamp:unset;max-height:220px;overflow:auto}
+.ccx-registration-note small{display:block;color:#687d78;font:9px Tahoma;margin-bottom:3px}
+@media(max-width:1180px){body.gl-page-call_center_dashboard .ccx .ccx-registration-cell{grid-column:1/-1;display:block!important}.ccx-registration-note .lead-description-preview{-webkit-line-clamp:3;max-height:5.4em}}
+@media(max-width:480px){.lead-contact-dialog{padding:14px}.lead-phone-edit-row{gap:5px}.lead-phone-edit-row label{font-size:10px}.lead-contact-control button span{display:none}}
+@media(min-width:1181px){body.gl-page-call_center_dashboard .ccx .ccx-queue .cc-work-row{grid-template-columns:minmax(135px,1.2fr) 68px 78px minmax(85px,.75fr) minmax(140px,1fr) minmax(295px,1.7fr)!important}}
+body.gl-page-call_center_dashboard .ccx .ccx-registration-cell{min-width:0;white-space:normal!important;text-align:right!important}

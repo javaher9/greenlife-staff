@@ -1,4 +1,4 @@
-{% extends 'core/base.html' %}{% block content %}
+{% extends 'core/base.html' %}{% block content %}{% include "core/call_center/_contact_assets.html" %}
 <style>
 .cc-direct-page{max-width:760px;margin:18px auto 90px;padding:0 12px}
 .cc-direct-card{background:#fff;border:1px solid #dfe7ea;border-radius:22px;overflow:hidden;box-shadow:0 14px 36px rgba(35,54,68,.07)}
@@ -21,6 +21,7 @@
         <div class="cc-direct-grid">
           <div class="cc-direct-field"><label>{{ form.full_name.label }}</label>{{ form.full_name }}{% if form.full_name.errors %}<div class="cc-direct-errors">{{ form.full_name.errors }}</div>{% endif %}</div>
           <div class="cc-direct-field"><label>{{ form.phone.label }}</label>{{ form.phone }}{% if form.phone.errors %}<div class="cc-direct-errors">{{ form.phone.errors }}</div>{% endif %}</div>
+          {% include "core/call_center/_extra_phones.html" %}
           <div class="cc-direct-field"><label>{{ form.group.label }} <span class="cc-direct-required">*</span></label>{{ form.group }}{% if form.group.errors %}<div class="cc-direct-errors">{{ form.group.errors }}</div>{% endif %}</div>
           <div class="cc-direct-field"><label>{{ form.interested_service.label }}</label>{{ form.interested_service }}{% if form.interested_service.errors %}<div class="cc-direct-errors">{{ form.interested_service.errors }}</div>{% endif %}</div>
           <div class="cc-direct-field full"><label>{{ form.notes.label }}</label>{{ form.notes }}<span class="cc-direct-help">مثلاً: شماره از لیست VIP قدیمی، میز دکتر جواهریان، تماس قبلی یا منبع دیگری بوده است.</span>{% if form.notes.errors %}<div class="cc-direct-errors">{{ form.notes.errors }}</div>{% endif %}</div>
