@@ -12,7 +12,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
-from django.db import transaction
+from django.db import connection, transaction
 from django.db.models import Count, Max, Q, Sum
 from django.db.models.functions import TruncDate
 from django.core.exceptions import PermissionDenied
@@ -27,6 +27,7 @@ from .forms import (
 )
 from .models import Attendance, AuditLog, CallCenterLeadGroup, ConsultationPlan, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification, VisitAppointment, InternalMessage, DuplicateLeadError, PatientProfile, PersonalNotebookEntry
 from .call_center_identity import FlowerLeadProxy, call_center_display_name
+from .lead_group_names import normalized_group_name, preferred_group_name
 from .jalali import format_jalali, parse_jalali
 # Production rebuild marker after the previous deployment hit the workflow timeout.
 
@@ -1606,18 +1607,27 @@ def call_center_group_create(request):
     if len(name)>80:
         messages.error(request,'نام گروه باید حداکثر ۸۰ کاراکتر باشد.')
         return redirect('call_center_dashboard')
-    group,created=CallCenterLeadGroup.objects.get_or_create(
-        name=name,defaults={'owner':None,'is_default':False},
-    )
-    if group.owner_id is not None:
-        group.owner=None
-        group.save(update_fields=['owner'])
-    AuditLog.objects.create(
-        actor=request.user,action='call_center_group_create',path=request.path,method='POST',
-        object_type='CallCenterLeadGroup',object_id=str(group.pk),
-        summary='Global call-center group created' if created else 'Existing global call-center group selected',
-        metadata={'name':group.name,'created':created},
-    )
+    key=normalized_group_name(name)
+    with transaction.atomic():
+        if connection.vendor=='postgresql':
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT pg_advisory_xact_lock(hashtext(%s)::bigint)',[f'greenlife-group:{key}'])
+        group=next((item for item in CallCenterLeadGroup.objects.all()
+                    if normalized_group_name(item.name)==key),None)
+        created=group is None
+        if created:
+            group=CallCenterLeadGroup.objects.create(
+                name=preferred_group_name(name),owner=None,is_default=False,
+            )
+        elif group.owner_id is not None:
+            group.owner=None
+            group.save(update_fields=['owner'])
+        AuditLog.objects.create(
+            actor=request.user,action='call_center_group_create',path=request.path,method='POST',
+            object_type='CallCenterLeadGroup',object_id=str(group.pk),
+            summary='Global call-center group created' if created else 'Existing global call-center group selected',
+            metadata={'name':group.name,'created':created},
+        )
     if created:
         messages.success(request,f'گروه سراسری «{group.name}» ساخته شد و برای همه گل‌ها قابل مشاهده است.')
     else:
