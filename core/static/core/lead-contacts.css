@@ -23,6 +23,7 @@
 .lead-extra-fields{grid-column:1/-1;color:#526779;font:11px/1.8 Tahoma}
 .lead-extra-fields textarea{width:100%;box-sizing:border-box;background:#fff!important;color:#263e50!important;border:1px solid #d3e0e4!important;border-radius:9px;padding:9px}
 .ccx-registration-note{min-width:0;border:1px solid #e2e9e6;background:#f7faf8;border-radius:9px;padding:7px 9px;color:#40596a;font:11px/1.8 Tahoma;overflow-wrap:anywhere}
+.ccx-registration-cell .ccx-next-action-label{display:block;margin-bottom:4px;color:#40596b;font-size:10px;line-height:1.4}
 .ccx-registration-note summary{list-style:none;cursor:pointer}
 .ccx-registration-note summary::-webkit-details-marker{display:none}
 .ccx-registration-note .lead-description-preview{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;white-space:pre-line;max-height:3.6em}

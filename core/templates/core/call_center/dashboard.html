@@ -1361,7 +1361,8 @@ body.gl-page-call_center_dashboard .ccx .ccx-search-form button,.ccx-pagination 
           <span class="ccx-sla {{ row.sla_class }}">{{ row.sla_label }}</span>
           <div class="ccx-last"><strong>{{ row.last_action }}</strong>{{ row.last_action_at|date:"H:i" }}</div>
           <div class="ccx-next-action{% if row.lead.registration_description %} ccx-registration-cell{% endif %}">
-            {% if row.lead.registration_description %}<details class="ccx-registration-note"><summary title="برای دیدن متن کامل کلیک کنید"><small>توضیحات · نمایش کامل ↕</small><span class="lead-description-preview">{{ row.lead.registration_description }}</span></summary></details>{% else %}{{ row.next_action }}{% endif %}
+            <span class="ccx-next-action-label">{{ row.next_action }}</span>
+            {% if row.lead.registration_description %}<details class="ccx-registration-note"><summary title="برای دیدن متن کامل کلیک کنید"><small>توضیحات · نمایش کامل ↕</small><span class="lead-description-preview">{{ row.lead.registration_description }}</span></summary></details>{% endif %}
           </div>
           <div class="ccx-actions">
             <a class="ccx-action call" href="tel:{{ row.lead.phone }}">☎ تماس</a>
