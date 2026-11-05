@@ -214,6 +214,7 @@ _BUTTON_PALETTE_SCRIPT = r'''<script id="greenlife-call-center-button-palette-sc
   }
   function boot(){
     if(location.pathname!='/call-center/'&&location.pathname!='/call-center')return;
+    if(!document.querySelector('.cc-v5'))return;
     paint(document);[100,350,900,1800].forEach(function(ms){setTimeout(function(){paint(document);},ms);});
     var target=document.querySelector('.cc-v5');if(!target)return;
     new MutationObserver(function(){requestAnimationFrame(function(){paint(target);});}).observe(target,{childList:true,subtree:true});

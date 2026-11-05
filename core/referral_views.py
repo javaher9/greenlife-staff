@@ -10,6 +10,7 @@ from urllib.parse import quote
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, Max, Q, Sum
 from django.db.models.functions import TruncDate
@@ -963,8 +964,8 @@ def call_center_dashboard(request):
     elif group_filter.isdigit():
         queue_scope=queue_scope.filter(group_id=int(group_filter))
 
-    # Filters and search run over rendered rows in the browser. Truncating
-    # the oldest records here hides fresh assignments once the backlog grows.
+    # Keep the complete queue for counts/search; render only the requested page.
+    # Never truncate candidates before filtering: fresh leads must stay reachable.
     queue_candidates=list(
         queue_scope
         .exclude(status__in=('won','lost'))
@@ -1102,6 +1103,26 @@ def call_center_dashboard(request):
         item.pop('_sort',None)
 
     next_queue=work_queue[:5]
+    queue_filter=request.GET.get('queue','all')
+    if queue_filter not in category_counts:
+        queue_filter='all'
+    queue_search=(request.GET.get('q') or '').strip()[:200]
+    search_key=queue_search.translate(str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩','01234567890123456789')).casefold()
+    filtered_queue=[]
+    for item in work_queue:
+        lead=item['lead']
+        if queue_filter!='all' and queue_filter not in item['categories'].split():
+            continue
+        haystack=' '.join(str(value or '') for value in (
+            lead.full_name,lead.phone,lead.alternate_phone,item['source_label'],
+            lead.interested_service,lead.group.name if lead.group_id else '',
+        )).casefold()
+        if not search_key or search_key in haystack:
+            filtered_queue.append(item)
+    queue_page=Paginator(filtered_queue,50).get_page(request.GET.get('queue_page'))
+    queue_params=request.GET.copy()
+    queue_params.pop('queue_page',None)
+    queue_page_base='?'+queue_params.urlencode()
     upcoming_followups=list(
         all_leads.filter(next_follow_up__gt=today,next_follow_up__lte=today+timedelta(days=3))
         .exclude(status__in=('won','lost'))
@@ -1277,6 +1298,8 @@ def call_center_dashboard(request):
         'routing_policy_notice':routing_policy_notice,
         'can_manage_groups':_can_manage_call_center_groups(request.user),
         'cockpit':cockpit,'work_queue':work_queue,'next_queue':next_queue,
+        'queue_page':queue_page,'queue_filter':queue_filter,'queue_search':queue_search,
+        'queue_page_base':queue_page_base,
         'queue_category_counts':category_counts,'upcoming_followups':upcoming_followups,
         'today_assigned_history':today_assigned_history,'today_assigned_count':today_leads.count(),
     })

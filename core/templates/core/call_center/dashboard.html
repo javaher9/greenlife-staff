@@ -1252,6 +1252,12 @@ body.gl-page-call_center_dashboard .ccx .ccx-side-direct:focus{
  body.gl-page-call_center_dashboard .ccx-side{width:180px!important}
  body.gl-page-call_center_dashboard .ccx .cc-work-row{grid-template-columns:minmax(135px,1.2fr) 68px 78px minmax(85px,.75fr) 70px minmax(260px,1.6fr)!important;gap:4px!important}
 }
+
+/* Keep large queues light without hiding records from search or filters. */
+body.gl-page-call_center_dashboard .ccx .ccx-search-form{display:flex;gap:6px;min-width:0}
+body.gl-page-call_center_dashboard .ccx .ccx-search-form input[type="search"]{min-width:0;flex:1}
+body.gl-page-call_center_dashboard .ccx .ccx-search-form button,.ccx-pagination a{border:1px solid #cdb8df!important;background:#f3ecfa!important;color:#604387!important;border-radius:9px;padding:7px 12px;font:800 10px Tahoma;white-space:nowrap;text-decoration:none}
+.ccx-pagination{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;color:#526779;font:11px Tahoma;border-bottom:1px solid #e5ebee}
 </style>
 
 <style>
@@ -1294,7 +1300,12 @@ body.gl-page-call_center_dashboard .ccx .ccx-side-direct:focus{
   </nav>
 
   <section class="ccx-filters ccx-card">
-    <div class="ccx-search"><input id="ccxSearch" type="search" placeholder="جستجو در نام، موبایل، منبع یا خدمت…"></div>
+    <form class="ccx-search ccx-search-form" method="get" role="search">
+      {% if group_filter %}<input type="hidden" name="group" value="{{ group_filter }}">{% endif %}
+      <input type="hidden" name="queue" value="{{ queue_filter }}">
+      <input id="ccxSearch" name="q" value="{{ queue_search }}" type="search" maxlength="200" placeholder="جستجو در همه لیدهای صف…" aria-label="جستجو در همه لیدهای صف">
+      <button type="submit">جستجو</button>
+    </form>
     <div class="ccx-filter-row" id="ccxFilters">
       <button class="ccx-filter active" data-filter="all">همه <b>{{ queue_category_counts.all }}</b></button>
       <button class="ccx-filter" data-filter="receivedtoday" title="لیدهای تخصیص‌یافته امروز که هنوز در صف کار هستند">دریافتی امروز در صف <b>{{ queue_category_counts.receivedtoday }}</b></button>
@@ -1329,8 +1340,16 @@ body.gl-page-call_center_dashboard .ccx .ccx-side-direct:focus{
   <div class="ccx-layout">
     <main class="ccx-main ccx-card">
       <header class="ccx-head"><div><h2>صف کار امروز</h2><p>از بالا به پایین؛ سیستم موارد عقب‌افتاده، پیگیری‌های امروز و لیدهای تازه را جلو می‌آورد.</p></div><button id="ccxNextLead" class="ccx-next-btn" type="button">بعدی ←</button></header>
+      {% if queue_page.paginator.num_pages > 1 or queue_search %}
+      <nav class="ccx-pagination" aria-label="صفحه‌های لیدها">
+        <span>{{ queue_page.paginator.count }} لید{% if queue_page.paginator.count %} · نمایش {{ queue_page.start_index }} تا {{ queue_page.end_index }}{% endif %}</span>
+        {% if queue_page.has_previous %}<a href="{{ queue_page_base }}&amp;queue_page={{ queue_page.previous_page_number }}">قبلی</a>{% endif %}
+        <span>صفحه {{ queue_page.number }} از {{ queue_page.paginator.num_pages }}</span>
+        {% if queue_page.has_next %}<a href="{{ queue_page_base }}&amp;queue_page={{ queue_page.next_page_number }}">بعدی</a>{% endif %}
+      </nav>
+      {% endif %}
       <div class="ccx-queue" id="ccxQueue">
-        {% for row in work_queue %}
+        {% for row in queue_page %}
         <article class="cc-work-row" data-lead-id="{{ row.lead.pk }}" data-categories="{{ row.categories }}" data-search="{{ row.lead.full_name }} {{ row.lead.phone }} {{ row.source_label }} {{ row.lead.interested_service }} {{ row.lead.group.name|default:'' }}" data-call-url="{% url 'call_center_mark_call_started' row.lead.pk %}" data-result-url="{% url 'call_center_save_call_result' row.lead.pk %}">
           <div class="ccx-personcell">
             <div class="ccx-name-line"><strong data-lead-name data-name-label role="button" tabindex="0" title="برای ویرایش نام کلیک کنید">{{ row.lead.full_name }}</strong><span class="ccx-name-edit" role="button" tabindex="0" data-name-edit data-name-url="{% url 'call_center_lead_name_update' row.lead.pk %}" title="ویرایش نام">✎</span>{% if transfer_operators %}<button type="button" class="ccx-transfer-mini" data-transfer-open data-transfer-url="{% url 'call_center_lead_transfer' row.lead.pk %}" data-transfer-name="{{ row.lead.full_name|escape }}">⇄ انتقال گل</button>{% endif %}</div>
@@ -1462,7 +1481,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-side-direct:focus{
 <script>
 (function(){
   function csrf(){var x=document.querySelector('input[name="csrfmiddlewaretoken"]');if(x&&x.value)return x.value;var m=document.cookie.match(/(?:^|;\s*)(?:csrftoken|greenlife_lan_csrftoken)=([^;]+)/);return m?decodeURIComponent(m[1]):''}
-  var queue=document.getElementById('ccxQueue'),search=document.getElementById('ccxSearch'),filters=[].slice.call(document.querySelectorAll('.ccx-filter')),activeFilter='all';
+  var queue=document.getElementById('ccxQueue'),search=document.getElementById('ccxSearch'),filters=[].slice.call(document.querySelectorAll('.ccx-filter')),activeFilter='{{ queue_filter|escapejs }}';
   var transferModal=document.getElementById('ccxTransferModal'),transferBack=document.querySelector('.ccx-transfer-backdrop'),transferTarget=document.getElementById('ccxTransferTarget'),transferTitle=document.getElementById('ccxTransferTitle'),transferSave=document.getElementById('ccxTransferSave'),transferStatus=document.getElementById('ccxTransferStatus'),transferCurrent=null,transferBusy=false;
   function openTransfer(btn){
     if(!transferModal)return;
@@ -1497,13 +1516,13 @@ body.gl-page-call_center_dashboard .ccx .ccx-side-direct:focus{
   function rows(){return queue?[].slice.call(queue.querySelectorAll('.cc-work-row')):[]}
   function visibleRows(){return rows().filter(function(r){return r.style.display!=='none'&&r.dataset.done!=='1'})}
   function applyFilters(){
-    var q=(search&&search.value||'').trim().toLowerCase();
-    rows().forEach(function(r){
-      var cats=(r.dataset.categories||'').split(/\s+/),okF=activeFilter==='all'||cats.indexOf(activeFilter)>=0,okQ=!q||(r.dataset.search||'').toLowerCase().indexOf(q)>=0;
-      r.style.display=(okF&&okQ)?'grid':'none';
-    });
+    var url=new URL(window.location.href);
+    url.searchParams.set('queue',activeFilter);
+    if(search&&search.value.trim())url.searchParams.set('q',search.value.trim());else url.searchParams.delete('q');
+    url.searchParams.delete('queue_page');
+    window.location.assign(url.pathname+url.search);
   }
-  if(search)search.addEventListener('input',applyFilters);
+  filters.forEach(function(b){b.classList.toggle('active',b.dataset.filter===activeFilter)});
 
   var liveToday=document.getElementById('ccxTodayAppointments'),liveTime=document.getElementById('ccxTodayLiveTime'),liveBusy=false;
   function liveEsc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
@@ -1725,10 +1744,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-side-direct:focus{
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){paintCockpit(document)});
   else paintCockpit(document);
-  var target=document.querySelector('.ccx');
-  if(target){
-    new MutationObserver(function(){paintCockpit(target)}).observe(target,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
-  }
+  // Static CSS handles state changes; do not repaint every lead on DOM mutations.
 })();
 
 (function(){
@@ -1741,8 +1757,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-side-direct:focus{
     document.querySelectorAll('.ccx-name-cancel').forEach(function(el){imp(el,'background','#f3eef8');imp(el,'color','#65478d');imp(el,'border','1px solid #d9cce6');imp(el,'box-shadow','none')});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paintNameEditor);else paintNameEditor();
-  setTimeout(paintNameEditor,100);
-  setTimeout(paintNameEditor,800);
+
 })();
 
 (function(){
@@ -1754,7 +1769,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-side-direct:focus{
     document.querySelectorAll('.ccx-transfer-cancel,.ccx-transfer-close').forEach(function(el){imp(el,'background','#f4f1f8');imp(el,'color','#66517f');imp(el,'box-shadow','none')});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paintTransfer);else paintTransfer();
-  setTimeout(paintTransfer,100);setTimeout(paintTransfer,700);
+
 })();
 
 (function(){
@@ -1768,7 +1783,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-side-direct:focus{
     document.querySelectorAll('.ccx-follow-form button').forEach(function(el){imp(el,'background','#e7f5ee');imp(el,'color','#176e4f');imp(el,'border','1px solid #c7e2d4');imp(el,'box-shadow','none')});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paintResultPopover);else paintResultPopover();
-  setTimeout(paintResultPopover,100);setTimeout(paintResultPopover,700);
+
 })();
 </script>
 {% endblock %}

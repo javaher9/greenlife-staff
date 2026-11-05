@@ -79,6 +79,26 @@ class CallCenterQueueVisibilityTests(TestCase):
         self.assertContains(response,'id="ccxTodayHistory"')
         self.assertContains(response,'همه لیدهای دریافتی امروز')
 
+    def test_large_queue_is_paged_without_truncating_counts_or_search(self):
+        response=self.dashboard()
+        self.assertEqual(len(response.context['queue_page']),50)
+        self.assertEqual(response.context['queue_page'].paginator.count,301)
+        self.assertEqual(response.content.count(b'class="cc-work-row"'),50)
+        last=self.dashboard(queue_page=7)
+        self.assertEqual(len(last.context['queue_page']),1)
+        target=self.backlog[-1]
+        found=self.dashboard(q=target.phone)
+        self.assertEqual([row['lead'].pk for row in found.context['queue_page']],[target.pk])
+        self.assertEqual(found.context['queue_category_counts']['all'],301)
+        self.assertContains(found,f'data-lead-id="{target.pk}"')
+
+    def test_queue_filters_work_across_pages_and_keep_operator_scope(self):
+        response=self.dashboard(queue='receivedtoday')
+        self.assertEqual([row['lead'].pk for row in response.context['queue_page']],[self.fresh.pk])
+        foreign=self.dashboard(q=self.foreign.phone)
+        self.assertEqual(foreign.context['queue_page'].paginator.count,0)
+        self.assertNotContains(foreign,self.foreign.full_name)
+
     def test_today_count_has_actual_row_after_more_than_250_old_leads(self):
         response = self.dashboard()
         self.assertEqual(response.context['stats']['today'], 1)
