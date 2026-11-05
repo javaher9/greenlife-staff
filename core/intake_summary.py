@@ -46,6 +46,8 @@ def compact_medical_summary(answers):
         "داروها": _items(answers.get("medications")),
         "حساسیت‌ها": _items(answers.get("allergies")),
         "هشدارهای ایمنی": _items(answers.get("safety_flags")),
+        "سابقه جراحی": _items(answers.get("surgery_type")),
+        "زمان جراحی": _items(answers.get("surgery_when")),
     }
     # Weight-loss prompts support the physician's first-look overview.
     if answers.get('form_version') == 'weight-loss-v2':
@@ -59,6 +61,9 @@ def compact_medical_summary(answers):
         ):
             if _meaningful(answers.get(key)):
                 sections[label] = _items(answers[key])
+    for label, key in (("وضعیت بیماری‌ها", "conditions_status"), ("وضعیت ایمنی", "safety_status"), ("وضعیت دارو", "medication_status"), ("وضعیت حساسیت", "allergy_status")):
+        if answers.get(key) in ("نامشخص", "اطلاع ندارم"):
+            sections[label] = ["نیازمند بررسی پزشک"]
     return {
         "sections": {label: values for label, values in sections.items() if values},
         "screening_incomplete": answers.get("required_screening_complete") is not True,

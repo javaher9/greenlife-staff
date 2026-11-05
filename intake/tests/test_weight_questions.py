@@ -27,12 +27,12 @@ class WeightLossIntakeTests(TestCase):
     def test_12_question_form_post_and_physician_summary(self):
         page=self.client.get(self.url,secure=True,HTTP_HOST='app.greenlifeclinics.com')
         self.assertEqual(page.status_code,200)
-        self.assertContains(page,'فرم اولیه کاهش وزن')
+        self.assertContains(page,'اطلاعات اولیه کاهش وزن')
         data={
             'goal':'کاهش وزن','body_area':'شکم و پهلو',
-            'conditions':['کم‌کاری تیروئید'],'medications':'لووتیروکسین',
-            'allergies':'','safety_flags':[],'screening_confirmed':'on',
-            'appetite':'زیاد','eating_habits':'ریزه‌خواری',
+            'conditions':['کم‌کاری تیروئید'],'medication_status':'بله','medications':'لووتیروکسین',
+            'allergy_status':'خیر','allergies':'','safety_none':'yes','safety_flags':[],'screening_confirmed':'on',
+            'appetite':'زیاد','eating_habits':['ریزه‌خواری','پرخوری'],
             'activity':'کم','sleep':'۶ تا ۸ ساعت',
             'previous_treatments':'رژیم غذایی','current_weight':'89.2',
             'target_weight':'75','motivation':'سلامتی','consent':'on',
@@ -46,6 +46,7 @@ class WeightLossIntakeTests(TestCase):
         self.assertIsNotNone(self.invitation.completed_at)
         self.assertEqual(self.invitation.answers['form_version'],'weight-loss-v2')
         self.assertEqual(self.invitation.answers['appetite'],'زیاد')
+        self.assertEqual(self.invitation.answers['eating_habits'],['ریزه‌خواری','پرخوری'])
         summary=compact_medical_summary(self.invitation.answers)
         self.assertEqual(summary['sections']['داروها'],['لووتیروکسین'])
         self.assertEqual(summary['sections']['وزن هدف (کیلوگرم)'],['75.0'])
@@ -74,4 +75,4 @@ class WeightLossIntakeTests(TestCase):
         response=self.client.get(reverse('intake_public_form',args=[token]),
             secure=True,HTTP_HOST='app.greenlifeclinics.com')
         self.assertContains(response,'فرم اطلاعات اولیه')
-        self.assertNotContains(response,'فرم اولیه کاهش وزن')
+        self.assertNotContains(response,'اطلاعات اولیه کاهش وزن')

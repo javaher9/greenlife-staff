@@ -117,12 +117,64 @@ def intake_form(request, token):
         weight_answers = {}
         if is_weight:
             for field, allowed in WEIGHT_FIELDS.items():
+                if field == 'eating_habits':
+                    items = request.POST.getlist(field)
+                    if not items or len(items) > 3 or any(x not in ('ریزه‌خواری', 'شیرینی و تنقلات', 'پرخوری', 'هیچ‌کدام') for x in items) or ('هیچ‌کدام' in items and len(items) != 1):
+                        return render(request, _intake_template(invitation),
+                            {'error': 'عادات غذایی را مشخص کنید.', 'invitation': invitation,
+                             'conditions': LIMITED_CHOICES['conditions'], 'safety_flags': LIMITED_CHOICES['safety_flags']})
+                    weight_answers[field] = items
+                    continue
                 value = request.POST.get(field, '').strip()
                 if value not in allowed:
                     return render(request, _intake_template(invitation),
                         {'error': 'لطفاً تمام پرسش‌های کاهش وزن را پاسخ دهید.', 'invitation': invitation,
                          'conditions': LIMITED_CHOICES['conditions'], 'safety_flags': LIMITED_CHOICES['safety_flags']})
                 weight_answers[field] = value
+            for field, allowed in (
+                ('medication_status', ('بله', 'خیر', 'اطلاع ندارم')),
+                ('allergy_status', ('بله', 'خیر', 'اطلاع ندارم')),
+            ):
+                value = request.POST.get(field, '').strip()
+                if value not in allowed:
+                    return render(request, _intake_template(invitation),
+                        {'error': 'وضعیت داروها و حساسیت‌ها را مشخص کنید.', 'invitation': invitation,
+                         'conditions': LIMITED_CHOICES['conditions'], 'safety_flags': LIMITED_CHOICES['safety_flags']})
+                weight_answers[field] = value
+            for field in ('body_area_other', 'conditions_other', 'surgery_type', 'surgery_when', 'safety_other', 'motivation_other'):
+                weight_answers[field] = request.POST.get(field, '').strip()[:250]
+            conditions_selected = request.POST.getlist('conditions')
+            safety_selected = request.POST.getlist('safety_flags')
+            conditions_none = request.POST.get('conditions_none') == 'yes'
+            conditions_unknown = request.POST.get('conditions_unknown') == 'yes'
+            safety_none = request.POST.get('safety_none') == 'yes'
+            safety_unknown = request.POST.get('safety_unknown') == 'yes'
+            if ((not conditions_selected and not conditions_none and not conditions_unknown)
+                or (conditions_selected and (conditions_none or conditions_unknown))
+                or (conditions_none and conditions_unknown)
+                or (not safety_selected and not safety_none and not safety_unknown)
+                or (safety_selected and (safety_none or safety_unknown))
+                or (safety_none and safety_unknown)
+                or any(
+                    not weight_answers[field]
+                    for field, enabled in (
+                        ('surgery_type', 'جراحی مهم' in conditions_selected),
+                        ('surgery_when', 'جراحی مهم' in conditions_selected),
+                        ('conditions_other', 'سایر' in conditions_selected),
+                        ('safety_other', 'سایر' in safety_selected),
+                        ('body_area_other', weight_answers['body_area'] == 'سایر'),
+                        ('motivation_other', weight_answers['motivation'] == 'سایر'),
+                    ) if enabled
+                )
+                or (weight_answers['medication_status'] == 'بله' and not request.POST.get('medications', '').strip())
+                or (weight_answers['allergy_status'] == 'بله' and not request.POST.get('allergies', '').strip())):
+                return render(request, _intake_template(invitation),
+                    {'error': 'لطفاً سوابق و توضیحات ضروری را کامل کنید.', 'invitation': invitation,
+                     'conditions': LIMITED_CHOICES['conditions'], 'safety_flags': LIMITED_CHOICES['safety_flags']})
+            weight_answers.update({
+                'conditions_status': 'نامشخص' if conditions_unknown else ('ندارد' if conditions_none else 'ثبت شده'),
+                'safety_status': 'نامشخص' if safety_unknown else ('ندارد' if safety_none else 'ثبت شده'),
+            })
             try:
                 current_weight = float(request.POST.get('current_weight', ''))
                 target_weight = float(request.POST.get('target_weight', ''))
@@ -137,7 +189,11 @@ def intake_form(request, token):
         conditions = request.POST.getlist('conditions')
         flags = request.POST.getlist('safety_flags')
         medications = request.POST.get('medications', '').strip()[:1000]
+        if is_weight and weight_answers['medication_status'] != 'بله':
+            medications = weight_answers['medication_status']
         allergies = request.POST.get('allergies', '').strip()[:1000]
+        if is_weight and weight_answers['allergy_status'] != 'بله':
+            allergies = weight_answers['allergy_status']
         comments = request.POST.get('comments', '').strip()[:1000]
         if not reasons or request.POST.get('consent') != 'on' or request.POST.get('screening_confirmed') != 'on':
             return render(request, _intake_template(invitation), {'error': 'علت مراجعه، تأیید بررسی سوابق بیماری و آگاهی از ثبت اطلاعات الزامی است.', 'invitation': invitation, 'conditions': LIMITED_CHOICES['conditions'], 'safety_flags': LIMITED_CHOICES['safety_flags']})
