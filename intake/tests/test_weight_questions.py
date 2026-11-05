@@ -27,7 +27,7 @@ class WeightLossIntakeTests(TestCase):
     def test_12_question_form_post_and_physician_summary(self):
         page=self.client.get(self.url,secure=True,HTTP_HOST='app.greenlifeclinics.com')
         self.assertEqual(page.status_code,200)
-        self.assertContains(page,'فرم اولیه کاهش وزن')
+        self.assertContains(page,'اطلاعات اولیه کاهش وزن')
         data={
             'goal':'کاهش وزن','body_area':'شکم و پهلو',
             'conditions':['کم‌کاری تیروئید'],'medication_status':'بله','medications':'لووتیروکسین',
@@ -75,4 +75,4 @@ class WeightLossIntakeTests(TestCase):
         response=self.client.get(reverse('intake_public_form',args=[token]),
             secure=True,HTTP_HOST='app.greenlifeclinics.com')
         self.assertContains(response,'فرم اطلاعات اولیه')
-        self.assertNotContains(response,'فرم اولیه کاهش وزن')
+        self.assertNotContains(response,'اطلاعات اولیه کاهش وزن')
