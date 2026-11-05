@@ -59,6 +59,7 @@ body.gl-premium-dark .app-main .lead-page .badge.ig{border-color:#7a355c!importa
  .lead-country-chip.tr-market{border-color:#2f8f77!important;background:#123b34!important;color:#8cf2cf!important;box-shadow:0 0 0 1px rgba(52,211,153,.08) inset}
 .latin-phone{font-family:Tahoma,Arial,sans-serif;direction:ltr;unicode-bidi:isolate;white-space:nowrap}</style>
 <div class="lead-page">
+{% include 'core/_live_lead_pulse.html' %}
 <div class="lead-head"><div><h1>لیدها</h1><p>مرکز یکپارچه لید گرین‌لایف؛ فعلاً ایران و ترکیه در یک صف دیده می‌شوند و کشور هر لید جدا ثبت می‌شود.</p></div><div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end">{% if market_filter == 'TR' %}<div class="lead-chip">🇹🇷 Türkiye</div>{% elif market_filter == 'IR' %}<div class="lead-chip">🇮🇷 Iran</div>{% else %}<div class="lead-chip">🌍 Iran + Türkiye</div>{% endif %}<div class="lead-chip">LIVE · LEAD HUB</div></div></div>
 <section aria-label="عملکرد ثبت‌کنندگان لید" style="border:1px solid #38334f;border-radius:16px;background:linear-gradient(145deg,#1b1c2c,#111822);padding:16px;margin:0 0 16px;color:#edf0fa">
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><h2 style="font-size:17px;margin:0">عملکرد ثبت‌کنندگان لید</h2><span style="font-size:11px;color:#b8bed0">گزارش ماه شمسی · مستقل از تخصیص کال‌سنتر</span></div>
