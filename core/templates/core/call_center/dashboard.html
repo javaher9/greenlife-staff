@@ -1422,9 +1422,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-search-form button,.ccx-pagination 
       <summary>گروه‌ها و ابزارهای ثانویه ▾</summary>
       <div class="ccx-details-body">
         <div class="ccx-group-list"><a href="{% url 'call_center_dashboard' %}">همه</a>{% for group in groups %}<a href="?group={{ group.pk }}">{{ group.name }} · {{ group.lead_count }}</a>{% endfor %}</div>
-        {% if can_manage_groups %}
-        <form class="ccx-group-form" method="post" action="{% url 'call_center_group_create' %}">{% csrf_token %}<input name="name" maxlength="80" placeholder="نام گروه سراسری جدید" required><button type="submit">ساخت گروه برای همه</button></form>
-        {% else %}<div class="ccx-group-managed-note">ساخت گروه فقط توسط سرگروه مجاز انجام می‌شود؛ همه گل‌ها گروه‌های مشترک را می‌بینند.</div>{% endif %}
+        <div class="ccx-group-managed-note">گروه‌های کال‌سنتر به هفت منبع مصوب محدود است.</div>
       </div>
     </details>
   </section>

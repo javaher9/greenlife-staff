@@ -12,6 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from .credential_security import decrypt_secret
+from .lead_group_names import operational_group_name
 from .models import Attendance, CallCenterLeadGroup, DuplicateLeadError, EmployeeProfile, LeaveRequest, ReferralLead, ReferralProfile, StaffNotification, WebsiteLeadIntegrationSettings
 
 
@@ -349,9 +350,8 @@ def _assign_lead(lead, channel):
 
     group_name = 'اینستاگرام جدید' if channel == 'instagram' else f'ورودی {CHANNEL_LABELS.get(channel, channel)}'
     group, _ = CallCenterLeadGroup.objects.get_or_create(
-        owner=operator,
-        name=group_name,
-        defaults={'is_default': False},
+        name=operational_group_name(group_name),
+        defaults={'owner': None, 'is_default': False},
     )
     lead.assigned_to = operator
     lead.group = group

@@ -1,5 +1,6 @@
 from .lead_contacts import create_with_contacts
 from .lead_phone_forms import LeadPhonesCreateMixin
+from .lead_group_names import operational_group_name
 from django import forms
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -176,9 +177,8 @@ def _assign_instagram_lead(lead, group_name=INSTAGRAM_GROUP_NAME, notification_t
         return None
 
     group, _ = CallCenterLeadGroup.objects.get_or_create(
-        owner=operator,
-        name=group_name,
-        defaults={'is_default': False},
+        name=operational_group_name(group_name),
+        defaults={'owner': None, 'is_default': False},
     )
     lead.assigned_to = operator
     lead.group = group

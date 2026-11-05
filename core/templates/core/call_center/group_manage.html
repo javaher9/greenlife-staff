@@ -11,11 +11,7 @@
 @media(max-width:640px){.ccgm{padding:0 8px;margin-top:10px}.ccgm-head{padding:14px}.ccgm-form{grid-template-columns:1fr}.ccgm-form button{width:100%}}
 </style>
 <section class="ccgm">
-  <header class="ccgm-head"><h1>گروه‌های سراسری کال‌سنتر</h1><p>هر گروهی که اینجا ساخته شود، برای تمام گل‌های کال‌سنتر نمایش داده می‌شود.</p></header>
-  <article class="ccgm-card">
-    <form class="ccgm-form" method="post">{% csrf_token %}<input name="name" maxlength="80" placeholder="مثلاً VIP تهران یا میز قدیمی دکتر جواهریان" required><button type="submit">＋ ساخت گروه</button></form>
-    <div class="ccgm-note">ساخت گروه فقط برای مدیران و سرگروه‌هایی که مجوز «مدیریت گروه‌های کال‌سنتر» دارند فعال است.</div>
-  </article>
+  <header class="ccgm-head"><h1>گروه‌های سراسری کال‌سنتر</h1><p>فقط هفت گروه مصوب نمایش داده می‌شود؛ لیدها با منبع مناسب در همین گروه‌ها ثبت می‌شوند.</p></header>
   <article class="ccgm-card"><div class="ccgm-list">{% for group in groups %}<div class="ccgm-row"><strong>{{ group.name }}</strong><span>{{ group.lead_count }} لید{% if group.is_default %} · پیش‌فرض{% endif %}</span></div>{% empty %}<div class="ccgm-row"><strong>هنوز گروهی ثبت نشده است.</strong></div>{% endfor %}</div></article>
 </section>
 {% endblock %}

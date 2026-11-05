@@ -27,7 +27,7 @@ from .forms import (
 )
 from .models import Attendance, AuditLog, CallCenterLeadGroup, ConsultationPlan, EmployeeProfile, ReferralLead, ReferralProfile, ReferralSale, StaffNotification, VisitAppointment, InternalMessage, DuplicateLeadError, PatientProfile, PersonalNotebookEntry
 from .call_center_identity import FlowerLeadProxy, call_center_display_name
-from .lead_group_names import normalized_group_name, preferred_group_name
+from .lead_group_names import CANONICAL_GROUPS, normalized_group_name, preferred_group_name
 from .jalali import format_jalali, parse_jalali
 # Production rebuild marker after the previous deployment hit the workflow timeout.
 
@@ -241,11 +241,11 @@ def _public_referral_url(profile):
 CALL_CENTER_STARTER_GROUPS=(
     ('شبکه فروش پرسنل',True),
     ('VIP',False),
-    ('میزهای قدیمی دکتر جواهریان',False),
-    ('وب‌سایت',False),
+    ('مزوهای قدیمی دکتر',False),
+    ('وب سایت',False),
     ('کمپ',False),
-    ('شرکت‌ها و همکاری سازمانی',False),
     ('اینستاگرام',False),
+    ('ترکیه',False),
 )
 
 
@@ -1608,6 +1608,9 @@ def call_center_group_create(request):
         messages.error(request,'نام گروه باید حداکثر ۸۰ کاراکتر باشد.')
         return redirect('call_center_dashboard')
     key=normalized_group_name(name)
+    if preferred_group_name(name) not in CANONICAL_GROUPS:
+        messages.error(request,'فقط هفت گروه مصوب کال‌سنتر قابل استفاده است.')
+        return redirect('call_center_dashboard')
     with transaction.atomic():
         if connection.vendor=='postgresql':
             with connection.cursor() as cursor:

@@ -373,7 +373,7 @@ class UnifiedLeadRoutingTests(TestCase):
         self.assertEqual(operator.id,self.operators[0].id)
         lead.refresh_from_db()
         self.assertEqual(lead.assigned_to_id,self.operators[0].id)
-        self.assertEqual(lead.group.name,'Türkiye | Turkey')
+        self.assertEqual(lead.group.name,'ترکیه')
 
     def test_inactive_operator_is_never_selected(self):
         self.operators[3].is_active = False

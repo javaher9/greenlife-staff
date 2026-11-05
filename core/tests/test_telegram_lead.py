@@ -33,13 +33,13 @@ class TelegramLeadTests(TestCase):
         # Leads created before the daily release stay pending; ownership is not invented.
         if lead.assigned_to_id:
             self.assertEqual(lead.assigned_to, self.operator)
-            self.assertEqual(lead.group.name, 'تلگرام - لینک')
+            self.assertEqual(lead.group.name, 'وب سایت')
         else:
-            self.assertEqual(_pending_destination(lead)[0], 'تلگرام - لینک')
+            self.assertEqual(_pending_destination(lead)[0], 'وب سایت')
         self.assertEqual(lead.source, 'link')
         self.assertIn('/telegram/', lead.source_url)
         self.assertIn('تلگرام', lead.notes)
         if lead.group_id:
             self.assertTrue(
-                CallCenterLeadGroup.objects.filter(owner__isnull=True, name='تلگرام - لینک').exists()
+                CallCenterLeadGroup.objects.filter(owner__isnull=True, name='وب سایت').exists()
             )

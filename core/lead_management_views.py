@@ -183,7 +183,7 @@ class AttentionLeadProxy(FlowerLeadProxy):
 def _channel_q(channel):
     marker = f'[channel:{channel}]'
     if channel == 'instagram':
-        return Q(group__name__in=('اینستاگرام جدید', 'اینستاگرام - لینک')) | Q(notes__icontains='[channel:instagram]') | Q(source_url__icontains='/instagram/')
+        return Q(group__name__in=('اینستاگرام', 'اینستاگرام جدید', 'اینستاگرام - لینک')) | Q(notes__icontains='[channel:instagram]') | Q(source_url__icontains='/instagram/')
     if channel == 'telegram':
         return Q(group__name='تلگرام - لینک') | Q(notes__icontains='[channel:telegram]') | Q(notes__icontains='ورودی مستقیم فرم تلگرام') | Q(source_url__icontains='/telegram/')
     if channel == 'bale':

@@ -163,21 +163,21 @@ class CallCenterRoleTests(TestCase):
         groups=CallCenterLeadGroup.objects.filter(owner__isnull=True)
         names=set(groups.values_list('name',flat=True))
         self.assertTrue({
-            'شبکه فروش پرسنل','وب‌سایت','کمپ','شرکت‌ها و همکاری سازمانی','اینستاگرام'
+            'شبکه فروش پرسنل','وب سایت','کمپ','مزوهای قدیمی دکتر','اینستاگرام','VIP','ترکیه'
         }.issubset(names))
         self.lead_one.refresh_from_db()
         self.assertEqual(self.lead_one.group.name,'شبکه فروش پرسنل')
         self.assertContains(response,'شبکه فروش پرسنل')
 
-    def test_authorized_operator_can_create_global_group_and_move_own_lead(self):
+    def test_authorized_operator_can_select_approved_group_and_move_own_lead(self):
         self.operator_one.profile.can_manage_call_center_groups=True
         self.operator_one.profile.save(update_fields=['can_manage_call_center_groups'])
-        response=self.client.post(reverse('call_center_group_create'),{'name':'کمپ VIP'})
+        response=self.client.post(reverse('call_center_group_create'),{'name':'کمپ'})
         self.assertRedirects(response,
                              reverse('call_center_dashboard')+'?group='+str(
-                                 CallCenterLeadGroup.objects.get(name='کمپ VIP').pk),
+                                 CallCenterLeadGroup.objects.get(name='کمپ').pk),
                              fetch_redirect_response=False)
-        group=CallCenterLeadGroup.objects.get(owner__isnull=True,name='کمپ VIP')
+        group=CallCenterLeadGroup.objects.get(owner__isnull=True,name='کمپ')
         response=self.client.post(reverse('call_center_lead',args=[self.lead_one.pk]),{
             'contact_result':'no_answer','group':group.pk,'next_follow_up':'',
             'interested_service':'لاغری','notes':'انتقال به گروه کمپ',

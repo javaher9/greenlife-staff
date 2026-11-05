@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from .models import Attendance, CallCenterLeadGroup, EmployeeProfile, LeaveRequest, ReferralLead, StaffNotification
 from .lead_routing_models import CallCenterRoutingDay
+from .lead_group_names import operational_group_name
 
 
 CHANNEL_LABELS = {
@@ -87,7 +88,7 @@ def _assign_turkey_lead(lead, *, notify=True):
     return _assign_to_operator(
         lead,
         operator,
-        'Türkiye | Turkey',
+        'ترکیه',
         'لید جدید ترکیه',
         notify=notify,
     )
@@ -392,6 +393,7 @@ def _locked_round_robin_operator(now=None, channel=None):
 
 def _group_for(operator, name, *, is_default=False):
     # Groups are shared across the whole call center.
+    name = operational_group_name(name)
     group, _ = CallCenterLeadGroup.objects.get_or_create(
         name=name,
         defaults={'owner':None,'is_default':is_default},
@@ -445,23 +447,23 @@ def _pending_destination(lead):
     source_url = _normalize(getattr(lead, 'source_url', ''))
 
     if _is_beytoote_reportage_start(lead):
-        return 'رپورتاژ - استارت', 'لید جدید بیتوته - رپورتاژ'
+        return 'وب سایت', 'لید جدید بیتوته - رپورتاژ'
     if 'اینستاگرام - دستی' in notes:
-        return 'اینستاگرام - دستی', 'لید جدید اینستاگرام - دستی'
+        return 'اینستاگرام', 'لید جدید اینستاگرام - دستی'
     if 'تلگرام' in notes or '/telegram/' in source_url:
-        return 'تلگرام - لینک', 'لید جدید تلگرام'
+        return 'وب سایت', 'لید جدید تلگرام'
     if 'بله' in notes or '[channel:bale]' in notes or '/bale/' in source_url:
-        return 'بله - لینک', 'لید جدید بله'
+        return 'وب سایت', 'لید جدید بله'
     if '[channel:instagram]' in notes or '[instagram_page:' in notes or '/instagram/' in source_url:
-        return 'اینستاگرام جدید', 'لید جدید اینستاگرام'
+        return 'اینستاگرام', 'لید جدید اینستاگرام'
     if '[channel:website]' in notes or 'greenlifeclinics.com' in source_url:
-        return 'ورودی وب‌سایت', 'لید جدید وب‌سایت'
+        return 'وب سایت', 'لید جدید وب‌سایت'
     if '[channel:crm]' in notes or 'crm' in source_url:
-        return 'ورودی CRM', 'لید جدید CRM'
+        return 'وب سایت', 'لید جدید CRM'
     if '[channel:whatsapp]' in notes or 'whatsapp' in source_url or 'wa.me' in source_url:
-        return 'ورودی واتس‌اپ', 'لید جدید واتس‌اپ'
+        return 'وب سایت', 'لید جدید واتس‌اپ'
     if '[channel:campaign]' in notes or 'utm_campaign=' in source_url:
-        return 'ورودی کمپین', 'لید جدید کمپین'
+        return 'کمپ', 'لید جدید کمپین'
     return 'شبکه فروش پرسنل', 'لید جدید برای تماس'
 
 
