@@ -1,6 +1,7 @@
 {% extends 'core/base.html' %}
 {% load finance_alerts %}
 {% block content %}
+{% include 'core/_live_lead_pulse.html' %}
 {% if show_call_center_deposit %}
 <section class="qc-deposit-action" aria-label="ثبت بیعانه کال‌سنتر">
   <a href="{% url 'call_center_deposit_entry' %}"><strong>✦ ثبت بیعانه کال‌سنتر</strong><span>ثبت رسید و ارسال برای تأیید مدیرعامل</span></a>
