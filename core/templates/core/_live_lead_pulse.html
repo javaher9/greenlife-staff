@@ -1,0 +1,43 @@
+<section id="glLeadPulse" data-url="{% url 'live_last_lead' %}" aria-label="رادار آخرین لید" style="direction:rtl;display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:10px 0 16px;padding:12px 17px;border:1px solid #355b66;background:linear-gradient(115deg,#102b37,#172d40);color:#f5fbff;border-radius:14px">
+  <strong style="font-size:13px">◉ آخرین لید دریافتی</strong>
+  <span id="glPulseAge" style="font-size:16px;font-weight:900;font-variant-numeric:tabular-nums">در حال دریافت…</span>
+  <small id="glPulseTime" style="color:#c0d7df">زمان ثبت: —</small>
+  <span id="glPulseState" role="status" aria-live="polite" style="padding:5px 10px;border-radius:9px;background:#314756;color:#d5ecf2;font-weight:800">در حال اتصال</span>
+  <small style="color:#9ebaca">بازه پایش: ۸ صبح تا ۱ بامداد · هشدار بعد از ۶۰ دقیقه</small>
+</section>
+<script>
+(function(){
+  const root=document.getElementById('glLeadPulse');
+  if(!root)return;
+  const age=document.getElementById('glPulseAge'),stamp=document.getElementById('glPulseTime'),state=document.getElementById('glPulseState');
+  let last=null,serverAt=0,receivedAt=0,monitoring=false,working=false;
+  const fa=n=>Number(n).toLocaleString('fa-IR');
+  const formatAge=sec=>{const mins=Math.floor(Math.max(0,sec)/60);return mins<60?fa(mins)+' دقیقه پیش':fa(Math.floor(mins/60))+' ساعت و '+fa(mins%60)+' دقیقه پیش'};
+  function paint(){
+    if(!last)return;
+    const secs=last.elapsed_seconds===null?null:Math.max(0,last.elapsed_seconds+Math.floor((Date.now()-receivedAt)/1000));
+    age.textContent=last.last_lead_at?(secs===null?'آخرین ثبت موجود':formatAge(Math.max(0,Math.floor((serverAt-new Date(last.last_lead_at).getTime())/1000)+(Date.now()-receivedAt)/1000))):'هنوز لیدی ثبت نشده';
+    if(!monitoring){state.textContent='خارج از ساعت پایش';state.style.background='#35485a';state.style.color='#d0e3ed';return}
+    if(secs>=3600){state.textContent='⚠ بیش از یک ساعت بدون لید جدید';state.style.background='#813640';state.style.color='#fff';}
+    else{state.textContent='● دریافت لید فعال';state.style.background='#174f42';state.style.color='#d0ffed';}
+  }
+  async function refresh(){
+    if(working||document.hidden)return;
+    working=true;
+    try{
+      const response=await fetch(root.dataset.url,{credentials:'same-origin',cache:'no-store',headers:{'Accept':'application/json'}});
+      if(!response.ok)throw new Error('HTTP '+response.status);
+      const data=await response.json();
+      if(!data.ok)throw new Error('invalid');
+      last=data;monitoring=data.monitoring;receivedAt=Date.now();serverAt=new Date(data.server_time).getTime();
+      stamp.textContent=data.last_lead_at?'آخرین ثبت: '+new Intl.DateTimeFormat('fa-IR',{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric',timeZone:'Asia/Tehran'}).format(new Date(data.last_lead_at)):'زمان ثبت: —';
+      paint();
+    }catch(error){state.textContent='ارتباط با رادار برقرار نیست';state.style.background='#76552c';state.style.color='#fff'}
+    finally{working=false}
+  }
+  refresh();
+  setInterval(refresh,30000);
+  setInterval(paint,10000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
+})();
+</script>
