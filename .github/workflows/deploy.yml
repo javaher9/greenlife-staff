@@ -123,7 +123,7 @@ jobs:
           repo_url="https://github.com/${GITHUB_REPOSITORY}.git"
           git remote remove origin >/dev/null 2>&1 || true
           git remote add origin "$repo_url"
-          basic_auth="$(printf 'x-access-token:%s' "$CHECKOUT_TOKEN" | base64 | tr -d '\\n')"
+          basic_auth="$(printf 'x-access-token:%s' "$CHECKOUT_TOKEN" | base64 -w0)"
           GIT_TERMINAL_PROMPT=0 git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $basic_auth" fetch --no-tags --depth=2 origin "${GITHUB_SHA}"
           git checkout --force --detach FETCH_HEAD
           git clean -fdx -q
