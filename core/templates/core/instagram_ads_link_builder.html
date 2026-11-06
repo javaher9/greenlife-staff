@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>ساخت لینک تبلیغات | گرین‌لایف</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at 90% 5%,#7c3c97 0,transparent 45%),linear-gradient(155deg,#26132f,#57316d 70%,#7d58a5);font-family:Vazirmatn,Tahoma,Arial,sans-serif;color:#fff;padding:24px 14px;display:flex;justify-content:center;align-items:center}
+main{width:min(100%,560px)}
+a{color:inherit}
+.brand{font-family:Arial,sans-serif;font-weight:800;font-size:25px;letter-spacing:-1px;text-align:center;margin-bottom:20px}
+.brand small{display:block;font-size:10px;letter-spacing:5px;font-weight:600;margin-top:2px}
+.panel{background:#fff;color:#341e40;border-radius:25px;padding:27px 24px;box-shadow:0 22px 75px #160e234d}
+h1{font-size:23px;line-height:1.7;margin:0 0 9px;color:#512a68}
+p{font-size:13px;line-height:2;margin:0 0 19px;color:#6b5e70}
+label{display:block;font-size:15px;font-weight:800;margin-bottom:9px}
+input{display:block;width:100%;height:53px;padding:0 14px;font:600 16px Vazirmatn,Tahoma,sans-serif;border-radius:13px;border:1px solid #d7c9df;outline:0;color:#41244f;background:#fff}
+input:focus{border-color:#925eb0;box-shadow:0 0 0 3px #925eb01c}
+input::placeholder{color:#ae9cb4;font-weight:400}
+button,.pill{font:800 14px Vazirmatn,Tahoma,sans-serif;cursor:pointer;border-radius:13px;border:0;padding:12px 16px;text-align:center;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;min-height:44px}
+.primary{background:linear-gradient(100deg,#572071,#8f4db2);color:#fff}
+.secondary{border:1px solid #d9c7e3;color:#623776;background:#faf5fd}
+.full{width:100%;margin-top:15px}
+.divider{height:1px;background:#eadff0;margin:26px 0}
+.box{border:1px solid #e6dbea;background:#faf7fb;border-radius:14px;padding:12px;margin-top:12px}
+.output{direction:ltr;text-align:left;unicode-bidi:plaintext;font-size:12px;font-family:Arial,sans-serif;line-height:1.8;word-break:break-all;color:#4b3159;user-select:all}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.row>*{flex:1}
+.note{font-size:12px;color:#7b6983;margin:10px 0 0;line-height:1.9}
+.back{display:block;text-align:center;margin:18px auto 0;color:#e9ddec;font-weight:600;font-size:13px;text-decoration:none}
+.status{color:#358454;font-size:12px;min-height:22px;margin-top:8px}
+[hidden]{display:none!important}
+@media(max-width:450px){.panel{padding:24px 18px}.row{flex-direction:column}h1{font-size:21px}}
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">Green Life <small>CLINICS</small></div>
+  <section class="panel">
+    <h1>ساخت لینک تبلیغات اینستاگرام</h1>
+    <p>برای همه تبلیغات بدون نام پیج، همین لینک عمومی را بدهید. اگر تبلیغ در یک پیج مشخص منتشر می‌شود، نام همان پیج را وارد کنید تا در مدیریت لیدها ثبت شود.</p>
+    <label>لینک عمومی تبلیغات</label>
+    <div class="box"><div class="output" id="publicLink">{{ ads_base_url }}</div></div>
+    <div class="row"><button type="button" class="secondary" id="copyPublic">کپی لینک عمومی</button><a class="pill secondary" href="{{ ads_base_url }}" target="_blank" rel="noopener">مشاهده فرم</a></div>
+    <div class="divider"></div>
+    <form id="adBuilder" autocomplete="off">
+      <label for="page">نام پیج منتشرکننده تبلیغ</label>
+      <input id="page" name="page" type="text" maxlength="100" placeholder="مثلاً @zanashooei یا آدرس پیج" dir="auto" required>
+      <div class="note">فقط برای تبلیغاتی که نیاز به شناسایی پیج دارند. وارد کردن این نام در فرم مشتری لازم نیست.</div>
+      <button class="primary full" type="submit">ساخت لینک اختصاصی این تبلیغ</button>
+    </form>
+    <div class="box" id="result" hidden>
+      <div class="note" id="resultLabel" style="margin:0 0 6px;color:#623776;font-weight:800"></div>
+      <div class="output" id="createdLink"></div>
+      <div class="row">
+        <button type="button" class="primary" id="copyCreated">کپی لینک</button>
+        <a class="pill secondary" id="preview" href="#" target="_blank" rel="noopener">باز کردن فرم</a>
+      </div>
+    </div>
+    <div class="status" id="copyStatus" role="status" aria-live="polite"></div>
+  </section>
+  <a class="back" href="/lead-management/">بازگشت به مدیریت لیدها</a>
+</main>
+<script>
+(function(){
+  var publicUrl = '{{ ads_base_url|escapejs }}';
+  var lastUrl = '';
+  var status = document.getElementById('copyStatus');
+  function pageName(input){
+    var name = (input || '').trim();
+    var urlCandidate = name;
+    if(/^(www\.)?instagram\.com\//i.test(name)) urlCandidate = 'https://' + name;
+    if(/^https?:\/\//i.test(urlCandidate)){
+      try{
+        var parsed = new URL(urlCandidate);
+        if(/^(www\.|m\.)?instagram\.com$/i.test(parsed.hostname)) name = parsed.pathname.split('/').filter(Boolean)[0] || '';
+      }catch(e){}
+    }
+    return name.replace(/^@/, '').replace(/[\[\]<>|]/g, '').replace(/\s+/g, ' ').trim().slice(0,48);
+  }
+  function copy(value){
+    if(!value)return;
+    function manual(){
+      var field = document.createElement('textarea');
+      field.value=value;field.style.position='fixed';field.style.opacity='0';
+      document.body.appendChild(field);field.select();
+      var ok=false;try{ok=document.execCommand('copy')}catch(e){}
+      field.remove();
+      status.textContent=ok?'لینک کپی شد.':'لینک را انتخاب و کپی کنید.';
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(value).then(function(){status.textContent='لینک کپی شد.';}).catch(manual);
+    }else manual();
+  }
+  document.getElementById('copyPublic').addEventListener('click',function(){copy(publicUrl)});
+  document.getElementById('adBuilder').addEventListener('submit',function(event){
+    event.preventDefault();
+    var page = pageName(document.getElementById('page').value);
+    if(!page){status.textContent='نام پیج را وارد کنید.';return;}
+    var url = new URL(publicUrl);
+    url.searchParams.set('ad_page',page);
+    lastUrl=url.toString();
+    document.getElementById('createdLink').textContent=lastUrl;
+    document.getElementById('resultLabel').textContent='در مدیریت لید: تبلیغات · ' + (page.includes(' ')?page:'@'+page);
+    document.getElementById('preview').href=lastUrl;
+    document.getElementById('result').hidden=false;
+    status.textContent='';
+  });
+  document.getElementById('copyCreated').addEventListener('click',function(){copy(lastUrl)});
+})();
+</script>
+</body>
+</html>
