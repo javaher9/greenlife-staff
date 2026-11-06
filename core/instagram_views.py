@@ -1,6 +1,7 @@
 from .lead_contacts import create_with_contacts
 from .lead_phone_forms import LeadPhonesCreateMixin
 from .lead_group_names import operational_group_name
+from .instagram_ad_attribution import normalize_ad_page
 from django import forms
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -213,32 +214,41 @@ def _assign_instagram_lead(lead, group_name=INSTAGRAM_GROUP_NAME, notification_t
 
 
 def instagram_lead(request):
-    """All public Instagram intake links use the approved paid-ads landing page.
-
-    Redirect GET/HEAD so old bio and story links reach the single canonical URL,
-    preserving source=<instagram_page> and campaign/UTM parameters. For legacy
-    forms that POST directly to the old endpoint, accept the submission in place
-    rather than dropping customer data during a 302 redirect.
-    """
-    if request.method in ('GET', 'HEAD'):
-        query = request.GET.urlencode()
-        canonical = reverse('instagram_ads_lead')
-        return redirect(f'{canonical}?{query}' if query else canonical)
-    return _public_instagram_lead(request, advertising=True)
+    """Organic links keep their own page source while reusing the approved design."""
+    return _public_instagram_lead(request, advertising=False)
 
 
 def instagram_ads_lead(request):
-    """Dedicated short public URL for paid Instagram story advertisements."""
+    """Single public ad URL, optionally tagged with the external publisher."""
     return _public_instagram_lead(request, advertising=True)
+
+
+@login_required
+def instagram_ads_link_builder(request):
+    """Staff-only generator for an ad link identifying its publisher page."""
+    return render(request, 'core/instagram_ads_link_builder.html', {
+        'ads_base_url': request.build_absolute_uri(reverse('instagram_ads_lead')),
+    })
 
 
 def _public_instagram_lead(request, *, advertising):
     page_slug, page_label = _instagram_page_source(request.GET.get('source'))
-    form_class = InstagramAdsLeadForm if advertising else InstagramLeadForm
+    advertiser_page = normalize_ad_page(request.GET.get('ad_page')) if advertising else ''
+    # All Instagram public entry points share the approved three-field form.
+    form_class = InstagramAdsLeadForm
     form = form_class(request.POST or None)
     completed = False
     if request.method == 'POST' and form.is_valid():
         data = form.cleaned_data
+        if advertising:
+            notes = 'ورودی تبلیغات اینستاگرام | منبع: تبلیغات | [entry:advertising]'
+            if advertiser_page:
+                notes += f' | پیج تبلیغ‌کننده: {advertiser_page} | [ad_page:{advertiser_page}]'
+        else:
+            notes = (
+                f'ورودی مستقیم فرم اینستاگرام | پیج: {page_label} | '
+                f'[instagram_page:{page_slug}]'
+            )
         try:
             lead = ReferralLead.objects.create(
                 referrer=_instagram_source_profile(),
@@ -248,12 +258,7 @@ def _public_instagram_lead(request, *, advertising):
                 status='new',
                 source='link',
                 source_url=request.build_absolute_uri()[:500],
-                notes=(
-                    f'ورودی تبلیغات اینستاگرام | منبع: تبلیغات | پیج: {page_label} | '
-                    f'[entry:advertising] [instagram_page:{page_slug}]'
-                    if advertising else
-                    f'ورودی مستقیم فرم اینستاگرام | پیج: {page_label} | [instagram_page:{page_slug}]'
-                ),
+                notes=notes,
             )
         except DuplicateLeadError:
             form.add_error('phone', LEAD_DUPLICATE_MESSAGE)
@@ -269,7 +274,7 @@ def _public_instagram_lead(request, *, advertising):
         'form': form,
         'completed': completed,
         'instagram_page': page_label,
-        'advertising': advertising,
+        'advertising': True,  # same approved visual, independently classified source
     })
 
 
