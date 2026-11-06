@@ -1,3 +1,5 @@
+core/templates/core/bulk_sms_groups.html:485: trailing whitespace.
++    
 {% extends 'core/base.html' %}
 {% block content %}
 <style>
@@ -440,6 +442,28 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
 }
 
 </style>
+<style>
+/* Guided SMS workspace: audience first, then composition. */
+.bulk-sms-page .bulk-sms-hero{position:static!important;height:auto!important;min-height:90px}
+.sms-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
+.sms-overview article{padding:20px;border-radius:18px;border:1px solid #75639a;background:linear-gradient(125deg,#49316e,#25243e);box-shadow:0 8px 22px #0002}
+.sms-overview article:nth-child(2){background:linear-gradient(125deg,#185c4e,#18333b);border-color:#398675}
+.sms-overview article:nth-child(3){background:linear-gradient(125deg,#214f7e,#202f48);border-color:#497ca6}
+.sms-overview article:nth-child(4){background:linear-gradient(125deg,#68512d,#36303b);border-color:#927647}
+.sms-overview span{color:#edf4fa;font-size:13px}.sms-overview b{display:block;font-size:32px;line-height:1.5;color:#fff;direction:ltr;text-align:right}.sms-overview small{color:#d5dce5;font-size:11px}
+.sms-steps{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0;color:#c9bfdc;font-size:12px}.sms-steps a{padding:8px 14px;border:1px solid #51496c;border-radius:99px;background:#22263c}
+.bulk-sms-page .bulk-sms-catalog{grid-row:1}
+.bulk-sms-page .bulk-sms-preview{grid-row:2;display:block;padding:20px!important}
+.bulk-sms-page .bulk-sms-preview>.bulk-sms-stats{display:inline-block;min-height:0;margin:8px 0;padding:10px 20px}
+.bulk-sms-page .bulk-sms-preview>#bulk-preview-button{display:inline-block;width:auto;min-height:44px;margin:8px 12px}
+.bulk-sms-page .bulk-sms-preview>#bulk-error{min-height:0}
+.bulk-sms-page .bulk-sms-preview>.bulk-campaign{height:auto;margin-top:16px}
+.bulk-sms-page .bulk-filter-panel summary,.sms-secondary summary{cursor:pointer;font-size:14px;font-weight:800;color:#daceff;padding:8px 0}
+.sms-secondary{margin-top:16px;padding:14px 18px;border:1px solid #3c5260;border-radius:14px;background:#182b36}
+.bulk-sms-page .bulk-sms-choice small{white-space:normal;overflow-wrap:anywhere}
+.bulk-sms-page .bulk-sms-preview .bulk-campaign textarea{min-height:150px}
+@media(max-width:760px){.sms-overview{grid-template-columns:repeat(2,minmax(0,1fr))}.sms-overview article{padding:14px}.sms-overview b{font-size:25px}}
+</style>
 
 <div class="bulk-sms-page">
   <header class="bulk-sms-hero">
@@ -452,9 +476,17 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
       <a href="{% url 'sms_management' %}">مدیریت درگاه پیامک</a>
     </div>
   </header>
+  <div class="sms-overview" aria-label="خلاصه پیامک">
+    <article><span>گروه‌های مخاطبان</span><b>{{ total_segment_types }}</b><small>گروه‌های هوشمند و به‌روز</small></article>
+    <article><span>انتخاب شما</span><b id="sms-kpi-selected">0</b><small>گروه برای پیام جدید</small></article>
+    <article><span>در انتظار ارسال</span><b id="sms-kpi-pending">—</b><small>در ۱۵ کمپین اخیر شما</small></article>
+    <article><span>پذیرفته‌شده درگاه</span><b id="sms-kpi-accepted">—</b><small>در ۱۵ کمپین اخیر؛ نه تأیید تحویل</small></article>
+  </div>
+  <nav class="sms-steps" aria-label="مراحل ارسال"><a href="#bulk-audience-form">۱ · انتخاب مخاطبان</a><a href="#sms-compose">۲ · نوشتن و بررسی پیام</a><a href="#sms-history">سوابق ارسال</a></nav>
   <div class="bulk-sms-layout">
+    
     <main class="bulk-sms-catalog">
-      <h2>بانک گروه‌های هوشمند</h2>
+      <h2>۱. انتخاب مخاطبان</h2>
       <p class="bulk-sms-muted">{{ total_segment_types }} نوع گروه قابل انتخاب. هر دسته کوچک یا بزرگ می‌تواند هم‌زمان با دسته‌های دیگر انتخاب شود؛ گروه‌های جدید کال‌سنتر، شعبه‌ها و نام دستگاه‌ها خودکار اضافه می‌شوند.</p>
       <form id="bulk-audience-form">{% csrf_token %}
         <div class="bulk-sms-tools">
@@ -462,8 +494,8 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
           <button type="button" id="bulk-select-visible">انتخاب موارد پیدا‌شده</button>
           <button type="button" id="bulk-clear">پاک‌کردن انتخاب‌ها</button>
         </div>
-        <section class="bulk-filter-panel" aria-label="فیلتر ترکیبی و بازه زمانی">
-          <h3>فیلترهای ترکیبی و زمان</h3>
+        <details class="bulk-filter-panel" aria-label="فیلتر ترکیبی و بازه زمانی">
+          <summary>فیلتر پیشرفته · ترکیب گروه‌ها و بازه زمانی</summary>
           <p class="bulk-filter-description">می‌توانید ۲ یا ۳ گروه (یا بیشتر) را ترکیب کنید. «همه شرط‌ها» یعنی شماره باید در تمام گروه‌های انتخابی وجود داشته باشد. «حداقل یکی» یعنی شماره متعلق به هر یک از گروه‌ها باشد.</p>
           <div class="bulk-filter-grid">
             <label class="bulk-filter-field">نحوه ترکیب گروه‌ها
@@ -502,7 +534,7 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
             </label>
           </div>
           <p class="bulk-filter-description">بازه زمانی فقط روی رویداد انتخاب‌شده اثر دارد؛ مثلاً «بیمار VIP» + «مراجعه‌کرده» با تاریخ مراجعه در 30 روز اخیر، پرونده VIP قدیمی را حذف نمی‌کند. برای حذف فیلتر زمان، عدد 0 را انتخاب کنید. شمارش بدون ارسال پیامک انجام می‌شود.</p>
-        </section>
+        </details>
         {% for group, segments in segment_groups.items %}
         <details class="bulk-sms-section" open>
           <summary>{{ group }} <span class="section-count">{{ segments|length }} گروه</span><span class="section-caret">⌄</span></summary>
@@ -518,9 +550,9 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
         {% endfor %}
       </form>
     </main>
-    <aside class="bulk-sms-preview" aria-label="پیش‌نمایش مخاطبان">
-      <h2>پیش‌نمایش مخاطبان</h2>
-      <p class="bulk-sms-muted">انتخاب گروه‌ها کاملاً آنلاین است؛ هیچ خروجی Excel لازم نیست.</p>
+    <aside class="bulk-sms-preview" id="sms-compose" aria-label="پیش‌نمایش مخاطبان">
+      <h2>۲. آماده‌سازی پیام</h2>
+      <p class="bulk-sms-muted">مخاطبان را بررسی کنید، سپس متن پیام را بنویسید.</p>
       <div class="bulk-sms-stats"><strong id="bulk-selected-count">0</strong><span>گروه انتخاب‌شده</span></div>
       <button id="bulk-preview-button" type="button">محاسبه تعداد مخاطبان یکتا</button>
       <p id="bulk-error" class="bulk-sms-error" role="alert"></p>
@@ -531,7 +563,7 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
       </div>
 
       <section class="bulk-campaign" aria-label="آماده‌سازی کمپین واقعی">
-        <h3>ارسال واقعی پیامک گروهی</h3>
+        <h3>متن پیام</h3>
         <p class="bulk-sms-muted">پس از انتخاب گروه‌ها و بازه، متن را بنویسید و فهرست نهایی را آماده کنید. این مرحله هیچ پیامکی نمی‌فرستد.</p>
         <textarea id="bulk-message-text" maxlength="560" placeholder="گرین‌لایف — پیام اطلاع‌رسانی شما ... (از ثبت جزئیات پزشکی خصوصی پرهیز کنید)"></textarea>
         <p class="bulk-sms-muted">«لغو 11» در پایان پیام‌های فاقد راه لغو افزوده می‌شود. پیش از ارسال از رضایت مخاطبان اطمینان حاصل کنید.</p>
@@ -548,24 +580,25 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
           <button type="button" class="bulk-cancel" id="bulk-abandon-draft">انصراف از این پیش‌نویس</button>
         </div>
       </section>
-      <section class="bulk-campaign" aria-label="پیگیری ارسال‌ها">
-        <h3>وضعیت کمپین‌ها</h3>
+      <section class="bulk-campaign" id="sms-history" aria-label="پیگیری ارسال‌ها">
+        <h3>آخرین کمپین‌های شما</h3>
         <p class="bulk-sms-muted">«پذیرفته‌شده» یعنی درگاه پیامک درخواست را قبول کرده است؛ نه لزوماً تحویل نهایی. حداکثر ۴۰۰ تلاش در ۲۴ ساعت؛ ادامه صف در روزهای بعد خودکار انجام می‌شود.</p>
         <button id="bulk-refresh-campaigns" type="button">به‌روزرسانی وضعیت</button>
         <div style="overflow:auto">
           <table class="bulk-campaign-table"><thead><tr><th>کمپین</th><th>وضعیت</th><th>تعداد</th><th>پذیرفته</th><th>ناموفق</th><th>حذف‌شده</th><th>عملیات</th></tr></thead><tbody id="bulk-campaign-rows"><tr><td colspan="7">برای مشاهده وضعیت روی به‌روزرسانی بزنید.</td></tr></tbody></table>
         </div>
       </section>
-      <section class="bulk-campaign" aria-label="فهرست عدم ارسال">
-        <h3>عدم دریافت پیامک تبلیغاتی</h3>
+      <details class="bulk-campaign sms-secondary" aria-label="فهرست عدم ارسال">
+        <summary>مدیریت عدم دریافت پیامک</summary>
         <p class="bulk-sms-muted">اگر فردی پیامک «11» را پاسخ دهد، خودکار به فهرست عدم ارسال می‌رود؛ در اینجا نیز می‌توانید دستی اضافه کنید.</p>
         <div class="bulk-optout"><input id="bulk-optout-number" type="tel" placeholder="0912xxxxxxx" aria-label="شماره عدم ارسال"><button id="bulk-optout-add" type="button">افزودن به عدم ارسال</button></div>
         <p id="bulk-optout-notice" class="bulk-sms-muted"></p>
-      </section>
-      <div class="bulk-sms-warning">
+      </details>
+      <details class="bulk-sms-warning">
+        <summary>قواعد ارسال و حذف مخاطبان تکراری</summary>
         <strong>ارسال با کنترل ایمنی</strong>
         <div>تنها بعد از تأیید جداگانه شما آغاز می‌شود. گیرندگان تکراری یک کمپین، شماره‌های لغوکننده و مخاطبان دریافت‌کننده پیامک گروهی در ۷ روز اخیر مجدداً ارسال نمی‌شوند. نتایج نامشخص درگاه بدون بازبینی دستی تکرار نمی‌شوند.</div>
-      </div>
+      </details>
       <p class="bulk-sms-info">پیش‌نمایش و آماده‌سازی، هیچ پیامکی ارسال نمی‌کنند؛ ارسال فقط بعد از «تأیید نهایی» و از صف محافظت‌شده انجام می‌شود. شمارش آنلاین بوده و شماره کامل افراد در این صفحه نمایش داده نمی‌شود.</p>
     </aside>
   </div>
@@ -605,7 +638,7 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
   loadSegmentCounts();
   datePreset.addEventListener('change',()=>{dateCustom.hidden=datePreset.value!=='custom';refresh();});
   [combine,dateEvent,dateFrom,dateTo].forEach(el=>el.addEventListener('change',refresh));
-  function refresh(){selectedCount.textContent=String(boxes.filter(b=>b.checked).length);results.hidden=true;err.textContent='';}
+  function refresh(){selectedCount.textContent=String(boxes.filter(b=>b.checked).length);document.getElementById('sms-kpi-selected').textContent=selectedCount.textContent;results.hidden=true;err.textContent='';}
   form.addEventListener('change',refresh);
   search.addEventListener('input',()=>{
     const q=search.value.trim().toLocaleLowerCase('fa');
@@ -711,6 +744,8 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
     const r=await fetch(statusUrl,{credentials:'same-origin',headers:{Accept:'application/json'}});
     const data=await r.json();if(!r.ok||!data.ok)throw Error('خواندن وضعیت کمپین‌ها انجام نشد');
     campaignsBody.replaceChildren();
+    document.getElementById('sms-kpi-pending').textContent=data.campaigns.reduce((n,c)=>n+c.pending+c.sending,0).toLocaleString('en-US');
+    document.getElementById('sms-kpi-accepted').textContent=data.campaigns.reduce((n,c)=>n+c.accepted,0).toLocaleString('en-US');
     if(!data.campaigns.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=7;td.textContent='هنوز کمپین تأییدشده یا پیش‌نویس وجود ندارد.';tr.append(td);campaignsBody.append(tr);return;}
     const statusLabels={
       draft:'پیش‌نویس',queued:'در صف ارسال',paused:'متوقف موقت',
