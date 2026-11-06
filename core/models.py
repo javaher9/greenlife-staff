@@ -2241,6 +2241,11 @@ class BulkSmsRecipient(models.Model):
         indexes=[models.Index(fields=['status','attempted_at'],name='bulk_sms_dispatch_idx')]
 
 
+from .bulk_sms_automation_models import (
+    BulkSmsAutomation, BulkSmsAutomationRun, BulkSmsAutomationStep, BulkSmsParticipation,
+)
+
+
 
 from .treatment_content_models import TreatmentRichContent, TreatmentRichSection, TreatmentRichMedia, TreatmentDietDayAudio
 from .lead_routing_models import CallCenterRoutingDay

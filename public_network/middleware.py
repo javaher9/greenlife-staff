@@ -11,6 +11,7 @@ class PublicNetworkMemberMiddleware:
         '/static/',
         '/media/',
         '/api/health/',
+        '/s/c/',
     )
 
     def __init__(self, get_response):

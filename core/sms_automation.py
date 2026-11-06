@@ -203,6 +203,8 @@ def process_due_sms(batch_size=25):
     # Real bulk campaigns share the existing dedicated SMS worker but remain
     # separately approved, suppressed, metered and auditable.
     from .bulk_sms_dispatch import process_bulk_sms
+    from .bulk_sms_automations import process_due_automations
+    process_due_automations()
     processed += process_bulk_sms(batch_size=12)
     return processed
 

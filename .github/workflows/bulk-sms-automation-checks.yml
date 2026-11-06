@@ -1,0 +1,26 @@
+name: Bulk SMS Automation Checks
+on:
+  push:
+    branches: ['codex/sms-automation']
+  pull_request:
+    paths: ['core/bulk_sms*', 'core/tests/test_bulk_sms*', 'core/static/core/bulk-sms-*', 'core/templates/core/bulk_sms*']
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements.txt
+      - name: Validate schema and SMS flows without contacting gateway
+        env:
+          DJANGO_SETTINGS_MODULE: greenlife.test_settings
+        run: |
+          python manage.py check
+          python -m compileall -q core/bulk_sms_automations.py core/bulk_sms_automation_views.py core/migrations/0114_bulk_sms_automations.py
+          python manage.py test core.tests.test_bulk_sms_automations core.tests.test_bulk_sms_dispatch core.tests.test_bulk_sms_audiences --verbosity 2
+      - run: node --check core/static/core/bulk-sms-automations.js

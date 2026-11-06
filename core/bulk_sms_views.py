@@ -128,7 +128,16 @@ def bulk_sms_campaign_api(request):
 def bulk_sms_campaigns_status_api(request):
     if not _may_manage_bulk_sms(request.user):
         raise PermissionDenied('مشاهده کمپین‌های گروهی مجاز نیست.')
-    campaigns=(BulkSmsCampaign.objects.filter(created_by=request.user)
+    source=BulkSmsCampaign.objects.filter(created_by=request.user)
+    mode=request.GET.get('mode')
+    if mode=='manual':
+        source=source.filter(automation_step__isnull=True)
+    elif mode=='auto':
+        source=source.filter(automation_step__isnull=False)
+    automation=request.GET.get('automation','')
+    if automation.isdigit():
+        source=source.filter(automation_step__run__automation_id=int(automation))
+    campaigns=(source.select_related('automation_step__run__automation')
         .annotate(
             pending=Count('recipients',filter=Q(recipients__status='pending')),
             sending=Count('recipients',filter=Q(recipients__status='sending')),
@@ -145,9 +154,16 @@ def bulk_sms_campaigns_status_api(request):
         campaign__created_by=request.user,status='accepted',
         attempted_at__gte=start,attempted_at__lt=end,
     ).count()
-    return JsonResponse({'ok':True,'sent_today':sent_today,'campaigns':[
+    overview=BulkSmsRecipient.objects.filter(campaign__in=BulkSmsCampaign.objects.filter(created_by=request.user).order_by('-pk')[:15]).aggregate(
+        pending=Count('id',filter=Q(status__in=['pending','sending'])),
+        accepted=Count('id',filter=Q(status='accepted')),
+    )
+    return JsonResponse({'ok':True,'sent_today':sent_today,'overview':overview,'campaigns':[
         {
             'id':item.pk,'status':item.status,'total':item.recipient_count,
+            'source':'auto' if hasattr(item,'automation_step') else 'manual',
+            'automation_name':item.automation_step.run.automation.name if hasattr(item,'automation_step') else '',
+            'step':item.automation_step.index+1 if hasattr(item,'automation_step') else None,
             'pending':item.pending,'sending':item.sending,
             'accepted':item.accepted,'failed':item.failed,'skipped':item.skipped,
             'created_at':item.created_at.isoformat(),

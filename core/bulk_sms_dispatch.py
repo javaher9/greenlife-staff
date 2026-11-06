@@ -164,6 +164,8 @@ def process_bulk_sms(batch_size=MAX_WORKER_BATCH):
         status='sending',updated_at__lt=now-timedelta(minutes=6),
     ).update(status='failed',reason='نتیجه درگاه نامشخص؛ ارسال دوباره خودکار ممنوع')
     attempts=0
+    automation_cache={}
+    blocked_campaigns=set()
     for _ in range(max(1,min(batch_size,MAX_WORKER_BATCH))):
         with transaction.atomic():
             ApiServerSettings.objects.select_for_update().get(pk=1)
@@ -174,9 +176,21 @@ def process_bulk_sms(batch_size=MAX_WORKER_BATCH):
                 break
             entry=(BulkSmsRecipient.objects.select_for_update(skip_locked=True)
                    .filter(status='pending',campaign__status='queued',campaign__consent_attested=True)
+                   .exclude(campaign_id__in=blocked_campaigns)
                    .order_by('campaign__approved_at','pk').first())
             if not entry:
                 break
+            from .bulk_sms_automations import automation_dispatch_context, personalized_body
+            context=automation_dispatch_context(entry.campaign_id,timezone.now(),automation_cache)
+            if context is not None and context['remaining'] <= 0:
+                blocked_campaigns.add(entry.campaign_id)
+                continue
+            if context is not None and entry.number not in context['numbers']:
+                entry.status='skipped'
+                entry.reason='شرایط سناریو یا عضویت مخاطب تغییر کرده است'
+                entry.save(update_fields=['status','reason','updated_at'])
+                _finalize_finished_campaign(entry.campaign_id)
+                continue
             opted_out=BulkSmsOptOut.objects.filter(number=entry.number).exists()
             too_recent=BulkSmsRecipient.objects.filter(
                 number=entry.number,status='accepted',
@@ -188,11 +202,20 @@ def process_bulk_sms(batch_size=MAX_WORKER_BATCH):
                 entry.save(update_fields=['status','reason','updated_at'])
                 _finalize_finished_campaign(entry.campaign_id)
                 continue
+            try:
+                campaign_body=personalized_body(entry.campaign.body,context,entry.number)
+            except ValueError as exc:
+                entry.status='failed'
+                entry.reason=str(exc)[:140]
+                entry.save(update_fields=['status','reason','updated_at'])
+                _finalize_finished_campaign(entry.campaign_id)
+                continue
             entry.status='sending'
             entry.attempted_at=timezone.now()
             entry.save(update_fields=['status','attempted_at','updated_at'])
             campaign_id=entry.campaign_id
-            campaign_body=entry.campaign.body
+            if context is not None:
+                context['remaining']-=1
             recipient_id=entry.pk
             recipient_number=entry.number
             owner=entry.campaign.created_by
