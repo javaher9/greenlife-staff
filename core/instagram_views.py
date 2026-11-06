@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from .models import Attendance, CallCenterLeadGroup, DuplicateLeadError, EmployeeProfile, LEAD_DUPLICATE_MESSAGE, ReferralLead, ReferralProfile, StaffNotification, normalize_lead_phone
@@ -212,7 +213,18 @@ def _assign_instagram_lead(lead, group_name=INSTAGRAM_GROUP_NAME, notification_t
 
 
 def instagram_lead(request):
-    return _public_instagram_lead(request, advertising=False)
+    """All public Instagram intake links use the approved paid-ads landing page.
+
+    Redirect GET/HEAD so old bio and story links reach the single canonical URL,
+    preserving source=<instagram_page> and campaign/UTM parameters. For legacy
+    forms that POST directly to the old endpoint, accept the submission in place
+    rather than dropping customer data during a 302 redirect.
+    """
+    if request.method in ('GET', 'HEAD'):
+        query = request.GET.urlencode()
+        canonical = reverse('instagram_ads_lead')
+        return redirect(f'{canonical}?{query}' if query else canonical)
+    return _public_instagram_lead(request, advertising=True)
 
 
 def instagram_ads_lead(request):
