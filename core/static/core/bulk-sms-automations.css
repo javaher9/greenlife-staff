@@ -1,4 +1,8 @@
 .bulk-sms-page [hidden],.sa-dialog [hidden]{display:none!important}
+.bulk-sms-page .sms-main-tabs button,.bulk-sms-page .sms-auto button,.bulk-sms-page .sa-dialog button{background:#193345!important;box-shadow:none!important}
+.bulk-sms-page .sms-main-tabs button[aria-selected=true],.bulk-sms-page .sms-auto button.sa-primary,.bulk-sms-page .sa-dialog button.sa-primary{background:linear-gradient(135deg,#6438c8,#8e50e4)!important;border-color:#aa82ed!important;box-shadow:0 4px 18px #865ed030!important}
+.bulk-sms-page .sa-dialog .sa-presets button{background:linear-gradient(135deg,#3f306166,#152b3c)!important}
+.bulk-sms-page .sa-dialog .sa-presets button.selected{background:linear-gradient(135deg,#7144a666,#22465b)!important;border-color:#bc94fc!important}
 .sms-main-tabs{display:flex;gap:8px;border-bottom:1px solid #345065;padding:4px 0 12px;margin:8px 0 20px;flex-wrap:wrap}
 .sms-main-tabs button{border:1px solid #344c62;border-radius:13px;background:#112330;color:#cbdbe6;padding:13px 22px;font:700 13px Tahoma;cursor:pointer}
 .sms-main-tabs button[aria-selected=true]{background:linear-gradient(135deg,#7043bf,#4c357c);border-color:#ac8ae2;color:white;box-shadow:0 4px 20px #865ed026}
@@ -25,3 +29,4 @@
 #sms-history-panel .bulk-campaign-table th{background:#1b3547!important;color:#eff7ff!important}#sms-history-panel .bulk-campaign-table td{background:#10232d!important;color:#dcebf5!important}#sms-history-panel .bulk-campaign{border:0;padding:0;background:transparent}#sms-history-panel .bulk-campaign h3{display:none}
 @media(max-width:1150px){.sa-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.sa-presets{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.sms-auto{padding:16px}.sms-main-tabs{gap:5px}.sms-main-tabs button{padding:11px;font-size:11px;flex:1}.sms-main-tabs button span{display:none}.sa-toolbar{align-items:flex-start;flex-wrap:wrap}.sa-cards,.sa-fields{grid-template-columns:1fr}.sa-dialog{padding:16px;width:calc(100vw - 20px);max-height:94vh}.sa-groups details>div,.sa-exit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sa-progress{gap:4px}.sa-progress li{padding:6px;font-size:9px}.sa-report-metrics{grid-template-columns:repeat(2,1fr)}.sa-summary{flex-wrap:wrap}.sa-footer button{flex:1}}
+
