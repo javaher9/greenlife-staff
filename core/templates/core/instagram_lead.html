@@ -4,6 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#f7faf8">
+  {% if advertising %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  {% endif %}
   <title>مشاوره رایگان گرین‌لایف</title>
   <style>
     :root{
@@ -102,8 +107,27 @@
     .ads-art{width:144px;height:94px;margin:0 auto 5px;display:flex;align-items:center;justify-content:center}
     .ads-art svg{display:block;width:100%;height:100%}
     .ad-card h1{margin:0 0 18px;font-size:22px}
-    .ad-card .field textarea{min-height:78px;resize:vertical}
+    .ad-card .field textarea{min-height:126px;resize:vertical}
     .ad-card .btn{margin-top:5px}
+    /* Larger, high-contrast Persian typography for mobile ad visitors only. */
+    .advertising-page,
+    .advertising-page input,
+    .advertising-page textarea,
+    .advertising-page button{font-family:'Vazirmatn','Noto Sans Arabic','Segoe UI',Tahoma,Arial,sans-serif}
+    .advertising-page .field>span{
+      font-size:16px;font-weight:900;color:#263c32;line-height:1.8;margin-bottom:8px;
+    }
+    .advertising-page .field input,
+    .advertising-page .field textarea{
+      font-size:17px;font-weight:650;color:#24342b;line-height:1.85;
+      border-color:#dce7e0;background:#fff;
+    }
+    .advertising-page .field input{min-height:56px}
+    .advertising-page .field textarea{padding:13px 14px;min-height:126px}
+    .advertising-page .field input::placeholder,
+    .advertising-page .field textarea::placeholder{font-size:15px;font-weight:500;color:#6d7c73;opacity:1;line-height:1.85}
+    .advertising-page h1{font-weight:900;font-size:24px}
+    .advertising-page .btn{font-weight:850;font-size:17px}
     .success{text-align:center;padding:18px 3px 9px}
     .success .tick{
       width:72px;height:72px;border-radius:24px;display:grid;place-items:center;margin:0 auto 17px;
@@ -124,7 +148,7 @@
     }
   </style>
 </head>
-<body>
+<body{% if advertising %} class="advertising-page"{% endif %}>
 <main class="wrap">
   <div class="brand">
     <div class="brand-mark">GL</div>
