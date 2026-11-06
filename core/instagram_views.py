@@ -66,6 +66,20 @@ class InstagramLeadForm(forms.Form):
         return value
 
 
+class InstagramAdsLeadForm(InstagramLeadForm):
+    """Paid Instagram ads: minimal three-field form with no consent checkbox."""
+    interested_service = forms.CharField(
+        label='توضیحات', max_length=160, required=False,
+        widget=forms.Textarea(attrs={
+            'rows': 2, 'placeholder': 'در صورت تمایل توضیح کوتاهی بنویسید',
+        }),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields.pop('consent', None)
+
+
 class InstagramManualLeadForm(LeadPhonesCreateMixin,InstagramLeadForm):
     # Required for every staff user, including admins/superusers. Keeping this
     # validation in the form prevents bypassing the requirement by posting
@@ -204,7 +218,8 @@ def instagram_ads_lead(request):
 
 def _public_instagram_lead(request, *, advertising):
     page_slug, page_label = _instagram_page_source(request.GET.get('source'))
-    form = InstagramLeadForm(request.POST or None)
+    form_class = InstagramAdsLeadForm if advertising else InstagramLeadForm
+    form = form_class(request.POST or None)
     completed = False
     if request.method == 'POST' and form.is_valid():
         data = form.cleaned_data
@@ -232,12 +247,13 @@ def _public_instagram_lead(request, *, advertising):
             else:
                 _assign_instagram_lead(lead)
             completed = True
-            form = InstagramLeadForm()
+            form = form_class()
 
     return render(request, 'core/instagram_lead.html', {
         'form': form,
         'completed': completed,
         'instagram_page': page_label,
+        'advertising': advertising,
     })
 
 
