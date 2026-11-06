@@ -71,7 +71,8 @@ class InstagramAdsLeadForm(InstagramLeadForm):
     interested_service = forms.CharField(
         label='توضیحات', max_length=160, required=False,
         widget=forms.Textarea(attrs={
-            'rows': 2, 'placeholder': 'در صورت تمایل توضیح کوتاهی بنویسید',
+            'rows': 3,
+            'placeholder': 'مثلاً: شکم و پهلو چربی بیشتری دارد؛ قدم ۱۶۵ و وزنم ۸۰ کیلو است؛ درباره تعداد جلسات سؤال دارم.',
         }),
     )
 
