@@ -88,6 +88,14 @@ class BulkSmsAudienceTests(TestCase):
         self.assertEqual(response.json()['count'],1)
         self.assertEqual(SmsMessageLog.objects.count(),0)
 
+    def test_group_counts_api_returns_unique_valid_numbers_without_sending(self):
+        before=SmsMessageLog.objects.count()
+        response=self.client.get(reverse('bulk_sms_group_counts_api'))
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.json()['counts']['lead_all'],1)
+        self.assertEqual(response.json()['counts']['patient_vip'],1)
+        self.assertEqual(SmsMessageLog.objects.count(),before)
+
     def test_tablet_layout_stacks_campaign_preview_without_overflow(self):
         page=self.client.get(reverse('bulk_sms_groups'))
         self.assertEqual(page.status_code,200)
@@ -244,3 +252,4 @@ class BulkSmsAudienceTests(TestCase):
         self.assertContains(response,'0 — همه تاریخ‌ها')
         self.assertContains(response,'id="bulk-date-from"')
         self.assertContains(response,'id="bulk-date-to"')
+

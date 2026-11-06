@@ -166,6 +166,7 @@ path('attendance/corrections/',views.correction_list,name='correction_list'),pat
 path('kpi/automatic/',views.automatic_kpi_dashboard,name='automatic_kpi_dashboard'),
 path('sms/send/',marketing_sms_views.marketing_sms_compose,name='marketing_sms_compose'),
 path('sms/groups/',bulk_sms_views.bulk_sms_groups,name='bulk_sms_groups'),
+path('api/sms/groups/counts/',bulk_sms_views.bulk_sms_group_counts_api,name='bulk_sms_group_counts_api'),
 path('api/sms/groups/preview/',bulk_sms_views.bulk_sms_preview_api,name='bulk_sms_preview_api'),
 path('api/sms/groups/campaign/',bulk_sms_views.bulk_sms_campaign_api,name='bulk_sms_campaign_api'),
 path('api/sms/groups/campaigns/',bulk_sms_views.bulk_sms_campaigns_status_api,name='bulk_sms_campaigns_status_api'),
@@ -194,3 +195,4 @@ path('guidelines/manage/',views.guidelines_manage,name='guidelines_manage'),
 path('guidelines/manage/new/',views.guideline_create,name='guideline_create'),
 path('job-duties/new/',views.job_duty_create,name='job_duty_create'),
 path('job-duties/<int:pk>/edit/',views.job_duty_edit,name='job_duty_edit')]
+

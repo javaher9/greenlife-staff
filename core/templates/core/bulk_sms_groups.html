@@ -284,6 +284,25 @@
   .bulk-sms-page .bulk-filter-dates{grid-template-columns:1fr}
 }
 
+/* Compact, one-line audience cards with live valid-number totals. */
+.bulk-sms-page .bulk-sms-choice{
+  min-height:44px!important;padding:8px 10px!important;align-items:center!important;gap:8px!important;
+}
+.bulk-sms-page .bulk-sms-choice input{margin:0!important}
+.bulk-sms-page .bulk-sms-choice .choice-copy{
+  display:flex;align-items:center;gap:7px;min-width:0;width:100%;white-space:nowrap;
+}
+.bulk-sms-page .bulk-sms-choice strong{
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.5!important;
+}
+.bulk-sms-page .bulk-sms-choice small{display:none!important}
+.bulk-sms-page .segment-count{
+  flex:0 0 auto;margin-right:auto;padding:2px 7px;border:1px solid #4a6570;border-radius:999px;
+  background:#102730;color:#cfe0dc;font-size:10px;font-weight:800;line-height:1.6;white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.bulk-sms-page .segment-count[data-ready="true"]{color:#ddf7ec;border-color:#4c806d;background:#17382f}
+
 /* Keep this screen self-contained when global readability rules target generic
    header, main and aside elements. Those rules previously turned the hero and
    preview cards light while their copy remained white. */
@@ -457,9 +476,9 @@
           <summary>{{ group }} <span class="section-count">{{ segments|length }} گروه</span><span class="section-caret">⌄</span></summary>
           <div class="bulk-sms-choices">
             {% for segment in segments %}
-            <label class="bulk-sms-choice" data-search="{{ segment.label }} {{ segment.description }} {{ group }}">
+            <label class="bulk-sms-choice" data-search="{{ segment.label }} {{ segment.description }} {{ group }}" title="{{ segment.label }} — {{ segment.description }}">
               <input type="checkbox" name="segments" value="{{ segment.key }}">
-              <span><strong>{{ segment.label }}</strong><small>{{ segment.description }}</small></span>
+              <span class="choice-copy"><strong>{{ segment.label }}</strong><small>{{ segment.description }}</small><span class="segment-count" data-segment-key="{{ segment.key }}" aria-label="در حال محاسبه تعداد شماره‌ها">…</span></span>
             </label>
             {% endfor %}
           </div>
@@ -535,6 +554,23 @@
   const dateCustom=document.getElementById('bulk-date-custom');
   const dateFrom=document.getElementById('bulk-date-from');
   const dateTo=document.getElementById('bulk-date-to');
+  async function loadSegmentCounts(){
+    const badges=Array.from(form.querySelectorAll('.segment-count'));
+    try{
+      const response=await fetch("{% url 'bulk_sms_group_counts_api' %}",{credentials:'same-origin',headers:{'Accept':'application/json'}});
+      const data=await response.json();
+      if(!response.ok||!data.ok)throw new Error('count');
+      badges.forEach(badge=>{
+        const count=data.counts[badge.dataset.segmentKey];
+        badge.textContent=Number(count||0).toLocaleString('fa-IR')+' شماره';
+        badge.dataset.ready='true';
+        badge.setAttribute('aria-label',String(count||0)+' شماره معتبر و یکتا');
+      });
+    }catch(e){
+      badges.forEach(badge=>{badge.textContent='— شماره';badge.setAttribute('aria-label','تعداد در دسترس نیست');});
+    }
+  }
+  loadSegmentCounts();
   datePreset.addEventListener('change',()=>{dateCustom.hidden=datePreset.value!=='custom';refresh();});
   [combine,dateEvent,dateFrom,dateTo].forEach(el=>el.addEventListener('change',refresh));
   function refresh(){selectedCount.textContent=String(boxes.filter(b=>b.checked).length);results.hidden=true;err.textContent='';}

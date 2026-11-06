@@ -13,7 +13,7 @@ from django.shortcuts import render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_POST
 
-from .bulk_sms_audiences import audience_preview, catalog
+from .bulk_sms_audiences import audience_preview, catalog, catalog_counts
 from .bulk_sms_dispatch import (
     prepare_campaign, approve_campaign, change_campaign, suppress_number,
 )
@@ -65,6 +65,15 @@ def bulk_sms_preview_api(request):
     except (UnicodeDecodeError,json.JSONDecodeError,AttributeError,TypeError,ValueError) as exc:
         return JsonResponse({'ok':False,'error':str(exc)[:180]},status=400)
     return JsonResponse({'ok':True,**result})
+
+
+@login_required
+@require_GET
+@never_cache
+def bulk_sms_group_counts_api(request):
+    if not _may_manage_bulk_sms(request.user):
+        raise PermissionDenied('مشاهده تعداد مخاطبان فقط برای مدیریت است.')
+    return JsonResponse({'ok':True,'counts':catalog_counts()})
 
 
 @login_required
@@ -132,3 +141,4 @@ def bulk_sms_campaigns_status_api(request):
             'created_at':item.created_at.isoformat(),
         } for item in campaigns
     ]})
+

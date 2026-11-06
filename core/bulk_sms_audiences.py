@@ -293,6 +293,22 @@ def segment_numbers(key, *, window=None):
     )
 
 
+def catalog_counts():
+    """Return the valid, unique Iranian mobile count for every catalog item."""
+    counts={}
+    for segment in catalog():
+        collection=segment_numbers(segment['key'])
+        iterables=collection if isinstance(collection,tuple) else (collection,)
+        numbers=set()
+        for items in iterables:
+            for raw in items.iterator(chunk_size=1000):
+                number=_iran_number(raw)
+                if number:
+                    numbers.add(number)
+        counts[segment['key']]=len(numbers)
+    return counts
+
+
 def audience_preview(keys, *, combine='any', date_filter=None, max_contacts=MAX_PREVIEW_CONTACTS, include_numbers=False):
     """Read-only union/intersection on normalized phone, with event-scoped dates.
 
