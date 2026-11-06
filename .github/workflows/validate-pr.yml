@@ -303,7 +303,7 @@ jobs:
       - name: Django system check
         run: python manage.py check
       - name: external-leads regression tests
-        run: python manage.py test core.tests.test_telegram_lead core.tests.test_instagram_page_sources --verbosity 2
+        run: python manage.py test core.tests.test_telegram_lead core.tests.test_instagram_page_sources core.tests.test_instagram_paid_ads --verbosity 2
   doctor-device:
     runs-on: ubuntu-latest
     timeout-minutes: 18
