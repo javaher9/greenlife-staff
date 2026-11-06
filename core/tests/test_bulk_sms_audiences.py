@@ -62,7 +62,9 @@ class BulkSmsAudienceTests(TestCase):
         self.assertIn('device:Cooltech Define',keys)
         self.assertIn('leadgroup:'+str(self.group.pk),keys)
         self.assertIn('branch_leads:'+str(self.branch.pk),keys)
-        self.assertIn('lead_instagram_manual',keys)
+        self.assertIn('lead_instagram',keys)
+        self.assertNotIn('lead_instagram_manual',keys)
+        self.assertNotIn('lead_instagram_other',keys)
         self.assertIn('visit_no_show',keys)
         self.assertIn('network_all',keys)
 
@@ -80,7 +82,7 @@ class BulkSmsAudienceTests(TestCase):
     def test_group_api_preview_never_sends(self):
         response=self.client.post(
             reverse('bulk_sms_preview_api'),
-            data=json.dumps({'segments':['lead_instagram_manual','network_all']}),
+            data=json.dumps({'segments':['lead_instagram','network_all']}),
             content_type='application/json',
         )
         self.assertEqual(response.status_code,200)
@@ -142,7 +144,7 @@ class BulkSmsAudienceTests(TestCase):
         # One contact may be in many independent tables; no duplicates.
         response=self.client.post(
             reverse('bulk_sms_preview_api'),
-            data=json.dumps({'segments':['lead_instagram_manual','visit_no_show','patient_vip'],
+            data=json.dumps({'segments':['lead_instagram','visit_no_show','patient_vip'],
                 'combine':'all','date_filter':{'preset':'all'}}),
             content_type='application/json',
         )
@@ -155,10 +157,10 @@ class BulkSmsAudienceTests(TestCase):
         # while union still finds the lead and patient.
         VisitAppointment.objects.filter(pk=self.visit.pk).update(status='booked')
         self.assertEqual(audience_preview(
-            ['lead_instagram_manual','visit_no_show','patient_vip'],combine='all',
+            ['lead_instagram','visit_no_show','patient_vip'],combine='all',
         )['count'],0)
         self.assertEqual(audience_preview(
-            ['lead_instagram_manual','visit_no_show','patient_vip'],combine='any',
+            ['lead_instagram','visit_no_show','patient_vip'],combine='any',
         )['count'],1)
 
     def test_visit_window_filters_event_not_vip_registration(self):
@@ -179,7 +181,7 @@ class BulkSmsAudienceTests(TestCase):
         self.assertEqual(audience_preview(keys,combine='all',date_filter={'preset':'all'})['count'],1)
 
     def test_lead_windows_work_independently_of_visit_dates(self):
-        keys=['lead_instagram_manual','patient_vip']
+        keys=['lead_instagram','patient_vip']
         recent={'preset':'30','event':'lead'}
         self.assertEqual(audience_preview(keys,combine='all',date_filter=recent)['count'],1)
         ReferralLead.objects.filter(pk=self.lead.pk).update(
