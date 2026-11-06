@@ -158,6 +158,32 @@ class BulkSmsDispatchTests(TestCase):
             reverse('bulk_sms_campaigns_status_api')
         ).status_code,403)
 
+    def test_today_count_uses_tehran_send_date_and_all_owned_campaigns(self):
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        start=datetime(2026,11,7,tzinfo=ZoneInfo('Asia/Tehran'))
+        campaign=BulkSmsCampaign.objects.create(created_by=self.executive,body='test')
+        # Newer drafts must not hide an older campaign's sends from today's total.
+        for _ in range(16):
+            BulkSmsCampaign.objects.create(created_by=self.executive,body='draft')
+        other=BulkSmsCampaign.objects.create(created_by=self.staff,body='other')
+        for index,(owner,status,when) in enumerate([
+            (campaign,'accepted',start),
+            (campaign,'accepted',start+timedelta(hours=23,minutes=59)),
+            (campaign,'accepted',start-timedelta(seconds=1)),
+            (campaign,'accepted',start+timedelta(days=1)),
+            (campaign,'failed',start),
+            (campaign,'pending',None),
+            (other,'accepted',start),
+        ]):
+            BulkSmsRecipient.objects.create(campaign=owner,status=status,
+                attempted_at=when,number=f'0912000{index:04d}')
+        with patch('core.bulk_sms_views.timezone.now',return_value=start+timedelta(hours=12)):
+            response=self.client.get(reverse('bulk_sms_campaigns_status_api'))
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.json()['sent_today'],2)
+        self.assertEqual(len(response.json()['campaigns']),15)
+
     def test_prepared_draft_expires_and_cannot_be_approved(self):
         draft=prepare_campaign(
             user=self.executive,keys=['lead_all'],combine='any',

@@ -1,5 +1,3 @@
-core/templates/core/bulk_sms_groups.html:485: trailing whitespace.
-+    
 {% extends 'core/base.html' %}
 {% block content %}
 <style>
@@ -445,11 +443,13 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
 <style>
 /* Guided SMS workspace: audience first, then composition. */
 .bulk-sms-page .bulk-sms-hero{position:static!important;height:auto!important;min-height:90px}
-.sms-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
-.sms-overview article{padding:20px;border-radius:18px;border:1px solid #75639a;background:linear-gradient(125deg,#49316e,#25243e);box-shadow:0 8px 22px #0002}
-.sms-overview article:nth-child(2){background:linear-gradient(125deg,#185c4e,#18333b);border-color:#398675}
-.sms-overview article:nth-child(3){background:linear-gradient(125deg,#214f7e,#202f48);border-color:#497ca6}
-.sms-overview article:nth-child(4){background:linear-gradient(125deg,#68512d,#36303b);border-color:#927647}
+.sms-overview{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:16px 0}
+.sms-overview article{--glass:65,211,221;position:relative;isolation:isolate;overflow:hidden;min-width:0;padding:20px;border-radius:18px;border:1px solid rgba(var(--glass),.55);background:linear-gradient(135deg,rgba(var(--glass),.38),rgba(var(--glass),.12) 65%,rgba(255,255,255,.05));backdrop-filter:blur(18px) saturate(145%);-webkit-backdrop-filter:blur(18px) saturate(145%);box-shadow:inset 0 1px 0 #ffffff45,inset 0 -1px 0 #ffffff0d,0 8px 22px #0002}
+.sms-overview article::before{content:"";position:absolute;z-index:-1;inset:0;pointer-events:none;background:linear-gradient(155deg,#ffffff24,transparent 45%),radial-gradient(ellipse at 0 0,#ffffff20,transparent 65%)}
+.sms-overview article:nth-child(2){--glass:172,125,248}
+.sms-overview article:nth-child(3){--glass:58,216,165}
+.sms-overview article:nth-child(4){--glass:77,166,248}
+.sms-overview article:nth-child(5){--glass:240,188,82}
 .sms-overview span{color:#edf4fa;font-size:13px}.bulk-sms-page .sms-overview b{display:block;font-size:32px;line-height:1.5;color:#fff!important;-webkit-text-fill-color:#fff!important;direction:ltr;text-align:right}.sms-overview small{color:#d5dce5;font-size:11px}
 .sms-steps{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0;color:#c9bfdc;font-size:12px}.sms-steps a{padding:8px 14px;border:1px solid #51496c;border-radius:99px;background:#22263c}
 .bulk-sms-page .bulk-sms-catalog{grid-row:1}
@@ -462,7 +462,8 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
 .sms-secondary{margin-top:16px;padding:14px 18px;border:1px solid #3c5260;border-radius:14px;background:#182b36}
 .bulk-sms-page .bulk-sms-choice small{white-space:normal;overflow-wrap:anywhere}
 .bulk-sms-page .bulk-sms-preview .bulk-campaign textarea{min-height:150px}
-@media(max-width:760px){.sms-overview{grid-template-columns:repeat(2,minmax(0,1fr))}.sms-overview article{padding:14px}.sms-overview b{font-size:25px}}
+@media(max-width:1050px){.sms-overview{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.sms-overview{grid-template-columns:repeat(2,minmax(0,1fr))}.sms-overview article{padding:14px}.bulk-sms-page .sms-overview b{font-size:25px}}
 </style>
 
 <div class="bulk-sms-page">
@@ -477,6 +478,7 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
     </div>
   </header>
   <div class="sms-overview" aria-label="خلاصه پیامک">
+    <article><span>ارسال امروز</span><b id="sms-kpi-today">—</b><small>ارسال‌های گروهی شما؛ پذیرفته‌شده درگاه · امروز تهران</small></article>
     <article><span>گروه‌های مخاطبان</span><b>{{ total_segment_types }}</b><small>گروه‌های هوشمند و به‌روز</small></article>
     <article><span>انتخاب شما</span><b id="sms-kpi-selected">0</b><small>گروه برای پیام جدید</small></article>
     <article><span>در انتظار ارسال</span><b id="sms-kpi-pending">—</b><small>در ۱۵ کمپین اخیر شما</small></article>
@@ -484,7 +486,7 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
   </div>
   <nav class="sms-steps" aria-label="مراحل ارسال"><a href="#bulk-audience-form">۱ · انتخاب مخاطبان</a><a href="#sms-compose">۲ · نوشتن و بررسی پیام</a><a href="#sms-history">سوابق ارسال</a></nav>
   <div class="bulk-sms-layout">
-    
+
     <main class="bulk-sms-catalog">
       <h2>۱. انتخاب مخاطبان</h2>
       <p class="bulk-sms-muted">{{ total_segment_types }} نوع گروه قابل انتخاب. هر دسته کوچک یا بزرگ می‌تواند هم‌زمان با دسته‌های دیگر انتخاب شود؛ گروه‌های جدید کال‌سنتر، شعبه‌ها و نام دستگاه‌ها خودکار اضافه می‌شوند.</p>
@@ -744,6 +746,7 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
     const r=await fetch(statusUrl,{credentials:'same-origin',headers:{Accept:'application/json'}});
     const data=await r.json();if(!r.ok||!data.ok)throw Error('خواندن وضعیت کمپین‌ها انجام نشد');
     campaignsBody.replaceChildren();
+    document.getElementById('sms-kpi-today').textContent=Number(data.sent_today).toLocaleString('en-US');
     document.getElementById('sms-kpi-pending').textContent=data.campaigns.reduce((n,c)=>n+c.pending+c.sending,0).toLocaleString('en-US');
     document.getElementById('sms-kpi-accepted').textContent=data.campaigns.reduce((n,c)=>n+c.accepted,0).toLocaleString('en-US');
     if(!data.campaigns.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=7;td.textContent='هنوز کمپین تأییدشده یا پیش‌نویس وجود ندارد.';tr.append(td);campaignsBody.append(tr);return;}
@@ -793,4 +796,3 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
 })();
 </script>
 {% endblock %}
-

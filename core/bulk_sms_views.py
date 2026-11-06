@@ -4,12 +4,15 @@ Sending is deliberately not enabled here until opt-out, consent, queue,
 campaign idempotency, and per-day throttling are enforced.
 """
 import json
+from datetime import datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
 from django.shortcuts import render
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_POST
 
@@ -133,7 +136,16 @@ def bulk_sms_campaigns_status_api(request):
             failed=Count('recipients',filter=Q(recipients__status='failed')),
             skipped=Count('recipients',filter=Q(recipients__status='skipped')),
         ).order_by('-pk')[:15])
-    return JsonResponse({'ok':True,'campaigns':[
+    # Count by send time across all of this user's campaigns, not the latest 15.
+    tehran=ZoneInfo('Asia/Tehran')
+    today=timezone.localdate(timezone.now(), timezone=tehran)
+    start=datetime.combine(today,time.min,tzinfo=tehran)
+    end=datetime.combine(today+timedelta(days=1),time.min,tzinfo=tehran)
+    sent_today=BulkSmsRecipient.objects.filter(
+        campaign__created_by=request.user,status='accepted',
+        attempted_at__gte=start,attempted_at__lt=end,
+    ).count()
+    return JsonResponse({'ok':True,'sent_today':sent_today,'campaigns':[
         {
             'id':item.pk,'status':item.status,'total':item.recipient_count,
             'pending':item.pending,'sending':item.sending,
@@ -141,4 +153,3 @@ def bulk_sms_campaigns_status_api(request):
             'created_at':item.created_at.isoformat(),
         } for item in campaigns
     ]})
-
