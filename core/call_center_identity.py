@@ -252,7 +252,9 @@ class FlowerLeadProxy:
     def source_page_display(self):
         """Canonical page/source label used by the Lead Hub table."""
         if self._is_paid_advertising():
-            return 'تبلیغات'
+            # Keep generic ads generic; tagged publisher pages display beside it.
+            from .instagram_ad_attribution import advertising_source_label
+            return advertising_source_label(self._flower_lead)
         if self._is_instagram_lead():
             return self.instagram_page_display or 'Greenlifeclinics'
         source_url=str(getattr(self._flower_lead,'source_url','') or '').lower()
