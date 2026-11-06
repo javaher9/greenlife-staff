@@ -169,6 +169,71 @@
       body{padding-top:13px}.brand-mark{display:none}.brand{margin-bottom:9px}.brand small{display:none}
       .card{padding-top:20px}.eyebrow{margin-bottom:8px}.lead{margin-bottom:13px}.field{margin-bottom:9px}
     }
+    /* Approved purple campaign: live, accessible form alongside the approved model. */
+    body.advertising-page {color:#fff; background:radial-gradient(circle at 15% 8%,#b489cc 0,transparent 40%),linear-gradient(150deg,#42204d,#80509b 60%,#dab2e9)}
+    .advertising-page .wrap{width:min(100%,980px)}
+    .advertising-page .brand{display:none}
+    .advertising-page .ad-entry{
+      display:grid;grid-template-columns:42% minmax(0,58%);grid-template-rows:auto minmax(0,1fr);
+      column-gap:8px;align-items:stretch;isolation:isolate;
+      min-height:710px;padding:32px 36px 30px;
+      background:linear-gradient(122deg,#50305d 0%,#76478b 43%,#a67dc0 72%,#d2b3dd 100%);
+      border:1px solid rgba(245,222,255,.44);border-radius:32px;
+      box-shadow:0 30px 85px rgba(45,15,72,.28);overflow:hidden;
+    }
+    .advertising-page .ad-entry::before{height:3px;background:linear-gradient(90deg,#d8a8ff,#fff,#b77de2)}
+    .advertising-page .ads-copy{grid-column:2;grid-row:1;z-index:2;min-width:0;text-align:right;padding:4px 10px 0 6px}
+    .advertising-page .ads-brand{display:flex;direction:ltr;justify-content:flex-end;align-items:center;gap:10px;color:#fff;margin-bottom:26px;text-align:left}
+    .advertising-page .ads-brand strong{display:block;font-family:Arial,sans-serif;font-size:29px;font-weight:800;line-height:1.12;letter-spacing:-1px;color:#fff}
+    .advertising-page .ads-brand small{display:block;letter-spacing:5px;font-family:Arial,sans-serif;font-size:10px;font-weight:700;color:#eddcf4;text-align:center;margin-top:3px}
+    .advertising-page .ads-copy h1{font-size:clamp(22px,3.3vw,34px);line-height:1.55;font-weight:900;color:#fff;text-align:right;margin:0 0 22px;text-shadow:0 2px 12px rgba(44,8,68,.17)}
+    .advertising-page .ads-copy h1 span{color:#f5e5fe}
+    .advertising-page .ads-copy h1 em{font-style:normal;color:#e6baff}
+    .advertising-page .ads-art{grid-column:1;grid-row:1 / span 2;z-index:1;align-self:stretch;width:100%;height:100%;margin:0;display:flex;align-items:end;justify-content:center}
+    .advertising-page .ads-art img{display:block;width:auto;height:min(610px,100%);max-width:100%;object-fit:contain;object-position:bottom center;border-radius:0;filter:drop-shadow(0 10px 20px rgba(45,23,62,.13))}
+    .advertising-page .ad-entry form{
+      grid-column:2;grid-row:2;z-index:3;width:100%;align-self:start;
+      padding:21px 20px 19px;border:1px solid rgba(255,255,255,.75);border-radius:25px;
+      background:rgba(250,242,253,.79);box-shadow:0 10px 32px rgba(63,28,87,.12);
+      backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)
+    }
+    .advertising-page .ad-entry .field{margin-bottom:12px}
+    .advertising-page .ad-entry .field>span{font-size:16px;color:#46205f;font-weight:900;margin:0 3px 6px;line-height:1.6}
+    .advertising-page .ad-entry .field input,.advertising-page .ad-entry .field textarea{
+      border-color:#d9c3e6;background:rgba(255,255,255,.92);color:#331b40;font-size:17px;
+      border-radius:15px;box-shadow:inset 0 1px 3px rgba(79,34,96,.035)
+    }
+    .advertising-page .ad-entry .field input::placeholder{color:#aa94b4;font-weight:400}
+    .advertising-page .ad-entry .field textarea::placeholder{color:#c6bacd;font-size:14px;font-weight:400;opacity:1}
+    .advertising-page .ad-entry .btn{
+      min-height:54px;background:linear-gradient(105deg,#572076,#873eae 70%,#a24cc2);
+      border:1px solid #d49be8;box-shadow:0 7px 17px rgba(114,46,154,.23);font-size:17px
+    }
+    .advertising-page .ad-entry .field textarea{min-height:110px}
+    @media(max-width:700px){
+      body.advertising-page{align-items:flex-start;padding:12px 10px 22px}
+      .advertising-page .wrap{width:100%}
+      .advertising-page .ad-entry{display:block;min-height:0;padding:0 0 17px;border-radius:24px}
+      .advertising-page .ads-copy{position:relative;min-height:258px;padding:20px 44% 0 14px;z-index:2}
+      .advertising-page .ads-brand{justify-content:flex-start;gap:4px;margin-bottom:17px}
+      .advertising-page .ads-brand svg{height:27px;width:27px;flex:0 0 27px}
+      .advertising-page .ads-brand strong{font-size:19px;letter-spacing:-.5px;white-space:nowrap}
+      .advertising-page .ads-brand small{font-size:7px;letter-spacing:2.5px}
+      .advertising-page .ads-copy h1{font-size:clamp(17px,5vw,24px);line-height:1.55;margin-bottom:0;white-space:nowrap}
+      .advertising-page .ads-art{position:absolute;top:8px;right:7px;width:42%;height:254px;z-index:1;align-items:end;justify-content:center}
+      .advertising-page .ads-art img{height:252px;width:auto;max-width:100%}
+      .advertising-page .ad-entry form{position:relative;width:auto;margin:0 12px;padding:17px 15px;border-radius:20px}
+      .advertising-page .ad-entry .field>span{font-size:16px}
+      .advertising-page .ad-entry .field input{min-height:51px}
+      .advertising-page .ad-entry .field textarea{min-height:102px}
+      .advertising-page .ad-entry .btn{height:53px}
+    }
+    @media(max-width:365px){
+      .advertising-page .ads-copy{min-height:245px;padding-right:42%}
+      .advertising-page .ads-copy h1{font-size:16px}
+      .advertising-page .ads-brand strong{font-size:17px}
+      .advertising-page .ads-art,.advertising-page .ads-art img{height:238px}
+    }
   </style>
 </head>
 <body{% if advertising %} class="advertising-page"{% endif %}>
@@ -179,7 +244,7 @@
     <small>CLINICS</small>
   </div>
 
-  <section class="card{% if advertising %} ad-card{% endif %}">
+  <section class="card{% if advertising %} ad-card{% endif %}{% if advertising and not completed %} ad-entry{% endif %}">
     {% if completed %}
       <div class="success">
         <div class="tick">✓</div>
@@ -188,31 +253,18 @@
       </div>
     {% else %}
       {% if advertising %}
-      <div class="ads-art">
-        <img src="https://images.pexels.com/photos/13816068/pexels-photo-13816068.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=420"
-             alt="خانم خوش‌اندام با لباس شیک و غیرورزشی، نمای تمام‌قد"
-             width="132" height="190" loading="eager" decoding="async"
-             onerror="this.parentElement.classList.add('is-fallback')">
-        <svg class="ads-art-fallback" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 110" role="img" aria-label="تصویر مینیمال تناسب اندام">
-          <defs>
-            <linearGradient id="adGlow" x1="0" x2="1" y1="0" y2="1">
-              <stop stop-color="#f2eaf8"/><stop offset="1" stop-color="#e7f5ef"/>
-            </linearGradient>
-          </defs>
-          <ellipse cx="90" cy="55" rx="72" ry="45" fill="url(#adGlow)"/>
-          <path d="M31 72c18 15 39 16 59 5" fill="none" stroke="#b1d6c3" stroke-width="2" stroke-linecap="round"/>
-          <path d="M137 29c10 6 14 14 14 24" fill="none" stroke="#b6a0d0" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="109" cy="32" r="9" fill="#d9ad90"/>
-          <path d="M101 29c-1-10 12-15 18-7 4 5 2 11-1 15 0-7-3-11-7-12-4 4-7 5-10 4Z" fill="#4a3a44"/>
-          <path d="M103 42c-7 10-13 24-16 31 11 6 22 7 33 0-5-16-8-24-10-31Z" fill="#8064a9"/>
-          <path d="M104 46 77 30M113 47l23-22" stroke="#d9ad90" stroke-width="6" stroke-linecap="round"/>
-          <path d="m93 74-23 18m43-17 25 12" stroke="#d9ad90" stroke-width="7" stroke-linecap="round"/>
-          <path d="m67 94-8 1m78-7 9 4" stroke="#455d54" stroke-width="4" stroke-linecap="round"/>
-          <path d="m47 40 4-8m6 3 8-3m-7 13 8 2" fill="none" stroke="#ab91cb" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="140" cy="69" r="2.5" fill="#93c9ac"/><circle cx="41" cy="62" r="2" fill="#bba7d2"/>
-        </svg>
+      <div class="ads-copy">
+        <div class="ads-brand" aria-label="Green Life Clinics">
+          <svg aria-hidden="true" viewBox="0 0 48 48" width="44" height="44"><path d="M21 38C6 30 5 15 6 7c11 2 22 11 22 24 0 3-2 6-7 7Z" fill="#e5d1f8"/><path d="M27 35C26 18 34 8 43 4c3 17-2 29-16 31Z" fill="#fff"/></svg>
+          <span><strong>Green Life</strong><small>CLINICS</small></span>
+        </div>
+        <h1>مشاوره تخصصی<br><span>تناسب اندام و</span><br><em>لاغری هوشمند</em></h1>
       </div>
-      <h1>مشاوره رایگان</h1>
+      <div class="ads-art">
+        <img src="{% static 'core/instagram_ads_approved_model.svg' %}"
+             alt="خانم خوش‌اندام با پوشش مناسب، نمای تمام‌قد"
+             width="150" height="525" loading="eager" decoding="async">
+      </div>
       {% elif website_form %}
       <h1 style="margin-bottom:18px">درخواست مشاوره رایگان</h1>
       {% else %}
@@ -225,7 +277,7 @@
       <form method="post" id="instagramLeadForm">{% csrf_token %}
         <label class="field"><span>{{ form.full_name.label }}{% if advertising %}:{% endif %}</span>{{ form.full_name }}{% for error in form.full_name.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <label class="field"><span>{{ form.phone.label }}{% if advertising %}:{% endif %}</span>{{ form.phone }}{% for error in form.phone.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
-        <label class="field"><span>{{ form.interested_service.label }}</span>{{ form.interested_service }}{% for error in form.interested_service.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
+        <label class="field"><span>{{ form.interested_service.label }}{% if advertising %}:{% endif %}</span>{{ form.interested_service }}{% for error in form.interested_service.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         {% if not website_form and not advertising %}<label class="consent">{{ form.consent }}<span>{{ form.consent.label }}</span></label>{% for error in form.consent.errors %}<em class="error">{{ error }}</em>{% endfor %}{% endif %}
         <button class="btn" id="submitLeadBtn" type="submit">{% if website_form or advertising %}ثبت درخواست{% else %}درخواست تماس{% endif %}</button>
       </form>
