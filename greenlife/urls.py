@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
-from core import call_center_views, consultant_sales_views, instagram_views, instagram_api_views, lead_ingest_views, lead_action_views, lead_admin_views, lead_management_fixed_views, website_integration_views, whatsapp_views
+from core import call_center_views, consultant_sales_views, instagram_views, instagram_api_views, lead_ingest_views, lead_action_views, lead_admin_views, lead_management_fixed_views, website_integration_views, website_public_lead_views, whatsapp_views
 
 urlpatterns=[
     path('admin/',admin.site.urls),
@@ -17,6 +17,7 @@ urlpatterns=[
     path('api/instagram/oauth-health/',instagram_api_views.instagram_oauth_health,name='instagram_oauth_health'),
     path('api/instagram/callback/',instagram_api_views.instagram_oauth_callback,name='instagram_oauth_callback'),
     path('api/instagram/webhook/',instagram_api_views.instagram_webhook,name='instagram_webhook'),
+    path('website/lead/',website_public_lead_views.website_lead,name='website_public_lead'),
     path('instagram/',instagram_views.instagram_lead,name='instagram_lead'),
     # Lightweight public entry: reuse the verified CRM intake, consent and duplicate checks.
     path('instagram/fast/',instagram_views.instagram_lead,name='instagram_fast_lead'),
