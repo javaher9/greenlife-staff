@@ -1,0 +1,48 @@
+<section id="sms-auto-panel" class="sms-auto" role="tabpanel" aria-labelledby="sms-tab-auto" hidden
+ data-api="{% url 'bulk_sms_automations_api' %}" data-report="{% url 'bulk_sms_automation_report' 0 %}">
+  <div class="sa-toolbar"><div><h2>کمپین‌های خودکار</h2><p>یک بار طراحی کنید؛ در زمان تعیین‌شده، برای مخاطبان واجد شرایط اجرا شود.</p></div><button class="sa-primary" id="sa-create" type="button">+ ساخت کمپین خودکار</button></div>
+  <div class="sa-summary"><span id="sa-summary">در حال خواندن زمان‌بندی‌ها…</span><button id="sa-refresh" type="button">به‌روزرسانی</button></div>
+  <p id="sa-notice" role="status"></p><div id="sa-cards" class="sa-cards"></div>
+  <div class="sa-empty" id="sa-empty" hidden><div class="sa-orb">◷</div><h3>اولین کمپین خودکار را بسازید</h3><p>از یک سناریوی آماده شروع کنید. گروه‌ها، پیام‌ها و زمان‌بندی را پیش از فعال‌سازی مرور خواهید کرد.</p><button class="sa-primary" id="sa-empty-create" type="button">انتخاب سناریو</button></div>
+</section>
+<section id="sms-history-panel" class="sms-auto" role="tabpanel" aria-labelledby="sms-tab-history" hidden>
+  <div class="sa-toolbar"><div><h2>سوابق ارسال</h2><p>ارسال‌های دستی و مراحل کمپین‌های خودکار در یک نگاه.</p></div></div>
+  <div class="sa-fields"><label>نوع ارسال<select id="sms-history-mode"><option value="all">همه ارسال‌ها</option><option value="manual">ارسال دستی</option><option value="auto">کمپین خودکار</option></select></label><label>نام کمپین خودکار<select id="sms-history-automation"><option value="">همه کمپین‌ها</option></select></label></div>
+  <p id="sms-history-notice" role="status"></p><div id="sa-history-host"></div>
+</section>
+<dialog id="sa-wizard" class="sa-dialog" aria-labelledby="sa-title">
+ <form id="sa-form">
+  <div class="sa-toolbar"><div><small>طراحی کمپین گروهی</small><h2 id="sa-title">کمپین جدید</h2></div><button type="button" class="sa-close" data-close="sa-wizard" aria-label="بستن فرم">×</button></div>
+  <ol class="sa-progress" id="sa-progress"><li>سناریو</li><li>مخاطبان</li><li>پیام و امتیاز</li><li>زمان‌بندی</li><li>مرور نهایی</li></ol>
+  <section class="sa-page" data-page="0"><h3>از کدام سناریو شروع کنیم؟</h3><div class="sa-presets">
+   <button type="button" data-preset="leads"><b>فعال‌سازی لیدها</b><span>دعوت ورودی‌های سایت و اینستاگرام</span></button>
+   <button type="button" data-preset="return"><b>بازگشت مخاطبان</b><span>افراد دارای مراجعهٔ قدیمی</span></button>
+   <button type="button" data-preset="club"><b>مشارکت امتیازی</b><span>دعوت باشگاه با لینک اختصاصی</span></button>
+   <button type="button" data-preset="occasion"><b>کمپین مناسبتی</b><span>پیام گروهی در یک تاریخ مشخص</span></button>
+   <button type="button" data-preset="custom"><b>سناریوی دلخواه</b><span>گروه و مسیر را خودتان تعیین کنید</span></button>
+  </div><label class="sa-label">نام کمپین<input id="sa-name" maxlength="100" placeholder="مثلاً دعوت اعضای باشگاه آبان"></label></section>
+  <section class="sa-page" data-page="1" hidden><h3>چه کسانی وارد این کمپین شوند؟</h3>
+   <input id="sa-group-search" type="search" placeholder="جست‌وجوی گروه…" aria-label="جست‌وجوی گروه‌های کمپین خودکار"><p id="sa-selection-count">0 گروه انتخاب شده</p>
+   <div class="sa-groups">{% for group, segments in segment_groups.items %}<details open><summary>{{ group }}</summary><div>{% for segment in segments %}<label data-sa-search="{{ segment.label }} {{ group }}"><input type="checkbox" name="auto_segments" value="{{ segment.key }}"><span>{{ segment.label }}</span></label>{% endfor %}</div></details>{% endfor %}</div>
+   <div class="sa-fields"><label>ترکیب گروه‌ها<select id="sa-combine"><option value="any">حداقل یکی از گروه‌ها</option><option value="all">عضویت در همه گروه‌ها</option></select></label><label>شرط سابقه مراجعه<select id="sa-inactive"><option value="0">بدون شرط مراجعه</option><option value="30">مراجعه داشته؛ در 30 روز اخیر نیامده</option><option value="60">مراجعه داشته؛ در 60 روز اخیر نیامده</option><option value="90">مراجعه داشته؛ در 90 روز اخیر نیامده</option><option value="180">مراجعه داشته؛ در 180 روز اخیر نیامده</option></select></label></div>
+   <details class="sa-exits"><summary>شرایط خروج از کمپین</summary><p>عضویت در هر یک از این گروه‌ها، مخاطب را از ارسال‌های بعدی خارج می‌کند.</p><div class="sa-exit-grid">{% for group, segments in segment_groups.items %}{% for segment in segments %}<label><input type="checkbox" name="auto_exits" value="{{ segment.key }}">{{ segment.label }}</label>{% endfor %}{% endfor %}</div></details>
+   <p class="sa-hint">مخاطبان پیش از هر مرحله دوباره بررسی می‌شوند. شماره‌های تکراری، لغو دریافت و دریافت‌کنندگان اخیر خودکار کنار گذاشته می‌شوند.</p>
+  </section>
+  <section class="sa-page" data-page="2" hidden><h3>پیام‌ها و ادامهٔ مسیر</h3><div id="sa-steps"></div><button type="button" id="sa-add-step">+ افزودن مرحله بعدی</button>
+   <label class="sa-toggle"><input id="sa-reward-enabled" type="checkbox">امتیاز و هدیهٔ مشارکت</label>
+   <div id="sa-reward-fields" hidden><div class="sa-fields"><label>امتیاز هر مشارکت<input id="sa-points" type="number" min="0" max="10000" value="20"></label><label>عنوان هدیه یا توضیح پاداش<input id="sa-reward-title" maxlength="120" placeholder="اختیاری؛ با هماهنگی باشگاه"></label></div><p class="sa-hint">امتیاز پس از زدن دکمهٔ ثبت مشارکت در لینک اختصاصی، یک بار در هر اجرا ثبت می‌شود. هماهنگی تحویل هدیه با باشگاه است.</p></div>
+   <p class="sa-hint">برای ثبت مشارکت، {لینک} را در مرحلهٔ اول قرار دهید. {امتیاز} و {هدیه} از تنظیمات بالا خوانده می‌شوند. «لغو 11» خودکار به پیام اضافه می‌شود.</p>
+  </section>
+  <section class="sa-page" data-page="3" hidden><h3>چه زمانی اجرا شود؟</h3><p class="sa-hint">تاریخ ورودی میلادی و تمام ساعت‌ها به وقت تهران هستند.</p><div class="sa-fields">
+   <label>شروع نخستین اجرا<input id="sa-start" type="datetime-local"></label><label>تکرار<select id="sa-interval"><option value="0">فقط یک‌بار</option><option value="7">هر 7 روز</option><option value="14">هر 14 روز</option><option value="30">هر 30 روز</option></select></label>
+   <label>پایان زمان‌بندی (اختیاری)<input id="sa-end" type="datetime-local"></label><label>حداکثر مخاطب در هر اجرا<input id="sa-limit" type="number" min="1" max="2500" value="100"></label><label>سقف ارسال این کمپین در 24 ساعت<input id="sa-daily" type="number" min="1" max="400" value="100"></label>
+  </div><p class="sa-hint">سقف کل سیستم 400 تلاش در 24 ساعت است. ظرفیت اضافه در صف می‌ماند؛ مراحل بعدی از صف قبلی جلو نمی‌زنند. زمان‌های ازدست‌رفته به‌صورت یک‌جا تکرار نمی‌شوند.</p></section>
+  <section class="sa-page" data-page="4" hidden><h3>مرور پیش از فعال‌سازی</h3><div id="sa-review"></div><div id="sa-preview" class="sa-summary" role="status"></div>
+   <label class="sa-toggle"><input id="sa-consent" type="checkbox">رضایت دریافت این پیام‌ها را تأیید می‌کنم و اجرای خودکار همین سناریو را می‌خواهم.</label><label class="sa-label">برای فعال‌سازی، «تایید» را بنویسید<input id="sa-typed" autocomplete="off" placeholder="تایید"></label>
+  </section>
+  <p id="sa-form-error" role="alert"></p><div class="sa-footer"><button type="button" id="sa-back">مرحله قبل</button><button type="button" class="sa-primary" id="sa-next">مرحله بعد</button><button type="button" id="sa-save" hidden>ذخیره پیش‌نویس</button><button type="button" class="sa-primary" id="sa-activate" hidden>ذخیره و فعال‌سازی</button></div>
+ </form>
+</dialog>
+<template id="sa-step-template"><article class="sa-step"><div class="sa-toolbar"><h4></h4><button type="button" class="sa-remove">حذف مرحله</button></div><textarea maxlength="430" rows="4" aria-label="متن مرحله" placeholder="متن پیامک…"></textarea><div class="sa-step-tools"><button type="button" class="sa-insert-link">+ لینک مشارکت</button><small class="sa-char-count"></small></div><div class="sa-fields sa-followup"><label>فاصله از مرحلهٔ قبلی (روز)<input class="sa-delay" type="number" min="7" max="90" value="7"></label><label>این مرحله برای چه کسانی باشد؟<select class="sa-condition"><option value="all">همه گیرندگان مرحله اولِ واجد شرایط</option><option value="unengaged">فقط کسانی که مشارکت نکرده‌اند</option><option value="engaged">فقط مشارکت‌کنندگان</option></select></label></div></article></template>
+<dialog id="sa-detail" class="sa-dialog" aria-labelledby="sa-detail-title"><div class="sa-toolbar"><h2 id="sa-detail-title">مراحل و گزارش</h2><button class="sa-close" type="button" data-close="sa-detail" aria-label="بستن گزارش">×</button></div><div id="sa-detail-body"></div></dialog>
+<dialog id="sa-confirm" class="sa-dialog sa-confirm" aria-labelledby="sa-confirm-title"><div class="sa-toolbar"><h2 id="sa-confirm-title">فعال‌سازی کمپین</h2><button class="sa-close" type="button" data-close="sa-confirm" aria-label="بستن تأیید">×</button></div><div id="sa-confirm-body"></div><div id="sa-confirm-controls"><label class="sa-toggle"><input id="sa-resume-consent" type="checkbox">رضایت مخاطبان و اجرای خودکار این سناریو را تأیید می‌کنم.</label><label class="sa-label">عبارت تأیید<input id="sa-resume-typed" placeholder="تایید" autocomplete="off"></label></div><p id="sa-confirm-error" role="alert"></p><button id="sa-confirm-action" class="sa-primary" type="button">فعال‌سازی</button></dialog>

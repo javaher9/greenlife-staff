@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load static %}
 {% block content %}
 <style>
 
@@ -484,7 +485,13 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
     <article><span>در انتظار ارسال</span><b id="sms-kpi-pending">—</b><small>در ۱۵ کمپین اخیر شما</small></article>
     <article><span>پذیرفته‌شده درگاه</span><b id="sms-kpi-accepted">—</b><small>در ۱۵ کمپین اخیر؛ نه تأیید تحویل</small></article>
   </div>
-  <nav class="sms-steps" aria-label="مراحل ارسال"><a href="#bulk-audience-form">۱ · انتخاب مخاطبان</a><a href="#sms-compose">۲ · نوشتن و بررسی پیام</a><a href="#sms-history">سوابق ارسال</a></nav>
+  <div class="sms-main-tabs" role="tablist" aria-label="مدیریت ارسال گروهی">
+    <button type="button" role="tab" id="sms-tab-manual" aria-controls="sms-manual-panel" aria-selected="true" data-sms-tab="manual">ارسال گروهی</button>
+    <button type="button" role="tab" id="sms-tab-auto" aria-controls="sms-auto-panel" aria-selected="false" tabindex="-1" data-sms-tab="auto">کمپین‌های خودکار <span>زمان‌بندی و سناریو</span></button>
+    <button type="button" role="tab" id="sms-tab-history" aria-controls="sms-history-panel" aria-selected="false" tabindex="-1" data-sms-tab="history">سوابق ارسال</button>
+  </div>
+  <div id="sms-manual-panel" role="tabpanel" aria-labelledby="sms-tab-manual">
+  <nav class="sms-steps" aria-label="مراحل ارسال"><a href="#bulk-audience-form">۱ · انتخاب مخاطبان</a><a href="#sms-compose">۲ · نوشتن و بررسی پیام</a></nav>
   <div class="bulk-sms-layout">
 
     <main class="bulk-sms-catalog">
@@ -604,7 +611,11 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
       <p class="bulk-sms-info">پیش‌نمایش و آماده‌سازی، هیچ پیامکی ارسال نمی‌کنند؛ ارسال فقط بعد از «تأیید نهایی» و از صف محافظت‌شده انجام می‌شود. شمارش آنلاین بوده و شماره کامل افراد در این صفحه نمایش داده نمی‌شود.</p>
     </aside>
   </div>
+  </div>
+  {% include 'core/bulk_sms_automations.html' %}
 </div>
+<link rel="stylesheet" href="{% static 'core/bulk-sms-automations.css' %}?v=1">
+<script src="{% static 'core/bulk-sms-automations.js' %}?v=1" defer></script>
 <script>
 (function(){
   const form=document.getElementById('bulk-audience-form');
@@ -743,12 +754,13 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
   });
   const campaignsBody=document.getElementById('bulk-campaign-rows');
   async function refreshCampaigns(){
-    const r=await fetch(statusUrl,{credentials:'same-origin',headers:{Accept:'application/json'}});
+    const query=new URLSearchParams({mode:document.getElementById('sms-history-mode').value,automation:document.getElementById('sms-history-automation').value});
+    const r=await fetch(statusUrl+'?'+query,{credentials:'same-origin',headers:{Accept:'application/json'}});
     const data=await r.json();if(!r.ok||!data.ok)throw Error('خواندن وضعیت کمپین‌ها انجام نشد');
     campaignsBody.replaceChildren();
     document.getElementById('sms-kpi-today').textContent=Number(data.sent_today).toLocaleString('en-US');
-    document.getElementById('sms-kpi-pending').textContent=data.campaigns.reduce((n,c)=>n+c.pending+c.sending,0).toLocaleString('en-US');
-    document.getElementById('sms-kpi-accepted').textContent=data.campaigns.reduce((n,c)=>n+c.accepted,0).toLocaleString('en-US');
+    document.getElementById('sms-kpi-pending').textContent=Number(data.overview.pending).toLocaleString('en-US');
+    document.getElementById('sms-kpi-accepted').textContent=Number(data.overview.accepted).toLocaleString('en-US');
     if(!data.campaigns.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=7;td.textContent='هنوز کمپین تأییدشده یا پیش‌نویس وجود ندارد.';tr.append(td);campaignsBody.append(tr);return;}
     const statusLabels={
       draft:'پیش‌نویس',queued:'در صف ارسال',paused:'متوقف موقت',
@@ -757,7 +769,7 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
     for(const item of data.campaigns){
       const tr=document.createElement('tr');
       const numberCell=document.createElement('td');
-      numberCell.textContent=String(item.id);tr.append(numberCell);
+      numberCell.textContent=item.source==='auto'?(item.automation_name+' · مرحله '+item.step+' · #'+item.id):('ارسال دستی #'+item.id);tr.append(numberCell);
       const statusCell=document.createElement('td');
       const statusBadge=document.createElement('span');
       statusBadge.className='bulk-campaign-status'+(Object.prototype.hasOwnProperty.call(statusLabels,item.status)?' status-'+item.status:'');
@@ -767,22 +779,25 @@ body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width
         const td=document.createElement('td');td.textContent=String(value);tr.append(td);
       });
       const actions=document.createElement('td');
-      const controls=item.status==='queued'?['pause','cancel']:(item.status==='paused'?['resume','cancel']:[]);
+      const controls=item.source==='auto'?[]:(item.status==='queued'?['pause','cancel']:(item.status==='paused'?['resume','cancel']:[]));
+      if(item.source==='auto')actions.textContent='مدیریت از تب کمپین‌های خودکار';
       for(const action of controls){
         const button=document.createElement('button');button.type='button';button.className='bulk-small';
         button.textContent={pause:'توقف',resume:'ادامه',cancel:'لغو باقی‌مانده'}[action];
         button.addEventListener('click',async()=>{
           if(action==='cancel'&&!confirm('پیامک‌های ارسال‌نشده این کمپین لغو شوند؟'))return;
           button.disabled=true;try{await api({action,campaign_id:item.id});await refreshCampaigns();}
-          catch(e){campaignNotice.textContent=e.message;button.disabled=false;}
+          catch(e){document.getElementById('sms-history-notice').textContent=e.message;button.disabled=false;}
         });actions.append(button);
       }
       tr.append(actions);campaignsBody.append(tr);
     }
   }
   document.getElementById('bulk-refresh-campaigns').addEventListener('click',async()=>{
-    try{await refreshCampaigns()}catch(e){campaignNotice.textContent=e.message}
+    try{await refreshCampaigns()}catch(e){document.getElementById('sms-history-notice').textContent=e.message}
   });
+  window.smsRefreshCampaigns=refreshCampaigns;
+  ['sms-history-mode','sms-history-automation'].forEach(id=>document.getElementById(id).addEventListener('change',()=>refreshCampaigns().catch(e=>{document.getElementById('sms-history-notice').textContent=e.message})));
   document.getElementById('bulk-optout-add').addEventListener('click',async e=>{
     const button=e.currentTarget;button.disabled=true;
     const notice=document.getElementById('bulk-optout-notice');
