@@ -182,8 +182,16 @@ class AttentionLeadProxy(FlowerLeadProxy):
 
 def _channel_q(channel):
     marker = f'[channel:{channel}]'
+    advertising_q = (
+        Q(notes__icontains='[entry:advertising]')
+        | Q(source_url__icontains='/instagram/ads/')
+        | Q(source_url__icontains='utm_medium=paid_story')
+        | Q(source_url__icontains='utm_medium=paid_social')
+    )
+    if channel == 'advertising':
+        return advertising_q
     if channel == 'instagram':
-        return Q(group__name__in=('اینستاگرام', 'اینستاگرام جدید', 'اینستاگرام - لینک')) | Q(notes__icontains='[channel:instagram]') | Q(source_url__icontains='/instagram/')
+        return (Q(group__name__in=('اینستاگرام', 'اینستاگرام جدید', 'اینستاگرام - لینک')) | Q(notes__icontains='[channel:instagram]') | Q(source_url__icontains='/instagram/')) & ~advertising_q
     if channel == 'telegram':
         return Q(group__name='تلگرام - لینک') | Q(notes__icontains='[channel:telegram]') | Q(notes__icontains='ورودی مستقیم فرم تلگرام') | Q(source_url__icontains='/telegram/')
     if channel == 'bale':
@@ -225,7 +233,7 @@ def _channel_q(channel):
 
 
 def _channel_counts(leads):
-    channels = [('instagram','اینستاگرام','#ec4899'),('website','وب‌سایت','#3b82f6'),('beytoote','بیتوته','#f97316'),('aparat','آپارات','#06b6d4'),('crm','CRM','#8b5cf6'),('whatsapp','واتس‌اپ','#22c55e'),('campaign','کمپین / UTM','#f59e0b'),('telegram','تلگرام','#38bdf8'),('bale','بله','#10b981')]
+    channels = [('advertising','تبلیغات','#f97316'),('instagram','اینستاگرام','#ec4899'),('website','وب‌سایت','#3b82f6'),('beytoote','بیتوته','#f97316'),('aparat','آپارات','#06b6d4'),('crm','CRM','#8b5cf6'),('whatsapp','واتس‌اپ','#22c55e'),('campaign','کمپین / UTM','#f59e0b'),('telegram','تلگرام','#38bdf8'),('bale','بله','#10b981')]
     claimed = Q(pk__in=[])
     rows = []
     for key, label, color in channels:
@@ -294,7 +302,7 @@ def _filtered_leads_for_trend(request):
     leads=_apply_market_filter(leads,market_filter)
     source_filter=(request.GET.get('source') or '').strip()
     operator_filter=(request.GET.get('operator') or '').strip()
-    if source_filter in ('instagram','website','beytoote','aparat','crm','whatsapp','campaign','telegram','bale'):
+    if source_filter in ('advertising','instagram','website','beytoote','aparat','crm','whatsapp','campaign','telegram','bale'):
         leads=leads.filter(_channel_q(source_filter))
     elif source_filter in ('panel','qr','link'):
         leads=leads.filter(source=source_filter)
@@ -557,7 +565,7 @@ def lead_management_dashboard(request):
     source_filter=(request.GET.get('source') or '').strip(); status_filter=(request.GET.get('status') or '').strip(); operator_filter=(request.GET.get('operator') or '').strip()
     search_query=(request.GET.get('q') or '').strip()
     filtered=leads
-    if source_filter in ('instagram','website','crm','whatsapp','campaign','telegram','bale'): filtered=filtered.filter(_channel_q(source_filter))
+    if source_filter in ('advertising','instagram','website','crm','whatsapp','campaign','telegram','bale'): filtered=filtered.filter(_channel_q(source_filter))
     elif source_filter in ('panel','qr','link'): filtered=filtered.filter(source=source_filter)
     if status_filter=='follow_up': filtered=filtered.filter(status='contacted',next_follow_up__isnull=False)
     elif status_filter: filtered=filtered.filter(status=status_filter)
