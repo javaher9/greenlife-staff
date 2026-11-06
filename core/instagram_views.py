@@ -194,6 +194,15 @@ def _assign_instagram_lead(lead, group_name=INSTAGRAM_GROUP_NAME, notification_t
 
 
 def instagram_lead(request):
+    return _public_instagram_lead(request, advertising=False)
+
+
+def instagram_ads_lead(request):
+    """Dedicated short public URL for paid Instagram story advertisements."""
+    return _public_instagram_lead(request, advertising=True)
+
+
+def _public_instagram_lead(request, *, advertising):
     page_slug, page_label = _instagram_page_source(request.GET.get('source'))
     form = InstagramLeadForm(request.POST or None)
     completed = False
@@ -208,12 +217,20 @@ def instagram_lead(request):
                 status='new',
                 source='link',
                 source_url=request.build_absolute_uri()[:500],
-                notes=f'ورودی مستقیم فرم اینستاگرام | پیج: {page_label} | [instagram_page:{page_slug}]',
+                notes=(
+                    f'ورودی تبلیغات اینستاگرام | منبع: تبلیغات | پیج: {page_label} | '
+                    f'[entry:advertising] [instagram_page:{page_slug}]'
+                    if advertising else
+                    f'ورودی مستقیم فرم اینستاگرام | پیج: {page_label} | [instagram_page:{page_slug}]'
+                ),
             )
         except DuplicateLeadError:
             form.add_error('phone', LEAD_DUPLICATE_MESSAGE)
         else:
-            _assign_instagram_lead(lead)
+            if advertising:
+                _assign_instagram_lead(lead, group_name='کمپ', notification_title='لید جدید تبلیغات')
+            else:
+                _assign_instagram_lead(lead)
             completed = True
             form = InstagramLeadForm()
 
