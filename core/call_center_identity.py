@@ -138,6 +138,17 @@ class FlowerLeadProxy:
             or ref_username in ('instagram-lead-source','lead-source-instagram')
         )
 
+    def _is_paid_advertising(self):
+        lead = self._flower_lead
+        notes = str(getattr(lead, 'notes', '') or '').lower()
+        source_url = str(getattr(lead, 'source_url', '') or '').lower()
+        return (
+            '[entry:advertising]' in notes
+            or '/instagram/ads/' in source_url
+            or ('/instagram/' in source_url and ('utm_medium=paid_story' in source_url
+                or 'utm_medium=paid_social' in source_url or 'utm_medium=paid' in source_url))
+        )
+
     @property
     def instagram_page_display(self):
         lead=self._flower_lead
@@ -211,6 +222,8 @@ class FlowerLeadProxy:
         lead=self._flower_lead
         group=getattr(lead,'group',None)
         raw=str(getattr(group,'name','') or '')
+        if self._is_paid_advertising():
+            return 'تبلیغات'
         if self._is_instagram_lead():
             return f'اینستاگرام - {self.instagram_entry_display}'
         if self._is_beytoote_reportage_start():
@@ -221,6 +234,8 @@ class FlowerLeadProxy:
 
     @property
     def source_origin_display(self):
+        if self._is_paid_advertising():
+            return 'تبلیغات'
         page=self.instagram_page_display
         if self._is_instagram_lead():
             parts=['اینستاگرام',self.instagram_entry_display]
@@ -235,6 +250,8 @@ class FlowerLeadProxy:
     @property
     def source_page_display(self):
         """Canonical page/source label used by the Lead Hub table."""
+        if self._is_paid_advertising():
+            return 'تبلیغات'
         if self._is_instagram_lead():
             return self.instagram_page_display or 'Greenlifeclinics'
         source_url=str(getattr(self._flower_lead,'source_url','') or '').lower()
