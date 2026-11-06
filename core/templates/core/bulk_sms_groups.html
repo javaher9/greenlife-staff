@@ -2,6 +2,28 @@
 {% block content %}
 <style>
 
+/* Use the full workspace width after the fixed navigation sidebar. */
+@media(min-width:1101px){
+  body.gl-page-bulk_sms_groups .app-main,
+  body:has(.bulk-sms-page) .app-main{
+    width:auto!important;max-width:none!important;margin-right:248px!important;
+  }
+}
+@media(min-width:761px) and (max-width:1100px){
+  body.gl-page-bulk_sms_groups .app-main,
+  body:has(.bulk-sms-page) .app-main{
+    width:auto!important;max-width:none!important;margin-right:210px!important;
+  }
+}
+@media(max-width:760px){
+  body.gl-page-bulk_sms_groups .app-main,
+  body:has(.bulk-sms-page) .app-main{
+    width:100%!important;max-width:none!important;margin-right:0!important;
+  }
+}
+body.gl-page-bulk_sms_groups .app-main>.bulk-sms-page,
+body:has(.bulk-sms-page) .app-main>.bulk-sms-page{max-width:none!important;width:100%!important}
+
   .bulk-sms-page{
     --sms-bg:#0c1720;--sms-panel:#12232d;--sms-panel-2:#172c35;
     --sms-border:#29444a;--sms-text:#eaf4ef;--sms-muted:#a4b9b6;
