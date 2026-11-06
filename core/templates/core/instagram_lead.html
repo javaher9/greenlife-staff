@@ -97,6 +97,13 @@
       color:#809087;font-size:10px;margin:0 0 14px;
     }
     .quick-note i{width:6px;height:6px;border-radius:50%;background:var(--purple);box-shadow:12px 0 0 rgba(29,143,99,.9)}
+    /* Compact editorial illustration only for the paid-ads landing page. */
+    .ad-card{padding-top:20px}
+    .ads-art{width:144px;height:94px;margin:0 auto 5px;display:flex;align-items:center;justify-content:center}
+    .ads-art svg{display:block;width:100%;height:100%}
+    .ad-card h1{margin:0 0 18px;font-size:22px}
+    .ad-card .field textarea{min-height:78px;resize:vertical}
+    .ad-card .btn{margin-top:5px}
     .success{text-align:center;padding:18px 3px 9px}
     .success .tick{
       width:72px;height:72px;border-radius:24px;display:grid;place-items:center;margin:0 auto 17px;
@@ -125,15 +132,37 @@
     <small>CLINICS</small>
   </div>
 
-  <section class="card">
+  <section class="card{% if advertising %} ad-card{% endif %}">
     {% if completed %}
       <div class="success">
         <div class="tick">✓</div>
         <h1>درخواست شما ثبت شد</h1>
-        <p>یکی از کارشناسان گرین‌لایف برای راهنمایی و هماهنگی با شما تماس می‌گیرد.</p>
+        <p>{% if advertising %}به‌زودی با شما تماس می‌گیریم.{% else %}یکی از کارشناسان گرین‌لایف برای راهنمایی و هماهنگی با شما تماس می‌گیرد.{% endif %}</p>
       </div>
     {% else %}
-      {% if website_form %}
+      {% if advertising %}
+      <div class="ads-art">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 110" role="img" aria-label="تصویر کوچک از حس سبکی و تحرک">
+          <defs>
+            <linearGradient id="adGlow" x1="0" x2="1" y1="0" y2="1">
+              <stop stop-color="#f2eaf8"/><stop offset="1" stop-color="#e7f5ef"/>
+            </linearGradient>
+          </defs>
+          <ellipse cx="90" cy="55" rx="72" ry="45" fill="url(#adGlow)"/>
+          <path d="M31 72c18 15 39 16 59 5" fill="none" stroke="#b1d6c3" stroke-width="2" stroke-linecap="round"/>
+          <path d="M137 29c10 6 14 14 14 24" fill="none" stroke="#b6a0d0" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="109" cy="32" r="9" fill="#d9ad90"/>
+          <path d="M101 29c-1-10 12-15 18-7 4 5 2 11-1 15 0-7-3-11-7-12-4 4-7 5-10 4Z" fill="#4a3a44"/>
+          <path d="M103 42c-7 10-13 24-16 31 11 6 22 7 33 0-5-16-8-24-10-31Z" fill="#8064a9"/>
+          <path d="M104 46 77 30M113 47l23-22" stroke="#d9ad90" stroke-width="6" stroke-linecap="round"/>
+          <path d="m93 74-23 18m43-17 25 12" stroke="#d9ad90" stroke-width="7" stroke-linecap="round"/>
+          <path d="m67 94-8 1m78-7 9 4" stroke="#455d54" stroke-width="4" stroke-linecap="round"/>
+          <path d="m47 40 4-8m6 3 8-3m-7 13 8 2" fill="none" stroke="#ab91cb" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="140" cy="69" r="2.5" fill="#93c9ac"/><circle cx="41" cy="62" r="2" fill="#bba7d2"/>
+        </svg>
+      </div>
+      <h1>مشاوره رایگان</h1>
+      {% elif website_form %}
       <h1 style="margin-bottom:18px">درخواست مشاوره رایگان</h1>
       {% else %}
       <div class="eyebrow">مشاوره رایگان و سریع</div>
@@ -146,10 +175,10 @@
         <label class="field"><span>{{ form.full_name.label }}</span>{{ form.full_name }}{% for error in form.full_name.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <label class="field"><span>{{ form.phone.label }}</span>{{ form.phone }}{% for error in form.phone.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <label class="field"><span>{{ form.interested_service.label }}</span>{{ form.interested_service }}{% for error in form.interested_service.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
-        {% if not website_form %}<label class="consent">{{ form.consent }}<span>{{ form.consent.label }}</span></label>{% for error in form.consent.errors %}<em class="error">{{ error }}</em>{% endfor %}{% endif %}
-        <button class="btn" id="submitLeadBtn" type="submit">{% if website_form %}ثبت درخواست{% else %}درخواست تماس{% endif %}</button>
+        {% if not website_form and not advertising %}<label class="consent">{{ form.consent }}<span>{{ form.consent.label }}</span></label>{% for error in form.consent.errors %}<em class="error">{{ error }}</em>{% endfor %}{% endif %}
+        <button class="btn" id="submitLeadBtn" type="submit">{% if website_form or advertising %}ثبت درخواست{% else %}درخواست تماس{% endif %}</button>
       </form>
-      {% if not website_form %}<div class="privacy">اطلاعات شما فقط برای تماس کارشناسان گرین‌لایف استفاده می‌شود.</div>{% endif %}
+      {% if not website_form and not advertising %}<div class="privacy">اطلاعات شما فقط برای تماس کارشناسان گرین‌لایف استفاده می‌شود.</div>{% endif %}
     {% endif %}
   </section>
 </main>
