@@ -133,19 +133,23 @@
         <p>یکی از کارشناسان گرین‌لایف برای راهنمایی و هماهنگی با شما تماس می‌گیرد.</p>
       </div>
     {% else %}
-      <div class="eyebrow">{% if website_form %}مشاوره رایگان گرین‌لایف{% else %}مشاوره رایگان و سریع{% endif %}</div>
+      {% if website_form %}
+      <h1 style="margin-bottom:18px">درخواست مشاوره رایگان</h1>
+      {% else %}
+      <div class="eyebrow">مشاوره رایگان و سریع</div>
       <h1>یک قدم تا شروع تغییر</h1>
       <p class="lead">اطلاعات کوتاه زیر را وارد کنید؛ کارشناسان گرین‌لایف برای راهنمایی با شما تماس می‌گیرند.</p>
       <div class="quick-note"><i></i><span>ثبت درخواست کمتر از یک دقیقه</span></div>
+      {% endif %}
 
       <form method="post" id="instagramLeadForm">{% csrf_token %}
         <label class="field"><span>{{ form.full_name.label }}</span>{{ form.full_name }}{% for error in form.full_name.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <label class="field"><span>{{ form.phone.label }}</span>{{ form.phone }}{% for error in form.phone.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <label class="field"><span>{{ form.interested_service.label }}</span>{{ form.interested_service }}{% for error in form.interested_service.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
-        <label class="consent">{{ form.consent }}<span>{{ form.consent.label }}</span></label>{% for error in form.consent.errors %}<em class="error">{{ error }}</em>{% endfor %}
-        <button class="btn" id="submitLeadBtn" type="submit">درخواست تماس</button>
+        {% if not website_form %}<label class="consent">{{ form.consent }}<span>{{ form.consent.label }}</span></label>{% for error in form.consent.errors %}<em class="error">{{ error }}</em>{% endfor %}{% endif %}
+        <button class="btn" id="submitLeadBtn" type="submit">{% if website_form %}ثبت درخواست{% else %}درخواست تماس{% endif %}</button>
       </form>
-      <div class="privacy">اطلاعات شما فقط برای تماس کارشناسان گرین‌لایف استفاده می‌شود.</div>
+      {% if not website_form %}<div class="privacy">اطلاعات شما فقط برای تماس کارشناسان گرین‌لایف استفاده می‌شود.</div>{% endif %}
     {% endif %}
   </section>
 </main>
