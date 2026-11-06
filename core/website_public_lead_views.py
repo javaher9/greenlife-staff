@@ -1,12 +1,21 @@
 """Public consultation form for visitors arriving from GreenLife's website."""
 from urllib.parse import urlparse
 
+from django import forms
 from django.db import transaction
 from django.shortcuts import render
 
 from .instagram_views import InstagramLeadForm
 from .lead_ingest_views import _assign_lead, _source_profile
 from .models import DuplicateLeadError, LEAD_DUPLICATE_MESSAGE, ReferralLead
+
+
+class WebsiteLeadForm(InstagramLeadForm):
+    interested_service = forms.CharField(
+        label='توضیحات', max_length=160, required=False,
+        widget=forms.Textarea(attrs={'rows': 3, 'placeholder': 'اختیاری'}),
+    )
+    consent = None
 
 
 def _website_page(raw):
@@ -26,7 +35,7 @@ def _website_page(raw):
 def website_lead(request):
     source_page = _website_page(request.GET.get('page'))
     cta_label = str(request.GET.get('cta') or '').strip()[:120]
-    form = InstagramLeadForm(request.POST or None)
+    form = WebsiteLeadForm(request.POST or None)
     completed = False
 
     if request.method == 'POST' and form.is_valid():
@@ -50,7 +59,7 @@ def website_lead(request):
             form.add_error('phone', LEAD_DUPLICATE_MESSAGE)
         else:
             completed = True
-            form = InstagramLeadForm()
+            form = WebsiteLeadForm()
 
     return render(request, 'core/instagram_lead.html', {
         'form': form,
