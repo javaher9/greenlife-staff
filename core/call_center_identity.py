@@ -223,7 +223,8 @@ class FlowerLeadProxy:
         group=getattr(lead,'group',None)
         raw=str(getattr(group,'name','') or '')
         if self._is_paid_advertising():
-            return 'تبلیغات'
+            # Ads still originate from an Instagram link; "تبلیغات" is the source column.
+            return 'اینستاگرام - لینک'
         if self._is_instagram_lead():
             return f'اینستاگرام - {self.instagram_entry_display}'
         if self._is_beytoote_reportage_start():
