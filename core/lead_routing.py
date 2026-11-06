@@ -448,6 +448,8 @@ def _pending_destination(lead):
 
     if _is_beytoote_reportage_start(lead):
         return 'وب سایت', 'لید جدید بیتوته - رپورتاژ'
+    if '[entry:advertising]' in notes or '/instagram/ads/' in source_url:
+        return 'کمپ', 'لید جدید تبلیغات'
     if 'اینستاگرام - دستی' in notes:
         return 'اینستاگرام', 'لید جدید اینستاگرام - دستی'
     if 'تلگرام' in notes or '/telegram/' in source_url:
