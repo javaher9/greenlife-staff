@@ -1261,6 +1261,26 @@ body.gl-page-call_center_dashboard .ccx .ccx-search-form button,.ccx-pagination 
 </style>
 
 <style>
+/* The existing result plaque expands in place without navigation. */
+body.gl-page-call_center_dashboard .ccx .ccx-result-panel.ccx-follow-expanded{width:min(620px,calc(100vw - 24px))!important;max-height:min(78vh,690px);overflow:auto;transform:none!important}
+body.gl-page-call_center_dashboard .ccx .ccx-result-panel.ccx-follow-expanded:before{display:none!important}
+body.gl-page-call_center_dashboard .ccx .ccx-follow-form.open{display:block!important;padding:15px!important;margin-top:12px!important}
+.ccx-follow-tabs{display:flex;gap:8px;margin-bottom:13px}
+body.gl-page-call_center_dashboard .ccx .ccx-follow-tabs button{flex:1;width:auto!important;min-height:42px;border:1px solid #d7c8e6!important;border-radius:10px;background:#fff!important;color:#684494!important;font:800 12px Tahoma!important;cursor:pointer}
+body.gl-page-call_center_dashboard .ccx .ccx-follow-tabs button.active{background:#eee4f8!important;color:#563679!important;border-color:#bda5d7!important}
+.ccx-follow-mode{display:none}.ccx-follow-mode.active{display:block}
+.ccx-follow-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+body.gl-page-call_center_dashboard .ccx .ccx-follow-steps button{width:100%!important;min-height:38px;border:1px solid #d9e3e8!important;border-radius:9px;background:#fff!important;color:#344d60!important;font:800 11px Tahoma!important;cursor:pointer}
+body.gl-page-call_center_dashboard .ccx .ccx-follow-steps button.active{background:#ece1f7!important;color:#573581!important;border-color:#a882cb!important}
+.ccx-follow-mode[data-follow-pane="exact"].active{display:grid;grid-template-columns:1fr 130px;gap:10px}
+.ccx-follow-mode label,.ccx-follow-note{display:grid;gap:6px;color:#435b6e;font:800 11px Tahoma}
+.ccx-follow-previous{margin:12px 0;padding:10px 12px;background:#f5f8fa;border:1px solid #e1e9ed;border-radius:10px;color:#465d6d;font:11px/1.8 Tahoma}
+.ccx-follow-previous p{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+body.gl-page-call_center_dashboard .ccx .ccx-follow-note textarea{width:100%;box-sizing:border-box;resize:vertical;padding:10px;border:1px solid #cbdde2;border-radius:9px;background:#fff;color:#273e50;font:12px/1.7 Tahoma}
+.ccx-follow-footer{display:flex;gap:8px;margin-top:12px}
+body.gl-page-call_center_dashboard .ccx .ccx-follow-footer button{width:auto!important;flex:1;min-height:40px;font:800 11px Tahoma!important;cursor:pointer}
+body.gl-page-call_center_dashboard .ccx .ccx-follow-footer [data-follow-cancel]{background:#fff!important;color:#586c7b!important;border-color:#d6e1e6!important}
+@media(max-width:600px){.ccx-follow-steps{grid-template-columns:repeat(3,minmax(0,1fr))}.ccx-follow-mode[data-follow-pane="exact"].active{grid-template-columns:1fr 100px}}
 .ccx-routing-summary{margin:8px 0 0;padding:7px 10px;border:1px solid #accfbd;border-radius:13px;background:#edf7f2;color:#344c60!important;font-size:12px!important;line-height:1.9;font-weight:700;white-space:normal;overflow-wrap:anywhere}
 </style>
 <div class="ccx" lang="fa" dir="rtl" translate="no">
@@ -1377,17 +1397,31 @@ body.gl-page-call_center_dashboard .ccx .ccx-search-form button,.ccx-pagination 
                   <button type="button" class="danger" data-quick-result="not_interested">× تمایل ندارد</button>
                   <a class="good" href="{% url 'appointment_schedule' %}?lead={{ row.lead.pk }}">＋ نوبت</a>
                 </div>
-                <div class="ccx-follow-form">
-                  <label>تاریخ پیگیری شمسی<input type="text" name="next_follow_up" inputmode="numeric" autocomplete="off" value="{{ tomorrow|jdate_en }}" placeholder="1405/07/16" pattern="[0-9۰-۹٠-٩]{4}[/.-][0-9۰-۹٠-٩]{1,2}[/.-][0-9۰-۹٠-٩]{1,2}" title="تاریخ را به شکل 1405/07/16 وارد کنید"></label>
-                  <label>ساعت<input type="time" name="follow_up_time" step="300" value="10:00"></label>
-                  <button type="button" data-follow-save>ثبت پیگیری</button>
+                <div class="ccx-follow-form" role="group" aria-label="تنظیم پیگیری">
+                  <div class="ccx-follow-tabs"><button type="button" class="active" data-follow-mode="interval" aria-pressed="true">فاصلهٔ زمانی</button><button type="button" data-follow-mode="exact" aria-pressed="false">تاریخ و ساعت دقیق</button></div>
+                  <div class="ccx-follow-mode active" data-follow-pane="interval">
+                    <div class="ccx-follow-steps" role="group" aria-label="فاصله تا پیگیری">
+                      <button type="button" data-follow-interval="minutes:30">نیم ساعت</button>
+                      <button type="button" data-follow-interval="hours:1">۱ ساعت</button><button type="button" data-follow-interval="hours:2">۲ ساعت</button><button type="button" data-follow-interval="hours:3">۳ ساعت</button><button type="button" data-follow-interval="hours:4">۴ ساعت</button><button type="button" data-follow-interval="hours:6">۶ ساعت</button><button type="button" data-follow-interval="hours:8">۸ ساعت</button><button type="button" data-follow-interval="hours:10">۱۰ ساعت</button>
+                      <button type="button" data-follow-interval="days:1">۱ روز</button><button type="button" data-follow-interval="days:2">۲ روز</button><button type="button" data-follow-interval="days:3">۳ روز</button><button type="button" data-follow-interval="days:4">۴ روز</button><button type="button" data-follow-interval="days:5">۵ روز</button><button type="button" data-follow-interval="days:6">۶ روز</button>
+                      <button type="button" data-follow-interval="weeks:1">۱ هفته</button><button type="button" data-follow-interval="weeks:2">۲ هفته</button><button type="button" data-follow-interval="weeks:3">۳ هفته</button>
+                      <button type="button" data-follow-interval="months:1">۱ ماه</button><button type="button" data-follow-interval="months:2">۲ ماه</button><button type="button" data-follow-interval="months:3">۳ ماه</button><button type="button" data-follow-interval="months:4">۴ ماه</button><button type="button" data-follow-interval="months:6">۶ ماه</button>
+                    </div>
+                  </div>
+                  <div class="ccx-follow-mode" data-follow-pane="exact">
+                    <label>تاریخ پیگیری شمسی<input type="text" name="next_follow_up" inputmode="numeric" autocomplete="off" value="{{ tomorrow|jdate_en }}" placeholder="1405/07/16" pattern="[0-9۰-۹٠-٩]{4}[/.-][0-9۰-۹٠-٩]{1,2}[/.-][0-9۰-۹٠-٩]{1,2}" title="تاریخ را به شکل 1405/07/16 وارد کنید"></label>
+                    <label>ساعت<input type="time" name="follow_up_time" step="300" value="10:00"></label>
+                  </div>
+                  {% if row.lead.notes %}<div class="ccx-follow-previous"><strong>یادداشت قبلی</strong><p>{{ row.lead.notes|truncatechars:220 }}</p></div>{% endif %}
+                  <label class="ccx-follow-note">توضیحات تماس<textarea name="follow_up_note" maxlength="2000" rows="3" placeholder="مشتری چه گفت و در تماس بعدی چه چیزی را یادآوری کنم؟"></textarea></label>
+                  <div class="ccx-follow-footer"><button type="button" data-follow-cancel>انصراف</button><button type="button" data-follow-save>ثبت پیگیری</button></div>
                 </div>
                 <div class="ccx-result-msg"></div>
               </div>
             </div>
             <a class="ccx-action appt" href="{% url 'appointment_schedule' %}?lead={{ row.lead.pk }}">نوبت</a>
             <a class="ccx-action p360-action" href="{% url 'patient_360_from_lead' row.lead.pk %}">◉ پرونده 360</a>
-            <a class="ccx-action note-action" href="{% url 'call_center_lead' row.lead.pk %}#ccLeadFollowup">✎ یادداشت/پیگیری</a>
+            <button class="ccx-action note-action" type="button" data-follow-direct>✎ یادداشت/پیگیری</button>
           </div>
         </article>
         {% empty %}<div class="ccx-empty">صف کاری برای امروز ندارید.</div>{% endfor %}
@@ -1608,6 +1642,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-search-form button,.ccx-pagination 
     document.querySelectorAll('.ccx-name-editor.open').forEach(function(x){x.classList.remove('open')});
     document.querySelectorAll('.ccx-result-panel.open').forEach(function(x){
       x.classList.remove('open');x.setAttribute('aria-hidden','true');
+      x.classList.remove('ccx-follow-expanded');
       var wrap=x.closest('.ccx-result-wrap'),t=wrap&&wrap.querySelector('[data-result-toggle]');if(t)t.setAttribute('aria-expanded','false');
       var f=x.querySelector('.ccx-follow-form');if(f)f.classList.remove('open');
     });
@@ -1620,16 +1655,26 @@ body.gl-page-call_center_dashboard .ccx .ccx-search-form button,.ccx-pagination 
     return fetch(row.dataset.resultUrl,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(r){return r.json().then(function(d){if(!r.ok||!d.ok)throw new Error(d.error||'ثبت انجام نشد');return d})}).then(function(d){
       msg.textContent='✓ '+d.result_label+' ثبت شد';
       var resultPanel=row.querySelector('.ccx-result-panel'),resultToggle=row.querySelector('[data-result-toggle]');
-      if(resultPanel){setTimeout(function(){resultPanel.classList.remove('open');resultPanel.setAttribute('aria-hidden','true')},450)}
+      if(resultPanel){setTimeout(function(){resultPanel.classList.remove('open','ccx-follow-expanded');resultPanel.setAttribute('aria-hidden','true');var form=resultPanel.querySelector('.ccx-follow-form');if(form)form.classList.remove('open')},450)}
       if(resultToggle)setTimeout(function(){resultToggle.setAttribute('aria-expanded','false')},450);
       row.dataset.done='1';
       var last=row.querySelector('.ccx-last strong');if(last)last.textContent=d.result_label;
-      setTimeout(function(){focusNext(row)},300);
+      if(result!=='follow_up')setTimeout(function(){focusNext(row)},300);
       return d;
     }).catch(function(e){msg.textContent=e.message||'خطا در ثبت';throw e});
   }
   rows().forEach(function(row){
     var toggle=row.querySelector('[data-result-toggle]'),panel=row.querySelector('.ccx-result-panel'),follow=row.querySelector('.ccx-follow-form');
+    var selectedInterval='';
+    function closeFollow(){follow.classList.remove('open');panel.classList.remove('open','ccx-follow-expanded');panel.setAttribute('aria-hidden','true');toggle.setAttribute('aria-expanded','false');toggle.focus()}
+    function openFollow(){
+      document.querySelectorAll('.ccx-result-panel.open').forEach(function(other){if(other!==panel){other.classList.remove('open','ccx-follow-expanded');other.setAttribute('aria-hidden','true')}});
+      panel.classList.add('open','ccx-follow-expanded');follow.classList.add('open');panel.setAttribute('aria-hidden','false');toggle.setAttribute('aria-expanded','true');
+      var wrap=toggle.getBoundingClientRect(),width=Math.min(620,window.innerWidth-24);
+      var left=Math.max(12,Math.min(wrap.left+wrap.width/2-width/2,window.innerWidth-width-12));
+      panel.style.left=(left-wrap.left)+'px';
+      var note=follow.querySelector('[name="follow_up_note"]');if(note)note.focus();
+    }
     if(toggle)toggle.addEventListener('click',function(e){
       e.stopPropagation();
       var willOpen=!panel.classList.contains('open');
@@ -1639,11 +1684,18 @@ body.gl-page-call_center_dashboard .ccx .ccx-search-form button,.ccx-pagination 
       panel.classList.toggle('open',willOpen);
       panel.setAttribute('aria-hidden',willOpen?'false':'true');
       toggle.setAttribute('aria-expanded',willOpen?'true':'false');
-      if(!willOpen&&follow)follow.classList.remove('open');
+      if(!willOpen&&follow){follow.classList.remove('open');panel.classList.remove('ccx-follow-expanded');panel.style.left=''}
     });
     if(panel)panel.addEventListener('click',function(e){e.stopPropagation()});
     row.querySelectorAll('[data-quick-result]').forEach(function(b){b.addEventListener('click',function(){b.disabled=true;postResult(row,b.dataset.quickResult,{}).finally(function(){b.disabled=false})})});
-    var fo=row.querySelector('[data-follow-open]');if(fo)fo.addEventListener('click',function(){follow.classList.toggle('open')});
+    var fo=row.querySelector('[data-follow-open]');if(fo)fo.addEventListener('click',openFollow);
+    var direct=row.querySelector('[data-follow-direct]');if(direct)direct.addEventListener('click',function(e){e.stopPropagation();openFollow()});
+    var cancel=follow.querySelector('[data-follow-cancel]');if(cancel)cancel.addEventListener('click',closeFollow);
+    follow.querySelectorAll('[data-follow-mode]').forEach(function(b){b.addEventListener('click',function(){
+      follow.querySelectorAll('[data-follow-mode]').forEach(function(x){var active=x===b;x.classList.toggle('active',active);x.setAttribute('aria-pressed',active?'true':'false')});
+      follow.querySelectorAll('[data-follow-pane]').forEach(function(x){x.classList.toggle('active',x.dataset.followPane===b.dataset.followMode)});
+    })});
+    follow.querySelectorAll('[data-follow-interval]').forEach(function(b){b.addEventListener('click',function(){selectedInterval=b.dataset.followInterval;follow.querySelectorAll('[data-follow-interval]').forEach(function(x){x.classList.toggle('active',x===b)})})});
     var jalaliInput=follow&&follow.querySelector('[name="next_follow_up"]');
     if(jalaliInput)jalaliInput.addEventListener('input',function(){
       var v=jalaliInput.value.replace(/[۰-۹]/g,function(x){return '۰۱۲۳۴۵۶۷۸۹'.indexOf(x)}).replace(/[٠-٩]/g,function(x){return '٠١٢٣٤٥٦٧٨٩'.indexOf(x)}).replace(/[^0-9]/g,'').slice(0,8);
@@ -1651,7 +1703,19 @@ body.gl-page-call_center_dashboard .ccx .ccx-search-form button,.ccx-pagination 
       else if(v.length>4)v=v.slice(0,4)+'/'+v.slice(4);
       jalaliInput.value=v;
     });
-    var fs=row.querySelector('[data-follow-save]');if(fs)fs.addEventListener('click',function(){var d=follow.querySelector('[name="next_follow_up"]').value,t=follow.querySelector('[name="follow_up_time"]').value;if(!d)return;fs.disabled=true;postResult(row,'follow_up',{next_follow_up:d,follow_up_time:t}).finally(function(){fs.disabled=false})});
+    var fs=row.querySelector('[data-follow-save]');if(fs)fs.addEventListener('click',function(){
+      var mode=follow.querySelector('[data-follow-mode].active').dataset.followMode;
+      var extra={follow_up_note:follow.querySelector('[name="follow_up_note"]').value};
+      if(mode==='interval'){
+        if(!selectedInterval){row.querySelector('.ccx-result-msg').textContent='فاصلهٔ زمانی را انتخاب کنید.';return}
+        extra.follow_up_interval=selectedInterval;
+      }else{
+        extra.next_follow_up=follow.querySelector('[name="next_follow_up"]').value;
+        extra.follow_up_time=follow.querySelector('[name="follow_up_time"]').value;
+        if(!extra.next_follow_up){row.querySelector('.ccx-result-msg').textContent='تاریخ را وارد کنید.';return}
+      }
+      fs.disabled=true;postResult(row,'follow_up',extra).then(function(){follow.querySelector('[name="follow_up_note"]').value='';selectedInterval='';follow.querySelectorAll('[data-follow-interval]').forEach(function(b){b.classList.remove('active')})}).catch(function(){}).finally(function(){fs.disabled=false});
+    });
     var call=row.querySelector('.ccx-action.call');if(call)call.addEventListener('click',function(){var fd=new FormData(),token=csrf();if(token)fd.append('csrfmiddlewaretoken',token);fetch(row.dataset.callUrl,{method:'POST',body:fd,credentials:'same-origin',keepalive:true,headers:{'X-Requested-With':'XMLHttpRequest'}}).catch(function(){})});
   });
 
