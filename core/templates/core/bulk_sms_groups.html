@@ -283,6 +283,52 @@
   .bulk-sms-page .bulk-filter-dates{grid-template-columns:1fr}
 }
 
+/* Keep this screen self-contained when global readability rules target generic
+   header, main and aside elements. Those rules previously turned the hero and
+   preview cards light while their copy remained white. */
+.bulk-sms-page .bulk-sms-hero{
+  background:linear-gradient(115deg,#173a35 0%,#132833 64%,#19353a 100%)!important;
+  border-color:#3e675f!important;
+  color:#f7fffc!important;
+}
+.bulk-sms-page .bulk-sms-catalog,
+.bulk-sms-page .bulk-sms-preview{
+  background:#12242e!important;
+  border-color:#38545b!important;
+  color:#f1f8f6!important;
+}
+.bulk-sms-page .bulk-sms-preview{
+  max-height:calc(100vh - 30px);
+  overflow:auto;
+  scrollbar-color:#527068 #142630;
+  scrollbar-width:thin;
+}
+.bulk-sms-page .bulk-campaign,
+.bulk-sms-page .bulk-final-confirm{
+  background:#192f39!important;
+  color:#eef8f4!important;
+}
+.bulk-sms-page .bulk-campaign textarea,
+.bulk-sms-page .bulk-final-confirm input[type=text],
+.bulk-sms-page .bulk-optout input{
+  background:#0d1e28!important;
+  color:#f7fffc!important;
+  -webkit-text-fill-color:#f7fffc!important;
+}
+.bulk-sms-page .bulk-campaign textarea::placeholder,
+.bulk-sms-page .bulk-sms-tools input::placeholder,
+.bulk-sms-page .bulk-optout input::placeholder{
+  color:#91aaa5!important;
+  opacity:1;
+}
+.bulk-sms-page .bulk-sms-warning{
+  background:#302b26!important;
+  color:#f4ddb0!important;
+}
+@media(max-width:1050px){
+  .bulk-sms-page .bulk-sms-preview{max-height:none;overflow:visible}
+}
+
 </style>
 
 <div class="bulk-sms-page">
@@ -585,3 +631,4 @@
 })();
 </script>
 {% endblock %}
+
