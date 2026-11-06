@@ -9,7 +9,7 @@ const ROUTES=[
 ["شعب",/\/(camp|branch)\b/],
 ["تنظیمات",/\/(credentials|credential|api-server|staff-security|security|device-capacity|treatment-catalog|treatment-content|call-center-group)\b/]
 ];
-const SPECIAL=[["تنظیمات",/credential_settings|panel-preview|تنظیمات برنامه غذایی|تنظیمات خدمات|صفحات پرسنل|گروه‌های کال/],["مدیریت",/وضعیت سرور|کنترل کیفیت|تارگت|صورت.جلس|مرکز اقدام/],["مالی",/درخواست پرداخت|هزینه‌ها|درآمد/],["پرسنل",/حقوق/],["بازاریابی",/اتصال اینستاگرام|لیدهای سایت|پیامک/]];
+const SPECIAL=[["تنظیمات",/credential_settings|panel-preview|تنظیمات برنامه غذایی|تنظیمات خدمات|تنظیمات پیامک|صفحات پرسنل|گروه‌های کال/],["مدیریت",/وضعیت سرور|کنترل کیفیت|تارگت|صورت.جلس|مرکز اقدام/],["مالی",/درخواست پرداخت|هزینه‌ها|درآمد/],["پرسنل",/حقوق/],["بازاریابی",/اتصال اینستاگرام|لیدهای سایت|پیامک/]];
 function classify(a){const label=(a.textContent||"").trim();for(const [g,re] of SPECIAL)if(re.test(label))return g;const u=new URL(a.href,location.href);for(const [g,re] of ROUTES)if(re.test(u.pathname))return g;return "مدیریت"}
 function run(){const nav=document.querySelector(".app-sidebar .app-nav");if(!nav||nav.dataset.grouped||!document.body.classList.contains("gl-executive-nav-enabled"))return;
 const source=[...nav.children];const links=[];
@@ -57,3 +57,4 @@ const region=document.createDocumentFragment();for(const [name,ico] of GROUPS){c
 const previous=document.createElement("div");previous.hidden=true;previous.className="gl-legacy-menu-backup";for(const el of [...nav.children])previous.appendChild(el);nav.appendChild(previous);nav.appendChild(region);nav.classList.add("gl-grouped-nav");nav.dataset.grouped="1";nav.querySelectorAll(".gl-nav-group").forEach(item=>item.addEventListener("toggle",()=>{if(item.open)nav.querySelectorAll(".gl-nav-group").forEach(other=>{if(other!==item)other.open=false})}));}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",run);else run();
 })();
+
