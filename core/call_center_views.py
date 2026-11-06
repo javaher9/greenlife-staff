@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from calendar import monthrange
 
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -159,15 +160,38 @@ def save_call_result(request, pk):
     if result=='follow_up':
         raw_date=(request.POST.get('next_follow_up') or '').strip()
         follow_up_time=(request.POST.get('follow_up_time') or '').strip()
-        try:
+        interval=(request.POST.get('follow_up_interval') or '').strip()
+        note=(request.POST.get('follow_up_note') or '').strip()
+        if len(note)>2000:
+            return JsonResponse({'ok':False,'error':'توضیحات بیش از حد طولانی است.'},status=400)
+        if interval:
+            try:
+                unit,raw_amount=interval.split(':',1)
+                amount=int(raw_amount)
+                if (unit,amount) not in ({('hours',n) for n in (1,2,3,4,6,8,10)} | {('minutes',30)} | {('days',n) for n in range(1,7)} | {('weeks',n) for n in range(1,4)} | {('months',n) for n in (1,2,3,4,6)}):
+                    raise ValueError()
+                now=timezone.localtime(timezone.now())
+                if unit=='months':
+                    month_index=now.year*12+now.month-1+amount
+                    year,month=divmod(month_index,12)
+                    month+=1
+                    target=now.replace(year=year,month=month,day=min(now.day,monthrange(year,month)[1]))
+                else:
+                    target=now+timedelta(**{unit:amount})
+                follow_date=target.date()
+                follow_up_time=target.strftime('%H:%M')
+            except (ValueError,OverflowError):
+                return JsonResponse({'ok':False,'error':'فاصلهٔ پیگیری معتبر نیست.'},status=400)
+        else:
+            try:
             # Cockpit sends Jalali dates (e.g. 1405/07/16). Keep ISO support
             # for older clients during the transition.
-            if '/' in raw_date or (raw_date[:4].isdigit() and int(raw_date[:4]) < 1700):
-                follow_date=parse_jalali(raw_date)
-            else:
-                follow_date=datetime.strptime(raw_date,'%Y-%m-%d').date()
-        except (TypeError,ValueError):
-            return JsonResponse({'ok':False,'error':'تاریخ پیگیری شمسی معتبر نیست.'},status=400)
+                if '/' in raw_date or (raw_date[:4].isdigit() and int(raw_date[:4]) < 1700):
+                    follow_date=parse_jalali(raw_date)
+                else:
+                    follow_date=datetime.strptime(raw_date,'%Y-%m-%d').date()
+            except (TypeError,ValueError):
+                return JsonResponse({'ok':False,'error':'تاریخ پیگیری شمسی معتبر نیست.'},status=400)
         if follow_date<timezone.localdate():
             return JsonResponse({'ok':False,'error':'تاریخ پیگیری نمی‌تواند گذشته باشد.'},status=400)
         if follow_up_time:
@@ -175,13 +199,16 @@ def save_call_result(request, pk):
                 datetime.strptime(follow_up_time,'%H:%M')
             except ValueError:
                 return JsonResponse({'ok':False,'error':'ساعت پیگیری معتبر نیست.'},status=400)
+            if not interval and timezone.make_aware(datetime.combine(follow_date,datetime.strptime(follow_up_time,'%H:%M').time()))<=timezone.now():
+                return JsonResponse({'ok':False,'error':'زمان پیگیری باید در آینده باشد.'},status=400)
         lead.contact_result='follow_up'
         lead.status='contacted'
         lead.next_follow_up=follow_date
-        if follow_up_time:
-            stamp=f'[followup_time:{follow_date.isoformat()} {follow_up_time}]'
+        if follow_up_time or note:
+            stamp=f'[followup_time:{follow_date.isoformat()} {follow_up_time}]' if follow_up_time else ''
             notes=(lead.notes or '').rstrip()
-            lead.notes=(notes+'\n'+stamp).strip()
+            entry='\n'.join(part for part in (stamp,note) if part)
+            lead.notes=(notes+'\n'+entry).strip()
             lead.save(update_fields=['contact_result','status','next_follow_up','notes','updated_at'])
         else:
             lead.save(update_fields=['contact_result','status','next_follow_up','updated_at'])
