@@ -79,6 +79,9 @@ class InstagramAdsLeadForm(InstagramLeadForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields.pop('consent', None)
+        # The labels already identify each field; keep input hints unobtrusive.
+        self.fields['full_name'].widget.attrs['placeholder'] = ''
+        self.fields['phone'].widget.attrs['placeholder'] = '09xxxxxxxxx'
 
 
 class InstagramManualLeadForm(LeadPhonesCreateMixin,InstagramLeadForm):
@@ -244,7 +247,7 @@ def _public_instagram_lead(request, *, advertising):
             form.add_error('phone', LEAD_DUPLICATE_MESSAGE)
         else:
             if advertising:
-                _assign_instagram_lead(lead, group_name='کمپ', notification_title='لید جدید تبلیغات')
+                _assign_instagram_lead(lead, group_name=INSTAGRAM_GROUP_NAME, notification_title='لید جدید تبلیغات')
             else:
                 _assign_instagram_lead(lead)
             completed = True
