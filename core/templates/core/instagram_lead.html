@@ -86,6 +86,8 @@
       color:#748078;font-size:11px;line-height:1.75;cursor:pointer;
     }
     .consent input{width:17px;height:17px;margin:3px 0 0;accent-color:var(--green);flex:0 0 auto}
+    .advertising-page .consent{color:#46205f;font-size:12px}
+    .advertising-page .consent input{accent-color:#873eae}
     .error{display:block;color:#c83e51;font-style:normal;font-size:11px;margin:6px 4px 0;line-height:1.6}
     .btn{
       width:100%;height:54px;border:0;border-radius:16px;padding:0 18px;
@@ -278,7 +280,7 @@
         <label class="field"><span>{{ form.full_name.label }}{% if advertising %}:{% endif %}</span>{{ form.full_name }}{% for error in form.full_name.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <label class="field"><span>{{ form.phone.label }}{% if advertising %}:{% endif %}</span>{{ form.phone }}{% for error in form.phone.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         <label class="field"><span>{{ form.interested_service.label }}{% if advertising %}:{% endif %}</span>{{ form.interested_service }}{% for error in form.interested_service.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
-        {% if not website_form and not advertising %}<label class="consent">{{ form.consent }}<span>{{ form.consent.label }}</span></label>{% for error in form.consent.errors %}<em class="error">{{ error }}</em>{% endfor %}{% endif %}
+        {% if not website_form and form.consent %}<label class="consent">{{ form.consent }}<span>{{ form.consent.label }}</span></label>{% for error in form.consent.errors %}<em class="error">{{ error }}</em>{% endfor %}{% endif %}
         <button class="btn" id="submitLeadBtn" type="submit">{% if website_form or advertising %}ثبت درخواست{% else %}درخواست تماس{% endif %}</button>
       </form>
       {% if not website_form and not advertising %}<div class="privacy">اطلاعات شما فقط برای تماس کارشناسان گرین‌لایف استفاده می‌شود.</div>{% endif %}

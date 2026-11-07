@@ -7,6 +7,32 @@ No Instagram referrer/header is treated as proof of the publishing page.
 import re
 from urllib.parse import parse_qs, urlparse
 
+from django.db.models import Q
+
+
+# Use the same predicates for SQL filters, source labels and deferred routing.
+# Query boundaries prevent "paid_story_extra" and nested URLs matching ads.
+ADS_PATH_PATTERN = r'^[^?#]*/instagram/ads/([?#]|$)'
+PAID_INSTAGRAM_PATTERN = r'^[^?#]*/instagram/[^#]*[?&]utm_medium=(paid|paid_story|paid_social)(&|#|$)'
+
+
+def advertising_lead_q():
+    return (
+        Q(notes__icontains='[entry:advertising]')
+        | Q(source_url__iregex=ADS_PATH_PATTERN)
+        | Q(source_url__iregex=PAID_INSTAGRAM_PATTERN)
+    )
+
+
+def is_paid_instagram_ad(lead):
+    notes = str(getattr(lead, 'notes', '') or '').lower()
+    source_url = str(getattr(lead, 'source_url', '') or '')
+    return bool(
+        '[entry:advertising]' in notes
+        or re.search(ADS_PATH_PATTERN, source_url, re.I)
+        or re.search(PAID_INSTAGRAM_PATTERN, source_url, re.I)
+    )
+
 
 def normalize_ad_page(raw):
     """Return a safe, short page name/handle for storage and display."""

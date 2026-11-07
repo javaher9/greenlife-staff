@@ -7,6 +7,7 @@ from django.utils import timezone
 from .models import Attendance, CallCenterLeadGroup, EmployeeProfile, LeaveRequest, ReferralLead, StaffNotification
 from .lead_routing_models import CallCenterRoutingDay
 from .lead_group_names import operational_group_name
+from .instagram_ad_attribution import is_paid_instagram_ad
 
 
 CHANNEL_LABELS = {
@@ -428,10 +429,10 @@ def _pending_channel(lead):
     """Recover the routing channel for an unassigned lead."""
     notes=_normalize(getattr(lead,'notes',''))
     source_url=_normalize(getattr(lead,'source_url',''))
+    if is_paid_instagram_ad(lead) or '[channel:instagram]' in notes or '[instagram_page:' in notes or '/instagram/' in source_url:
+        return 'instagram'
     if '[channel:website]' in notes or 'greenlifeclinics.com' in source_url:
         return 'website'
-    if '[channel:instagram]' in notes or '[instagram_page:' in notes or '/instagram/' in source_url:
-        return 'instagram'
     if '[channel:crm]' in notes or 'crm' in source_url:
         return 'crm'
     if '[channel:whatsapp]' in notes or 'whatsapp' in source_url or 'wa.me' in source_url:
@@ -448,8 +449,8 @@ def _pending_destination(lead):
 
     if _is_beytoote_reportage_start(lead):
         return 'وب سایت', 'لید جدید بیتوته - رپورتاژ'
-    if '[entry:advertising]' in notes or '/instagram/ads/' in source_url:
-        return 'کمپ', 'لید جدید تبلیغات'
+    if is_paid_instagram_ad(lead):
+        return 'اینستاگرام - لینک', 'لید جدید تبلیغات'
     if 'اینستاگرام - دستی' in notes:
         return 'اینستاگرام', 'لید جدید اینستاگرام - دستی'
     if 'تلگرام' in notes or '/telegram/' in source_url:

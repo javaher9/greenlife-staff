@@ -139,15 +139,8 @@ class FlowerLeadProxy:
         )
 
     def _is_paid_advertising(self):
-        lead = self._flower_lead
-        notes = str(getattr(lead, 'notes', '') or '').lower()
-        source_url = str(getattr(lead, 'source_url', '') or '').lower()
-        return (
-            '[entry:advertising]' in notes
-            or '/instagram/ads/' in source_url
-            or ('/instagram/' in source_url and ('utm_medium=paid_story' in source_url
-                or 'utm_medium=paid_social' in source_url or 'utm_medium=paid' in source_url))
-        )
+        from .instagram_ad_attribution import is_paid_instagram_ad
+        return is_paid_instagram_ad(self._flower_lead)
 
     @property
     def instagram_page_display(self):

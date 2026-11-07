@@ -69,7 +69,7 @@ class InstagramLeadForm(forms.Form):
 
 
 class InstagramAdsLeadForm(InstagramLeadForm):
-    """Paid Instagram ads: minimal three-field form with no consent checkbox."""
+    """Shared visual form; paid entries require explicit permission to contact."""
     interested_service = forms.CharField(
         label='توضیحات', max_length=160, required=False,
         widget=forms.Textarea(attrs={
@@ -78,9 +78,10 @@ class InstagramAdsLeadForm(InstagramLeadForm):
         }),
     )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, require_consent=False, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields.pop('consent', None)
+        if not require_consent:
+            self.fields.pop('consent', None)
         # The labels already identify each field; keep input hints unobtrusive.
         self.fields['full_name'].widget.attrs['placeholder'] = ''
         self.fields['phone'].widget.attrs['placeholder'] = '09xxxxxxxxx'
@@ -227,21 +228,22 @@ def instagram_ads_lead(request):
 def instagram_ads_link_builder(request):
     """Staff-only generator for an ad link identifying its publisher page."""
     return render(request, 'core/instagram_ads_link_builder.html', {
-        'ads_base_url': request.build_absolute_uri(reverse('instagram_ads_lead')),
+        'ads_base_url': 'https://app.greenlifeclinics.com' + reverse('instagram_ads_lead'),
     })
 
 
 def _public_instagram_lead(request, *, advertising):
     page_slug, page_label = _instagram_page_source(request.GET.get('source'))
     advertiser_page = normalize_ad_page(request.GET.get('ad_page')) if advertising else ''
-    # All Instagram public entry points share the approved three-field form.
+    # Share the approved visual while keeping paid consent and attribution explicit.
     form_class = InstagramAdsLeadForm
-    form = form_class(request.POST or None)
+    form = form_class(request.POST or None, require_consent=advertising)
     completed = False
     if request.method == 'POST' and form.is_valid():
         data = form.cleaned_data
         if advertising:
             notes = 'ورودی تبلیغات اینستاگرام | منبع: تبلیغات | [entry:advertising]'
+            notes += f' | [consent:contact_v1] | [consent_at:{timezone.now().isoformat()}]'
             if advertiser_page:
                 notes += f' | پیج تبلیغ‌کننده: {advertiser_page} | [ad_page:{advertiser_page}]'
         else:
@@ -268,7 +270,7 @@ def _public_instagram_lead(request, *, advertising):
             else:
                 _assign_instagram_lead(lead)
             completed = True
-            form = form_class()
+            form = form_class(require_consent=advertising)
 
     return render(request, 'core/instagram_lead.html', {
         'form': form,
