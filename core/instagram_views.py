@@ -365,7 +365,12 @@ def instagram_manual_lead(request):
 # Separate restricted entry links for Instagram operators. Only SHA-256 digests
 # are stored in source; the link tokens themselves are not stored here.
 _INSTAGRAM_OPERATOR_LINKS = {
-    'rad': 'cdc539a40d6cafe33dd4cfe260fb9c65d01d0384726376f92d7acbd3b5024014',
+    # Preserve the existing shared link while adding a separately issued
+    # high-entropy VPN-friendly alternative for Rad. Never store raw tokens.
+    'rad': (
+        'cdc539a40d6cafe33dd4cfe260fb9c65d01d0384726376f92d7acbd3b5024014',
+        'bac11ff2da924db9654e872df5f856ed479d495f74e50fa70cfa0cf9df9a029b',
+    ),
     'laleh': 'e3f1e2df4096a639df35d4b3019c555ce5c33f02ab2e0397aa63d64c7d552471',
 }
 
@@ -378,8 +383,13 @@ def instagram_operator_quick_lead(request, operator, token):
     from django.http import Http404, HttpResponse
     from django.views.decorators.cache import never_cache
 
-    digest = _INSTAGRAM_OPERATOR_LINKS.get(operator)
-    if not digest or not hmac.compare_digest(hashlib.sha256(token.encode()).hexdigest(), digest):
+    allowed_digests = _INSTAGRAM_OPERATOR_LINKS.get(operator)
+    if not allowed_digests:
+        raise Http404()
+    if isinstance(allowed_digests, str):
+        allowed_digests = (allowed_digests,)
+    token_digest = hashlib.sha256(token.encode()).hexdigest()
+    if not any(hmac.compare_digest(token_digest, digest) for digest in allowed_digests):
         raise Http404()
     if request.method not in ('GET', 'POST'):
         return HttpResponse(status=405)
