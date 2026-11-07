@@ -1,0 +1,70 @@
+{% extends "core/base.html" %}
+{% block content %}
+<style>
+.infra-page{direction:rtl;color:#eff7fb;background:linear-gradient(145deg,#0b1b29,#102b3a);border:1px solid #274d5f;border-radius:20px;padding:20px;max-width:1360px;margin:10px auto 30px}
+.infra-page *{box-sizing:border-box}.infra-page h1{font-size:24px;margin:0 0 8px;color:#fff}.infra-page h2{font-size:17px;margin:0 0 12px;color:#fff}
+.infra-page p,.infra-page small{color:#c1d4df;line-height:1.9}
+.infra-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.infra-page .infra-btn{background:#155745;color:white!important;border:1px solid #4cae91;padding:9px 14px;border-radius:10px;font-weight:bold;text-decoration:none;cursor:pointer}
+.infra-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px;margin:18px 0}
+.infra-card{background:#142d3d;border:1px solid #3b6171;border-radius:15px;padding:14px;min-width:0}
+.infra-card strong{font-size:16px;color:#f7fffd;display:block}.infra-card .dim{font-size:12px;margin:5px 0 8px;color:#b4d0dc}
+.infra-card .tag{display:inline-block;border:1px solid #617e8f;border-radius:20px;padding:3px 9px;font-size:11px;background:#213f50;color:#edfaff}
+.infra-card .tag.owed{color:#ffb9a5;border-color:#b35b5a}.infra-card .tag.clear{color:#a3efd0;border-color:#37846c}
+.infra-card .tag.unknown{color:#f5d7a0;border-color:#9b7542}
+.infra-panel{background:#142d3d;padding:16px;border:1px solid #3b6171;border-radius:15px;margin-top:15px}
+.infra-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.infra-form label{font-size:12px;color:#d7e8f1;display:block;margin-bottom:5px}
+.infra-form input,.infra-form select,.infra-form textarea{width:100%;background:#0d2130;color:#fff;border:1px solid #55788b;border-radius:8px;padding:11px;font-family:inherit;font-size:13px}
+.infra-form .wide{grid-column:1/-1}.infra-errors{color:#ffb4b4!important}
+.infra-page a{color:#8bdcfa}
+@media(max-width:700px){.infra-page{padding:12px}.infra-form{grid-template-columns:1fr}.infra-page h1{font-size:20px}}
+</style>
+<section class="infra-page" aria-label="کنترل قبوض و دسترسی زیرساخت">
+  <div class="infra-toolbar">
+    <div><h1>کنترل قبوض و دسترسی زیرساخت</h1><p>این صفحه گزارش بررسی دستی است؛ بدهی‌ها به‌صورت خودکار از مخابرات یا شرکت اینترنتی استعلام نمی‌شوند.</p></div>
+    {% if can_add_service %}<a class="infra-btn" href="/admin/core/infrastructureservice/add/">افزودن اشتراک</a>{% endif %}
+  </div>
+  <p>اطلاعات رمز عبور، کد یک‌بارمصرف و شماره کامل بازیابی را اینجا وارد نکنید. وضعیت انتقال شماره تأیید به شرکت صرفاً ثبت و پیگیری می‌شود.</p>
+  {% if messages %}{% for message in messages %}<p>{{ message }}</p>{% endfor %}{% endif %}
+  <div class="infra-list">
+    {% for service in services %}
+    <article class="infra-card">
+      <strong>{{ service.label }}</strong>
+      <div class="dim">{{ service.get_kind_display }} | {{ service.branch.name|default:"عمومی" }} | {{ service.provider }}</div>
+      {% if service.account_reference %}<p>شناسه اشتراک: {{ service.account_reference }}</p>{% endif %}
+      <p>مالک ثبت‌شده: {{ service.registered_owner|default:"نامشخص" }}</p>
+      <p>کنترل بازیابی توسط شرکت:
+        {% if service.company_controls_recovery %}<b>تأییدشده</b>{% else %}<b>هنوز تأیید نشده</b>{% endif %}
+        {% if service.verification_contact_hint %}<small>({{ service.verification_contact_hint }})</small>{% endif %}
+      </p>
+      {% if service.latest_check %}
+      <span class="tag {{ service.latest_check.status }}">{{ service.latest_check.get_status_display }}</span>
+      {% if service.latest_check.amount_due != None %}<p>مبلغ گزارش‌شده: {{ service.latest_check.amount_due }} ریال</p>{% endif %}
+      {% if service.latest_check.due_date %}<p>سررسید: {{ service.latest_check.due_date }}</p>{% endif %}
+      <p class="dim">آخرین بررسی: {{ service.latest_check.checked_at|date:"Y/m/d H:i" }} توسط {{ service.latest_check.checked_by.get_full_name|default:service.latest_check.checked_by.username }}؛ {{ service.latest_check.get_source_display }}</p>
+      {% else %}<span class="tag unknown">هنوز بررسی نشده</span>{% endif %}
+      {% if service.portal_url %}<p><a href="{{ service.portal_url }}" target="_blank" rel="noopener noreferrer">پنل ارائه‌دهنده ↗</a></p>{% endif %}
+    </article>
+    {% empty %}<p>اشتراکی ثبت نشده است. ابتدا مدیر سیستم سرویس‌های هر شعبه را تعریف کند.</p>{% endfor %}
+  </div>
+  <section class="infra-panel">
+    <h2>ثبت نتیجه بررسی جدید</h2>
+    <p>هر بررسی در سابقه جدا ثبت می‌شود و نتیجه قبلی را پاک نمی‌کند.</p>
+    {% if form.errors %}<p class="infra-errors">{{ form.errors }}</p>{% endif %}
+    <form method="post" class="infra-form">
+      {% csrf_token %}
+      <div><label for="id_service_id">سرویس</label><select name="service_id" id="id_service_id" required>
+        <option value="">انتخاب سرویس</option>
+        {% for service in services %}<option value="{{ service.id }}" {% if form.service_id.value|stringformat:"s" == service.id|stringformat:"s" %}selected{% endif %}>{{ service.label }} — {{ service.branch.name|default:"عمومی" }}</option>{% endfor %}
+      </select></div>
+      <div><label for="{{ form.status.id_for_label }}">نتیجه</label>{{ form.status }}</div>
+      <div><label for="{{ form.amount_due.id_for_label }}">مبلغ بدهی به ریال (درصورت وجود)</label>{{ form.amount_due }}</div>
+      <div><label for="{{ form.due_date.id_for_label }}">سررسید (میلادی)</label>{{ form.due_date }}</div>
+      <div><label for="{{ form.source.id_for_label }}">منبع استعلام</label>{{ form.source }}</div>
+      <div class="wide"><label for="{{ form.note.id_for_label }}">توضیحات بدون اطلاعات محرمانه</label>{{ form.note }}</div>
+      <div class="wide"><button class="infra-btn" type="submit">ثبت گزارش بررسی</button></div>
+    </form>
+  </section>
+</section>
+{% endblock %}
