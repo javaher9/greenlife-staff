@@ -1344,6 +1344,30 @@ body.gl-page-call_center_dashboard .ccx .ccx-follow-footer [data-follow-cancel]{
     {% for group in groups %}<a href="?group={{ group.pk }}" class="{% if group_filter == group.pk|stringformat:'s' %}active{% endif %}">{{ group.name }} <b>{{ group.lead_count }}</b></a>{% endfor %}
   </nav>
 
+  <details class="ccx-card" id="ccxLeadHistory" {% if group_filter or history_q %}open{% endif %} style="padding:12px 15px;border:1px solid #dce8e5;border-radius:14px;background:#fff">
+    <summary style="cursor:pointer;font-weight:850;color:#263f51;font-size:13px">همه لیدهای من در این گروه — {{ history_page.paginator.count }} مورد <span style="font-size:11px;color:#667587;font-weight:500">(شامل سوابق خارج از صف امروز)</span></summary>
+    <form method="get" action="{% url 'call_center_dashboard' %}#ccxLeadHistory" style="display:flex;gap:8px;margin:12px 0">
+      {% if group_filter %}<input type="hidden" name="group" value="{{ group_filter }}">{% endif %}
+      <input type="search" name="history_q" value="{{ history_q }}" maxlength="100" placeholder="جستجوی نام یا شماره در همه سوابق من" aria-label="جستجوی سوابق لید" style="flex:1;min-width:0;padding:9px;border:1px solid #dce8e5;border-radius:9px">
+      <button type="submit" style="padding:9px 15px;border:0;border-radius:9px;background:#40597a;color:#fff;cursor:pointer">جستجو</button>
+    </form>
+    <div style="max-height:360px;overflow:auto;display:grid;gap:5px">
+      {% for item in history_page %}
+      <a href="{% url 'call_center_lead' item.pk %}" style="text-decoration:none;color:#253e50;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;background:#f5f8fa;border:1px solid #e3ebef;border-radius:9px">
+        <span><strong>{{ item.full_name }}</strong> <small style="color:#697b89;direction:ltr;unicode-bidi:isolate">{{ item.phone }}</small></span>
+        <span style="color:#586d7f;font-size:11px">{{ item.get_status_display }}</span>
+      </a>
+      {% empty %}<p style="color:#6d7d8d">لیدی با این مشخصات در سوابق شما نیست.</p>{% endfor %}
+    </div>
+    {% if history_page.paginator.num_pages > 1 %}
+    <nav aria-label="صفحه‌های سوابق لید" style="display:flex;align-items:center;gap:12px;margin-top:10px">
+      {% if history_page.has_previous %}<a href="{{ history_page_base }}&amp;history_page={{ history_page.previous_page_number }}#ccxLeadHistory">قبلی</a>{% endif %}
+      <span>صفحه {{ history_page.number }} از {{ history_page.paginator.num_pages }}</span>
+      {% if history_page.has_next %}<a href="{{ history_page_base }}&amp;history_page={{ history_page.next_page_number }}#ccxLeadHistory">بعدی</a>{% endif %}
+    </nav>
+    {% endif %}
+  </details>
+
   <details class="ccx-card" id="ccxTodayHistory" style="padding:12px 15px;border:1px solid #dce8e5;border-radius:14px;background:#fff">
     <summary style="cursor:pointer;font-weight:850;color:#263f51;font-size:13px">همه لیدهای دریافتی امروز — {{ today_assigned_count }} مورد <span style="font-size:11px;color:#667587;font-weight:500"> (شامل پیگیری‌شده، بسته‌شده و خارج از صف کار)</span></summary>
     <div style="margin-top:10px;max-height:340px;overflow:auto;display:grid;gap:5px">
