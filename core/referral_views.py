@@ -966,6 +966,23 @@ def call_center_dashboard(request):
     elif group_filter.isdigit():
         queue_scope=queue_scope.filter(group_id=int(group_filter))
 
+    # The work queue changes when a call result or follow-up date changes.
+    # Keep every lead owned by this operator reachable from its group, including
+    # contacted and closed records that are no longer actionable today.
+    history_q=(request.GET.get('history_q') or '').strip()[:100]
+    history_search=history_q.translate(str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩','01234567890123456789'))
+    history_scope=queue_scope.select_related('group').order_by('-assigned_at','-created_at','-id')
+    if history_search:
+        history_scope=history_scope.filter(
+            Q(full_name__icontains=history_search) |
+            Q(phone__icontains=history_search) |
+            Q(alternate_phone__icontains=history_search)
+        )
+    history_page=Paginator(history_scope,50).get_page(request.GET.get('history_page'))
+    history_params=request.GET.copy()
+    history_params.pop('history_page',None)
+    history_page_base='?'+history_params.urlencode()
+
     # Keep the complete queue for counts/search; render only the requested page.
     # Never truncate candidates before filtering: fresh leads must stay reachable.
     queue_candidates=list(
@@ -1305,6 +1322,7 @@ def call_center_dashboard(request):
         'queue_page_base':queue_page_base,
         'queue_category_counts':category_counts,'upcoming_followups':upcoming_followups,
         'today_assigned_history':today_assigned_history,'today_assigned_count':today_leads.count(),
+        'history_page':history_page,'history_q':history_q,'history_page_base':history_page_base,
     })
 
 
