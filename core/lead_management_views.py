@@ -19,6 +19,7 @@ from .models import AuditLog, EmployeeProfile, ReferralLead, ReferralSale, Staff
 from .instagram_views import INSTAGRAM_PAGE_SOURCES
 from .jalali import gregorian_to_jalali, jalali_to_gregorian
 from .country_workspace import scoped_queryset
+from .instagram_ad_attribution import advertising_lead_q
 
 
 ALLOWED_ROLES = ('admin', 'manager', 'internal_manager')
@@ -182,12 +183,7 @@ class AttentionLeadProxy(FlowerLeadProxy):
 
 def _channel_q(channel):
     marker = f'[channel:{channel}]'
-    advertising_q = (
-        Q(notes__icontains='[entry:advertising]')
-        | Q(source_url__icontains='/instagram/ads/')
-        | Q(source_url__icontains='utm_medium=paid_story')
-        | Q(source_url__icontains='utm_medium=paid_social')
-    )
+    advertising_q = advertising_lead_q()
     if channel == 'advertising':
         return advertising_q
     if channel == 'instagram':
