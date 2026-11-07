@@ -2259,3 +2259,6 @@ from .sales_target_models import SalesTargetBand, TargetPercentPolicy
 
 # Patient progress images use the same patient record as scan station.
 from .body_progress_models import BodyProgressPhoto
+
+# Manual infrastructure inventory and provider-bill auditing (no secrets).
+from .infrastructure_models import InfrastructureService, InfrastructureBalanceCheck

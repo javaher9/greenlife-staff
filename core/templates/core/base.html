@@ -397,6 +397,15 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     <span><b>GreenLife</b><small>STAFF APP</small></span>
   </div>
   <nav class="app-nav">
+  {% if user.is_superuser or user.profile.role == 'admin' %}
+    <a href="{% url 'infrastructure_dashboard' %}" class="{% if request.resolver_match.url_name == 'infrastructure_dashboard' %}is-active{% endif %}"><span class="nav-ico">▣</span><span>قبوض و زیرساخت</span></a>
+  {% else %}
+    {% for infra_group in user.groups.all %}
+      {% if infra_group.name == 'GreenLife Infrastructure Audit' %}
+      <a href="{% url 'infrastructure_dashboard' %}" class="{% if request.resolver_match.url_name == 'infrastructure_dashboard' %}is-active{% endif %}"><span class="nav-ico">▣</span><span>قبوض و زیرساخت</span></a>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
   {% if user.is_superuser or user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' or 'کنترل کیفیت' in user.profile.job_title %}
     <a href="{% url 'quality_command_center' %}" class="{% if request.resolver_match.url_name == 'quality_command_center' %}is-active{% endif %}"><span class="nav-ico">◉</span><span>اتاق فرمان کنترل کیفیت</span></a>
     {% endif %}

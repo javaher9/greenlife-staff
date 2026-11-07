@@ -147,3 +147,29 @@ admin.site.register(MeetingMinute)
 admin.site.register(MeetingActionItem)
 admin.site.register(MeetingActionStep)
 admin.site.register(MeetingActionUpdate)
+
+
+# Operational subscriptions are defined by admins; audit checks are append-only.
+from .infrastructure_models import InfrastructureService, InfrastructureBalanceCheck
+
+@admin.register(InfrastructureService)
+class InfrastructureServiceAdmin(admin.ModelAdmin):
+    list_display = ("label", "kind", "branch", "provider", "company_controls_recovery", "is_active")
+    list_filter = ("kind", "branch", "is_active", "company_controls_recovery")
+    search_fields = ("label", "provider", "account_reference", "registered_owner")
+    readonly_fields = ("created_at", "updated_at")
+
+@admin.register(InfrastructureBalanceCheck)
+class InfrastructureBalanceCheckAdmin(admin.ModelAdmin):
+    list_display = ("service", "status", "amount_due", "due_date", "source", "checked_by", "checked_at")
+    list_filter = ("status", "source", "service__branch")
+    readonly_fields = ("service", "status", "amount_due", "due_date", "source", "note", "checked_by", "checked_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
