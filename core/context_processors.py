@@ -1,6 +1,11 @@
 from django.conf import settings
 from .call_center_identity import FlowerUserProxy
 
+
+def recruitment_access(request):
+    from recruitment.permissions import can_manage
+    return {'recruitment_access': can_manage(getattr(request, 'user', None))}
+
 def executive_access(request):
     user=getattr(request,'user',None)
     allowed=bool(user and getattr(user,'is_authenticated',False) and (user.username or '').lower() in settings.EXECUTIVE_USERNAMES)

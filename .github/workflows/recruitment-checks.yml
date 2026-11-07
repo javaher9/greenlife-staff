@@ -1,0 +1,91 @@
+name: Recruitment and release safety
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'recruitment/**'
+      - 'greenlife/settings.py'
+      - 'greenlife/urls.py'
+      - 'core/context_processors.py'
+      - 'core/templates/core/base.html'
+      - 'scripts/deploy_runner.sh'
+      - 'scripts/test_deploy_safety.py'
+      - 'scripts/recruitment_ui_fixture.py'
+      - 'scripts/recruitment_browser_qa.cjs'
+      - '.github/workflows/recruitment-checks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recruitment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: recruitment_ci
+          POSTGRES_USER: greenlife
+          POSTGRES_PASSWORD: test-password
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U greenlife -d recruitment_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DEBUG: '1'
+      SECRET_KEY: 'test-only-recruitment-isolated-ci-key'
+      ALLOWED_HOSTS: 'localhost,127.0.0.1,testserver'
+      POSTGRES_DB: recruitment_ci
+      POSTGRES_USER: greenlife
+      POSTGRES_PASSWORD: test-password
+      POSTGRES_HOST: '127.0.0.1'
+      POSTGRES_PORT: '5432'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python manage.py check
+      - run: python manage.py makemigrations recruitment --check --dry-run
+      - run: python manage.py test recruitment --verbosity 2
+      - run: bash -n scripts/deploy_runner.sh
+      - run: python scripts/test_deploy_safety.py
+      - run: node --check recruitment/static/recruitment/workspace.js
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated browser test dependencies
+        run: |
+          npm install --prefix "$RUNNER_TEMP/recruitment-browser" playwright@1.56.1
+          "$RUNNER_TEMP/recruitment-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Browser workflow and responsive screenshots
+        env:
+          RECRUITMENT_UI_QA: '1'
+        run: |
+          set -euo pipefail
+          mkdir -p qa-artifacts
+          python manage.py migrate --noinput
+          python scripts/recruitment_ui_fixture.py --output "$RUNNER_TEMP/recruitment-qa-session.json"
+          python manage.py runserver 127.0.0.1:8010 --noreload >qa-artifacts/server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true; rm -f "$RUNNER_TEMP/recruitment-qa-session.json"' EXIT
+          for attempt in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:8010/api/health/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:8010/api/health/ >/dev/null
+          NODE_PATH="$RUNNER_TEMP/recruitment-browser/node_modules" \
+            node scripts/recruitment_browser_qa.cjs "$RUNNER_TEMP/recruitment-qa-session.json" qa-artifacts
+      - name: Save recruitment screenshots and test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recruitment-ui-qa
+          path: qa-artifacts/
+          if-no-files-found: ignore
+          retention-days: 7

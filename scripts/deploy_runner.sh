@@ -49,7 +49,9 @@ fi
 # backup so a clean server can bootstrap without deleting or replacing data.
 if "${COMPOSE[@]}" config --services | grep -qx db; then
   echo "Ensuring PostgreSQL service is running..."
-  "${COMPOSE[@]}" up -d db
+  # A release must never replace a running database because Compose config
+  # changed. Start it if needed, but leave existing containers untouched.
+  "${COMPOSE[@]}" up -d --no-recreate db
 
   echo "Waiting for PostgreSQL readiness..."
   db_ready=0
@@ -59,14 +61,10 @@ if "${COMPOSE[@]}" config --services | grep -qx db; then
       echo "PostgreSQL is ready."
       break
     fi
-    if [[ "$i" == "6" ]]; then
-      echo "PostgreSQL still not ready; restarting database container once..." >&2
-      "${COMPOSE[@]}" restart db || true
-    fi
     sleep 2
   done
   if [[ "$db_ready" != "1" ]]; then
-    echo "PostgreSQL did not become ready. Recent database log:" >&2
+    echo "PostgreSQL did not become ready; aborting release without restarting the database. Recent database log:" >&2
     "${COMPOSE[@]}" logs --no-color --tail=120 db >&2 || true
     exit 1
   fi
@@ -186,12 +184,28 @@ LAN_CANDIDATE="greenlife-web-lan-candidate-${RELEASE_ID}"
 NETWORK="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}' "$PUBLIC_WEB")"
 [[ -n "$NETWORK" ]] || { echo "ERROR: could not determine production Docker network." >&2; exit 1; }
 
+# A previous failed release may still be serving from its candidate. Names
+# normally differ on every attempt; if one collides, never delete it to retry.
+for candidate_name in "$PUBLIC_CANDIDATE" "$LAN_CANDIDATE"; do
+  if docker container inspect "$candidate_name" >/dev/null 2>&1; then
+    echo "ERROR: candidate name already exists; leaving it untouched: $candidate_name" >&2
+    exit 1
+  fi
+done
+
+# Set before attempting any proxy switch, since a reload may have succeeded
+# even if a later step fails. Only clear after BOTH proxy reloads drain and
+# BOTH stable proxy paths pass their health checks.
+CANDIDATE_TRAFFIC_POSSIBLE=0
 cleanup_candidates() {
+  if [[ "$CANDIDATE_TRAFFIC_POSSIBLE" == "1" ]]; then
+    echo "Preserving candidate containers: nginx may still be serving traffic through them." >&2
+    return 0
+  fi
   docker rm -f "$PUBLIC_CANDIDATE" "$LAN_CANDIDATE" >/dev/null 2>&1 || true
 }
 trap 'cleanup_candidates' EXIT
 
-docker rm -f "$PUBLIC_CANDIDATE" "$LAN_CANDIDATE" >/dev/null 2>&1 || true
 docker image inspect greenlife-staff-runtime-web:latest >/dev/null 2>&1 || { echo "ERROR: candidate image missing." >&2; exit 1; }
 
 docker run -d --name "$PUBLIC_CANDIDATE" \
@@ -261,13 +275,58 @@ with path.open('w', encoding='utf-8') as handle:
     handle.write(text)
 PY
 }
+nginx_worker_pids() {
+  local proxy="$1" processes worker_pids
+  # The nginx Alpine images provide BusyBox ps. Reading the process list must
+  # succeed; an unavailable command is not evidence that requests have drained.
+  if ! processes="$(docker exec "$proxy" ps -o pid,args)"; then
+    echo "ERROR: cannot inspect nginx workers in $proxy; refusing unsafe cutover." >&2
+    return 1
+  fi
+  worker_pids="$(printf '%s\n' "$processes" | awk '$1 ~ /^[0-9]+$/ && /nginx: [w]orker process/ {print $1}')"
+  [[ -n "$worker_pids" ]] || {
+    echo "ERROR: no nginx workers found in $proxy; refusing unsafe cutover." >&2
+    return 1
+  }
+  printf '%s\n' "$worker_pids"
+}
+
+wait_for_nginx_workers() {
+  local proxy="$1" old_worker_pids="$2" current_worker_pids worker_pid pending attempt
+  # nginx -s reload only sends a signal. Wait for the actual OLD worker PIDs
+  # to exit, including requests already connected to the outgoing backend.
+  for attempt in {1..60}; do
+    current_worker_pids="$(nginx_worker_pids "$proxy")" || return 1
+    pending=0
+    for worker_pid in $old_worker_pids; do
+      if grep -Fxq "$worker_pid" <<< "$current_worker_pids"; then
+        pending=1
+        break
+      fi
+    done
+    if [[ "$pending" == "0" ]]; then
+      echo "Old nginx workers drained: $proxy"
+      return 0
+    fi
+    sleep 2
+  done
+  echo "ERROR: nginx workers in $proxy did not drain within 120 seconds; leaving backends running." >&2
+  return 1
+}
+
+reload_nginx_safely() {
+  local proxy="$1" old_worker_pids
+  docker exec "$proxy" nginx -t || return 1
+  old_worker_pids="$(nginx_worker_pids "$proxy")" || return 1
+  docker exec "$proxy" nginx -s reload || return 1
+  wait_for_nginx_workers "$proxy" "$old_worker_pids"
+}
+
 reload_public_nginx() {
-  docker exec "$PUBLIC_NGINX" nginx -t
-  docker exec "$PUBLIC_NGINX" nginx -s reload
+  reload_nginx_safely "$PUBLIC_NGINX"
 }
 reload_lan_nginx() {
-  docker exec "$LAN_NGINX" nginx -t
-  docker exec "$LAN_NGINX" nginx -s reload
+  reload_nginx_safely "$LAN_NGINX"
 }
 
 probe_public_proxy() {
@@ -297,6 +356,7 @@ probe_lan_proxy() {
 }
 
 echo "Gracefully switching public traffic to the healthy candidate..."
+CANDIDATE_TRAFFIC_POSSIBLE=1
 set_public_upstream "$PUBLIC_CANDIDATE"
 reload_public_nginx
 if docker ps --format '{{.Names}}' | grep -qx "$LAN_CANDIDATE"; then
@@ -339,6 +399,7 @@ probe_public_proxy 20
 if docker ps --format '{{.Names}}' | grep -qx "$LAN_WEB"; then
   probe_lan_proxy 20
 fi
+CANDIDATE_TRAFFIC_POSSIBLE=0
 
 # A dedicated lightweight worker keeps the 10:15 lead settlement independent
 # of SMS provider latency and of whether staff have a browser tab open.

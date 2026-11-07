@@ -7,6 +7,7 @@ from core import call_center_views, consultant_sales_views, instagram_views, ins
 urlpatterns=[
     path('admin/',admin.site.urls),
     path('payments/',include('payments.urls')),
+    path('management/recruitment/',include('recruitment.urls')),
 
     path('api/integrations/leads/',lead_ingest_views.ingest_lead,name='lead_ingest'),
     path('api/whatsapp/events/',whatsapp_views.whatsapp_bridge_event,name='whatsapp_bridge_event'),
