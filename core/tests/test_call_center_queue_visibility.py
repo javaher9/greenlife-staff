@@ -79,6 +79,24 @@ class CallCenterQueueVisibilityTests(TestCase):
         self.assertContains(response,'id="ccxTodayHistory"')
         self.assertContains(response,'همه لیدهای دریافتی امروز')
 
+    def test_group_history_keeps_old_contacts_and_closed_leads_searchable(self):
+        old=self.backlog[0]
+        ReferralLead.objects.filter(pk=old.pk).update(
+            status='contacted', contact_result='follow_up',
+            next_follow_up=self.now.date()+timedelta(days=5),
+        )
+        closed=self.backlog[1]
+        ReferralLead.objects.filter(pk=closed.pk).update(status='lost')
+        response=self.dashboard(group=self.old_group.pk,history_q=old.phone)
+        self.assertEqual(response.context['queue_page'].paginator.count,298)
+        self.assertEqual([lead.pk for lead in response.context['history_page']],[old.pk])
+        self.assertContains(response,old.phone)
+        self.assertContains(response,'همه لیدهای من در این گروه')
+        closed_response=self.dashboard(group=self.old_group.pk,history_q=closed.phone)
+        self.assertEqual([lead.pk for lead in closed_response.context['history_page']],[closed.pk])
+        foreign=self.dashboard(group=self.new_group.pk,history_q=self.foreign.phone)
+        self.assertEqual(foreign.context['history_page'].paginator.count,0)
+
     def test_large_queue_is_paged_without_truncating_counts_or_search(self):
         response=self.dashboard()
         self.assertEqual(len(response.context['queue_page']),50)
