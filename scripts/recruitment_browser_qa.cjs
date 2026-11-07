@@ -93,6 +93,7 @@ async function closeDialog(page) {
     // All six views must switch within the current document.
     for(const tab of ['applications','followups','ads','onboarding','talent','jobs']) {
       await page.locator(`[data-tab="${tab}"]`).click();
+      await waitReady(page);
       assert(await page.locator(`[data-tab="${tab}"]`).evaluate(el=>el.classList.contains('is-active')),
         `Tab ${tab} did not become active.`);
       assert.equal(await page.evaluate(()=>window.__recruitmentQaDocument),'same-document');
@@ -146,6 +147,7 @@ async function closeDialog(page) {
 
     // Search for the saved record, open its real detail, and verify that it is persisted.
     await page.locator('[data-tab="applications"]').click();
+    await waitReady(page);
     await page.locator('#rh-search').fill('متقاضی آزمایشی مرورگر');
     await page.getByText('متقاضی آزمایشی مرورگر',{exact:true}).first().waitFor();
     await page.getByText('متقاضی آزمایشی مرورگر',{exact:true}).first().click();
@@ -200,12 +202,15 @@ async function closeDialog(page) {
     for(const [label,width,height] of [['tablet',820,1180],['mobile',390,844]]) {
       await page.setViewportSize({width,height});
       await page.locator('[data-tab="jobs"]').click();
+      await waitReady(page);
       await assertNoOverflow(page,`${label} positions`);
       await page.screenshot({path:path.join(output,`03-${label}-positions.png`),fullPage:true});
       await page.locator('[data-tab="applications"]').click();
+      await waitReady(page);
       await assertNoOverflow(page,`${label} applicants`);
       await page.getByText('متقاضی آزمایشی 1',{exact:true}).first().click();
       await page.locator('#rh-dialog[open]').waitFor();
+      await page.locator('#rh-dialog .rh-detail-person h3').filter({hasText:'متقاضی آزمایشی 1'}).waitFor();
       await assertNoOverflow(page,`${label} detail`);
       await page.screenshot({path:path.join(output,`04-${label}-applicant.png`),fullPage:true});
       await closeDialog(page);

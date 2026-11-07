@@ -7,3 +7,21 @@
 @media(prefers-reduced-motion:reduce){.rh-spinner{animation:none}.rh *{scroll-behavior:auto!important}}
 
 .rh-pagination{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:17px;color:#a4bdcf;font-size:12px;flex-wrap:wrap}
+
+/* Neutralize inherited global header/button rules inside this workspace only. */
+#recruitment-workspace .rh-header{position:static;top:auto;z-index:auto;height:auto;min-height:0;padding:0;background:transparent!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+#recruitment-workspace .rh-evaluation header{position:static;top:auto;z-index:auto;height:auto;min-height:0;padding:0;background:transparent!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+#recruitment-workspace header span{margin-top:0}
+#recruitment-workspace button{transform:none!important;box-shadow:none!important}
+#recruitment-workspace .rh-btn{background:#132b3d!important;border:1px solid #365063!important;color:#f4f8ff!important}
+#recruitment-workspace .rh-btn.rh-primary{background:linear-gradient(135deg,#6b43be,#8558d2)!important;border-color:#9a79d7!important}
+#recruitment-workspace .rh-btn.rh-subtle{background:transparent!important;border-color:#2a4355!important;color:#bed0df!important}
+#recruitment-workspace .rh-btn.rh-positive{background:#113e31!important;border-color:#28735a!important;color:#91e8c2!important}
+#recruitment-workspace .rh-btn.rh-danger{background:#3a2028!important;border-color:#794452!important;color:#ffb4c0!important}
+#recruitment-workspace .rh-alert{background:linear-gradient(125deg,#102737,#0b1b27)!important;border:1px solid #254153!important;color:#c7d6e1!important}
+#recruitment-workspace .rh-tabs button{background:transparent!important;border:0!important;color:#adbfcd!important}
+#recruitment-workspace .rh-tabs button.is-active{color:#d7c0ff!important}
+#recruitment-workspace .rh-card-title,#recruitment-workspace .rh-person button{background:transparent!important;border:0!important;color:#f4f8ff!important}
+#recruitment-workspace .rh-close{background:#173043!important;border:1px solid #385365!important;color:#d5e4ee!important}
+#recruitment-workspace .rh-detail-tabs button{background:transparent!important;border:1px solid transparent!important;color:#a7bdcf!important}
+#recruitment-workspace .rh-detail-tabs button.is-active{background:#2b2440!important;border-color:#66508c!important;color:#ddc8ff!important}
