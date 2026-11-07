@@ -169,70 +169,136 @@
       body{padding-top:13px}.brand-mark{display:none}.brand{margin-bottom:9px}.brand small{display:none}
       .card{padding-top:20px}.eyebrow{margin-bottom:8px}.lead{margin-bottom:13px}.field{margin-bottom:9px}
     }
-    /* Approved purple campaign: live, accessible form alongside the approved model. */
-    body.advertising-page {color:#fff; background:radial-gradient(circle at 15% 8%,#b489cc 0,transparent 40%),linear-gradient(150deg,#42204d,#80509b 60%,#dab2e9)}
-    .advertising-page .wrap{width:min(100%,980px)}
+
+    /* Final approved purple art direction. The actual three fields remain live HTML inputs. */
+    body.advertising-page{
+      min-height:100vh;margin:0;padding:14px 10px;display:flex;align-items:center;justify-content:center;
+      color:#fff;background:radial-gradient(ellipse at 20% 15%,#9365aa 0,transparent 47%),linear-gradient(137deg,#3c244d,#6d408b 65%,#9f70b6);
+      font-family:Vazirmatn,'Noto Sans Arabic',Tahoma,sans-serif
+    }
+    .advertising-page .wrap{width:min(100%,1110px);margin:auto}
     .advertising-page .brand{display:none}
     .advertising-page .ad-entry{
-      display:grid;grid-template-columns:42% minmax(0,58%);grid-template-rows:auto minmax(0,1fr);
-      column-gap:8px;align-items:stretch;isolation:isolate;
-      min-height:710px;padding:32px 36px 30px;
-      background:linear-gradient(122deg,#50305d 0%,#76478b 43%,#a67dc0 72%,#d2b3dd 100%);
-      border:1px solid rgba(245,222,255,.44);border-radius:32px;
-      box-shadow:0 30px 85px rgba(45,15,72,.28);overflow:hidden;
+      direction:rtl;position:relative;isolation:isolate;display:grid;
+      grid-template-columns:minmax(255px,42%) minmax(0,58%);
+      grid-template-rows:auto minmax(0,1fr);column-gap:4px;
+      min-height:710px;padding:30px 35px 30px 30px;overflow:hidden;
+      background:
+        radial-gradient(ellipse at 10% 100%,rgba(252,218,255,.36),transparent 48%),
+        radial-gradient(ellipse at 89% 2%,rgba(227,183,242,.36),transparent 50%),
+        linear-gradient(117deg,#59326c 0%,#81519c 53%,#9b72b5 100%);
+      box-shadow:0 24px 90px rgba(44,17,65,.23);
+      border:0;border-radius:24px;
     }
-    .advertising-page .ad-entry::before{height:3px;background:linear-gradient(90deg,#d8a8ff,#fff,#b77de2)}
-    .advertising-page .ads-copy{grid-column:2;grid-row:1;z-index:2;min-width:0;text-align:right;padding:4px 10px 0 6px}
-    .advertising-page .ads-brand{display:flex;direction:ltr;justify-content:flex-end;align-items:center;gap:10px;color:#fff;margin-bottom:26px;text-align:left}
-    .advertising-page .ads-brand strong{display:block;font-family:Arial,sans-serif;font-size:29px;font-weight:800;line-height:1.12;letter-spacing:-1px;color:#fff}
-    .advertising-page .ads-brand small{display:block;letter-spacing:5px;font-family:Arial,sans-serif;font-size:10px;font-weight:700;color:#eddcf4;text-align:center;margin-top:3px}
-    .advertising-page .ads-copy h1{font-size:clamp(22px,3.3vw,34px);line-height:1.55;font-weight:900;color:#fff;text-align:right;margin:0 0 22px;text-shadow:0 2px 12px rgba(44,8,68,.17)}
-    .advertising-page .ads-copy h1 span{color:#f5e5fe}
-    .advertising-page .ads-copy h1 em{font-style:normal;color:#e6baff}
-    .advertising-page .ads-art{grid-column:1;grid-row:1 / span 2;z-index:1;align-self:stretch;width:100%;height:100%;margin:0;display:flex;align-items:end;justify-content:center}
-    .advertising-page .ads-art img{display:block;width:auto;height:min(610px,100%);max-width:100%;object-fit:contain;object-position:bottom center;border-radius:0;filter:drop-shadow(0 10px 20px rgba(45,23,62,.13))}
+    .advertising-page .ad-entry::before{
+      content:'';position:absolute;z-index:-1;inset:auto -20% -80px -20%;height:215px;
+      background:radial-gradient(ellipse at 50% 100%,rgba(250,216,255,.45),transparent 68%);border:0;
+    }
+    .advertising-page .ads-copy{
+      grid-column:2;grid-row:1;position:relative;z-index:2;
+      min-width:0;padding:0 12px 0 4px;text-align:right;
+    }
+    .advertising-page .ads-brand{display:flex;justify-content:flex-end;direction:ltr;gap:12px;align-items:center;margin:0 0 32px;color:#fff}
+    .advertising-page .ads-brand strong{font-family:Arial,sans-serif;color:#fff;font-size:30px;font-weight:800;line-height:1;letter-spacing:-1px}
+    .advertising-page .ads-brand small{display:block;font-family:Arial,sans-serif;letter-spacing:5px;font-size:11px;font-weight:700;color:#eee1f7;text-align:center;margin-top:8px}
+    .advertising-page .ads-brand svg{width:44px;height:44px;flex:0 0 44px}
+    .advertising-page .ads-copy h1{
+      font-size:clamp(27px,3.1vw,39px);line-height:1.56;font-weight:900;color:#fff;
+      text-align:right;margin:0 0 32px;text-shadow:0 2px 14px rgba(45,17,69,.12)
+    }
+    .advertising-page .ads-copy h1 span{color:#f0c8ff}
+    .advertising-page .ads-copy h1 em{font-style:normal;color:#f0c8ff}
+    .advertising-page .ads-copy h1:after{
+      content:'';display:block;width:77%;height:12px;margin:12px auto 0;
+      border-top:3px solid #e7b3ff;border-radius:80% 20% 0 0;transform:rotate(-2deg);
+      box-shadow:0 -3px 12px rgba(236,158,255,.4)
+    }
+    .advertising-page .ads-art{
+      grid-column:1;grid-row:1 / span 2;position:relative;z-index:1;
+      display:flex;justify-content:center;align-items:flex-end;
+      width:100%;height:100%;margin:0;overflow:visible;
+    }
+    .advertising-page .ads-art img{
+      display:block;width:auto;height:min(690px,100%);
+      max-width:100%;object-fit:contain;object-position:center bottom;
+      border:0;border-radius:0!important;box-shadow:none!important;
+      filter:drop-shadow(0 17px 18px rgba(35,10,48,.1));
+    }
     .advertising-page .ad-entry form{
-      grid-column:2;grid-row:2;z-index:3;width:100%;align-self:start;
-      padding:21px 20px 19px;border:1px solid rgba(255,255,255,.75);border-radius:25px;
-      background:rgba(250,242,253,.79);box-shadow:0 10px 32px rgba(63,28,87,.12);
-      backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)
+      grid-column:2;grid-row:2;z-index:3;align-self:start;
+      display:block;width:100%;margin:0;padding:20px 17px 14px;
+      background:rgba(243,223,250,.15);border:1px solid rgba(255,236,255,.56);
+      border-radius:27px;box-shadow:0 5px 24px rgba(68,24,101,.09);
+      backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)
     }
-    .advertising-page .ad-entry .field{margin-bottom:12px}
-    .advertising-page .ad-entry .field>span{font-size:16px;color:#46205f;font-weight:900;margin:0 3px 6px;line-height:1.6}
-    .advertising-page .ad-entry .field input,.advertising-page .ad-entry .field textarea{
-      border-color:#d9c3e6;background:rgba(255,255,255,.92);color:#331b40;font-size:17px;
-      border-radius:15px;box-shadow:inset 0 1px 3px rgba(79,34,96,.035)
+    .advertising-page .ad-entry .field{
+      position:relative;display:block;min-height:76px;margin-bottom:12px;
     }
-    .advertising-page .ad-entry .field input::placeholder{color:#aa94b4;font-weight:400}
-    .advertising-page .ad-entry .field textarea::placeholder{color:#c6bacd;font-size:14px;font-weight:400;opacity:1}
+    .advertising-page .ad-entry .field>span:first-child{
+      position:absolute;z-index:2;right:20px;top:11px;margin:0;pointer-events:none;
+      color:#2f1740;font-size:17px;font-weight:900;line-height:1.5;
+    }
+    .advertising-page .ad-entry .field input,
+    .advertising-page .ad-entry .field textarea{
+      display:block;width:100%;padding:35px 17px 10px 66px;border:1px solid rgba(255,255,255,.84);
+      border-radius:19px;background:rgba(254,249,255,.90)!important;color:#2a1836!important;
+      font-family:inherit;font-size:16px;line-height:1.5;box-shadow:0 3px 12px rgba(59,24,91,.06);
+      outline:0;direction:rtl;text-align:right;
+    }
+    .advertising-page .ad-entry .field input{height:76px;min-height:76px}
+    .advertising-page .ad-entry .field textarea{height:145px;min-height:145px;resize:vertical}
+    .advertising-page .ad-entry .field input:focus,
+    .advertising-page .ad-entry .field textarea:focus{border-color:#b579d1;box-shadow:0 0 0 3px rgba(229,178,250,.30)}
+    .advertising-page .ad-entry .field input::placeholder{color:#c1b4c7!important;font-weight:400}
+    .advertising-page .ad-entry .field textarea::placeholder{color:#bcb0c4!important;font-weight:400;font-size:13px;opacity:1;line-height:1.8}
+    .advertising-page .ads-field-icon{
+      position:absolute!important;left:19px;right:auto!important;top:50%!important;
+      margin:0!important;transform:translateY(-50%);display:grid;place-items:center;
+      width:37px;height:37px;border-right:1px solid #ad80c4;padding-right:8px;color:#672a85!important;
+      pointer-events:none;z-index:2;
+    }
+    .advertising-page .field:has(textarea) .ads-field-icon{top:43px!important;transform:none}
+    .advertising-page .ads-field-icon svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
     .advertising-page .ad-entry .btn{
-      min-height:54px;background:linear-gradient(105deg,#572076,#873eae 70%,#a24cc2);
-      border:1px solid #d49be8;box-shadow:0 7px 17px rgba(114,46,154,.23);font-size:17px
+      display:block;min-height:63px;width:100%;margin-top:15px;
+      border:1px solid #da9ffa;border-radius:45px;
+      background:linear-gradient(105deg,#55216f,#77229e 60%,#a24ac1);
+      box-shadow:0 0 10px rgba(228,139,255,.75),0 6px 20px rgba(76,24,115,.18);
+      font-family:inherit;font-size:22px;font-weight:900;color:#fff;
     }
-    .advertising-page .ad-entry .field textarea{min-height:110px}
-    @media(max-width:700px){
-      body.advertising-page{align-items:flex-start;padding:12px 10px 22px}
+    @media(max-width:740px){
+      body.advertising-page{align-items:flex-start;padding:8px 0 0}
       .advertising-page .wrap{width:100%}
-      .advertising-page .ad-entry{display:block;min-height:0;padding:0 0 17px;border-radius:24px}
-      .advertising-page .ads-copy{position:relative;min-height:258px;padding:20px 44% 0 14px;z-index:2}
-      .advertising-page .ads-brand{justify-content:flex-start;gap:4px;margin-bottom:17px}
-      .advertising-page .ads-brand svg{height:27px;width:27px;flex:0 0 27px}
-      .advertising-page .ads-brand strong{font-size:19px;letter-spacing:-.5px;white-space:nowrap}
-      .advertising-page .ads-brand small{font-size:7px;letter-spacing:2.5px}
-      .advertising-page .ads-copy h1{font-size:clamp(17px,5vw,24px);line-height:1.55;margin-bottom:0;white-space:nowrap}
-      .advertising-page .ads-art{position:absolute;top:8px;right:7px;width:42%;height:254px;z-index:1;align-items:end;justify-content:center}
-      .advertising-page .ads-art img{height:252px;width:auto;max-width:100%}
-      .advertising-page .ad-entry form{position:relative;width:auto;margin:0 12px;padding:17px 15px;border-radius:20px}
-      .advertising-page .ad-entry .field>span{font-size:16px}
-      .advertising-page .ad-entry .field input{min-height:51px}
-      .advertising-page .ad-entry .field textarea{min-height:102px}
-      .advertising-page .ad-entry .btn{height:53px}
+      .advertising-page .ad-entry{
+        min-height:100vh;padding:18px 13px 25px;border-radius:0;
+        display:block;overflow:hidden;
+      }
+      .advertising-page .ads-copy{position:relative;z-index:2;min-height:245px;padding:3px 45% 0 4px}
+      .advertising-page .ads-brand{justify-content:flex-start;margin-bottom:18px;gap:5px}
+      .advertising-page .ads-brand strong{font-size:19px;white-space:nowrap}
+      .advertising-page .ads-brand small{font-size:7px;letter-spacing:3px}
+      .advertising-page .ads-brand svg{width:29px;height:29px;flex-basis:29px}
+      .advertising-page .ads-copy h1{font-size:clamp(19px,5.2vw,27px);line-height:1.65;margin-top:27px}
+      .advertising-page .ads-copy h1:after{width:100%;margin-top:8px}
+      .advertising-page .ads-art{
+        position:absolute;z-index:1;right:1px;top:8px;width:49%;height:265px;
+        justify-content:center;align-items:end;
+      }
+      .advertising-page .ads-art img{height:265px;max-width:100%}
+      .advertising-page .ad-entry form{
+        position:relative;z-index:3;width:100%;padding:13px 12px 12px;
+        margin-top:10px;border-radius:24px;
+      }
+      .advertising-page .ad-entry .field{min-height:68px;margin-bottom:10px}
+      .advertising-page .ad-entry .field input{height:70px;min-height:70px}
+      .advertising-page .ad-entry .field textarea{min-height:135px;height:135px}
+      .advertising-page .ad-entry .field>span:first-child{font-size:15px;right:15px;top:9px}
+      .advertising-page .ad-entry .btn{font-size:19px;min-height:58px}
     }
-    @media(max-width:365px){
-      .advertising-page .ads-copy{min-height:245px;padding-right:42%}
-      .advertising-page .ads-copy h1{font-size:16px}
-      .advertising-page .ads-brand strong{font-size:17px}
-      .advertising-page .ads-art,.advertising-page .ads-art img{height:238px}
+    @media(min-width:741px) and (max-height:760px){
+      .advertising-page .ad-entry{min-height:650px}
+      .advertising-page .ads-brand{margin-bottom:12px}
+      .advertising-page .ads-copy h1{margin-bottom:12px}
     }
   </style>
 </head>
@@ -258,12 +324,12 @@
           <svg aria-hidden="true" viewBox="0 0 48 48" width="44" height="44"><path d="M21 38C6 30 5 15 6 7c11 2 22 11 22 24 0 3-2 6-7 7Z" fill="#e5d1f8"/><path d="M27 35C26 18 34 8 43 4c3 17-2 29-16 31Z" fill="#fff"/></svg>
           <span><strong>Green Life</strong><small>CLINICS</small></span>
         </div>
-        <h1>مشاوره تخصصی<br><span>تناسب اندام و</span><br><em>لاغری هوشمند</em></h1>
+        <h1>مشاوره تخصصی<br><span>اندام و تناسب وزن</span></h1>
       </div>
       <div class="ads-art">
-        <img src="{% static 'core/instagram_ads_approved_model.svg' %}"
-             alt="خانم خوش‌اندام با پوشش مناسب، نمای تمام‌قد"
-             width="150" height="525" loading="eager" decoding="async">
+        <img src="https://greenlifeclinics.com/wp-content/uploads/2026/11/instagram-model-cutout-final-5e8d8639.png"
+             alt="خانم تمام‌قد در پس‌زمینه یکپارچه بنفش"
+             width="425" height="1328" loading="eager" decoding="async">
       </div>
       {% elif website_form %}
       <h1 style="margin-bottom:18px">درخواست مشاوره رایگان</h1>
@@ -275,9 +341,9 @@
       {% endif %}
 
       <form method="post" id="instagramLeadForm">{% csrf_token %}
-        <label class="field"><span>{{ form.full_name.label }}{% if advertising %}:{% endif %}</span>{{ form.full_name }}{% for error in form.full_name.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
-        <label class="field"><span>{{ form.phone.label }}{% if advertising %}:{% endif %}</span>{{ form.phone }}{% for error in form.phone.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
-        <label class="field"><span>{{ form.interested_service.label }}{% if advertising %}:{% endif %}</span>{{ form.interested_service }}{% for error in form.interested_service.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
+        <label class="field"><span>{{ form.full_name.label }}{% if advertising %}:{% endif %}</span>{{ form.full_name }}{% if advertising %}<span class="ads-field-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2c0-4 3.1-6 8-6s8 2 8 6v2"/></svg></span>{% endif %}{% for error in form.full_name.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
+        <label class="field"><span>{{ form.phone.label }}{% if advertising %}:{% endif %}</span>{{ form.phone }}{% if advertising %}<span class="ads-field-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h4l1.4 5-2 2a14 14 0 0 0 4.6 4.6l2-2L21 14v4c0 1.7-1.3 3-3 3C10 21 3 14 3 6c0-1.7 1.3-3 3-3Z"/></svg></span>{% endif %}{% for error in form.phone.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
+        <label class="field"><span>{{ form.interested_service.label }}{% if advertising %}:{% endif %}</span>{{ form.interested_service }}{% if advertising %}<span class="ads-field-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.5 0-3-.4-4.2-1.2L3 21l1.5-4.3A8.5 8.5 0 1 1 20 11.5Z"/></svg></span>{% endif %}{% for error in form.interested_service.errors %}<em class="error">{{ error }}</em>{% endfor %}</label>
         {% if not website_form and not advertising %}<label class="consent">{{ form.consent }}<span>{{ form.consent.label }}</span></label>{% for error in form.consent.errors %}<em class="error">{{ error }}</em>{% endfor %}{% endif %}
         <button class="btn" id="submitLeadBtn" type="submit">{% if website_form or advertising %}ثبت درخواست{% else %}درخواست تماس{% endif %}</button>
       </form>
