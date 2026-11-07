@@ -22,6 +22,15 @@ async function assertNoOverflow(page, label) {
     dialog:document.querySelector('#rh-dialog')?.open
       ? document.querySelector('#rh-dialog').getBoundingClientRect().toJSON() : null,
   }));
+  if (result.content > result.viewport + 2) {
+    result.overflowElements = await page.evaluate(() => [...document.querySelectorAll('body *')]
+      .map(el=>({el,rect:el.getBoundingClientRect(),css:getComputedStyle(el)}))
+      .filter(({rect,css})=>rect.width>0 && rect.height>0 && css.visibility!=='hidden'
+        && (rect.left < -2 || rect.right > document.documentElement.clientWidth+2))
+      .slice(0,25).map(({el,rect,css})=>({tag:el.tagName,id:el.id,classes:el.className,
+        left:rect.left,right:rect.right,width:rect.width,minWidth:css.minWidth,
+        display:css.display,overflowX:css.overflowX,position:css.position})));
+  }
   assert(result.content <= result.viewport + 2, `${label}: page overflow ${JSON.stringify(result)}`);
   if (result.dialog) {
     assert(result.dialog.left >= -1 && result.dialog.right <= result.viewport+1,

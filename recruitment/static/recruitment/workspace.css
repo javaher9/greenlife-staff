@@ -25,3 +25,23 @@
 #recruitment-workspace .rh-close{background:#173043!important;border:1px solid #385365!important;color:#d5e4ee!important}
 #recruitment-workspace .rh-detail-tabs button{background:transparent!important;border:1px solid transparent!important;color:#a7bdcf!important}
 #recruitment-workspace .rh-detail-tabs button.is-active{background:#2b2440!important;border-color:#66508c!important;color:#ddc8ff!important}
+
+/* The shared topbar has four fixed grid columns; wrap its contents when the
+   recruitment workspace is narrower than those columns, without clipping. */
+@media(max-width:1100px){
+  body:has(#recruitment-workspace) .app-main{min-width:0}
+  body:has(#recruitment-workspace) .topbar{display:flex!important;flex-wrap:wrap!important;justify-content:space-between!important;align-items:center!important;direction:rtl!important;height:auto!important;min-height:0!important;gap:10px!important;margin:0 0 17px!important;padding:12px!important;width:100%!important;max-width:100%!important;left:auto!important;right:auto!important;box-sizing:border-box}
+  body:has(#recruitment-workspace) .topbar>*{min-width:0;max-width:100%;box-sizing:border-box}
+  body:has(#recruitment-workspace) .topbar .header-person{order:1;flex:1 1 140px;min-width:0!important;padding:0!important;border:0!important}
+  body:has(#recruitment-workspace) .header-person>div:last-child{display:flex;min-width:0;overflow-wrap:anywhere}
+  body:has(#recruitment-workspace) .topbar .gl-workspace-switchers{order:2;position:static!important;transform:none!important;flex:0 1 auto;flex-wrap:wrap;min-width:0;max-width:100%;padding:0;background:transparent!important}
+  body:has(#recruitment-workspace) .topbar .gl-workspace-switchers form{min-width:0;max-width:100%}
+  body:has(#recruitment-workspace) .topbar .topbar-meta{order:3;flex:0 1 auto}
+  body:has(#recruitment-workspace) .topbar .topbar-search{order:4;flex:1 1 100%;width:100%!important;max-width:100%;min-width:0;height:auto;min-height:40px}
+  body:has(#recruitment-workspace) .topbar-search input{width:100%;min-width:0}
+  #recruitment-workspace .rh-alerts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #recruitment-workspace .rh-alert>span:last-child{min-width:0;overflow-wrap:anywhere}
+  #recruitment-workspace .rh-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #recruitment-workspace .rh-search{grid-column:1/-1}
+  #recruitment-workspace .rh-job-grid{grid-template-columns:1fr}
+}
