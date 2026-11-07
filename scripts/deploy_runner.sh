@@ -24,6 +24,58 @@ flock -n 9 || { echo "Another deployment is already running."; exit 1; }
 command -v docker >/dev/null || { echo "ERROR: docker is required" >&2; exit 1; }
 docker compose version >/dev/null
 
+verify_nginx_bind_mount() {
+  local proxy="$1" host_config="$2" host_identity container_identity
+  host_identity="$(stat -c '%d:%i' "$host_config")" || {
+    echo "ERROR: cannot inspect host nginx config; leaving production untouched: $proxy" >&2
+    return 1
+  }
+  container_identity="$(docker exec "$proxy" stat -c '%d:%i' /etc/nginx/conf.d/default.conf)" || {
+    echo "ERROR: cannot inspect mounted nginx config; leaving production untouched: $proxy" >&2
+    return 1
+  }
+  if [[ "$host_identity" != "$container_identity" ]]; then
+    echo "ERROR: stale nginx config bind mount detected; release stopped before runtime changes: $proxy" >&2
+    return 1
+  fi
+}
+
+verify_nginx_config_visible() {
+  local proxy="$1" host_config="$2" host_digest container_digest
+  verify_nginx_bind_mount "$proxy" "$host_config" || return 1
+  host_digest="$(sha256sum "$host_config")" || return 1
+  container_digest="$(docker exec "$proxy" sha256sum /etc/nginx/conf.d/default.conf)" || {
+    echo "ERROR: cannot read mounted nginx config; refusing reload: $proxy" >&2
+    return 1
+  }
+  if [[ "${host_digest%% *}" != "${container_digest%% *}" ]]; then
+    echo "ERROR: nginx cannot see the intended upstream config; refusing reload: $proxy" >&2
+    return 1
+  fi
+}
+
+check_running_nginx_bind_mounts() {
+  local running proxy host_config
+  running="$(docker ps --format '{{.Names}}')" || {
+    echo "ERROR: cannot inspect running proxies; leaving production untouched." >&2
+    return 1
+  }
+  for proxy in greenlife-staff-runtime-nginx-1 greenlife-staff-runtime-nginx_lan-1; do
+    if grep -Fxq "$proxy" <<< "$running"; then
+      case "$proxy" in
+        greenlife-staff-runtime-nginx-1) host_config="$DEPLOY_PATH/deploy/nginx.conf" ;;
+        *) host_config="$DEPLOY_PATH/deploy/nginx-lan.conf" ;;
+      esac
+      verify_nginx_bind_mount "$proxy" "$host_config" || return 1
+    fi
+  done
+}
+
+# Source sync can replace a file inode while a running nginx container keeps
+# its old file bind mount. Detect that BEFORE env, DB, backup, image or service
+# changes; a healthy response alone cannot prove traffic switched to a candidate.
+check_running_nginx_bind_mounts
+
 # Keep the server-owned .env file, but replace known placeholder settings and
 # enforce safe production flags before Docker reads it. Secret values are never
 # written to the GitHub Actions log.
@@ -315,7 +367,8 @@ wait_for_nginx_workers() {
 }
 
 reload_nginx_safely() {
-  local proxy="$1" old_worker_pids
+  local proxy="$1" host_config="$2" old_worker_pids
+  verify_nginx_config_visible "$proxy" "$host_config" || return 1
   docker exec "$proxy" nginx -t || return 1
   old_worker_pids="$(nginx_worker_pids "$proxy")" || return 1
   docker exec "$proxy" nginx -s reload || return 1
@@ -323,10 +376,10 @@ reload_nginx_safely() {
 }
 
 reload_public_nginx() {
-  reload_nginx_safely "$PUBLIC_NGINX"
+  reload_nginx_safely "$PUBLIC_NGINX" "$DEPLOY_PATH/deploy/nginx.conf"
 }
 reload_lan_nginx() {
-  reload_nginx_safely "$LAN_NGINX"
+  reload_nginx_safely "$LAN_NGINX" "$DEPLOY_PATH/deploy/nginx-lan.conf"
 }
 
 probe_public_proxy() {

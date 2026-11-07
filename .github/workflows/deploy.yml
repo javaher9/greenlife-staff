@@ -194,7 +194,10 @@ jobs:
               -C "$DEPLOY_PATH" .
           fi
 
-          rsync -a --delete \
+          # nginx binds individual config files; preserve their inodes so an
+          # existing proxy reads subsequent upstream edits. The deploy script
+          # separately rejects stale mounts left by older atomic copies.
+          rsync -a --delete --inplace \
             --exclude='.git/' \
             --exclude='.env' \
             --exclude='docker-compose.yml' \

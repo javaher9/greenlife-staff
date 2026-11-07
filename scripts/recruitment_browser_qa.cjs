@@ -62,11 +62,15 @@ async function submit(page, suffix, expectedStatus=200, formKind=null) {
     && response.request().method() === 'POST');
   const selector=formKind ? `#rh-dialog form[data-form="${formKind}"] button[type="submit"]`
     : '#rh-dialog form button[type="submit"]';
+  const submittedForm=await page.locator(selector).first().evaluateHandle(button=>button.closest('form'));
   await page.locator(selector).first().click();
   const response=await responsePromise;
   const data=await response.json();
   assert.equal(response.status(),expectedStatus,JSON.stringify(data));
   assert.equal(data.ok,expectedStatus>=200 && expectedStatus<300,JSON.stringify(data));
+  // A response arrives before the UI finishes its follow-up refresh/render.
+  await page.waitForFunction(form=>!form.isConnected || form.dataset.busy!=='1',submittedForm);
+  await submittedForm.dispose();
   return data;
 }
 
