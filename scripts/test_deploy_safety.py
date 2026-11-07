@@ -8,6 +8,9 @@ import unittest
 
 
 SCRIPT = Path(__file__).with_name("deploy_runner.sh").read_text()
+BIND_FUNCTIONS = "verify_nginx_bind_mount() {" + SCRIPT.split(
+    "verify_nginx_bind_mount() {", 1
+)[1].split("# Source sync can replace", 1)[0]
 CLEANUP = SCRIPT.split("CANDIDATE_TRAFFIC_POSSIBLE=0\n", 1)[1].split(
     "\ndocker image inspect", 1
 )[0]
@@ -36,6 +39,7 @@ LAN_WEB=lan-stable
 PUBLIC_NGINX=public-proxy
 LAN_NGINX=lan-proxy
 CANDIDATE_TRAFFIC_POSSIBLE=0
+DEPLOY_PATH=/mock-runtime
 record() {
   local key="$*"
   calls["$key"]=$(( ${calls["$key"]:-0} + 1 ))
@@ -71,6 +75,7 @@ probe_candidate() { record probe_candidate "$@"; }
 """
 
 NGINX_MOCK = r"""
+verify_nginx_config_visible() { return 0; }
 docker() {
   printf '%s\n' "$*" >> "$MOCK_CALL_FILE"
   if [[ "$*" == 'exec public-proxy ps -o pid,args' ]]; then
@@ -95,17 +100,101 @@ docker() {
 sleep() { printf 'SLEEP %s\n' "$*" >> "$MOCK_CALL_FILE"; }
 """
 
+BIND_MOCK = r"""
+set -Eeuo pipefail
+docker() {
+  printf '%s\n' "$*" >> "$MOCK_CALL_FILE"
+  if [[ "$1" == ps ]]; then
+    if [[ "${MOUNT_MODE:-}" == docker_error ]]; then return 1; fi
+    printf 'greenlife-staff-runtime-nginx-1\n'
+    return 0
+  fi
+  if [[ "$3" == stat ]]; then
+    if [[ "${MOUNT_MODE:-}" == stat_error ]]; then return 1; fi
+    if [[ "${MOUNT_MODE:-}" == content_mismatch ]]; then
+      stat -c "$5" "$DEPLOY_PATH/deploy/nginx.conf"
+    else
+      stat -c "$5" "$MOUNT_PATH"
+    fi
+    return
+  fi
+  if [[ "$3" == sha256sum ]]; then
+    sha256sum "$MOUNT_PATH"
+    return
+  fi
+  return 0
+}
+"""
+
 
 class DeploymentSafetyTests(unittest.TestCase):
-    def run_shell(self, body):
+    def run_shell(self, body, extra_env=None):
         with tempfile.TemporaryDirectory() as directory:
             log = Path(directory) / "mock-calls"
             result = subprocess.run(
                 ["bash", "-c", body], capture_output=True, text=True, timeout=5,
-                env={**os.environ, "MOCK_CALL_FILE": str(log)},
+                env={**os.environ, **(extra_env or {}), "MOCK_CALL_FILE": str(log)},
             )
             result.mock_calls = log.read_text() if log.exists() else ""
             return result
+
+    def run_mount_fixture(self, mode, body):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "deploy").mkdir()
+            source = root / "deploy/nginx.conf"
+            source.write_text("set $greenlife_web_upstream web:8005;\n")
+            mounted = root / "mounted-default.conf"
+            os.link(source, mounted)
+            if mode in ("replacement", "content_mismatch"):
+                replacement = root / "new.conf"
+                # Identical contents still constitute a stale inode: later
+                # candidate edits would no longer reach the mounted file.
+                replacement.write_text(source.read_text())
+                os.replace(replacement, source)
+                if mode == "content_mismatch":
+                    source.write_text("set $greenlife_web_upstream candidate:8005;\n")
+            return self.run_shell(body, {
+                "DEPLOY_PATH": str(root), "MOUNT_PATH": str(mounted),
+                "MOUNT_MODE": mode,
+            })
+
+    def test_current_file_mount_passes_readonly_preflight(self):
+        result = self.run_mount_fixture(
+            "matching", BIND_MOCK + BIND_FUNCTIONS
+            + '\ncheck_running_nginx_bind_mounts\necho PREFLIGHT_PASSED\n'
+            + 'verify_nginx_config_visible greenlife-staff-runtime-nginx-1 "$DEPLOY_PATH/deploy/nginx.conf"\n'
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("PREFLIGHT_PASSED", result.stdout)
+        self.assertNotIn("nginx -s reload", result.mock_calls)
+
+    def test_replaced_inode_or_inspection_error_stops_before_runtime_changes(self):
+        for mode in ("replacement", "stat_error", "docker_error"):
+            with self.subTest(mode=mode):
+                result = self.run_mount_fixture(
+                    mode, BIND_MOCK + BIND_FUNCTIONS
+                    + '\ncheck_running_nginx_bind_mounts\necho RUNTIME_MUTATION\n'
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("RUNTIME_MUTATION", result.stdout)
+                self.assertNotIn("nginx -s reload", result.mock_calls)
+                if mode == "replacement":
+                    self.assertIn("stale nginx config bind mount", result.stderr)
+        self.assertLess(
+            SCRIPT.index("\ncheck_running_nginx_bind_mounts\n"),
+            SCRIPT.index('python3 "$DEPLOY_PATH/scripts/harden_env.py"'),
+        )
+
+    def test_container_content_mismatch_blocks_reload(self):
+        result = self.run_mount_fixture(
+            "content_mismatch", BIND_MOCK + BIND_FUNCTIONS + NGINX_FUNCTIONS
+            + '\nreload_nginx_safely greenlife-staff-runtime-nginx-1 "$DEPLOY_PATH/deploy/nginx.conf"\n'
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("cannot see the intended upstream config", result.stderr)
+        self.assertNotIn("nginx -t", result.mock_calls)
+        self.assertNotIn("nginx -s reload", result.mock_calls)
 
     def test_cleanup_before_cutover_removes_unused_candidates(self):
         result = self.run_shell(MOCKS + CLEANUP + "\nexit 9\n")
