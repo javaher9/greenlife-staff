@@ -153,7 +153,7 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertEqual(response.status_code,302)
         response = self.client.get(self.url+"?edit=1")
         self.assertEqual(response.context["branches"][-1]["plan"].sales_floor,Decimal("400"))
-        self.assertEqual(response.context["flower_cards"][0]["plan"].sales_floor,Decimal("150"))
+        self.assertEqual(next(row for row in response.context["flower_cards"] if row["key"] == f"flower:{self.flower.pk}")["plan"].sales_floor,Decimal("150"))
         payload["floor_call_center"] = "350"
         payload[f"floor_flower:{self.flower.pk}"] = "125"
         response = self.client.post(self.url,payload,follow=True)
@@ -225,7 +225,7 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.context["branches"][-1]["value"], Decimal("4.00"))
         self.assertEqual(res.context["deposit_count"], 1)
-        flower_row = res.context["flower_cards"][0]
+        flower_row = next(row for row in res.context["flower_cards"] if row["key"] == f"flower:{self.flower.pk}")
         self.assertEqual(flower_row["value"], Decimal("13.00"))
         self.assertEqual(res.context["overall"]["value"], Decimal("18.00"))
 
