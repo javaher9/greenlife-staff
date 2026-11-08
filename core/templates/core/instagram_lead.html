@@ -301,6 +301,116 @@
       .advertising-page .ads-brand{margin-bottom:12px}
       .advertising-page .ads-copy h1{margin-bottom:12px}
     }
+
+    /* Approved 1024×1536 poster, with native live controls in exact positions. */
+    body.advertising-page:has(.approved-poster){
+      display:block;margin:0;padding:0;min-height:100vh;
+      background:#593d6e;overflow-x:hidden;
+    }
+    body.advertising-page:has(.approved-poster) .wrap{width:min(100%,790px);max-width:790px;margin:0 auto;}
+    body.advertising-page:has(.approved-poster) .brand{display:none}
+    .approved-poster{
+      direction:ltr;position:relative;width:100%;aspect-ratio:2 / 3;
+      margin:0 auto;container-type:inline-size;isolation:isolate;
+      overflow:visible;box-shadow:0 9px 48px rgba(45,15,64,.15);
+    }
+    .approved-poster>.poster-art{
+      display:block;width:100%;height:100%;object-fit:fill;
+      border:0;margin:0;padding:0;pointer-events:none;
+    }
+    .approved-poster .poster-live-form{
+      position:absolute!important;inset:0!important;z-index:2;
+      display:block!important;width:100%!important;height:100%!important;
+      min-height:0!important;max-width:none!important;margin:0!important;
+      padding:0!important;border:0!important;border-radius:0!important;
+      box-shadow:none!important;background:transparent!important;
+      backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+      pointer-events:none;
+    }
+    .approved-poster .poster-live-form .poster-field{
+      display:block!important;position:absolute!important;z-index:3;
+      height:auto!important;min-height:0!important;margin:0!important;
+      padding:0!important;pointer-events:auto;
+    }
+    .approved-poster .poster-field.name-field{
+      left:5.66%;top:37.45%;width:54.30%;height:6.68%;
+    }
+    .approved-poster .poster-field.phone-field{
+      left:5.66%;top:45.97%;width:54.30%;height:6.68%;
+    }
+    .approved-poster .poster-field.details-field{
+      left:5.66%;top:54.56%;width:54.30%;height:18.00%;
+    }
+    .approved-poster .poster-field .poster-a11y-label{
+      position:absolute!important;clip-path:inset(50%)!important;
+      clip:rect(0 0 0 0)!important;white-space:nowrap!important;
+      width:1px!important;height:1px!important;overflow:hidden!important;
+    }
+    .approved-poster .poster-field input,
+    .approved-poster .poster-field textarea{
+      display:block!important;position:absolute!important;inset:0!important;
+      width:100%!important;height:100%!important;min-height:0!important;
+      max-height:none!important;margin:0!important;
+      padding:0 6% 0 21%!important;
+      border:2px solid transparent!important;border-radius:4.5cqw!important;
+      background:transparent!important;box-shadow:none!important;
+      outline:0!important;color:transparent!important;
+      caret-color:#4a2263!important;direction:rtl!important;text-align:right!important;
+      font-family:Vazirmatn,Tahoma,Arial,sans-serif!important;
+      font-size:clamp(13px,2.5cqw,22px)!important;font-weight:700!important;
+      line-height:1.6!important;opacity:1!important;
+      transition:background .12s,border-color .12s;
+      pointer-events:auto;resize:none!important;
+    }
+    .approved-poster .poster-field input::placeholder,
+    .approved-poster .poster-field textarea::placeholder{color:transparent!important;opacity:0!important}
+    .approved-poster .poster-field input:focus,
+    .approved-poster .poster-field input.has-value,
+    .approved-poster .poster-field textarea:focus,
+    .approved-poster .poster-field textarea.has-value{
+      background:rgba(249,242,253,.97)!important;
+      border-color:#bd8cce!important;color:#32173e!important;
+      box-shadow:inset 0 0 9px rgba(98,47,124,.07)!important;
+    }
+    .approved-poster .poster-field input:focus::placeholder,
+    .approved-poster .poster-field textarea:focus::placeholder{
+      color:#9e84a6!important;opacity:1!important
+    }
+    .approved-poster .poster-field textarea:focus,
+    .approved-poster .poster-field textarea.has-value{
+      padding:11% 7% 5% 15%!important;line-height:1.8!important;
+      font-size:clamp(12px,2.1cqw,19px)!important
+    }
+    .approved-poster .poster-field .error{
+      position:absolute;left:0;right:0;top:103%;
+      z-index:5;border-radius:6px;padding:3px 7px;
+      background:#fff4f4;color:#a32745;font:700 11px/1.5 Tahoma,sans-serif;
+    }
+    .approved-poster .poster-submit{
+      position:absolute!important;left:5.1%;top:77.98%;width:54.7%;height:8.05%;
+      z-index:4;min-height:0!important;padding:0!important;margin:0!important;
+      display:block!important;background:transparent!important;
+      color:transparent!important;border:0!important;border-radius:6cqw!important;
+      box-shadow:none!important;font-size:0!important;
+      cursor:pointer;pointer-events:auto;outline-offset:2px;
+    }
+    .approved-poster .poster-submit:focus-visible{outline:3px solid white!important}
+    .approved-poster .poster-submit:hover{background:rgba(255,255,255,.06)!important}
+    .approved-poster .poster-submit:disabled{
+      color:white!important;background:rgba(79,32,110,.93)!important;
+      font:800 clamp(13px,2.7cqw,24px) Vazirmatn,Tahoma,sans-serif!important
+    }
+    .approved-poster .poster-image-error{
+      display:none;position:absolute;inset:10% 5% auto;
+      background:#fff5fb;color:#4d205f;border-radius:15px;
+      text-align:center;padding:15px;font:700 14px/2 Tahoma,sans-serif;z-index:1
+    }
+    .approved-poster.poster-unavailable .poster-image-error{display:block}
+    .approved-poster.poster-unavailable{background:#76528c}
+    @media(max-width:480px){
+      .approved-poster .poster-field input,
+      .approved-poster .poster-field textarea{border-width:1px!important}
+    }
   </style>
 </head>
 <body{% if advertising %} class="advertising-page"{% endif %}>
@@ -311,6 +421,41 @@
     <small>CLINICS</small>
   </div>
 
+  {% if advertising and not completed %}
+  <section class="approved-poster" aria-label="فرم مشاوره تخصصی تناسب اندام و وزن">
+    <img class="poster-art"
+         src="https://greenlifeclinics.com/wp-content/uploads/2026/11/green-life-fitness-consultation-mockup-a75d176e.png"
+         width="1024" height="1536"
+         alt="گرین لایف، مشاوره تخصصی تناسب اندام و وزن؛ خانم تمام‌قد در سمت راست، فرم درخواست در سمت چپ"
+         fetchpriority="high" decoding="async"
+         onerror="this.closest('.approved-poster').classList.add('poster-unavailable')">
+    <div class="poster-image-error">بارگذاری تصویر با مشکل مواجه شد. اتصال اینترنت را بررسی کنید.</div>
+    <form method="post" id="instagramLeadForm" class="poster-live-form" aria-label="ثبت درخواست مشاوره">
+      {% csrf_token %}
+      <label class="poster-field name-field">
+        <span class="poster-a11y-label">نام و نام خانوادگی:</span>
+        {{ form.full_name }}
+        {% for error in form.full_name.errors %}<em class="error">{{ error }}</em>{% endfor %}
+      </label>
+      <label class="poster-field phone-field">
+        <span class="poster-a11y-label">شماره موبایل:</span>
+        {{ form.phone }}
+        {% for error in form.phone.errors %}<em class="error">{{ error }}</em>{% endfor %}
+      </label>
+      <label class="poster-field details-field">
+        <span class="poster-a11y-label">توضیحات:</span>
+        {{ form.interested_service }}
+        {% for error in form.interested_service.errors %}<em class="error">{{ error }}</em>{% endfor %}
+      </label>
+      <button class="poster-submit" id="submitLeadBtn" type="submit" aria-label="ثبت درخواست مشاوره">ثبت درخواست</button>
+      {% if form.non_field_errors %}
+        <div role="alert" style="position:absolute;z-index:7;top:87%;left:5%;width:55%;background:#fff2f6;color:#a32745;border-radius:12px;padding:7px;font-size:12px">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
+    </form>
+  </section>
+  {% else %}
   <section class="card{% if advertising %} ad-card{% endif %}{% if advertising and not completed %} ad-entry{% endif %}">
     {% if completed %}
       <div class="success">
@@ -351,6 +496,7 @@
       {% if not website_form and not advertising %}<div class="privacy">اطلاعات شما فقط برای تماس کارشناسان گرین‌لایف استفاده می‌شود.</div>{% endif %}
     {% endif %}
   </section>
+  {% endif %}
 </main>
 
 <script>
@@ -361,6 +507,14 @@
   var nameInput=document.querySelector('[name="full_name"]');
   if(phone){phone.setAttribute('inputmode','tel');phone.setAttribute('autocomplete','tel');phone.setAttribute('dir','ltr');}
   if(nameInput){nameInput.setAttribute('autocomplete','name');}
+  if(form&&form.classList.contains('poster-live-form')){
+    form.querySelectorAll('input,textarea').forEach(function(input){
+      function update(){input.classList.toggle('has-value',!!input.value.trim());}
+      input.addEventListener('input',update);
+      input.addEventListener('change',update);
+      update();
+    });
+  }
   if(form&&btn){
     form.addEventListener('submit',function(){
       if(!form.checkValidity()) return;
