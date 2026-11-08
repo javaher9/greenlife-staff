@@ -114,7 +114,7 @@ class SyntheticJourneyTests(TestCase):
         cabin=DeviceCabin.objects.create(branch=self.branch,name='Audit')
         device=PhysicalDevice.objects.create(branch=self.branch,device_type=kind,cabin=cabin,name='Audit')
         self.post('consultant','device_booking_schedule',{'appointment':appt.pk,'day':(self.day+timedelta(days=1)).isoformat(),
-            'plan_item':item.pk,'device':device.pk,'start_time':device.work_start.strftime('%H:%M')})
+            'plan_item':item.pk,'device':device.pk,'start_time':'09:00'})
         booking=DeviceSessionBooking.objects.get(appointment=appt)
         self.stage('next device appointment')
         self.post('consultant','device_booking_status',args=[booking.pk,'completed'])

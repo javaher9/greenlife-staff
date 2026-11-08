@@ -10,9 +10,9 @@ class ConsultantSalesOutcomeTests(TestCase):
     def setUp(self):
         self.branch = Branch.objects.create(name='Outcome Test')
         self.consultant_user = User.objects.create_user('consultant-outcome', password='pass')
-        self.consultant = EmployeeProfile.objects.create(user=self.consultant_user, branch=self.branch, role='consultant')
+        self.consultant = EmployeeProfile.objects.update_or_create(user=self.consultant_user, defaults={'branch':self.branch, 'role':'consultant'})[0]
         self.operator_user = User.objects.create_user('operator-outcome', password='pass')
-        self.operator = EmployeeProfile.objects.create(user=self.operator_user, branch=self.branch, role='call_center')
+        self.operator = EmployeeProfile.objects.update_or_create(user=self.operator_user, defaults={'branch':self.branch, 'role':'call_center'})[0]
         source_user = User.objects.create_user('source-outcome', password='pass')
         self.source = ReferralProfile.objects.create(user=source_user, referral_code='OUTCOME1')
         self.lead = ReferralLead.objects.create(referrer=self.source, full_name='مراجع تست', phone='09120000000', status='visited', assigned_to=self.operator, first_appointment_by=self.operator_user)

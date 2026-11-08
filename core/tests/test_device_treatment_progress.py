@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import time, timedelta
 
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -29,7 +29,7 @@ class DeviceTreatmentProgressTests(TestCase):
         self.appointment=VisitAppointment.objects.create(
             branch=self.branch,full_name='بیمار روند',phone='09121110000',
             appointment_date=timezone.localdate(),
-            appointment_time=timezone.localtime().time().replace(second=0,microsecond=0),
+            appointment_time=time(10, 0),
             status='arrived',source='receptionist',created_by=self.user,
         )
         self.program=PatientDeviceProgram.objects.create(
