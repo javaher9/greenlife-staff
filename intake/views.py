@@ -22,7 +22,7 @@ from .models import IntakeInvitation
 CONSENT_VERSION = 'intake-2026-10-v1'
 REQUIRED_FIELDS = ('reasons', 'conditions', 'medications', 'allergies', 'safety_flags')
 LIMITED_CHOICES = {
-    'conditions': ['دیابت', 'کم‌کاری تیروئید', 'پرکاری تیروئید', 'فشار خون', 'بیماری قلبی', 'تشنج', 'بیماری کبد یا کلیه', 'جراحی مهم', 'سایر'],
+    'conditions': ['دیابت', 'کم‌کاری تیروئید', 'پرکاری تیروئید', 'فشار خون', 'بیماری قلبی', 'تشنج', 'بیماری کبد یا کلیه', 'زخم معده', 'مشکلات معده و گوارش', 'ریزش موی شدید', 'سابقه لخته خون در پا یا ریه (DVT/PE)', 'جراحی مهم', 'سایر'],
     'safety_flags': ['بارداری', 'شیردهی', 'ضربان‌ساز قلب', 'سابقه واکنش شدید به درمان', 'سایر'],
 }
 WEIGHT_TERMS = ('لاغری', 'کاهش وزن', 'کاهش سایز', 'تناسب اندام', 'چربی سوز', 'چربی‌سوز', 'فرم دهی بدن', 'فرم‌دهی بدن')
@@ -34,6 +34,8 @@ WEIGHT_FIELDS = {
     'activity': ('کم', 'متوسط', 'زیاد'),
     'sleep': ('کمتر از ۶ ساعت', '۶ تا ۸ ساعت', 'بیشتر از ۸ ساعت', 'نامنظم'),
     'previous_treatments': ('خیر', 'رژیم غذایی', 'دارو', 'دستگاه لاغری', 'جراحی', 'چند روش'),
+    'mental_state': ('حال روحی خوب', 'گاهی اضطراب یا غمگینی', 'غمگینی یا بی‌انگیزگی بیشتر روزها', 'ترجیح می‌دهم با پزشک مطرح کنم'),
+    'hopelessness': ('خیر', 'گاهی', 'بیشتر روزها', 'ترجیح می‌دهم پاسخ ندهم'),
     'motivation': ('سلامتی', 'تناسب اندام و زیبایی', 'افزایش انرژی و تحرک', 'سایر'),
 }
 
@@ -119,7 +121,7 @@ def intake_form(request, token):
             for field, allowed in WEIGHT_FIELDS.items():
                 if field == 'eating_habits':
                     items = request.POST.getlist(field)
-                    if not items or len(items) > 3 or any(x not in ('ریزه‌خواری', 'شیرینی و تنقلات', 'پرخوری', 'هیچ‌کدام') for x in items) or ('هیچ‌کدام' in items and len(items) != 1):
+                    if not items or len(items) > 5 or any(x not in ('ریزه‌خواری', 'شیرینی و کیک و قند', 'فست‌فود', 'غذاهای چرب و سرخ‌کردنی', 'پرخوری', 'هیچ‌کدام') for x in items) or ('هیچ‌کدام' in items and len(items) != 1):
                         return render(request, _intake_template(invitation),
                             {'error': 'عادات غذایی را مشخص کنید.', 'invitation': invitation,
                              'conditions': LIMITED_CHOICES['conditions'], 'safety_flags': LIMITED_CHOICES['safety_flags']})
