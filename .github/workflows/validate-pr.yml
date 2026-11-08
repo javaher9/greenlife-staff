@@ -43,8 +43,8 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Django system check
         run: python manage.py check
-      - name: Inspect migration drift without writing files
-        run: python manage.py makemigrations --dry-run --verbosity 3
+      - name: Require models and migrations to agree
+        run: python manage.py makemigrations --check --dry-run
       - name: payments regression tests
         run: python manage.py test payments.tests --verbosity 2
   appointments:
