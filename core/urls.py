@@ -17,6 +17,7 @@ from . import sms_views
 from . import marketing_sms_views
 from . import bulk_sms_views
 from . import bulk_sms_automation_views
+from . import sms_interest_views
 from . import sms_center_views
 from . import task_management_views
 from . import lead_command_views
@@ -174,6 +175,8 @@ path('api/sms/groups/campaigns/',bulk_sms_views.bulk_sms_campaigns_status_api,na
 path('api/sms/groups/automations/',bulk_sms_automation_views.automations_api,name='bulk_sms_automations_api'),
 path('api/sms/groups/automations/<int:pk>/report/',bulk_sms_automation_views.automation_report,name='bulk_sms_automation_report'),
 path('s/c/<uuid:token>/',bulk_sms_automation_views.participate,name='bulk_sms_participate'),
+path('s/c/interest/<uuid:token>/', sms_interest_views.public, name='sms_interest_public'),
+path('sms/responses/', sms_interest_views.inbox, name='sms_interest_inbox'),
 path('login/',views.login_view,name='login'),path('logout/',views.logout_view,name='logout'),path('settings/catalog/',views.treatment_catalog_settings,name='treatment_catalog_settings'),path('settings/access/',views.credential_settings,name='credential_settings'),path('staff-panel-preview/',views.staff_panel_preview,name='staff_panel_preview'),path('settings/api/',sms_views.api_server_settings,name='api_server_settings'),path('settings/sms/',sms_views.sms_management,name='sms_management'),path('settings/sms/leads/',sms_center_views.sms_leads,name='sms_leads'),path('api/sms-center/callback/',sms_center_views.sms_center_callback,name='sms_center_callback'),path('settings/access/<int:pk>/update/',views.credential_update,name='credential_update'),path('settings/access/<int:pk>/reveal/<str:kind>/',views.credential_reveal,name='credential_reveal'),path('settings/access/<int:pk>/view-as/',views.impersonate_start,name='impersonate_start'),path('settings/access/return/',views.impersonate_return,name='impersonate_return'),path('',views.dashboard,name='dashboard'),
 path('reports/',views.report_list,name='report_list'),path('reports/new/',views.report_create,name='report_create'),path('reports/<int:pk>/',views.report_detail,name='report_detail'),
 path('tasks/',views.task_list,name='task_list'),path('my-tasks/',views.my_task_list,name='my_task_list'),path('tasks/new/',views.task_create,name='task_create'),path('tasks/<int:pk>/manage/',task_management_views.manager_task_edit,name='manager_task_edit'),path('tasks/<int:pk>/delete/',task_management_views.manager_task_delete,name='manager_task_delete'),path('tasks/<int:pk>/',views.task_update,name='task_update'),

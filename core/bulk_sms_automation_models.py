@@ -1,5 +1,6 @@
 """Persisted executive bulk schedules, immutable runs and opt-in participation."""
 import uuid
+from .sms_interest_models import SmsInterestInvitation
 
 from django.conf import settings
 from django.db import models
@@ -53,3 +54,4 @@ class BulkSmsParticipation(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=['run', 'number'], name='sms_auto_unique_participant')]
+

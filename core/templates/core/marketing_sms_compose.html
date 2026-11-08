@@ -1,5 +1,18 @@
 {% extends 'core/base.html' %}{% block content %}
-<section style="max-width:1060px;margin:16px auto;padding:20px;direction:rtl;color:#173e39;background:#f7fbfa;border:1px solid #c7e2da;border-radius:18px">
+<style>
+#sms-compose-page{background:#0d2029!important;color:#e9f5f2!important;border-color:#31505b!important}
+#sms-compose-page h1,#sms-compose-page h2,#sms-compose-page label,#sms-compose-page th,#sms-compose-page td{color:#e9f5f2!important}
+#sms-compose-page p{color:#bfd4cf!important;line-height:1.9}
+#sms-compose-page form,#sms-compose-page div[style],#sms-compose-page table{background:#122b35!important;border-color:#34525d!important}
+#sms-compose-page input:not([type=checkbox]),#sms-compose-page select,#sms-compose-page textarea{box-sizing:border-box;background:#091c25!important;color:#f2faf7!important;border:1px solid #52717a!important;font:inherit;min-height:46px}
+#sms-compose-page textarea::placeholder,#sms-compose-page input::placeholder{color:#9bb6b2!important}
+#sms-compose-page button{background:#17694f!important;color:white!important;min-height:46px;font:inherit;font-weight:700}
+#sms-compose-page a{color:#b6a0ff!important}#sms-compose-page td,#sms-compose-page th{padding:12px}#sms-compose-page tr{border-color:#34525d!important}
+#sms-compose-page :focus-visible{outline:2px solid #b6a0ff;outline-offset:3px}
+@media(max-width:600px){#sms-compose-page{padding:16px!important;margin:12px 0!important}#sms-compose-page h1{font-size:24px}}
+</style>
+<section id="sms-compose-page" style="max-width:1060px;margin:16px auto;padding:20px;direction:rtl;color:#173e39;background:#f7fbfa;border:1px solid #c7e2da;border-radius:18px">
+  <nav style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:18px"><a href="{% url 'bulk_sms_groups' %}">ارسال گروهی</a><a href="{% url 'sms_interest_inbox' %}">پاسخ‌های کمپین پیامکی</a></nav>
   <h1 style="margin:0;color:#075c4d">ارسال پیامک</h1>
   <p>ارسال تکی یا گروهی به شماره دلخواه و مخاطبان ثبت‌شده. هر نوبت حداکثر ۲۵ نفر؛ سقف روزانه ۱۰۰ پیامک. همه ارسال‌ها ثبت می‌شوند.</p>
   <form method="post" style="display:grid;gap:12px;padding:15px;border-radius:14px;background:#fff;border:1px solid #c7e2da">{% csrf_token %}
