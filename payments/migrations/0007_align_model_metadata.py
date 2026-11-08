@@ -9,3 +9,36 @@ class Migration(migrations.Migration):
         ('payments', '0006_saved_payment_recipient'),
     ]
 
+    operations = [
+        migrations.RenameIndex(
+            model_name='paymentrequest',
+            new_name='payments_pa_assigne_c7c4c5_idx',
+            old_name='payments_pa_assigne_2b467e_idx',
+        ),
+        migrations.RenameIndex(
+            model_name='savedpaymentrecipient',
+            new_name='payments_sa_owner_i_eaa490_idx',
+            old_name='payments_sa_owner_i_4b8d0a_idx',
+        ),
+        migrations.AlterField(
+            model_name='paymentclarification',
+            name='id',
+            field=models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+        ),
+        migrations.AlterField(
+            model_name='paymentevent',
+            name='id',
+            field=models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+        ),
+        migrations.AlterField(
+            model_name='paymentrequest',
+            name='id',
+            field=models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+        ),
+        migrations.AlterField(
+            model_name='pettycashexpense',
+            name='id',
+            field=models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+        ),
+    ]
+

@@ -9,3 +9,36 @@ class Migration(migrations.Migration):
         ('core', '0116_sms_interest_short_code'),
     ]
 
+    operations = [
+        migrations.RenameIndex(
+            model_name='salestargetband',
+            new_name='core_salest_period__b82258_idx',
+            old_name='core_sales_p_y_m_scope_idx',
+        ),
+        migrations.AlterField(
+            model_name='checklisttemplate',
+            name='role',
+            field=models.CharField(blank=True, choices=[('admin', 'مدیر سیستم'), ('internal_manager', 'مدیر داخلی'), ('manager', 'مدیر شعبه'), ('quality_control', 'کنترل کیفیت'), ('referral_supervisor', 'ناظر شبکه فروش'), ('call_center', 'کال\u200cسنتر'), ('consultant', 'مشاور'), ('doctor', 'پزشک'), ('receptionist', 'منشی'), ('scan_station', 'ایستگاه اسکن و آنالیز (غیرپرسنلی)'), ('employee', 'کارمند'), ('referrer', 'معرف مشتری')], max_length=20),
+        ),
+        migrations.AlterField(
+            model_name='employeeprofile',
+            name='role',
+            field=models.CharField(choices=[('admin', 'مدیر سیستم'), ('internal_manager', 'مدیر داخلی'), ('manager', 'مدیر شعبه'), ('quality_control', 'کنترل کیفیت'), ('referral_supervisor', 'ناظر شبکه فروش'), ('call_center', 'کال\u200cسنتر'), ('consultant', 'مشاور'), ('doctor', 'پزشک'), ('receptionist', 'منشی'), ('scan_station', 'ایستگاه اسکن و آنالیز (غیرپرسنلی)'), ('employee', 'کارمند'), ('referrer', 'معرف مشتری')], default='employee', max_length=20),
+        ),
+        migrations.AlterField(
+            model_name='treatmentrichcontent',
+            name='id',
+            field=models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+        ),
+        migrations.AlterField(
+            model_name='treatmentrichmedia',
+            name='id',
+            field=models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+        ),
+        migrations.AlterField(
+            model_name='treatmentrichsection',
+            name='id',
+            field=models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+        ),
+    ]
+
