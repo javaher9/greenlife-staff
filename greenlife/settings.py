@@ -6,6 +6,7 @@ DEBUG = os.getenv('DEBUG', '0') == '1'
 EXECUTIVE_USERNAMES = {x.strip().lower() for x in os.getenv('EXECUTIVE_USERNAMES', 'drjavaherian').split(',') if x.strip()}
 # Confirmed executive account for the finance pilot; retain env-provided usernames.
 EXECUTIVE_USERNAMES.add('admin')
+SMS_SHORT_BASE_URL = os.getenv('SMS_SHORT_BASE_URL', '').rstrip('/')
 LAN_MODE = os.getenv('LAN_MODE', '0') == '1'
 _WEAK_SECRET_KEYS = {
     '',
