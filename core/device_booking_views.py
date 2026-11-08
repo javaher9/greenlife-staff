@@ -205,7 +205,7 @@ def _followup_owner(plan):
 def _sync_treatment_followup(plan_id):
     """Create exactly one post-treatment follow-up when all device items are complete."""
     plan=(
-        ConsultationPlan.objects.select_for_update()
+        ConsultationPlan.objects.select_for_update(of=('self',))
         .select_related(
             'appointment','appointment__lead','appointment__lead__assigned_to__user',
             'appointment__lead__first_appointment_by','consultant','appointment__created_by',
@@ -908,7 +908,7 @@ def device_booking_status(request,pk,status):
     if status not in allowed:
         raise PermissionDenied('وضعیت نوبت معتبر نیست.')
 
-    qs=DeviceSessionBooking.objects.select_for_update().select_related('appointment','branch','plan_item')
+    qs=DeviceSessionBooking.objects.select_for_update(of=('self',)).select_related('appointment','branch','plan_item')
     if not (request.user.is_superuser or profile.role=='admin'):
         if not profile.branch_id:
             raise PermissionDenied('شعبه شما مشخص نشده است.')
@@ -951,7 +951,7 @@ def device_booking_cancel(request,pk):
     _role_allowed(profile,('consultant','admin','manager'))
     with transaction.atomic():
         booking=get_object_or_404(
-            DeviceSessionBooking.objects.select_for_update().select_related('appointment'),
+            DeviceSessionBooking.objects.select_for_update(of=('self',)).select_related('appointment'),
             pk=pk,branch_id=profile.branch_id,
         )
         if booking.status=='booked':
