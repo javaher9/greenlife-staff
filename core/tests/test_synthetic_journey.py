@@ -110,10 +110,18 @@ class SyntheticJourneyTests(TestCase):
         self.assertEqual(plan.status,'paid'); self.assertEqual(appt.care_stage,'closed')
         self.assertEqual(lead.status,'won')
         self.stage('receipt pending then approved settlement')
+        before=plan.final_amount_toman
+        self.post('consultant','consultant_sales_outcomes',{'appointment_id':appt.pk,
+            'action':'update_item','item_id':item.pk,'unit_price_million':'3','quantity':'1','included':'1'})
+        plan.refresh_from_db()
+        print('AUDIT paid plan amount before/after:',before,plan.final_amount_toman,flush=True)
+        with self.subTest(guard='paid package immutable'):
+            self.assertEqual(plan.final_amount_toman,before,'Paid package can be changed after settlement')
+
         kind=DeviceTypeSchedule.objects.create(code='AUDIT1',name='Audit Device',treatment_minutes=30,preparation_minutes=10)
         cabin=DeviceCabin.objects.create(branch=self.branch,name='Audit')
-        device=PhysicalDevice.objects.create(branch=self.branch,device_type=kind,cabin=cabin,name='Audit')
-        self.post('consultant','device_booking_schedule',{'appointment':appt.pk,'day':(self.day+timedelta(days=1)).isoformat(),
+        device=PhysicalDevice.objects.create(branch=self.branch,device_type=kind,cabin=cabin,name='Audit',work_start=time(9,0),last_start=time(18,0))
+        self.post('consultant','device_booking_schedule',{'appointment':appt.pk,'day':format_jalali(self.day+timedelta(days=1)),
             'plan_item':item.pk,'device':device.pk,'start_time':'09:00'})
         booking=DeviceSessionBooking.objects.get(appointment=appt)
         self.stage('next device appointment')
@@ -125,12 +133,6 @@ class SyntheticJourneyTests(TestCase):
         task.refresh_from_db(); self.assertEqual(task.status,'done')
         self.stage('treatment completion and call-center follow-up')
 
-        before=plan.final_amount_toman
-        self.post('consultant','consultant_sales_outcomes',{'appointment_id':appt.pk,
-            'action':'update_item','item_id':item.pk,'unit_price_million':'3','quantity':'1','included':'1'})
-        plan.refresh_from_db()
-        print('AUDIT paid plan amount before/after:',before,plan.final_amount_toman,flush=True)
-        self.assertEqual(plan.final_amount_toman,before,'Paid package can be changed after settlement')
 
     def test_missing_patient_id_must_not_mutate_first_queue_record(self):
         appt=VisitAppointment.objects.create(branch=self.branch,full_name='Synthetic ID guard',
