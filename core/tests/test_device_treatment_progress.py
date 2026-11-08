@@ -8,7 +8,7 @@ from django.utils import timezone
 from core.models import (
     Branch, ConsultationPlan, ConsultationPlanItem, DeviceCabin, DeviceSessionBooking,
     DeviceTypeSchedule, PatientCareNote, PatientDeviceProgram, PatientProfile, PhysicalDevice,
-    StaffNotification, Task, VisitAppointment,
+    StaffNotification, Task, VisitAppointment, ReferralLead,
 )
 
 
@@ -21,13 +21,25 @@ class DeviceTreatmentProgressTests(TestCase):
         profile.branch=self.branch
         profile.is_active=True
         profile.save(update_fields=['role','branch','is_active'])
+        self.manager=User.objects.create_user('progress-manager',password='pass')
+        manager_profile=self.manager.profile
+        manager_profile.role='manager'
+        manager_profile.branch=self.branch
+        manager_profile.save(update_fields=['role','branch'])
+        self.operator=User.objects.create_user('progress-operator',password='pass')
+        operator_profile=self.operator.profile
+        operator_profile.role='call_center'
+        operator_profile.branch=self.branch
+        operator_profile.save(update_fields=['role','branch'])
+        self.lead=ReferralLead.objects.create(full_name='Synthetic progress',phone='09121110000',
+            first_appointment_by=self.operator,assigned_to=operator_profile)
         self.client.force_login(self.user)
 
         self.patient=PatientProfile.objects.create(
             full_name='بیمار روند',phone='09121110000',home_branch=self.branch,
         )
         self.appointment=VisitAppointment.objects.create(
-            branch=self.branch,full_name='بیمار روند',phone='09121110000',
+            branch=self.branch,lead=self.lead,full_name='بیمار روند',phone='09121110000',
             appointment_date=timezone.localdate(),
             appointment_time=time(10, 0),
             status='arrived',source='receptionist',created_by=self.user,
@@ -96,12 +108,12 @@ class DeviceTreatmentProgressTests(TestCase):
         self.client.post(reverse('device_booking_status',args=[second.pk,'completed']))
         self.assertEqual(Task.objects.count(),1)
         task=Task.objects.get()
-        self.assertEqual(task.assigned_to,self.user)
+        self.assertEqual(task.assigned_to,self.operator)
         self.assertEqual(task.status,'todo')
         self.assertEqual(task.priority,'high')
         self.assertEqual(task.due_date,timezone.localdate()+timedelta(days=3))
         self.assertTrue(
-            StaffNotification.objects.filter(user=self.user,title='پیگیری نتیجه درمان').exists()
+            StaffNotification.objects.filter(user=self.operator,title='پیگیری نتیجه درمان').exists()
         )
 
         self.item.refresh_from_db()
@@ -116,6 +128,7 @@ class DeviceTreatmentProgressTests(TestCase):
         self.assertContains(page,'پایان درمان و پیگیری نتیجه')
         self.assertContains(page,'در انتظار پیگیری')
 
+        self.client.force_login(self.operator)
         response=self.client.post(
             reverse('patient_360_followup_complete',args=[self.patient.pk,task.pk]),
             {'result':'بیمار راضی است و نیاز به ادامه درمان فعلاً ندارد.'},
@@ -139,6 +152,7 @@ class DeviceTreatmentProgressTests(TestCase):
         self.client.post(reverse('device_booking_status',args=[second.pk,'completed']))
         task=Task.objects.get()
 
+        self.client.force_login(self.manager)
         self.client.post(reverse('device_booking_status',args=[second.pk,'cancelled']))
         self.assertFalse(Task.objects.filter(pk=task.pk).exists())
         self.item.refresh_from_db()
@@ -147,6 +161,11 @@ class DeviceTreatmentProgressTests(TestCase):
     def test_correcting_completed_status_recalculates_without_double_count(self):
         booking=self._booking(60)
         self.client.post(reverse('device_booking_status',args=[booking.pk,'completed']))
+        # Consultant cannot undo a completed treatment.
+        self.client.post(reverse('device_booking_status',args=[booking.pk,'cancelled']))
+        booking.refresh_from_db()
+        self.assertEqual(booking.status,'completed')
+        self.client.force_login(self.manager)
         self.client.post(reverse('device_booking_status',args=[booking.pk,'cancelled']))
 
         self.program.refresh_from_db()
