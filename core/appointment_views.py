@@ -716,6 +716,11 @@ def receptionist_appointment_status(request,pk,status):
     )
     with transaction.atomic():
         item.status=status
+        if status == 'arrived':
+            from .reception_patient import ensure_reception_patient
+            if ensure_reception_patient(item, request.user) is None:
+                messages.error(request, 'برای پذیرش و ساخت پرونده، شماره تماس لازم است.')
+                return redirect('appointment_schedule')
         item.save(update_fields=['status','updated_at'])
         if status in ('cancelled','no_show'):
             SmsScheduledMessage.objects.filter(

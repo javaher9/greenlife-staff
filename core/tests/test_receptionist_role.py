@@ -9,6 +9,50 @@ from core.models import Branch, EmployeeProfile, ReferralLead, ReferralProfile, 
 
 
 class ReceptionistRoleTests(TestCase):
+    def test_arrival_creates_patient_and_allows_scan_without_opening_360(self):
+        from core.models import PatientProfile, BodyAnalysisRecord
+        appointment = VisitAppointment.objects.create(
+            branch=self.branch, full_name='تست پذیرش', phone='+989121234567',
+            appointment_date=timezone.localdate(), appointment_time=time(11, 15),
+        )
+        url = reverse('receptionist_appointment_status', args=[appointment.pk, 'arrived'])
+        self.assertEqual(self.client.post(url).status_code, 302)
+        patient = PatientProfile.objects.get(phone='09121234567')
+        self.assertEqual(patient.home_branch, self.branch)
+        patient.medical_history = 'preserve history'
+        patient.save()
+        self.client.post(url)
+        self.assertEqual(PatientProfile.objects.filter(phone=patient.phone).count(), 1)
+        patient.refresh_from_db()
+        self.assertEqual(patient.medical_history, 'preserve history')
+        response = self.client.post(reverse('scan_station'), {
+            'appointment_id': appointment.pk, 'operator_id': self.user.profile.pk,
+            'weight_kg': '75', 'inbody_score': '80', 'skeletal_muscle_kg': '30',
+            'fat_kg': '20', 'whr': '0.8', 'visceral_fat': '8',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(BodyAnalysisRecord.objects.filter(patient=patient).count(), 1)
+
+    def test_arrival_preserves_legacy_patient_and_rejects_other_branch(self):
+        from core.models import PatientProfile
+        patient = PatientProfile.objects.create(phone='+989121234568', full_name='Existing')
+        appointment = VisitAppointment.objects.create(
+            branch=self.branch, full_name='New visit', phone='09121234568',
+            appointment_date=timezone.localdate(), appointment_time=time(11, 30),
+        )
+        url = reverse('receptionist_appointment_status', args=[appointment.pk, 'arrived'])
+        self.client.post(url)
+        self.assertFalse(PatientProfile.objects.filter(phone=appointment.phone).exists())
+        patient.refresh_from_db()
+        self.assertEqual(patient.full_name, 'Existing')
+        other = Branch.objects.create(name='Other audit branch')
+        appointment.branch = other
+        appointment.status = 'booked'
+        appointment.save()
+        self.assertEqual(self.client.post(url).status_code, 404)
+        appointment.refresh_from_db()
+        self.assertEqual(appointment.status, 'booked')
+
     def setUp(self):
         self.branch=Branch.objects.create(name='نیاوران')
         self.user=User.objects.create_user(
