@@ -64,6 +64,13 @@ def compact_medical_summary(answers):
     for label, key in (("وضعیت بیماری‌ها", "conditions_status"), ("وضعیت ایمنی", "safety_status"), ("وضعیت دارو", "medication_status"), ("وضعیت حساسیت", "allergy_status")):
         if answers.get(key) in ("نامشخص", "اطلاع ندارم"):
             sections[label] = ["نیازمند بررسی پزشک"]
+    if answers.get("form_version") == "weight-loss-v2":
+        if answers.get("mental_state") not in ("", None, "حال روحی خوب"):
+            sections["وضعیت روحی اظهارشده"] = _items(answers.get("mental_state"))
+        if answers.get("hopelessness") in ("گاهی", "بیشتر روزها"):
+            sections["نیاز به گفت‌وگوی محرمانه درباره ناامیدی"] = _items(answers.get("hopelessness"))
+        elif answers.get("hopelessness") == "ترجیح می‌دهم پاسخ ندهم":
+            sections["وضعیت روحی"] = ["ترجیح به پاسخ ندادن"]
     return {
         "sections": {label: values for label, values in sections.items() if values},
         "screening_incomplete": answers.get("required_screening_complete") is not True,
