@@ -8,7 +8,7 @@ from django.utils import timezone
 from core.models import (
     Branch, ConsultationPlan, ConsultationPlanItem, DeviceCabin, DeviceSessionBooking,
     DeviceTypeSchedule, PatientCareNote, PatientDeviceProgram, PatientProfile, PhysicalDevice,
-    StaffNotification, Task, VisitAppointment, ReferralLead,
+    StaffNotification, Task, VisitAppointment, ReferralLead, ReferralProfile,
 )
 
 
@@ -31,7 +31,8 @@ class DeviceTreatmentProgressTests(TestCase):
         operator_profile.role='call_center'
         operator_profile.branch=self.branch
         operator_profile.save(update_fields=['role','branch'])
-        self.lead=ReferralLead.objects.create(full_name='Synthetic progress',phone='09121110000',
+        referrer=ReferralProfile.objects.create(user=self.operator,referral_code='PROGRESS-AUDIT')
+        self.lead=ReferralLead.objects.create(referrer=referrer,full_name='Synthetic progress',phone='09121110000',
             first_appointment_by=self.operator,assigned_to=operator_profile)
         self.client.force_login(self.user)
 
