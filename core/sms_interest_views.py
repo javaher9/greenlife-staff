@@ -37,13 +37,36 @@ def inbox(request):
     selected = None
     if request.GET.get('invitation', '').isdigit():
         selected = get_object_or_404(SmsInterestInvitation, pk=request.GET['invitation'], created_by=request.user)
-    items = list(SmsInterestInvitation.objects.order_by('-created_at')[:100])
+    all_items = SmsInterestInvitation.objects.order_by('-created_at')
+    status = request.GET.get('status', 'callback')
+    if status == 'callback':
+        filtered_items = all_items.filter(callback_at__isnull=False)
+    elif status == 'answered':
+        filtered_items = all_items.filter(answered_at__isnull=False, callback_at__isnull=True).exclude(choice='later')
+    elif status == 'later':
+        filtered_items = all_items.filter(choice='later')
+    elif status == 'waiting':
+        filtered_items = all_items.filter(answered_at__isnull=True)
+    else:
+        status = 'all'
+        filtered_items = all_items
+    items = list(filtered_items[:100])
     labels = {**LEGACY_LABELS, **{key: title for key, title, _ in CHOICES}}
     for item in items:
         item.choice_label = labels.get(item.choice, 'هنوز پاسخ نداده')
     short_base = getattr(settings, 'SMS_SHORT_BASE_URL', '').rstrip('/') or ('https://' + request.get_host())
     link = short_base + reverse('sms_interest_short', args=[selected.short_code]) if selected else ''
-    return render(request, 'core/sms_interest_inbox.html', {'items': items, 'selected': selected, 'link': link})
+    today = timezone.localdate()
+    stats = {
+        'callback': all_items.filter(callback_at__isnull=False).count(),
+        'today': all_items.filter(answered_at__date=today).count(),
+        'answered': all_items.filter(answered_at__isnull=False).count(),
+        'waiting': all_items.filter(answered_at__isnull=True).count(),
+    }
+    return render(request, 'core/sms_interest_inbox.html', {
+        'items': items, 'selected': selected, 'link': link,
+        'status': status, 'stats': stats,
+    })
 
 
 @require_http_methods(['GET', 'POST'])

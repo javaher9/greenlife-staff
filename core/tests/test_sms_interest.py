@@ -35,6 +35,20 @@ class SmsInterestTests(TestCase):
         self.assertContains(response, self.item.number)
         self.assertContains(response, 'درخواست تماس ثبت شده')
 
+    def test_private_inbox_filters_and_stats(self):
+        self.client.force_login(self.owner)
+        callback = SmsInterestInvitation.objects.create(
+            number='09000000001', created_by=self.owner, choice='weight',
+            answered_at=timezone.now(), callback_at=timezone.now(),
+        )
+        response = self.client.get(reverse('sms_interest_inbox'))
+        self.assertContains(response, callback.number)
+        self.assertNotContains(response, self.item.number)
+        self.assertContains(response, 'نیازمند تماس')
+        response = self.client.get(reverse('sms_interest_inbox') + '?status=waiting')
+        self.assertContains(response, self.item.number)
+        self.assertNotContains(response, callback.number)
+
     def test_direct_mobile_choice_rejects_unknown_value(self):
         self.assertEqual(self.client.get(self.url + '?select=unknown').status_code, 400)
         self.item.refresh_from_db()
