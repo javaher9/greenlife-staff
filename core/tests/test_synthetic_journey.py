@@ -13,7 +13,7 @@ from intake.models import IntakeInvitation
 
 class SyntheticJourneyTests(TestCase):
     def setUp(self):
-        self.day=date(2026,11,9)
+        self.day=timezone.localdate()
         clock=patch('django.utils.timezone.localdate',return_value=self.day)
         clock.start(); self.addCleanup(clock.stop)
         self.tmp=tempfile.TemporaryDirectory()
@@ -118,6 +118,14 @@ class SyntheticJourneyTests(TestCase):
         with self.subTest(guard='paid package immutable'):
             self.assertEqual(plan.final_amount_toman,before,'Paid package can be changed after settlement')
 
+        for action in ('add_item','finalize','no_sale'):
+            with self.subTest(paid_action=action):
+                self.post('consultant','consultant_sales_outcomes',{'appointment_id':appt.pk,
+                    'action':action,'title':'Must not be added','unit_price_toman':'1000000','discount_million':'1'})
+                plan.refresh_from_db()
+                self.assertEqual(plan.status,'paid')
+                self.assertEqual(plan.final_amount_toman,before)
+                self.assertEqual(plan.items.count(),1)
         kind=DeviceTypeSchedule.objects.create(code='AUDIT1',name='Audit Device',treatment_minutes=30,preparation_minutes=10)
         cabin=DeviceCabin.objects.create(branch=self.branch,name='Audit')
         device=PhysicalDevice.objects.create(branch=self.branch,device_type=kind,cabin=cabin,name='Audit',work_start=time(9,0),last_start=time(18,0))
@@ -139,6 +147,9 @@ class SyntheticJourneyTests(TestCase):
             phone='09120009992',appointment_date=self.day,appointment_time=time(10,0),
             status='arrived',care_stage='consultant',source='receptionist',created_by=self.users['receptionist'])
         plan=ConsultationPlan.objects.create(appointment=appt,consultant=self.users['consultant'],status='draft')
-        self.post('consultant','consultant_sales_outcomes',{'action':'no_sale','failure_reason':'financial'})
+        for bad_id in ('','invalid','999999999','9'*30):
+            self.post('consultant','consultant_sales_outcomes',{'appointment_id':bad_id,'action':'no_sale','failure_reason':'financial'})
+            plan.refresh_from_db()
+            self.assertEqual(plan.status,'draft')
         plan.refresh_from_db()
         self.assertEqual(plan.status,'draft','Missing appointment_id changed first queued patient')

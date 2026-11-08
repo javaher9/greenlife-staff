@@ -105,7 +105,7 @@ def _sync_device_treatment_progress(plan_item_id):
     correcting a status never double-counts or leaves stale progress.
     """
     item=(
-        ConsultationPlanItem.objects.select_for_update()
+        ConsultationPlanItem.objects.select_for_update(of=('self',))
         .select_related('plan__appointment','plan__consultant')
         .get(pk=plan_item_id)
     )
