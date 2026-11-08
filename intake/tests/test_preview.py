@@ -1,9 +1,10 @@
 from unittest.mock import patch
 
+from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from core.models import StaffNotification, VisitAppointment
+from core.models import AuditLog, StaffNotification, VisitAppointment
 from intake.models import IntakeInvitation
 from intake.views import LIMITED_CHOICES
 
@@ -42,3 +43,12 @@ class WeightPreviewTests(TestCase):
         token = response.cookies["csrftoken"].value
         self.assertEqual(client.post(url, {}, HTTP_X_CSRFTOKEN=token).status_code, 200)
         self.assertEqual(self.client.put(url).status_code, 405)
+
+    def test_signed_in_preview_does_not_retain_answers_in_audit(self):
+        user = get_user_model().objects.create_user(username="intake-preview-reviewer")
+        self.client.force_login(user)
+        response = self.client.post(reverse("intake_weight_preview"), {"medications": "DEMO-SECRET"})
+        self.assertEqual(response.status_code, 200)
+        log = AuditLog.objects.filter(actor=user, path=reverse("intake_weight_preview")).latest("pk")
+        self.assertEqual(log.metadata["payload"], {})
+        self.assertNotIn("DEMO-SECRET", str(log.metadata))

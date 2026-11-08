@@ -1,6 +1,8 @@
 SENSITIVE_KEYS={'password','password_confirm','new_password','csrfmiddlewaretoken','token','api_key','secret','authorization'}
 
 def _safe_payload(request):
+    if getattr(getattr(request, 'resolver_match', None), 'url_name', None) == 'intake_weight_preview':
+        return {}  # Demo answers must not be retained, even for signed-in staff.
     data={}
     try:
         for key in request.POST.keys():
