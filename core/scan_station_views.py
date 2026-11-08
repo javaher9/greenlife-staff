@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
 from django.utils import timezone
-from .models import PatientProfile, BodyAnalysisRecord, EmployeeProfile, VisitAppointment
+from .models import PatientProfile, BodyAnalysisRecord, EmployeeProfile, VisitAppointment, lead_phone_variants
 
 FIELDS = [('weight_kg','وزن (kg)'),('inbody_score','امتیاز'),('skeletal_muscle_kg','عضلات (kg)'),('fat_kg','چربی (kg)'),('whr','نسبت دور کمر به باسن'),('visceral_fat','چربی احشایی')]
 
@@ -24,7 +24,7 @@ def scan_station(request):
     ).order_by('appointment_time','id')[:80]) if branch else []
     for appointment in queue:
         appointment.scan_completed = BodyAnalysisRecord.objects.filter(
-            patient__phone=appointment.phone,
+            patient__phone__in=lead_phone_variants(appointment.phone),
             measurements__scan_appointment_id=appointment.pk,
         ).exists()
     staff = EmployeeProfile.objects.filter(user__is_active=True,is_active=True).exclude(role__in=['scan_station','referrer'])
@@ -37,7 +37,7 @@ def scan_station(request):
             VisitAppointment, pk=request.POST.get('appointment_id'),
             branch=branch, status='arrived', appointment_date=timezone.localdate()
         )
-        patient = PatientProfile.objects.filter(phone=appointment.phone).first()
+        patient = PatientProfile.objects.filter(phone__in=lead_phone_variants(appointment.phone)).order_by('id').first()
         if patient is None:
             messages.error(request,'پرونده ۳۶۰ این مراجع هنوز ایجاد نشده است.')
             return redirect('scan_station')
