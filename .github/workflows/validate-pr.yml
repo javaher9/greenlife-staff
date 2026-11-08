@@ -194,7 +194,7 @@ jobs:
       - name: Django system check
         run: python manage.py check
       - name: reception regression tests
-        run: python manage.py test core.tests.test_receptionist_role --verbosity 2
+        run: python manage.py test core.tests.test_synthetic_journey core.tests.test_consultant_sales_outcomes core.tests.test_device_treatment_progress --verbosity 2
   call-center:
     runs-on: ubuntu-latest
     timeout-minutes: 18
