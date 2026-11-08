@@ -124,3 +124,19 @@ class SyntheticJourneyTests(TestCase):
         self.post('call_center','patient_360_followup_complete',{'result':'Synthetic follow-up completed'},[patient.pk,task.pk])
         task.refresh_from_db(); self.assertEqual(task.status,'done')
         self.stage('treatment completion and call-center follow-up')
+
+        before=plan.final_amount_toman
+        self.post('consultant','consultant_sales_outcomes',{'appointment_id':appt.pk,
+            'action':'update_item','item_id':item.pk,'unit_price_million':'3','quantity':'1','included':'1'})
+        plan.refresh_from_db()
+        print('AUDIT paid plan amount before/after:',before,plan.final_amount_toman,flush=True)
+        self.assertEqual(plan.final_amount_toman,before,'Paid package can be changed after settlement')
+
+    def test_missing_patient_id_must_not_mutate_first_queue_record(self):
+        appt=VisitAppointment.objects.create(branch=self.branch,full_name='Synthetic ID guard',
+            phone='09120009992',appointment_date=self.day,appointment_time=time(10,0),
+            status='arrived',care_stage='consultant',source='receptionist',created_by=self.users['receptionist'])
+        plan=ConsultationPlan.objects.create(appointment=appt,consultant=self.users['consultant'],status='draft')
+        self.post('consultant','consultant_sales_outcomes',{'action':'no_sale','failure_reason':'financial'})
+        plan.refresh_from_db()
+        self.assertEqual(plan.status,'draft','Missing appointment_id changed first queued patient')
