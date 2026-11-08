@@ -22,8 +22,8 @@ class SmsInterestTests(TestCase):
         self.assertIsNone(self.item.answered_at)
 
     def test_choice_and_callback_appear_in_private_inbox(self):
-        self.client.post(self.url, {'choice': 'device'})
-        self.client.post(self.url, {'action': 'callback'})
+        self.client.get(self.url + '?select=device')
+        self.client.get(self.url + '?callback=1')
         self.item.refresh_from_db()
         first = self.item.callback_at
         self.assertIsNotNone(first)
@@ -34,6 +34,11 @@ class SmsInterestTests(TestCase):
         response = self.client.get(reverse('sms_interest_inbox'))
         self.assertContains(response, self.item.number)
         self.assertContains(response, 'درخواست تماس ثبت شده')
+
+    def test_direct_mobile_choice_rejects_unknown_value(self):
+        self.assertEqual(self.client.get(self.url + '?select=unknown').status_code, 400)
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.choice, '')
 
     def test_later_cancels_callback(self):
         self.client.post(self.url, {'choice': 'weight'})
@@ -65,3 +70,4 @@ class SmsInterestTests(TestCase):
         self.assertContains(response, 'باز کردن صفحه چهارگزینه‌ای')
         self.assertContains(response, '/g/')
         self.assertNotContains(response, '/s/c/interest/')
+

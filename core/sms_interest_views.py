@@ -51,17 +51,19 @@ def inbox(request):
 def public(request, token=None, code=None):
     item = get_object_or_404(SmsInterestInvitation, **({'short_code': code} if code else {'token': token}))
     expired = timezone.now() > item.created_at + timedelta(days=30)
-    if request.method == 'POST' and not expired:
+    direct_choice = request.GET.get('select')
+    direct_callback = request.GET.get('callback') == '1'
+    if (request.method == 'POST' or direct_choice or direct_callback) and not expired:
         with transaction.atomic():
             item = SmsInterestInvitation.objects.select_for_update().get(pk=item.pk)
-            if request.POST.get('action') == 'callback':
+            if direct_callback or request.POST.get('action') == 'callback':
                 if item.choice not in {x[0] for x in CHOICES}:
                     return HttpResponseBadRequest('ابتدا یک گزینه انتخاب کنید.')
                 if item.callback_at is None:
                     item.callback_at = timezone.now()
                     item.save(update_fields=['callback_at'])
             else:
-                choice = request.POST.get('choice')
+                choice = direct_choice or request.POST.get('choice')
                 if choice != 'later' and choice not in {x[0] for x in CHOICES}:
                     return HttpResponseBadRequest('گزینه نامعتبر است.')
                 item.choice = choice
@@ -75,3 +77,4 @@ def public(request, token=None, code=None):
     response['Referrer-Policy'] = 'no-referrer'
     response['X-Robots-Tag'] = 'noindex, nofollow'
     return response
+

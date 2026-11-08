@@ -6,7 +6,8 @@
 {% if declined %}<section class="answer" aria-live="polite"><strong>انتخاب شما ثبت شد ✓</strong><p>برای این دعوت، درخواست پیگیری یا تماس ثبت نمی‌شود.</p></section><details><summary>تغییر انتخاب من</summary>
 {% elif answer %}<section class="answer" aria-live="polite"><strong>انتخاب شما ثبت شد ✓</strong><h2 style="font-size:18px">{{ answer.1 }}</h2><p>{{ answer.2 }}</p>
 {% if item.callback_at %}<strong>درخواست تماس شما در پنل ثبت شد ✓</strong><p>تیم گرین‌لایف درخواست شما را می‌بیند.</p>
-{% elif item.choice != 'later' %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="callback"><button class="primary">می‌خواهم مشاور با من تماس بگیرد</button></form>{% endif %}</section><details><summary>تغییر انتخاب من</summary>{% endif %}
-<form method="post" class="choices">{% csrf_token %}{% for key,title,description in choices %}<button type="submit" name="choice" value="{{ key }}">{{ title }}</button>{% endfor %}<button class="not-now" type="submit" name="choice" value="later">فعلاً قصد پیگیری ندارم</button></form>{% if answer or declined %}</details>{% endif %}
+{% elif item.choice != 'later' %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="callback"><button class="primary" onclick="window.location.href='?callback=1';return false">می‌خواهم مشاور با من تماس بگیرد</button></form>{% endif %}</section><details><summary>تغییر انتخاب من</summary>{% endif %}
+<form method="post" class="choices">{% csrf_token %}{% for key,title,description in choices %}<button type="submit" name="choice" value="{{ key }}" onclick="window.location.href='?select={{ key }}';return false">{{ title }}</button>{% endfor %}<button class="not-now" type="submit" name="choice" value="later" onclick="window.location.href='?select=later';return false">فعلاً قصد پیگیری ندارم</button></form>{% if answer or declined %}</details>{% endif %}
 <small>انتخاب شما به شماره دریافت‌کننده این لینک متصل است و فقط در پنل مجاز گرین‌لایف نمایش داده می‌شود. این لینک شخصی است؛ آن را برای دیگران نفرستید. انتخاب گزینه به‌تنهایی درخواست تماس ایجاد نمی‌کند.</small>{% endif %}
 </main></body></html>
+
