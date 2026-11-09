@@ -123,6 +123,55 @@ def treatment_content_library(request):
     import base64
     from .treatment_excel_weekly_import import extract_workbook, validate_batch, import_weekly_diets
     action=(request.POST.get('action') or '') if request.method=='POST' else ''
+    if action=='recommendations_excel_preview':
+        from .treatment_excel_recommendations_import import (
+            extract_recommendations_xlsx, recommendation_import_preview,
+        )
+        request.session.pop('recommendations_excel_pending', None)
+        uploaded=request.FILES.get('recommendations_excel')
+        if not uploaded or not uploaded.name.lower().endswith('.xlsx') or uploaded.size>4_000_000:
+            messages.error(request,'فایل اکسل توصیه‌های لاغری با پسوند XLSX و حداکثر چهار مگابایت لازم است.')
+        else:
+            try:
+                raw=uploaded.read()
+                entries=extract_recommendations_xlsx(raw)
+                review=recommendation_import_preview(entries)
+                request.session['recommendations_excel_pending']=base64.b64encode(raw).decode('ascii')
+                request.session.modified=True
+                messages.success(
+                    request,
+                    f'هر {len(review)} توصیه با عنوان‌های موجود تطبیق داده شد. '
+                    'هنوز هیچ محتوایی جایگذاری نشده است.'
+                )
+            except ValueError as exc:
+                messages.error(request,str(exc))
+        return redirect('treatment_content_library')
+    if action=='recommendations_excel_import':
+        from .treatment_excel_recommendations_import import (
+            extract_recommendations_xlsx, import_recommendations_xlsx,
+        )
+        pending=request.session.get('recommendations_excel_pending')
+        if not pending:
+            messages.error(request,'ابتدا فایل توصیه‌ها را برای تطبیق عنوان‌ها بارگذاری کنید.')
+        else:
+            try:
+                entries=extract_recommendations_xlsx(base64.b64decode(pending))
+                report=import_recommendations_xlsx(
+                    entries,
+                    replace_existing=request.POST.get('replace_recommendations')=='1',
+                )
+                request.session.pop('recommendations_excel_pending',None)
+                request.session.modified=True
+                messages.success(
+                    request,
+                    f"توصیه‌ها: {report['filled']} مورد تکمیل، "
+                    f"{report['replaced']} مورد با تأیید بازنویسی، "
+                    f"{report['unchanged']} مورد قبلی دست‌نخورده، "
+                    f"{report['images']} جایگاه تصویر و {report['audios']} لینک صوتی افزوده شد."
+                )
+            except ValueError as exc:
+                messages.error(request,str(exc))
+        return redirect('treatment_content_library')
     if action=='all_excel_preview':
         from .treatment_excel_all_import import read_all_diets
         weights=request.FILES.get('all_weight_excel')
@@ -273,10 +322,25 @@ def treatment_content_library(request):
             request.session.pop('weekly_excel_pending',None)
             messages.error(request,'فایل در انتظار تأیید معتبر نیست: '+str(exc))
     count_diets=sum(row['category']=='diet' for row in rows)
+    recommendations_excel_preview=[]
+    recommendations_pending=request.session.get('recommendations_excel_pending')
+    if recommendations_pending:
+        try:
+            from .treatment_excel_recommendations_import import (
+                extract_recommendations_xlsx, recommendation_import_preview,
+            )
+            recommendations_excel_preview=recommendation_import_preview(
+                extract_recommendations_xlsx(base64.b64decode(recommendations_pending))
+            )
+        except ValueError as exc:
+            request.session.pop('recommendations_excel_pending', None)
+            request.session.modified=True
+            messages.error(request,'توصیه‌ها در انتظار تأیید معتبر نیستند: '+str(exc))
     from .diet_excel_sample_previews import preview_cards
     return render(request,'core/treatment_content_library.html',{
         'rows':rows,'count_diets':count_diets,'weekly_excel_preview':weekly_excel_preview,
         'all_diets_ready':bool(request.session.get('all_diets_pending')),
+        'recommendations_excel_preview':recommendations_excel_preview,
         'excel_preview_cards':preview_cards(),
     })
 
