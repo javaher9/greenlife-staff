@@ -18,6 +18,42 @@
 <div class="tcl">
   <div class="hero"><h1>تنظیمات برنامه غذایی و رژیم‌ها</h1>
   <p>از دکمه «ویرایش» مقابل هر برنامه، متن وعده‌ها و عکس همان وعده را در جای خودش ببینید، اصلاح کنید یا جایگزین نمایید. {{ count_diets }} رژیم در بانک اصلی ثبت شده است. برنامه‌های بدون محتوای اولیه با وضعیت غیرفعال برای تکمیل باز می‌شوند.</p></div>
+  <section class="panel" id="recommendations-excel-import" style="border-color:#498d78;background:linear-gradient(145deg,#142f35,#132b3c)">
+    <h2 style="color:#f3fff8;font-size:19px;margin-top:0">تکمیل متن ۴۸ توصیه پزشک از اکسل</h2>
+    <p>نام توصیه‌ها از قبل در بانک اصلی ثبت شده‌اند. این بخش <strong style="color:#e7fff3">فقط محتوای همان عنوان‌ها</strong> را از فایل «توصیه‌های لاغری.xlsx» وارد می‌کند؛ رژیم‌ها، نام‌های موجود و پرونده‌های بیماران دست‌نخورده می‌مانند.</p>
+    <form method="post" enctype="multipart/form-data" style="display:flex;align-items:end;gap:11px;flex-wrap:wrap">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="recommendations_excel_preview">
+      <label>فایل توصیه‌های آقای یاوری (.xlsx)
+        <input type="file" name="recommendations_excel" accept=".xlsx" required>
+      </label>
+      <button type="submit">۱. بررسی ۴۸ عنوان، بدون ذخیره</button>
+    </form>
+    {% if recommendations_excel_preview %}
+    <div style="margin-top:12px;padding:15px;border-radius:15px;background:#214439;border:1px solid #61a48a">
+      <strong style="display:block;font-size:15px;color:#e2fff0">تطبیق عنوان‌ها موفق بود · {{ recommendations_excel_preview|length }} توصیه</strong>
+      <p style="color:#c7e8d9">متن‌های جدید از بخش‌های اصلی اکسل استخراج شده‌اند. آدرس عکس و صوت CRM حفظ می‌شود، اما اگر فایل اصلی پشت ورود CRM باشد، مشاهده آن به دسترسی CRM نیاز دارد. بازنویسی متن‌های قبلی فقط با علامت‌زدن گزینه زیر انجام خواهد شد.</p>
+      <div style="max-height:235px;overflow:auto;border:1px solid #48715e;border-radius:12px;margin:10px 0">
+        <table style="width:100%;border-collapse:collapse;text-align:right;color:#effff4;font-size:12px">
+          <thead><tr><th style="padding:9px">عنوان موجود</th><th style="padding:9px">بخش‌ها</th><th style="padding:9px">وضعیت</th></tr></thead>
+          <tbody>{% for entry in recommendations_excel_preview %}
+          <tr style="border-top:1px solid #45675e">
+            <td style="padding:8px">{{ entry.title }}</td>
+            <td style="padding:8px">{{ entry.sections }}</td>
+            <td style="padding:8px">{% if entry.has_existing %}محتوای قبلی؛ بدون تأیید بازنویسی نمی‌شود{% else %}آماده تکمیل{% endif %}</td>
+          </tr>
+          {% endfor %}</tbody>
+        </table>
+      </div>
+      <form method="post" style="margin-top:11px">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="recommendations_excel_import">
+        <label style="color:#f3fff8"><input type="checkbox" name="replace_recommendations" value="1"> در صورت نیاز، متن توصیه‌هایی که از قبل محتوا دارند نیز با نسخه اکسل جایگزین شود (ویرایش‌های قبلی از بین می‌روند)</label>
+        <button type="submit" style="margin-top:5px">۲. تأیید و ورود متن به عنوان‌های موجود</button>
+      </form>
+    </div>
+    {% endif %}
+  </section>
   <section class="panel" id="excel-sample-previews">
     <h2 style="color:#fff;font-size:18px">پیش‌نمایش دو رژیم از اکسل · در انتظار تأیید</h2>
     <p>این دو نمونه از فایل اکسل فقط برای بررسی هستند. در بانک رژیم‌ها ذخیره یا برای تجویز فعال نشده‌اند؛ عکس وعده‌ها منتقل نشده و نمادهای زمان روز نمایش داده می‌شوند.</p>
