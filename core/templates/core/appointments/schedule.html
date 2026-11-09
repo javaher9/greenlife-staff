@@ -102,11 +102,24 @@ body.gl-page-appointment_schedule .s7-arrow{
 .s7-slot.just-booked{background:#edf8f3!important;box-shadow:inset 0 0 0 1px #c9e3d5}.s7-just-booked{padding:7px}.s7-just-booked strong{display:block;color:#176f4f;font-size:9px}.s7-just-booked small{display:block;margin-top:4px;color:#63786e;font-size:7px}.s7-just-booked b{display:inline-block;margin-top:5px;padding:3px 6px;border-radius:999px;background:#dff2e8;color:#176f4f;font-size:7px}
 
 .s7-book-modal-backdrop{position:fixed;inset:0;z-index:190;background:rgba(18,31,41,.28);display:none}.s7-book-modal-backdrop.open{display:block}
-.s7-book-modal{position:fixed;z-index:191;left:50%;top:50%;width:min(440px,92vw);transform:translate(-50%,-46%) scale(.98);opacity:0;pointer-events:none;transition:.16s;background:#fff;border:1px solid #dce5e8;border-radius:18px;box-shadow:0 24px 70px rgba(18,31,41,.22);overflow:hidden}.s7-book-modal.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
+.s7-book-modal{position:fixed;z-index:191;left:50%;top:50%;width:min(440px,92vw);max-height:calc(100dvh - 24px);transform:translate(-50%,-46%) scale(.98);opacity:0;pointer-events:none;transition:.16s;background:#fff;border:1px solid #dce5e8;border-radius:18px;box-shadow:0 24px 70px rgba(18,31,41,.22);overflow:hidden;display:grid;grid-template-rows:auto minmax(0,1fr)}.s7-book-modal.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto}
 .s7-book-modal-head{height:auto!important;min-height:62px!important;position:relative!important;top:auto!important;margin:0!important;padding:13px 15px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;background:linear-gradient(135deg,#f7f2fc,#f0f8f4)!important;border-bottom:1px solid #e3eaec!important}.s7-book-modal-head strong{font-size:13px;color:#293f50}.s7-book-modal-close{width:32px;height:32px;border:1px solid #d7e1e4!important;border-radius:9px!important;background:#fff!important;color:#677985!important;font-size:17px!important;cursor:pointer!important}
-.s7-book-modal-body{padding:14px}.s7-book-summary{display:grid;grid-template-columns:1fr 1fr;gap:7px}.s7-book-summary div{padding:9px;border:1px solid #e1e8ea;border-radius:10px;background:#fafcfc}.s7-book-summary span{display:block;color:#81909a;font-size:7px}.s7-book-summary b{display:block;margin-top:4px;color:#30495a;font-size:9px}.s7-book-notes{display:block;margin-top:10px;color:#5c6d7a;font-size:8px;font-weight:900}.s7-book-notes textarea{width:100%;min-height:68px;margin-top:5px;padding:9px;border:1px solid #d7e2e5;border-radius:10px;background:#fff;color:#2b4051;font:800 9px/1.8 Tahoma;resize:vertical;outline:none}.s7-book-notes textarea:focus{border-color:#cbb7dd;box-shadow:0 0 0 3px rgba(104,73,149,.06)}
-.s7-book-modal-actions{display:flex;gap:7px;margin-top:11px}.s7-book-confirm,.s7-book-abort{flex:1;min-height:39px;border-radius:10px!important;font:900 9px Tahoma!important;cursor:pointer!important}.s7-book-confirm{background:#e6f5ed!important;color:#176e4f!important;border:1px solid #c4e2d2!important}.s7-book-abort{background:#f4f6f7!important;color:#687884!important;border:1px solid #dce3e6!important}.s7-book-status{min-height:18px;margin-top:7px;color:#257554;font-size:8px;font-weight:900;text-align:center}
+.s7-book-modal-body{min-height:0;padding:14px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}.s7-book-summary{display:grid;grid-template-columns:1fr 1fr;gap:7px}.s7-book-summary div{padding:9px;border:1px solid #e1e8ea;border-radius:10px;background:#fafcfc}.s7-book-summary span{display:block;color:#81909a;font-size:7px}.s7-book-summary b{display:block;margin-top:4px;color:#30495a;font-size:9px}.s7-book-notes{display:block;margin-top:10px;color:#5c6d7a;font-size:8px;font-weight:900}.s7-book-notes textarea{width:100%;min-height:68px;margin-top:5px;padding:9px;border:1px solid #d7e2e5;border-radius:10px;background:#fff;color:#2b4051;font:800 9px/1.8 Tahoma;resize:vertical;outline:none}.s7-book-notes textarea:focus{border-color:#cbb7dd;box-shadow:0 0 0 3px rgba(104,73,149,.06)}
+.s7-book-modal-actions{position:sticky;bottom:-14px;z-index:2;display:flex;gap:7px;margin-top:11px;padding:9px 0 5px;background:#fff;box-shadow:0 -10px 18px rgba(255,255,255,.96)}.s7-book-confirm,.s7-book-abort{flex:1;min-height:39px;border-radius:10px!important;font:900 9px Tahoma!important;cursor:pointer!important}.s7-book-confirm{background:#e6f5ed!important;color:#176e4f!important;border:1px solid #c4e2d2!important}.s7-book-abort{background:#f4f6f7!important;color:#687884!important;border:1px solid #dce3e6!important}.s7-book-status{min-height:18px;margin-top:7px;color:#257554;font-size:8px;font-weight:900;text-align:center}
 @media(max-width:760px){.s7-booking-banner{align-items:flex-start;flex-direction:column}.s7-booking-actions{width:100%}.s7-booking-cancel{flex:1}.s7-book-summary{grid-template-columns:1fr}}
+@media(max-height:700px){
+  .s7-book-modal{top:8px;max-height:calc(100dvh - 16px);transform:translateX(-50%) scale(.98);border-radius:14px}
+  .s7-book-modal.open{transform:translateX(-50%) scale(1)}
+  .s7-book-modal-head{min-height:50px!important;padding:8px 12px!important}
+  .s7-book-modal-body{padding:9px 11px 10px}
+  .s7-book-summary{gap:5px}
+  .s7-book-summary div{padding:6px 8px}
+  .s7-book-notes{margin-top:6px}
+  .s7-book-notes textarea{height:48px;min-height:48px;margin-top:3px;padding:6px 8px;resize:none}
+  .s7-book-modal-actions{bottom:-10px;margin-top:6px;padding:7px 0 4px}
+  .s7-book-confirm,.s7-book-abort{min-height:35px}
+  .s7-book-status{min-height:14px;margin-top:3px}
+}
 
 /* Keep booking-mode free slots visually identical to the original light calendar. */
 body.gl-page-appointment_schedule .schedule7 .s7-slot{
@@ -225,6 +238,21 @@ body.gl-page-appointment_schedule .s7-book-modal .s7-book-modal-body{
 }
 body.gl-page-appointment_schedule .s7-book-modal .s7-book-modal-actions{
   margin-top:9px!important;
+}
+@media(max-height:700px){
+  body.gl-page-appointment_schedule .s7-book-modal .s7-book-modal-body{
+    padding:9px 11px 10px!important;
+  }
+  body.gl-page-appointment_schedule .s7-book-modal .s7-book-notes textarea{
+    height:48px!important;
+    min-height:48px!important;
+    max-height:48px!important;
+    padding:6px 8px!important;
+    resize:none!important;
+  }
+  body.gl-page-appointment_schedule .s7-book-modal .s7-book-modal-actions{
+    margin-top:6px!important;
+  }
 }
 
 /* Patient names inside booked slots must remain text-like, never dark pills. */
@@ -604,7 +632,7 @@ body.gl-role-receptionist.gl-page-appointment_schedule .schedule7 .s7-controls{b
       imp(el,'background','#f3ecfa');imp(el,'color','#684995');imp(el,'border','1px solid #d6c5e6');imp(el,'box-shadow','none');
     });
     document.querySelectorAll('.s7-book-notes textarea').forEach(function(el){
-      imp(el,'background','#fff');imp(el,'color','#293f50');imp(el,'border','1.3px solid #d8e2e5');imp(el,'height','84px');imp(el,'min-height','84px');imp(el,'box-shadow','inset 0 1px 2px rgba(35,53,70,.025)');
+      imp(el,'background','#fff');imp(el,'color','#293f50');imp(el,'border','1.3px solid #d8e2e5');imp(el,'box-shadow','inset 0 1px 2px rgba(35,53,70,.025)');
     });
     document.querySelectorAll('.s7-book-confirm').forEach(function(el){
       imp(el,'background','#e5f5ed');imp(el,'color','#176e4f');imp(el,'border','1px solid #c2dfd0');
