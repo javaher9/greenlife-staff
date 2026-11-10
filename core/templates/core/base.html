@@ -553,6 +553,9 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     {% endif %}
     {% if user.profile.role != 'employee' %}<a href="/live/"><span class="nav-ico">⌘</span><span>{% if user.profile.role == "manager" %}{% gl_t 'shell.branch_management' %}{% elif user.profile.role == "internal_manager" %}{% gl_t 'shell.internal_management' %}{% else %}{% gl_t 'shell.management_panel' %}{% endif %}</span></a>{% endif %}
     {% if user.profile.role != 'employee' %}<a href="/action-center/"><span class="nav-ico">⚡</span><span>{% gl_t 'shell.action_center' %}</span></a>{% endif %}
+    {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}
+    <a href="{% url 'management_all_leads' %}" class="{% if request.resolver_match.url_name == 'management_all_leads' %}is-active{% endif %}"><span class="nav-ico">▦</span><span>همه لیدها</span></a>
+    {% endif %}
     {% if user.profile.role == 'admin' %}
     <details class="gl-settings-menu" {% if request.resolver_match.url_name == 'lead_management_dashboard' or request.resolver_match.url_name == 'instagram_manual_lead' %}open{% endif %}>
       <summary><span class="nav-ico">◉</span><span>{% gl_t 'common.leads' %}</span><span class="settings-caret">⌄</span></summary>

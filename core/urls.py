@@ -1,4 +1,4 @@
-from . import lead_contact_views
+from . import lead_contact_views, all_leads_views
 from django.urls import path
 from . import views
 from . import executive_finance_hub_views
@@ -43,6 +43,8 @@ from . import call_center_deposit_views
 from . import sales_target_views
 from .mcp import mcp_endpoint
 urlpatterns=[
+path('management/all-leads/',all_leads_views.all_leads,name='management_all_leads'),
+path('management/all-leads/data/',all_leads_views.all_leads_data,name='management_all_leads_data'),
 path('api/leads/last-arrival/',lead_freshness_views.live_last_lead,name='live_last_lead'),
 path('skin-care/',skin_care_views.skin_care_home,name='skin_care_home'),
 path('finance/executive/',executive_finance_hub_views.executive_finance_hub,name='executive_finance_hub'),

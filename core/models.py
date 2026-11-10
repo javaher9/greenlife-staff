@@ -334,6 +334,7 @@ class ReferralLead(models.Model):
         indexes=[
             models.Index(fields=['referrer','status','-created_at'],name='reflead_ref_status_idx'),
             models.Index(fields=['assigned_at'],name='reflead_assigned_at_idx'),
+            models.Index(fields=['created_at','id'],name='reflead_archive_cursor_idx'),
         ]
 
     @classmethod
@@ -484,6 +485,7 @@ class VisitAppointment(models.Model):
                 fields=['branch','appointment_date','appointment_time'],
                 name='visitappt_branch_day_time_idx',
             ),
+            models.Index(fields=['lead','-created_at','-id'],name='visitappt_lead_latest_idx'),
         ]
 
     def clean(self):

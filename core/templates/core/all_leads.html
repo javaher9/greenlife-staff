@@ -1,0 +1,20 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'core/all-leads.css' %}?v=1">
+<section id="all-leads" class="all-leads" dir="rtl" data-endpoint="{% url 'management_all_leads_data' %}" aria-label="مدیریت همه لیدها">
+  <header class="al-heading"><div><small>مدیریت</small><h1>همه لیدها <span id="al-total"></span></h1></div><button type="button" id="al-refresh">تازه‌سازی</button></header>
+  <form id="al-filters" class="al-filters">
+    <label class="al-search">جست‌وجو<input name="q" type="search" placeholder="نام یا شماره موبایل" autocomplete="off"></label>
+    <label>گل<select name="flower"><option value="">همه گل‌ها</option><option value="none">بدون مسئول</option>{% for id,name in flowers %}<option value="{{ id }}">{{ name }}</option>{% endfor %}</select></label>
+    <label>گروه لید<select name="group"><option value="">همه گروه‌ها</option><option value="none">بدون گروه</option>{% for group in groups %}<option value="{{ group.pk }}">{{ group.name }}</option>{% endfor %}</select></label>
+    <label>شعبهٔ آخرین نوبت<select name="branch"><option value="">همه شعبه‌ها</option><option value="none">بدون نوبت</option>{% for branch in branches %}<option value="{{ branch.pk }}">{{ branch.name }}</option>{% endfor %}</select></label>
+    <label>وضعیت / نتیجه<select name="state"><option value="">همه وضعیت‌ها</option>{% for key,label in states %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label>
+    <fieldset class="al-dates"><legend>تاریخ ثبت</legend><label><span class="al-sr">از تاریخ شمسی</span><input name="from" inputmode="numeric" placeholder="از: 1405/01/01" aria-label="از تاریخ شمسی"></label><label><span class="al-sr">تا تاریخ شمسی</span><input name="to" inputmode="numeric" placeholder="تا: 1405/12/29" aria-label="تا تاریخ شمسی"></label><button type="button" id="al-all-dates">همه تاریخ‌ها</button></fieldset>
+    <div class="al-tools"><label><input type="checkbox" name="untouched" value="1"> فقط بدون تماس</label><button type="reset">پاک‌کردن فیلترها</button><label class="al-sort"><span class="al-sr">مرتب‌سازی</span><select name="sort"><option value="newest">جدیدترین اول</option><option value="oldest">قدیمی‌ترین اول</option></select></label></div>
+  </form>
+  <div id="al-scroll" class="al-scroll" role="region" aria-label="پلاک‌های لیدها" tabindex="0"><div id="al-before"></div><div id="al-grid" class="al-grid"></div><div id="al-after"></div></div>
+  <footer class="al-footer"><span id="al-message" role="status" aria-live="polite">در حال دریافت لیدها…</span><button id="al-more" type="button">دریافت ادامه</button></footer>
+</section>
+<script src="{% static 'core/all-leads.js' %}?v=1" defer></script>
+{% endblock %}
