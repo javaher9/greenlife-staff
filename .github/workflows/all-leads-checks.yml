@@ -1,0 +1,57 @@
+name: All Leads Archive Checks
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'core/all_leads_views.py'
+      - 'core/templates/core/all_leads.html'
+      - 'core/static/core/all-leads.*'
+      - 'core/tests/test_all_leads*'
+      - 'core/migrations/0119_all_leads_archive_indexes.py'
+      - 'core/models.py'
+      - 'core/urls.py'
+      - 'core/templates/core/base.html'
+      - '.github/workflows/all-leads-checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: greenlife
+          POSTGRES_USER: greenlife
+          POSTGRES_PASSWORD: test-password
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U greenlife -d greenlife"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DEBUG: '1'
+      SECRET_KEY: archive-ci-only-not-a-production-secret
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      POSTGRES_DB: greenlife
+      POSTGRES_USER: greenlife
+      POSTGRES_PASSWORD: test-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: '5432'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt playwright
+      - run: python -m playwright install --with-deps chromium
+      - run: python manage.py check
+      - run: python manage.py makemigrations --check --dry-run
+      - run: python manage.py test core.tests.test_all_leads core.tests.test_all_leads_browser --verbosity 2
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: all-leads-browser
+          path: test-artifacts/all-leads-*.png
