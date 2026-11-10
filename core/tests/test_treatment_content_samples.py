@@ -65,6 +65,12 @@ def fake_zip():
 
 
 class TreatmentContentSampleTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        # Import tests start empty; migration 0118 now seeds doctor content.
+        # This is rolled back with this TestCase and never touches live data.
+        TreatmentRichContent.objects.all().delete()
+
     def setUp(self):
         self.media=TemporaryDirectory()
         self.settings_override=override_settings(MEDIA_ROOT=self.media.name)
