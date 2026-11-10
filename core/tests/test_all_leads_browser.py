@@ -36,6 +36,8 @@ class ArchiveBrowserTests(StaticLiveServerTestCase):
             page.on('pageerror', lambda error: errors.append(str(error)))
             page.goto(self.live_server_url + '/management/all-leads/')
             page.locator('.al-plaque').first.wait_for()
+            self.assertEqual(page.locator('.al-heading').evaluate('(el)=>getComputedStyle(el).backgroundColor'), 'rgba(0, 0, 0, 0)')
+            self.assertLessEqual(page.locator('input[name=untouched]').bounding_box()['width'], 16)
             page.screenshot(path=str(out / 'all-leads-desktop.png'), full_page=True)
             self.assertLess(page.locator('.al-plaque').count(), 120)
             page.locator('select[name=state]').select_option('new')

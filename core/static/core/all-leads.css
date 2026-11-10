@@ -1,4 +1,11 @@
 /* Executive management context: dark at every viewport. Lead Hub semantic colors. */
+body.gl-premium-dark.gl-page-management_all_leads #all-leads .al-heading{background:transparent!important;box-shadow:none!important;border:0!important;padding:0!important;min-height:0!important;position:static!important}
+body.gl-premium-dark.gl-page-management_all_leads #all-leads .al-heading h1{color:#f5f7fb!important;font-size:22px!important;margin:3px 0!important}
+body.gl-premium-dark.gl-page-management_all_leads #all-leads .al-filters label{margin:0!important;white-space:nowrap}
+body.gl-premium-dark.gl-page-management_all_leads #all-leads select,body.gl-premium-dark.gl-page-management_all_leads #all-leads input:not([type=checkbox]),body.gl-premium-dark.gl-page-management_all_leads #all-leads button{height:34px!important;min-height:34px!important;padding:5px 8px!important;font-size:11px!important;border-radius:5px!important;line-height:20px!important}
+body.gl-premium-dark.gl-page-management_all_leads #all-leads .al-tools input[type=checkbox]{width:14px!important;height:14px!important;min-height:0!important;padding:0!important;margin:0!important;flex:0 0 14px}
+body.gl-premium-dark.gl-page-management_all_leads #all-leads .al-tools>label{display:inline-flex!important;white-space:nowrap!important}
+@media(pointer:coarse){body.gl-premium-dark.gl-page-management_all_leads #all-leads select,body.gl-premium-dark.gl-page-management_all_leads #all-leads input:not([type=checkbox]),body.gl-premium-dark.gl-page-management_all_leads #all-leads button{height:44px!important;min-height:44px!important;font-size:16px!important}}
 body.gl-page-management_all_leads .app-main{background:#10151e!important;color:#f5f7fb!important}
 .all-leads{--al-border:#303746;color:#f5f7fb;font-family:inherit;padding:12px 0 24px;max-width:100%}
 .all-leads *{box-sizing:border-box}.al-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.al-heading small{color:#a4afbe;font-size:11px}.al-heading h1{margin:3px 0;font-size:22px}.al-heading h1 span{font-size:11px;font-weight:400;color:#a4afbe;margin-right:8px}

@@ -14,7 +14,7 @@ from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_GET
 
 from .call_center_identity import call_center_display_name
-from .jalali import format_jalali, jalali_to_gregorian
+from .jalali import format_jalali, gregorian_to_jalali, jalali_to_gregorian
 from .lead_management_views import ALLOWED_ROLES, _lead_hub_queryset
 from .models import Branch, CallCenterLeadGroup, EmployeeProfile, ReferralLead, VisitAppointment
 
@@ -84,6 +84,8 @@ def date_boundary(value):
     if not (1300 <= year <= 1500 and 1 <= month <= 12 and 1 <= day <= (31 if month <= 6 else 30)):
         raise ValueError('تاریخ نامعتبر است.')
     converted = date(*jalali_to_gregorian(year, month, day))
+    if gregorian_to_jalali(converted.year, converted.month, converted.day) != (year, month, day):
+        raise ValueError('تاریخ نامعتبر است.')
     return timezone.make_aware(datetime.combine(converted, time.min))
 
 

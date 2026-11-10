@@ -88,6 +88,8 @@ class AllLeadsTests(TestCase):
     def test_query_count_does_not_grow_with_page(self):
         from django.test.utils import CaptureQueriesContext
         from django.db import connection
+        # CountryWorkspaceMiddleware initializes/saves the session on the first request.
+        self.client.get(self.url)
         with CaptureQueriesContext(connection) as many:
             self.client.get(self.url)
         with CaptureQueriesContext(connection) as one:
