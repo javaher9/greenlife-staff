@@ -8,6 +8,7 @@
   const before = document.getElementById('al-before'), after = document.getElementById('al-after');
   let items = [], cursor = null, done = false, busy = false, controller, generation = 0, timer, frame;
   const rowHeight = 64;
+  let renderedWindow = null;
   const initial = new URLSearchParams(location.search);
   for (const [key,value] of initial) {
     const el = form.elements.namedItem(key);
@@ -20,6 +21,9 @@
     const startRow = Math.max(0, Math.floor(scroll.scrollTop / rowHeight) - 3);
     const start = Math.min(items.length, startRow * columns);
     const end = Math.min(items.length, start + (Math.ceil(scroll.clientHeight / rowHeight) + 7) * columns);
+    const windowKey = `${generation}:${start}:${end}:${columns}:${items.length}`;
+    if (windowKey === renderedWindow) return;
+    renderedWindow = windowKey;
     const fragment = document.createDocumentFragment();
     items.slice(start, end).forEach(item => {
       const link = document.createElement('a'); link.className = 'al-plaque'; link.href = item.url;
