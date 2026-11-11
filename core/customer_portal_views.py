@@ -330,6 +330,8 @@ def _visible_staff_requests(request):
     qs=CustomerServiceRequest.objects.select_related(
         'member','branch','assigned_to','visit_appointment','device_session'
     )
+    from .country_workspace import scoped_queryset
+    qs=scoped_queryset(request,qs,'branch__country')
     if role in ('admin','internal_manager'):
         return qs
     profile=getattr(request.user,'profile',None)
@@ -347,9 +349,11 @@ def staff_customer_requests(request):
     _staff_gate(request)
     qs=_visible_staff_requests(request)
     selected=request.GET.get('status','pending')
-    if selected not in ('pending','contacted','booked','declined','all'):
+    if selected not in ('pending','contacted','booked','declined','all','open'):
         selected='pending'
-    if selected!='all':
+    if selected=='open':
+        qs=qs.filter(status__in=('pending','contacted'))
+    elif selected!='all':
         qs=qs.filter(status=selected)
     return render(request,'core/customer_portal/staff_requests.html',{
         'rows':qs[:120],'selected':selected,'role':_role(request)

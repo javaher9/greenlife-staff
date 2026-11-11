@@ -72,6 +72,9 @@ def _gauge_row(key, label, value, plans, *, avatar="", people=None, group="", no
 def sales_targets_dashboard(request):
     user = request.user
     profile = getattr(user, "profile", None)
+    if profile and profile.role == "internal_manager":
+        from .internal_manager_views import qualitative_targets
+        return qualitative_targets(request)
     allowed = user.is_superuser or (
         profile and profile.role in ("admin", "internal_manager")
     )

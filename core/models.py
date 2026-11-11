@@ -2261,3 +2261,15 @@ from .sales_target_models import SalesTargetBand, TargetPercentPolicy
 
 # Patient progress images use the same patient record as scan station.
 from .body_progress_models import BodyProgressPhoto
+
+
+class OperationsIncident(models.Model):
+    """Durable computed incident. Reading/acknowledging never resolves a cause."""
+    key=models.CharField(max_length=160,unique=True)
+    kind=models.CharField(max_length=40)
+    country=models.ForeignKey(Country,on_delete=models.PROTECT)
+    day=models.DateField(db_index=True)
+    started_at=models.DateTimeField()
+    deadline=models.DateTimeField()
+    resolved_at=models.DateTimeField(null=True,blank=True)
+    created_at=models.DateTimeField(auto_now_add=True)

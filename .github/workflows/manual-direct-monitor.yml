@@ -1,0 +1,20 @@
+name: Monitor manual Instagram registration
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: greenlife-manual-direct-monitor
+  cancel-in-progress: false
+jobs:
+  monitor:
+    runs-on: [self-hosted, linux, greenlife-prod]
+    timeout-minutes: 5
+    steps:
+      - name: Reconcile recorded manual DM gaps (no external messages)
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          docker exec greenlife-staff-runtime-web-1 python manage.py monitor_manual_direct

@@ -29,7 +29,8 @@ def live_last_lead(request):
         raise PermissionDenied
     # The same access and branch restrictions as the QC command centre.
     branch_id = _qc_scope(request.user)
-    qs = ReferralLead.objects.all()
+    from .country_workspace import scoped_queryset
+    qs = scoped_queryset(request,ReferralLead.objects.all())
     if branch_id:
         qs = qs.filter(assigned_to__branch_id=branch_id)
     recent = qs.order_by("-created_at", "-pk").values("id", "created_at").first()

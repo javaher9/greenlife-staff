@@ -1,0 +1,4 @@
+<button type="button" class="im-menu-toggle" aria-expanded="false" aria-label="باز و بسته کردن منوی اصلی">منوی اصلی</button>
+<script>
+(()=>{const button=document.querySelector('.im-menu-toggle');function close(){document.body.classList.remove('im-navigation-open');button.setAttribute('aria-expanded','false');button.textContent='منوی اصلی';}button.addEventListener('click',()=>{const open=document.body.classList.toggle('im-navigation-open');button.setAttribute('aria-expanded',String(open));button.textContent=open?'بستن منو':'منوی اصلی';});document.addEventListener('keydown',event=>{if(event.key==='Escape')close();});})();
+</script>

@@ -1,0 +1,62 @@
+name: Internal manager operations checks
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'core/**'
+      - 'greenlife/**'
+      - '.github/workflows/internal-manager-checks.yml'
+permissions:
+  contents: read
+jobs:
+  operations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: greenlife
+          POSTGRES_USER: greenlife
+          POSTGRES_PASSWORD: test-password
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U greenlife -d greenlife"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DEBUG: '1'
+      SECRET_KEY: 'internal-manager-ci-tests-only'
+      ALLOWED_HOSTS: 'localhost,127.0.0.1,testserver'
+      POSTGRES_DB: greenlife
+      POSTGRES_USER: greenlife
+      POSTGRES_PASSWORD: test-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: '5432'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python manage.py check
+      - run: python manage.py makemigrations --check --dry-run
+      - run: python manage.py test core.tests.test_internal_manager_operations core.tests.test_internal_manager_role core.tests.test_all_leads core.tests.test_sales_targets_dashboard core.tests.test_customer_portal --verbosity 2
+      - name: Install browser test dependencies
+        run: |
+          pip install playwright
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo "IM_BROWSER_EXECUTABLE=$(command -v google-chrome)" >> "$GITHUB_ENV"
+          else
+            python -m playwright install --with-deps chromium
+          fi
+      - name: Synthetic responsive browser checks
+        env:
+          RUN_IM_BROWSER: '1'
+          IM_ARTIFACTS: test-artifacts/internal-manager
+        run: python manage.py test core.tests.test_internal_manager_browser --verbosity 2
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: internal-manager-screenshots
+          path: test-artifacts/internal-manager/

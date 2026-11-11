@@ -1031,10 +1031,16 @@ def blackboard_edit(request,pk=None):
 
 @login_required
 def leave_list(request):
-    role=role_of(request.user); qs=LeaveRequest.objects.select_related('user').order_by('-created_at')
-    if role in PERSONNEL_ROLES: qs=qs.filter(user=request.user)
-    elif role=='manager': qs=qs.filter(user__profile__branch=request.user.profile.branch)
-    return render(request,'core/leave_list.html',{'requests':qs,'can_review':role in MANAGEMENT_ROLES})
+    from django.core.paginator import Paginator
+    from .internal_manager_scope import visible_leaves, supervised_users
+    qs=visible_leaves(request).select_related('user__profile__branch').order_by('-created_at')
+    if request.GET.get('status') in ('pending','approved','rejected'):
+        qs=qs.filter(status=request.GET['status'])
+    page=Paginator(qs, 40).get_page(request.GET.get('page'))
+    allowed=set(supervised_users(request).values_list('pk',flat=True))
+    for item in page:
+        item.can_review=item.user_id in allowed
+    return render(request,'core/leave_list.html',{'requests':page,'can_review':role_of(request.user) in MANAGEMENT_ROLES})
 
 @login_required
 def leave_create(request):
@@ -1078,12 +1084,29 @@ def leave_create(request):
 
 @manager_required
 def leave_review(request,pk):
-    obj=get_object_or_404(LeaveRequest,pk=pk)
-    if role_of(request.user)=='manager' and getattr(obj.user.profile,'branch_id',None)!=request.user.profile.branch_id: return redirect('leave_list')
+    from .internal_manager_scope import can_review_leave, visible_leaves
+    from .leave_decisions import decide_leave, LeaveConflict
+    from django.core.exceptions import ValidationError
+    obj=get_object_or_404(LeaveRequest.objects.select_related('user__profile__branch'),pk=pk)
+    if not can_review_leave(request,obj):
+        raise PermissionDenied
     form=LeaveReviewForm(request.POST or None,instance=obj)
+    response_status=200
     if request.method=='POST' and form.is_valid():
-        item=form.save(commit=False); item.reviewed_by=request.user; item.save(); messages.success(request,'درخواست بررسی شد.'); return redirect('leave_list')
-    return render(request,'core/generic_form.html',{'form':form,'title':'بررسی درخواست','button':'ثبت نتیجه'})
+        try:
+            decide_leave(request,pk,form.cleaned_data['status'],form.cleaned_data['manager_note'])
+        except ValidationError as exc:
+            form.add_error(None,exc)
+        except LeaveConflict as exc:
+            form.add_error(None,str(exc)); response_status=409
+        else:
+            messages.success(request,'درخواست بررسی شد.')
+            return redirect('leave_list')
+    overlaps=visible_leaves(request).filter(
+        status='approved',start_date__lte=obj.end_date,end_date__gte=obj.start_date,
+        user__profile__branch_id=obj.user.profile.branch_id,
+    ).exclude(pk=obj.pk).select_related('user')[:30] if obj.user.profile.branch_id else []
+    return render(request,'core/leave_review.html',{'form':form,'item':obj,'overlaps':overlaps},status=response_status)
 
 @login_required
 def sop_list(request):
@@ -1389,9 +1412,13 @@ def attendance_team(request):
     try: selected=parse_jalali(date_value) if date_value else timezone.localdate()
     except ValueError: selected=timezone.localdate()
     users=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
+    if role_of(request.user)=='internal_manager':
+        from .internal_manager_scope import supervised_users
+        users=supervised_users(request).select_related('profile','profile__branch')
     records=Attendance.objects.filter(date=selected).select_related('user','branch')
     if role=='manager':
         users=users.filter(profile__branch=profile.branch); records=records.filter(branch=profile.branch)
+    records=records.filter(user__in=users)
     recmap={r.user_id:r for r in records}
     approved_leave_ids=set(LeaveRequest.objects.filter(
         user__in=users,status='approved',start_date__lte=selected,end_date__gte=selected,
@@ -2284,7 +2311,9 @@ def correction_create(request):
 @manager_required
 def correction_review(request,pk):
     obj=get_object_or_404(AttendanceCorrectionRequest,pk=pk)
-    if role_of(request.user)=='manager' and obj.user.profile.branch_id!=request.user.profile.branch_id: return redirect('correction_list')
+    from .internal_manager_scope import supervised_users
+    if not supervised_users(request).filter(pk=obj.user_id).exists():
+        raise PermissionDenied
     form=AttendanceCorrectionReviewForm(request.POST or None,instance=obj)
     if request.method=='POST' and form.is_valid():
         approve_correction(obj,request.user,form.cleaned_data['status'],form.cleaned_data.get('manager_note',''))
@@ -2583,6 +2612,9 @@ def _branch_live_payload(branch=None, day=None):
 
 @manager_required
 def branch_live_dashboard(request):
+    if role_of(request.user)=='internal_manager' and settings.INTERNAL_MANAGER_OPERATIONS_ENABLED:
+        from .internal_manager_views import internal_dashboard
+        return internal_dashboard(request)
     from .models import Branch
     branch = _branch_scope_for_manager(request)
     branches = Branch.objects.filter(is_active=True).order_by('name')
@@ -2607,6 +2639,14 @@ def branch_live_dashboard(request):
 
 @manager_required
 def branch_live_api(request):
+    if role_of(request.user)=='internal_manager':
+        from .internal_manager_targets import target_statuses
+        from .management_alert_views import collect_alerts
+        from django.core.exceptions import ValidationError
+        try:
+            return JsonResponse({'targets':target_statuses(request),'alerts':collect_alerts(request.user,request=request)})
+        except ValidationError:
+            return JsonResponse({'error':'دوره نامعتبر است'},status=400)
     branch=_branch_scope_for_manager(request)
     data=_branch_live_payload(branch)
     if role_of(request.user)=='internal_manager':
@@ -2626,7 +2666,8 @@ def _employee_access(request, employee):
     if role_of(request.user)=='admin':
         return True
     if role_of(request.user)=='internal_manager':
-        return employee.role in PERSONNEL_ROLES
+        from .internal_manager_scope import supervised_users
+        return supervised_users(request).filter(pk=employee.user_id).exists()
     if role_of(request.user)=='manager':
         return employee.branch_id == getattr(request.user.profile,'branch_id',None)
     return employee.user_id == request.user.id
@@ -2866,6 +2907,9 @@ def checklist_team_status(request):
     except Exception:
         pass
     users=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
+    if role_of(request.user)=='internal_manager':
+        from .internal_manager_scope import supervised_users
+        users=supervised_users(request).select_related('profile','profile__branch')
     if role_of(request.user)=='manager':
         users=users.filter(profile__branch=request.user.profile.branch)
     rows=[]
@@ -2890,6 +2934,9 @@ def executive_today(request):
     day=timezone.localdate()
     branch=_branch_scope_for_manager(request)
     users=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
+    if role_of(request.user)=='internal_manager':
+        from .internal_manager_scope import supervised_users
+        users=supervised_users(request).select_related('profile','profile__branch')
     if branch:
         users=users.filter(profile__branch=branch)
 
@@ -3149,6 +3196,10 @@ def internal_requests(request):
             Q(requester__profile__branch=request.user.profile.branch) |
             Q(assigned_to=request.user)
         )
+
+    if role_of(request.user)=='internal_manager':
+        from .internal_manager_scope import supervised_users
+        qs=qs.filter(requester__in=supervised_users(request),category__in=('repair','it','hr','other'))
 
     # Keep dashboard filtering read-only and isolated from request workflow.
     base_qs=qs
@@ -3466,6 +3517,9 @@ def device_issue_manage(request):
         messages.error(request,'دسترسی مجاز نیست.')
         return redirect('dashboard')
     issues=DeviceIssue.objects.select_related('reporter','reporter__profile','branch','resolved_by')
+    if role_of(request.user)=='internal_manager':
+        from .country_workspace import scoped_queryset
+        issues=scoped_queryset(request,issues,field='branch__country')
     if role_of(request.user)=='manager':
         issues=issues.filter(branch=request.user.profile.branch)
     status=request.GET.get('status')
@@ -3478,7 +3532,11 @@ def device_issue_review(request,pk):
     if not _can_manage_device_issues(request.user):
         messages.error(request,'دسترسی مجاز نیست.')
         return redirect('dashboard')
-    issue=get_object_or_404(DeviceIssue,pk=pk)
+    issue_qs=DeviceIssue.objects.all()
+    if role_of(request.user)=='internal_manager':
+        from .country_workspace import scoped_queryset
+        issue_qs=scoped_queryset(request,issue_qs,field='branch__country')
+    issue=get_object_or_404(issue_qs,pk=pk)
     if role_of(request.user)=='manager' and issue.branch_id!=request.user.profile.branch_id:
         messages.error(request,'دسترسی مجاز نیست.')
         return redirect('device_issue_manage')
@@ -3514,12 +3572,8 @@ def action_center(request):
     day=timezone.localdate()
     language=getattr(request,'ui_language','fa')
 
-    users=User.objects.filter(
-        profile__is_active=True,
-        profile__role__in=PERSONNEL_ROLES,
-    ).select_related('profile','profile__branch')
-    if role=='manager':
-        users=users.filter(profile__branch=getattr(profile,'branch',None))
+    from .internal_manager_scope import supervised_users
+    users=supervised_users(request).select_related('profile','profile__branch')
     user_ids=list(users.values_list('id',flat=True))
 
     items=[]

@@ -312,6 +312,7 @@ def telegram_lead(request):
 
 
 @login_required(login_url='/login/')
+@transaction.atomic
 def instagram_manual_lead(request):
     profile=getattr(request.user,'profile',None)
     if not (request.user.is_superuser or (profile and profile.is_active and (profile.role in ('admin','call_center') or profile.can_register_instagram_dm_lead))):
@@ -353,6 +354,8 @@ def instagram_manual_lead(request):
                 group_name=INSTAGRAM_MANUAL_GROUP_NAME,
                 notification_title='لید جدید اینستاگرام - دستی',
             )
+            from .operations_monitor import record_manual_dm
+            record_manual_dm(lead, lead.created_by)
             completed = True
             form = InstagramManualLeadForm(initial={'instagram_page': INSTAGRAM_DEFAULT_PAGE})
 
@@ -486,6 +489,8 @@ def instagram_operator_quick_lead(request, operator, token):
                     group_name=INSTAGRAM_MANUAL_GROUP_NAME,
                     notification_title='لید جدید اینستاگرام - دستی',
                 )
+                from .operations_monitor import record_manual_dm
+                record_manual_dm(lead, lead.created_by)
                 lead_id = lead.pk
                 assigned = assignment is not None
         except DuplicateLeadError:

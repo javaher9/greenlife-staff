@@ -57,7 +57,8 @@
           </div>
 
           <div class="action-center-buttons-v36">
-            {% if item.kind == 'leave' or item.kind == 'correction' %}
+            {% if item.kind == 'leave' %}<a class="action-open-v36" href="{{ item.url }}">مشاهده جزئیات و تصمیم</a>
+            {% elif item.kind == 'correction' %}
               <button type="button" class="action-quick-v36 approve" data-action="approved">{% gl_t 'action.approved' %}</button>
               <button type="button" class="action-quick-v36 reject" data-action="rejected">{% gl_t 'action.rejected' %}</button>
             {% elif item.kind == 'device' %}

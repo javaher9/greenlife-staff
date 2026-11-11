@@ -217,6 +217,8 @@ def save_call_result(request, pk):
         lead.status='contacted' if result=='no_answer' else 'lost'
         lead.next_follow_up=None
         lead.save(update_fields=['contact_result','status','next_follow_up','updated_at'])
+    from .models import AuditLog
+    AuditLog.objects.create(actor=request.user,action='lead_contact_result',path=request.path,method='POST',object_type='ReferralLead',object_id=str(lead.pk),summary='Recorded call outcome',metadata={'result':result})
     from .sms_automation import queue_call_result_sms
     if (previous_result,previous_status)!=(lead.contact_result,lead.status):
         transaction.on_commit(lambda lead_id=lead.pk: queue_call_result_sms(lead_id))

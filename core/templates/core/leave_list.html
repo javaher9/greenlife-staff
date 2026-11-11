@@ -18,14 +18,15 @@
 }
 </style>
 <section class="leave-page">
-  <header class="leave-head"><div><h1>درخواست‌های من</h1><p>مرخصی و مأموریت‌های ثبت‌شده</p></div><a class="leave-new" href="{% url 'leave_create' %}">＋ درخواست جدید</a></header>
+  <header class="leave-head"><div><h1>{% if can_review %}کارتابل مرخصی‌ها{% else %}درخواست‌های من{% endif %}</h1><p>مرخصی و مأموریت‌های ثبت‌شده</p></div><a class="leave-new" href="{% url 'leave_create' %}">＋ درخواست جدید</a></header>
   <div class="leave-list">
     {% for r in requests %}
     <article class="leave-item">
-      <div class="leave-main"><strong>{{ r.get_request_type_display }}</strong><small>{{ r.start_date|jdate }} تا {{ r.end_date|jdate }}{% if r.reason %}<br>{{ r.reason|truncatechars:100 }}{% endif %}{% if r.manager_note %}<br>پاسخ مدیر: {{ r.manager_note|truncatechars:100 }}{% endif %}</small></div>
-      <div class="leave-side"><span class="leave-status {{ r.status }}">{{ r.get_status_display }}</span>{% if can_review and r.status == 'pending' %}<a class="leave-review" href="/requests/{{ r.id }}/review/">بررسی</a>{% endif %}</div>
+      <div class="leave-main"><strong>{{ r.user.get_full_name|default:r.user.username }} · {{ r.get_request_type_display }}</strong><small>{{ r.user.profile.get_role_display }} · {{ r.user.profile.branch.name|default:"شعبه مشخص نشده" }}</small><small>{{ r.start_date|jdate }} تا {{ r.end_date|jdate }}{% if r.reason %}<br>{{ r.reason|truncatechars:100 }}{% endif %}{% if r.manager_note %}<br>پاسخ مدیر: {{ r.manager_note|truncatechars:100 }}{% endif %}</small></div>
+      <div class="leave-side"><span class="leave-status {{ r.status }}">{{ r.get_status_display }}</span>{% if r.can_review and r.status == 'pending' %}<a class="leave-review" href="/requests/{{ r.id }}/review/">بررسی</a>{% endif %}</div>
     </article>
     {% empty %}<div class="leave-empty">هنوز درخواستی ثبت نکرده‌اید.</div>{% endfor %}
   </div>
+<nav>{% if requests.has_previous %}<a href="?page={{ requests.previous_page_number }}&status={{ request.GET.status }}">قبلی</a>{% endif %} {% if requests.has_next %}<a href="?page={{ requests.next_page_number }}&status={{ request.GET.status }}">بعدی</a>{% endif %}</nav>
 </section>
 {% endblock %}

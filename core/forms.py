@@ -197,6 +197,10 @@ class LeaveRequestForm(forms.ModelForm):
         model=LeaveRequest; fields=['request_type','start_date','end_date','reason']; widgets={'reason':forms.Textarea(attrs={'rows':4})}
 
 class LeaveReviewForm(forms.ModelForm):
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.fields['status'].choices=[('approved','تأیید شده'),('rejected','رد شده')]
+
     class Meta: model=LeaveRequest; fields=['status','manager_note']; widgets={'manager_note':forms.Textarea(attrs={'rows':3})}
 
 class AnnouncementForm(forms.ModelForm):

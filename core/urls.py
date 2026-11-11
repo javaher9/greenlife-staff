@@ -1,3 +1,4 @@
+from . import internal_manager_views
 from . import lead_contact_views, all_leads_views
 from django.urls import path
 from . import views
@@ -43,6 +44,8 @@ from . import call_center_deposit_views
 from . import sales_target_views
 from .mcp import mcp_endpoint
 urlpatterns=[
+path('management/monitoring-history/',internal_manager_views.monitoring_history,name='monitoring_history'),
+path('management/all-leads/<int:pk>/',internal_manager_views.supervisory_lead,name='supervisory_lead'),
 path('management/all-leads/',all_leads_views.all_leads,name='management_all_leads'),
 path('management/all-leads/data/',all_leads_views.all_leads_data,name='management_all_leads_data'),
 path('api/leads/last-arrival/',lead_freshness_views.live_last_lead,name='live_last_lead'),
