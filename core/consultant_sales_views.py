@@ -251,6 +251,7 @@ def _service_summary(plan):
 
 
 @login_required
+@transaction.atomic
 def consultant_sales_outcomes(request):
     profile=_consultant(request)
     if not profile:
@@ -259,6 +260,9 @@ def consultant_sales_outcomes(request):
 
     appointments=_queue(profile)
     selected_id=(request.POST.get('appointment_id') if request.method=='POST' else request.GET.get('appointment')) or ''
+    if request.method=='POST' and (not str(selected_id).isascii() or not str(selected_id).isdigit() or len(str(selected_id))>18):
+        messages.error(request,'شناسه معتبر پرونده الزامی است.')
+        return redirect('consultant_sales_outcomes')
     selected=appointments.filter(pk=int(selected_id)).first() if str(selected_id).isdigit() else appointments.first()
     plan=_ensure_plan(selected,request.user) if selected else None
 
@@ -266,7 +270,16 @@ def consultant_sales_outcomes(request):
         if not selected or not plan:
             messages.error(request,'پرونده انتخاب‌شده در صف مشاوره شما نیست.')
             return redirect('consultant_sales_outcomes')
+        plan=ConsultationPlan.objects.select_for_update().get(pk=plan.pk)
         action=(request.POST.get('action') or '').strip()
+        if action in ('update_item','add_item','finalize','no_sale'):
+            has_receipt=FinancialTransaction.objects.filter(
+                appointment=selected,source='manual',entry_type='inc',
+                review_status__in=('pending','approved'),amount__gt=0,
+            ).exists()
+            if plan.status in ('partial_paid','paid') or has_receipt:
+                messages.error(request,'پس از ثبت دریافت وجه، تغییر پکیج مجاز نیست؛ اصلاح مالی را پیگیری کنید.')
+                return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
 
         if action=='update_item':
             item=get_object_or_404(plan.items,pk=request.POST.get('item_id'))
