@@ -93,7 +93,9 @@ def internal_dashboard(request):
 @login_required
 @require_GET
 def monitoring_history(request):
-    internal_gate(request)
+    profile=getattr(request.user,'profile',None)
+    if not request.user.is_active or not profile or not profile.is_active or profile.role not in ('admin','internal_manager'):
+        raise PermissionDenied
     from django.core.paginator import Paginator
     from .models import OperationsIncident
     rows=scoped_queryset(request,OperationsIncident.objects.all()).order_by('-day','-deadline')
