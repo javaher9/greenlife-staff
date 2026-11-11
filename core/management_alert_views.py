@@ -64,9 +64,14 @@ def collect_alerts(user, request=None):
         href='/referrals/staff-monthly/' if role in ('admin','internal_manager') else '/referrals/network/'
         alerts.append(_item('acquisition-unknown','اعتبار شاخص جذب روزانه نیازمند تکمیل است',
             'داده کافی نیست؛ تفکیک جذب واقعی از تست و ورود قدیمی هنوز قابل اثبات نیست.',href,'info','مدیریت کال‌سنتر و شبکه فروش'))
-    if role in ('admin','internal_manager'):
+    if role in ('admin','internal_manager') and getattr(request,'country_scope_code','IR') in ('','IR','ALL'):
         from .operations_monitor import direct_gap, TEHRAN
-        from .models import OperationsIncident
+        from .models import OperationsIncident, MarketingWorkerState
+        heartbeat=MarketingWorkerState.objects.filter(key='manual_direct').values_list('heartbeat_at',flat=True).first()
+        if heartbeat is None or timezone.now()-heartbeat > timedelta(minutes=20):
+            alerts.append(_item('manual-monitor-stale','پایش زمان‌بندی‌شده دایرکت به‌روز نیست',
+                'بررسی لحظه‌ای انجام می‌شود، اما ثبت پیوسته تاریخچه تأیید نشده است؛ اجرای پایش بررسی شود.',
+                '/management/monitoring-history/' if role=='internal_manager' else '/alerts/','warning','پشتیبانی سامانه'))
         gap=direct_gap(country_id=getattr(getattr(request,'country_scope',None),'pk',None))
         if gap and gap['active']:
             alerts.append(_item('manual-dm-gap','وقفه در ثبت دستی دایرکت اینستاگرام',

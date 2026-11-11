@@ -33,6 +33,9 @@ Branch starts from `27e05a32140c357dc00661067c23b2adefd9d4d9`.
   Actions pattern schedules a dedicated no-message monitoring command every 10m.
   GitHub schedules are best-effort, not a real-time SLA. Verify first successful
   scheduler invocation after deployment; no claims of live scheduling before then.
+  Existing MarketingWorkerState stores a separate scheduler heartbeat; missing or
+  stale heartbeat is explicitly displayed. Monitoring uses the actual Iran intake
+  flow; no synthetic per-country Instagram workflow is assumed for other countries.
 - Collapsible attendance records, approved today/tomorrow leave, current stored
   visitor stages, open equipment/internal issues and overdue tasks.
 
@@ -87,3 +90,13 @@ PostgreSQL-only TransactionTestCase exercises two competing leave decisions.
 Opt-in StaticLiveServer browser test uses synthetic users and checks 390/820/1440px.
 Local Chromium startup is blocked by the executor's socket policy; CI browser test
 is provided instead. Until that check succeeds, visual verification is incomplete.
+
+## Observed verification (2026-11-11)
+
+- Local focused regression suite: 52 tests, 51 passed, PostgreSQL-only concurrency
+  skipped. The corresponding PostgreSQL CI suite passed, including concurrency.
+- Full local core suite: 633 tests, 26 failures, 39 errors, 2 skipped. Baseline
+  `27e05a3` in a separate untouched worktree: 617 tests, 28 failures, 39 errors.
+  Final comparison found no new failing test names versus baseline. This does NOT
+  mean the entire suite is green; baseline defects/dependency differences remain.
+- Current GitHub PR is #370. No merge or live deployment claimed.

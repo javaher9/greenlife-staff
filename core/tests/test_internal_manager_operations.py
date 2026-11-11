@@ -184,6 +184,24 @@ class DirectClockTests(TestCase):
         AuditLog.objects.filter(pk=log.pk).update(created_at=self.dt(10,30))
         self.assertFalse(direct_gap(self.dt(11))['active'])
 
+    def test_legacy_routes_not_group_or_edit_time_define_manual_registration(self):
+        user=User.objects.create_user('clock-source')
+        referrer=ReferralProfile.objects.create(user=user,referral_code='CLOCKSOURCE')
+        lead=ReferralLead.objects.create(referrer=referrer,full_name='نمونه',phone='09122334455',source='panel',source_url='https://app.greenlifeclinics.com/instagram/ads/')
+        ReferralLead.objects.filter(pk=lead.pk).update(created_at=self.dt(10,30),updated_at=self.dt(10,59))
+        self.assertTrue(direct_gap(self.dt(11))['active'])
+        ReferralLead.objects.filter(pk=lead.pk).update(source_url='https://app.greenlifeclinics.com/instagram/manual/')
+        self.assertFalse(direct_gap(self.dt(11))['active'])
+        ReferralLead.objects.filter(pk=lead.pk).update(created_at=self.dt(8),updated_at=self.dt(10,59))
+        self.assertTrue(direct_gap(self.dt(11))['active'])
+
+    def test_scheduled_heartbeat_is_not_faked_by_request(self):
+        from core.models import MarketingWorkerState
+        reconcile_direct_gap(self.dt(11))
+        self.assertFalse(MarketingWorkerState.objects.filter(key='manual_direct').exists())
+        reconcile_direct_gap(self.dt(11),scheduled=True)
+        self.assertEqual(MarketingWorkerState.objects.get(key='manual_direct').heartbeat_at,self.dt(11))
+
     def test_persistent_gap_dedup_not_resolved_by_midnight(self):
         country=Country.objects.get(code='IR')
         reconcile_direct_gap(self.dt(11));reconcile_direct_gap(self.dt(11))

@@ -39,11 +39,11 @@ def direct_gap(now=None, country_id=None):
 
 
 @transaction.atomic
-def reconcile_direct_gap(now=None):
-    from .models import Country
+def reconcile_direct_gap(now=None, *, scheduled=False):
+    from .models import Country, MarketingWorkerState
     now=now or timezone.now()
     # Scope by the same existing country workspaces; no personal operator blame.
-    for country_id in Country.objects.filter(is_active=True).values_list('pk',flat=True):
+    for country_id in Country.objects.filter(code='IR',is_active=True).values_list('pk',flat=True):
         gap=direct_gap(now,country_id)
         if gap is None:
             continue
@@ -58,3 +58,6 @@ def reconcile_direct_gap(now=None):
                 'kind':'manual_dm_gap','country_id':country_id,'day':gap['day'],
                 'started_at':gap['origin'],'deadline':gap['deadline'],
             })
+    if scheduled:
+        MarketingWorkerState.objects.update_or_create(key='manual_direct',defaults={
+            'heartbeat_at':now,'activity':'پایش ثبت دستی دایرکت','last_error':''})

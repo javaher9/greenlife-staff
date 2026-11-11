@@ -45,7 +45,11 @@ jobs:
       - name: Install browser test dependencies
         run: |
           pip install playwright
-          python -m playwright install --with-deps chromium
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo "IM_BROWSER_EXECUTABLE=$(command -v google-chrome)" >> "$GITHUB_ENV"
+          else
+            python -m playwright install --with-deps chromium
+          fi
       - name: Synthetic responsive browser checks
         env:
           RUN_IM_BROWSER: '1'
