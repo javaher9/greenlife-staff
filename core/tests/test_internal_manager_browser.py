@@ -35,6 +35,12 @@ class InternalManagerBrowserTests(StaticLiveServerTestCase):
                 page.screenshot(path=str(out/f'internal-manager-{label}.png'),full_page=True)
                 overflow=page.evaluate('''() => ({width:innerWidth,scroll:document.documentElement.scrollWidth,offenders:[...document.querySelectorAll('body *')].filter(e=>{const r=e.getBoundingClientRect();return r.width && (r.right>innerWidth+1 || r.left < -1)}).slice(0,20).map(e=>({tag:e.tagName,cls:e.className,left:e.getBoundingClientRect().left,right:e.getBoundingClientRect().right}))})''')
                 self.assertLessEqual(overflow['scroll'],width+1,overflow)
+                if label=='mobile':
+                    self.assertFalse(page.locator('.app-sidebar').is_visible())
+                    page.locator('.im-menu-toggle').click()
+                    self.assertTrue(page.locator('.app-sidebar').is_visible())
+                    page.keyboard.press('Escape')
+                    self.assertFalse(page.locator('.app-sidebar').is_visible())
             page.goto(self.live_server_url+f'/requests/{leave.pk}/review/')
             self.assertIn('درخواست آزمایشی',page.locator('body').inner_text())
             self.assertFalse(errors,errors)

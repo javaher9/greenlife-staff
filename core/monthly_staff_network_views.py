@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from .jalali import gregorian_to_jalali, jalali_to_gregorian
 from .models import EmployeeProfile, ReferralLead, ReferralProfile
+from .country_workspace import scoped_queryset
 
 
 @login_required
@@ -35,7 +36,7 @@ def monthly_staff_network_report(request):
     # 1 and 2 as one staff member's network; no referral is double-counted.
     profiles=list(ReferralProfile.objects.values('id','user_id','sponsor_id','created_at'))
     by_id={p['id']:p for p in profiles}
-    staff=list(EmployeeProfile.objects.filter(is_active=True,user__is_active=True)
+    staff=list(scoped_queryset(request,EmployeeProfile.objects.filter(is_active=True,user__is_active=True))
                .exclude(role='referrer').select_related('user','branch').order_by('user__last_name','user__first_name','id'))
     owner_by_user={p.user_id:p.user_id for p in staff}
     owner_for_profile={}
@@ -63,7 +64,7 @@ def monthly_staff_network_report(request):
                 member_counts[owner]+=1
 
     lead_counts=Counter()
-    leads=ReferralLead.objects.filter(
+    leads=scoped_queryset(request,ReferralLead.objects.all()).filter(
         created_at__date__gte=start,created_at__date__lt=end
     ).values('referrer_id').annotate(total=Count('id'))
     for lead in leads:

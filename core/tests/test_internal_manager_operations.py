@@ -64,6 +64,18 @@ class OperationsTests(TestCase):
             result=self.client.get(url)
             self.assertLess(result.status_code,400,url)
 
+    def test_linked_operational_pages_respect_country(self):
+        from core.models import DeviceIssue
+        issue=DeviceIssue.objects.create(reporter=self.other,branch=self.other_branch,device_name='foreign-device',description='test')
+        self.assertEqual(self.client.get(reverse('device_issue_review',args=[issue.pk])).status_code,404)
+        result=self.client.get(reverse('monthly_staff_network_report'))
+        self.assertEqual(result.status_code,200)
+        self.assertNotIn(self.other.pk,[x['person'].user_id for x in result.context['rows']])
+        for route in ('attendance_team','checklist_team_status'):
+            result=self.client.get(reverse(route))
+            self.assertEqual(result.status_code,200)
+            self.assertNotIn(self.other.pk,[x['user'].pk for x in result.context['rows']])
+
     def test_target_context_allowlist_and_direct_post_denied(self):
         SalesTargetBand.objects.create(key=f'{self.jy}-{self.jm:02d}:branch:{self.branch.pk}',period_year=self.jy,period_month=self.jm,scope='branch',branch=self.branch,heavy_limit=70,sales_floor=100,target_one=130,target_two=160)
         FinancialTransaction.objects.create(source='manual',entry_type='inc',review_status='approved',occurred_at=timezone.now(),amount=Decimal('987654321'),branch=self.branch)

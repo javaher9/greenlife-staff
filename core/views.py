@@ -1412,9 +1412,13 @@ def attendance_team(request):
     try: selected=parse_jalali(date_value) if date_value else timezone.localdate()
     except ValueError: selected=timezone.localdate()
     users=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
+    if role_of(request.user)=='internal_manager':
+        from .internal_manager_scope import supervised_users
+        users=supervised_users(request).select_related('profile','profile__branch')
     records=Attendance.objects.filter(date=selected).select_related('user','branch')
     if role=='manager':
         users=users.filter(profile__branch=profile.branch); records=records.filter(branch=profile.branch)
+    records=records.filter(user__in=users)
     recmap={r.user_id:r for r in records}
     approved_leave_ids=set(LeaveRequest.objects.filter(
         user__in=users,status='approved',start_date__lte=selected,end_date__gte=selected,
@@ -2662,7 +2666,8 @@ def _employee_access(request, employee):
     if role_of(request.user)=='admin':
         return True
     if role_of(request.user)=='internal_manager':
-        return employee.role in PERSONNEL_ROLES
+        from .internal_manager_scope import supervised_users
+        return supervised_users(request).filter(pk=employee.user_id).exists()
     if role_of(request.user)=='manager':
         return employee.branch_id == getattr(request.user.profile,'branch_id',None)
     return employee.user_id == request.user.id
@@ -2902,6 +2907,9 @@ def checklist_team_status(request):
     except Exception:
         pass
     users=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
+    if role_of(request.user)=='internal_manager':
+        from .internal_manager_scope import supervised_users
+        users=supervised_users(request).select_related('profile','profile__branch')
     if role_of(request.user)=='manager':
         users=users.filter(profile__branch=request.user.profile.branch)
     rows=[]
@@ -2926,6 +2934,9 @@ def executive_today(request):
     day=timezone.localdate()
     branch=_branch_scope_for_manager(request)
     users=User.objects.filter(profile__is_active=True).select_related('profile','profile__branch')
+    if role_of(request.user)=='internal_manager':
+        from .internal_manager_scope import supervised_users
+        users=supervised_users(request).select_related('profile','profile__branch')
     if branch:
         users=users.filter(profile__branch=branch)
 
@@ -3185,6 +3196,10 @@ def internal_requests(request):
             Q(requester__profile__branch=request.user.profile.branch) |
             Q(assigned_to=request.user)
         )
+
+    if role_of(request.user)=='internal_manager':
+        from .internal_manager_scope import supervised_users
+        qs=qs.filter(requester__in=supervised_users(request),category__in=('repair','it','hr','other'))
 
     # Keep dashboard filtering read-only and isolated from request workflow.
     base_qs=qs
@@ -3502,6 +3517,9 @@ def device_issue_manage(request):
         messages.error(request,'دسترسی مجاز نیست.')
         return redirect('dashboard')
     issues=DeviceIssue.objects.select_related('reporter','reporter__profile','branch','resolved_by')
+    if role_of(request.user)=='internal_manager':
+        from .country_workspace import scoped_queryset
+        issues=scoped_queryset(request,issues,field='branch__country')
     if role_of(request.user)=='manager':
         issues=issues.filter(branch=request.user.profile.branch)
     status=request.GET.get('status')
@@ -3514,7 +3532,11 @@ def device_issue_review(request,pk):
     if not _can_manage_device_issues(request.user):
         messages.error(request,'دسترسی مجاز نیست.')
         return redirect('dashboard')
-    issue=get_object_or_404(DeviceIssue,pk=pk)
+    issue_qs=DeviceIssue.objects.all()
+    if role_of(request.user)=='internal_manager':
+        from .country_workspace import scoped_queryset
+        issue_qs=scoped_queryset(request,issue_qs,field='branch__country')
+    issue=get_object_or_404(issue_qs,pk=pk)
     if role_of(request.user)=='manager' and issue.branch_id!=request.user.profile.branch_id:
         messages.error(request,'دسترسی مجاز نیست.')
         return redirect('device_issue_manage')
