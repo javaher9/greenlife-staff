@@ -10,16 +10,9 @@ from .staff_i18n import translate
 
 
 def _allowed_manager(request, user):
-    role = role_of(request.user)
-    if role == 'admin':
-        return True
-    if role == 'internal_manager':
-        return getattr(getattr(user, 'profile', None), 'role', None) == 'employee'
-    if role != 'manager':
-        return False
-    manager_branch = getattr(getattr(request.user, 'profile', None), 'branch_id', None)
-    user_branch = getattr(getattr(user, 'profile', None), 'branch_id', None)
-    return manager_branch and manager_branch == user_branch
+    from .internal_manager_scope import supervised_users
+    return supervised_users(request).filter(pk=user.pk).exists()
+
 
 
 @login_required

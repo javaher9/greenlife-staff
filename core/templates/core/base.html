@@ -690,7 +690,8 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
   <section class="gl-quick-shortcuts" aria-label="میانبرهای مدیریتی">
     <div class="gl-quick-shortcuts-title">دسترسی سریع</div>
     <div class="gl-quick-shortcuts-row">
-      <a class="gl-quick-orb gl-quick-leads" href="{% if user.profile.role == 'internal_manager' %}{% url 'management_all_leads' %}{% else %}{% url 'lead_management_dashboard' %}{% endif %}?shortcut=1" title="لیدها" aria-label="لیدها"><span class="gl-orb-symbol" aria-hidden="true">◎</span><span>لید</span></a>
+      {% if user.profile.role == 'internal_manager' %}<a class="gl-quick-orb gl-quick-leads" href="{% url 'management_all_leads' %}?shortcut=1" title="لیدها" aria-label="لیدها"><span class="gl-orb-symbol" aria-hidden="true">◎</span><span>لید</span></a>{% else %}
+      <a class="gl-quick-orb gl-quick-leads" href="{% url 'lead_management_dashboard' %}?shortcut=1" title="لیدها" aria-label="لیدها"><span class="gl-orb-symbol" aria-hidden="true">◎</span><span>لید</span></a>{% endif %}
       <a class="gl-quick-orb gl-quick-income" href="{% url 'finance_dashboard' %}?shortcut=1" title="درآمد" aria-label="درآمد"><span class="gl-orb-symbol" aria-hidden="true">↗</span><span>درآمد</span></a>
       <a class="gl-quick-orb gl-quick-targets" href="{% url 'sales_targets_dashboard' %}?shortcut=1" title="تارگت‌های فروش" aria-label="تارگت‌های فروش"><span class="gl-orb-symbol" aria-hidden="true">◎</span><span>تارگت</span></a>
     </div>

@@ -2307,7 +2307,9 @@ def correction_create(request):
 @manager_required
 def correction_review(request,pk):
     obj=get_object_or_404(AttendanceCorrectionRequest,pk=pk)
-    if role_of(request.user)=='manager' and obj.user.profile.branch_id!=request.user.profile.branch_id: return redirect('correction_list')
+    from .internal_manager_scope import supervised_users
+    if not supervised_users(request).filter(pk=obj.user_id).exists():
+        raise PermissionDenied
     form=AttendanceCorrectionReviewForm(request.POST or None,instance=obj)
     if request.method=='POST' and form.is_valid():
         approve_correction(obj,request.user,form.cleaned_data['status'],form.cleaned_data.get('manager_note',''))

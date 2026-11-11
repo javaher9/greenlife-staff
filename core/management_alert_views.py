@@ -65,14 +65,14 @@ def collect_alerts(user, request=None):
         alerts.append(_item('acquisition-unknown','اعتبار شاخص جذب روزانه نیازمند تکمیل است',
             'داده کافی نیست؛ تفکیک جذب واقعی از تست و ورود قدیمی هنوز قابل اثبات نیست.',href,'info','مدیریت کال‌سنتر و شبکه فروش'))
     if role in ('admin','internal_manager'):
-        from .operations_monitor import direct_gap
+        from .operations_monitor import direct_gap, TEHRAN
         from .models import OperationsIncident
         gap=direct_gap(country_id=getattr(getattr(request,'country_scope',None),'pk',None))
         if gap and gap['active']:
             alerts.append(_item('manual-dm-gap','وقفه در ثبت دستی دایرکت اینستاگرام',
                 'بیش از دو ساعت در بازه فعال تهران، ثبت دستی معتبر ردیابی نشده؛ جریان ثبت بررسی شود.',
                 ('/management/monitoring-history/' if role=='internal_manager' else '/instagram/manual/'),'warning','تیم ثبت دستی دایرکت'))
-        past=scoped_queryset(request,OperationsIncident.objects.filter(resolved_at__isnull=True,day__lt=today)).exists()
+        past=scoped_queryset(request,OperationsIncident.objects.filter(resolved_at__isnull=True,day__lt=timezone.now().astimezone(TEHRAN).date())).exists()
         if past:
             alerts.append(_item('manual-dm-history','وقفه حل‌نشده ثبت دستی از روز قبل',
                 'با تغییر روز رفع نشده است؛ علت توقف با تیم ثبت بررسی شود.', ('/management/monitoring-history/' if role=='internal_manager' else '/instagram/manual/'),'warning','تیم ثبت دستی دایرکت'))
