@@ -4,6 +4,7 @@ Clinical wording is copied verbatim, never synthesized. Existing rich content
 is never overwritten. Pictures of meals are not collected or saved.
 """
 from io import BytesIO
+import re
 from zipfile import BadZipFile, ZipFile
 from xml.etree import ElementTree as ET
 from django.db import transaction
@@ -65,14 +66,29 @@ def read_all_diets(weight_xlsx,ramadan_xlsx):
         elif template=='thirteen':
             # Cof-150 was exported as descriptive, but its original text
             # contains the 13 numbered days. Preserve every line.
-            data['raw_days']=(row.get(71) or '').strip()
-            data['extras']=[(row.get(i) or '').strip()
-                            for i in range(73,100,2) if (row.get(i) or '').strip()]
+            full_text=(row.get(71) or '').strip()
+            # The old Cof export has day 14 as a doctor follow-up, not food.
+            # Keep it in explanatory notes rather than appending it to day 13.
+            followup=re.search(r'(?m)^\s*روز\s*چهاردهم\b',full_text)
+            data['followup']=full_text[followup.start():].strip() if followup else ''
+            day_text=full_text[:followup.start()].rstrip() if followup else full_text
+            # A legacy row can begin "روز دوم صبح :" without the punctuation
+            # understood by the strict 13-day renderer; insert a header separator.
+            day_text=re.sub(
+                r'(?m)^(\s*روز\s*(?:اول|دوم|سوم|چهارم|پنجم|ششم|هفتم|هشتم|نهم|دهم|یازدهم|دوازدهم|سیزدهم))\s+(?=(?:صبحانه|صبح|ناهار|نهار)\b)',
+                r'\1: ',day_text)
+            data['raw_days']=day_text
+            data['extras']=[str(row.get(i) or '').strip()
+                            for i in range(72,110) if str(row.get(i) or '').strip()
+                            and not str(row.get(i)).strip().lower().startswith(('http://','https://'))]
             if not data['raw_days']:raise ValueError('متن اصلی ۱۳ روزه Cof-150 خالی است.')
         else:
             data['display_title']=(row.get(68) or '').strip()
-            data['pages']=[(row.get(i) or '').strip() for i in range(71,110,2)
-                           if (row.get(i) or '').strip()]
+            # Exported descriptive files sometimes have genuine prose in
+            # nominally "image" columns. Preserve ALL non-URL text in order.
+            data['pages']=[str(row.get(i) or '').strip() for i in range(70,110)
+                           if str(row.get(i) or '').strip()
+                           and not str(row.get(i)).strip().lower().startswith(('http://','https://'))]
             if not data['pages']:raise ValueError(f'محتوای متنی {code} خالی است.')
         extra.append(data)
         codes.add(code)
@@ -130,7 +146,8 @@ def import_remaining_diets(extra,actor):
                     content.diet_notes_text=item_data.get('day14','')
                 else:
                     src=item_data['raw_days']
-                    content.diet_notes_text='\n\n'.join(item_data.get('extras',[]))
+                    content.diet_notes_text='\n\n'.join(
+                        x for x in [item_data.get('followup','')]+item_data.get('extras',[]) if x)
                 TreatmentRichSection.objects.create(
                     content=content,title='برنامه غذایی',body=src,meal_slot='other',
                     day_number=1,sort_order=10)
