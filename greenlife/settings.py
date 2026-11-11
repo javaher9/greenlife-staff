@@ -31,7 +31,7 @@ for _origin in ('https://staff.greenlifeclinics.com','https://app.greenlifeclini
 CSRF_FAILURE_VIEW = 'core.security_views.csrf_failure'
 INSTALLED_APPS = ['django.contrib.admin','django.contrib.auth','django.contrib.contenttypes','django.contrib.sessions','django.contrib.messages','django.contrib.staticfiles','core','public_network','intake','payments','recruitment']
 MIDDLEWARE = ['django.middleware.security.SecurityMiddleware','whitenoise.middleware.WhiteNoiseMiddleware','django.contrib.sessions.middleware.SessionMiddleware','django.middleware.common.CommonMiddleware','django.middleware.csrf.CsrfViewMiddleware','django.contrib.auth.middleware.AuthenticationMiddleware',
-    'core.language_workspace.StaffLanguageMiddleware','core.country_workspace.CountryWorkspaceMiddleware','core.localized_response.StaticUiLocalizationMiddleware','core.call_center_views.CallCenterCallTrackingMiddleware','public_network.middleware.PublicNetworkMemberMiddleware','core.audit.AuditLogMiddleware','django.contrib.messages.middleware.MessageMiddleware','django.middleware.clickjacking.XFrameOptionsMiddleware']
+    'core.language_workspace.StaffLanguageMiddleware','core.country_workspace.CountryWorkspaceMiddleware','core.internal_manager_guard.InternalManagerGuard','core.localized_response.StaticUiLocalizationMiddleware','core.call_center_views.CallCenterCallTrackingMiddleware','public_network.middleware.PublicNetworkMemberMiddleware','core.audit.AuditLogMiddleware','django.contrib.messages.middleware.MessageMiddleware','django.middleware.clickjacking.XFrameOptionsMiddleware']
 
 # This escape hatch is restricted to DEBUG mode and can never disable CSRF in production.
 if DEBUG and os.getenv('DISABLE_CSRF', '0') == '1':
@@ -64,3 +64,6 @@ PUBLIC_BASE_URL = os.getenv('PUBLIC_BASE_URL','https://staff.greenlifeclinics.co
 
 # Activate only after the nginx private photo path has been applied and reloaded.
 BODY_PROGRESS_UPLOAD_ENABLED = os.getenv('BODY_PROGRESS_UPLOAD_ENABLED', '0') == '1'
+
+# UI rollout switch; privacy boundaries remain enforced when disabled.
+INTERNAL_MANAGER_OPERATIONS_ENABLED = os.getenv("INTERNAL_MANAGER_OPERATIONS_ENABLED", "1") == "1"

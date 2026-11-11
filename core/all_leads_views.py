@@ -6,6 +6,10 @@ from django.contrib.auth.decorators import login_required
 from django.core import signing
 from django.core.exceptions import PermissionDenied
 from django.db.models import Case, CharField, OuterRef, Q, Subquery, Value, When
+from django.db.models.functions import Cast
+from .models import AuditLog
+from .country_workspace import scoped_queryset
+from .supervision_text import safe_label
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
@@ -41,7 +45,14 @@ def management_required(view):
 
 def archive_queryset(request):
     latest = VisitAppointment.objects.filter(lead_id=OuterRef('pk')).order_by('-created_at', '-pk')
-    qs = _lead_hub_queryset(request, ReferralLead.objects.all()).annotate(
+    base = _lead_hub_queryset(request, ReferralLead.objects.all())
+    if request.user.profile.role == 'internal_manager':
+        base = scoped_queryset(request, base)
+    elif request.user.profile.role == 'manager':
+        base = base.filter(appointments__branch_id=request.user.profile.branch_id).distinct() if request.user.profile.branch_id else base.none()
+    actions = AuditLog.objects.filter(object_type='ReferralLead', object_id=Cast(OuterRef('pk'),CharField()),action='lead_contact_result').order_by('-created_at')
+    qs = base.annotate(
+        last_action=Subquery(actions.values('created_at')[:1]),
         last_visit_status=Subquery(latest.values('status')[:1]),
         last_branch=Subquery(latest.values('branch_id')[:1]),
         last_plan_status=Subquery(latest.values('consultation_plan__status')[:1]),
@@ -68,14 +79,18 @@ def archive_queryset(request):
 @require_GET
 @management_required
 def all_leads(request):
+    supervisory=request.user.profile.role == 'internal_manager'
+    qs=archive_queryset(request)
+    flowers=EmployeeProfile.objects.filter(pk__in=qs.values('assigned_to_id')).select_related('user').distinct()
+    branches=Branch.objects.filter(pk__in=qs.values('last_branch')).order_by('name')
+    groups=CallCenterLeadGroup.objects.filter(pk__in=qs.values('group_id')).order_by('name')
     return render(request, 'core/all_leads.html', {
-        'flowers': [(p.pk, call_center_display_name(p)) for p in EmployeeProfile.objects.filter(
-            Q(role='call_center') | Q(assigned_referral_leads__isnull=False)
-        ).select_related('user').distinct()],
-        'branches': Branch.objects.all().order_by('name'),
-        'groups': CallCenterLeadGroup.objects.all().order_by('name'),
-        'states': STATES.items(),
+        'flowers':[(p.pk,safe_label(call_center_display_name(p))) for p in flowers],
+        'branches':[{'pk':b.pk,'name':safe_label(b.name)} for b in branches],
+        'groups':[{'pk':g.pk,'name':safe_label(g.name)} for g in groups],
+        'states': STATES.items(), 'supervisory':supervisory,
     })
+
 
 
 def date_boundary(value):
@@ -92,7 +107,7 @@ def date_boundary(value):
 @require_GET
 @management_required
 def all_leads_data(request):
-    params = {key: request.GET.get(key, '').strip() for key in ('q', 'flower', 'branch', 'group', 'state', 'from', 'to', 'untouched', 'sort')}
+    params = {key: request.GET.get(key, '').strip() for key in ('q', 'flower', 'branch', 'group', 'state', 'from', 'to', 'untouched', 'overdue', 'sort')}
     qs = archive_queryset(request)
     try:
         for key, field in (('flower', 'assigned_to_id'), ('branch', 'last_branch'), ('group', 'group_id')):
@@ -106,7 +121,9 @@ def all_leads_data(request):
                 raise ValueError('وضعیت نامعتبر است.')
             qs = qs.filter(archive_state=params['state'])
         if params['untouched'] == '1':
-            qs = qs.filter(status='new', contact_result='', archive_state='new')
+            qs = qs.filter(status='new', contact_result='', archive_state='new', last_action__isnull=True)
+        if params['overdue'] == '1':
+            qs = qs.filter(next_follow_up__lt=timezone.localdate(), status__in=('new','contacted','appointment'))
         if params['from']:
             qs = qs.filter(created_at__gte=date_boundary(params['from']))
         if params['to']:
@@ -115,7 +132,10 @@ def all_leads_data(request):
             raise ValueError('تاریخ شروع باید قبل از پایان باشد.')
         if params['q']:
             query = params['q'][:160].translate(str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', '01234567890123456789'))
-            qs = qs.filter(Q(full_name__icontains=query) | Q(phone__icontains=query) | Q(alternate_phone__icontains=query))
+            if request.user.profile.role == 'internal_manager':
+                qs = qs.filter(full_name__icontains=query) if not any(c.isdigit() for c in query) else qs.none()
+            else:
+                qs = qs.filter(Q(full_name__icontains=query) | Q(phone__icontains=query) | Q(alternate_phone__icontains=query))
         total = None if request.GET.get('cursor') else qs.count()
         ascending = params['sort'] == 'oldest'
         if request.GET.get('cursor'):
@@ -135,11 +155,11 @@ def all_leads_data(request):
     rows = rows[:PAGE_SIZE]
     next_cursor = signing.dumps({'date': rows[-1].created_at.isoformat(), 'id': rows[-1].pk, 'filters': params}, salt=CURSOR_SALT) if more else None
     response = JsonResponse({'total': total, 'next': next_cursor, 'items': [{
-        'id': lead.pk, 'name': lead.full_name,
-        'flower': call_center_display_name(lead.assigned_to) if lead.assigned_to_id else 'بدون مسئول',
+        'id': lead.pk, 'name': safe_label(lead.full_name),
+        'flower': safe_label(call_center_display_name(lead.assigned_to)) if lead.assigned_to_id else 'بدون مسئول',
         'date': format_jalali(timezone.localtime(lead.created_at), persian_digits=False),
         'state': lead.archive_state, 'label': STATES[lead.archive_state],
-        'url': reverse('referral_lead_manage', args=[lead.pk]),
+        'url': reverse('supervisory_lead', args=[lead.pk]) if request.user.profile.role == 'internal_manager' else reverse('referral_lead_manage', args=[lead.pk]),
     } for lead in rows]}, json_dumps_params={'ensure_ascii': False})
     response['Cache-Control'] = 'private, no-store'
     return response

@@ -1,0 +1,6 @@
+{% extends 'core/base.html' %}{% load jalali_tags %}{% block content %}
+<section class="hero"><h1>بررسی درخواست مرخصی</h1><a href="{% url 'leave_list' %}">بازگشت به کارتابل</a></section>
+<section class="panel"><h2>{{ item.user.get_full_name|default:item.user.username }}</h2><p>{{ item.user.profile.get_role_display }} · {{ item.user.profile.branch.name|default:'شعبه مشخص نشده' }}</p><p>{{ item.get_request_type_display }} · {{ item.start_date|jdate }} تا {{ item.end_date|jdate }}</p><p>{{ item.reason|linebreaksbr }}</p>
+{% if item.request_type == 'hourly' %}<p>ساعت شروع و پایان در ساختار فعلی ذخیره نشده؛ پیش از تصمیم با درخواست‌کننده بررسی شود.</p>{% endif %}
+<h3>مرخصی‌های تأییدشده هم‌زمان در همین شعبه</h3>{% for other in overlaps %}<p>{{ other.user.get_full_name|default:other.user.username }} · {{ other.start_date|jdate }} تا {{ other.end_date|jdate }}</p>{% empty %}<p>مرخصی هم‌زمانِ قابل مشاهده ثبت نشده است.</p>{% endfor %}<p>این هم‌پوشانی مربوط به تاریخ است؛ پوشش همان شیفت و ساعت هنوز محاسبه نشده است.</p>
+<form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit" class="primary">ثبت تصمیم</button></form></section>{% endblock %}

@@ -40,17 +40,15 @@ def quick_action(request):
         return JsonResponse({'ok': False, 'message': translate('action.invalid_id',language)}, status=400)
 
     if kind == 'leave':
-        obj = get_object_or_404(LeaveRequest.objects.select_related('user', 'user__profile'), pk=pk)
-        if not _allowed_manager(request, obj.user):
-            return JsonResponse({'ok': False, 'message': translate('common.access_denied',language)}, status=403)
-        if obj.status != 'pending':
-            return JsonResponse({'ok': True, 'message': translate('action.already_reviewed',language)})
-        if action not in ('approved', 'rejected'):
-            return JsonResponse({'ok': False, 'message': translate('common.invalid_result',language)}, status=400)
-        obj.status = action
-        obj.reviewed_by = request.user
-        obj.save(update_fields=['status', 'reviewed_by'])
-        return JsonResponse({'ok': True, 'message': translate('action.request_approved',language) if action == 'approved' else translate('action.request_rejected',language)})
+        from django.core.exceptions import ValidationError
+        from .leave_decisions import decide_leave, LeaveConflict
+        try:
+            decide_leave(request, pk, action, request.POST.get('manager_note', ''))
+        except ValidationError as exc:
+            return JsonResponse({'ok':False,'message':'؛ '.join(exc.messages)},status=400)
+        except LeaveConflict as exc:
+            return JsonResponse({'ok':False,'message':str(exc)},status=409)
+        return JsonResponse({'ok':True,'message':translate('action.request_approved',language) if action == 'approved' else translate('action.request_rejected',language)})
 
     if kind == 'correction':
         obj = get_object_or_404(AttendanceCorrectionRequest.objects.select_related('user', 'user__profile'), pk=pk)

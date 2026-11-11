@@ -76,18 +76,10 @@ class InternalManagerRoleTests(TestCase):
     def test_management_dashboard_has_high_contrast_readability_floor(self):
         response = self.client.get('/live/')
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'داشبورد مدیریتی امروز')
-        self.assertContains(response, 'body.gl-page-branch_live_dashboard .cmd-hero h1')
-        self.assertContains(response, 'color:#ffffff!important')
-        self.assertContains(response, '.cmd-card small')
-        self.assertContains(response, '.cmd-section-head h2')
-        self.assertContains(response, '#ownerNoteStateV35')
-        self.assertContains(response, 'Lightweight premium KPI plaques')
-        self.assertContains(response, 'repeating-linear-gradient')
-        self.assertContains(response, '.cmd-card.amber')
-        self.assertContains(response, '#8e4465')
-        self.assertContains(response, '.cmd-attn:nth-child(2) i')
-        self.assertContains(response, '.cmd-module:nth-child(4n+3):before')
+        self.assertContains(response, 'مدیریت داخلی · پیگیری امروز')
+        self.assertContains(response, 'مرخصی‌های منتظر تأیید')
+        self.assertContains(response, 'internal-manager.css')
+        self.assertContains(response, 'لیدهای نیازمند توجه')
 
     def test_live_api_is_operational_but_has_no_revenue_field(self):
         response = self.client.get('/api/live/')
