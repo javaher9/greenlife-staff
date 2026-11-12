@@ -12,13 +12,13 @@ const fs=require('fs');
    const res=await page.goto('http://127.0.0.1:8787'+path,{waitUntil:'networkidle'});
    const label=role+'-'+path.replace(/\W/g,'_')+'-'+width;
    await page.screenshot({path:'schools-qa/'+label+'.png',fullPage:true});
-   const metrics=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,heading:document.querySelector('.school-workspace h2')?getComputedStyle(document.querySelector('.school-workspace h2')).color:null,background:getComputedStyle(document.querySelector('.school-panel')||document.body).backgroundColor,body:document.body.innerText.slice(0,100)}));
+   const metrics=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,inputBackground:document.querySelector('.school-light input:not([type=checkbox])')?getComputedStyle(document.querySelector('.school-light input:not([type=checkbox])')).backgroundColor:null,heading:document.querySelector('.school-workspace h2')?getComputedStyle(document.querySelector('.school-workspace h2')).color:null,background:getComputedStyle(document.querySelector('.school-panel')||document.body).backgroundColor,body:document.body.innerText.slice(0,100)}));
    reports.push({role,path,width,status:res.status(),errors,...metrics});
    await ctx.close();
   }
  }
  fs.writeFileSync('schools-qa/results.json',JSON.stringify(reports,null,2));
  console.log(JSON.stringify(reports,null,2));
- if(reports.some(r=>r.status!==200||r.errors.length||r.scroll>r.width+2||(['consultant','doctor'].includes(r.role)&&r.heading&&r.heading!=='rgb(36, 63, 71)'))) process.exitCode=1;
+ if(reports.some(r=>r.status!==200||r.errors.length||r.scroll>r.width+2||(r.inputBackground&&r.inputBackground!=='rgb(243, 247, 246)')||(['consultant','doctor'].includes(r.role)&&r.heading&&r.heading!=='rgb(36, 63, 71)'))) process.exitCode=1;
  await browser.close();
 })();

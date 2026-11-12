@@ -12,3 +12,7 @@ body.gl-app .school-workspace :is(p,small,.school-stat span){color:var(--sc-mute
 body.gl-app .school-workspace :is(input,select,textarea){background:var(--sc-bg)!important;color:var(--sc-text)!important;-webkit-text-fill-color:var(--sc-text)!important}
 body.gl-app .school-workspace .school-btn{background:#7044a3!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
 body.gl-app .school-workspace .school-btn.secondary{background:var(--sc-panel)!important;color:var(--sc-text)!important;-webkit-text-fill-color:var(--sc-text)!important}
+
+html body.gl-app .app-main .school-workspace.school-light :is(input:not([type=checkbox]),select,textarea){background:#f3f7f6!important;background-image:none!important;color:#243f47!important;-webkit-text-fill-color:#243f47!important}
+html body.gl-app .app-main .school-workspace .school-btn{background:#7044a3!important;background-image:none!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
+html body.gl-app .app-main .school-workspace .school-btn.secondary{background:var(--sc-panel)!important;background-image:none!important;color:var(--sc-text)!important;-webkit-text-fill-color:var(--sc-text)!important}
