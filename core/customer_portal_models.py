@@ -24,12 +24,13 @@ class CustomerPortalOTP(models.Model):
 
 
 class CustomerServiceRequest(models.Model):
-    KINDS=[('visit','درخواست ویزیت'),('device','درخواست نوبت دستگاه'),('network','درخواست عضویت شبکه فروش')]
+    KINDS=[('diet','کمک و پیگیری رژیم'),('visit','درخواست ویزیت'),('device','درخواست نوبت دستگاه'),('network','درخواست عضویت شبکه فروش')]
     STATUSES=[
         ('pending','در انتظار بررسی'),('contacted','در حال پیگیری'),
-        ('booked','نوبت تأیید شد'),('declined','بسته شد'),
+        ('booked','نوبت تأیید شد'),('declined','بسته شد'),('resolved','پاسخ داده شد'),
     ]
     DAYPARTS=[('any','فرقی ندارد'),('morning','صبح'),('afternoon','بعدازظهر')]
+    request_token=models.UUIDField(null=True,blank=True,unique=True)
     member=models.ForeignKey(CustomerPortalMember,on_delete=models.PROTECT,related_name='requests')
     kind=models.CharField(max_length=12,choices=KINDS)
     branch=models.ForeignKey('core.Branch',on_delete=models.PROTECT,related_name='customer_requests')
