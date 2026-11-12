@@ -85,7 +85,7 @@ jobs:
       - name: appointments regression tests
         run: python manage.py test core.tests.test_appointments --verbosity 2
       - name: Verified Me account and cross-device sync tests
-        run: python manage.py test core.tests.test_me_sync core.tests.test_customer_portal --verbosity 2
+        run: python manage.py test core.tests.test_me_sync core.tests.test_customer_portal core.tests.test_me_diet core.tests.test_diet_companion --verbosity 2
   lead-routing:
     runs-on: ubuntu-latest
     timeout-minutes: 18
