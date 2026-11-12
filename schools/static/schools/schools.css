@@ -5,3 +5,10 @@ body:has(.school-light) .app-main{background:#f3f7f6!important;color:#243f47!imp
 /* Match the shared shell padding and keep dashboard values legible. */
 .school-workspace .school-stat b{color:var(--sc-text)!important;-webkit-text-fill-color:var(--sc-text)!important}
 @media(max-width:700px){body:has(.school-workspace) .app-main{padding-left:10px!important;padding-right:10px!important}body:has(.school-workspace) .topbar{margin-left:-10px!important;margin-right:-10px!important}}
+
+body.gl-app:has(.school-light) .app-main{background:#f3f7f6!important;color:#243f47!important}
+body.gl-app .school-workspace :is(h1,h2,h3,label,td,th,b,li,.school-timeline,.school-tag){color:var(--sc-text)!important;-webkit-text-fill-color:var(--sc-text)!important}
+body.gl-app .school-workspace :is(p,small,.school-stat span){color:var(--sc-muted)!important;-webkit-text-fill-color:var(--sc-muted)!important}
+body.gl-app .school-workspace :is(input,select,textarea){background:var(--sc-bg)!important;color:var(--sc-text)!important;-webkit-text-fill-color:var(--sc-text)!important}
+body.gl-app .school-workspace .school-btn{background:#7044a3!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
+body.gl-app .school-workspace .school-btn.secondary{background:var(--sc-panel)!important;color:var(--sc-text)!important;-webkit-text-fill-color:var(--sc-text)!important}
