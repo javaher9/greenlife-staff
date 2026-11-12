@@ -1,6 +1,7 @@
 import io
 from functools import wraps
 import qrcode
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -36,8 +37,8 @@ def audit(program, event, request, enrollment=None, details=None):
 
 
 def invitation_url(request, program):
-    # Stay on the same public host so OTP sessions and installed app share cookies.
-    return request.build_absolute_uri(reverse('schools_join', args=[program.token]))
+    # Coordinators may work on the private LAN; parents need the canonical public URL.
+    return settings.PUBLIC_BASE_URL.rstrip('/') + reverse('schools_join', args=[program.token])
 
 
 @staff_only

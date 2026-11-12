@@ -3,7 +3,7 @@ from importlib import import_module
 from unittest.mock import patch
 from django.apps import apps
 from django.contrib.auth.models import User
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from core.models import Branch, CustomerPortalMember, AuditLog
@@ -197,3 +197,23 @@ class SchoolProgramTests(TestCase):
         duplicate.profile.refresh_from_db()
         self.assertFalse(self.moradi.profile.can_manage_schools)
         self.assertFalse(duplicate.profile.can_manage_schools)
+
+    @override_settings(PUBLIC_BASE_URL='https://app.greenlifeclinics.com')
+    def test_invitation_uses_public_host_even_from_lan(self):
+        self.client.force_login(self.moradi)
+        response = self.client.get(reverse('schools_detail', args=[self.program.pk]), HTTP_HOST='192.168.40.96')
+        self.assertContains(response, 'https://app.greenlifeclinics.com/customer/schools/')
+        self.assertNotContains(response, 'http://192.168.40.96/customer/schools/')
+
+    def test_reception_changes_synchronize_family_after_commit(self):
+        from core.models import VisitAppointment
+        e = self.enrollment()
+        appointment = VisitAppointment.objects.create(branch=self.branch, full_name=e.parent_name, phone=self.member.phone, service='مدارس', appointment_date=timezone.localdate(), appointment_time='10:00', created_by=self.moradi)
+        e.visit_appointment = appointment
+        e.save()
+        with self.captureOnCommitCallbacks(execute=True):
+            appointment.status = 'arrived'
+            appointment.save()
+        e.refresh_from_db()
+        self.assertEqual(e.status, 'attended')
+        self.assertIsNotNone(e.appointment_at)
