@@ -66,6 +66,9 @@ class SharedAppointmentTests(TestCase):
         # Use a future date for booking tests; past slots on the current day
         # must remain unavailable to real users.
         self.day=timezone.localdate() + timedelta(days=1)
+        # Friday is intentionally closed; keep booking fixtures on an open day.
+        if self.day.weekday() == 4:
+            self.day += timedelta(days=1)
         self.jalali_day=format_jalali(self.day)
 
     def test_slots_run_every_fifteen_minutes_from_nine_through_eighteen(self):
