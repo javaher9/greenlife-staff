@@ -1,0 +1,2 @@
+{% extends 'core/base.html' %}{% load static %}
+{% block content %}<link rel="stylesheet" href="{% static 'schools/schools.css' %}"><div class="school-workspace {% if user.profile.role == 'consultant' or user.profile.role == 'doctor' %}school-light{% endif %}">{% block school_content %}{% endblock %}</div>{% endblock %}

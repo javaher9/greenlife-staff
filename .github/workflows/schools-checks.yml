@@ -1,0 +1,51 @@
+name: Schools and family checks
+on:
+  pull_request:
+    paths:
+      - 'schools/**'
+      - 'core/customer_portal*'
+      - 'core/templates/core/customer_portal/**'
+      - 'core/templates/core/base.html'
+      - 'core/models.py'
+      - 'core/migrations/**'
+      - 'greenlife/**'
+      - '.github/workflows/schools-checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  schools:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DJANGO_SETTINGS_MODULE: greenlife.test_settings
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      DEBUG: '1'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: pip install -r requirements.txt
+      - run: python manage.py check && python manage.py makemigrations --check --dry-run
+      - run: python manage.py test schools core.tests.test_customer_portal core.tests.test_appointments --verbosity 2
+      - run: python manage.py migrate --noinput
+      - run: python manage.py shell < schools/qa/seed.py
+      - run: npm install --no-save --package-lock=false playwright@1.56.1 && npx playwright install --with-deps chromium
+      - name: Desktop and mobile visual checks
+        run: |
+          python manage.py runserver 127.0.0.1:8787 --noreload > /tmp/schools-server.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8787/customer/manifest.webmanifest > /dev/null; then break; fi
+            sleep 1
+          done
+          node schools/qa/visual.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: schools-visual-qa
+          path: schools-qa/
+          if-no-files-found: ignore
