@@ -155,7 +155,10 @@ class SchoolProgramTests(TestCase):
         self.assertEqual(e.status, 'pending')
         e.app_activated_at = timezone.now()
         e.save()
-        payload.update(appointment_at=(timezone.localtime() + timedelta(days=3)).replace(hour=10, minute=0, second=0, microsecond=0).isoformat(), adult_outcome='none')
+        booking_day = timezone.localtime() + timedelta(days=3)
+        while booking_day.weekday() == 4:
+            booking_day += timedelta(days=1)
+        payload.update(appointment_at=booking_day.replace(hour=10, minute=0, second=0, microsecond=0).isoformat(), adult_outcome='none')
         self.assertEqual(self.client.post(url, payload).status_code, 302)
         e.refresh_from_db()
         self.assertEqual(e.status, 'booked')
