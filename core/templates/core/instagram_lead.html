@@ -333,14 +333,18 @@
       height:auto;min-height:0!important;margin:0!important;
       padding:0!important;pointer-events:auto;
     }
-    .approved-poster .poster-field.name-field{
-      left:5.66%;top:37.45%;width:54.30%;height:6.68%;
-    }
-    .approved-poster .poster-field.phone-field{
-      left:5.66%;top:45.97%;width:54.30%;height:6.68%;
-    }
-    .approved-poster .poster-field.details-field{
-      left:5.66%;top:54.56%;width:54.30%;height:18.00%;
+    /* On tablets and desktops, each editable field must fill the
+       ENTIRE corresponding printed card, not its single-line label. */
+    @media (min-width:651px){
+      .approved-poster .poster-live-form .poster-field.name-field{
+        left:5.66%;top:37.45%;width:54.30%;height:6.68%!important;
+      }
+      .approved-poster .poster-live-form .poster-field.phone-field{
+        left:5.66%;top:45.97%;width:54.30%;height:6.68%!important;
+      }
+      .approved-poster .poster-live-form .poster-field.details-field{
+        left:5.66%;top:54.56%;width:54.30%;height:18.00%!important;
+      }
     }
     .approved-poster .poster-field .poster-a11y-label{
       position:absolute!important;clip-path:inset(50%)!important;
