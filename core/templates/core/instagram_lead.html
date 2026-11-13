@@ -407,9 +407,96 @@
     }
     .approved-poster.poster-unavailable .poster-image-error{display:block}
     .approved-poster.poster-unavailable{background:#76528c}
-    @media(max-width:480px){
+    /* Accessibility and actual usability: do not hide real inputs under the poster. */
+    .approved-poster .poster-field input,
+    .approved-poster .poster-field textarea,
+    .approved-poster .poster-field input:not(:focus):not(.has-value),
+    .approved-poster .poster-field textarea:not(:focus):not(.has-value){
+      background:#fbf3ff!important;color:#301b42!important;
+      border:2px solid #e2c6ed!important;
+      box-shadow:0 3px 15px rgba(64,23,91,.20)!important;
+      caret-color:#4a2263!important;
+    }
+    .approved-poster .poster-field .poster-a11y-label{
+      position:absolute!important;z-index:4;display:block!important;
+      top:7%;right:5%;width:auto!important;height:auto!important;
+      clip:auto!important;clip-path:none!important;overflow:visible!important;
+      white-space:nowrap!important;
+      color:#4c2465;font:900 clamp(12px,2.1cqw,19px)/1.7 Vazirmatn,Tahoma,sans-serif;
+      pointer-events:none;
+    }
+    .approved-poster .poster-field input,
+    .approved-poster .poster-field textarea{
+      padding:30px 7% 8px 9%!important;
+      border-radius:3cqw!important;
+    }
+    .approved-poster .poster-field textarea,
+    .approved-poster .poster-field textarea:focus,
+    .approved-poster .poster-field textarea.has-value{
+      padding:37px 7% 8px 9%!important;
+    }
+    .approved-poster .poster-field input::placeholder,
+    .approved-poster .poster-field textarea::placeholder{
+      color:#ae96b9!important;opacity:1!important;font-weight:400!important;
+    }
+    .approved-poster .poster-submit,
+    .approved-poster .poster-submit:not(:disabled){
+      background:linear-gradient(115deg,#67218b,#9d45bb)!important;
+      color:#fff!important;border:1px solid #eed2ff!important;
+      box-shadow:0 5px 20px rgba(80,19,113,.3)!important;
+      font:900 clamp(15px,2.7cqw,25px)/1.5 Vazirmatn,Tahoma,sans-serif!important;
+    }
+    .approved-poster .poster-submit:hover{filter:brightness(1.08)}
+    @media(max-width:650px){
+      body.advertising-page:has(.approved-poster){background:#68427d}
+      .approved-poster{
+        aspect-ratio:auto;min-height:0;overflow:hidden;
+        padding-top:240px;background:linear-gradient(145deg,#744a8b,#ae7fc4);
+      }
+      /* On small screens show only the portrait part of the original artwork.
+         The fake printed poster fields are cropped out; live form is below. */
+      .approved-poster>.poster-art{
+        position:absolute;top:0;left:-100%;width:200%;height:auto;min-height:240px;
+        object-fit:cover;object-position:right top;max-width:none;
+      }
+      .approved-poster .poster-live-form{
+        position:relative!important;inset:auto!important;
+        height:auto!important;min-height:0!important;
+        padding:17px 14px 23px!important;
+        display:flex!important;flex-direction:column!important;gap:13px!important;
+        background:linear-gradient(170deg,#805297,#633678)!important;
+        pointer-events:auto;
+      }
+      .approved-poster .poster-live-form .poster-field{
+        position:relative!important;inset:auto!important;
+        top:auto!important;left:auto!important;right:auto!important;
+        display:block!important;width:100%!important;height:auto!important;
+        min-height:0!important;
+      }
       .approved-poster .poster-field input,
-      .approved-poster .poster-field textarea{border-width:1px!important}
+      .approved-poster .poster-field textarea{
+        position:relative!important;inset:auto!important;
+        min-height:85px!important;height:85px!important;
+        font-size:17px!important;border-radius:17px!important;
+        padding:32px 17px 10px!important;
+      }
+      .approved-poster .poster-field textarea,
+      .approved-poster .poster-field textarea:focus,
+      .approved-poster .poster-field textarea.has-value{
+        height:138px!important;min-height:138px!important;
+        padding:43px 17px 10px!important;
+      }
+      .approved-poster .poster-field .poster-a11y-label{
+        top:10px;right:17px;font-size:16px;
+      }
+      .approved-poster .poster-submit,.approved-poster .poster-submit:not(:disabled){
+        position:relative!important;inset:auto!important;left:auto!important;top:auto!important;
+        display:block!important;width:100%!important;height:59px!important;min-height:59px!important;
+        border-radius:32px!important;font-size:20px!important;margin:3px 0 0!important;
+      }
+      .approved-poster .poster-field .error{
+        position:relative;top:auto;display:block;margin-top:4px;font-size:12px
+      }
     }
   </style>
 </head>
