@@ -1,0 +1,4 @@
+{% extends 'schools/base.html' %}{% block school_content %}
+<div class="school-head"><h1>گزارش همکاری {{ program.organization.name }}</h1><button class="school-btn no-print" onclick="window.print()">چاپ / ذخیره PDF</button></div>
+<article class="school-panel"><h2>{{ program.title }}</h2><p>شعبه {{ program.organization.branch.name }} · تاریخ گزارش {{ today|date:'Y/m/d' }}</p><p>وضعیت همکاری: {{ program.get_state_display }}</p>{% if counts.registered >= 10 %}<div class="school-stats"><div class="school-stat"><b>{{ counts.registered }}</b><span>خانواده ثبت‌نام‌شده</span></div><div class="school-stat"><b>{{ counts.attended }}</b><span>خانواده مراجعه‌کرده</span></div></div>{% else %}<p>مشارکت هنوز برای گزارش آماری تجمیعی کافی نیست.</p>{% endif %}<p>نتایج فردی فرزندان فقط در پرونده خصوصی خانواده ارائه می‌شود.</p><p>برای هماهنگی جلسه آموزشی والدین با رابط گرین‌لایف در شعبه تماس بگیرید.</p></article>
+{% endblock %}

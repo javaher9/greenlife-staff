@@ -3,6 +3,8 @@ SENSITIVE_KEYS={'password','password_confirm','new_password','csrfmiddlewaretoke
 def _safe_payload(request):
     if getattr(getattr(request, 'resolver_match', None), 'url_name', None) == 'intake_weight_preview':
         return {}  # Demo answers must not be retained, even for signed-in staff.
+    if request.path.startswith(('/schools/', '/customer/family/', '/customer/schools/')):
+        return {}  # School audit stores events; child medical data stays in its protected record.
     data={}
     try:
         for key in request.POST.keys():

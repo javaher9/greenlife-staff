@@ -473,6 +473,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     {% if executive_access or user.is_superuser or user.profile.role == 'admin' %}
     <a href="{% url 'whatsapp_hub' %}" class="{% if request.resolver_match.url_name == 'whatsapp_hub' %}is-active{% endif %}"><span class="nav-ico">◉</span><span>واتساپ</span><b class="gl-private-badge">WA</b></a>
     {% endif %}
+    {% if schools_access %}<a href="{% url 'schools_dashboard' %}" class="{% if request.path|slice:':9' == '/schools/' %}is-active{% endif %}"><span class="nav-ico">▦</span><span>مدارس</span></a>{% elif schools_clinical_access %}<a href="{% url 'schools_clinical' %}"><span class="nav-ico">▦</span><span>مدارس · پرونده رشد</span></a>{% endif %}
     {% if user.profile.role != 'referrer' and user.profile.role != 'doctor' %}
     <a href="{% url 'internal_messages' %}" class="{% if request.resolver_match.url_name == 'internal_messages' %}is-active{% endif %}"><span class="nav-ico">✉</span><span>{% gl_t 'common.internal_messages' %}</span></a>
     {% endif %}

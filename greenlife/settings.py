@@ -29,7 +29,7 @@ for _origin in ('https://staff.greenlifeclinics.com','https://app.greenlifeclini
     if _origin not in CSRF_TRUSTED_ORIGINS:
         CSRF_TRUSTED_ORIGINS.append(_origin)
 CSRF_FAILURE_VIEW = 'core.security_views.csrf_failure'
-INSTALLED_APPS = ['django.contrib.admin','django.contrib.auth','django.contrib.contenttypes','django.contrib.sessions','django.contrib.messages','django.contrib.staticfiles','core','public_network','intake','payments','recruitment']
+INSTALLED_APPS = ['django.contrib.admin','django.contrib.auth','django.contrib.contenttypes','django.contrib.sessions','django.contrib.messages','django.contrib.staticfiles','core','public_network','intake','payments','recruitment','schools']
 MIDDLEWARE = ['django.middleware.security.SecurityMiddleware','whitenoise.middleware.WhiteNoiseMiddleware','django.contrib.sessions.middleware.SessionMiddleware','django.middleware.common.CommonMiddleware','django.middleware.csrf.CsrfViewMiddleware','django.contrib.auth.middleware.AuthenticationMiddleware',
     'core.language_workspace.StaffLanguageMiddleware','core.country_workspace.CountryWorkspaceMiddleware','core.localized_response.StaticUiLocalizationMiddleware','core.call_center_views.CallCenterCallTrackingMiddleware','public_network.middleware.PublicNetworkMemberMiddleware','core.audit.AuditLogMiddleware','django.contrib.messages.middleware.MessageMiddleware','django.middleware.clickjacking.XFrameOptionsMiddleware']
 
@@ -50,7 +50,7 @@ else:
     SESSION_COOKIE_SECURE = not DEBUG or os.getenv('SESSION_COOKIE_SECURE', '0') == '1'
 
 ROOT_URLCONF='greenlife.urls'
-TEMPLATES=[{'BACKEND':'django.template.backends.django.DjangoTemplates','DIRS':[BASE_DIR/'templates'],'APP_DIRS':True,'OPTIONS':{'context_processors':['django.template.context_processors.request','django.contrib.auth.context_processors.auth','django.contrib.messages.context_processors.messages','core.context_processors.executive_access','core.context_processors.call_center_flower_user','core.context_processors.country_workspace','core.context_processors.staff_language','core.context_processors.recruitment_access']}}]
+TEMPLATES=[{'BACKEND':'django.template.backends.django.DjangoTemplates','DIRS':[BASE_DIR/'templates'],'APP_DIRS':True,'OPTIONS':{'context_processors':['django.template.context_processors.request','django.contrib.auth.context_processors.auth','django.contrib.messages.context_processors.messages','core.context_processors.executive_access','core.context_processors.call_center_flower_user','core.context_processors.country_workspace','core.context_processors.staff_language','core.context_processors.recruitment_access','schools.permissions.school_access']}}]
 WSGI_APPLICATION='greenlife.wsgi.application'
 DATABASES={'default':{'ENGINE':'django.db.backends.postgresql','NAME':os.getenv('POSTGRES_DB','greenlife'),'USER':os.getenv('POSTGRES_USER','greenlife'),'PASSWORD':os.getenv('POSTGRES_PASSWORD','change-me'),'HOST':os.getenv('POSTGRES_HOST','db'),'PORT':os.getenv('POSTGRES_PORT','5432')}}
 AUTH_PASSWORD_VALIDATORS=[]

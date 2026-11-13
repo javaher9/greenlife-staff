@@ -130,6 +130,7 @@ class EmployeeProfile(models.Model):
         default=False,
         help_text='مجوز فردی دورکاری: ورود و خروج از راه دور بدون GPS شعبه، با ثبت استراحت. فقط برای کال‌سنتر.',
     )
+    can_manage_schools=models.BooleanField(default=False,help_text='اختیار کامل مدارس شعبه بدون تأیید مدیر')
     can_send_marketing_sms=models.BooleanField(default=False,help_text='اجازه ارسال پیامک تکی و گروهی، بدون دسترسی به تنظیمات درگاه.')
     can_manage_call_center_groups=models.BooleanField(
         default=False,

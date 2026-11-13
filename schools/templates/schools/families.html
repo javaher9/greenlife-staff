@@ -1,0 +1,5 @@
+{% extends 'schools/base.html' %}{% block school_content %}
+<div class="school-head"><div><h1>خانواده‌ها و کارتابل پیگیری</h1><p>{{ families.paginator.count }} خانواده با فیلتر انتخاب‌شده · تاریخ‌ها به وقت تهران</p></div><a class="school-btn secondary" href="{% url 'schools_dashboard' %}">بازگشت به مدارس</a></div>
+<form class="school-filters" method="get">{% for k,v in request.GET.items %}{% if k != 'parent' and k != 'page' %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}<label>نام والد یا شماره تأییدشده<input name="parent" value="{{ request.GET.parent }}" placeholder="جست‌وجوی خانواده"></label><button class="school-btn">جستجو</button><a class="school-btn secondary" href="{% url 'schools_families' %}">همه خانواده‌ها</a></form>
+<section class="school-panel">{% include 'schools/family_rows.html' %}{% include 'schools/pagination.html' with page=families %}</section>
+{% endblock %}
