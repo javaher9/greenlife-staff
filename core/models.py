@@ -2270,5 +2270,6 @@ from .body_progress_models import BodyProgressPhoto
 from .me_sync_models import MeAccountState, MeDailyAward, MeSyncAudit
 
 from .me_diet_models import MeMealReport
+from .me_nutrition_models import MeNutritionProgress
 
 from .intake_models import CustomerIntake, CustomerIntakePhoto, CustomerRequestEvent
