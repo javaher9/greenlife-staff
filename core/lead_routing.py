@@ -551,7 +551,7 @@ def release_pending_leads_if_ready(*, force=False, now=None):
     pending = list(
         ReferralLead.objects.select_for_update(of=('self',))
         .select_related('referrer', 'country')
-        .filter(assigned_to__isnull=True, status__in=OPEN_ROUTING_STATUSES,
+        .filter(assigned_to__isnull=True, school_enrollment__isnull=True, status__in=OPEN_ROUTING_STATUSES,
                 created_at__lte=local_now)
         .order_by('created_at', 'id')
     )
@@ -670,6 +670,8 @@ def _release_before_live_assignment():
 
 @transaction.atomic
 def assign_external_lead(lead, channel):
+    if lead.school_enrollment_id:
+        return lead.assigned_to
     _release_before_live_assignment()
     lead.refresh_from_db(fields=['assigned_to', 'group', 'assigned_at', 'country'])
     if lead.assigned_to_id:
@@ -700,6 +702,8 @@ def assign_external_lead(lead, channel):
 
 @transaction.atomic
 def assign_referral_lead(lead):
+    if lead.school_enrollment_id:
+        return lead.assigned_to
     if lead.assigned_to_id:
         if not lead.group_id:
             lead.group = _group_for(lead.assigned_to, 'شبکه فروش پرسنل', is_default=True)
@@ -732,6 +736,8 @@ def assign_referral_lead(lead):
 
 @transaction.atomic
 def assign_social_lead(lead, group_name='اینستاگرام - لینک', notification_title='لید جدید اینستاگرام'):
+    if lead.school_enrollment_id:
+        return lead.assigned_to
     _release_before_live_assignment()
     lead.refresh_from_db(fields=['assigned_to', 'group', 'assigned_at', 'country'])
     if lead.assigned_to_id:

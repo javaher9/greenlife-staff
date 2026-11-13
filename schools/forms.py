@@ -6,6 +6,11 @@ from .models import SchoolProgram, Child, GrowthRecord, FamilyEnrollment
 class ProgramForm(forms.ModelForm):
     school_name = forms.CharField(label='نام مدرسه', max_length=160)
     branch = forms.ModelChoiceField(label='شعبه', queryset=None)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['school_name'].help_text = 'مثال: دبستان مهر نیاوران؛ نام کامل مدرسه را وارد کنید.'
+        self.fields['title'].help_text = 'مثال: پایه سوم، پاییز ۱۴۰۵. نام مدرسه و این گروه در توضیحات لید گندم ثبت می‌شود.'
+        self.fields['state'].help_text = 'برای استفاده والدین از لینک و QR، «ثبت‌نام فعال» را انتخاب کنید. نصب اپ لازم نیست.'
     class Meta:
         model = SchoolProgram
         fields = ['school_name', 'branch', 'title', 'contact_name', 'contact_phone', 'capacity', 'state', 'starts_on', 'ends_on', 'terms', 'recorded_cost']
@@ -48,8 +53,6 @@ class CoordinationForm(forms.ModelForm):
     def clean(self):
         data = super().clean()
         state = data.get('status')
-        if state in FamilyEnrollment.OCCUPIED and not self.instance.app_activated_at:
-            self.add_error('status', 'ابتدا والد باید گرین‌لایف من را فعال کند.')
         if state == 'booked' and data.get('appointment_at'):
             at = data['appointment_at']
             if at <= timezone.now():

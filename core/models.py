@@ -293,6 +293,7 @@ class DuplicateLeadError(ValidationError):
 
 
 class ReferralLead(models.Model):
+    school_enrollment=models.OneToOneField('schools.FamilyEnrollment',on_delete=models.PROTECT,null=True,blank=True,related_name='lead')
     CONTACT_RESULT=[('follow_up','نیاز به پیگیری'),('appointment','نوبت ثبت شد'),('no_answer','پاسخ نداد'),('won','فروش موفق'),('sale_lost','فروش ناموفق'),('not_interested','تمایل ندارد')]
     STATUS=[
         ('new','جدید'),('contacted','تماس گرفته شد'),('appointment','نوبت ثبت شد'),
@@ -346,6 +347,7 @@ class ReferralLead(models.Model):
             return None
         qs=cls.objects.filter(
             created_at__gte=(now or timezone.now())-LEAD_DUPLICATE_WINDOW,
+            school_enrollment__isnull=True,
         )
         if exclude_pk:
             qs=qs.exclude(pk=exclude_pk)
@@ -362,7 +364,7 @@ class ReferralLead(models.Model):
     def clean(self):
         super().clean()
         self.phone=normalize_lead_phone(self.phone)
-        if self._state.adding and self.phone:
+        if self._state.adding and self.phone and not self.school_enrollment_id:
             duplicate=self.recent_duplicate_for_phone(self.phone)
             if duplicate:
                 raise ValidationError({'phone':LEAD_DUPLICATE_MESSAGE})
@@ -394,7 +396,9 @@ class ReferralLead(models.Model):
             if kwargs.get('update_fields') is not None:
                 kwargs['update_fields']=set(kwargs['update_fields'])|{'initial_description'}
         self.phone=normalize_lead_phone(self.phone)
-        if not (self._state.adding and self.phone):
+        # School follow-up is a distinct, consented task, unique per enrollment.
+        # Never steal a same-phone commercial lead from its existing operator.
+        if self.school_enrollment_id or not (self._state.adding and self.phone):
             return super().save(*args,**kwargs)
 
         # Serialize same-phone inserts in PostgreSQL so two simultaneous

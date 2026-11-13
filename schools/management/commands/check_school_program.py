@@ -25,6 +25,8 @@ class Command(BaseCommand):
                    (normalized(p.user.last_name) == 'مرادی' or normalized(p.user.username) == 'moradi')]
         ready = len(matches) == 1 and can_manage(matches[0].user)
         self.stdout.write(f'niavaran_moradi_matches={len(matches)} authorized={int(ready)}')
+        from schools.services import gandom_operator
+        self.stdout.write(f'gandom_ready={int(gandom_operator() is not None)} web_enrollment_without_install=1')
         if options['require_niavaran'] and not ready:
             raise CommandError('Exact Niavaran coordinator is not uniquely authorized; no access was changed.')
         users = [('coordinator', matches[0].user)] if ready else []

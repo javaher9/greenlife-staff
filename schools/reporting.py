@@ -5,7 +5,7 @@ from django.utils.dateparse import parse_date
 from .models import FamilyEnrollment
 
 METRICS = [('all', 'ثبت‌نام خانواده'), ('activated', 'فعال‌سازی گرین‌لایف من'), ('attended', 'مراجعه خانواده'), ('requested', 'درخواست مشاوره والد'), ('treatment', 'شروع درمان والد')]
-TASKS = [('new', 'ثبت‌نام جدید'), ('pending', 'اپ فعال نشده'), ('ready', 'نوبت نگرفته'), ('today', 'نوبت امروز'), ('no_show', 'عدم حضور'), ('followup', 'موعد پیگیری')]
+TASKS = [('new', 'ثبت‌نام جدید'), ('pending', 'پذیرش تکمیل نشده'), ('ready', 'نوبت نگرفته'), ('today', 'نوبت امروز'), ('no_show', 'عدم حضور'), ('followup', 'موعد پیگیری')]
 
 def criterion(key):
     now = timezone.now()
@@ -13,8 +13,8 @@ def criterion(key):
         'all': Q(), 'activated': Q(app_activated_at__isnull=False),
         'attended': Q(status='attended'), 'requested': Q(adult_opt_in=True),
         'treatment': Q(adult_opt_in=True, adult_outcome='treatment'),
-        'new': Q(created_at__gte=now-timedelta(days=2), status='pending', staff_note=''),
-        'pending': Q(app_activated_at__isnull=True) & ~Q(status='cancelled'),
+        'new': Q(created_at__gte=now-timedelta(days=2), status__in=('pending', 'ready', 'waiting'), staff_note=''),
+        'pending': Q(status='pending'),
         'ready': Q(status='ready'), 'today': Q(appointment_at__date=timezone.localdate(), status='booked'),
         'no_show': Q(visit_appointment__status='no_show') | Q(status='booked', appointment_at__lt=now),
         'followup': Q(next_follow_up_at__lte=now) & ~Q(status='cancelled'),

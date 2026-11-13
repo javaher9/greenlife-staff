@@ -17,7 +17,7 @@ from django.views.decorators.http import require_POST, require_http_methods
 from core.models import Branch, CustomerPortalMember
 from core.customer_portal_views import _require_member
 from .models import Organization, SchoolProgram, FamilyEnrollment, Child, SchoolAudit
-from .services import sync_appointment
+from .services import sync_appointment, ensure_school_lead
 from .forms import ProgramForm, EnrollmentForm, ChildForm, CoordinationForm, GrowthForm
 from .permissions import can_manage, can_clinical, is_executive, programs_for
 from .reporting import select, metric_cards, financials, criterion, TASKS
@@ -184,7 +184,7 @@ def coordinate(request, pk):
                         return redirect('schools_detail', pk=enrollment.program_id)
     phone = enrollment.member.phone
     whatsapp_phone = '98' + phone[1:] if phone.startswith('0') else phone.lstrip('+')
-    coordination_message = 'سلام؛ برای ادامه ثبت‌نام طرح مدرسه و فعال‌سازی پرونده خانواده در گرین‌لایف من، با همان شماره تأییدشده وارد شوید: ' + settings.PUBLIC_BASE_URL.rstrip('/') + reverse('schools_family')
+    coordination_message = 'سلام؛ برای مشاهده ثبت‌نام طرح مدرسه و پرونده خانواده، بدون نصب اپ و با همان شماره تأییدشده وارد شوید: ' + settings.PUBLIC_BASE_URL.rstrip('/') + reverse('schools_family')
     return render(request, 'schools/coordinate.html', {'enrollment': enrollment, 'form': form, 'whatsapp_phone': whatsapp_phone, 'coordination_message': coordination_message})
 
 
@@ -212,6 +212,7 @@ def join(request, token):
             if not program.is_open:
                 return render(request, 'schools/join.html', {'program': program}, status=409)
             enrollment, created = FamilyEnrollment.objects.get_or_create(program=program, member=member, defaults={
+                'status': 'ready' if program.enrollments.filter(status__in=FamilyEnrollment.OCCUPIED).count() < program.capacity else 'waiting',
                 'parent_name': form.cleaned_data['parent_name'], 'consent_at': timezone.now(), 'terms_snapshot': program.terms,
                 'adult_opt_in': form.cleaned_data['adult_opt_in'], 'adult_opt_in_at': timezone.now() if form.cleaned_data['adult_opt_in'] else None,
                 'adult_outcome': 'requested' if form.cleaned_data['adult_opt_in'] else 'none',
@@ -219,6 +220,7 @@ def join(request, token):
             if created:
                 Child.objects.create(enrollment=enrollment, **{k: form.cleaned_data[k] for k in ['name', 'birth_date', 'sex']})
                 audit(program, 'parent_registered', request, enrollment)
+            ensure_school_lead(enrollment)
         return redirect('schools_family')
     return render(request, 'schools/register.html', {'program': program, 'form': form})
 
@@ -240,15 +242,14 @@ def family(request):
             enrollment = FamilyEnrollment.objects.select_for_update().get(pk=enrollment.pk)
             action = request.POST.get('action')
             if action == 'activate':
-                # UX signal only: never used to authorize identity or medical access.
-                if request.POST.get('standalone') != '1':
-                    return JsonResponse({'error': 'اپ را از صفحهٔ اصلی گوشی باز کنید.'}, status=400)
-                if not enrollment.app_activated_at:
+                # Optional install telemetry; admission works in an ordinary browser.
+                if request.POST.get('standalone') == '1' and not enrollment.app_activated_at:
                     enrollment.app_activated_at = timezone.now()
                 if enrollment.status in ('pending', 'waiting') and program.is_open:
                     occupied = program.enrollments.filter(status__in=FamilyEnrollment.OCCUPIED).count()
                     enrollment.status = 'ready' if occupied < program.capacity else 'waiting'
                 enrollment.save(update_fields=['app_activated_at', 'status'])
+                ensure_school_lead(enrollment)
             elif action == 'cancel':
                 if enrollment.status == 'attended':
                     return JsonResponse({'error': 'برای اصلاح سابقهٔ مراجعه با کلینیک تماس بگیرید.'}, status=400)
@@ -257,6 +258,8 @@ def family(request):
                     from core.models import VisitAppointment
                     VisitAppointment.objects.filter(pk=enrollment.visit_appointment_id).update(status='cancelled')
                 enrollment.save(update_fields=['status'])
+                from core.models import ReferralLead
+                ReferralLead.objects.filter(school_enrollment=enrollment).update(status='lost', notes='ثبت‌نام طرح مدرسه توسط والد لغو شد؛ برای این درخواست تماس نگیرید.')
             elif action == 'adult_opt_in':
                 enrollment.adult_opt_in = request.POST.get('adult_opt_in') == '1'
                 enrollment.adult_opt_in_at = timezone.now() if enrollment.adult_opt_in else None
