@@ -30,6 +30,10 @@ class SchoolProgram(models.Model):
     ends_on = models.DateField('پایان ثبت‌نام', null=True, blank=True)
     terms = models.TextField('خدمات و هزینه‌ها', max_length=2000)
     coordinator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='school_programs')
+    contact_name = models.CharField('رابط مدرسه', max_length=140, blank=True)
+    contact_phone = models.CharField('شماره رابط', max_length=24, blank=True)
+    invitation_views = models.PositiveIntegerField(default=0)
+    recorded_cost = models.DecimalField('هزینه ثبت‌شده طرح (تومان)', max_digits=15, decimal_places=0, null=True, blank=True, validators=[MinValueValidator(0)])
     created_at = models.DateTimeField(auto_now_add=True)
 
     @property
@@ -57,6 +61,8 @@ class FamilyEnrollment(models.Model):
     appointment_at = models.DateTimeField(null=True, blank=True)
     visit_appointment = models.OneToOneField('core.VisitAppointment', on_delete=models.SET_NULL, null=True, blank=True, related_name='school_family')
     staff_note = models.CharField(max_length=500, blank=True)
+    next_follow_up_at = models.DateTimeField('پیگیری بعدی', null=True, blank=True)
+    contract_amount = models.DecimalField('مبلغ قرارداد والد (تومان)', max_digits=15, decimal_places=0, null=True, blank=True, validators=[MinValueValidator(0)])
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

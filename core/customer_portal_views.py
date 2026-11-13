@@ -40,7 +40,7 @@ def _role(request):
 def _is_staff_allowed(request,kind):
     role=_role(request)
     return role in {
-        'visit':STAFF_VISIT,'device':STAFF_DEVICE,'network':STAFF_NETWORK,
+        'diet':STAFF_VISIT,'visit':STAFF_VISIT,'device':STAFF_DEVICE,'network':STAFF_NETWORK,
     }.get(kind,())
 
 
@@ -334,7 +334,7 @@ def _visible_staff_requests(request):
         return qs
     profile=getattr(request.user,'profile',None)
     if role=='call_center':
-        return qs.filter(kind='visit')
+        return qs.filter(kind__in=('visit','diet'))
     if role=='consultant':
         return qs.filter(kind='device',branch_id=profile.branch_id) if profile and profile.branch_id else qs.none()
     if role=='manager':
@@ -347,7 +347,7 @@ def staff_customer_requests(request):
     _staff_gate(request)
     qs=_visible_staff_requests(request)
     selected=request.GET.get('status','pending')
-    if selected not in ('pending','contacted','booked','declined','all'):
+    if selected not in ('pending','contacted','booked','declined','resolved','all'):
         selected='pending'
     if selected!='all':
         qs=qs.filter(status=selected)
@@ -370,6 +370,13 @@ def staff_customer_request_action(request,pk):
         if action=='claim' and row.status=='pending':
             row.status='contacted'
             row.assigned_to=getattr(request.user,'profile',None)
+        elif action=='resolve' and row.kind=='diet' and row.status in ('pending','contacted'):
+            note=request.POST.get('staff_note','').strip()
+            if not note:
+                raise PermissionDenied('پاسخ قابل نمایش به مراجع را وارد کنید.')
+            row.staff_note=note[:300]
+            row.status='resolved'
+            row.resolved_by=request.user
         elif action=='decline' and row.status in ('pending','contacted'):
             note=request.POST.get('staff_note','').strip()
             if not note:
@@ -377,7 +384,7 @@ def staff_customer_request_action(request,pk):
             row.staff_note=note[:300]
             row.status='declined'
             row.resolved_by=request.user
-        elif action=='book' and row.status in ('pending','contacted') and row.kind!='network':
+        elif action=='book' and row.status in ('pending','contacted') and row.kind in ('visit','device'):
             id_text=request.POST.get('booking_id','').strip()
             if not id_text.isdigit():
                 raise PermissionDenied('برای تأیید، شماره نوبت واقعی ثبت‌شده در CRM را وارد کنید.')

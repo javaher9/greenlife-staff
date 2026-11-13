@@ -6,7 +6,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction, IntegrityError
-from django.db.models import Count, Q
+from django.db.models import Count, Q, F
+from django.core.paginator import Paginator
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -19,6 +20,7 @@ from .models import Organization, SchoolProgram, FamilyEnrollment, Child, School
 from .services import sync_appointment
 from .forms import ProgramForm, EnrollmentForm, ChildForm, CoordinationForm, GrowthForm
 from .permissions import can_manage, can_clinical, is_executive, programs_for
+from .reporting import select, metric_cards, financials, criterion, TASKS
 
 
 def staff_only(view):
@@ -43,17 +45,48 @@ def invitation_url(request, program):
 
 @staff_only
 def dashboard(request):
-    programs = programs_for(request.user).annotate(
-        family_count=Count('enrollments', distinct=True),
-        activated=Count('enrollments', filter=Q(enrollments__app_activated_at__isnull=False), distinct=True),
-        attended=Count('enrollments', filter=Q(enrollments__status='attended'), distinct=True),
-        adult_requests=Count('enrollments', filter=Q(enrollments__adult_opt_in=True), distinct=True),
-        treatments=Count('enrollments', filter=Q(enrollments__adult_outcome='treatment'), distinct=True),
+    scope = programs_for(request.user)
+    programs, families = select(request, scope)
+    programs = programs.annotate(
+        family_count=Count('enrollments', filter=Q(enrollments__in=families), distinct=True),
+        activated=Count('enrollments', filter=Q(enrollments__in=families, enrollments__app_activated_at__isnull=False), distinct=True),
+        attended=Count('enrollments', filter=Q(enrollments__in=families, enrollments__status='attended'), distinct=True),
+        adult_requests=Count('enrollments', filter=Q(enrollments__in=families, enrollments__adult_opt_in=True), distinct=True),
+        treatments=Count('enrollments', filter=Q(enrollments__in=families, enrollments__adult_opt_in=True, enrollments__adult_outcome='treatment'), distinct=True),
+        occupied=Count('enrollments', filter=Q(enrollments__status__in=FamilyEnrollment.OCCUPIED), distinct=True),
     ).order_by('-created_at')
-    query = request.GET.get('q', '').strip()[:160]
-    if query:
-        programs = programs.filter(Q(organization__name__icontains=query) | Q(title__icontains=query))
-    return render(request, 'schools/dashboard.html', {'programs': programs, 'query': query, 'executive': is_executive(request.user)})
+    stages = [{'key': key, 'label': label, 'count': programs.filter(state=key).count()} for key, label in SchoolProgram.STATES]
+    finance = financials(families, programs) if is_executive(request.user) else None
+    if finance and (request.GET.get('from') or request.GET.get('to')):
+        finance['estimate'] = None  # Costs belong to whole cohorts, not a registration date slice.
+    return render(request, 'schools/dashboard.html', {
+        'programs': Paginator(programs, 24).get_page(request.GET.get('page')), 'query': request.GET.get('q', ''),
+        'executive': is_executive(request.user), 'metrics': metric_cards(request, families), 'tasks': metric_cards(request, families, TASKS),
+        'finance': finance,
+        'stages': stages, 'states': SchoolProgram.STATES,
+        'branches': Branch.objects.filter(pk__in=scope.values('organization__branch_id')),
+        'coordinators': scope.values('coordinator_id', 'coordinator__first_name', 'coordinator__last_name', 'coordinator__username').distinct(),
+    })
+
+
+@staff_only
+def families_list(request):
+    programs, families = select(request, programs_for(request.user))
+    bucket = request.GET.get('bucket', 'all')
+    families = families.filter(criterion(bucket)).select_related('member', 'program__organization', 'visit_appointment').prefetch_related('children')
+    search = request.GET.get('parent', '').strip()[:100]
+    if search:
+        families = families.filter(Q(parent_name__icontains=search) | Q(member__phone__icontains=search))
+    return render(request, 'schools/families.html', {'families': Paginator(families, 40).get_page(request.GET.get('page')), 'programs': programs, 'bucket': bucket})
+
+
+@staff_only
+def school_report(request, pk):
+    program = get_object_or_404(programs_for(request.user), pk=pk)
+    families = program.enrollments.all()
+    counts = {'registered': families.count(), 'attended': families.filter(status='attended').count()}
+    # No child-level health information, names, phone numbers or sales figures in school exports.
+    return render(request, 'schools/report.html', {'program': program, 'counts': counts, 'today': timezone.localdate()})
 
 
 @staff_only
@@ -65,6 +98,8 @@ def program_edit(request, pk=None):
     if not is_executive(request.user):
         branches = branches.filter(pk=request.user.profile.branch_id)
     form.fields['branch'].queryset = branches
+    if not is_executive(request.user):
+        form.fields.pop('recorded_cost')
     if request.method == 'POST' and form.is_valid():
         with transaction.atomic():
             if program:
@@ -91,7 +126,8 @@ def program_edit(request, pk=None):
 def detail(request, pk):
     program = get_object_or_404(programs_for(request.user), pk=pk)
     families = program.enrollments.select_related('member').prefetch_related('children')
-    return render(request, 'schools/detail.html', {'program': program, 'families': families, 'invite_url': invitation_url(request, program), 'audit_entries': program.audit_entries.select_related('actor').order_by('-created_at')[:30]})
+    occupied = families.filter(status__in=FamilyEnrollment.OCCUPIED).count()
+    return render(request, 'schools/detail.html', {'program': program, 'families': Paginator(families, 30).get_page(request.GET.get('page')), 'metrics': metric_cards(request, families), 'occupied': occupied, 'capacity_percent': round(occupied*100/program.capacity), 'executive': is_executive(request.user), 'invite_url': invitation_url(request, program), 'audit_entries': program.audit_entries.select_related('actor').order_by('-created_at')[:30]})
 
 
 @staff_only
@@ -116,6 +152,8 @@ def qr(request, pk):
 def coordinate(request, pk):
     enrollment = get_object_or_404(FamilyEnrollment.objects.select_related('program__organization', 'member'), pk=pk, program__in=programs_for(request.user))
     form = CoordinationForm(request.POST or None, instance=enrollment)
+    if not is_executive(request.user):
+        form.fields.pop('contract_amount')
     if request.method == 'POST':
         with transaction.atomic():
             # Same lock order as app activation/cancellation: program then enrollment.
@@ -123,6 +161,8 @@ def coordinate(request, pk):
             enrollment = FamilyEnrollment.objects.select_for_update().get(pk=pk)
             old_status = enrollment.status
             form = CoordinationForm(request.POST, instance=enrollment)
+            if not is_executive(request.user):
+                form.fields.pop('contract_amount')
             if form.is_valid():
                 new_status = form.cleaned_data['status']
                 occupied = enrollment.program.enrollments.filter(status__in=FamilyEnrollment.OCCUPIED).exclude(pk=pk).count()
@@ -142,7 +182,10 @@ def coordinate(request, pk):
                         audit(enrollment.program, 'family_coordinated', request, enrollment, {k: str(form.cleaned_data[k]) for k in form.fields})
                         messages.success(request, 'پیگیری و نوبت کلینیک ذخیره شد.')
                         return redirect('schools_detail', pk=enrollment.program_id)
-    return render(request, 'schools/coordinate.html', {'enrollment': enrollment, 'form': form})
+    phone = enrollment.member.phone
+    whatsapp_phone = '98' + phone[1:] if phone.startswith('0') else phone.lstrip('+')
+    coordination_message = 'سلام؛ برای ادامه ثبت‌نام طرح مدرسه و فعال‌سازی پرونده خانواده در گرین‌لایف من، با همان شماره تأییدشده وارد شوید: ' + settings.PUBLIC_BASE_URL.rstrip('/') + reverse('schools_family')
+    return render(request, 'schools/coordinate.html', {'enrollment': enrollment, 'form': form, 'whatsapp_phone': whatsapp_phone, 'coordination_message': coordination_message})
 
 
 @never_cache
@@ -150,6 +193,8 @@ def coordinate(request, pk):
 def join(request, token):
     program = get_object_or_404(SchoolProgram.objects.select_related('organization__branch'), token=token)
     if request.method == 'GET' and not request.GET.get('register'):
+        # Page views, not unique people; no IP/device identifier is retained.
+        SchoolProgram.objects.filter(pk=program.pk).update(invitation_views=F('invitation_views') + 1)
         occupied = program.enrollments.filter(status__in=FamilyEnrollment.OCCUPIED).count()
         return render(request, 'schools/join.html', {'program': program, 'remaining': max(0, program.capacity - occupied)})
     member = _require_member(request)

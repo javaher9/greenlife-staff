@@ -1,0 +1,1 @@
+<div class="school-metrics">{% for m in metrics %}<a class="school-stat school-clickable" href="{% url 'schools_families' %}?{{ m.query }}{% if program %}&amp;school={{ program.pk }}{% endif %}"><span>{{ m.label }}</span><b>{{ m.count }}</b><small>{{ m.percent }}٪ از ثبت‌نام‌ها · جزئیات ←</small></a>{% endfor %}</div>

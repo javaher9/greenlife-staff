@@ -8,7 +8,7 @@ class ProgramForm(forms.ModelForm):
     branch = forms.ModelChoiceField(label='شعبه', queryset=None)
     class Meta:
         model = SchoolProgram
-        fields = ['school_name', 'branch', 'title', 'capacity', 'state', 'starts_on', 'ends_on', 'terms']
+        fields = ['school_name', 'branch', 'title', 'contact_name', 'contact_phone', 'capacity', 'state', 'starts_on', 'ends_on', 'terms', 'recorded_cost']
         widgets = {'starts_on': forms.DateInput(attrs={'type': 'date'}), 'ends_on': forms.DateInput(attrs={'type': 'date'}), 'terms': forms.Textarea(attrs={'rows': 3})}
 
     def clean(self):
@@ -41,9 +41,9 @@ class EnrollmentForm(ChildForm):
 class CoordinationForm(forms.ModelForm):
     class Meta:
         model = FamilyEnrollment
-        fields = ['status', 'appointment_at', 'adult_outcome', 'staff_note']
+        fields = ['status', 'appointment_at', 'adult_outcome', 'staff_note', 'next_follow_up_at', 'contract_amount']
         labels = {'status': 'وضعیت مراجعه', 'appointment_at': 'زمان نوبت؛ تهران (تاریخ میلادی)', 'adult_outcome': 'نتیجهٔ مشاورهٔ والد', 'staff_note': 'یادداشت هماهنگی'}
-        widgets = {'appointment_at': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'), 'staff_note': forms.Textarea(attrs={'rows': 2})}
+        widgets = {'appointment_at': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'), 'next_follow_up_at': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'), 'staff_note': forms.Textarea(attrs={'rows': 2})}
 
     def clean(self):
         data = super().clean()
@@ -62,6 +62,8 @@ class CoordinationForm(forms.ModelForm):
             self.add_error('status', 'زمان مراجعه هنوز نرسیده است.')
         if data.get('adult_outcome') not in ('none', 'declined') and not self.instance.adult_opt_in:
             self.add_error('adult_outcome', 'والد درخواست مشاورهٔ شخصی نداده است.')
+        if data.get('contract_amount') and (not self.instance.adult_opt_in or data.get('adult_outcome') != 'treatment'):
+            self.add_error('contract_amount', 'مبلغ قرارداد فقط برای والدِ متقاضی با وضعیت شروع درمان ثبت شود.')
         return data
 
 

@@ -394,6 +394,14 @@ jobs:
           set -Eeuo pipefail
           "$DEPLOY_PATH/scripts/deploy_runner.sh"
 
+      - name: Verify schools access in live web containers
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for container in greenlife-staff-runtime-web-1 greenlife-staff-runtime-web_lan-1; do
+            docker exec "$container" python manage.py check_school_program --require-niavaran
+          done
+
       - name: Verify Instagram DNS from live web container
         if: ${{ false }}
         shell: bash

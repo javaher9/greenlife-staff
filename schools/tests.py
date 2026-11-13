@@ -220,3 +220,87 @@ class SchoolProgramTests(TestCase):
         e.refresh_from_db()
         self.assertEqual(e.status, 'attended')
         self.assertIsNotNone(e.appointment_at)
+
+    def test_dashboard_metrics_links_and_branch_filtered_family_lists(self):
+        e = self.enrollment()
+        e.app_activated_at = timezone.now()
+        e.status = 'ready'
+        e.save()
+        self.client.force_login(self.moradi)
+        response = self.client.get(reverse('schools_dashboard'))
+        self.assertEqual(response.status_code, 200)
+        values = {m['key']: m['count'] for m in response.context['metrics']}
+        self.assertEqual(values['all'], 1)
+        self.assertEqual(values['activated'], 1)
+        self.assertContains(response, 'کارتابل اقدام امروز')
+        url = reverse('schools_families')
+        self.assertContains(self.client.get(url, {'school': self.program.pk, 'bucket': 'ready'}), e.parent_name)
+        self.assertNotContains(self.client.get(url, {'bucket': 'pending'}), e.parent_name)
+        self.client.force_login(self.other)
+        self.assertNotContains(self.client.get(url, {'school': self.program.pk}), e.parent_name)
+
+    def test_date_filter_totals_match_cards_and_no_double_count_children(self):
+        e = self.enrollment()
+        Child.objects.create(enrollment=e, name='فرزند دوم', birth_date='2015-01-01', sex='m')
+        self.client.force_login(self.owner)
+        response = self.client.get(reverse('schools_dashboard'))
+        self.assertEqual(response.context['metrics'][0]['count'], 1)
+        self.assertEqual(list(response.context['programs'])[0].family_count, 1)
+        response = self.client.get(reverse('schools_dashboard'), {'from': '2099-01-01'})
+        self.assertEqual(response.context['metrics'][0]['count'], 0)
+        self.assertEqual(list(response.context['programs'])[0].family_count, 0)
+        self.assertEqual(self.client.get(reverse('schools_dashboard'), {'from': 'bad', 'branch': 'invalid'}).status_code, 200)
+
+    def test_financial_fields_are_executive_only_and_unknown_cost_is_not_zero(self):
+        from .reporting import financials
+        e = self.enrollment()
+        e.adult_opt_in = True
+        e.adult_outcome = 'treatment'
+        e.contract_amount = 1000
+        e.save()
+        result = financials(FamilyEnrollment.objects.all(), SchoolProgram.objects.all())
+        self.assertIsNone(result['estimate'])
+        self.program.recorded_cost = 100
+        self.program.save()
+        self.assertEqual(financials(FamilyEnrollment.objects.all(), SchoolProgram.objects.all())['estimate'], 900)
+        self.client.force_login(self.moradi)
+        self.assertNotContains(self.client.get(reverse('schools_coordinate', args=[e.pk])), 'name="contract_amount"')
+        self.assertNotContains(self.client.get(reverse('schools_edit', args=[self.program.pk])), 'name="recorded_cost"')
+        self.client.post(reverse('schools_coordinate', args=[e.pk]), {'status': 'pending', 'adult_outcome': 'treatment', 'contract_amount': '99999'})
+        e.refresh_from_db()
+        self.assertEqual(e.contract_amount, 1000)
+        self.client.force_login(self.owner)
+        self.assertContains(self.client.get(reverse('schools_coordinate', args=[e.pk])), 'name="contract_amount"')
+        self.assertContains(self.client.get(reverse('schools_dashboard')), 'نتیجهٔ مالی والدین')
+
+    def test_report_suppresses_small_groups_and_has_no_contact_or_health_data(self):
+        e = self.enrollment()
+        self.client.force_login(self.moradi)
+        response = self.client.get(reverse('schools_report', args=[self.program.pk]))
+        self.assertContains(response, 'کافی نیست')
+        self.assertNotContains(response, e.parent_name)
+        self.assertNotContains(response, e.member.phone)
+        self.client.force_login(self.other)
+        self.assertEqual(self.client.get(reverse('schools_report', args=[self.program.pk])).status_code, 404)
+
+    def test_public_page_counts_views_not_registrations(self):
+        self.client.get(reverse('schools_join', args=[self.program.token]))
+        self.client.get(reverse('schools_join', args=[self.program.token]))
+        self.program.refresh_from_db()
+        self.assertEqual(self.program.invitation_views, 2)
+        self.assertEqual(self.program.enrollments.count(), 0)
+
+    def test_live_readiness_checks_exact_coordinator_without_writing_records(self):
+        from io import StringIO
+        from django.core.management import call_command, CommandError
+        with self.assertRaises(CommandError):
+            call_command('check_school_program', require_niavaran=True, stdout=StringIO())
+        self.moradi.last_name = 'مرادی'
+        self.moradi.save()
+        output = StringIO()
+        call_command('check_school_program', require_niavaran=True, stdout=output)
+        self.assertIn('authorized=1', output.getvalue())
+        self.assertIn('coordinator /schools/ rendered=200', output.getvalue())
+        self.assertIn('executive /schools/ rendered=200', output.getvalue())
+        self.assertEqual(SchoolProgram.objects.count(), 1)
+        self.assertEqual(FamilyEnrollment.objects.count(), 0)

@@ -4,7 +4,7 @@ const fs=require('fs');
  const f=JSON.parse(fs.readFileSync('/tmp/school-browser-fixture.json','utf8'));
  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  const reports=[]; fs.mkdirSync('schools-qa',{recursive:true});
- for(const [role,path] of [['admin','/schools/'],['consultant','/schools/'],['consultant','/schools/'+f.program+'/'],['consultant','/schools/new/'],['consultant','/schools/'+f.program+'/card/'],['parent','/customer/family/'],['public','/customer/schools/'+f.token+'/'],['doctor','/schools/clinical/'+f.child+'/']]){
+ for(const [role,path] of [['admin','/schools/'],['consultant','/schools/'],['consultant','/schools/families/'],['consultant','/schools/families/'+f.enrollment+'/'],['consultant','/schools/'+f.program+'/'],['consultant','/schools/new/'],['consultant','/schools/'+f.program+'/card/'],['parent','/customer/family/'],['public','/customer/schools/'+f.token+'/'],['doctor','/schools/clinical/'+f.child+'/']]){
   for(const width of [1440,390]){
    const ctx=await browser.newContext({viewport:{width,height:1000}});
    if(role!=='public') await ctx.addCookies([{name:'sessionid',value:f.sessions[role],domain:'127.0.0.1',path:'/'}]);

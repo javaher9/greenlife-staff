@@ -5,6 +5,8 @@ The Staff management menu and authorized Niavaran coordinator get a Schools work
 ## Routes and workflow
 
 - `/schools/`: management and branch-scoped coordinator dashboard.
+- `/schools/families/`: filtered drill-down from every metric and follow-up queue, with school, branch, coordinator and registration-date filters.
+- `/schools/<id>/report/`: printable aggregate school report, suppressing counts for cohorts with fewer than ten families and excluding identity, health and sales data.
 - `/schools/new/`: school/cohort creation and immediate link/QR generation.
 - `/schools/<id>/card/`: printable invitation, Save as PDF, downloadable QR image.
 - `/customer/schools/<uuid>/`: public school invitation, existing SMS OTP verification, parent consent and registration.
@@ -37,6 +39,12 @@ python manage.py test schools core.tests.test_customer_portal core.tests.test_ap
 
 The Schools and family checks workflow renders synthetic data at desktop/mobile widths and uploads screenshots. `schools/qa/seed.py` refuses non-debug or non-SQLite settings; never use it in production. This change includes no real family records.
 
-BMI is a raw calculation, with no adult cutoffs or automated pediatric diagnosis. Physician interpretation and follow-up dates are recorded. Age/sex reference percentile charts, financial ROI attribution and automatic reminder delivery are not included in this first implementation.
+BMI is a raw calculation, with no adult cutoffs or automated pediatric diagnosis. Physician interpretation and follow-up dates are recorded. Age/sex reference percentile charts, accounting integration and automatic reminder delivery are not included in this first implementation.
+
+Executive-only finance uses manually recorded contract amounts for consenting parents who started treatment and manually recorded cohort costs (tomans). Missing values remain unknown, not zero. The difference is shown only when all relevant values are recorded and no registration-date slice is selected; it is not realized accounting profit. Consultants cannot read or modify these financial fields. Follow-up timestamps drive a real action queue; the contact buttons only prepare calls/messages for the coordinator to initiate. Invitation page views include repeats and are labeled accordingly.
+
+GreenLife Me's account sync and family enrollments both reference `CustomerPortalMember`, identified by the existing verified phone session. The next parent-link phase should extend this shared identity in the external Me frontend, without creating another account. The separate frontend integration is not included in this Staff release.
+
+After deployment, `check_school_program --require-niavaran` verifies a unique active Moradi coordinator and renders both consultant and executive dashboard/list/create routes using their real permission scope. The command does not create sessions, send messages, or change production records. Both public and LAN web containers run this read-only check in the existing deploy workflow.
 
 Deployment uses the existing Afserieh self-hosted production workflow only after required checks pass. Never infer production rollout from a code commit. Verify coordinator activation, actual device installation, SMS OTP and a controlled end-to-end enrollment before inviting real schools.

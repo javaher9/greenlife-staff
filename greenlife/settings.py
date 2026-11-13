@@ -64,3 +64,6 @@ PUBLIC_BASE_URL = os.getenv('PUBLIC_BASE_URL','https://staff.greenlifeclinics.co
 
 # Activate only after the nginx private photo path has been applied and reloaded.
 BODY_PROGRESS_UPLOAD_ENABLED = os.getenv('BODY_PROGRESS_UPLOAD_ENABLED', '0') == '1'
+
+# Canonical member app; keep Django CSRF verification on every write.
+CSRF_TRUSTED_ORIGINS.append("https://greenlife-me-preview.vercel.app")

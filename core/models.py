@@ -2262,3 +2262,7 @@ from .sales_target_models import SalesTargetBand, TargetPercentPolicy
 
 # Patient progress images use the same patient record as scan station.
 from .body_progress_models import BodyProgressPhoto
+
+from .me_sync_models import MeAccountState, MeDailyAward, MeSyncAudit
+
+from .me_diet_models import MeMealReport
