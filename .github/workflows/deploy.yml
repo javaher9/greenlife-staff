@@ -398,6 +398,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          docker exec greenlife-staff-runtime-web-1 python manage.py sync_school_leads
           for container in greenlife-staff-runtime-web-1 greenlife-staff-runtime-web_lan-1; do
             docker exec "$container" python manage.py check_school_program --require-niavaran
           done

@@ -95,7 +95,7 @@ class SchoolProgramTests(TestCase):
         first = self.enrollment()
         self.customer()
         url = reverse('schools_family')
-        self.assertEqual(self.client.post(url, {'enrollment': first.pk, 'action': 'activate'}).status_code, 400)
+        self.assertEqual(self.client.post(url, {'enrollment': first.pk, 'action': 'activate'}).status_code, 302)
         self.client.post(url, {'enrollment': first.pk, 'action': 'activate', 'standalone': '1'})
         self.client.post(url, {'enrollment': first.pk, 'action': 'activate', 'standalone': '1'})
         first.refresh_from_db()
@@ -304,3 +304,61 @@ class SchoolProgramTests(TestCase):
         self.assertIn('executive /schools/ rendered=200', output.getvalue())
         self.assertEqual(SchoolProgram.objects.count(), 1)
         self.assertEqual(FamilyEnrollment.objects.count(), 0)
+
+    def test_browser_enrollment_routes_to_gandom_without_stealing_same_phone_lead(self):
+        from core.models import ReferralLead, ReferralProfile
+        from schools.services import gandom_operator
+        from core.lead_routing import assign_referral_lead, assign_social_lead, assign_external_lead
+        referrer = ReferralProfile.objects.create(user=self.owner, referral_code='SCHOOL-OLD')
+        old = ReferralLead.objects.create(referrer=referrer, full_name='old', phone=self.member.phone, assigned_to=self.other.profile)
+        self.customer()
+        url = reverse('schools_join', args=[self.program.token]) + '?register=1'
+        data = {'parent_name': 'والد مدارس', 'name': 'کودک محرمانه', 'birth_date': '2016-01-01', 'sex': 'f', 'consent': 'on'}
+        self.assertEqual(self.client.post(url, data).status_code, 302)
+        e = FamilyEnrollment.objects.get()
+        self.assertEqual(e.status, 'ready')
+        self.assertIsNone(e.app_activated_at)
+        self.assertEqual(e.lead.assigned_to_id, gandom_operator().pk)
+        self.assertEqual(e.lead.group.name, 'مدارس')
+        self.assertIn(self.org.name, e.lead.registration_description)
+        self.assertIn(self.program.title, e.lead.registration_description)
+        self.assertNotIn('کودک محرمانه', e.lead.notes)
+        self.client.post(url, data)
+        self.assertEqual(ReferralLead.objects.filter(school_enrollment=e).count(), 1)
+        old.refresh_from_db()
+        self.assertEqual(old.assigned_to_id, self.other.profile.pk)
+        from core.models import DuplicateLeadError
+        with self.assertRaises(DuplicateLeadError):
+            ReferralLead.objects.create(referrer=referrer, full_name='duplicate', phone=self.member.phone)
+        for route in (assign_referral_lead, assign_social_lead):
+            self.assertEqual(route(e.lead).pk, gandom_operator().pk)
+        self.assertEqual(assign_external_lead(e.lead, 'website').pk, gandom_operator().pk)
+        e.lead.assigned_to = None
+        e.lead.save(update_fields=['assigned_to'])
+        self.assertIsNone(assign_referral_lead(e.lead))
+        self.client.post(reverse('schools_family'), {'enrollment': e.pk, 'action': 'cancel'})
+        e.lead.refresh_from_db()
+        self.assertEqual(e.lead.status, 'lost')
+
+    def test_no_install_admission_capacity_and_backfill_are_idempotent(self):
+        from django.core.management import call_command
+        from io import StringIO
+        first = self.enrollment()
+        self.customer()
+        url = reverse('schools_family')
+        self.client.post(url, {'enrollment': first.pk, 'action': 'activate'})
+        first.refresh_from_db()
+        self.assertEqual(first.status, 'ready')
+        self.assertIsNone(first.app_activated_at)
+        member = CustomerPortalMember.objects.create(phone='09123456700', referral_code='WAIT-SCHOOL')
+        second = self.enrollment(member)
+        call_command('sync_school_leads', stdout=StringIO())
+        call_command('sync_school_leads', stdout=StringIO())
+        second.refresh_from_db()
+        self.assertEqual(second.status, 'waiting')
+        from core.models import ReferralLead
+        self.assertEqual(ReferralLead.objects.filter(school_enrollment__isnull=False).count(), 2)
+        first.appointment_at = timezone.now() + timedelta(days=2)
+        from .forms import CoordinationForm
+        form = CoordinationForm({'status': 'ready', 'adult_outcome': 'none'}, instance=first)
+        self.assertTrue(form.is_valid(), form.errors)

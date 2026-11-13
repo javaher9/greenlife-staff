@@ -44,7 +44,7 @@ class SchoolProgram(models.Model):
 
 
 class FamilyEnrollment(models.Model):
-    STATES = [('pending', 'منتظر فعال‌سازی اپ'), ('waiting', 'فهرست انتظار'), ('ready', 'آماده نوبت‌دهی'), ('booked', 'نوبت قطعی'), ('attended', 'مراجعه کرده'), ('cancelled', 'لغو شده')]
+    STATES = [('pending', 'در انتظار تکمیل پذیرش'), ('waiting', 'فهرست انتظار'), ('ready', 'آماده نوبت‌دهی'), ('booked', 'نوبت قطعی'), ('attended', 'مراجعه کرده'), ('cancelled', 'لغو شده')]
     OCCUPIED = ('ready', 'booked', 'attended')
     OUTCOMES = [('none', 'بدون درخواست'), ('requested', 'درخواست مشاوره'), ('consulted', 'مشاوره انجام شد'), ('treatment', 'شروع درمان'), ('declined', 'عدم تمایل')]
     program = models.ForeignKey(SchoolProgram, on_delete=models.PROTECT, related_name='enrollments')
