@@ -455,6 +455,8 @@
     /* Mobile-only, full-body campaign artwork with genuinely interactive
        frosted-glass fields layered over it. No crop, no side scrolling. */
     .poster-mobile-slogan{display:none}
+    .approved-poster .poster-a11y-label{direction:rtl!important;unicode-bidi:isolate!important;text-align:right!important}
+    .approved-poster .poster-colon{direction:ltr;unicode-bidi:isolate;display:inline-block;margin-right:2px}
     @media (max-width:650px){
       html,body{max-width:100%;overflow-x:hidden}
       body.advertising-page:has(.approved-poster){
@@ -596,17 +598,17 @@
     <form method="post" id="instagramLeadForm" class="poster-live-form" aria-label="ثبت درخواست مشاوره">
       {% csrf_token %}
       <label class="poster-field name-field">
-        <span class="poster-a11y-label">نام و نام خانوادگی:</span>
+        <span class="poster-a11y-label" dir="rtl">نام و نام خانوادگی<span class="poster-colon" aria-hidden="true"> :</span></span>
         {{ form.full_name }}
         {% for error in form.full_name.errors %}<em class="error">{{ error }}</em>{% endfor %}
       </label>
       <label class="poster-field phone-field">
-        <span class="poster-a11y-label">شماره موبایل:</span>
+        <span class="poster-a11y-label" dir="rtl">شماره موبایل<span class="poster-colon" aria-hidden="true"> :</span></span>
         {{ form.phone }}
         {% for error in form.phone.errors %}<em class="error">{{ error }}</em>{% endfor %}
       </label>
       <label class="poster-field details-field">
-        <span class="poster-a11y-label">توضیحات:</span>
+        <span class="poster-a11y-label" dir="rtl">توضیحات<span class="poster-colon" aria-hidden="true"> :</span></span>
         {{ form.interested_service }}
         {% for error in form.interested_service.errors %}<em class="error">{{ error }}</em>{% endfor %}
       </label>
