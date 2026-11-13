@@ -30,7 +30,7 @@ from . import diet_companion_views
 from . import diet_daily_views
 from . import diet_excel_sample_previews
 from . import me_desk_views
-from . import intake_views
+from . import intake_views, me_visit_views
 from . import customer_portal_views
 from . import diet_template_views
 from . import payroll_views
@@ -49,6 +49,7 @@ from .mcp import mcp_endpoint
 urlpatterns = [
     path("customer/me/connect/", me_sync_views.connect),
     path("customer/me/state/", me_sync_views.state),
+    path("customer/me/visits/", me_visit_views.visits, name="me_visits"),
     path("customer/me/diet/", me_diet_views.diet, name="me_diet"),
     path("customer/me/logout/", me_sync_views.logout),
 path('management/all-leads/',all_leads_views.all_leads,name='management_all_leads'),
