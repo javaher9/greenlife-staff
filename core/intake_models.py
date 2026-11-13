@@ -14,3 +14,14 @@ class CustomerIntakePhoto(models.Model):
     intake=models.ForeignKey(CustomerIntake,on_delete=models.CASCADE,related_name='photos')
     content=models.BinaryField()
     created_at=models.DateTimeField(auto_now_add=True)
+
+class CustomerRequestEvent(models.Model):
+    request=models.ForeignKey('core.CustomerServiceRequest',on_delete=models.CASCADE,related_name='followup_events')
+    actor=models.ForeignKey('auth.User',on_delete=models.SET_NULL,null=True)
+    action=models.CharField(max_length=40)
+    note=models.CharField(max_length=1000,blank=True)
+    status=models.CharField(max_length=12)
+    next_followup_at=models.DateTimeField(null=True,blank=True)
+    created_at=models.DateTimeField(auto_now_add=True)
+    class Meta:
+        ordering=['-created_at','-pk']

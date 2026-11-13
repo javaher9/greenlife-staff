@@ -416,7 +416,14 @@ def staff_customer_request_action(request,pk):
             row.staff_note='درخواست عضویت برای بررسی مدیریت دریافت شد.'
         else:
             raise PermissionDenied('تغییر وضعیت درخواست مجاز نیست.')
+        if row.status in ('booked','declined','resolved'): row.next_followup_at=None
         row.save()
+        if row.kind=='visit':
+            from .models import CustomerRequestEvent
+            labels={'claim':'شروع پیگیری','book':'تأیید نوبت واقعی','decline':'بستن درخواست'}
+            CustomerRequestEvent.objects.create(request=row,actor=request.user,action=labels.get(action,action),note=row.staff_note if action=='decline' else '',status=row.status,next_followup_at=row.next_followup_at)
+    if request.POST.get('return_to')=='me_desk' and row.kind=='visit':
+        return redirect('me_desk_detail',pk=row.pk)
     return redirect(reverse('staff_customer_requests')+'?status=all')
 
 

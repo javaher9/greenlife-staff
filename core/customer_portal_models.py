@@ -36,6 +36,7 @@ class CustomerServiceRequest(models.Model):
     branch=models.ForeignKey('core.Branch',on_delete=models.PROTECT,related_name='customer_requests')
     preferred_date=models.DateField(null=True,blank=True)
     daypart=models.CharField(max_length=12,choices=DAYPARTS,default='any')
+    next_followup_at=models.DateTimeField(null=True,blank=True,db_index=True)
     note=models.CharField(max_length=300,blank=True)
     status=models.CharField(max_length=12,choices=STATUSES,default='pending',db_index=True)
     assigned_to=models.ForeignKey('core.EmployeeProfile',on_delete=models.SET_NULL,null=True,blank=True,related_name='customer_service_requests')

@@ -1,4 +1,4 @@
-{% extends 'core/base.html' %}{% load jalali_tags staff_i18n %}{% block content %}{% include "core/call_center/_contact_assets.html" %}
+{% extends 'core/base.html' %}{% load jalali_tags staff_i18n %}{% block content %}<a href="{% url 'me_desk' %}" style="display:block;margin:12px 0;padding:16px 20px;border:1px solid #b8d8c9;border-radius:16px;background:#e9f7f0;color:#17684b;font-weight:700">مراجعان گرین‌لایف من ← <small style="font-weight:400">پرونده، عکس‌ها و پیگیری درخواست نوبت</small></a>{% include "core/call_center/_contact_assets.html" %}
 {% if user.first_name == 'زهرا' and user.last_name == 'آزادی' %}<div style="direction:rtl;padding:10px 14px"><a href="{% url 'referral_member_create' %}" style="display:block;text-align:center;padding:14px;border-radius:12px;background:#147b59;color:white;font-size:17px;font-weight:bold;text-decoration:none">＋ افزودن عضو شبکه فروش</a></div>{% endif %}
 
 <style>

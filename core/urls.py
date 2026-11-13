@@ -29,6 +29,7 @@ from . import treatment_content_views
 from . import diet_companion_views
 from . import diet_daily_views
 from . import diet_excel_sample_previews
+from . import me_desk_views
 from . import intake_views
 from . import customer_portal_views
 from . import diet_template_views
@@ -107,6 +108,9 @@ path('lead-management/attention/assign/',lead_management_views.lead_attention_bu
 path('doctor/',doctor_views.doctor_dashboard,name='doctor_dashboard'),
 path('api/doctor/actions/',doctor_views.doctor_action_api,name='doctor_action_api'),
 path('payroll/',payroll_views.payroll_dashboard,name='payroll_dashboard'),
+path('call-center/greenlife-me/',me_desk_views.workspace,name='me_desk'),
+path('call-center/greenlife-me/<int:pk>/',me_desk_views.detail,name='me_desk_detail'),
+path('call-center/greenlife-me/<int:pk>/followup/',me_desk_views.followup,name='me_desk_followup'),
 path('call-center/',referral_views.call_center_dashboard,name='call_center_dashboard'),
 path('call-center/groups/new/',referral_views.call_center_group_create,name='call_center_group_create'),path('call-center/quick-message/',referral_views.call_center_quick_message,name='call_center_quick_message'),path('call-center/notebook/',referral_views.call_center_notebook,name='call_center_notebook'),path('call-center/today-appointments/live/',referral_views.call_center_today_appointments_live,name='call_center_today_appointments_live'),
 path('call-center/leads/new/',referral_views.call_center_lead_create,name='call_center_lead_create'),path('call-center/leads/direct/new/',referral_views.call_center_direct_lead_create,name='call_center_direct_lead_create'),
