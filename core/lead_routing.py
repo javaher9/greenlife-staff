@@ -1,4 +1,4 @@
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 
 from django.db import transaction
 from django.db.models import Count, Max, Q
@@ -31,6 +31,16 @@ PENDING_MORNING_RELEASE_MINUTE = 15
 DAILY_LEAD_ROUTING_END = time(20, 0)
 # Attendance is not permission to receive overnight leads.
 DAILY_LEAD_ROUTING_START = time(8, 0)
+
+# Management's ONE-DAY exception (Friday 2026-11-13, Iran local time):
+# New leads from ALL channels stay safely unassigned in the existing queue.
+# Saturday morning (2026-11-14) normal queue release resumes automatically.
+# Do not turn this into a recurring Friday rule or change prior ownership.
+ONE_TIME_LEAD_HOLD_DATE = date(2026, 11, 13)
+
+
+def _one_time_lead_hold(now=None):
+    return timezone.localtime(now or timezone.now()).date() == ONE_TIME_LEAD_HOLD_DATE
 
 # Equal-weight rotation requested by management. Laleh is reinstated as
 # the fifth eligible operator, subject to normal attendance/leave checks. Absent operators
@@ -507,6 +517,10 @@ def release_pending_leads_if_ready(*, force=False, now=None):
     `force` intentionally cannot bypass the time, attendance or exclusion rules.
     """
     local_now = timezone.localtime(now or timezone.now())
+    # Keep *all* new leads unassigned for this Friday only. This guard also
+    # prevents the independent 15-second queue worker from releasing them.
+    if _one_time_lead_hold(local_now):
+        return 0
     day = local_now.date()
     release_at = _release_time(local_now)
     friday = local_now.weekday() == 4
@@ -638,6 +652,8 @@ def _live_assignment_allowed(now=None):
     is the only path that may release a morning lead.
     """
     local_now=timezone.localtime(now or timezone.now())
+    if _one_time_lead_hold(local_now):
+        return False
     if not (DAILY_LEAD_ROUTING_START <= local_now.time() < DAILY_LEAD_ROUTING_END):
         return False
     if local_now.weekday()==4:
