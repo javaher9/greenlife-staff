@@ -2,7 +2,9 @@
 from types import SimpleNamespace
 
 from django.test import SimpleTestCase
+from django.urls import resolve, reverse
 
+from . import instagram_views
 from .call_center_identity import FlowerLeadProxy
 from .instagram_ad_attribution import (
     advertising_source_label,
@@ -17,6 +19,11 @@ def fake_lead(*, url, notes, source='link'):
 
 
 class InstagramAdAttributionTests(SimpleTestCase):
+    def test_short_greenlife_instagram_link_uses_same_public_crm_form(self):
+        self.assertEqual(reverse('greenlife_instagram_short'), '/g/')
+        self.assertEqual(resolve('/g/').func, instagram_views.instagram_lead)
+        self.assertEqual(instagram_views.INSTAGRAM_DEFAULT_PAGE, 'greenlifeclinics')
+
     def test_single_generic_ad_link_does_not_invent_a_page(self):
         lead = fake_lead(
             url='https://staff.greenlifeclinics.com/instagram/ads/',
