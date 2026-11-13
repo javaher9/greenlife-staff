@@ -1,4 +1,5 @@
 from . import me_diet_views
+from . import me_nutrition_views
 from . import me_sync_views
 from . import lead_contact_views, all_leads_views
 from django.urls import path
@@ -51,6 +52,7 @@ urlpatterns = [
     path("customer/me/state/", me_sync_views.state),
     path("customer/me/visits/", me_visit_views.visits, name="me_visits"),
     path("customer/me/diet/", me_diet_views.diet, name="me_diet"),
+    path("customer/me/nutrition/", me_nutrition_views.nutrition, name="me_nutrition"),
     path("customer/me/logout/", me_sync_views.logout),
 path('management/all-leads/',all_leads_views.all_leads,name='management_all_leads'),
 path('management/all-leads/data/',all_leads_views.all_leads_data,name='management_all_leads_data'),
