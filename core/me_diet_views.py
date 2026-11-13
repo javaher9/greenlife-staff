@@ -13,6 +13,7 @@ from .diet_companion_views import _content, plan_data
 from .me_sync_views import reply, HEART
 from .me_sync_models import MeAccountState, MeDailyAward
 from .me_diet_models import MeMealReport
+from .me_food_table import CATALOG, food_table
 from .models import PatientDietProgram, CustomerPortalMember, CustomerServiceRequest, EmployeeProfile, StaffNotification
 
 REASONS={'unavailable':'مواد این وعده در دسترس نیست','difficult':'اجرای برنامه برایم سخت شده','hunger':'درباره گرسنگی نیاز به راهنمایی دارم','contact':'درخواست تماس درباره رژیم'}
@@ -44,9 +45,9 @@ def snapshot(request, member, day):
     program,cards,notice=plan(member,day)
     rows={r.meal_key:r for r in MeMealReport.objects.filter(member=member,day=day)}
     for c in cards:
-        r=rows.get(c['key']);c['report']={'status':r.status,'note':r.note,'revision':r.revision} if r else None
+        r=rows.get(c['key']);c['report']={'status':r.status,'note':r.note,'revision':r.revision,'table':r.food_table} if r else None
     done=sum(bool(c['report']) for c in cards)
-    return {'authenticated':True,'csrf':get_token(request),'day':day.isoformat(),'today':today().isoformat(),'name':member.full_name,'notice':notice,
+    return {'authenticated':True,'csrf':get_token(request),'table_version':CATALOG['version'],'day':day.isoformat(),'today':today().isoformat(),'name':member.full_name,'notice':notice,
             'program':{'id':program.pk,'title':program.diet_name,'url':f'/customer/diets/{program.pk}/'} if program else None,
             'meals':cards,'reported':done,'total':len(cards),'percent':round(done/len(cards)*100) if cards else None,
             'hearts':MeDailyAward.objects.filter(member=member).count(),'awarded_today':MeDailyAward.objects.filter(member=member,day=day).exists(),
@@ -77,7 +78,14 @@ def diet(request):
             if not card or not isinstance(status,str) or status not in STATUSES or not isinstance(note,str) or len(note)>200 or type(revision) is not int:return reply({'error':'گزارش وعده معتبر نیست.'},400)
             row=MeMealReport.objects.filter(member=member,day=day,meal_key=card['key']).first()
             if revision!=(row.revision if row else 0):return reply({'error':'این وعده در دستگاه دیگری تغییر کرده؛ ابتدا تازه‌سازی کن.'},409)
-            MeMealReport.objects.update_or_create(member=member,day=day,meal_key=card['key'],defaults={'label':card['label'][:200],'status':status,'note':note.strip(),'revision':revision+1})
+            table=row.food_table if row else {}
+            if 'table' in data:
+                if day!=today():return reply({'error':'روز عوض شده؛ وعده‌های امروز را تازه‌سازی کن.'},409)
+                if data.get('consumed') is not True or status=='skipped':return reply({'error':'فقط میز مصرف‌شده را به‌عنوان وعده ثبت کن.'},400)
+                try:table=food_table(data['table'])
+                except ValueError as exc:return reply({'error':str(exc)},400)
+            if status=='skipped':table={}
+            MeMealReport.objects.update_or_create(member=member,day=day,meal_key=card['key'],defaults={'label':card['label'][:200],'status':status,'note':note.strip(),'revision':revision+1,'food_table':table})
             count=MeMealReport.objects.filter(member=member,day=day,meal_key__in=[c['key'] for c in cards]).count()
             if cards and count==len(cards):
                 # One daily award across ALL routes; every honest status counts equally.
