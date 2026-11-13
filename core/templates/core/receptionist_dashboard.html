@@ -198,6 +198,12 @@
       </div>
     </header>
 
+    {% if messages %}
+    <section class="card" role="status" aria-live="polite" style="margin-top:14px;padding:12px 16px">
+      {% for message in messages %}<p style="margin:4px 0">{{ message }}</p>{% endfor %}
+    </section>
+    {% endif %}
+
     <section class="kpis">
       <article class="kpi"><div class="kpi-copy"><small>{% gl_t 'rec.today_appointments' %}</small><strong>{{ receptionist_appointment_count|default:0 }}</strong><p>{% gl_t 'rec.real_branch_appointments' %}</p></div><div class="kpi-icon">▣</div></article>
       <article class="kpi"><div class="kpi-copy"><small>{% gl_t 'rec.today_patients' %}</small><strong>{{ receptionist_arrived_count|default:0 }}</strong><p>{% gl_t 'rec.by_today_status' %}</p></div><div class="kpi-icon">♙</div></article>
@@ -267,6 +273,9 @@
               <a class="row-action pay" href="{% url 'finance_entry' %}?appointment={{ item.pk }}">ثبت پرداخت</a>
               {% else %}
               <a class="row-action primary" href="{% url 'patient_360_from_appointment' item.pk %}">باز کردن پرونده</a>
+              {% endif %}
+              {% if item.status == 'arrived' %}
+              <form method="post" action="{% url 'intake_send_link' item.pk %}">{% csrf_token %}<input type="hidden" name="next" value="dashboard"><input type="hidden" name="resend" value="1"><button class="row-action arrive" type="submit">ارسال لینک فرم اولیه</button></form>
               {% endif %}
               <details class="row-more">
                 <summary>•••</summary>

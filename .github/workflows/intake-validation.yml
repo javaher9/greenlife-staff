@@ -44,3 +44,6 @@ jobs:
         run: python manage.py makemigrations intake --check --dry-run
       - name: Test positive only summaries
         run: python manage.py test core.tests.test_intake_summary intake.tests.test_public_csrf intake.tests.test_weight_questions intake.tests.test_preview
+
+      - name: Test receptionist dashboard intake action
+        run: python manage.py test core.tests.test_reception_intake_actions --verbosity 2
