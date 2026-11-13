@@ -217,6 +217,9 @@ def customer_logout(request):
 
 @require_http_methods(['GET','POST'])
 def customer_request(request,kind):
+    if kind=='visit':
+        from .intake_views import visit_intake
+        return visit_intake(request)
     if kind not in ('visit','device','network'):
         raise Http404()
     member=_require_member(request)

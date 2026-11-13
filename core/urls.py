@@ -29,6 +29,7 @@ from . import treatment_content_views
 from . import diet_companion_views
 from . import diet_daily_views
 from . import diet_excel_sample_previews
+from . import intake_views
 from . import customer_portal_views
 from . import diet_template_views
 from . import payroll_views
@@ -67,6 +68,7 @@ path('customer/body/',body_progress_views.customer_body,name='customer_body'),
 path('customer/body/photo/<uuid:public_id>/',body_progress_views.customer_body_photo,name='customer_body_photo'),
 path('alerts/',management_alert_views.alert_center,name='management_alert_center'),
 path('api/alerts/management/',management_alert_views.alert_center_api,name='management_alert_api'),
+path('customer/intake/photo/<uuid:public_id>/',intake_views.intake_photo,name='customer_intake_photo'),
 path('customer/login/',customer_portal_views.customer_login,name='customer_login'),
 path('customer/logout/',customer_portal_views.customer_logout,name='customer_logout'),
 path('customer/club/',customer_portal_views.customer_club,name='customer_club'),
