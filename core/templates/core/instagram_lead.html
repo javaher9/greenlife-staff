@@ -329,7 +329,8 @@
     }
     .approved-poster .poster-live-form .poster-field{
       display:block!important;position:absolute!important;z-index:3;
-      height:auto!important;min-height:0!important;margin:0!important;
+      /* Keep desktop poster's percentage field heights: auto!important shrank live controls. */
+      height:auto;min-height:0!important;margin:0!important;
       padding:0!important;pointer-events:auto;
     }
     .approved-poster .poster-field.name-field{
