@@ -19,6 +19,9 @@ urlpatterns=[
     path('api/instagram/callback/',instagram_api_views.instagram_oauth_callback,name='instagram_oauth_callback'),
     path('api/instagram/webhook/',instagram_api_views.instagram_webhook,name='instagram_webhook'),
     path('website/lead/',website_public_lead_views.website_lead,name='website_public_lead'),
+    # Short public Instagram link for Green Life's own page. Uses the same
+    # verified CRM form, its default source greenlifeclinics and POST workflow.
+    path('g/', instagram_views.instagram_lead, name='greenlife_instagram_short'),
     path('instagram/',instagram_views.instagram_lead,name='instagram_lead'),
     # Lightweight public entry: reuse the verified CRM intake, consent and duplicate checks.
     path('instagram/fast/',instagram_views.instagram_lead,name='instagram_fast_lead'),
