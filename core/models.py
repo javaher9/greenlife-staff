@@ -2267,4 +2267,4 @@ from .me_sync_models import MeAccountState, MeDailyAward, MeSyncAudit
 
 from .me_diet_models import MeMealReport
 
-from .intake_models import CustomerIntake, CustomerIntakePhoto
+from .intake_models import CustomerIntake, CustomerIntakePhoto, CustomerRequestEvent
