@@ -61,6 +61,45 @@ body.gl-page-finance_dashboard .app-main>.stats{background:#081723!important;bac
 .fin44-revenue-percent{position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);font-size:10px;line-height:1;color:#f3f9ff!important;font-weight:950;white-space:nowrap;direction:ltr;font-variant-numeric:tabular-nums}
 .fin44-revenue-amount{padding-top:8px;color:#fff!important;font-size:11px;line-height:1.4;font-weight:950;direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums}
 .fin44-revenue-label{padding-top:4px;color:#c0d1dd!important;font-size:10px;line-height:1.5;font-weight:800;overflow-wrap:anywhere}
+
+/* Stable four-unit finance chart: keep labels in place even when sales are zero. */
+.fin44-branch-card{background:radial-gradient(ellipse at 65% 100%,rgba(39,100,115,.14),transparent 65%),linear-gradient(145deg,#0d2030,#0a1827)!important}
+.fin44-grid3 .fin44-branch-card .fin44-revenue-chart{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;
+  align-items:end;min-height:190px;padding:20px 4px 8px;overflow:visible;
+  border-radius:10px;
+}
+.fin44-grid3 .fin44-branch-card .fin44-revenue-col{
+  display:flex;min-width:0;max-width:none;width:100%;
+  flex:none;align-items:center;justify-content:flex-end;gap:0;
+}
+.fin44-grid3 .fin44-branch-card .fin44-revenue-barzone{
+  height:128px;min-height:128px;border-bottom:1px solid rgba(103,153,170,.47);
+  position:relative;display:flex;justify-content:center;align-items:flex-end;
+}
+.fin44-grid3 .fin44-branch-card .fin44-revenue-barzone:after{
+  content:"";position:absolute;bottom:-2px;width:15px;height:3px;
+  border-radius:6px;background:rgba(105,170,190,.55);
+}
+.fin44-grid3 .fin44-branch-card .fin44-revenue-bar{
+  width:26px;max-width:53%;min-height:4px;border-radius:7px 7px 0 0;
+  box-shadow:0 0 11px color-mix(in srgb,var(--col,#20dc91) 23%,transparent);
+}
+.fin44-grid3 .fin44-branch-card .fin44-revenue-percent{
+  font-size:9px;font-weight:850;bottom:calc(100% + 7px)
+}
+.fin44-grid3 .fin44-branch-card .fin44-revenue-amount{
+  display:block;min-height:19px;line-height:19px;text-align:center;
+  font-size:11px;max-width:100%;white-space:nowrap;
+}
+.fin44-grid3 .fin44-branch-card .fin44-revenue-label{
+  display:block;width:100%;min-height:28px;text-align:center;
+  padding-top:5px;font-size:10px;font-weight:850;line-height:1.5;
+  color:#d7e8f2!important;overflow-wrap:anywhere;
+}
+.fin44-grid3 .fin44-branch-card .is-zero .fin44-revenue-amount{color:#708ca2!important;font-size:14px}
+.fin44-grid3 .fin44-branch-card .is-zero .fin44-revenue-barzone:after{background:rgba(88,122,145,.35)}
+.fin44-branch-other-note{margin-top:6px;border-top:1px solid rgba(103,153,170,.17);padding-top:9px;color:#a8bfd0;font-size:9px;line-height:1.7}
 .fin44-mid{display:grid;grid-template-columns:1.15fr .84fr .84fr;gap:10px}.fin44-matrix{overflow:auto}.fin44-matrix table{width:100%;border-collapse:separate;border-spacing:0;min-width:560px;font-size:9px;background:#091722!important}.fin44-matrix th,.fin44-matrix td{padding:10px 8px;border-bottom:1px solid rgba(92,132,162,.14);border-left:1px solid rgba(92,132,162,.09);text-align:center;color:#dce8f2;background:#0a1a27!important}.fin44-matrix th{background:#102335!important;color:#b1c2d0;font-size:8px;font-weight:900}.fin44-matrix th:first-child,.fin44-matrix td:first-child{text-align:right;position:sticky;right:0;background:#0c1d2b!important;z-index:2;min-width:150px}.fin44-matrix td.hot{background:linear-gradient(135deg,rgba(8,116,78,.95),rgba(8,70,57,.86))!important;color:#d6fff1;font-weight:950}.fin44-matrix .sum{color:#fff;font-weight:950;background:#0d2232!important}
 .fin44-matrix td .fin44-matrix-dash{display:inline-block;color:#65798a!important;font-size:12px;font-weight:400;line-height:1;opacity:.72}
 .fin44-matrix-summary{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-bottom:8px;font-size:10px;font-weight:800;color:#c3d5e1}.fin44-matrix-summary span{display:inline-flex;align-items:center;gap:5px;border:1px solid #27465b;border-radius:7px;padding:6px 9px;background:#102435}.fin44-matrix-summary strong{font-size:11px;color:#fff}.fin44-matrix-unassigned td,.fin44-matrix-unassigned td:first-child{background:#34271b!important;color:#ffe3b2!important;font-weight:950}.fin44-matrix-total td,.fin44-matrix-total td:first-child{background:#102f3a!important;color:#e3fff4!important;font-weight:950}.fin44-matrix-note{margin-top:9px;padding:7px 9px;border:1px solid #37516a;border-radius:8px;background:#102536!important;color:#c3d8e5;font-size:9px;line-height:1.8}.fin44-matrix td small{color:#96aabe;font-size:8px}
@@ -158,7 +197,23 @@ body.gl-page-finance_dashboard .msg.warning{
   </section>
 
   <div class="fin44-grid3">
-    <section class="fin44-panel fin44-card"><div class="fin44-card-head"><h2>درآمد بر اساس شعبه</h2><span class="fin44-pill">میلیون تومان</span></div>{% if intel.branch_rows %}<div class="fin44-revenue-chart" role="group" aria-label="نمودار ستونی سهم درآمد تأییدشده شعب">{% for r in intel.branch_rows|slice:':6' %}<div class="fin44-revenue-col"><div class="fin44-revenue-barzone"><div class="fin44-revenue-bar" style="height:{{ r.pct }}%;--col:{{ r.color }}"><span class="fin44-revenue-percent">{{ r.pct }}٪</span></div></div><strong class="fin44-revenue-amount">{{ r.total|million_toman }}</strong><span class="fin44-revenue-label">{{ r.label }}</span></div>{% endfor %}</div>{% else %}<div class="fin44-empty"><i>○</i><span>برای این فیلتر هنوز درآمد شعبه‌ای ثبت نشده است.</span></div>{% endif %}</section>
+    <section class="fin44-panel fin44-card fin44-branch-card">
+      <div class="fin44-card-head"><h2>درآمد بر اساس شعبه</h2><span class="fin44-pill">میلیون تومان</span></div>
+      <div class="fin44-revenue-chart" role="group" aria-label="نمودار چهار واحد ثابت درآمد تأییدشده">
+        {% for r in intel.branch_chart_rows %}
+        <div class="fin44-revenue-col{% if not r.total %} is-zero{% endif %}" aria-label="{{ r.label }}{% if r.total %}: {{ r.total|million_toman }} میلیون تومان{% else %}: بدون درآمد تأییدشده{% endif %}">
+          <div class="fin44-revenue-barzone">
+            {% if r.total %}<div class="fin44-revenue-bar" style="height:{{ r.height }}%;--col:{{ r.color }}"><span class="fin44-revenue-percent">{{ r.pct }}٪</span></div>{% endif %}
+          </div>
+          <strong class="fin44-revenue-amount">{% if r.total %}{{ r.total|million_toman }}{% else %}—{% endif %}</strong>
+          <span class="fin44-revenue-label">{{ r.label }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% if intel.branch_chart_other_total %}
+      <div class="fin44-branch-other-note">درآمد سایر شعب در جمع کل لحاظ شده است: {{ intel.branch_chart_other_total|million_toman }} میلیون تومان</div>
+      {% endif %}
+    </section>
     <section class="fin44-panel fin44-card fin44-payment-card" aria-label="درآمد تأییدشده بر اساس روش دریافت">
       <div class="fin44-card-head"><h2>پول از کجا آمده؟</h2><span class="fin44-pill">میلیون تومان</span></div>
       {% if intel.payment_method_rows %}

@@ -388,6 +388,35 @@ def finance_intelligence(context):
     branch_donut = branch_rows[0]['pct'] if branch_rows else 0
     branch_gradient = _conic_gradient(branch_rows, total)
 
+    # The compact branch card has four stable slots, even with zero receipts.
+    # The former Afsariyeh deposit channel is presented as Call Center here
+    # only; transaction branches and other finance reports stay unchanged.
+    chart_branches=(
+        ('نیاوران', BRANCH_PALETTE['نیاوران']),
+        ('پونک', BRANCH_PALETTE['پونک']),
+        ('اصفهان', BRANCH_PALETTE['اصفهان']),
+        ('کال‌سنتر', BRANCH_PALETTE['افسریه']),
+    )
+    call_center_aliases={'افسریه','کال‌سنتر','کال سنتر','کالسنتر'}
+    branch_chart_amounts={name:ZERO for name,_ in chart_branches}
+    other_branch_total=ZERO
+    for row in branch_rows:
+        name=row['label']
+        key='کال‌سنتر' if name in call_center_aliases else name
+        if key in branch_chart_amounts:
+            branch_chart_amounts[key]+=row['total']
+        else:
+            other_branch_total+=row['total']
+    max_chart_amount=max(branch_chart_amounts.values()) or Decimal('1')
+    branch_chart_rows=[
+        {
+            'label':name, 'total':branch_chart_amounts[name], 'color':color,
+            'pct':_pct(branch_chart_amounts[name],total),
+            'height':_pct(branch_chart_amounts[name],max_chart_amount),
+        }
+        for name,color in chart_branches
+    ]
+
     # Lead source distribution for approved income.
     source_rows = []
     source_defs = list(ReferralLead.SOURCE) + [('direct', 'مراجعه مستقیم')]
@@ -581,6 +610,7 @@ def finance_intelligence(context):
         'lead_count': lead_count, 'appointment_count': appointment_count, 'visit_count': visit_count,
         'conversion': conversion, 'revenue_per_lead': revenue_per_lead,
         'trend': trend, 'branch_rows': branch_rows, 'branch_donut': branch_donut,
+        'branch_chart_rows':branch_chart_rows,'branch_chart_other_total':other_branch_total,
         'branch_gradient': branch_gradient, 'afsariyeh_only': afsariyeh_only,
         'source_rows': source_rows, 'source_donut': source_donut, 'source_gradient': source_gradient,
         'payment_method_rows': payment_method_rows,
