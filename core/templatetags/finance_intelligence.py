@@ -408,6 +408,34 @@ def finance_intelligence(context):
     source_donut = source_rows[0]['pct'] if source_rows else 0
     source_gradient = _conic_gradient(source_rows, total)
 
+    # Payment channel distribution is the same approved, filtered income queryset
+    # as the headline KPI; every transaction contributes exactly once.
+    payment_palette=('#23c7bb','#638bff','#ad7bf5','#f7b34b','#ed779f','#69d88f','#45a8de')
+    payment_totals=list(
+        income.values('payment_method').annotate(
+            total=Sum('amount'), count=Count('id'),
+        ).order_by('-total', 'payment_method')
+    )
+    payment_method_rows=[]
+    payment_max=max((row['total'] or ZERO for row in payment_totals),default=ZERO)
+    payment_labels={
+        'Pos H':'POS-H', 'Pos S':'POS-S', 'CC S':'CC-S', 'CC G':'CC-G',
+        'CC P':'CC-P', 'CC D':'CC-D', 'LINK':'لینک پرداخت',
+        'Cash':'نقدی', 'Bank Transfer':'حواله بانکی',
+        'TRANSFER':'کارت‌به‌کارت / حواله',
+    }
+    for idx,row in enumerate(payment_totals):
+        method=(row['payment_method'] or '').strip()
+        amount=_money(row['total'])
+        payment_method_rows.append({
+            'code':method,
+            'label':payment_labels.get(method,method) if method else 'روش نامشخص',
+            'total':amount,'count':row['count'],
+            'pct':round(float(amount * 100 / total),1) if total else 0,
+            'relative':_pct(amount,payment_max),
+            'color':payment_palette[idx % len(payment_palette)],
+        })
+
     # Service distribution. Keep all configured categories visible so a zero
     # clearly means "not recorded" rather than "missing from the system".
     service_rows = []
@@ -555,6 +583,7 @@ def finance_intelligence(context):
         'trend': trend, 'branch_rows': branch_rows, 'branch_donut': branch_donut,
         'branch_gradient': branch_gradient, 'afsariyeh_only': afsariyeh_only,
         'source_rows': source_rows, 'source_donut': source_donut, 'source_gradient': source_gradient,
+        'payment_method_rows': payment_method_rows,
         'service_rows': service_rows, 'uncategorized_count': uncategorized_count,
         'matrix_branches': branches, 'matrix_rows': matrix_rows,
         'matrix_unassigned_cells': matrix_unassigned_cells,
