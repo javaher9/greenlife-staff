@@ -402,14 +402,60 @@ class ReferralLeadManageForm(forms.ModelForm):
     next_follow_up=JalaliDateField(label='پیگیری بعدی',required=False)
     class Meta:
         model=ReferralLead
-        fields=['status','assigned_to','next_follow_up','interested_service','notes']
-        labels={'status':'وضعیت','assigned_to':'مسئول پیگیری','interested_service':'خدمت موردنظر','notes':'یادداشت پیگیری'}
+        fields=['status','contact_result','assigned_to','next_follow_up','interested_service','notes']
+        labels={
+            'status':'وضعیت فعلی','contact_result':'آخرین نتیجه ثبت‌شده',
+            'assigned_to':'مسئول پیگیری','interested_service':'خدمت موردنظر',
+            'notes':'یادداشت پیگیری',
+        }
         widgets={'notes':forms.Textarea(attrs={'rows':5})}
 
     def __init__(self,*args,branch=None,**kwargs):
         super().__init__(*args,**kwargs)
         qs=EmployeeProfile.objects.filter(is_active=True,role='call_center').select_related('user','branch')
         self.fields['assigned_to'].queryset=qs.order_by('branch__name','user__last_name')
+        result_field=self.fields['contact_result']
+        result_field.required=False
+        if self.instance and self.instance.contact_result in ('won','sale_lost'):
+            # Sales decisions are owned by receptionist/finance, never revised
+            # by a manual manager follow-up form.
+            result_field.disabled=True
+            result_field.help_text='نتیجه فروش در بخش منشی/مالی ثبت شده است.'
+        else:
+            result_field.choices=[
+                ('','— نتیجه‌ای ثبت نشده —'),
+                ('no_answer','پاسخ نداد'),('follow_up','نیاز به پیگیری'),
+                ('appointment','نوبت ثبت شد'),('not_interested','تمایل ندارد'),
+            ]
+        # Older cached manager forms did not submit this field; an absent key
+        # must not silently erase a legitimate historical call result.
+        if self.is_bound and 'contact_result' not in self.data:
+            result_field.disabled=True
+
+    def clean(self):
+        data=super().clean()
+        if ('contact_result' in self.changed_data
+                and data.get('contact_result')=='follow_up'
+                and not data.get('next_follow_up')):
+            self.add_error('next_follow_up','برای «نیاز به پیگیری» تاریخ پیگیری بعدی را ثبت کنید.')
+        return data
+
+    def save(self,commit=True):
+        lead=super().save(commit=False)
+        if 'contact_result' in self.changed_data:
+            result=self.cleaned_data.get('contact_result')
+            status_for_result={
+                'no_answer':'contacted','follow_up':'contacted',
+                'appointment':'appointment','not_interested':'lost',
+            }
+            if result in status_for_result:
+                lead.status=status_for_result[result]
+            if result not in ('follow_up','no_answer'):
+                lead.next_follow_up=None
+        if commit:
+            lead.save()
+            self.save_m2m()
+        return lead
 
 
 class CallCenterLeadForm(forms.ModelForm):
