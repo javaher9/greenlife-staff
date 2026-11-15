@@ -148,6 +148,7 @@ def mark_call_started(request, pk):
 
 @login_required
 @require_POST
+@transaction.atomic
 def save_call_result(request, pk):
     """Persist simple call outcomes directly from the call-center work queue."""
     profile=getattr(request.user,'profile',None)
@@ -157,9 +158,12 @@ def save_call_result(request, pk):
     result=(request.POST.get('result') or '').strip()
     if result not in ('no_answer','not_interested','follow_up'):
         return JsonResponse({'ok':False,'error':'invalid_result'},status=400)
+    from .follow_up_agenda import previous_follow_up, record_follow_up
+    previous=previous_follow_up(lead)
     previous_result=lead.contact_result
     previous_status=lead.status
     follow_up_time=''
+    note=''
     if result=='follow_up':
         raw_date=(request.POST.get('next_follow_up') or '').strip()
         follow_up_time=(request.POST.get('follow_up_time') or '').strip()
@@ -207,19 +211,28 @@ def save_call_result(request, pk):
         lead.contact_result='follow_up'
         lead.status='contacted'
         lead.next_follow_up=follow_date
+        lead.next_follow_up_time=(
+            datetime.strptime(follow_up_time,'%H:%M').time() if follow_up_time else None
+        )
         if follow_up_time or note:
             stamp=f'[followup_time:{follow_date.isoformat()} {follow_up_time}]' if follow_up_time else ''
             notes=(lead.notes or '').rstrip()
             entry='\n'.join(part for part in (stamp,note) if part)
             lead.notes=(notes+'\n'+entry).strip()
-            lead.save(update_fields=['contact_result','status','next_follow_up','notes','updated_at'])
+            lead.save(update_fields=['contact_result','status','next_follow_up','next_follow_up_time','notes','updated_at'])
         else:
-            lead.save(update_fields=['contact_result','status','next_follow_up','updated_at'])
+            lead.save(update_fields=['contact_result','status','next_follow_up','next_follow_up_time','updated_at'])
     else:
         lead.contact_result=result
         lead.status='contacted' if result=='no_answer' else 'lost'
-        lead.next_follow_up=None
-        lead.save(update_fields=['contact_result','status','next_follow_up','updated_at'])
+        # No-answer is an attempt, NOT cancellation of an existing
+        # callback promise. Leave the original due date/time visible and
+        # overdue until the operator explicitly schedules the next attempt.
+        if result=='not_interested':
+            lead.next_follow_up=None
+            lead.next_follow_up_time=None
+        lead.save(update_fields=['contact_result','status','next_follow_up','next_follow_up_time','updated_at'])
+    record_follow_up(lead,actor=request.user,previous=previous,result=result,note=note)
     from .sms_automation import queue_call_result_sms
     if (previous_result,previous_status)!=(lead.contact_result,lead.status):
         transaction.on_commit(lambda lead_id=lead.pk: queue_call_result_sms(lead_id))
@@ -231,6 +244,7 @@ def save_call_result(request, pk):
         'label':lead.get_status_display(),
         'next_follow_up':lead.next_follow_up.isoformat() if lead.next_follow_up else None,
         'follow_up_time':follow_up_time,
+        'stored_follow_up_time':lead.next_follow_up_time.strftime('%H:%M') if lead.next_follow_up_time else None,
     })
 
 
