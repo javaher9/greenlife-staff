@@ -2,7 +2,7 @@
 import uuid
 from decimal import Decimal
 from collections import defaultdict
-from datetime import timedelta
+from datetime import timedelta, datetime
 from functools import wraps
 from urllib.parse import urlencode
 from django.conf import settings
@@ -19,6 +19,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_GET, require_http_methods
 from .models import FinancialTransaction, lead_phone_variants, CustomerPortalMember, PatientProfile, PatientDietProgram, VisitAppointment, CustomerServiceRequest
+from .jalali import parse_jalali, format_jalali, LATIN_DIGITS
 from .me_diet_models import MeMealReport
 from .me_members_models import MeMemberCare, MeMemberAction
 from .customer_portal_views import _member
@@ -145,7 +146,16 @@ def detail(request,pk):
             if kind=='points' and not 1<=points<=100:raise ValueError('امتیاز باید بین ۱ و ۱۰۰ باشد.')
             due=None;assignee=None
             if kind=='followup':
-                raw=request.POST.get('followup_at','');due=parse_datetime(raw) if raw else None
+                raw=request.POST.get('followup_at','').strip()
+                if raw and request.POST.get('followup_calendar') == 'jalali':
+                    normalized=raw.translate(LATIN_DIGITS)
+                    date_part,time_part=normalized.split()
+                    day=parse_jalali(date_part)
+                    if format_jalali(day,persian_digits=False) != date_part:
+                        raise ValueError('تاریخ شمسی معتبر نیست.')
+                    due=datetime.combine(day,datetime.strptime(time_part,'%H:%M').time())
+                else:
+                    due=parse_datetime(raw) if raw else None
                 if raw and not due:raise ValueError('زمان پیگیری معتبر نیست.')
                 if due and timezone.is_naive(due):due=timezone.make_aware(due)
                 if due and due<=timezone.now():raise ValueError('زمان پیگیری باید در آینده باشد.')

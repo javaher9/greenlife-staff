@@ -40,6 +40,15 @@ class MemberTests(TestCase):
  def test_followup_validation(self):
   self.assertEqual(self.client.post(self.url,self.data('followup',followup_at=(timezone.now()-timedelta(days=1)).isoformat())).status_code,400)
   self.assertFalse(MeMemberAction.objects.exists())
+ def test_jalali_followup_roundtrip(self):
+  from core.jalali import format_jalali
+  due=timezone.localtime(timezone.now()+timedelta(days=2)).replace(second=0,microsecond=0)
+  raw=format_jalali(due,with_time=True,persian_digits=False)
+  r=self.client.post(self.url,self.data('followup',followup_calendar='jalali',followup_at=raw))
+  self.assertEqual(r.status_code,200);self.assertEqual(MeMemberCare.objects.get(member=self.m).followup_at,due)
+  self.assertContains(r,raw);self.assertNotContains(r,'datetime-local')
+  r=self.client.post(self.url,self.data('followup',revision=1,followup_calendar='jalali',followup_at='1405/13/01 12:30'))
+  self.assertEqual(r.status_code,400)
  def test_counts_and_real_attendance(self):
   from datetime import time
   from core.models import Branch,VisitAppointment
