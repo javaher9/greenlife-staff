@@ -1,5 +1,6 @@
 """Rename Isfahan fixed-role usernames without changing user IDs or history."""
 
+import os
 from django.conf import settings
 from django.db import migrations
 
@@ -33,6 +34,14 @@ def rename_role_accounts(apps,schema_editor):
                 or (
                     getattr(settings, "SETTINGS_MODULE", "") == "greenlife.test_settings"
                     and database_name.endswith("test.sqlite3")
+                )
+                # GitHub-hosted PR runners use disposable PostgreSQL databases
+                # named "greenlife", not always a test_ prefixed database.
+                # Production deploys run on a SELF-HOSTED runner and retain
+                # strict missing-account protections.
+                or (
+                    os.getenv("GITHUB_ACTIONS") == "true"
+                    and os.getenv("RUNNER_ENVIRONMENT") == "github-hosted"
                 )
             )
             if not destination and is_ephemeral_test_database:
