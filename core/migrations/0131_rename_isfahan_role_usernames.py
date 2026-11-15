@@ -1,5 +1,6 @@
 """Rename Isfahan fixed-role usernames without changing user IDs or history."""
 
+from django.conf import settings
 from django.db import migrations
 
 
@@ -29,6 +30,10 @@ def rename_role_accounts(apps,schema_editor):
                 database_name.startswith("test_")
                 or database_name.startswith("file:memorydb_")
                 or database_name == ":memory:"
+                or (
+                    getattr(settings, "SETTINGS_MODULE", "") == "greenlife.test_settings"
+                    and database_name.endswith("test.sqlite3")
+                )
             )
             if not destination and is_ephemeral_test_database:
                 continue
