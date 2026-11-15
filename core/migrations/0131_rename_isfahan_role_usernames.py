@@ -23,7 +23,14 @@ def rename_role_accounts(apps,schema_editor):
             # accounts. This safety exception never applies to the live DB:
             # production continues to refuse silent missing-account renames.
             database_name=str(schema_editor.connection.settings_dict.get("NAME") or "")
-            if not destination and database_name.startswith("test_"):
+            # SQLite tests use Django's file:memorydb_default URI rather
+            # than a test_ prefix. Both are ephemeral test database names.
+            is_ephemeral_test_database=(
+                database_name.startswith("test_")
+                or database_name.startswith("file:memorydb_")
+                or database_name == ":memory:"
+            )
+            if not destination and is_ephemeral_test_database:
                 continue
             raise RuntimeError(f"{old}: account missing; preserving database unchanged")
         if len(original)!=1 or destination:
