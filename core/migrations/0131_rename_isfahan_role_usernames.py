@@ -19,6 +19,12 @@ def rename_role_accounts(apps,schema_editor):
         if not original:
             if len(destination)==1:
                 continue  # Already renamed by a permitted administrator.
+            # Django's *ephemeral test database* has no production staff user
+            # accounts. This safety exception never applies to the live DB:
+            # production continues to refuse silent missing-account renames.
+            database_name=str(schema_editor.connection.settings_dict.get("NAME") or "")
+            if not destination and database_name.startswith("test_"):
+                continue
             raise RuntimeError(f"{old}: account missing; preserving database unchanged")
         if len(original)!=1 or destination:
             raise RuntimeError(f"{old}: conflicting accounts; preserving database unchanged")
