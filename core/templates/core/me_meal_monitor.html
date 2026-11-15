@@ -1,5 +1,11 @@
 {% extends 'core/base.html' %}{% block content %}
-<section class="panel" dir="rtl">
+<style>
+.meal-monitor{--meal-bg:{% if executive %}#102820{% else %}#ffffff{% endif %};--meal-ink:{% if executive %}#edf7f3{% else %}#203f39{% endif %};background:var(--meal-bg)!important;color:var(--meal-ink)!important;padding:20px;border-radius:18px}
+.meal-monitor .panel{background:var(--meal-bg)!important;border:1px solid {% if executive %}#365348{% else %}#dce8e1{% endif %};margin-top:14px}
+.meal-monitor h1,.meal-monitor h2,.meal-monitor p,.meal-monitor strong,.meal-monitor label,.meal-monitor nav{color:var(--meal-ink)!important;-webkit-text-fill-color:var(--meal-ink)!important}
+.meal-monitor p,.meal-monitor strong,.meal-monitor label,.meal-monitor nav{font-size:14px!important;line-height:1.9}.meal-monitor a{color:{% if executive %}#b8e5d4{% else %}#17664d{% endif %}!important}.meal-monitor h2{font-size:18px!important}
+@media(max-width:600px){.meal-monitor{padding:14px}.meal-monitor h1{font-size:22px!important}}
+</style><section class="panel meal-monitor" dir="rtl">
 <h1>مانیتورینگ وعده‌های من</h1>
 <p>درصد رعایت و توضیحات ثبت‌شده توسط مراجع؛ درصدهای ثبت‌نشده صفر محسوب نمی‌شوند.</p>
 <form method="get"><label>نام مراجع <input name="q" value="{{ q }}" maxlength="100"></label><button type="submit" class="btn">جستجو</button></form>
