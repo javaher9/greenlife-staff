@@ -12,11 +12,11 @@ class PersonnelAccessControlTests(TestCase):
         self.niavaran=Branch.objects.create(name='نیاوران')
         self.isfahan=Branch.objects.create(name='اصفهان')
         self.admin=User.objects.create_user('manager-control-test',password='AdminTest123',first_name='مدیر')
-        EmployeeProfile.objects.create(user=self.admin,role='admin',branch=self.niavaran)
+        EmployeeProfile.objects.update_or_create(user=self.admin,defaults={'role':'admin','branch':self.niavaran})
         self.member=User.objects.create_user('account-to-disable',password='MemberTest123',first_name='کارمند')
-        self.profile=EmployeeProfile.objects.create(user=self.member,role='receptionist',branch=self.isfahan)
+        self.profile,_=EmployeeProfile.objects.update_or_create(user=self.member,defaults={'role':'receptionist','branch':self.isfahan})
         self.other=User.objects.create_user('other-staff',password='MemberTest123')
-        self.other_profile=EmployeeProfile.objects.create(user=self.other,role='consultant',branch=self.niavaran)
+        self.other_profile,_=EmployeeProfile.objects.update_or_create(user=self.other,defaults={'role':'consultant','branch':self.niavaran})
         self.client.force_login(self.admin)
 
     def test_filters_default_active_and_counts_are_stable(self):
@@ -89,7 +89,7 @@ class PersonnelAccessControlTests(TestCase):
                              {'action':'deactivate'}).status_code,403
         )
         branch_manager=User.objects.create_user('branch-manager-control',password='AdminTest123')
-        EmployeeProfile.objects.create(user=branch_manager,role='manager',branch=self.niavaran)
+        EmployeeProfile.objects.update_or_create(user=branch_manager,defaults={'role':'manager','branch':self.niavaran})
         self.client.force_login(branch_manager)
         self.assertEqual(self.client.post(target,{'action':'deactivate'}).status_code,403)
         self.member.refresh_from_db()
