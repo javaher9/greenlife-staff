@@ -1306,6 +1306,57 @@ body.gl-page-call_center_dashboard .ccx .ccx-follow-footer [data-follow-cancel]{
     </div>
   </header>
 
+
+<style>
+/* Call-center callback commitments: visible, clickable and mobile first. */
+.cc-callbacks{margin:12px 0 17px;padding:12px 14px;border-radius:17px;border:1px solid #d8e6eb;background:linear-gradient(125deg,#fff,#f8f4fc);color:#263b50}
+.cc-callbacks>h2{font:900 15px Tahoma,sans-serif!important;color:#27384b!important;margin:2px 0 11px}
+.cc-cb-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.cc-cb-card,.cc-cb-card:visited,.cc-cb-card summary{color:#33465d!important}
+.cc-cb-card{display:block;border:1px solid #d6cce5;border-radius:13px;background:rgba(252,249,255,.92);padding:11px;min-width:0;text-decoration:none!important;box-shadow:0 4px 10px rgba(58,34,83,.05)}
+.cc-cb-card strong{display:block;font:900 11px/1.6 Tahoma,sans-serif;color:#41516c!important}
+.cc-cb-card b{display:block;margin-top:5px;font:900 27px Tahoma,sans-serif;color:#7650a4!important}
+.cc-cb-card small{display:block;font-size:10px;color:#66768b!important;margin-top:4px}
+.cc-cb-card.today{border-color:#b79ed6;background:#f2eafa}
+.cc-cb-card.overdue{border-color:#edc1c1;background:#fff4f3}
+.cc-cb-card.overdue b{color:#b13e60!important}
+.cc-cb-card.done{border-color:#b6dec9;background:#f0f9f5}
+.cc-cb-card.done b{color:#20845e!important}
+.cc-cb-card summary{list-style:none;cursor:pointer;display:block}
+.cc-cb-card summary::-webkit-details-marker{display:none}
+.cc-cb-open{margin-top:11px;border-top:1px solid #ded5e9;padding-top:9px;display:grid;gap:7px}
+.cc-cb-open a{font-size:11px;text-decoration:none!important;color:#5f398e!important;font-weight:900;padding:8px;border:1px solid #e0d9ea;border-radius:8px;background:#fff}
+.cc-cb-open a small{font-weight:400}
+.cc-cb-view-all{background:#7451a8!important;color:white!important;text-align:center}
+.cc-cb-advice{margin:8px 0 0;color:#66788b!important;font:11px/1.9 Tahoma,sans-serif}
+@media(max-width:880px){.cc-cb-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:470px){.cc-callbacks{padding:10px}.cc-cb-grid{gap:7px}.cc-cb-card{padding:9px}.cc-cb-card b{font-size:24px}.cc-cb-card strong{font-size:10px}}
+</style>
+
+<section class="cc-callbacks" aria-label="پیگیری‌های زمان‌بندی‌شده">
+ <h2>تعهدات تماس من · برنامه امروز</h2>
+ <div class="cc-cb-grid">
+  <details class="cc-cb-card today" id="ccCallbackToday">
+   <summary><strong>☎ تماس‌های مقرر امروز</strong><b>{{ callback_counts.today }}</b><small>برای باز کردن فهرست بزنید</small></summary>
+   <div class="cc-cb-open">
+     {% for lead in callback_today_preview %}
+       <a href="{% url 'call_center_lead' lead.pk %}">{{ lead.full_name }} <small>· {% if lead.next_follow_up_time %}{{ lead.next_follow_up_time|time:"H:i" }}{% else %}بدون ساعت{% endif %}</small></a>
+     {% empty %}<small>برای امروز موعدی ثبت نشده است.</small>{% endfor %}
+     <a class="cc-cb-view-all" href="{% url 'call_center_follow_up_agenda' %}?tab=today">مشاهده همه {{ callback_counts.today }} مورد</a>
+   </div>
+  </details>
+  <a class="cc-cb-card overdue" href="{% url 'call_center_follow_up_agenda' %}?tab=overdue">
+    <strong>⚠ پیگیری عقب‌افتاده</strong><b>{{ callback_counts.overdue }}</b><small>فهرست کامل موعدهای گذشته</small>
+  </a>
+  <a class="cc-cb-card" href="{% url 'call_center_follow_up_agenda' %}?tab=future">
+    <strong>◷ پیگیری‌های آینده</strong><b>{{ callback_counts.future }}</b><small>جستجو در تمام تاریخ‌ها</small>
+  </a>
+  <a class="cc-cb-card done" href="{% url 'call_center_follow_up_agenda' %}?tab=done">
+    <strong>✓ موعدهای امروز که تماسشان ثبت شد</strong><b>{{ callback_counts.done }}</b><small>نتیجه‌های ثبت‌شده واقعی</small>
+  </a>
+ </div>
+ <p class="cc-cb-advice">تماس‌های تاریخ‌دار از هر ماهی، روز موعد در این پلاک ظاهر می‌شوند. هر تماس را با نتیجه واقعی ثبت کنید تا سابقه و شمارنده‌ها به‌روز شوند.</p>
+</section>
   <nav class="ccx-quick-plaque" aria-label="دسترسی‌های سریع کال‌سنتر">
     <a class="ccx-quick-link" href="{% url 'call_center_dashboard' %}"><b>☎</b><span>میز کار</span></a>
     <a class="ccx-quick-link" href="{% url 'call_center_direct_lead_create' %}"><b>＋</b><span>ثبت مستقیم لید</span></a>
