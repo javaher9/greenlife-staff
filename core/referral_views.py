@@ -903,6 +903,17 @@ def call_center_dashboard(request):
     today=timezone.localdate()
     tomorrow=today+timedelta(days=1)
 
+    # Full callback ledger: unlike the work queue this includes all scheduled
+    # dates, regardless of when a lead was originally created.
+    from .follow_up_agenda import due_follow_up_scope
+    from .follow_up_views import _category_counts
+    callbacks=due_follow_up_scope(all_leads)
+    callback_counts=_category_counts(callbacks,today,request.user.pk)
+    callback_today_preview=list(
+        callbacks.filter(next_follow_up=today)
+        .order_by('next_follow_up_time','pk')[:6]
+    )
+
     # Date-driven daily agenda keeps scheduled callbacks visible on the day
     # they are due, regardless of how old the original lead is.
     agenda_due=list(
@@ -1314,6 +1325,8 @@ def call_center_dashboard(request):
         'leads':[FlowerLeadProxy(lead) for lead in leads],'statuses':ReferralLead.STATUS,'status_filter':status,
         'group_filter':group_filter,'groups':groups,
         'stats':stats,'performance':performance,'today':today,'tomorrow':tomorrow,
+        'callback_counts':callback_counts,
+        'callback_today_preview':callback_today_preview,
         'agenda_due':[FlowerLeadProxy(lead) for lead in agenda_due],
         'agenda_today_count':agenda_today_count,'agenda_overdue_count':agenda_overdue_count,
         'tomorrow_appointments':tomorrow_appointments,
