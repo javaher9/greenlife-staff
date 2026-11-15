@@ -6,7 +6,7 @@ Run only from a trusted server-side process with tightly controlled input.
 import sys
 
 from django.contrib.auth.models import User
-from django.core.management import BaseCommand, CommandError
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.db.models import Q
 
