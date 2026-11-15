@@ -1,0 +1,77 @@
+{% extends 'core/base.html' %}
+{% load jalali_tags %}
+{% block content %}
+<style>
+.gl-agenda{direction:rtl;max-width:1220px;margin:auto;padding:14px 12px 45px;color:#20364b;font-family:Tahoma,sans-serif}
+.gl-agenda *{box-sizing:border-box}
+.gl-agenda h1{font-size:24px;margin:8px 0}.gl-agenda .sub{color:#6c8090;margin:0 0 15px;font-size:12px;line-height:1.9}
+.gl-agenda .ag-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.gl-agenda .ag-card{border:1px solid #cddde5;border-radius:16px;background:linear-gradient(145deg,#fff,#f2f7fa);color:#253e51;padding:14px;display:block;text-decoration:none;min-height:94px}
+.gl-agenda .ag-card.active{border:2px solid #8a62ba;background:#f4ecfa}
+.gl-agenda .ag-card b{display:block;font-size:30px;margin:7px 0;color:#714399}
+.gl-agenda .ag-card span{font-size:12px;font-weight:900}
+.gl-agenda .ag-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fff;padding:12px;border-radius:12px;border:1px solid #dde8ed}
+.gl-agenda .ag-filter input{background:#f7fafb;border:1px solid #cad9e4;border-radius:9px;padding:10px;color:#253e51;min-width:0}
+.gl-agenda .ag-filter button{background:#7451a5;border:0;border-radius:9px;color:white;padding:11px 16px;cursor:pointer;font-weight:900}
+.gl-agenda .ag-list{display:grid;gap:10px;margin-top:12px}
+.gl-agenda .ag-row{border:1px solid #dbe6ed;border-radius:15px;background:#fff;padding:13px;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(110px,.6fr) minmax(0,1fr) auto;align-items:center;gap:11px}
+.gl-agenda .ag-row strong{font-size:14px;color:#26384a}.gl-agenda .ag-row small{display:block;color:#667e8f;margin-top:6px;font-size:11px;line-height:1.6}
+.gl-agenda .ag-due{font-size:12px;font-weight:900;color:#7751a2}.gl-agenda .ag-actions{display:flex;gap:6px;flex-wrap:wrap}
+.gl-agenda .ag-actions a{padding:9px 12px;border-radius:9px;text-decoration:none;background:#eaf5ef;color:#17674f;font-size:12px;font-weight:900}
+.gl-agenda .ag-actions a:last-child{background:#ece7f7;color:#624489}
+.gl-agenda details{grid-column:1/-1;background:#f8f5fb;border-radius:10px;padding:9px 12px;font-size:11px;color:#576879}
+.gl-agenda details summary{cursor:pointer;font-weight:800}
+.gl-agenda .ag-history{margin:9px 0 0;padding:0 16px;line-height:2}
+.gl-agenda .ag-pager{display:flex;align-items:center;gap:15px;justify-content:center;padding:16px}
+.gl-agenda .ag-pager a{color:#65449a}
+.gl-agenda .ag-empty{background:#fff;border-radius:14px;padding:24px;color:#627a89;text-align:center}
+.gl-agenda .ag-back{display:inline-flex;color:#6d4c97;font-weight:900;text-decoration:none;margin-bottom:7px}
+@media(max-width:950px){.gl-agenda .ag-row{grid-template-columns:1fr 1fr}.gl-agenda .ag-actions{justify-content:flex-start}.gl-agenda .ag-cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:550px){.gl-agenda .ag-row{grid-template-columns:1fr}.gl-agenda .ag-cards{gap:6px}.gl-agenda .ag-card{padding:10px;min-height:78px}.gl-agenda .ag-card b{font-size:25px}}
+</style>
+<section class="gl-agenda">
+  <a class="ag-back" href="{% url 'call_center_dashboard' %}">بازگشت به میز کار کال‌سنتر</a>
+  <h1>مرکز پیگیری‌های من</h1>
+  <p class="sub">تمام موعدهای ثبت‌شده، حتی اگر شش ماه قبل تعیین شده باشند، از پرونده واقعی لیدها خوانده می‌شوند. پیگیریِ بدون ساعت، بدون ساعت فرضی نمایش داده می‌شود.</p>
+  <nav class="ag-cards" aria-label="فیلترهای تعهدات تماس">
+    <a class="ag-card {% if tab == 'today' %}active{% endif %}" href="?tab=today"><span>تماس‌های مقرر امروز</span><b>{{ counts.today }}</b></a>
+    <a class="ag-card {% if tab == 'overdue' %}active{% endif %}" href="?tab=overdue"><span>پیگیری عقب‌افتاده</span><b>{{ counts.overdue }}</b></a>
+    <a class="ag-card {% if tab == 'future' %}active{% endif %}" href="?tab=future"><span>پیگیری‌های آینده</span><b>{{ counts.future }}</b></a>
+    <a class="ag-card {% if tab == 'done' %}active{% endif %}" href="?tab=done"><span>تماس‌های موعد امروز که ثبت شد</span><b>{{ counts.done }}</b></a>
+  </nav>
+  {% if counts.unscheduled %}<p class="sub"><a href="?tab=unscheduled">⚠ {{ counts.unscheduled }} مورد «نیاز به پیگیری» بدون تاریخ مشخص؛ تعیین موعد لازم است</a></p>{% endif %}
+  <form class="ag-filter" method="get">
+    <input type="hidden" name="tab" value="{{ tab }}">
+    <input type="search" name="q" value="{{ query }}" placeholder="نام یا شماره مشتری" aria-label="جستجوی پیگیری‌ها">
+    {% if tab == 'future' %}<label>تاریخ مشخص <input type="date" name="date" value="{{ exact_date }}"></label>{% endif %}
+    <button type="submit">جستجو</button>
+  </form>
+  <div class="ag-list">
+  {% for row in cards %}
+    <article class="ag-row">
+      <div><strong>{{ row.lead.full_name }}</strong><small>شماره: <span dir="ltr">{{ row.lead.phone }}</span></small></div>
+      <div class="ag-due">
+        {% if row.lead.next_follow_up %}{{ row.lead.next_follow_up|jdate }}{% else %}موعد تعیین نشده{% endif %}
+        <small>ساعت: {% if row.lead.next_follow_up_time %}{{ row.lead.next_follow_up_time|time:"H:i" }}{% else %}ثبت نشده{% endif %}</small>
+      </div>
+      <div><small>آخرین نتیجه: {{ row.lead.get_contact_result_display|default:"—" }}</small>
+        <small>{{ row.lead.interested_service|truncatechars:100|default:"بدون توضیح" }}</small></div>
+      <div class="ag-actions"><a href="tel:{{ row.lead.phone }}">☎ تماس</a><a href="{% url 'call_center_lead' row.lead.pk %}">ثبت نتیجه / تغییر موعد</a></div>
+      <details><summary>سابقه ثبت و تغییر پیگیری ({{ row.history|length }} مورد آخر)</summary>
+        <ol class="ag-history">{% for e in row.history %}
+          <li>{{ e.created_at|jdate }} · {{ e.created_at|date:"H:i" }} —
+          {{ e.get_action_display }}{% if e.actor %} توسط {{ e.actor.get_full_name|default:e.actor.username }}{% endif %}
+          {% if e.scheduled_for %} · موعد {{ e.scheduled_for|jdate }}{% if e.scheduled_time %} ساعت {{ e.scheduled_time|time:"H:i" }}{% endif %}{% endif %}
+          {% if e.note %}<small>{{ e.note|truncatechars:180 }}</small>{% endif %}</li>
+        {% empty %}<li>برای این لید، سابقه ساختاریافته‌ای ثبت نشده؛ تاریخ موعد فعلی همچنان معتبر است.</li>{% endfor %}</ol>
+      </details>
+    </article>
+  {% empty %}<div class="ag-empty">در این دسته موردی وجود ندارد.</div>{% endfor %}
+  </div>
+  <nav class="ag-pager" aria-label="صفحه‌بندی پیگیری‌ها">
+    {% if page.has_previous %}<a href="?{{ page_query }}&amp;page={{ page.previous_page_number }}">قبلی</a>{% endif %}
+    صفحه {{ page.number }} از {{ page.paginator.num_pages }} · کل {{ page.paginator.count }} مورد
+    {% if page.has_next %}<a href="?{{ page_query }}&amp;page={{ page.next_page_number }}">بعدی</a>{% endif %}
+  </nav>
+</section>
+{% endblock %}

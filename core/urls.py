@@ -2,7 +2,7 @@ from . import me_members_views
 from . import me_diet_views, me_meal_monitor
 from . import me_nutrition_views
 from . import me_sync_views
-from . import lead_contact_views, all_leads_views
+from . import lead_contact_views, all_leads_views, follow_up_views
 from django.urls import path
 from . import views
 from . import executive_finance_hub_views
@@ -58,6 +58,8 @@ urlpatterns = [
     path("customer/me/diet/", me_diet_views.diet, name="me_diet"),
     path("customer/me/nutrition/", me_nutrition_views.nutrition, name="me_nutrition"),
     path("customer/me/logout/", me_sync_views.logout),
+path('call-center/follow-ups/',follow_up_views.call_center_follow_up_agenda,name='call_center_follow_up_agenda'),
+path('lead-management/follow-ups/',follow_up_views.management_follow_up_agenda,name='management_follow_up_agenda'),
 path('management/all-leads/',all_leads_views.all_leads,name='management_all_leads'),
 path('management/all-leads/data/',all_leads_views.all_leads_data,name='management_all_leads_data'),
 path('api/leads/last-arrival/',lead_freshness_views.live_last_lead,name='live_last_lead'),
