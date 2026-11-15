@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -30,8 +31,16 @@ def management_lead_follow_up(request, pk):
     )
     form = ReferralLeadManageForm(request.POST or None, instance=lead)
     if request.method == 'POST' and form.is_valid():
-        previous_assignee = lead.assigned_to_id
-        updated = form.save()
+        from .follow_up_agenda import saved_follow_up_snapshot, record_follow_up
+        with transaction.atomic():
+            previous=saved_follow_up_snapshot(lead)
+            previous_assignee=ReferralLead.objects.filter(pk=lead.pk).values_list('assigned_to_id',flat=True).get()
+            updated=form.save()
+            if (previous['result'],previous['date'],previous['time']) != (
+                updated.contact_result,updated.next_follow_up,updated.next_follow_up_time,
+            ):
+                record_follow_up(updated,actor=request.user,previous=previous,
+                                 note=(form.cleaned_data.get('notes') or '')[:2000])
         if updated.assigned_to_id != previous_assignee:
             if updated.assigned_to_id:
                 updated.group = _default_call_center_group(updated.assigned_to)
