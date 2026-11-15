@@ -1,4 +1,4 @@
-name: Audit Isfahan Role Accounts and Prepare Secure Credential Transfer
+name: Verify Isfahan Role Usernames
 
 on:
   push:
@@ -15,40 +15,34 @@ jobs:
     runs-on: [self-hosted, linux, greenlife-prod]
     timeout-minutes: 10
     steps:
-      - name: Inspect current role accounts without printing secrets
+      - name: Verify renamed users on production without displaying credentials
         shell: bash
         run: |
           set -Eeuo pipefail
           docker exec -i greenlife-staff-runtime-web-1 python manage.py shell <<'PY'
           from django.contrib.auth.models import User
-          from core.models import EmployeeProfile, StaffCredential
-          expected = (
-              ("esfahan.reception", "receptionist"),
-              ("esfahan.consultant", "consultant"),
-              ("Esfehan.monshi", "receptionist"),
-              ("Esfehan.moshaver", "consultant"),
+          from core.models import EmployeeProfile
+          accounts=(
+              ("esfahan.reception","Esfehan.monshi","receptionist"),
+              ("esfahan.consultant","Esfehan.moshaver","consultant"),
           )
-          for username, role in expected:
-              matches=list(User.objects.filter(username__iexact=username))
-              if len(matches)!=1:
-                  print(f"{username}: account_matches={len(matches)}")
-                  continue
-              user=matches[0]
-              profile=EmployeeProfile.objects.select_related("branch").filter(user=user).first()
-              cred=StaffCredential.objects.filter(user=user).first()
-              branch=profile.branch.name if profile and profile.branch else ""
-              branch_ok=any(token in branch.lower() for token in ("اصفهان", "esfahan", "isfahan"))
-              print(f"{username}: exists=1 user_active={user.is_active} profile_active={profile.is_active if profile else None} role_ok={bool(profile and profile.role==role)} branch_ok={branch_ok} password_usable={user.has_usable_password()} pin_set={bool(cred and cred.mobile_pin_hash)}")
+          for old,new,role in accounts:
+              assert not User.objects.filter(username__iexact=old).exists(), f"Old login remains: {old}"
+              users=list(User.objects.filter(username__iexact=new))
+              assert len(users)==1, f"Missing or duplicate new login: {new}"
+              user=users[0]
+              profile=EmployeeProfile.objects.select_related("branch").get(user=user)
+              assert user.username==new and user.is_active and profile.is_active and profile.role==role
+              assert profile.branch and "اصفهان" in profile.branch.name
+              print(f"{new}: username=ok role=ok branch=ok active=1 password_usable={user.has_usable_password()}")
           PY
-      - name: Prepare one-time public encryption key on trusted runner
+      - name: Destroy unused one-time transfer private key
+        if: always()
         shell: bash
         run: |
           set -Eeuo pipefail
-          key_dir="$HOME/.config/greenlife-staff/secure-credential-transfer"
-          mkdir -p "$key_dir"
-          chmod 700 "$key_dir"
-          umask 077
-          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out "$key_dir/transfer-private.pem" 2>/dev/null
-          echo "PUBLIC_KEY_BEGIN"
-          openssl pkey -in "$key_dir/transfer-private.pem" -pubout
-          echo "PUBLIC_KEY_END"
+          key_file="$HOME/.config/greenlife-staff/secure-credential-transfer/transfer-private.pem"
+          if [ -f "$key_file" ]; then
+            shred -u "$key_file" || rm -f "$key_file"
+          fi
+          echo "Temporary key cleanup complete."
