@@ -433,6 +433,7 @@ class LeadContactPhone(models.Model):
 
 
 class VisitAppointment(models.Model):
+    visit_mode=models.CharField(max_length=10,choices=[('in_person','حضوری'),('online','آنلاین')],default='in_person',verbose_name='نوع ویزیت')
     STATUS=[
         ('booked','رزرو شده'),
         ('arrived','مراجعه کرده'),

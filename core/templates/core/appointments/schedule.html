@@ -460,7 +460,7 @@ body.gl-role-receptionist.gl-page-appointment_schedule .schedule7 .s7-controls{b
       <div><span>تاریخ</span><b id="s7BookDate">—</b></div>
       <div><span>ساعت</span><b id="s7BookTime">—</b></div>
     </div>
-    <label class="s7-book-notes">یادداشت برای منشی — اختیاری<textarea id="s7BookNotes" maxlength="2000" placeholder="در صورت نیاز توضیح کوتاه بنویسید"></textarea></label>
+    <label for="s7VisitMode">نوع ویزیت</label><select id="s7VisitMode"><option value="in_person">حضوری</option><option value="online">آنلاین</option></select><label class="s7-book-notes">یادداشت برای منشی — اختیاری<textarea id="s7BookNotes" maxlength="2000" placeholder="در صورت نیاز توضیح کوتاه بنویسید"></textarea></label>
     <div class="s7-book-modal-actions"><button class="s7-book-confirm" id="s7BookConfirm" type="button">ثبت قطعی نوبت</button><button class="s7-book-abort" type="button" data-book-close>انصراف</button></div>
     <div class="s7-book-status" id="s7BookStatus"></div>
   </div>
@@ -512,7 +512,7 @@ body.gl-role-receptionist.gl-page-appointment_schedule .schedule7 .s7-controls{b
     var branch=modal.dataset.branch||'';
     if(!branch){status.textContent='اول شعبه را انتخاب کنید.';return}
     var fd=new FormData(),token=csrf();if(token)fd.append('csrfmiddlewaretoken',token);
-    fd.append('branch',branch);fd.append('appointment_date',selected.dataset.date);fd.append('appointment_time',selected.dataset.time);fd.append('notes',notes.value||'');
+    fd.append('branch',branch);fd.append('appointment_date',selected.dataset.date);fd.append('appointment_time',selected.dataset.time);fd.append('notes',notes.value||'');fd.append('visit_mode',document.getElementById('s7VisitMode').value);
     busy=true;confirmBtn.disabled=true;confirmBtn.textContent='در حال ثبت…';status.textContent='در حال بررسی ساعت و ثبت نوبت…';
     fetch(modal.dataset.bookUrl,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}})
       .then(function(r){return r.json().then(function(d){if(!r.ok||!d.ok)throw new Error(d.error||'ثبت نوبت انجام نشد');return d})})

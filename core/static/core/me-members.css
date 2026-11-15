@@ -35,3 +35,5 @@ body .me-admin .me-money{font-size:30px!important;line-height:1.15;color:#a5ffdc
 .me-card-stats{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #ffffff12;border-bottom:1px solid #ffffff12;padding:9px 0;gap:8px;color:#b4c2d4;font-size:11px}.me-card-stats span+span{border-right:1px solid #ffffff15;padding-right:10px}body .me-admin .me-card-stats b{display:inline;font-size:15px!important;margin-left:4px}
 .me-card-bottom{margin-top:auto;font-size:10px}.me-card-bottom small{font-size:10px}.me-card-bottom>span{color:var(--me-accent)}.me-unit-note{font-size:11px;color:#a5ffdc;margin:6px 0!important}
 @media(min-width:1500px){body .me-admin .me-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+.me-card-bottom .me-alert-red{color:#ff9aaa!important}.me-card-bottom .me-alert-amber{color:#ffd27d!important}.me-alert-red:before,.me-alert-amber:before{content:"●";margin-left:5px}

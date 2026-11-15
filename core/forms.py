@@ -618,6 +618,10 @@ def visit_appointment_time_choices():
 
 
 class AppointmentFromLeadForm(forms.ModelForm):
+    visit_mode=forms.ChoiceField(choices=VisitAppointment._meta.get_field('visit_mode').choices,required=False,label='نوع ویزیت')
+    def clean_visit_mode(self):
+        return self.cleaned_data.get('visit_mode') or self.instance.visit_mode or 'in_person'
+
     appointment_date=JalaliDateField(label='تاریخ نوبت')
     appointment_time=forms.TimeField(
         label='ساعت نوبت',
@@ -626,7 +630,7 @@ class AppointmentFromLeadForm(forms.ModelForm):
     )
     class Meta:
         model=VisitAppointment
-        fields=['branch','appointment_date','appointment_time','notes']
+        fields=['branch','appointment_date','appointment_time','visit_mode','notes']
         labels={'branch':'شعبه','notes':'یادداشت نوبت'}
         widgets={'notes':forms.Textarea(attrs={'rows':3,'placeholder':'توضیح کوتاه برای منشی، در صورت نیاز'})}
 
@@ -655,6 +659,10 @@ class AppointmentFromLeadForm(forms.ModelForm):
 
 
 class ReceptionistAppointmentForm(forms.ModelForm):
+    visit_mode=forms.ChoiceField(choices=VisitAppointment._meta.get_field('visit_mode').choices,required=False,label='نوع ویزیت')
+    def clean_visit_mode(self):
+        return self.cleaned_data.get('visit_mode') or self.instance.visit_mode or 'in_person'
+
     appointment_date=JalaliDateField(label='تاریخ نوبت')
     appointment_time=forms.TimeField(
         label='ساعت نوبت',
@@ -663,7 +671,7 @@ class ReceptionistAppointmentForm(forms.ModelForm):
     )
     class Meta:
         model=VisitAppointment
-        fields=['full_name','phone','service','appointment_date','appointment_time','notes']
+        fields=['full_name','phone','service','appointment_date','appointment_time','visit_mode','notes']
         labels={
             'full_name':'نام مراجعه‌کننده','phone':'شماره موبایل','service':'خدمت موردنظر',
             'notes':'یادداشت نوبت',

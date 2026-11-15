@@ -402,6 +402,7 @@ def call_center_appointment_create(request,pk):
                     appointment_date=d['appointment_date'],
                     appointment_time=d['appointment_time'],
                     notes=d.get('notes') or '',
+                    visit_mode=d.get('visit_mode') or 'in_person',
                     source='call_center',
                     created_by=request.user,
                 )
@@ -451,6 +452,9 @@ def call_center_appointment_slot_create(request,pk):
     branch_id=(request.POST.get('branch') or '').strip()
     raw_date=(request.POST.get('appointment_date') or '').strip()
     raw_time=(request.POST.get('appointment_time') or '').strip()
+    visit_mode=request.POST.get('visit_mode') or 'in_person'
+    if visit_mode not in ('in_person','online'):
+        return JsonResponse({'ok':False,'error':'نوع ویزیت معتبر نیست.'},status=400)
     notes=(request.POST.get('notes') or '').strip()[:2000]
 
     if not branch_id.isdigit():
@@ -495,6 +499,7 @@ def call_center_appointment_slot_create(request,pk):
                 appointment_date=appointment_date,
                 appointment_time=appointment_time,
                 notes=notes,
+                visit_mode=visit_mode,
                 source='call_center',
                 created_by=request.user,
             )

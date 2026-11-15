@@ -78,3 +78,12 @@ class MemberTests(TestCase):
   self.assertEqual(paid[self.m.pk],0);self.assertEqual(paid[self.other.pk],300000000)
   u=User.objects.create_user('limited-finance');u.profile.role='internal_manager';u.profile.save();self.client.force_login(u)
   r=self.client.get('/greenlife-me/members/');self.assertFalse(any(hasattr(x,'paid_total') for x in r.context['rows']));self.assertNotContains(r,'>30</strong>');self.assertNotContains(self.client.get(self.url),'کل پرداختی تأییدشده')
+ def test_visit_modes_and_name(self):
+  from datetime import time
+  from core.models import Branch,VisitAppointment,PatientProfile
+  b=Branch.objects.create(name='mode');self.m.full_name='';self.m.save();PatientProfile.objects.create(full_name='نام پرونده',phone=self.m.phone)
+  a=VisitAppointment.objects.create(branch=b,full_name='name',phone=self.m.phone,appointment_date=timezone.localdate(),appointment_time=time(10),visit_mode='online',status='booked')
+  r=self.client.get('/greenlife-me/members/');m=next(x for x in r.context['rows'] if x.pk==self.m.pk);self.assertIsNone(m.last_mode);self.assertEqual(m.display_name,'نام پرونده')
+  a.status='completed';a.save();r=self.client.get('/greenlife-me/members/');m=next(x for x in r.context['rows'] if x.pk==self.m.pk);self.assertEqual(m.last_mode,'online')
+  VisitAppointment.objects.create(branch=b,full_name='name',phone=self.m.phone,appointment_date=timezone.localdate(),appointment_time=time(11),visit_mode='in_person',status='arrived')
+  r=self.client.get('/greenlife-me/members/');m=next(x for x in r.context['rows'] if x.pk==self.m.pk);self.assertEqual(m.last_mode,'in_person');self.assertTrue(m.has_online and m.has_in_person)

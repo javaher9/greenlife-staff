@@ -47,7 +47,11 @@ def members():
     visits=VisitAppointment.objects.filter(phone_q('phone'),status__in=('arrived','completed'))
     unread=MeMealReport.objects.filter(member_id=OuterRef('pk')).exclude(note='').filter(Q(updated_at__gt=OuterRef('me_care__reviewed_at'))|Q(member__me_care__reviewed_at__isnull=True))
     return CustomerPortalMember.objects.select_related('me_care__assigned_to','me_state').annotate(
-        patient_id=Subquery(patient.values('pk')[:1]),branch_name=Subquery(patient.values('home_branch__name')[:1]),
+        patient_id=Subquery(patient.values('pk')[:1]),patient_name=Subquery(patient.values('full_name')[:1]),
+        last_mode=Subquery(visits.order_by('-appointment_date','-appointment_time','-pk').values('visit_mode')[:1]),
+        has_online=Exists(visits.filter(visit_mode='online')),has_in_person=Exists(visits.filter(visit_mode='in_person')),
+        past_program=Exists(PatientDietProgram.objects.filter(phone_q('patient__phone'),status='completed')),
+        paused_program=Exists(PatientDietProgram.objects.filter(phone_q('patient__phone'),status='paused')),branch_name=Subquery(patient.values('home_branch__name')[:1]),
         visited=Exists(visits),has_program=Exists(PatientDietProgram.objects.filter(phone_q('patient__phone'),status='active')),
         has_note=Exists(unread),has_request=Exists(CustomerServiceRequest.objects.filter(member_id=OuterRef('pk'),status__in=('pending','contacted'))),
         last_seen=Greatest(Coalesce('last_login_at','created_at'),Coalesce('me_state__updated_at','created_at')),
@@ -92,6 +96,7 @@ def decorate(request,rows,now):
     for m in rows:
         c=getattr(m,'me_care',None)
         m.phone_display=masked_phone(request.user,m.phone)
+        m.display_name=m.full_name.strip() or m.patient_name or 'عضو بدون نام'
         m.overdue=bool(c and c.followup_at and c.followup_at<=now)
         m.needs_attention=m.has_note or m.has_request or m.overdue
     attach_payments(request.user,rows)
