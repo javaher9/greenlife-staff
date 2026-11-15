@@ -32,13 +32,13 @@ class PersonnelAccessControlTests(TestCase):
         self.member.save(update_fields=['is_active'])
         response=self.client.get(url)
         self.assertEqual(response.context['status_counts']['inactive'],1)
-        self.assertNotContains(response,'account-to-disable')
+        self.assertNotContains(response,reverse('employee_file',args=[self.profile.pk]))
         response=self.client.get(url+'?status=inactive')
-        self.assertContains(response,'account-to-disable')
-        self.assertNotContains(response,'other-staff')
+        self.assertContains(response,reverse('employee_file',args=[self.profile.pk]))
+        self.assertNotContains(response,reverse('employee_file',args=[self.other_profile.pk]))
         response=self.client.get(url+'?status=all')
-        self.assertContains(response,'account-to-disable')
-        self.assertContains(response,'other-staff')
+        self.assertContains(response,reverse('employee_file',args=[self.profile.pk]))
+        self.assertContains(response,reverse('employee_file',args=[self.other_profile.pk]))
 
     def test_deactivation_blocks_desktop_mobile_and_revokes_previous_sessions(self):
         url=reverse('employee_status_change',args=[self.profile.pk])
