@@ -1,5 +1,7 @@
 """Executive member overview. Registration, attendance and usage remain distinct."""
 import uuid
+from decimal import Decimal
+from collections import defaultdict
 from datetime import timedelta
 from functools import wraps
 from urllib.parse import urlencode
@@ -16,7 +18,7 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_GET, require_http_methods
-from .models import CustomerPortalMember, PatientProfile, PatientDietProgram, VisitAppointment, CustomerServiceRequest
+from .models import FinancialTransaction, lead_phone_variants, CustomerPortalMember, PatientProfile, PatientDietProgram, VisitAppointment, CustomerServiceRequest
 from .me_diet_models import MeMealReport
 from .me_members_models import MeMemberCare, MeMemberAction
 from .customer_portal_views import _member
@@ -59,12 +61,40 @@ def masked_phone(user,phone):
     if user.is_superuser or user.username.lower() in settings.EXECUTIVE_USERNAMES or getattr(getattr(user,'profile',None),'role',None)=='admin':return phone
     return phone[:4]+'***'+phone[-4:]
 
+def may_view_payments(user):
+    return bool(user.is_superuser or user.username.lower() in settings.EXECUTIVE_USERNAMES or getattr(getattr(user,'profile',None),'role',None)=='admin')
+
+def attach_payments(user, rows):
+    """Batch approved receipts, once per transaction; amounts are stored in rials.
+
+    An explicit appointment is authoritative over a conflicting free-text reference.
+    Ambiguous CRM references are never attributed to multiple members.
+    """
+    for m in rows:
+        m.show_payments=may_view_payments(user)
+    if not rows or not may_view_payments(user):return
+    by_phone=defaultdict(set)
+    by_ref=defaultdict(set)
+    totals={m.pk:Decimal('0') for m in rows}
+    for m in rows:
+        for phone in lead_phone_variants(m.phone):
+            by_phone[phone].add(m.pk)
+            by_ref[phone].add(m.pk)
+    for patient in PatientProfile.objects.filter(phone__in=by_phone).exclude(crm_id='').values('phone','crm_id'):
+        if patient['crm_id']:by_ref[patient['crm_id']].update(by_phone[patient['phone']])
+    entries=FinancialTransaction.objects.filter(entry_type='inc',review_status='approved').filter(Q(appointment__phone__in=by_phone)|Q(patient_ref__in=by_ref)).values('amount','appointment_id','appointment__phone','patient_ref')
+    for entry in entries:
+        targets=by_phone.get(entry['appointment__phone'],set()) if entry['appointment_id'] else by_ref.get(entry['patient_ref'],set())
+        if len(targets)==1:totals[next(iter(targets))]+=entry['amount']
+    for m in rows:m.paid_total=totals[m.pk]
+
 def decorate(request,rows,now):
     for m in rows:
         c=getattr(m,'me_care',None)
         m.phone_display=masked_phone(request.user,m.phone)
         m.overdue=bool(c and c.followup_at and c.followup_at<=now)
         m.needs_attention=m.has_note or m.has_request or m.overdue
+    attach_payments(request.user,rows)
     return rows
 
 @gate

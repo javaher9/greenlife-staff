@@ -49,3 +49,32 @@ class MemberTests(TestCase):
    MeMealReport.objects.create(member=self.m,day=timezone.localdate(),meal_key=key,label=key,status='reported')
   r=self.client.get('/greenlife-me/members/');self.assertEqual(r.context['counts']['total'],2);self.assertEqual(r.context['counts']['visited'],0)
   a.status='arrived';a.save();r=self.client.get('/greenlife-me/members/');self.assertEqual(r.context['counts']['visited'],1);self.assertEqual(r.context['counts']['unvisited'],1)
+ def test_payments_units_status_and_no_double_count(self):
+  from decimal import Decimal
+  from datetime import time
+  from core.models import Branch,VisitAppointment,FinancialTransaction,PatientProfile
+  b=Branch.objects.create(name='پرداخت آزمون')
+  a=VisitAppointment.objects.create(branch=b,full_name='آزمون',phone=self.m.phone,appointment_date=timezone.localdate(),appointment_time=time(10))
+  def receipt(amount,**kw):
+   return FinancialTransaction.objects.create(amount=amount,occurred_at=timezone.now(),source='manual',patient_ref=self.m.phone,**kw)
+  receipt(100000000,appointment=a)
+  receipt(100000000) # equal-sized separate receipts must both count
+  receipt(100000000,review_status='pending')
+  receipt(100000000,review_status='cancelled')
+  receipt(100000000,entry_type='exp')
+  PatientProfile.objects.create(full_name='آزمون',phone=self.m.phone,crm_id='MEMBER-CRM')
+  FinancialTransaction.objects.create(amount=100000000,occurred_at=timezone.now(),patient_ref='MEMBER-CRM')
+  r=self.client.get('/greenlife-me/members/');row=next(x for x in r.context['rows'] if x.pk==self.m.pk)
+  self.assertEqual(row.paid_total,Decimal('300000000'));self.assertContains(r,'>30</strong>');self.assertContains(r,'میلیون تومان')
+  self.assertEqual(next(x for x in r.context['rows'] if x.pk==self.other.pk).paid_total,0)
+  self.assertContains(self.client.get(self.url),'>30</strong>')
+ def test_payment_privacy_and_authoritative_appointment(self):
+  from datetime import time
+  from core.models import Branch,VisitAppointment,FinancialTransaction
+  b=Branch.objects.create(name='آزمون مالی')
+  a=VisitAppointment.objects.create(branch=b,full_name='آزمون',phone=self.other.phone,appointment_date=timezone.localdate(),appointment_time=time(10))
+  FinancialTransaction.objects.create(amount=300000000,occurred_at=timezone.now(),patient_ref=self.m.phone,appointment=a)
+  r=self.client.get('/greenlife-me/members/');paid={x.pk:x.paid_total for x in r.context['rows']}
+  self.assertEqual(paid[self.m.pk],0);self.assertEqual(paid[self.other.pk],300000000)
+  u=User.objects.create_user('limited-finance');u.profile.role='internal_manager';u.profile.save();self.client.force_login(u)
+  r=self.client.get('/greenlife-me/members/');self.assertFalse(any(hasattr(x,'paid_total') for x in r.context['rows']));self.assertNotContains(r,'>30</strong>');self.assertNotContains(self.client.get(self.url),'کل پرداختی تأییدشده')
