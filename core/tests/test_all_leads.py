@@ -85,6 +85,108 @@ class AllLeadsTests(TestCase):
         self.assertEqual(self.client.get(self.url, {'from':'۱۴۰۰/۰۱/۰۱','to':'۱۴۹۹/۱۲/۲۹'}).json()['total'], 8)
         self.assertEqual(self.client.get(self.url, {'flower': self.flower.pk}).json()['total'], 8)
 
+    def test_repeated_call_replaces_month_old_unanswered_result_in_both_screens(self):
+        lead = self.leads[0]
+        ReferralLead.objects.filter(pk=lead.pk).update(
+            status='contacted', contact_result='no_answer', next_follow_up=None,
+        )
+        before = {r['id']: r for r in self.client.get(self.url).json()['items']}
+        self.assertEqual(before[lead.pk]['label'], 'پاسخ نداد')
+
+        # Clicking to call again must allow a new result, but must NOT
+        # pretend the customer answered before the operator records it.
+        self.client.force_login(self.worker)
+        started = self.client.post(reverse('call_center_mark_call_started', args=[lead.pk]))
+        self.assertEqual(started.status_code, 200)
+        self.assertTrue(started.json()['needs_result'])
+        lead.refresh_from_db()
+        self.assertEqual(lead.contact_result, 'no_answer')
+
+        follow_date = timezone.localdate() + timedelta(days=2)
+        saved = self.client.post(
+            reverse('call_center_save_call_result', args=[lead.pk]),
+            {'result': 'follow_up', 'next_follow_up': follow_date.isoformat()},
+        )
+        self.assertEqual(saved.status_code, 200, saved.content)
+        self.assertEqual(saved.json()['result'], 'follow_up')
+        lead.refresh_from_db()
+        self.assertEqual(lead.contact_result, 'follow_up')
+        self.assertEqual(lead.next_follow_up, follow_date)
+
+        # Compact archive is a fresh DB read, not a one-time status snapshot.
+        self.client.force_login(self.manager)
+        after = {r['id']: r for r in self.client.get(self.url).json()['items']}
+        self.assertEqual(after[lead.pk]['label'], 'نیاز به پیگیری')
+        hub = self.client.get(reverse('lead_management_dashboard'))
+        self.assertEqual(hub.status_code, 200)
+        self.assertContains(hub, 'آخرین نتیجه')
+        self.assertContains(hub, 'نیاز به پیگیری')
+
+    def test_original_no_answer_remains_when_no_later_result_was_recorded(self):
+        lead = self.leads[1]
+        ReferralLead.objects.filter(pk=lead.pk).update(
+            status='contacted', contact_result='no_answer', next_follow_up=None,
+        )
+        row = next(r for r in self.client.get(self.url).json()['items'] if r['id'] == lead.pk)
+        # Do not invent a successful call merely because time has passed.
+        self.assertEqual(row['label'], 'پاسخ نداد')
+
+    def test_new_appointment_overrides_old_unanswered_badge(self):
+        lead = self.leads[2]
+        ReferralLead.objects.filter(pk=lead.pk).update(
+            status='appointment', contact_result='no_answer',
+        )
+        row = next(r for r in self.client.get(self.url).json()['items'] if r['id'] == lead.pk)
+        self.assertEqual(row['label'], 'نوبت داده شد')
+
+    def test_manager_explicit_result_updates_compact_archive_and_legacy_posts_preserve_it(self):
+        from core.forms import ReferralLeadManageForm
+        from core.jalali import format_jalali
+
+        lead = self.leads[3]
+        ReferralLead.objects.filter(pk=lead.pk).update(
+            status='contacted', contact_result='no_answer',
+        )
+        lead.refresh_from_db()
+        date = timezone.localdate() + timedelta(days=2)
+        fields = {
+            'status': 'contacted', 'contact_result': 'follow_up',
+            'assigned_to': str(self.flower.pk),
+            'next_follow_up': format_jalali(date),
+            'interested_service': '', 'notes': 'دوباره تماس گرفتیم، پیگیری خواسته است.',
+        }
+        form = ReferralLeadManageForm(fields, instance=lead)
+        self.assertTrue(form.is_valid(), form.errors.as_json())
+        form.save()
+        lead.refresh_from_db()
+        self.assertEqual((lead.contact_result, lead.status), ('follow_up', 'contacted'))
+        self.assertEqual(lead.next_follow_up, date)
+        row = next(r for r in self.client.get(self.url).json()['items'] if r['id'] == lead.pk)
+        self.assertEqual(row['label'], 'نیاز به پیگیری')
+
+        # Cached older manager pages without the new result field must not
+        # wipe it when someone edits a note or owner.
+        fields.pop('contact_result')
+        fields['notes'] = 'ویرایش یادداشت بدون ثبت تماس تازه'
+        old_form = ReferralLeadManageForm(fields, instance=lead)
+        self.assertTrue(old_form.is_valid(), old_form.errors.as_json())
+        old_form.save()
+        lead.refresh_from_db()
+        self.assertEqual(lead.contact_result, 'follow_up')
+
+    def test_repeat_result_control_available_on_already_contacted_queue_row(self):
+        lead = self.leads[4]
+        ReferralLead.objects.filter(pk=lead.pk).update(
+            status='contacted', contact_result='no_answer',
+        )
+        self.client.force_login(self.worker)
+        dashboard = self.client.get(reverse('call_center_dashboard'))
+        self.assertEqual(dashboard.status_code, 200)
+        # Dashboard helper no longer quits before adding controls to an
+        # unanswered or follow-up row, and each new call resets the strip.
+        self.assertContains(dashboard, "badgeText==='جدید'")
+        self.assertContains(dashboard, "if(old)old.remove()")
+
     def test_query_count_does_not_grow_with_page(self):
         from django.test.utils import CaptureQueriesContext
         from django.db import connection
