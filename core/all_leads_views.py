@@ -56,10 +56,13 @@ def archive_queryset(request):
         When(Q(last_visit_status__in=('arrived', 'completed')) | Q(status='visited'), then=Value('visited')),
         When(last_visit_status='booked', then=Value('appointment')),
         When(last_visit_status='cancelled', then=Value('cancelled')),
-        *[When(contact_result=key, then=Value(key)) for key in ('follow_up', 'no_answer', 'appointment', 'not_interested')],
+        # A newer appointment/closure or scheduled follow-up is the current
+        # business state. Do not let an older "no answer" mask those facts.
+        # Unchanged/no-new-attempt leads still display their last real result.
         When(status='appointment', then=Value('appointment')),
         When(status='lost', then=Value('not_interested')),
         When(status='contacted', next_follow_up__isnull=False, then=Value('follow_up')),
+        *[When(contact_result=key, then=Value(key)) for key in ('follow_up', 'no_answer', 'appointment', 'not_interested')],
         When(status='contacted', then=Value('contacted')),
         default=Value('new'), output_field=CharField(),
     ))
