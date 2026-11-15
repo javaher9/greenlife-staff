@@ -722,7 +722,7 @@ class EmployeeEditForm(forms.Form):
                 'address':employee.address,'education':employee.education,
                 'is_insured':employee.is_insured,'can_register_instagram_dm_lead':employee.can_register_instagram_dm_lead,
                 'can_manage_call_center_groups':employee.can_manage_call_center_groups,
-                'can_use_sales_network':employee.can_use_sales_network,'can_send_marketing_sms':employee.can_send_marketing_sms,'is_active':employee.is_active,
+                'can_use_sales_network':employee.can_use_sales_network,'can_send_marketing_sms':employee.can_send_marketing_sms,'is_active':bool(employee.is_active and employee.user.is_active),
             })
 
     def clean_username(self):

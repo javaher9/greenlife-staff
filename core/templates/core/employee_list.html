@@ -7,6 +7,21 @@
 .personnel-card-actions{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));flex-wrap:initial}.personnel-card-actions a{display:flex;align-items:center;justify-content:center;min-width:0;min-height:31px;padding:5px 4px!important;font-size:10px;line-height:1.25;text-align:center;white-space:nowrap}
 @media(min-width:700px) and (max-width:1180px){.personnel-card-actions{grid-template-columns:repeat(3,minmax(0,1fr))}.personnel-card-actions a{min-height:29px;font-size:9px;padding:4px 3px!important}}
 @media(max-width:699px){.personnel-card-actions{grid-template-columns:repeat(3,minmax(0,1fr))}.personnel-card-actions a{font-size:10px}}
+.personnel-status-filters{display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:10px;border:1px solid #293e50;border-radius:17px;background:#111e2b}
+.personnel-filter{display:inline-flex;align-items:center;gap:9px;justify-content:center;min-height:43px;padding:9px 15px;text-decoration:none!important;color:#cfdae6!important;background:#1a2938;border:1px solid #354958;border-radius:12px;font-size:12px;font-weight:800}
+.personnel-filter strong{border-radius:999px;padding:2px 8px;background:#293b4b;color:#e3edf5;font-size:12px}
+.personnel-filter[aria-current="page"]{background:#254938;color:#fff!important;border-color:#43876b}
+.personnel-filter[aria-current="page"] strong{background:#397b60;color:#fff}
+.personnel-account-footer{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:10px;margin-top:10px;border-top:1px solid #293e50}
+.personnel-state-chip{font-weight:800;font-size:10px;color:#77e6ae}
+.personnel-state-chip.is-inactive{color:#e0b2ac}
+.personnel-account-footer form{margin:0;margin-right:auto}
+.personnel-account-footer .mini{font-size:10px;padding:6px 10px!important}
+.personnel-access-button{cursor:pointer;border-radius:9px;padding:8px 11px;border:1px solid #8a5556;color:#ffe5e5;background:#64363d;font-family:inherit;font-size:11px;font-weight:800}
+.personnel-access-button.is-activate{background:#24513e;border-color:#388868;color:#e5ffee}
+.personnel-access-button:hover{filter:brightness(1.12)}
+.personnel-status-hint{font-size:11px;color:#92a9b9}
+@media(max-width:699px){.personnel-status-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.personnel-filter{padding:9px 6px;font-size:10px;gap:5px}.personnel-filter strong{padding:2px 5px;font-size:10px}.personnel-account-footer form{margin-right:0}}
 </style>
 <section class="personnel-page">{% if executive_access or user.is_superuser %}<div style="margin:8px 0"><a href="{% url 'staff_panel_preview' %}" style="display:inline-block;padding:10px 17px;border-radius:12px;background:#293d5a;color:#fff;text-decoration:none">◫ دیدن صفحات پرسنل</a> <a href="{% url 'payments_admin' %}#financialAccess" style="display:inline-block;padding:10px 17px;border-radius:12px;background:#253f46;color:#fff;text-decoration:none">⚿ دسترسی‌های مالی پرسنل</a></div>{% endif %}
   <div class="personnel-summary">
@@ -21,10 +36,16 @@
     <div><p class="muted">فهرست پرسنل و دسترسی سریع به پرونده هر فرد</p></div>
     <div class="personnel-actions">{% if can_manage %}<a class="primary" href="{% url 'employee_create' %}">افزودن پرسنل</a>{% endif %}</div>
   </div>
+  <nav class="personnel-status-filters" aria-label="نمایش پرسنل بر اساس وضعیت دسترسی">
+    <a class="personnel-filter" href="{% url 'employee_list' %}?status=active" {% if status_filter == 'active' %}aria-current="page"{% endif %}>فعال <strong>{{ status_counts.active }}</strong></a>
+    <a class="personnel-filter" href="{% url 'employee_list' %}?status=inactive" {% if status_filter == 'inactive' %}aria-current="page"{% endif %}>غیرفعال <strong>{{ status_counts.inactive }}</strong></a>
+    <a class="personnel-filter" href="{% url 'employee_list' %}?status=all" {% if status_filter == 'all' %}aria-current="page"{% endif %}>همه <strong>{{ status_counts.all }}</strong></a>
+    <span class="personnel-status-hint">غیرفعال یعنی عدم امکان ورود به اپ؛ پرونده و سوابق حفظ می‌شوند.</span>
+  </nav>
   <div class="personnel-grid">
     {% for employee in employees %}
     <article class="personnel-card">
-      <span class="personnel-status {% if employee.is_active %}is-active{% endif %}"></span>
+      <span class="personnel-status {% if employee.is_active and employee.user.is_active %}is-active{% endif %}"></span>
       <div class="personnel-top">
         <div class="personnel-avatar" data-employee-id="{{ employee.pk }}">{% if employee.avatar %}<img src="{{ employee.avatar.url }}" alt="عکس {{ employee.user.get_full_name|default:employee.user.username }}">{% else %}<span>{{ employee.user.first_name|first|default:employee.user.username|first }}</span>{% endif %}</div>
         <div class="personnel-primary">
@@ -42,8 +63,28 @@
         <a class="mini" href="{% url 'employee_360' employee.pk %}">عملکرد</a>
         {% if executive_access or user.is_superuser %}<a class="mini" href="{% url 'payments_admin' %}#finance-person-{{ employee.pk }}">دسترسی مالی</a>{% endif %}
       </div>
+      <div class="personnel-account-footer">
+        {% if employee.is_active and employee.user.is_active %}
+          <span class="personnel-state-chip">● فعال</span>
+        {% else %}
+          <span class="personnel-state-chip is-inactive">● غیرفعال — ورود مسدود</span>
+        {% endif %}
+        {% if employee.can_change_access %}
+          <a class="mini" href="{% url 'employee_edit' employee.pk %}">ویرایش مشخصات</a>
+          <form method="post" action="{% url 'employee_status_change' employee.pk %}">
+            {% csrf_token %}
+            {% if employee.is_active and employee.user.is_active %}
+              <input type="hidden" name="action" value="deactivate">
+              <button type="submit" class="personnel-access-button" onclick="return confirm('دسترسی ورود این فرد از همه دستگاه‌ها قطع شود؟ سوابق او حذف نمی‌شوند.')">غیرفعال‌کردن</button>
+            {% else %}
+              <input type="hidden" name="action" value="activate">
+              <button type="submit" class="personnel-access-button is-activate" onclick="return confirm('دسترسی ورود این فرد دوباره فعال شود؟')">فعال‌کردن</button>
+            {% endif %}
+          </form>
+        {% endif %}
+      </div>
     </article>
-    {% empty %}<div class="personnel-empty">هنوز پرسنلی ثبت نشده است.</div>{% endfor %}
+    {% empty %}<div class="personnel-empty">در این وضعیت، پرسنلی پیدا نشد. از فیلتر «همه» برای مشاهده کل فهرست استفاده کنید.</div>{% endfor %}
   </div>
 </section>
 <script>

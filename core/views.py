@@ -2,7 +2,7 @@ import math
 import uuid
 from datetime import date, datetime, timedelta
 from django.urls import reverse
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseBadRequest
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from functools import wraps
@@ -15,6 +15,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate
+from .personnel_access import revoke_staff_sessions
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
@@ -227,6 +228,9 @@ def login_view(request):
         raw_username=(form.cleaned_data.get('username') or '').strip()
         secret=form.cleaned_data.get('password') or ''
         matched=User.objects.filter(username__iexact=raw_username,is_active=True).order_by('id').first()
+        # Both account and personnel-profile status must permit sign-in.
+        if matched and EmployeeProfile.objects.filter(user=matched,is_active=False).exists():
+            matched=None
         user=None
         from .staff_i18n import translate
         auth_error=translate('login.invalid',getattr(request,'ui_language','fa'))
@@ -494,7 +498,7 @@ def staff_panel_preview(request):
 def impersonate_start(request,pk):
     if request.method!='POST':
         return redirect('credential_settings')
-    target_profile=get_object_or_404(EmployeeProfile.objects.select_related('user'),pk=pk,is_active=True)
+    target_profile=get_object_or_404(EmployeeProfile.objects.select_related('user'),pk=pk,is_active=True,user__is_active=True)
     target=target_profile.user
     if target.is_superuser or target_profile.role=='admin':
         messages.error(request,'برای امنیت، ورود آزمایشی به حساب مدیر سیستم از این صفحه مجاز نیست.')
@@ -1091,6 +1095,18 @@ def sop_list(request):
     qs=SOPDocument.objects.filter(is_active=True).filter(Q(branch__isnull=True)|Q(branch=getattr(profile,'branch',None))).filter(Q(job_title='')|Q(job_title=getattr(profile,'job_title',''))).order_by('title')
     return render(request,'core/sop_list.html',{'documents':qs})
 
+def _can_change_employee_status(request, employee):
+    # Do not expose the account switch for executives, another manager's
+    # branch, the acting user or a privileged/system account.
+    return bool(
+        employee.user_id != request.user.pk
+        and not employee.user.is_superuser
+        and not employee.user.is_staff
+        and employee.role in PERSONNEL_ROLES
+        and _employee_access(request,employee)
+    )
+
+
 @manager_required
 def employee_list(request):
     from .country_workspace import scoped_queryset
@@ -1099,10 +1115,69 @@ def employee_list(request):
     qs=scoped_queryset(request,qs)
     if role=='manager': qs=qs.filter(branch=request.user.profile.branch)
     elif role=='internal_manager': qs=qs.filter(role__in=PERSONNEL_ROLES)
+    stats=qs.aggregate(
+        total=Count('pk'),
+        active=Count('pk',filter=Q(is_active=True,user__is_active=True)),
+    )
+    status=(request.GET.get('status') or 'active').strip().lower()
+    if status not in ('active','inactive','all'):
+        status='active'
+    if status=='active':
+        qs=qs.filter(is_active=True,user__is_active=True)
+    elif status=='inactive':
+        qs=qs.filter(Q(is_active=False)|Q(user__is_active=False))
+    employees=list(qs)
+    for employee in employees:
+        employee.can_change_access=_can_change_employee_status(request,employee)
     return render(request,'core/employee_list.html',{
-        'employees':qs,
+        'employees':employees,
         'can_manage':role in MANAGEMENT_ROLES,
+        'status_filter':status,
+        'status_counts':{
+            'all':stats['total'],
+            'active':stats['active'],
+            'inactive':stats['total']-stats['active'],
+        },
     })
+
+
+@manager_required
+@require_POST
+def employee_status_change(request,pk):
+    action=request.POST.get('action')
+    if action not in ('activate','deactivate'):
+        return HttpResponseBadRequest('Invalid personnel status action.')
+    desired_active=(action=='activate')
+    with transaction.atomic():
+        employee=get_object_or_404(
+            EmployeeProfile.objects.select_for_update().select_related('user','branch'),
+            pk=pk,
+        )
+        if not _can_change_employee_status(request,employee):
+            raise PermissionDenied('You cannot change this personnel account.')
+        previous=bool(employee.is_active and employee.user.is_active)
+        employee.user.is_active=desired_active
+        employee.user.save(update_fields=['is_active'])
+        employee.is_active=desired_active
+        employee.save(update_fields=['is_active'])
+        revoked=revoke_staff_sessions(employee.user_id) if not desired_active else 0
+        AuditLog.objects.create(
+            actor=request.user,
+            action='personnel_access_enabled' if desired_active else 'personnel_access_disabled',
+            path=request.path,method='POST',
+            object_type='User',object_id=str(employee.user_id),
+            summary=f'Personnel access {"enabled" if desired_active else "disabled"}: {employee.user.username}',
+            metadata={'old_active':previous,'new_active':desired_active,'revoked_sessions':revoked},
+            ip_address=_request_ip(request),
+        )
+    label=employee.user.get_full_name() or employee.user.username
+    messages.success(request,(
+        f'دسترسی {label} فعال شد.'
+        if desired_active
+        else f'دسترسی {label} قطع شد و نشست‌های ورود قبلی او باطل شدند.'
+    ))
+    return redirect(reverse('employee_list')+('?status=active' if desired_active else '?status=inactive'))
+
 
 @manager_required
 def employee_create(request):
@@ -1141,6 +1216,8 @@ def employee_edit(request,pk):
         messages.error(request,'به این پرسنل دسترسی ندارید.')
         return redirect('employee_list')
     form=EmployeeEditForm(request.POST or None,employee=employee)
+    if not _can_change_employee_status(request,employee):
+        form.fields['is_active'].disabled=True
     if not (request.user.is_superuser or _is_executive_user(request.user)):
         form.fields.pop('can_send_marketing_sms',None)
     edit_scope=getattr(request,'country_scope',None)
@@ -1154,11 +1231,26 @@ def employee_edit(request,pk):
     elif role_of(request.user)=='internal_manager':
         form.fields['role'].choices=[('employee','کارمند'),('call_center','کال‌سنتر'),('consultant','مشاور')]
     if request.method=='POST' and form.is_valid():
+        desired_active=form.cleaned_data['is_active']
+        previous_active=bool(employee.user.is_active and employee.is_active)
+        if desired_active != previous_active and not _can_change_employee_status(request,employee):
+            raise PermissionDenied('Cannot change this personnel account.')
         with transaction.atomic():
             form.save()
             if form.cleaned_data.get('new_password'):
                 remember_desktop_password(employee.user,form.cleaned_data['new_password'],actor=request.user)
-        messages.success(request,'مشخصات پرسنل به‌روزرسانی شد.')
+            revoked=revoke_staff_sessions(employee.user_id) if not desired_active else 0
+            if previous_active != desired_active:
+                AuditLog.objects.create(
+                    actor=request.user,
+                    action='personnel_access_enabled' if desired_active else 'personnel_access_disabled',
+                    path=request.path,method='POST',
+                    object_type='User',object_id=str(employee.user_id),
+                    summary=f'Personnel access {"enabled" if desired_active else "disabled"} via edit: {employee.user.username}',
+                    metadata={'old_active':previous_active,'new_active':desired_active,'revoked_sessions':revoked},
+                    ip_address=_request_ip(request),
+                )
+        messages.success(request,'مشخصات پرسنل به‌روزرسانی شد.'+(' دسترسی ورود این فرد قطع شد.' if not desired_active else ''))
         return redirect('employee_file',pk=pk)
     return render(request,'core/employee_management_form.html',{
         'form':form,'employee':employee,'title':'ویرایش مشخصات',
