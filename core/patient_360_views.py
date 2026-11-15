@@ -498,7 +498,7 @@ def patient_360(request, pk):
     latest_intake = IntakeInvitation.objects.filter(appointment_id__in=appointment_ids, completed_at__isnull=False).order_by('-completed_at').first()
     medical_intake_summary = compact_medical_summary(latest_intake.answers if latest_intake else {}) if profile.role in {'doctor','admin','internal_manager'} else None
     context={
-        'me_meal_reports': MeMealReport.objects.filter(patient_id=patient.pk).select_related('program').order_by('-day','-updated_at')[:60] if profile.role in {'admin','internal_manager','doctor','consultant','manager'} else None,
+        'me_meal_reports': MeMealReport.objects.filter(Q(patient_id=patient.pk) | Q(patient__isnull=True, member__phone=patient.phone)).select_related('program').order_by('-day','-updated_at')[:60] if profile.role in {'admin','internal_manager'} or (profile.role in {'doctor','consultant','manager'} and profile.branch_id) else None,
         'medical_intake_summary':medical_intake_summary,
         'complete_weight_intake': latest_intake.answers if latest_intake and latest_intake.answers.get('form_version') == 'weight-loss-v2' and profile.role in {'doctor','admin','internal_manager'} else None,
         'patient':patient,

@@ -60,3 +60,7 @@ class MealAdherenceTests(TestCase):
         self.staff.role='admin';self.staff.save()
         self.assertContains(self.client.get(monitor),'private-note')
         self.assertEqual(Client().get(monitor).status_code,302)
+        MeMealReport.objects.update(patient=None,program=None)
+        self.assertContains(self.client.get(record),'private-note')
+        self.staff.role='doctor';self.staff.branch=self.branch;self.staff.save()
+        self.assertContains(self.client.get(monitor),'private-note')
