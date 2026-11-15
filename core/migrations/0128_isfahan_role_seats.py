@@ -6,6 +6,7 @@ They cannot sign in until an executive securely sets a desktop password
 """
 
 from django.db import migrations
+from django.contrib.auth.hashers import make_password
 
 
 ROLE_SEATS = (
@@ -53,8 +54,8 @@ def provision_isfahan_role_seats(apps, schema_editor):
             is_active=True,
             is_staff=False,
             is_superuser=False,
+            password=make_password(None),
         )
-        user.set_unusable_password()
         user.save(using=db)
 
         EmployeeProfile.objects.using(db).create(
