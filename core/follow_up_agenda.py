@@ -22,6 +22,15 @@ def previous_follow_up(lead):
     }
 
 
+def saved_follow_up_snapshot(lead):
+    """Read persisted values since bound ModelForm may mutate its instance."""
+    row=ReferralLead.objects.filter(pk=lead.pk).values(
+        "next_follow_up","next_follow_up_time","contact_result","status",
+    ).get()
+    return {"date":row["next_follow_up"],"time":row["next_follow_up_time"],
+            "result":row["contact_result"],"status":row["status"]}
+
+
 def record_follow_up(lead, *, actor=None, previous, result=None, note=""):
     """Insert an audit event in the same transaction as the saved lead."""
     result=result if result is not None else lead.contact_result
