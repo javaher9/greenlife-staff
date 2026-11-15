@@ -20,6 +20,7 @@ from .sms import SmsGatewayError, send_sms
 from .jalali import format_jalali
 from intake.models import IntakeInvitation
 from .intake_summary import compact_medical_summary
+from .me_diet_models import MeMealReport
 from .scan_analysis_display import scan_summary, scan_history_rows
 
 
@@ -497,6 +498,7 @@ def patient_360(request, pk):
     latest_intake = IntakeInvitation.objects.filter(appointment_id__in=appointment_ids, completed_at__isnull=False).order_by('-completed_at').first()
     medical_intake_summary = compact_medical_summary(latest_intake.answers if latest_intake else {}) if profile.role in {'doctor','admin','internal_manager'} else None
     context={
+        'me_meal_reports': MeMealReport.objects.filter(patient_id=patient.pk).select_related('program').order_by('-day','-updated_at')[:60] if profile.role in {'admin','internal_manager','doctor','consultant','manager'} else None,
         'medical_intake_summary':medical_intake_summary,
         'complete_weight_intake': latest_intake.answers if latest_intake and latest_intake.answers.get('form_version') == 'weight-loss-v2' and profile.role in {'doctor','admin','internal_manager'} else None,
         'patient':patient,

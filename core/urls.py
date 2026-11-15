@@ -1,4 +1,4 @@
-from . import me_diet_views
+from . import me_diet_views, me_meal_monitor
 from . import me_nutrition_views
 from . import me_sync_views
 from . import lead_contact_views, all_leads_views
@@ -111,6 +111,7 @@ path('lead-management/attention/assign/',lead_management_views.lead_attention_bu
 path('doctor/',doctor_views.doctor_dashboard,name='doctor_dashboard'),
 path('api/doctor/actions/',doctor_views.doctor_action_api,name='doctor_action_api'),
 path('payroll/',payroll_views.payroll_dashboard,name='payroll_dashboard'),
+path('staff/meal-monitor/',me_meal_monitor.monitor,name='me_meal_monitor'),
 path('call-center/greenlife-me/',me_desk_views.workspace,name='me_desk'),
 path('call-center/greenlife-me/<int:pk>/',me_desk_views.detail,name='me_desk_detail'),
 path('call-center/greenlife-me/<int:pk>/followup/',me_desk_views.followup,name='me_desk_followup'),

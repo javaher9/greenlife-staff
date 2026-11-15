@@ -1,0 +1,13 @@
+{% extends 'core/base.html' %}{% block content %}
+<section class="panel" dir="rtl">
+<h1>مانیتورینگ وعده‌های من</h1>
+<p>درصد رعایت و توضیحات ثبت‌شده توسط مراجع؛ درصدهای ثبت‌نشده صفر محسوب نمی‌شوند.</p>
+<form method="get"><label>نام مراجع <input name="q" value="{{ q }}" maxlength="100"></label><button type="submit" class="btn">جستجو</button></form>
+{% for meal in page %}<section class="panel"><h2>{{ meal.member.full_name|default:'مراجع' }}</h2>
+{% if meal.patient_id %}<a href="{% url 'patient_360' meal.patient_id %}#p360-meals">پرونده مراجع ←</a>{% endif %}
+<strong>{{ meal.label }} · {{ meal.day|date:'Y/m/d' }}</strong>
+<p>{% if meal.adherence_percent != None %}رعایت: {{ meal.adherence_percent }}٪{% else %}درصد رعایت ثبت نشده{% endif %}</p>
+{% if meal.note %}<p style="white-space:pre-wrap;overflow-wrap:anywhere">{{ meal.note }}</p>{% endif %}
+</section>{% empty %}<p>گزارشی برای نمایش وجود ندارد.</p>{% endfor %}
+<nav>{% if page.has_previous %}<a href="?q={{ q|urlencode }}&page={{ page.previous_page_number }}">قبلی</a>{% endif %} صفحه {{ page.number }} از {{ page.paginator.num_pages }} {% if page.has_next %}<a href="?q={{ q|urlencode }}&page={{ page.next_page_number }}">بعدی</a>{% endif %}</nav>
+</section>{% endblock %}

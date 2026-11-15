@@ -14,7 +14,7 @@ from .me_sync_views import reply, HEART
 from .me_sync_models import MeAccountState, MeDailyAward
 from .me_diet_models import MeMealReport
 from .me_food_table import CATALOG, food_table
-from .models import PatientDietProgram, CustomerPortalMember, CustomerServiceRequest, EmployeeProfile, StaffNotification
+from .models import PatientProfile, PatientDietProgram, CustomerPortalMember, CustomerServiceRequest, EmployeeProfile, StaffNotification
 
 REASONS={'unavailable':'مواد این وعده در دسترس نیست','difficult':'اجرای برنامه برایم سخت شده','hunger':'درباره گرسنگی نیاز به راهنمایی دارم','contact':'درخواست تماس درباره رژیم'}
 STATUSES=dict(MeMealReport._meta.get_field('status').choices)
@@ -45,7 +45,7 @@ def snapshot(request, member, day):
     program,cards,notice=plan(member,day)
     rows={r.meal_key:r for r in MeMealReport.objects.filter(member=member,day=day)}
     for c in cards:
-        r=rows.get(c['key']);c['report']={'status':r.status,'note':r.note,'revision':r.revision,'table':r.food_table} if r else None
+        r=rows.get(c['key']);c['report']={'status':r.status,'adherence_percent':r.adherence_percent,'note':r.note,'revision':r.revision,'table':r.food_table} if r else None
     done=sum(bool(c['report']) for c in cards)
     return {'authenticated':True,'csrf':get_token(request),'table_version':CATALOG['version'],'day':day.isoformat(),'today':today().isoformat(),'name':member.full_name,'notice':notice,
             'program':{'id':program.pk,'title':program.diet_name,'url':f'/customer/diets/{program.pk}/'} if program else None,
@@ -75,9 +75,23 @@ def diet(request):
         if action=='meal':
             card=next((c for c in cards if c['key']==data.get('key')),None)
             status=data.get('status');note=data.get('note','');revision=data.get('revision',0)
+            explicit = 'adherence_percent' in data
+            adherence = data.get('adherence_percent')
+            if explicit:
+                if program and (type(adherence) is not int or not 0 <= adherence <= 100):
+                    return reply({'error':'درصد رعایت را از صفر تا صد وارد کن.'},400)
+                if not program and adherence is not None:
+                    return reply({'error':'درصد رعایت فقط برای برنامهٔ غذایی فعال ثبت می‌شود.'},400)
+                status='reported'
+            elif status=='reported':
+                return reply({'error':'درصد رعایت مشخص نشده است.'},400)
             if not card or not isinstance(status,str) or status not in STATUSES or not isinstance(note,str) or len(note)>200 or type(revision) is not int:return reply({'error':'گزارش وعده معتبر نیست.'},400)
             row=MeMealReport.objects.filter(member=member,day=day,meal_key=card['key']).first()
             if revision!=(row.revision if row else 0):return reply({'error':'این وعده در دستگاه دیگری تغییر کرده؛ ابتدا تازه‌سازی کن.'},409)
+            if not explicit:
+                adherence=None
+            if not program and status=='reported' and not note.strip() and 'table' not in data and not (row and row.food_table):
+                return reply({'error':'توضیح وعده را وارد کن.'},400)
             table=row.food_table if row else {}
             if 'table' in data:
                 if day!=today():return reply({'error':'روز عوض شده؛ وعده‌های امروز را تازه‌سازی کن.'},409)
@@ -85,7 +99,7 @@ def diet(request):
                 try:table=food_table(data['table'])
                 except ValueError as exc:return reply({'error':str(exc)},400)
             if status=='skipped':table={}
-            MeMealReport.objects.update_or_create(member=member,day=day,meal_key=card['key'],defaults={'label':card['label'][:200],'status':status,'note':note.strip(),'revision':revision+1,'food_table':table})
+            MeMealReport.objects.update_or_create(member=member,day=day,meal_key=card['key'],defaults={'adherence_percent':adherence,'program':program,'patient':program.patient if program else PatientProfile.objects.filter(phone=member.phone).order_by('pk').first(),'label':card['label'][:200],'status':status,'note':note.strip(),'revision':revision+1,'food_table':table})
             count=MeMealReport.objects.filter(member=member,day=day,meal_key__in=[c['key'] for c in cards]).count()
             if cards and count==len(cards):
                 # One daily award across ALL routes; every honest status counts equally.

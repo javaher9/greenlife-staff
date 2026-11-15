@@ -1,0 +1,7 @@
+<p>درصدها خوداظهاری مراجع هستند. «بدون درصد» به معنی صفر نیست.</p>
+{% for meal in meal_rows %}<article class="panel" style="padding:12px 0;border-bottom:1px solid #dce5e1;overflow-wrap:anywhere">
+<strong>{{ meal.label }} · {{ meal.day|date:"Y/m/d" }}</strong>
+<p>{% if meal.adherence_percent != None %}رعایت: <b>{{ meal.adherence_percent }}٪</b>{% else %}درصد رعایت ثبت نشده{% endif %}</p>
+{% if meal.note %}<p style="white-space:pre-wrap">{{ meal.note }}</p>{% endif %}
+{% if meal.program %}<small>{{ meal.program.diet_name }}</small>{% endif %}
+</article>{% empty %}<p>هنوز گزارشی ثبت نشده است.</p>{% endfor %}

@@ -579,6 +579,10 @@ body.gl-patient360-workspace .p360-mini-btn.secondary{
 
   <div class="p360-grid">
     <div class="p360-col">
+      {% if me_meal_reports != None %}<section class="p360-card" id="p360-meals">
+        <div class="p360-head"><h2>مانیتورینگ وعده‌های من</h2><a href="{% url 'me_meal_monitor' %}">همه گزارش‌ها ←</a></div>
+        <div class="p360-body">{% include 'core/me_meal_rows.html' with meal_rows=me_meal_reports %}</div>
+      </section>{% endif %}
       <section class="p360-card" id="p360-analysis">
         <div class="p360-head"><h2>روند بدن و آنالیز</h2><span>{{ analyses|length }} رکورد اخیر</span></div>
         <div class="p360-body">
