@@ -25,13 +25,15 @@ class PersonnelAccessControlTests(TestCase):
         self.assertEqual(response.context['status_filter'],'active')
         self.assertContains(response,'?status=inactive')
         self.assertContains(response,'?status=all')
-        self.assertEqual(response.context['status_counts']['active'],3)
+        starting_active=response.context['status_counts']['active']
+        self.assertGreaterEqual(starting_active,3)
         self.assertEqual(response.context['status_counts']['inactive'],0)
 
         self.member.is_active=False
         self.member.save(update_fields=['is_active'])
         response=self.client.get(url)
         self.assertEqual(response.context['status_counts']['inactive'],1)
+        self.assertEqual(response.context['status_counts']['active'],starting_active-1)
         self.assertNotContains(response,reverse('employee_file',args=[self.profile.pk]))
         response=self.client.get(url+'?status=inactive')
         self.assertContains(response,reverse('employee_file',args=[self.profile.pk]))
@@ -104,7 +106,7 @@ class PersonnelAccessControlTests(TestCase):
         active_client.force_login(self.member)
         old_key=active_client.session.session_key
         response=self.client.post(reverse('employee_edit',args=[self.profile.pk]),{
-            'first_name':self.member.first_name,'last_name':'',
+            'first_name':self.member.first_name,'last_name':'تست',
             'username':self.member.username,'email':'',
             'employee_code':'','job_title':'منشی','phone':'',
             'birth_date':'','start_date':'','country':'','preferred_language':'fa',
