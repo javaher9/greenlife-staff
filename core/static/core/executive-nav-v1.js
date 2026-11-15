@@ -1,6 +1,7 @@
 /* Executive navigation taxonomy. Edit GROUPS and ROUTES to move an entry; existing Django permissions remain authoritative. */
-(()=>{const GROUPS=[["مدیریت","◈"],["بازاریابی","◎"],["درمان","✚"],["مالی","▧"],["پرسنل","♙"],["شعب","△"],["تنظیمات","⚙"]];
+(()=>{const GROUPS=[["مدیریت","◈"],["Greenlife Me","♡"],["بازاریابی","◎"],["درمان","✚"],["مالی","▧"],["پرسنل","♙"],["شعب","△"],["تنظیمات","⚙"]];
 const ROUTES=[
+["Greenlife Me",/^\/greenlife-me\//],
 ["مدیریت",/\/(schools|live|action-center|meeting-minutes|reports|my-office|kpi|server-health|quality|management|targets|notifications)\b/],
 ["بازاریابی",/\/(lead-management|lead-command|instagram|referrals|referral|call-center|whatsapp|bulk-sms|marketing-sms|sms-management|website-lead)\b/],
 ["درمان",/\/(doctor|consultant|appointments|patient|scan|device-issues|device-booking|diet|treatment|reception|service-requests|customer-requests)\b/],

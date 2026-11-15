@@ -1,3 +1,4 @@
+from . import me_members_views
 from . import me_diet_views, me_meal_monitor
 from . import me_nutrition_views
 from . import me_sync_views
@@ -48,6 +49,9 @@ from . import call_center_deposit_views
 from . import sales_target_views
 from .mcp import mcp_endpoint
 urlpatterns = [
+    path("greenlife-me/members/", me_members_views.dashboard, name="me_members"),
+    path("greenlife-me/members/<int:pk>/", me_members_views.detail, name="me_member_detail"),
+    path("customer/me/messages/", me_members_views.inbox, name="me_member_inbox"),
     path("customer/me/connect/", me_sync_views.connect),
     path("customer/me/state/", me_sync_views.state),
     path("customer/me/visits/", me_visit_views.visits, name="me_visits"),
