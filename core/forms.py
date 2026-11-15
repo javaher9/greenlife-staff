@@ -400,9 +400,13 @@ class BeytootePublicLeadForm(forms.ModelForm):
 
 class ReferralLeadManageForm(forms.ModelForm):
     next_follow_up=JalaliDateField(label='پیگیری بعدی',required=False)
+    next_follow_up_time=forms.TimeField(
+        label='ساعت تماس',required=False,
+        widget=forms.TimeInput(format='%H:%M',attrs={'type':'time','step':'300'}),
+    )
     class Meta:
         model=ReferralLead
-        fields=['status','contact_result','assigned_to','next_follow_up','interested_service','notes']
+        fields=['status','contact_result','assigned_to','next_follow_up','next_follow_up_time','interested_service','notes']
         labels={
             'status':'وضعیت فعلی','contact_result':'آخرین نتیجه ثبت‌شده',
             'assigned_to':'مسئول پیگیری','interested_service':'خدمت موردنظر',
@@ -412,6 +416,8 @@ class ReferralLeadManageForm(forms.ModelForm):
 
     def __init__(self,*args,branch=None,**kwargs):
         super().__init__(*args,**kwargs)
+        self._original_due=self.instance.next_follow_up
+        self._original_time=self.instance.next_follow_up_time
         qs=EmployeeProfile.objects.filter(is_active=True,role='call_center').select_related('user','branch')
         self.fields['assigned_to'].queryset=qs.order_by('branch__name','user__last_name')
         result_field=self.fields['contact_result']
@@ -431,6 +437,8 @@ class ReferralLeadManageForm(forms.ModelForm):
         # must not silently erase a legitimate historical call result.
         if self.is_bound and 'contact_result' not in self.data:
             result_field.disabled=True
+        if self.is_bound and 'next_follow_up_time' not in self.data:
+            self.fields['next_follow_up_time'].disabled=True
 
     def clean(self):
         data=super().clean()
@@ -450,8 +458,15 @@ class ReferralLeadManageForm(forms.ModelForm):
             }
             if result in status_for_result:
                 lead.status=status_for_result[result]
+            if result=='no_answer' and not lead.next_follow_up and self._original_due:
+                # A missed call must not erase the promised callback.
+                lead.next_follow_up=self._original_due
+                lead.next_follow_up_time=self._original_time
             if result not in ('follow_up','no_answer'):
                 lead.next_follow_up=None
+                lead.next_follow_up_time=None
+        if not lead.next_follow_up:
+            lead.next_follow_up_time=None
         if commit:
             lead.save()
             self.save_m2m()
@@ -460,9 +475,13 @@ class ReferralLeadManageForm(forms.ModelForm):
 
 class CallCenterLeadForm(forms.ModelForm):
     next_follow_up=JalaliDateField(label='پیگیری بعدی',required=False)
+    next_follow_up_time=forms.TimeField(
+        label='ساعت تماس',required=False,
+        widget=forms.TimeInput(format='%H:%M',attrs={'type':'time','step':'300'}),
+    )
     class Meta:
         model=ReferralLead
-        fields=['contact_result','group','next_follow_up','interested_service','notes']
+        fields=['contact_result','group','next_follow_up','next_follow_up_time','interested_service','notes']
         labels={
             'contact_result':'نتیجه تماس','group':'گروه لید','interested_service':'خدمت موردنظر',
             'notes':'گزارش تماس و توضیحات مشتری',
@@ -475,6 +494,11 @@ class CallCenterLeadForm(forms.ModelForm):
     def __init__(self,*args,operator=None,**kwargs):
         super().__init__(*args,**kwargs)
         self.operator=operator
+        self._original_due=self.instance.next_follow_up
+        self._original_time=self.instance.next_follow_up_time
+        # Older cached forms do not contain the new clock field.
+        if self.is_bound and 'next_follow_up_time' not in self.data:
+            self.fields['next_follow_up_time'].disabled=True
         if operator is None:
             self.fields['group'].queryset=CallCenterLeadGroup.objects.none()
         else:
@@ -509,8 +533,14 @@ class CallCenterLeadForm(forms.ModelForm):
         status_map={'follow_up':'contacted','no_answer':'contacted','appointment':'appointment','won':'won','sale_lost':'visited','not_interested':'lost'}
         if result:
             lead.status=status_map[result]
+        if result=='no_answer' and not lead.next_follow_up and self._original_due:
+            lead.next_follow_up=self._original_due
+            lead.next_follow_up_time=self._original_time
         if result not in ('follow_up','no_answer'):
             lead.next_follow_up=None
+            lead.next_follow_up_time=None
+        if not lead.next_follow_up:
+            lead.next_follow_up_time=None
         if commit:
             lead.save()
             self.save_m2m()
