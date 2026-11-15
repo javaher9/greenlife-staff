@@ -1,6 +1,6 @@
 {% extends 'core/base.html' %}{% load static %}{% block content %}
-<link rel="stylesheet" href="{% static 'core/me-members.css' %}?v=1">
-<section class="me-admin" dir="rtl"><header><small>Greenlife Me / مدیریت اعضا</small><h1>آمار فشرده من</h1><p>همه اعضا، از اولین ورود تا برنامه منظم حضوری یا آنلاین</p></header>
+<link rel="stylesheet" href="{% static 'core/me-members.css' %}?v=2">
+<section class="me-admin" dir="rtl"><div class="me-head"><small>Greenlife Me / مدیریت اعضا</small><h1>آمار فشرده من</h1><p>همه اعضا، از اولین ورود تا برنامه منظم حضوری یا آنلاین</p></div>
 <div class="me-metrics">{% for key,label,value,hint in tiles %}<a title="{{ hint }}" class="me-box {% if selected == key or selected == 'all' and key == 'total' %}selected{% endif %}" href="?group={% if key == 'total' %}all{% else %}{{ key }}{% endif %}"><strong>{{ value }}</strong><span>{{ label }}</span></a>{% endfor %}</div>
 <div class="me-tools"><a href="?group=notes">توضیح تازه: {{ counts.notes }}</a><a href="?group=requests">درخواست باز: {{ counts.requests }}</a><a href="?group=overdue">پیگیری عقب‌افتاده: {{ counts.overdue }}</a><a href="?group=quiet">بدون فعالیت در ۷ روز: {{ counts.quiet }}</a></div>
 <form class="me-tools" method="get"><input type="hidden" name="group" value="{{ selected }}"><input name="q" value="{{ q }}" placeholder="جستجوی عضو" aria-label="جستجوی عضو"><select name="sort" aria-label="مرتب‌سازی"><option value="attention" {% if sort == 'attention' %}selected{% endif %}>نیازمند رسیدگی، سپس آخرین فعالیت</option><option value="recent" {% if sort == 'recent' %}selected{% endif %}>آخرین فعالیت</option><option value="new" {% if sort == 'new' %}selected{% endif %}>جدیدترین عضو</option></select><button>اعمال</button><a href="?">همه اعضا</a></form>
