@@ -40,3 +40,12 @@ class MemberTests(TestCase):
  def test_followup_validation(self):
   self.assertEqual(self.client.post(self.url,self.data('followup',followup_at=(timezone.now()-timedelta(days=1)).isoformat())).status_code,400)
   self.assertFalse(MeMemberAction.objects.exists())
+ def test_counts_and_real_attendance(self):
+  from datetime import time
+  from core.models import Branch,VisitAppointment
+  b=Branch.objects.create(name='آزمون')
+  a=VisitAppointment.objects.create(branch=b,full_name='آزمون',phone='+989123456789',appointment_date=timezone.localdate(),appointment_time=time(10),status='booked')
+  for key in ('a','b'):
+   MeMealReport.objects.create(member=self.m,day=timezone.localdate(),meal_key=key,label=key,status='reported')
+  r=self.client.get('/greenlife-me/members/');self.assertEqual(r.context['counts']['total'],2);self.assertEqual(r.context['counts']['visited'],0)
+  a.status='arrived';a.save();r=self.client.get('/greenlife-me/members/');self.assertEqual(r.context['counts']['visited'],1);self.assertEqual(r.context['counts']['unvisited'],1)
