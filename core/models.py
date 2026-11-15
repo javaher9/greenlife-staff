@@ -319,6 +319,7 @@ class ReferralLead(models.Model):
     assigned_at=models.DateTimeField(null=True,blank=True)
     group=models.ForeignKey(CallCenterLeadGroup,on_delete=models.SET_NULL,null=True,blank=True,related_name='leads')
     next_follow_up=models.DateField(null=True,blank=True)
+    next_follow_up_time=models.TimeField(null=True,blank=True,help_text='ساعت تماس وعده داده‌شده؛ برای موعدهای قدیمی ممکن است ثبت نشده باشد.')
     notes=models.TextField(blank=True)
     crm_id=models.CharField(max_length=120,blank=True,null=True,db_index=True)
     sync_status=models.CharField(max_length=20,choices=SYNC_STATUS,default='local',db_index=True)
@@ -421,6 +422,30 @@ class ReferralLead(models.Model):
         return super().save(*args,**kwargs)
 
     def __str__(self): return f'{self.full_name} - {self.phone}'
+
+
+class LeadFollowUpLog(models.Model):
+    """Immutable callback action history; each attempt remains inspectable."""
+    lead=models.ForeignKey(ReferralLead,on_delete=models.CASCADE,related_name='follow_up_history')
+    actor=models.ForeignKey(User,on_delete=models.SET_NULL,null=True,blank=True,related_name='lead_follow_up_actions')
+    action=models.CharField(max_length=20,choices=(
+        ('scheduled','ثبت موعد'),('attempt','تلاش برای تماس'),
+        ('closed','پایان پیگیری'),('updated','ویرایش پیگیری'),
+    ))
+    result=models.CharField(max_length=20,blank=True)
+    previous_date=models.DateField(null=True,blank=True)
+    previous_time=models.TimeField(null=True,blank=True)
+    scheduled_for=models.DateField(null=True,blank=True)
+    scheduled_time=models.TimeField(null=True,blank=True)
+    note=models.TextField(blank=True)
+    created_at=models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering=['-created_at','-pk']
+        indexes=[
+            models.Index(fields=['lead','-created_at'],name='leadfollow_history_idx'),
+            models.Index(fields=['actor','-created_at'],name='leadfollow_actor_idx'),
+        ]
 
 
 class LeadContactPhone(models.Model):
