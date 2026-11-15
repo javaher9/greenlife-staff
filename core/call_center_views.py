@@ -139,7 +139,10 @@ def mark_call_started(request, pk):
         'changed': changed,
         'status': lead.status,
         'label': labels.get(lead.status, lead.get_status_display()),
-        'needs_result': not bool(lead.contact_result),
+        # A new call requires a NEW result even if a previous attempt was
+        # recorded as unanswered; keep the old result until explicitly replaced.
+        'needs_result': lead.status in ('new', 'contacted', 'appointment')
+                        and lead.contact_result not in ('won', 'sale_lost', 'not_interested'),
     })
 
 
@@ -368,7 +371,9 @@ _CALL_TRACKING_SCRIPT = r'''<script>
 
   function resultStrip(row,leadId){
     if(!row)return;
-    var old=row.querySelector('.cc-result-strip');if(old)return old;
+    // A later call must reopen result choices rather than leaving a previous
+    // "result saved" strip in place.
+    var old=row.querySelector('.cc-result-strip');if(old)old.remove();
     var strip=document.createElement('div');strip.className='cc-result-strip';
     strip.innerHTML='<strong>نتیجه تماس را ثبت کن:</strong>'+
       '<button type="button" data-result="no_answer">پاسخ نداد</button>'+
@@ -396,7 +401,8 @@ _CALL_TRACKING_SCRIPT = r'''<script>
     if(token)body.append('csrfmiddlewaretoken',token);
     var endpoint='/call-center/leads/'+leadId+'/call-started/';
 
-    if(options.optimistic)updateRow(row,'تماس گرفته شد');
+    // Clicking the dial button is not evidence that the customer answered.
+    // Update the visible status only after an actual outcome is saved.
 
     return fetch(endpoint,{
       method:'POST',body:body,credentials:'same-origin',keepalive:true,
@@ -477,15 +483,21 @@ _CALL_TRACKING_SCRIPT = r'''<script>
       }
 
       var badge=row.querySelector('.cc-v5-status');
-      if(!badge||badge.textContent.trim()!=='جدید')continue;
-      row.classList.add('cc-priority-new');
-      var personCopy=row.querySelector('.cc-v5-person-copy');
-      if(personCopy&&!row.querySelector('.cc-priority-pill')){
-        var pill=document.createElement('span');
-        pill.className='cc-priority-pill';
-        pill.textContent='اولویت تماس';
-        personCopy.appendChild(pill);
+      var badgeText=badge?(badge.textContent||'').trim():'';
+      if(!badge)continue;
+      if(badgeText==='جدید'){
+        row.classList.add('cc-priority-new');
+        var personCopy=row.querySelector('.cc-v5-person-copy');
+        if(personCopy&&!row.querySelector('.cc-priority-pill')){
+          var pill=document.createElement('span');
+          pill.className='cc-priority-pill';
+          pill.textContent='اولویت تماس';
+          personCopy.appendChild(pill);
+        }
       }
+      // Previously unanswered or follow-up leads must have the same
+      // quick-result action as new leads on EACH subsequent call.
+      if(/فروش موفق|تمایل به پیگیری ندارد|مراجعه کرد/.test(badgeText))continue;
       if(actionsBox.querySelector('.cc-contact-done'))continue;
 
       var button=document.createElement('button');
