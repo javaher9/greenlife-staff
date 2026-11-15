@@ -17,9 +17,17 @@
 .personnel-state-chip.is-inactive{color:#e0b2ac}
 .personnel-account-footer form{margin:0;margin-right:auto}
 .personnel-account-footer .mini{font-size:10px;padding:6px 10px!important}
-.personnel-access-button{cursor:pointer;border-radius:9px;padding:8px 11px;border:1px solid #8a5556;color:#ffe5e5;background:#64363d;font-family:inherit;font-size:11px;font-weight:800}
-.personnel-access-button.is-activate{background:#24513e;border-color:#388868;color:#e5ffee}
-.personnel-access-button:hover{filter:brightness(1.12)}
+.personnel-access-form{display:inline-flex;align-items:center;gap:7px}
+.personnel-access-switch{direction:ltr!important;position:relative;display:inline-block;flex:0 0 38px;width:38px!important;min-width:38px!important;max-width:38px!important;height:22px!important;min-height:22px!important;margin:0!important;padding:0!important;border:1px solid #566573!important;border-radius:999px!important;background:#384957!important;box-shadow:none!important;cursor:pointer;vertical-align:middle;transition:background .18s,border-color .18s;appearance:none}
+.personnel-access-switch:before{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#f6f8fa;box-shadow:0 1px 3px rgba(0,0,0,.27);transition:transform .18s}
+.personnel-access-switch[aria-checked="true"]{background:#28815c!important;border-color:#3ba572!important}
+.personnel-access-switch[aria-checked="true"]:before{transform:translateX(16px)}
+.personnel-access-switch:hover{filter:brightness(1.08)}
+.personnel-access-switch:focus-visible{outline:2px solid #8dbaff!important;outline-offset:3px}
+.personnel-access-label{color:#b2c4d1;font-size:10.5px;font-weight:800;white-space:nowrap}
+.personnel-access-label.is-active{color:#79e3ac}
+.personnel-access-label.is-inactive{color:#d9adab}
+@media(prefers-reduced-motion:reduce){.personnel-access-switch,.personnel-access-switch:before{transition:none}}
 .personnel-status-hint{font-size:11px;color:#92a9b9}
 @media(max-width:699px){.personnel-status-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.personnel-filter{padding:9px 6px;font-size:10px;gap:5px}.personnel-filter strong{padding:2px 5px;font-size:10px}.personnel-account-footer form{margin-right:0}}
 </style>
@@ -64,23 +72,24 @@
         {% if executive_access or user.is_superuser %}<a class="mini" href="{% url 'payments_admin' %}#finance-person-{{ employee.pk }}">دسترسی مالی</a>{% endif %}
       </div>
       <div class="personnel-account-footer">
-        {% if employee.is_active and employee.user.is_active %}
-          <span class="personnel-state-chip">● فعال</span>
-        {% else %}
-          <span class="personnel-state-chip is-inactive">● غیرفعال — ورود مسدود</span>
-        {% endif %}
         {% if employee.can_change_access %}
           <a class="mini" href="{% url 'employee_edit' employee.pk %}">ویرایش مشخصات</a>
-          <form method="post" action="{% url 'employee_status_change' employee.pk %}">
+          <form class="personnel-access-form" method="post" action="{% url 'employee_status_change' employee.pk %}">
             {% csrf_token %}
             {% if employee.is_active and employee.user.is_active %}
               <input type="hidden" name="action" value="deactivate">
-              <button type="submit" class="personnel-access-button" onclick="return confirm('دسترسی ورود این فرد از همه دستگاه‌ها قطع شود؟ سوابق او حذف نمی‌شوند.')">غیرفعال‌کردن</button>
+              <button type="submit" class="personnel-access-switch" role="switch" aria-checked="true" aria-label="غیرفعال‌کردن دسترسی {{ employee.user.get_full_name|default:employee.user.username }}" title="روشن؛ برای قطع دسترسی کلیک کنید" onclick="return confirm('دسترسی ورود این فرد از همه دستگاه‌ها قطع شود؟ سوابق او حذف نمی‌شوند.')"></button>
+              <span class="personnel-access-label is-active">فعال</span>
             {% else %}
               <input type="hidden" name="action" value="activate">
-              <button type="submit" class="personnel-access-button is-activate" onclick="return confirm('دسترسی ورود این فرد دوباره فعال شود؟')">فعال‌کردن</button>
+              <button type="submit" class="personnel-access-switch" role="switch" aria-checked="false" aria-label="فعال‌کردن دسترسی {{ employee.user.get_full_name|default:employee.user.username }}" title="خاموش؛ برای فعال‌سازی کلیک کنید" onclick="return confirm('دسترسی ورود این فرد دوباره فعال شود؟')"></button>
+              <span class="personnel-access-label is-inactive">غیرفعال</span>
             {% endif %}
           </form>
+        {% elif employee.is_active and employee.user.is_active %}
+          <span class="personnel-state-chip">● فعال</span>
+        {% else %}
+          <span class="personnel-state-chip is-inactive">● غیرفعال</span>
         {% endif %}
       </div>
     </article>

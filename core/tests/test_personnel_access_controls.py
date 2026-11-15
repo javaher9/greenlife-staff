@@ -127,3 +127,14 @@ class PersonnelAccessControlTests(TestCase):
         )
         self.assertEqual(response.status_code,200)
         self.assertNotIn('_auth_user_id',self.client.session)
+
+    def test_switch_is_compact_accessible_and_posts_correct_action(self):
+        page=self.client.get(reverse('employee_list')+'?status=all')
+        self.assertContains(page,'class="personnel-access-switch"')
+        self.assertContains(page,'role="switch" aria-checked="true"')
+        self.assertContains(page,reverse('employee_status_change',args=[self.profile.pk]))
+        self.assertNotContains(page,'class="personnel-access-button"')
+        self.client.post(reverse('employee_status_change',args=[self.profile.pk]),{'action':'deactivate'})
+        page=self.client.get(reverse('employee_list')+'?status=inactive')
+        self.assertContains(page,'role="switch" aria-checked="false"')
+        self.assertContains(page,'name="action" value="activate"')

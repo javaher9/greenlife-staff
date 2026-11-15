@@ -1150,7 +1150,7 @@ def employee_status_change(request,pk):
     desired_active=(action=='activate')
     with transaction.atomic():
         employee=get_object_or_404(
-            EmployeeProfile.objects.select_for_update().select_related('user','branch'),
+            EmployeeProfile.objects.select_related('user').select_for_update(of=('self',)),
             pk=pk,
         )
         if not _can_change_employee_status(request,employee):
