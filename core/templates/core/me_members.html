@@ -1,5 +1,5 @@
 {% extends 'core/base.html' %}{% load static jalali_tags %}{% block content %}
-<link rel="stylesheet" href="{% static 'core/me-members.css' %}?v=5">
+<link rel="stylesheet" href="{% static 'core/me-members.css' %}?v=6">
 <section class="me-admin" dir="rtl"><div class="me-head"><small>Greenlife Me / مدیریت اعضا</small><h1>آمار فشرده من</h1><p>همه اعضا، از اولین ورود تا برنامه منظم حضوری یا آنلاین</p></div>
 <div class="me-metrics">{% for key,label,value,hint in tiles %}<a title="{{ hint }}" class="me-box {% if selected == key or selected == 'all' and key == 'total' %}selected{% endif %}" href="?group={% if key == 'total' %}all{% else %}{{ key }}{% endif %}"><strong>{{ value }}</strong><span>{{ label }}</span></a>{% endfor %}</div>
 <div class="me-tools"><a href="?group=notes">توضیح تازه: {{ counts.notes }}</a><a href="?group=requests">درخواست باز: {{ counts.requests }}</a><a href="?group=overdue">پیگیری عقب‌افتاده: {{ counts.overdue }}</a><a href="?group=quiet">بدون فعالیت در ۷ روز: {{ counts.quiet }}</a></div>
