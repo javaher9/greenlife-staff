@@ -9,6 +9,8 @@ on:
       - core/tests/test_finance_afsariyeh_channel.py
       - core/tests/test_finance_payment_method_card.py
       - core/tests/test_finance_fixed_branch_chart.py
+      - core/finance_amount_correction.py
+      - core/tests/test_finance_ccg_correction.py
       - .github/workflows/finance-daily-chart-checks.yml
 permissions:
   contents: read
@@ -46,4 +48,4 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt
       - run: python manage.py check
-      - run: python manage.py test core.tests.test_finance_daily_revenue_curve core.tests.test_finance_afsariyeh_channel core.tests.test_finance_flower_matrix core.tests.test_finance_payment_method_card core.tests.test_finance_fixed_branch_chart --verbosity 2
+      - run: python manage.py test core.tests.test_finance_daily_revenue_curve core.tests.test_finance_afsariyeh_channel core.tests.test_finance_flower_matrix core.tests.test_finance_payment_method_card core.tests.test_finance_fixed_branch_chart core.tests.test_finance_ccg_correction --verbosity 2
