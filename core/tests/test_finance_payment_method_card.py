@@ -55,8 +55,39 @@ class FinancePaymentMethodCardTests(TestCase):
         self.income("250000000","Pos S",branch=self.other_branch)
         selected=self.report(branch=str(self.branch.pk),service="device_package")
         self.assertEqual(selected["total"],Decimal("100000000"))
-        self.assertEqual(len(selected["payment_method_rows"]),1)
-        self.assertEqual(selected["payment_method_rows"][0]["label"],"POS-H")
+        rows={r["code"]:r for r in selected["payment_method_rows"]}
+        self.assertEqual(set(rows),{"Pos H","CC G"})
+        self.assertEqual(rows["Pos H"]["label"],"POS-H")
+        self.assertEqual(rows["CC G"]["total"],Decimal("0"))
+        self.assertEqual(sum(r["total"] for r in rows.values()),selected["total"])
+
+    def test_ccg_is_displayed_even_without_approved_receipts(self):
+        result=self.report()
+        self.assertEqual(result["total"],Decimal("0"))
+        self.assertEqual(len(result["payment_method_rows"]),1)
+        ccg=result["payment_method_rows"][0]
+        self.assertEqual(ccg["code"],"CC G")
+        self.assertEqual(ccg["label"],"CC G")
+        self.assertEqual(ccg["total"],Decimal("0"))
+        self.assertTrue(ccg["is_zero"])
+        self.client.force_login(self.admin)
+        page=self.client.get("/finance/")
+        self.assertEqual(page.status_code,200)
+        self.assertContains(page,'class="fin44-payment-row fin44-payment-zero"')
+        self.assertContains(page,"CC G")
+
+    def test_ccg_legacy_variants_are_grouped_without_duplicate_income(self):
+        self.income("20000000","CC G")
+        self.income("30000000","CC-G")
+        self.income("40000000","CCG")
+        self.income("100000000","CC G",status="pending")
+        result=self.report()
+        rows=result["payment_method_rows"]
+        self.assertEqual(len(rows),1)
+        self.assertEqual(rows[0]["code"],"CC G")
+        self.assertEqual(rows[0]["total"],Decimal("90000000"))
+        self.assertEqual(rows[0]["count"],3)
+        self.assertEqual(result["total"],Decimal("90000000"))
 
     def test_new_card_is_visible_and_donut_legend_is_below(self):
         self.income("150000000","Pos H")
