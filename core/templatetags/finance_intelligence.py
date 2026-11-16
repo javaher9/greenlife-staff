@@ -440,26 +440,38 @@ def finance_intelligence(context):
     # Payment channel distribution is the same approved, filtered income queryset
     # as the headline KPI; every transaction contributes exactly once.
     payment_palette=('#23c7bb','#638bff','#ad7bf5','#f7b34b','#ed779f','#69d88f','#45a8de')
+    # Legacy card-to-card company spellings are one financial channel.
     payment_totals=list(
-        income.values('payment_method').annotate(
-            total=Sum('amount'), count=Count('id'),
-        ).order_by('-total', 'payment_method')
+        income.annotate(
+            payment_channel=Case(
+                When(payment_method__in=('CC G', 'CC-G', 'CCG'),then=Value('CC G')),
+                default='payment_method',output_field=CharField(),
+            ),
+        ).values('payment_channel').annotate(
+            total=Sum('amount'),count=Count('id'),
+        ).order_by('-total','payment_channel')
     )
+    # Pin CC G even with no approved entries, so the company receipt
+    # route is always visible without fabricating financial income.
+    if not any(row['payment_channel']=='CC G' for row in payment_totals):
+        payment_totals.insert(0,{'payment_channel':'CC G','total':ZERO,'count':0})
+    else:
+        payment_totals.sort(key=lambda row:row['payment_channel']!='CC G')
     payment_method_rows=[]
     payment_max=max((row['total'] or ZERO for row in payment_totals),default=ZERO)
     payment_labels={
-        'Pos H':'POS-H', 'Pos S':'POS-S', 'CC S':'CC-S', 'CC G':'CC-G',
+        'Pos H':'POS-H', 'Pos S':'POS-S', 'CC S':'CC-S', 'CC G':'CC G',
         'CC P':'CC-P', 'CC D':'CC-D', 'LINK':'لینک پرداخت',
         'Cash':'نقدی', 'Bank Transfer':'حواله بانکی',
         'TRANSFER':'کارت‌به‌کارت / حواله',
     }
     for idx,row in enumerate(payment_totals):
-        method=(row['payment_method'] or '').strip()
+        method=(row['payment_channel'] or '').strip()
         amount=_money(row['total'])
         payment_method_rows.append({
             'code':method,
             'label':payment_labels.get(method,method) if method else 'روش نامشخص',
-            'total':amount,'count':row['count'],
+            'total':amount,'count':row['count'],'is_zero':amount==ZERO,
             'pct':round(float(amount * 100 / total),1) if total else 0,
             'relative':_pct(amount,payment_max),
             'color':payment_palette[idx % len(payment_palette)],
