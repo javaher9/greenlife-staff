@@ -277,10 +277,22 @@ class ConsultantFinanceEntryTests(TestCase):
     def test_consultant_sees_only_destination_codes_not_internal_meanings(self):
         self.client.force_login(self.consultant)
         response=self.client.get('/finance/entry/')
-        for code in ('Pos S','Pos H','CC P','CC D','CC S'):
+        for code in ('Pos S','Pos H','CC G','CC P','CC D','CC S'):
             self.assertContains(response,code)
         for internal_label in ('پوز اصلی','فیلم و هنر','دکتر جواهریان','ساره'):
             self.assertNotContains(response,internal_label)
+
+    def test_company_card_to_card_ccg_can_be_recorded_as_pending(self):
+        self.client.force_login(self.consultant)
+        response=self.client.post(
+            '/finance/entry/',
+            data=self.valid_payload(payment_method='CC G', tracking_number='CCG-2026-01'),
+        )
+        self.assertRedirects(response,'/finance/entry/',fetch_redirect_response=False)
+        record=FinancialTransaction.objects.get(source='manual')
+        self.assertEqual(record.payment_method,'CC G')
+        self.assertEqual(record.review_status,'pending')
+        self.assertEqual(record.amount,Decimal('1234567'))
 
     def test_consultant_submits_exact_manual_amount_name_and_receipt(self):
         self.client.force_login(self.consultant)
