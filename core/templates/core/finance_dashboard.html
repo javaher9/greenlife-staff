@@ -221,7 +221,7 @@ body.gl-page-finance_dashboard .msg.warning{
       <div class="fin44-payment-list">
         {% for p in intel.payment_method_rows %}
         <div class="fin44-payment-row{% if p.is_zero %} fin44-payment-zero{% endif %}" title="{{ p.label }} · {{ p.count }} دریافت · {{ p.pct }} درصد">
-          <div class="fin44-payment-info"><span>{{ p.label }}</span><strong>{{ p.total|million_toman }} <small>· {{ p.pct }}٪</small></strong></div>
+          <div class="fin44-payment-info"><span>{% if p.code == 'CC G' %}CC G · حساب شرکت{% else %}{{ p.label }}{% endif %}</span><strong>{{ p.total|million_toman }} <small>· {{ p.pct }}٪</small></strong></div>
           <div class="fin44-payment-track"><i style="width:{{ p.relative }}%;--payment-color:{{ p.color }}"></i></div>
         </div>
         {% endfor %}
