@@ -126,8 +126,9 @@ def finance_entry_review_with_amount(request, pk, action):
     if action == 'correction':
         current_amount_million = _million_toman(entry.amount)
         payment_methods = [
-            ('Pos S','Pos S'),('Pos H','Pos H'),('CC P','CC P'),
-            ('CC D','CC D'),('CC S','CC S'),('LINK','LINK'),('Cash','نقدی'),
+            ('Pos S','Pos S'),('Pos H','Pos H'),('CC G','CC G'),
+            ('CC P','CC P'),('CC D','CC D'),('CC S','CC S'),
+            ('LINK','LINK'),('Cash','نقدی'),
         ]
         branches = Branch.objects.filter(is_active=True).order_by('name')
         context = {
