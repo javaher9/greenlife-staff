@@ -864,6 +864,7 @@ class ConsultantFinanceEntryForm(forms.ModelForm):
     PAYMENT_METHODS=[
         ('Pos S','Pos S'),
         ('Pos H','Pos H'),
+        ('CC G','CC G'),
         ('CC P','CC P'),
         ('CC D','CC D'),
         ('CC S','CC S'),
