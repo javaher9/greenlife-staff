@@ -1,66 +1,73 @@
 <style>
 /* Operational LIGHT variant: KPI spacing/radii, call-center green/purple palette. */
-#ccxGroupGuide{--cg-ink:#263f51;--cg-muted:#617682;--cg-line:#dce6e3;--cg-purple:#684995;--cg-green:#176e4f;width:min(1120px,96vw);height:min(850px,92dvh);max-width:96vw;max-height:92dvh;margin:auto;padding:0;border:1px solid var(--cg-line);border-radius:22px;background:#f6f9f8;color:var(--cg-ink);box-shadow:0 24px 80px #1e303d40;direction:rtl;font-family:Tahoma,"Segoe UI",Arial,sans-serif;font-size:14px;line-height:1.8;overflow:hidden;color-scheme:light}
-#ccxGroupGuide::backdrop{background:#19242d99;backdrop-filter:blur(3px)}
+#ccxGroupGuide{--cg-ink:#263f51;--cg-muted:#617682;--cg-line:#dce6e3;--cg-purple:#684995;--cg-green:#176e4f;width:min(1120px,96vw);height:min(850px,92dvh);max-width:96vw;max-height:92dvh;margin:auto;padding:0;border:1px solid var(--cg-line)!important;border-radius:22px!important;background:#f6f9f8!important;color:var(--cg-ink)!important;box-shadow:0 24px 80px #1e303d40!important;direction:rtl;font-family:Tahoma,"Segoe UI",Arial,sans-serif!important;font-size:14px!important;line-height:1.8!important;overflow:hidden;color-scheme:light}
+#ccxGroupGuide::backdrop{background:#19242d99!important;backdrop-filter:blur(3px)}
 #ccxGroupGuide *,#ccxGroupGuide *::before{box-sizing:border-box}
+#ccxGroupGuide :is(h2,h3,p,li,label,strong,b,span){color:inherit!important;-webkit-text-fill-color:currentColor!important;opacity:1!important}
+#ccxGroupGuide button{transform:none!important;box-shadow:none!important}
+#ccxGroupGuide .cg-header{margin:0}
+#ccxGroupGuide .cg-quick{position:static;inset:auto;width:auto;z-index:auto;backdrop-filter:none!important;box-shadow:none!important;overflow:visible}
+#ccxGroupGuide option{background:#fff!important;color:#263f51!important}
+#ccxGroupGuide input,#ccxGroupGuide textarea{caret-color:#263f51}
+#ccxGroupGuide input::placeholder,#ccxGroupGuide textarea::placeholder{color:#617682!important}
 #ccxGroupGuide [hidden]{display:none!important}
-#ccxGroupGuide h2,#ccxGroupGuide h3,#ccxGroupGuide p{color:inherit;-webkit-text-fill-color:currentColor;margin:0}
-#ccxGroupGuide button,#ccxGroupGuide select,#ccxGroupGuide textarea,#ccxGroupGuide input{font:inherit;letter-spacing:normal}
-#ccxGroupGuide button{min-height:44px;padding:9px 14px;border:1px solid var(--cg-line);border-radius:12px;background:#fff;color:var(--cg-ink);font-size:13px;font-weight:700;cursor:pointer;line-height:1.8;white-space:normal;text-align:center}
-#ccxGroupGuide button:hover{background:#f1eaf8;border-color:#c9b7dd}
-#ccxGroupGuide button:focus-visible,#ccxGroupGuide select:focus-visible,#ccxGroupGuide textarea:focus-visible,#ccxGroupGuide input:focus-visible{outline:3px solid #9d79c9;outline-offset:3px}
+#ccxGroupGuide h2,#ccxGroupGuide h3,#ccxGroupGuide p{color:inherit!important;-webkit-text-fill-color:currentColor;margin:0}
+#ccxGroupGuide button,#ccxGroupGuide select,#ccxGroupGuide textarea,#ccxGroupGuide input{font:inherit!important;letter-spacing:normal}
+#ccxGroupGuide button{min-height:44px;padding:9px 14px;border:1px solid var(--cg-line)!important;border-radius:12px!important;background:#fff!important;color:var(--cg-ink)!important;font-size:13px!important;font-weight:700!important;cursor:pointer;line-height:1.8!important;white-space:normal;text-align:center}
+#ccxGroupGuide button:hover{background:#f1eaf8!important;border-color:#c9b7dd!important}
+#ccxGroupGuide button:focus-visible,#ccxGroupGuide select:focus-visible,#ccxGroupGuide textarea:focus-visible,#ccxGroupGuide input:focus-visible{outline:3px solid #9d79c9!important;outline-offset:3px!important}
 #ccxGroupGuide button:disabled{opacity:.45;cursor:default}
-#ccxGroupGuide .cg-primary{background:var(--cg-purple);border-color:var(--cg-purple);color:#fff}
-#ccxGroupGuide .cg-primary:hover{background:#583a83}
-#ccxGroupGuide .cg-success{background:#e7f5ee;color:var(--cg-green);border-color:#c7e2d4}
-#ccxGroupGuide .cg-danger{background:#fff0f3;color:#a13d55;border-color:#efd3db}
+#ccxGroupGuide .cg-primary{background:var(--cg-purple)!important;border-color:var(--cg-purple)!important;color:#fff!important}
+#ccxGroupGuide .cg-primary:hover{background:#583a83!important}
+#ccxGroupGuide .cg-success{background:#e7f5ee!important;color:var(--cg-green)!important;border-color:#c7e2d4!important}
+#ccxGroupGuide .cg-danger{background:#fff0f3!important;color:#a13d55!important;border-color:#efd3db!important}
 #ccxGroupGuide .cg-shell{display:flex;flex-direction:column;height:100%;min-height:0}
-#ccxGroupGuide .cg-header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 24px 14px;background:#fff;border-bottom:1px solid var(--cg-line);flex:none}
-#ccxGroupGuide .cg-eyebrow{color:var(--cg-purple);font-size:11px;font-weight:700}
-#ccxGroupGuide h2{font-size:21px;font-weight:900;line-height:1.6}
+#ccxGroupGuide .cg-header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 24px 14px;background:#fff!important;border-bottom:1px solid var(--cg-line)!important;flex:none}
+#ccxGroupGuide .cg-eyebrow{color:var(--cg-purple)!important;font-size:11px!important;font-weight:700!important}
+#ccxGroupGuide h2{font-size:21px!important;font-weight:900!important;line-height:1.6!important}
 #ccxGroupGuide .cg-header-actions{display:flex;gap:7px;flex-shrink:0}
-#ccxGroupGuide .cg-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 24px;background:#fff;flex:none}
-#ccxGroupGuide .cg-tabs button{display:flex;align-items:center;justify-content:center;gap:9px;background:#f6f9f8;color:var(--cg-muted)}
-#ccxGroupGuide .cg-tabs button[aria-selected="true"]{background:#eee5f7;border-color:#ccb9de;color:var(--cg-purple)}
-#ccxGroupGuide .cg-tabs b{display:grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#fff;font-size:12px}
+#ccxGroupGuide .cg-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 24px;background:#fff!important;flex:none}
+#ccxGroupGuide .cg-tabs button{display:flex;align-items:center;justify-content:center;gap:9px;background:#f6f9f8!important;color:var(--cg-muted)!important}
+#ccxGroupGuide .cg-tabs button[aria-selected="true"]{background:#eee5f7!important;border-color:#ccb9de!important;color:var(--cg-purple)!important}
+#ccxGroupGuide .cg-tabs b{display:grid;place-items:center;width:25px;height:25px;border-radius:50%!important;background:#fff!important;font-size:12px!important}
 #ccxGroupGuide .cg-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:18px 24px 24px;scrollbar-width:thin}
 #ccxGroupGuide .cg-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-#ccxGroupGuide .cg-card{padding:20px;border:1px solid var(--cg-line);border-radius:18px;background:#fff;min-width:0}
-#ccxGroupGuide h3{font-size:17px;font-weight:800;margin-bottom:10px}
-#ccxGroupGuide .cg-muted{color:var(--cg-muted);font-size:12px}
-#ccxGroupGuide .cg-purpose{padding:16px 20px;border:1px solid #d6c6e5;border-radius:14px;background:#f3edf9;color:#57367e;margin-bottom:16px;font-size:14px;line-height:2}
+#ccxGroupGuide .cg-card{padding:20px;border:1px solid var(--cg-line)!important;border-radius:18px!important;background:#fff!important;min-width:0}
+#ccxGroupGuide h3{font-size:17px!important;font-weight:800!important;margin-bottom:10px}
+#ccxGroupGuide .cg-muted{color:var(--cg-muted)!important;font-size:12px!important}
+#ccxGroupGuide .cg-purpose{padding:16px 20px;border:1px solid #d6c6e5!important;border-radius:14px!important;background:#f3edf9!important;color:#57367e!important;margin-bottom:16px;font-size:14px!important;line-height:2!important}
 #ccxGroupGuide .cg-checklist{margin:0;padding:0;list-style:none;display:grid;gap:12px}
-#ccxGroupGuide .cg-checklist li{position:relative;padding-right:25px;font-size:13px;line-height:2}
-#ccxGroupGuide .cg-checklist li::before{content:'✓';position:absolute;right:0;color:var(--cg-green);font-weight:bold}
-#ccxGroupGuide .cg-scenario{display:block;width:100%;text-align:right;margin-top:10px;padding:15px;background:#f6f9f8}
-#ccxGroupGuide .cg-scenario span{display:block;font-weight:400;font-size:12px;color:var(--cg-muted);margin-top:3px}
+#ccxGroupGuide .cg-checklist li{position:relative;padding-right:25px;font-size:13px!important;line-height:2!important}
+#ccxGroupGuide .cg-checklist li::before{content:'✓';position:absolute;right:0;color:var(--cg-green)!important;font-weight:bold!important}
+#ccxGroupGuide .cg-scenario{display:block;width:100%;text-align:right;margin-top:10px;padding:15px;background:#f6f9f8!important}
+#ccxGroupGuide .cg-scenario span{display:block;font-weight:400!important;font-size:12px!important;color:var(--cg-muted)!important;margin-top:3px}
 #ccxGroupGuide .cg-call-layout{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:16px;align-items:start}
-#ccxGroupGuide .cg-script-card{background:#fff;padding:22px;border:1px solid var(--cg-line);border-radius:18px;min-width:0}
+#ccxGroupGuide .cg-script-card{background:#fff!important;padding:22px;border:1px solid var(--cg-line)!important;border-radius:18px!important;min-width:0}
 #ccxGroupGuide .cg-step-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
 #ccxGroupGuide .cg-step-head h3{margin:0}
-#ccxGroupGuide .cg-read-label{font-size:11px;color:var(--cg-green);font-weight:800;margin-bottom:8px}
-#ccxGroupGuide .cg-script{white-space:pre-line;font-size:19px;line-height:2.15;padding:18px 20px;background:#f0f7f3;border-right:4px solid #399273;border-radius:12px;color:#224e3e}
-#ccxGroupGuide .cg-tip{margin-top:14px;padding:12px 15px;border-radius:12px;background:#fff8e9;color:#775f27;font-size:12px;line-height:2}
-#ccxGroupGuide .cg-response-label{margin:20px 0 10px;font-size:13px;font-weight:800}
+#ccxGroupGuide .cg-read-label{font-size:11px!important;color:var(--cg-green)!important;font-weight:800!important;margin-bottom:8px}
+#ccxGroupGuide .cg-script{white-space:pre-line;font-size:19px!important;line-height:2.15!important;padding:18px 20px;background:#f0f7f3!important;border-right:4px solid #399273!important;border-radius:12px!important;color:#224e3e!important}
+#ccxGroupGuide .cg-tip{margin-top:14px;padding:12px 15px;border-radius:12px!important;background:#fff8e9!important;color:#775f27!important;font-size:12px!important;line-height:2!important}
+#ccxGroupGuide .cg-response-label{margin:20px 0 10px;font-size:13px!important;font-weight:800!important}
 #ccxGroupGuide .cg-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-#ccxGroupGuide .cg-choices button{text-align:right;min-height:48px;background:#fff}
-#ccxGroupGuide .cg-choices button::after{content:' ←';color:var(--cg-purple)}
-#ccxGroupGuide .cg-quick{padding:17px;border:1px solid var(--cg-line);border-radius:18px;background:#fff;display:grid;gap:8px}
-#ccxGroupGuide .cg-quick h3{font-size:14px;margin:0 0 4px}
-#ccxGroupGuide .cg-quick button{text-align:right;font-size:12px}
+#ccxGroupGuide .cg-choices button{text-align:right;min-height:48px;background:#fff!important}
+#ccxGroupGuide .cg-choices button::after{content:' ←';color:var(--cg-purple)!important}
+#ccxGroupGuide .cg-quick{padding:17px;border:1px solid var(--cg-line)!important;border-radius:18px!important;background:#fff!important;display:grid;gap:8px}
+#ccxGroupGuide .cg-quick h3{font-size:14px!important;margin:0 0 4px}
+#ccxGroupGuide .cg-quick button{text-align:right;font-size:12px!important}
 #ccxGroupGuide .cg-call-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 #ccxGroupGuide .cg-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-#ccxGroupGuide .cg-field{display:grid;gap:6px;min-width:0;font-size:12px;font-weight:700}
+#ccxGroupGuide .cg-field{display:grid;gap:6px;min-width:0;font-size:12px!important;font-weight:700!important}
 #ccxGroupGuide .cg-field.wide{grid-column:1/-1}
-#ccxGroupGuide select,#ccxGroupGuide input,#ccxGroupGuide textarea{width:100%;min-width:0;border:1px solid #ccdcd5;border-radius:11px;background:#fff;color:var(--cg-ink);padding:10px 12px;font-size:13px;line-height:1.8;box-shadow:none}
+#ccxGroupGuide select,#ccxGroupGuide input,#ccxGroupGuide textarea{width:100%;min-width:0;border:1px solid #ccdcd5!important;border-radius:11px!important;background:#fff!important;color:var(--cg-ink)!important;padding:10px 12px;font-size:13px!important;line-height:1.8!important;box-shadow:none!important}
 #ccxGroupGuide textarea{resize:vertical;min-height:96px}
 #ccxGroupGuide .cg-copy-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:14px}
-#ccxGroupGuide .cg-notice{padding:12px 16px;background:#edf4f8;border:1px solid #d4e1e8;border-radius:12px;color:#45687f;font-size:12px;margin-bottom:15px}
-#ccxGroupGuide .cg-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;flex:none;padding:10px 24px;border-top:1px solid var(--cg-line);background:#fff;font-size:11px;color:var(--cg-muted)}
-#ccxGroupGuide .cg-footer button{min-height:36px;padding:5px 12px;font-size:11px}
-#ccxGroupGuide.cg-large-text .cg-script{font-size:23px}
-@media(max-width:800px){#ccxGroupGuide{width:97vw;max-width:97vw;height:94dvh;max-height:94dvh;border-radius:16px}#ccxGroupGuide .cg-call-layout{grid-template-columns:1fr}#ccxGroupGuide .cg-quick{grid-template-columns:repeat(3,minmax(0,1fr))}#ccxGroupGuide .cg-quick h3{grid-column:1/-1}#ccxGroupGuide .cg-grid{grid-template-columns:1fr}#ccxGroupGuide .cg-header,#ccxGroupGuide .cg-tabs,#ccxGroupGuide .cg-scroll{padding-left:16px;padding-right:16px}#ccxGroupGuide h2{font-size:18px}}
-@media(max-width:480px){#ccxGroupGuide .cg-header{gap:8px;padding-top:12px;padding-bottom:10px}#ccxGroupGuide .cg-header-actions{gap:4px}#ccxGroupGuide .cg-header-actions button{padding:7px 9px;font-size:11px}#ccxGroupGuide h2{font-size:15px}#ccxGroupGuide .cg-tabs{gap:5px;padding-top:8px;padding-bottom:8px}#ccxGroupGuide .cg-tabs button{font-size:11px;padding:7px 4px;gap:5px}#ccxGroupGuide .cg-tabs b{width:20px;height:20px;font-size:10px}#ccxGroupGuide .cg-scroll{padding:12px}#ccxGroupGuide .cg-script-card,#ccxGroupGuide .cg-card{padding:15px}#ccxGroupGuide .cg-script{font-size:17px;padding:13px;line-height:2}#ccxGroupGuide .cg-choices,#ccxGroupGuide .cg-form{grid-template-columns:1fr}#ccxGroupGuide .cg-quick{grid-template-columns:1fr 1fr}#ccxGroupGuide .cg-footer{padding:9px 12px}#ccxGroupGuide .cg-footer span{font-size:10px}#ccxGroupGuide.cg-large-text .cg-script{font-size:21px}}
+#ccxGroupGuide .cg-notice{padding:12px 16px;background:#edf4f8!important;border:1px solid #d4e1e8!important;border-radius:12px!important;color:#45687f!important;font-size:12px!important;margin-bottom:15px}
+#ccxGroupGuide .cg-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;flex:none;padding:10px 24px;border-top:1px solid var(--cg-line)!important;background:#fff!important;font-size:11px!important;color:var(--cg-muted)!important}
+#ccxGroupGuide .cg-footer button{min-height:36px;padding:5px 12px;font-size:11px!important}
+#ccxGroupGuide.cg-large-text .cg-script{font-size:23px!important}
+@media(max-width:800px){#ccxGroupGuide{width:97vw;max-width:97vw;height:94dvh;max-height:94dvh;border-radius:16px!important}#ccxGroupGuide .cg-call-layout{grid-template-columns:1fr}#ccxGroupGuide .cg-quick{grid-template-columns:repeat(3,minmax(0,1fr))}#ccxGroupGuide .cg-quick h3{grid-column:1/-1}#ccxGroupGuide .cg-grid{grid-template-columns:1fr}#ccxGroupGuide .cg-header,#ccxGroupGuide .cg-tabs,#ccxGroupGuide .cg-scroll{padding-left:16px;padding-right:16px}#ccxGroupGuide h2{font-size:18px!important}}
+@media(max-width:480px){#ccxGroupGuide .cg-header{gap:8px;padding-top:12px;padding-bottom:10px}#ccxGroupGuide .cg-header-actions{gap:4px}#ccxGroupGuide .cg-header-actions button{padding:7px 9px;font-size:11px!important}#ccxGroupGuide h2{font-size:15px!important}#ccxGroupGuide .cg-tabs{gap:5px;padding-top:8px;padding-bottom:8px}#ccxGroupGuide .cg-tabs button{font-size:11px!important;padding:7px 4px;gap:5px}#ccxGroupGuide .cg-tabs b{width:20px;height:20px;font-size:10px!important}#ccxGroupGuide .cg-scroll{padding:12px}#ccxGroupGuide .cg-script-card,#ccxGroupGuide .cg-card{padding:15px}#ccxGroupGuide .cg-script{font-size:17px!important;padding:13px;line-height:2!important}#ccxGroupGuide .cg-choices,#ccxGroupGuide .cg-form{grid-template-columns:1fr}#ccxGroupGuide .cg-quick{grid-template-columns:1fr 1fr}#ccxGroupGuide .cg-footer{padding:9px 12px}#ccxGroupGuide .cg-footer span{font-size:10px!important}#ccxGroupGuide.cg-large-text .cg-script{font-size:21px!important}}
 </style>
 <dialog id="ccxGroupGuide" aria-labelledby="cgTitle" aria-describedby="cgSubtitle">
   <div class="cg-shell">
