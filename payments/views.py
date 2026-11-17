@@ -1,5 +1,6 @@
 from django import forms
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction, models
@@ -105,6 +106,20 @@ PAYMENT_ASSIGNEES = (
     ('memari', 'خانم مرجان معماری · مشاور پونک', ('معماری', 'memari', 'memary')),
 )
 
+IBAN_DIGIT_TRANSLATION = str.maketrans(
+    '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩',
+    '01234567890123456789',
+)
+
+
+def normalize_iran_iban(value):
+    """Return a canonical Iranian IBAN and accept the common 24-digit input."""
+    iban = ''.join(str(value or '').translate(IBAN_DIGIT_TRANSLATION).split())
+    iban = iban.replace('-', '').upper()
+    if len(iban) == 24 and iban.isdigit():
+        iban = f'IR{iban}'
+    return iban
+
 def five_payment_assignees():
     """Only uniquely identified active employee accounts, never sales-network members."""
     candidates=User.objects.filter(is_active=True,profile__is_active=True,profile__can_execute_payments=True).select_related('profile')
@@ -135,6 +150,11 @@ class ExecutiveQuickPaymentForm(forms.Form):
         super().__init__(*args,**kwargs)
         self.assignees=five_payment_assignees()
         self.fields['assigned_to'].queryset=User.objects.filter(pk__in=[user.pk for _,_,user in self.assignees])
+    def clean_recipient_iban(self):
+        iban=normalize_iran_iban(self.cleaned_data.get('recipient_iban'))
+        if iban and (len(iban)!=26 or not iban.startswith('IR') or not iban[2:].isdigit()):
+            raise ValidationError('شماره شبا باید ۲۴ رقم باشد؛ IR به‌صورت خودکار اضافه می‌شود.')
+        return iban
     def clean(self):
         cleaned=super().clean()
         if not cleaned.get('recipient_iban') and not cleaned.get('recipient_card'):
@@ -205,14 +225,17 @@ def executive_save_recipient(request):
     if not executive(request.user):
         raise PermissionDenied()
     name=request.POST.get('name','').strip()
-    iban=request.POST.get('iban','').strip().replace(' ','').upper()
+    iban=normalize_iran_iban(request.POST.get('iban',''))
     card=request.POST.get('card','').strip().replace(' ','').replace('-','')
     if not name or len(name)>160 or not (iban or card):
-        return HttpResponseBadRequest('نام و شماره شبا یا کارت الزامی است.')
+        messages.error(request,'نام و شماره شبا یا کارت الزامی است.')
+        return redirect('payments_executive_quick')
     if iban and (len(iban)!=26 or not iban.startswith('IR') or not iban[2:].isdigit()):
-        return HttpResponseBadRequest('شماره شبا باید IR و ۲۴ رقم باشد.')
+        messages.error(request,'شماره شبا باید ۲۴ رقم باشد؛ IR به‌صورت خودکار اضافه می‌شود.')
+        return redirect('payments_executive_quick')
     if card and (len(card)!=16 or not card.isdigit()):
-        return HttpResponseBadRequest('شماره کارت باید ۱۶ رقم باشد.')
+        messages.error(request,'شماره کارت باید ۱۶ رقم باشد.')
+        return redirect('payments_executive_quick')
     if SavedPaymentRecipient.objects.filter(owner=request.user,name=name,iban=iban,card=card).exists():
         return redirect('payments_executive_quick')
     SavedPaymentRecipient.objects.create(owner=request.user,name=name,iban=iban,card=card)

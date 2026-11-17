@@ -244,6 +244,24 @@ class PaymentWorkflowTests(TestCase):
         self.assertEqual(order.assigned_to,self.worker)
         self.assertEqual(order.approved_by,self.executive)
 
+    def test_executive_quick_payment_accepts_24_digit_iban_without_ir(self):
+        self.client.force_login(self.executive)
+        self.worker.first_name='خانم'
+        self.worker.last_name='مرادی'
+        self.worker.save()
+        iban_digits='980120020000008423462688'
+        res=self.client.post(reverse('payments_executive_quick'),{
+            'amount_million':'250',
+            'priority':'normal',
+            'description':'Office rent',
+            'assigned_to':self.worker.pk,
+            'recipient_name':'Example Company',
+            'recipient_iban':iban_digits,
+        })
+        self.assertEqual(res.status_code,302)
+        order=PaymentRequest.objects.get(description='Office rent')
+        self.assertEqual(order.recipient_iban,f'IR{iban_digits}')
+
     def test_nonexecutive_cannot_create_direct_payment(self):
         self.client.force_login(self.worker)
         self.assertEqual(self.client.get(reverse('payments_executive_quick')).status_code,403)
@@ -586,6 +604,16 @@ class SavedPaymentRecipientTests(TestCase):
         page=self.client.get(reverse('payments_executive_quick'))
         self.assertContains(page,'سنا')
 
+    def test_24_digit_iban_is_saved_with_ir_prefix(self):
+        from .models import SavedPaymentRecipient
+        self.client.force_login(self.executive)
+        iban_digits='980120020000008423462688'
+        response=self.client.post(reverse('payments_executive_recipient_save'),{
+            'name':'شرکت سازه کاران','iban':iban_digits,'card':''})
+        self.assertEqual(response.status_code,302)
+        recipient=SavedPaymentRecipient.objects.get(owner=self.executive,name='شرکت سازه کاران')
+        self.assertEqual(recipient.iban,f'IR{iban_digits}')
+
     def test_other_user_cannot_save_or_read_executive_book(self):
         from .models import SavedPaymentRecipient
         SavedPaymentRecipient.objects.create(owner=self.executive,name='Private',card='1234567890123456')
@@ -596,6 +624,11 @@ class SavedPaymentRecipientTests(TestCase):
     def test_invalid_bank_details_not_saved(self):
         from .models import SavedPaymentRecipient
         self.client.force_login(self.executive)
-        response=self.client.post(reverse('payments_executive_recipient_save'),{'name':'سنا','iban':'IR123'})
-        self.assertEqual(response.status_code,400)
+        response=self.client.post(
+            reverse('payments_executive_recipient_save'),
+            {'name':'سنا','iban':'IR123'},
+            follow=True,
+        )
+        self.assertRedirects(response,reverse('payments_executive_quick'))
         self.assertEqual(SavedPaymentRecipient.objects.count(),0)
+        self.assertContains(response,'شماره شبا باید ۲۴ رقم باشد')
