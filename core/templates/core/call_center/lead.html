@@ -99,7 +99,8 @@ body.gl-page-call_center_lead .cc-detail .cc-phone a{
     <article class="cc-card">
       <h1>{{ lead.full_name }}</h1><div class="cc-sub">{% gl_t 'cc.referrer' name=lead.referrer %} · <span class="cc-source">{{ lead.source_origin_display }}</span></div>
       {% include "core/call_center/_contact_control.html" with lead=lead %}
-      <div class="cc-phone"><b>{{ lead.phone }}</b><a href="tel:{{ lead.phone }}" data-phone="{{ lead.phone }}">☎ {% gl_t 'cc.direct_call' %}</a></div>
+      <div class="cc-phone"><b>{{ lead.phone }}</b><a href="tel:{{ lead.phone }}" data-phone="{{ lead.phone }}" data-call-phone="{{ lead.phone }}" data-call-start-url="{% url 'call_center_mark_call_started' lead.pk %}" data-call-plaque-url="{% url 'call_center_call_plaque' lead.pk %}" data-lead-name="{{ lead.full_name }}" data-lead-group="{{ lead.group.name|default:'' }}">☎ پلاک تماس و سوابق</a></div>
+      {% include "core/call_center/_call_plaque_badge.html" with lead_id=lead.pk summary=call_readiness %}
       <div class="cc-meta">
         <div><span>{% gl_t 'cc.interested_service' %}</span><b>{{ lead.interested_service|default:'—' }}</b></div>
         <div><span>{% gl_t 'cc.market' %}</span><b>{% if lead.country %}{{ lead.country.flag_emoji }} {{ lead.country.name_local }}{% else %}—{% endif %}</b></div>
@@ -122,6 +123,8 @@ body.gl-page-call_center_lead .cc-detail .cc-phone a{
   </section>
 </div>
 
+{% include "core/call_center/_call_plaque_list_assets.html" %}
+{% include "core/call_center/_call_plaque.html" %}
 <script>
 (function(){
   function imp(el,p,v){if(el)el.style.setProperty(p,v,'important')}

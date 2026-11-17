@@ -111,6 +111,7 @@ CALL_EVENT_STATUSES={
 
 def queue_call_result_sms(lead_id):
     """Replace stale pending messages after a saved call outcome; never send on dial."""
+    from .call_plaque import lead_do_not_contact
     from .models import ReferralLead
     lead=ReferralLead.objects.select_related('assigned_to__user','assigned_to__branch').filter(pk=lead_id).first()
     if not lead:
@@ -121,6 +122,8 @@ def queue_call_result_sms(lead_id):
         event_key__contains=f':{lead.pk}-',
         status='pending',
     ).update(status='cancelled')
+    if lead_do_not_contact(lead):
+        return None
     event=CALL_RESULT_SMS_EVENTS.get(lead.contact_result)
     if not event or lead.status!=CALL_EVENT_STATUSES[lead.contact_result]:
         return None
@@ -142,6 +145,7 @@ def queue_call_result_sms(lead_id):
 
 def _current_call_outcome(item):
     """Prevent a delayed call SMS from dispatching after the lead has changed."""
+    from .call_plaque import lead_do_not_contact
     from .models import ReferralLead
     expected=CALL_EVENT_RESULTS.get(item.rule.event)
     if not expected:
@@ -153,10 +157,11 @@ def _current_call_outcome(item):
     lead_id=lead_token.split('-',1)[0]
     if not lead_id.isdigit():
         return False
-    return ReferralLead.objects.filter(
+    lead=ReferralLead.objects.filter(
         pk=int(lead_id),contact_result=expected,
         status=CALL_EVENT_STATUSES[expected],
-    ).exists()
+    ).first()
+    return bool(lead and not lead_do_not_contact(lead))
 
 
 def process_due_sms(batch_size=25):
@@ -190,6 +195,12 @@ def process_due_sms(batch_size=25):
             item.status='sending'
             item.attempt_count+=1
             item.save(update_fields=['status','attempt_count','updated_at'])
+        # Consent can change while a worker claims an older queued outcome.
+        # Recheck immediately before dispatch; unrelated treatment events pass.
+        if not _current_call_outcome(item):
+            item.status='cancelled'
+            item.save(update_fields=['status','updated_at'])
+            continue
         try:
             send_sms(item.number,item.body,purpose='manual')
         except (SmsGatewayError,Exception) as exc:

@@ -1,0 +1,5 @@
+<span class="cp-readiness" data-call-score-for="{{ lead_id }}" data-band="{{ summary.band|default:'unknown' }}" title="امتیاز آمادگی؛ درصد احتمال خرید نیست">
+  <span data-call-score-label>{{ summary.label|default:'اطلاعات ناکافی' }}</span>
+  <b data-call-score-number>{% if summary.score != None %}{{ summary.score }} / 100{% else %}—{% endif %}</b>
+  <span class="cp-readiness-track" aria-hidden="true"><i data-call-score-fill style="width:{{ summary.score|default_if_none:0 }}%"></i></span>
+</span>

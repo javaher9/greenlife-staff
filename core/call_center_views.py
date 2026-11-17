@@ -124,6 +124,12 @@ def mark_call_started(request, pk):
         return JsonResponse({'ok': False, 'error': 'forbidden'}, status=403)
 
     lead = get_object_or_404(ReferralLead, pk=pk, assigned_to=profile)
+    from .call_plaque import lead_do_not_contact
+    if lead_do_not_contact(lead):
+        return JsonResponse({
+            'ok': False, 'code': 'do_not_contact',
+            'error': 'این فرد درخواست کرده تماس مجدد انجام نشود؛ تماس خروجی مجاز نیست.',
+        }, status=409)
     changed = False
 
     labels = {
@@ -154,7 +160,13 @@ def save_call_result(request, pk):
     profile=getattr(request.user,'profile',None)
     if not profile or profile.role!='call_center' or not profile.is_active:
         return JsonResponse({'ok':False,'error':'forbidden'},status=403)
-    lead=get_object_or_404(ReferralLead,pk=pk,assigned_to=profile)
+    lead=get_object_or_404(ReferralLead.objects.select_for_update(),pk=pk,assigned_to=profile)
+    from .call_plaque import lead_do_not_contact
+    if lead_do_not_contact(lead):
+        return JsonResponse({
+            'ok':False,'code':'do_not_contact',
+            'error':'این فرد درخواست کرده تماس مجدد انجام نشود؛ ثبت تماس خروجی یا پیگیری جدید مجاز نیست.',
+        },status=409)
     result=(request.POST.get('result') or '').strip()
     if result not in ('no_answer','not_interested','follow_up'):
         return JsonResponse({'ok':False,'error':'invalid_result'},status=400)
@@ -422,8 +434,13 @@ _CALL_TRACKING_SCRIPT = r'''<script>
       method:'POST',body:body,credentials:'same-origin',keepalive:true,
       headers:{'X-Requested-With':'XMLHttpRequest'}
     }).then(function(response){
-      if(!response.ok)throw new Error('contact status '+response.status);
-      return response.json();
+      return response.json().then(function(data){
+        if(!response.ok){
+          if(data&&data.code==='do_not_contact')window.alert(data.error);
+          throw new Error('contact status '+response.status);
+        }
+        return data;
+      });
     }).then(function(data){
       if(data&&data.ok){
         updateRow(row,data.label||'');
@@ -546,10 +563,16 @@ _CALL_TRACKING_SCRIPT = r'''<script>
 
     var link=event.target.closest('a[href^="tel:"]');
     if(!link||location.pathname.indexOf('/call-center/')!==0)return;
+    // The call plaque owns its trigger and its separately confirmed dial action.
+    if(link.hasAttribute('data-call-plaque-url')||link.closest('#glCallPlaque'))return;
     var leadId=leadIdFor(link);
     if(!leadId)return;
+    // Do not launch an outbound dial before the server checks current consent.
+    event.preventDefault();
     var row=link.closest('.cc-v5-patient');
-    postContact(leadId,row,{optimistic:true});
+    postContact(leadId,row,{optimistic:true}).then(function(data){
+      if(data&&data.ok)window.location.href=link.href;
+    });
   },true);
 })();
 </script>'''

@@ -294,7 +294,7 @@ class DuplicateLeadError(ValidationError):
 
 class ReferralLead(models.Model):
     school_enrollment=models.OneToOneField('schools.FamilyEnrollment',on_delete=models.PROTECT,null=True,blank=True,related_name='lead')
-    CONTACT_RESULT=[('follow_up','نیاز به پیگیری'),('appointment','نوبت ثبت شد'),('no_answer','پاسخ نداد'),('won','فروش موفق'),('sale_lost','فروش ناموفق'),('not_interested','تمایل ندارد')]
+    CONTACT_RESULT=[('follow_up','نیاز به پیگیری'),('appointment','نوبت ثبت شد'),('no_answer','پاسخ نداد'),('won','فروش موفق'),('sale_lost','فروش ناموفق'),('not_interested','تمایل ندارد'),('wrong_number','شماره یا مخاطب اشتباه')]
     STATUS=[
         ('new','جدید'),('contacted','تماس گرفته شد'),('appointment','نوبت ثبت شد'),
         ('visited','مراجعه کرد'),('won','فروش موفق'),('lost','ناموفق'),
@@ -2301,3 +2301,4 @@ from .me_nutrition_models import MeNutritionProgress
 from .intake_models import CustomerIntake, CustomerIntakePhoto, CustomerRequestEvent
 
 from .me_members_models import MeMemberCare, MeMemberAction
+from .call_plaque_models import LeadCallProfile, LeadCallSession

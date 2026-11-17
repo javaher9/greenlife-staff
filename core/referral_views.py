@@ -1,4 +1,5 @@
 from .lead_contacts import create_with_contacts
+from .call_plaque import call_plaque_summaries, lead_do_not_contact
 import csv
 import io
 import os
@@ -1160,6 +1161,9 @@ def call_center_dashboard(request):
         if not search_key or search_key in haystack:
             filtered_queue.append(item)
     queue_page=Paginator(filtered_queue,50).get_page(request.GET.get('queue_page'))
+    plaque_summaries=call_plaque_summaries([item['lead'].pk for item in queue_page])
+    for item in queue_page:
+        item['call_readiness']=plaque_summaries.get(item['lead'].pk,{'score':None,'band':'unknown','label':'اطلاعات ناکافی'})
     queue_params=request.GET.copy()
     queue_params.pop('queue_page',None)
     queue_page_base='?'+queue_params.urlencode()
@@ -1378,6 +1382,8 @@ def call_center_today_appointments_live(request):
             'status_source':journey['source'],
             'changed_time':journey['changed_time'],
             'needs_call':journey['needs_call'],
+            'plaque_url':reverse('call_center_call_plaque',args=[item.lead_id]),
+            'call_start_url':reverse('call_center_mark_call_started',args=[item.lead_id]),
             'patient_url':reverse('patient_360_from_appointment',args=[item.pk]),
         })
     response=JsonResponse({
@@ -1750,13 +1756,17 @@ def call_center_direct_lead_create(request):
 
 
 @call_center_required
+@transaction.atomic
 def call_center_lead(request,pk):
     lead=get_object_or_404(
-        ReferralLead.objects.select_related('assigned_to','group'),
+        ReferralLead.objects.select_for_update(of=('self',)).select_related('assigned_to','group') if request.method=='POST' else ReferralLead.objects.select_related('assigned_to','group'),
         pk=pk,assigned_to=request.user.profile,
     )
     form=CallCenterLeadForm(request.POST or None,instance=lead,operator=request.user.profile)
-    if request.method=='POST' and form.is_valid():
+    contact_blocked=lead_do_not_contact(lead)
+    if request.method=='POST' and contact_blocked:
+        form.add_error(None,'درخواست عدم تماس در پلاک این مخاطب ثبت شده است؛ پیگیری تازه ذخیره نشد.')
+    if request.method=='POST' and not contact_blocked and form.is_valid():
         from .follow_up_agenda import saved_follow_up_snapshot, record_follow_up
         with transaction.atomic():
             previous=saved_follow_up_snapshot(lead)
@@ -1776,6 +1786,7 @@ def call_center_lead(request,pk):
     real_appointments=lead.appointments.exclude(status='cancelled').select_related('branch').order_by('-appointment_date','-appointment_time')[:5]
     return render(request,'core/call_center/lead.html',{
         'lead':FlowerLeadProxy(lead),'form':form,'real_appointments':real_appointments,
+        'call_readiness':call_plaque_summaries([lead.pk]).get(lead.pk,{'score':None,'band':'unknown','label':'اطلاعات ناکافی'}),
     })
 
 

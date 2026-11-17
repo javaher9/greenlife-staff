@@ -7,7 +7,7 @@
   const more = document.getElementById('al-more'), total = document.getElementById('al-total');
   const before = document.getElementById('al-before'), after = document.getElementById('al-after');
   let items = [], cursor = null, done = false, busy = false, controller, generation = 0, timer, frame;
-  const rowHeight = 64;
+  const rowHeight = 90;
   let renderedWindow = null;
   const initial = new URLSearchParams(location.search);
   for (const [key,value] of initial) {
@@ -26,14 +26,23 @@
     renderedWindow = windowKey;
     const fragment = document.createDocumentFragment();
     items.slice(start, end).forEach(item => {
-      const link = document.createElement('a'); link.className = 'al-plaque'; link.href = item.url;
-      link.target = '_blank'; link.rel = 'noopener';
-      link.setAttribute('aria-label', `${item.name}، ${item.flower}، ${item.label}؛ باز کردن پرونده در زبانهٔ جدید`);
+      const link = document.createElement('button'); link.type = 'button'; link.className = 'al-plaque';
+      link.dataset.callPlaqueUrl = item.plaque_url;
+      link.dataset.leadName = item.name;
+      link.setAttribute('aria-label', `${item.name}، ${item.flower}، ${item.label}؛ پلاک تماس و سوابق`);
       const head = span('al-plaque-head', ''), meta = span('al-plaque-meta', '');
       const name = span('al-name', item.name); name.title = item.name;
       const flower = span('al-flower', item.flower); flower.title = item.flower;
       const status = span('al-state', item.label); status.dataset.state = item.state;
-      head.append(name, flower); meta.append(span('al-date', item.date), status); link.append(head, meta); fragment.append(link);
+      const r = item.readiness || {}, score = span('cp-readiness', '');
+      score.dataset.callScoreFor = item.id; score.dataset.band = r.do_not_contact ? 'blocked' : (r.band || 'unknown');
+      score.title = 'امتیاز آمادگی؛ درصد احتمال خرید نیست';
+      const label = span('', r.do_not_contact ? 'عدم تماس' : (r.label || 'اطلاعات ناکافی')); label.dataset.callScoreLabel = '';
+      const number = document.createElement('b'); number.dataset.callScoreNumber = ''; number.textContent = r.score == null ? '—' : `${r.score} / 100`;
+      const track = span('cp-readiness-track', ''); track.setAttribute('aria-hidden', 'true');
+      const fill = document.createElement('i'); fill.dataset.callScoreFill = ''; fill.style.width = `${r.score == null ? 0 : Math.max(0, Math.min(100, r.score))}%`;
+      track.append(fill); score.append(label, number, track);
+      head.append(name, flower); meta.append(span('al-date', item.date), status); link.append(head, meta, score); fragment.append(link);
     });
     before.style.height = `${Math.floor(start / columns) * rowHeight}px`;
     after.style.height = `${Math.max(0, Math.ceil(items.length / columns) - Math.ceil(end / columns)) * rowHeight}px`;
@@ -75,5 +84,10 @@
     cancelAnimationFrame(frame); frame = requestAnimationFrame(() => {draw(); if (scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 500) load();});
   }, {passive:true});
   new ResizeObserver(draw).observe(scroll);
+  document.addEventListener('call-plaque-saved', event => {
+    if (!event.detail || event.detail.action !== 'finalize') return;
+    const item = items.find(row => String(row.id) === String(event.detail.leadId));
+    if (item) { item.readiness = {...event.detail.profile.readiness, do_not_contact:event.detail.profile.do_not_contact}; renderedWindow = null; draw(); }
+  });
   reload();
 })();

@@ -1,0 +1,28 @@
+<style>
+.cp-readiness{--cp-band:#80909e;display:grid!important;grid-template-columns:1fr auto!important;gap:3px 8px!important;min-width:0!important;max-width:240px;padding:4px 0;color:#526c78!important;font:11px/1.5 Tahoma,sans-serif!important;white-space:normal!important}
+.cp-readiness[data-band="red"],.cp-readiness[data-band="low"]{--cp-band:#d46071}
+.cp-readiness[data-band="yellow"],.cp-readiness[data-band="exploring"]{--cp-band:#c99a36}
+.cp-readiness[data-band="green"],.cp-readiness[data-band="interested"]{--cp-band:#2d9b75}
+.cp-readiness[data-band="blue"],.cp-readiness[data-band="planned"]{--cp-band:#4e9ed6}
+.cp-readiness[data-band="purple"],.cp-readiness[data-band="ready"]{--cp-band:#9b73d7}
+.cp-readiness[data-band="blocked"],.cp-readiness[data-band="stop"]{--cp-band:#ab4664}
+.cp-readiness [data-call-score-label]{color:inherit!important;font-size:10px!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cp-readiness b{color:var(--cp-band)!important;font-size:10px!important;direction:ltr;white-space:nowrap}
+.cp-readiness-track{grid-column:1/-1;display:block!important;height:4px!important;border-radius:8px;background:#dfe7e5!important;overflow:hidden}
+.cp-readiness-track i{display:block;height:100%;background:var(--cp-band);border-radius:inherit;max-width:100%}
+#all-leads .cp-readiness{max-width:none;width:100%;color:#c6d2de!important;padding:0;gap:2px 5px!important}
+#all-leads .cp-readiness-track{background:#34404d!important}
+</style>
+<script>
+document.addEventListener('call-plaque-saved',function(e){
+  if(!e.detail||e.detail.action!=='finalize')return;
+  var p=e.detail.profile||{},r=p.readiness||{};
+  document.querySelectorAll('[data-call-score-for]').forEach(function(el){
+    if(String(e.detail.leadId)!==el.dataset.callScoreFor)return;
+    el.dataset.band=p.do_not_contact?'blocked':(r.band||'unknown');
+    el.querySelector('[data-call-score-label]').textContent=p.do_not_contact?'عدم تماس':(r.label||'اطلاعات ناکافی');
+    el.querySelector('[data-call-score-number]').textContent=r.score==null?'—':r.score+' / 100';
+    el.querySelector('[data-call-score-fill]').style.width=(r.score==null?0:Math.max(0,Math.min(100,r.score)))+'%';
+  });
+});
+</script>

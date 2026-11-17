@@ -14,6 +14,7 @@ from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_GET
 
 from .call_center_identity import call_center_display_name
+from .call_plaque import call_plaque_summaries
 from .jalali import format_jalali, gregorian_to_jalali, jalali_to_gregorian
 from .lead_management_views import ALLOWED_ROLES, _lead_hub_queryset
 from .models import Branch, CallCenterLeadGroup, EmployeeProfile, ReferralLead, VisitAppointment
@@ -24,7 +25,7 @@ STATES = {
     'new': 'جدید', 'contacted': 'تماس گرفته شد', 'follow_up': 'نیاز به پیگیری',
     'no_answer': 'پاسخ نداد', 'appointment': 'نوبت داده شد', 'visited': 'مراجعه کرد',
     'no_show': 'مراجعه نکرد', 'won': 'پکیج موفق', 'sale_lost': 'پکیج ناموفق',
-    'not_interested': 'تمایل ندارد', 'cancelled': 'نوبت لغو شد',
+    'not_interested': 'تمایل ندارد', 'wrong_number': 'شماره اشتباه', 'cancelled': 'نوبت لغو شد',
 }
 
 
@@ -60,6 +61,7 @@ def archive_queryset(request):
         # business state. Do not let an older "no answer" mask those facts.
         # Unchanged/no-new-attempt leads still display their last real result.
         When(status='appointment', then=Value('appointment')),
+        When(contact_result='wrong_number', then=Value('wrong_number')),
         When(status='lost', then=Value('not_interested')),
         When(status='contacted', next_follow_up__isnull=False, then=Value('follow_up')),
         *[When(contact_result=key, then=Value(key)) for key in ('follow_up', 'no_answer', 'appointment', 'not_interested')],
@@ -136,6 +138,7 @@ def all_leads_data(request):
         return JsonResponse({'error': 'فیلتر یا تاریخ نامعتبر است؛ تاریخ را به شکل 1405/08/19 وارد کنید.'}, status=400)
     more = len(rows) > PAGE_SIZE
     rows = rows[:PAGE_SIZE]
+    summaries = call_plaque_summaries([lead.pk for lead in rows])
     next_cursor = signing.dumps({'date': rows[-1].created_at.isoformat(), 'id': rows[-1].pk, 'filters': params}, salt=CURSOR_SALT) if more else None
     response = JsonResponse({'total': total, 'next': next_cursor, 'items': [{
         'id': lead.pk, 'name': lead.full_name,
@@ -143,6 +146,8 @@ def all_leads_data(request):
         'date': format_jalali(timezone.localtime(lead.created_at), persian_digits=False),
         'state': lead.archive_state, 'label': STATES[lead.archive_state],
         'url': reverse('referral_lead_manage', args=[lead.pk]),
+        'plaque_url': reverse('call_center_call_plaque', args=[lead.pk]),
+        'readiness': summaries.get(lead.pk),
     } for lead in rows]}, json_dumps_params={'ensure_ascii': False})
     response['Cache-Control'] = 'private, no-store'
     return response
