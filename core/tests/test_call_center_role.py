@@ -163,7 +163,7 @@ class CallCenterRoleTests(TestCase):
         groups=CallCenterLeadGroup.objects.filter(owner__isnull=True)
         names=set(groups.values_list('name',flat=True))
         self.assertTrue({
-            'شبکه فروش پرسنل','وب سایت','کمپ','مزوهای قدیمی دکتر','اینستاگرام','VIP','ترکیه'
+            'شبکه فروش پرسنل','وب سایت','کمپ','مزوهای قدیمی دکتر','اینستاگرام','VIP','ترکیه','طلا و جواهر فروشی'
         }.issubset(names))
         self.lead_one.refresh_from_db()
         self.assertEqual(self.lead_one.group.name,'شبکه فروش پرسنل')

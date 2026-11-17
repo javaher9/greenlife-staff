@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 21632)
+Total output lines: 1863
+
 from .lead_contacts import create_with_contacts
 import csv
 import io
@@ -246,6 +249,7 @@ CALL_CENTER_STARTER_GROUPS=(
     ('کمپ',False),
     ('اینستاگرام',False),
     ('ترکیه',False),
+    ('طلا و جواهر فروشی',False),
 )
 
 
@@ -856,150 +860,7 @@ def _call_center_appointment_journey(item):
         key,label,source='arrived','مراجعه کرد · پذیرش شد','منشی'
     elif item.status=='booked':
         key,label='booked','نوبت ثبت شده'
-        source='کال‌سنتر' if item.source=='call_center' else ('منشی' if item.source=='receptionist' else 'مدیریت')
-        changed_at=item.created_at
-
-    local_changed=timezone.localtime(changed_at) if changed_at else None
-    return {
-        'key':key,
-        'label':label,
-        'source':source,
-        'changed_at':local_changed,
-        'changed_time':local_changed.strftime('%H:%M') if local_changed else '—',
-        'needs_call':needs_call,
-    }
-
-
-def call_center_required(view):
-    @wraps(view)
-    @login_required
-    def wrapper(request,*args,**kwargs):
-        if _role(request.user)!='call_center':
-            messages.error(request,'این بخش فقط برای کارشناسان کال‌سنتر قابل دسترسی است.')
-            return redirect('dashboard')
-        return view(request,*args,**kwargs)
-    return wrapper
-
-
-@call_center_required
-def call_center_dashboard(request):
-    operator=request.user.profile
-    from .lead_routing import operator_policy_notice, eligible_operator_user_ids, operator_routing_summary
-    routing_policy_notice=operator_policy_notice(operator)
-    default_group=_default_call_center_group(operator)
-    ReferralLead.objects.filter(assigned_to=operator,group__isnull=True).update(group=default_group)
-    all_leads=ReferralLead.objects.filter(assigned_to=operator)
-    leads=all_leads.select_related('country','assigned_to','group','referrer__user','created_by')
-    status=request.GET.get('status','')
-    if status in dict(ReferralLead.STATUS):
-        leads=leads.filter(status=status)
-
-    group_filter=(request.GET.get('group') or '').strip()
-    if group_filter=='ungrouped':
-        leads=leads.filter(group__isnull=True)
-    elif group_filter.isdigit():
-        leads=leads.filter(group_id=int(group_filter))
-
-    today=timezone.localdate()
-    tomorrow=today+timedelta(days=1)
-
-    # Full callback ledger: unlike the work queue this includes all scheduled
-    # dates, regardless of when a lead was originally created.
-    from .follow_up_agenda import due_follow_up_scope
-    from .follow_up_views import _category_counts
-    callbacks=due_follow_up_scope(all_leads)
-    callback_counts=_category_counts(callbacks,today,request.user.pk)
-    callback_today_preview=list(
-        callbacks.filter(next_follow_up=today)
-        .order_by('next_follow_up_time','pk')[:6]
-    )
-
-    # Date-driven daily agenda keeps scheduled callbacks visible on the day
-    # they are due, regardless of how old the original lead is.
-    agenda_due=list(
-        all_leads
-        .filter(next_follow_up__lte=today)
-        .exclude(status__in=('won','lost'))
-        .select_related('country','assigned_to','group','referrer__user','created_by')
-        .order_by('-next_follow_up','updated_at','id')
-    )
-    agenda_today_count=sum(1 for lead in agenda_due if lead.next_follow_up==today)
-    agenda_overdue_count=len(agenda_due)-agenda_today_count
-
-    tomorrow_appointments=(
-        VisitAppointment.objects.filter(appointment_date=tomorrow)
-        .filter(Q(lead__assigned_to=operator) | Q(created_by=request.user,source='call_center'))
-        .exclude(status='cancelled')
-        .select_related('branch','lead')
-        .order_by('appointment_time','id')
-        .distinct()
-    )
-
-    # Operator Cockpit is intentionally computed from existing records only:
-    # no migration and no change to the lead-distribution engine is required.
-    local_now=timezone.localtime()
-    attendance=Attendance.objects.filter(user=request.user,date=today).first()
-    eligible_today=request.user.pk in eligible_operator_user_ids(today)
-    if attendance and attendance.check_in and not attendance.check_out and eligible_today:
-        routing_state='active'
-        routing_state_label='در چرخه دریافت لید هستید'
-        routing_state_reason='حضور فعال'
-    elif attendance and attendance.check_out:
-        routing_state='out'
-        routing_state_label='خارج از چرخه دریافت لید'
-        routing_state_reason='خروج ثبت شده'
-    elif attendance and attendance.check_in:
-        routing_state='out'
-        routing_state_label='خارج از چرخه دریافت لید'
-        routing_state_reason='امروز برای توزیع لید فعال نیستید'
-    else:
-        routing_state='out'
-        routing_state_label='خارج از چرخه دریافت لید'
-        routing_state_reason='حضور ثبت نشده'
-    shift_started_at=(
-        timezone.localtime(attendance.check_in).strftime('%H:%M')
-        if attendance and attendance.check_in else '—'
-    )
-
-    result_today=all_leads.filter(updated_at__date=today).exclude(contact_result='')
-    calls_today=result_today.count()
-    answered_today=result_today.exclude(contact_result='no_answer').count()
-    response_rate=round(answered_today*100/max(1,calls_today))
-    appointments_created_today=(
-        VisitAppointment.objects.filter(
-            source='call_center',created_by=request.user,created_at__date=today,
-        )
-        .exclude(status='cancelled')
-        .exclude(lead__isnull=True)
-        .values('lead_id').distinct().count()
-    )
-    today_sales_qs=ReferralSale.objects.filter(
-        lead__assigned_to=operator,sale_date=today,status__in=('approved','paid')
-    )
-    today_sales_count=today_sales_qs.count()
-    today_sales_amount=today_sales_qs.aggregate(x=Sum('amount'))['x'] or 0
-
-    queue_scope=all_leads
-    if group_filter=='ungrouped':
-        queue_scope=queue_scope.filter(group__isnull=True)
-    elif group_filter.isdigit():
-        queue_scope=queue_scope.filter(group_id=int(group_filter))
-
-    # The work queue changes when a call result or follow-up date changes.
-    # Keep every lead owned by this operator reachable from its group, including
-    # contacted and closed records that are no longer actionable today.
-    history_q=(request.GET.get('history_q') or '').strip()[:100]
-    history_search=history_q.translate(str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩','01234567890123456789'))
-    history_scope=queue_scope.select_related('group').order_by('-assigned_at','-created_at','-id')
-    if history_search:
-        history_scope=history_scope.filter(
-            Q(full_name__icontains=history_search) |
-            Q(phone__icontains=history_search) |
-            Q(alternate_phone__icontains=history_search)
-        )
-    history_page=Paginator(history_scope,50).get_page(request.GET.get('history_page'))
-    history_params=request.GET.copy()
-    history_params.pop('history_page',None)
+        source='…1632 tokens truncated…pop('history_page',None)
     history_page_base='?'+history_params.urlencode()
 
     # Keep the complete queue for counts/search; render only the requested page.
@@ -1648,7 +1509,7 @@ def call_center_group_create(request):
         return redirect('call_center_dashboard')
     key=normalized_group_name(name)
     if preferred_group_name(name) not in CANONICAL_GROUPS:
-        messages.error(request,'فقط هفت گروه مصوب کال‌سنتر قابل استفاده است.')
+        messages.error(request,'فقط گروه‌های مصوب کال‌سنتر قابل استفاده است.')
         return redirect('call_center_dashboard')
     with transaction.atomic():
         if connection.vendor=='postgresql':

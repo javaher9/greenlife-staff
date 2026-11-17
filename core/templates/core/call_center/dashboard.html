@@ -1141,6 +1141,15 @@ body.gl-page-call_center_dashboard .ccx .ccx-group-strip a.active{
   background:#eee5f7!important;color:#65458d!important;border-color:#cfbde0!important;
   box-shadow:0 4px 12px rgba(104,73,149,.08)!important
 }
+.ccx-group-pair{display:inline-flex;align-items:center;gap:2px;flex:0 0 auto}
+.ccx-group-guide{width:27px;height:27px;border:1px solid #d8e3e0;border-radius:50%;background:#fff;color:#684995;font:900 12px Tahoma;cursor:pointer;display:grid;place-items:center}
+.ccx-group-guide:hover,.ccx-group-guide:focus{background:#f1e9f8;border-color:#ccb9de;outline:none}
+.ccx-guide-dialog{width:min(560px,calc(100vw - 28px));border:0;border-radius:18px;padding:0;box-shadow:0 24px 70px rgba(30,48,61,.25);direction:rtl}
+.ccx-guide-dialog::backdrop{background:rgba(25,36,45,.48)}
+.ccx-guide-box{padding:20px;background:#fff;color:#263f51}.ccx-guide-box h3{margin:0 0 6px;font-size:17px}.ccx-guide-box .ccx-guide-purpose{margin:0 0 14px;color:#6c7d89;font-size:11px;line-height:1.9}
+.ccx-guide-script{white-space:pre-line;padding:14px;border:1px solid #dfe8e6;border-radius:13px;background:#f7faf9;color:#2f4a45;font-size:12px;line-height:2.05}
+.ccx-guide-rules{margin:13px 0 0;padding:11px 14px;background:#fff8e9;border:1px solid #efe0b8;border-radius:11px;color:#775f27;font-size:10px;line-height:1.9}
+.ccx-guide-close{margin-top:14px;width:100%;height:40px;border:0;border-radius:10px;background:#684995;color:#fff;font-weight:900;cursor:pointer}
 body.gl-page-call_center_dashboard .ccx .ccx-group-managed-note{
   margin-top:8px!important;padding:8px 10px!important;border-radius:9px!important;background:#f6f8f9!important;
   color:#75838d!important;border:1px solid #e3e9eb!important;font-size:8px!important
@@ -1393,8 +1402,9 @@ body.gl-page-call_center_dashboard .ccx .ccx-follow-footer [data-follow-cancel]{
   <nav class="ccx-group-strip" aria-label="گروه‌های مشترک کال‌سنتر">
     <span class="ccx-group-strip-title">گروه‌ها</span>
     <a href="{% url 'call_center_dashboard' %}" class="{% if not group_filter %}active{% endif %}">همه</a>
-    {% for group in groups %}<a href="?group={{ group.pk }}" class="{% if group_filter == group.pk|stringformat:'s' %}active{% endif %}">{{ group.name }} <b>{{ group.lead_count }}</b></a>{% endfor %}
+    {% for group in groups %}<span class="ccx-group-pair"><a href="?group={{ group.pk }}" class="{% if group_filter == group.pk|stringformat:'s' %}active{% endif %}">{{ group.name }} <b>{{ group.lead_count }}</b></a><button type="button" class="ccx-group-guide" data-group-guide="{{ group.name }}" title="راهنمای مکالمه {{ group.name }}" aria-label="راهنمای مکالمه {{ group.name }}">؟</button></span>{% endfor %}
   </nav>
+  <dialog class="ccx-guide-dialog" id="ccxGroupGuide"><div class="ccx-guide-box"><h3 id="ccxGuideTitle">راهنمای مکالمه</h3><p class="ccx-guide-purpose" id="ccxGuidePurpose"></p><div class="ccx-guide-script" id="ccxGuideScript"></div><div class="ccx-guide-rules" id="ccxGuideRules"></div><button type="button" class="ccx-guide-close">متوجه شدم</button></div></dialog>
 
   <details class="ccx-card" id="ccxLeadHistory" {% if group_filter or history_q %}open{% endif %} style="padding:12px 15px;border:1px solid #dce8e5;border-radius:14px;background:#fff">
     <summary style="cursor:pointer;font-weight:850;color:#263f51;font-size:13px">همه لیدهای من در این گروه — {{ history_page.paginator.count }} مورد <span style="font-size:11px;color:#667587;font-weight:500">(شامل سوابق خارج از صف امروز)</span></summary>
@@ -1925,6 +1935,30 @@ body.gl-page-call_center_dashboard .ccx .ccx-follow-footer [data-follow-cancel]{
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paintResultPopover);else paintResultPopover();
 
+})();
+
+(function(){
+  var dialog=document.getElementById('ccxGroupGuide');
+  if(!dialog)return;
+  var guides={
+    'طلا و جواهر فروشی':{
+      purpose:'تماس سرد و حرفه‌ای است؛ مخاطب قبلاً درخواست لاغری نداده. هدف تماس اول فقط ایجاد گفت‌وگوی محترمانه و گرفتن اجازه برای ادامه است، نه فروش فوری.',
+      script:'سلام، وقت‌تون بخیر. من [نام شما] هستم از مجموعه سلامت و تناسب‌اندام گرین‌لایف.\n\nبا چند مجموعه معتبر طلا و جواهر منطقه تماس می‌گیریم، چون همکاران این صنف معمولاً ساعت‌های طولانی با تمرکز بالا، کم‌تحرکی و فشار کاری زیاد دارند. خواستم فقط یک سؤال کوتاه بپرسم: در مجموعه شما برای انرژی، سلامت و تناسب‌اندام خودتان یا همکاران برنامه‌ای دارید؟\n\nاگر اجازه بدهید، یک ارزیابی اولیه و مشاوره کوتاه برای خودتان یا تیم‌تان در نظر بگیریم؛ بدون تعهد و بدون اینکه الان لازم باشد تصمیمی بگیرید. حتی می‌توانیم آن را به شکل یک چالش سلامت هفت‌روزه و امتیازی شروع کنیم تا جذاب و سبک باشد. بیشتر دوست دارید درباره انرژی و خستگی روزانه صحبت کنیم یا تناسب‌اندام و کاهش سایز؟',
+      rules:'نگویید «شما درخواست داده بودید». با عجله قیمت یا پکیج مطرح نکنید. ابتدا نام فرد و زمان مناسب تماس را بپرسید. اگر گفت «نیاز ندارم»، بگویید: «کاملاً متوجه‌ام؛ فقط کدام موضوع برای شما مهم‌تر است: انرژی روزانه، سلامت کمر و گردن، یا تناسب‌اندام؟» در صورت رد قطعی، محترمانه پایان دهید و اصرار نکنید.'
+    },
+    'مزوهای قدیمی دکتر':{purpose:'مخاطب سابقه آشنایی با خدمات دکتر دارد؛ با یادآوری محترمانه و بدون ادعای قطعی شروع کنید.',script:'سلام، وقت‌تون بخیر. من [نام] هستم از گرین‌لایف. شماره شما در فهرست ارتباط‌های قدیمی مجموعه ثبت شده و تماس گرفتم ببینم این روزها درباره تناسب‌اندام یا حال عمومی‌تان موضوعی هست که دوست داشته باشید دوباره بررسی شود؟ اگر مایل باشید یک ارزیابی کوتاه و به‌روز برایتان هماهنگ می‌کنم.',rules:'اگر مخاطب آشنایی قبلی را تأیید نکرد، بحث نکنید؛ بگویید ممکن است اطلاعات قدیمی باشد و اجازه ادامه مکالمه بگیرید.'},
+    'کمپ':{purpose:'فضای مکالمه تجربه‌محور و پرانرژی باشد، نه فروش خشک.',script:'سلام، من [نام] از گرین‌لایف هستم. تماس گرفتم ببینم اگر یک تجربه کوتاه طبیعت، تحرک و بازی‌های گروهی سلامت داشته باشیم، بیشتر دنبال آرامش و ریکاوری هستید یا کاهش وزن و افزایش انرژی؟ می‌توانم خیلی کوتاه برنامه کمپ را متناسب با علاقه‌تان توضیح بدهم.',rules:'اول علاقه مخاطب را کشف کنید؛ قبل از توضیح طولانی، اجازه بگیرید.'},
+    'شرکت‌ها و همکاری سازمانی':{purpose:'گفت‌وگو درباره سلامت کارکنان و همکاری سازمانی است.',script:'سلام، من [نام] از گرین‌لایف هستم. برای برنامه‌های سبک و قابل‌اندازه‌گیری سلامت کارکنان تماس گرفتم؛ مثل ارزیابی ترکیب بدنی، چالش انرژی و تحرک، و مشاوره کوتاه. مسئول منابع انسانی یا رفاه مجموعه چه کسی است تا در زمان مناسب یک معرفی دو دقیقه‌ای داشته باشیم؟',rules:'هدف تماس اول پیدا کردن فرد مسئول و زمان مناسب است؛ وارد فروش جزئی نشوید.'},
+    'شبکه فروش پرسنل':{purpose:'به معرفی و اعتماد موجود تکیه کنید.',script:'سلام، من [نام] از گرین‌لایف هستم. از طرف یکی از همکاران مجموعه با شما آشنا شدیم. قبل از هر توضیحی دوست دارم بدانم هدف اصلی شما بیشتر کاهش وزن است، فرم‌دهی موضعی یا افزایش انرژی و حال بهتر؟',rules:'نام معرف را فقط اگر در پرونده ثبت و قابل‌اتکا است بیان کنید.'},
+    'VIP':{purpose:'مکالمه کوتاه، شخصی و با احترام ویژه باشد.',script:'سلام، وقت‌تون بخیر. من [نام] از گرین‌لایف هستم. برای شما امکان یک ارزیابی خصوصی و مشاوره کوتاه در نظر گرفته شده. ترجیح می‌دهید موضوع را روی تناسب‌اندام، انرژی روزانه یا سلامت عمومی متمرکز کنیم؟',rules:'زمان مخاطب را حفظ کنید؛ توضیح اضافه را فقط با اجازه ارائه دهید.'},
+    'وب سایت':{purpose:'مخاطب از مسیر وب وارد شده؛ ابتدا نیاز او را روشن کنید.',script:'سلام، من [نام] از گرین‌لایف هستم. درباره اطلاعاتی که در وب‌سایت بررسی کرده بودید تماس گرفتم. برای اینکه راهنمایی دقیق باشد، هدف اصلی‌تان بیشتر کاهش وزن است، کاهش سایز موضعی یا بهبود حال و انرژی؟',rules:'اگر مخاطب ثبت درخواست را به یاد ندارد، با احترام بگویید ممکن است شماره هنگام بررسی خدمات ثبت شده باشد و برای ادامه اجازه بگیرید.'},
+    'اینستاگرام':{purpose:'به گفت‌وگوی اینستاگرامی وصل شوید و سریع نیاز را کشف کنید.',script:'سلام، من [نام] از گرین‌لایف هستم. درباره پیامی که از طریق اینستاگرام داشتید تماس گرفتم. برای اینکه کوتاه و دقیق راهنمایی کنم، بیشتر کدام نتیجه برایتان مهم است: کاهش وزن، فرم‌دهی یا افزایش انرژی؟',rules:'صفحه مبدا و توضیح ثبت‌شده را قبل از تماس بخوانید و همان موضوع را ادامه دهید.'},
+    'ترکیه':{purpose:'کشور، زبان ترجیحی و شهر مخاطب را ابتدا مشخص کنید.',script:'سلام، من [نام] از GreenLife هستم. برای راهنمایی خدمات ترکیه تماس گرفتم. ترجیح می‌دهید فارسی، ترکی یا انگلیسی صحبت کنیم؟ در کدام شهر هستید و هدف اصلی‌تان بیشتر تناسب‌اندام است یا خدمات سلامت و زیبایی؟',rules:'زبان و موقعیت را حدس نزنید؛ ابتدا سؤال کنید.'}
+  };
+  var fallback={purpose:'قبل از تماس، منبع و توضیحات پرونده را بخوانید و با اجازه مخاطب وارد گفت‌وگو شوید.',script:'سلام، من [نام] از گرین‌لایف هستم. تماس گرفتم خیلی کوتاه درباره هدف سلامت و تناسب‌اندام شما سؤال کنم. الان زمان مناسبی برای یک گفت‌وگوی یک‌دقیقه‌ای هست؟',rules:'شفاف، محترمانه و بدون ادعای درخواست قبلی صحبت کنید؛ در صورت رد قطعی اصرار نکنید.'};
+  document.querySelectorAll('[data-group-guide]').forEach(function(btn){btn.addEventListener('click',function(){var name=btn.getAttribute('data-group-guide'),g=guides[name]||fallback;document.getElementById('ccxGuideTitle').textContent='راهنمای مکالمه · '+name;document.getElementById('ccxGuidePurpose').textContent=g.purpose;document.getElementById('ccxGuideScript').textContent=g.script;document.getElementById('ccxGuideRules').textContent=g.rules;dialog.showModal()})});
+  dialog.querySelector('.ccx-guide-close').addEventListener('click',function(){dialog.close()});
+  dialog.addEventListener('click',function(e){if(e.target===dialog)dialog.close()});
 })();
 </script>
 {% include "core/call_center/_contact_dialog.html" %}

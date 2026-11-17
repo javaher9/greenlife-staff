@@ -11,7 +11,15 @@
 @media(max-width:640px){.ccgm{padding:0 8px;margin-top:10px}.ccgm-head{padding:14px}.ccgm-form{grid-template-columns:1fr}.ccgm-form button{width:100%}}
 </style>
 <section class="ccgm">
-  <header class="ccgm-head"><h1>گروه‌های سراسری کال‌سنتر</h1><p>فقط هفت گروه مصوب نمایش داده می‌شود؛ لیدها با منبع مناسب در همین گروه‌ها ثبت می‌شوند.</p></header>
+  <header class="ccgm-head"><h1>گروه‌های سراسری کال‌سنتر</h1><p>فقط گروه‌های مصوب نمایش داده می‌شوند؛ لیدها با منبع مناسب در همین گروه‌ها ثبت می‌شوند.</p></header>
+  {% if can_manage_groups %}
+  <article class="ccgm-card">
+    <form method="post" class="ccgm-form">{% csrf_token %}
+      <input name="name" maxlength="80" required placeholder="نام گروه مصوب" aria-label="نام گروه مصوب">
+      <button type="submit">ثبت گروه</button>
+    </form>
+  </article>
+  {% endif %}
   <article class="ccgm-card"><div class="ccgm-list">{% for group in groups %}<div class="ccgm-row"><strong>{{ group.name }}</strong><span>{{ group.lead_count }} لید{% if group.is_default %} · پیش‌فرض{% endif %}</span></div>{% empty %}<div class="ccgm-row"><strong>هنوز گروهی ثبت نشده است.</strong></div>{% endfor %}</div></article>
 </section>
 {% endblock %}

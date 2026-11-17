@@ -7,7 +7,7 @@ DOCTOR_DESK_NAME = 'مزوهای قدیمی دکتر'
 
 CANONICAL_GROUPS = (
     'وب سایت', 'مزوهای قدیمی دکتر', 'اینستاگرام', 'VIP',
-    'ترکیه', 'شبکه فروش پرسنل', 'کمپ',
+    'ترکیه', 'شبکه فروش پرسنل', 'کمپ', 'طلا و جواهر فروشی',
 )
 
 
@@ -41,7 +41,7 @@ def preferred_group_name(value):
 
 
 def operational_group_name(value):
-    """Keep every new automatic source within the seven approved folders."""
+    """Keep every new automatic source within the approved folders."""
     name = preferred_group_name(value)
     if name in CANONICAL_GROUPS:
         return name
