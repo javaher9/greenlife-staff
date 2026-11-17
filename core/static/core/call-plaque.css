@@ -35,6 +35,7 @@
 #glCallPlaque .cp-summary-meta{display:flex;align-content:center;align-items:center;justify-content:flex-start;gap:8px 18px;flex-wrap:wrap;font-size:11px;color:var(--cp-muted)!important}
 #glCallPlaque .cp-summary-meta span:last-child{flex-basis:100%}
 #glCallPlaque .cp-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:10px 22px;background:var(--cp-card)!important;flex:none}
+#glCallPlaque.cp-management .cp-tabs{grid-template-columns:repeat(2,1fr)}
 #glCallPlaque .cp-tabs button{background:var(--cp-page)!important;color:var(--cp-muted)!important}
 #glCallPlaque .cp-tabs button[aria-selected="true"]{background:var(--cp-purple-soft)!important;color:var(--cp-purple)!important;border-color:var(--cp-purple)!important}
 #glCallPlaque .cp-tabs b{display:inline-grid;place-items:center;min-width:22px;border-radius:7px;background:var(--cp-card)!important;font-size:10px!important}
