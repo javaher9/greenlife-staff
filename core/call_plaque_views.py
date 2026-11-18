@@ -166,7 +166,9 @@ def call_center_call_plaque(request, pk):
             profile = LeadCallProfile.objects.filter(lead=lead).select_related('draft__actor', 'latest_session').first()
             old = LeadCallSession.objects.filter(request_id=key).first()
             if old:
-                if old.lead_id != lead.pk or old.actor_id != request.user.pk or old.state != state or old.data != data:
+                # Compare older snapshots with today's defaults for unanswered questions.
+                saved_data = normalize_data(old.data) if old.state != 'discard' else {}
+                if old.lead_id != lead.pk or old.actor_id != request.user.pk or old.state != state or saved_data != data:
                     return JsonResponse({'ok': False, 'error': 'شناسه این درخواست قبلاً برای اطلاعات دیگری استفاده شده است.'}, status=409)
                 payload = _payload(lead, request.user, editable=True, restricted=False, profile=profile)
                 payload['replayed'] = True

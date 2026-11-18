@@ -11,11 +11,23 @@ from .models import LeadCallProfile
 
 SCHEMA_VERSION = 1
 ANSWER_STATES = {'unasked', 'answered', 'declined', 'not_applicable'}
-ANSWER_KEYS = {'goal', 'priority', 'timing', 'barrier', 'budget_fit', 'height_cm', 'weight_kg'}
+ANSWER_KEYS = {'goal', 'priority', 'timing', 'barrier', 'interest', 'budget_fit', 'height_cm', 'weight_kg'}
 ENUMS = {
     'timing': {'exploring': 'فعلاً آشنایی', 'later': 'بعداً', 'soon': 'در آینده نزدیک', 'now': 'آماده بررسی اکنون'},
     'barrier': {'none': 'مانع مشخصی ندارد', 'cost': 'هزینه', 'time': 'زمان', 'distance': 'فاصله', 'uncertainty': 'نیاز به اطلاعات بیشتر', 'consult': 'مشورت با دیگری', 'other': 'سایر'},
-    'budget_fit': {'suitable': 'هزینه اعلام‌شده مناسب است', 'needs_review': 'نیاز به بررسی هزینه', 'not_suitable': 'هزینه اعلام‌شده مناسب نیست'},
+    'interest': {
+        '1': 'فعلاً تمایلی ندارد', '2': 'فقط مایل به شنیدن معرفی است',
+        '3': 'درباره خدمت سؤال مشخصی دارد', '4': 'می‌خواهد گزینه‌ها یا زمان‌ها را بررسی کند',
+        '5': 'خودش درخواست قدم بعدی کرده است',
+    },
+    'budget_fit': {
+        '1': 'هزینه فعلاً خارج از بودجه است', '2': 'فقط با کاهش هزینه قابل بررسی است',
+        '3': 'باید مبلغ را با بودجه‌اش بسنجد', '4': 'با شرایط پرداخت موردنظرش قابل تأمین است',
+        '5': 'مبلغ اعلام‌شده در بودجه‌اش است',
+        # Original categorical responses remain readable without inventing a star rating.
+        'suitable': 'هزینه اعلام‌شده مناسب است', 'needs_review': 'نیاز به بررسی هزینه',
+        'not_suitable': 'هزینه اعلام‌شده مناسب نیست',
+    },
 }
 COMMUNICATION_STYLES = {
     'unknown': 'هنوز مشخص نیست', 'direct': 'خلاصه و نتیجه‌محور', 'details': 'جزئیات و روش کار',

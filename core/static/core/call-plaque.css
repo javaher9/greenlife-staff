@@ -116,3 +116,20 @@
 @media(max-width:950px){#glCallPlaque .cp-call-layout{grid-template-columns:minmax(0,1fr) minmax(270px,.8fr)}#glCallPlaque .cp-header,#glCallPlaque .cp-summary-bar,#glCallPlaque .cp-tabs,#glCallPlaque .cp-scroll,#glCallPlaque .cp-footer{padding-left:15px;padding-right:15px}#glCallPlaque .cp-card{padding:15px}#glCallPlaque .cp-script{font-size:17px!important}}
 @media(max-width:760px){#glCallPlaque{height:96dvh;max-height:96dvh;width:98vw;max-width:98vw;border-radius:15px!important}#glCallPlaque .cp-call-layout,#glCallPlaque .cp-grid,#glCallPlaque .cp-manager-grid{grid-template-columns:1fr}#glCallPlaque .cp-manager-card.cp-manager-wide{grid-column:auto}#glCallPlaque .cp-summary-bar{grid-template-columns:1fr;gap:6px;padding-top:8px;padding-bottom:8px}#glCallPlaque .cp-summary-meta{gap:5px 12px}#glCallPlaque .cp-summary-meta span:last-child{flex-basis:auto}#glCallPlaque .cp-readiness>div:first-child{justify-content:space-between}#glCallPlaque .cp-readiness strong{font-size:20px!important}#glCallPlaque .cp-readiness small{display:none}#glCallPlaque .cp-header{padding-top:11px;padding-bottom:11px;gap:8px}#glCallPlaque h2{font-size:17px!important}#glCallPlaque .cp-header-actions{gap:5px}#glCallPlaque .cp-header-actions button,#glCallPlaque .cp-header-actions a{padding:6px 9px;min-height:36px;font-size:10px!important}#glCallPlaque .cp-tabs{gap:5px;padding-top:8px;padding-bottom:8px}#glCallPlaque .cp-tabs button{padding:6px 4px;font-size:11px!important;min-height:38px}#glCallPlaque .cp-scroll{padding:12px}#glCallPlaque .cp-form-grid{grid-template-columns:1fr 1fr}#glCallPlaque .cp-header-actions [data-cp-font]{display:none}}
 @media(max-width:440px){#glCallPlaque .cp-header{align-items:flex-start}#glCallPlaque .cp-header-actions{max-width:96px;justify-content:flex-end}#glCallPlaque h2{font-size:15px!important}#glCallPlaque .cp-eyebrow{font-size:9px!important}#glCallPlaque .cp-summary-meta{font-size:10px!important}#glCallPlaque .cp-form-grid,#glCallPlaque .cp-choices{grid-template-columns:1fr}#glCallPlaque .cp-footer{padding:8px 11px}#glCallPlaque .cp-footer span{font-size:10px!important}#glCallPlaque .cp-footer button{font-size:10px!important;padding:5px 8px}#glCallPlaque .cp-script{font-size:16px!important;padding:13px}}
+
+#glCallPlaque .cp-assessment{display:grid;gap:12px;margin-block:8px}
+#glCallPlaque .cp-assessment section{border:1px solid var(--cp-line);border-radius:14px;padding:12px;background:var(--cp-card)}
+#glCallPlaque .cp-assessment h4{font-size:15px!important;margin:0 0 8px}
+#glCallPlaque .cp-rating-group{min-inline-size:0;margin:6px 0 0;padding:6px 0;border:0}
+#glCallPlaque .cp-rating-group legend{font-weight:bold}
+#glCallPlaque .cp-rating-row,#glCallPlaque .cp-star-choices{display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+#glCallPlaque .cp-rating-row{margin:4px 0}
+#glCallPlaque .cp-star-choices{gap:0}
+#glCallPlaque .cp-star{display:grid;place-items:center;position:relative;width:40px;height:42px;cursor:pointer;margin:0}
+#glCallPlaque .cp-star input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;margin:0}
+#glCallPlaque .cp-star span{color:var(--cp-muted)!important;font-size:23px;line-height:1}
+#glCallPlaque .cp-star:not(.cp-filled) span{color:transparent!important;-webkit-text-stroke:1px var(--cp-muted)}
+#glCallPlaque .cp-star.cp-filled span{color:var(--cp-purple)!important}
+#glCallPlaque .cp-star:focus-within{outline:2px solid var(--cp-purple);border-radius:8px}
+#glCallPlaque [data-cp-rating-action]{min-height:32px;padding:3px 8px;font-size:11px}
+#glCallPlaque .cp-rating-note{display:block;color:var(--cp-muted)}
