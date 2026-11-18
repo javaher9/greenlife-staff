@@ -6,6 +6,7 @@ from unittest import skipUnless
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from django.test import Client
 from django.utils import timezone
 
 from core.models import ReferralLead, ReferralProfile
@@ -26,8 +27,9 @@ class UnifiedCallBrowserTests(StaticLiveServerTestCase):
             next_follow_up=timezone.localdate(), notes='یادداشت پیگیری قدیمی')
         sessions = {}
         for user in (worker, manager):
-            self.client.force_login(user)
-            sessions[user.pk] = self.client.cookies[settings.SESSION_COOKIE_NAME].value
+            client = Client()
+            client.force_login(user)
+            sessions[user.pk] = client.cookies[settings.SESSION_COOKIE_NAME].value
         with sync_playwright() as driver:
             browser = driver.chromium.launch(executable_path=os.environ.get('PLAQUE_TEST_BROWSER'))
             for user, path in [(worker,'/call-center/follow-ups/?tab=today'), (manager,'/management/all-leads/')]:
