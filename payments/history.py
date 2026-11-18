@@ -21,6 +21,7 @@ EVENT_LABELS = {
     'reassigned': 'تغییر مسئول پرداخت',
     'executive_edit': 'اصلاح مبلغ یا شرح',
     'executive_cancel': 'لغو درخواست',
+    'executive_delete': 'حذف درخواست تکراری یا اشتباهی',
     'paid': 'ثبت پرداخت و رسید',
 }
 
@@ -38,9 +39,14 @@ def visible_payments(user, is_executive):
 def presentation_queryset(queryset):
     return queryset.select_related(
         'requester', 'assigned_to', 'approved_by', 'beneficiary', 'branch',
-    ).annotate(history_cancelled=Exists(PaymentEvent.objects.filter(
-        payment_id=OuterRef('pk'), action='executive_cancel',
-    )))
+    ).annotate(
+        history_cancelled=Exists(PaymentEvent.objects.filter(
+            payment_id=OuterRef('pk'), action='executive_cancel',
+        )),
+        history_paid_event=Exists(PaymentEvent.objects.filter(
+            payment_id=OuterRef('pk'), action='paid',
+        )),
+    )
 
 
 def display_name(user):
@@ -81,7 +87,10 @@ def decorate_payment(payment, is_executive):
     )
     payment.history_can_edit = bool(
         is_executive and payment.state in ('pending', 'approved')
-        and not (payment.paid_at or payment.payment_reference or payment.payment_receipt)
+        and not payment.deleted_at and not payment.has_payment_evidence
+    )
+    payment.history_can_delete = bool(
+        is_executive and not payment.deleted_at and not payment.has_payment_evidence
     )
     return payment
 

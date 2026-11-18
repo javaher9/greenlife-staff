@@ -1,4 +1,4 @@
-{% load money_display %}
+{% load static money_display %}
 <!doctype html>
 <html lang="fa" dir="rtl">
 <head>
@@ -45,10 +45,12 @@ tbody tr:hover{background:#ffffff08}.amount{font-weight:800;font-variant-numeric
 .side-title{font-size:18px;font-weight:800;padding:12px;color:#fff}.side-nav a{display:block;padding:12px;margin:5px 0;border-radius:10px;color:#edf1ff;font-weight:700}.side-nav a:hover,.side-nav a.active{background:#53368a;color:#fff}.main{margin-right:232px;max-width:none}.side-subtitle{margin-top:30px;color:#d7e4fa;font-size:12px;padding:10px}
 @media(max-width:850px){.side-nav{position:static;width:auto;display:flex;flex-wrap:wrap;gap:4px;padding:8px;border-left:0;border-bottom:1px solid #586388}.side-nav a{padding:7px 10px}.side-title{width:100%;padding:2px 8px}.side-subtitle{display:none}.main{margin-right:0}}
 </style>
+<link rel="stylesheet" href="{% static 'payments/actions.css' %}">
 </head>
 <body>
 <aside class="side-nav" aria-label="منوی مدیریت مالی"><div class="side-title">Green Life · مالی</div><a href="/">داشبورد</a><a href="{% url 'finance_dashboard' %}">مالی ـ درآمد</a><a class="active" href="{% url 'payments_expenses' %}">مالی ـ هزینه‌ها</a><a href="{% url 'payments_admin' %}">تأییدها و ارجاع پرداخت</a><a href="{% url 'payments_workspace' %}">تنخواه و درخواست‌ها</a><div class="side-subtitle">گزارش هزینه‌های شرکت، شخصی، کمپ و دشت عروس در یک دفتر مدیریتی</div></aside>
 <main class="main">
+{% include 'payments/partials/messages.html' %}
 <nav class="nav" aria-label="ناوبری مالی">
  <span class="logo">GREEN LIFE · مدیریت مالی</span>
  <a class="chip" href="{% url 'finance_dashboard' %}">مالی ـ درآمد</a>
@@ -86,18 +88,19 @@ tbody tr:hover{background:#ffffff08}.amount{font-weight:800;font-variant-numeric
 </section>
 <section class="panel">
  <div class="panel-h"><h2>درخواست‌ها و پرداخت‌های خروجی</h2><small>همه وضعیت‌ها · صفحه‌بندی ۵۰ موردی</small></div>
- <div class="table-scroll"><table><thead><tr><th>تاریخ</th><th>موضوع</th><th>دسته</th><th>متعلق به</th><th>مرکز / پروژه</th><th>درخواست‌کننده</th><th>گیرنده</th><th>مبلغ (میلیون)</th><th>وضعیت</th><th>مسئول پرداخت</th><th>رسید</th></tr></thead><tbody>
+ <div class="table-scroll"><table><thead><tr><th>تاریخ</th><th>موضوع</th><th>دسته</th><th>متعلق به</th><th>مرکز / پروژه</th><th>درخواست‌کننده</th><th>گیرنده</th><th>مبلغ (میلیون)</th><th>وضعیت</th><th>مسئول پرداخت</th><th>رسید</th><th class="payment-delete-cell">حذف</th></tr></thead><tbody>
  {% for p in requests_page %}
  <tr>
-  <td>{{ p.created_at|date:"Y/m/d" }}</td><td>{{ p.description|truncatechars:75 }}{% if p.kind == 'petty_cash' %}<br><small>شارژ تنخواه (نه هزینه قطعی)</small>{% endif %}</td>
+  <td>{{ p.created_at|date:"Y/m/d" }}</td><td><a href="{% url 'payments_detail' p.pk %}?return_to=expenses">{{ p.description|truncatechars:75 }}</a>{% if p.kind == 'petty_cash' %}<br><small>شارژ تنخواه (نه هزینه قطعی)</small>{% endif %}</td>
   <td>{{ p.get_category_display }}</td><td>{{ p.get_cost_owner_display }}</td>
   <td>{{ p.cost_center|default:p.branch|default:"—" }}</td>
   <td>{{ p.requester.get_full_name|default:p.requester.username }}</td><td>{{ p.recipient_name|default:"—" }}</td>
   <td class="amount">{{ p.amount_toman|million_toman }}</td>
   <td><span class="pill {{ p.state }}">{{ p.get_state_display }}</span></td>
   <td>{{ p.assigned_to.get_full_name|default:"—" }}</td><td>{% if p.state == "paid" and p.payment_receipt %}<a href="{% url 'payments_receipt' p.pk %}">مشاهده</a>{% else %}—{% endif %}</td>
+  <td class="payment-delete-cell">{% include 'payments/partials/delete_link.html' with delete_return='expenses' %}</td>
  </tr>
- {% empty %}<tr><td colspan="10" class="empty">هیچ موردی مطابق فیلترها وجود ندارد.</td></tr>{% endfor %}
+ {% empty %}<tr><td colspan="12" class="empty">هیچ موردی مطابق فیلترها وجود ندارد.</td></tr>{% endfor %}
  </tbody></table></div>
  <div class="pager">
  {% if requests_page.has_previous %}<a href="?q={{ query|urlencode }}&category={{ selected_category|urlencode }}&owner={{ selected_owner|urlencode }}&state={{ selected_status|urlencode }}&from={{ from_date|urlencode }}&to={{ to_date|urlencode }}&requests_page={{ requests_page.previous_page_number }}">صفحه قبل</a>{% endif %}

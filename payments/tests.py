@@ -4,10 +4,11 @@ from urllib.parse import parse_qs
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
+from django.test import Client, RequestFactory, TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from core.models import Branch, EmployeeProfile
-from .models import PaymentRequest, PaymentEvent, PettyCashExpense
+from .models import PaymentRequest, PaymentEvent, PaymentClarification, PettyCashExpense
 
 class PaymentWorkflowTests(TestCase):
     @classmethod
@@ -982,3 +983,365 @@ class PaymentHistoryTests(TestCase):
         self.assertEqual(self.client.get(reverse('payments_receipt_thumbnail', args=[payment.pk])).status_code, 404)
         self.client.force_login(self.outsider)
         self.assertEqual(self.client.get(url).status_code, 404)
+
+
+class PaymentDeletionTests(TestCase):
+    """Deleting an unpaid request removes it from every operational workflow."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.executive = User.objects.create_user(
+            username=next(iter(settings.EXECUTIVE_USERNAMES)), password='deletion-test-password',
+        )
+        cls.requester = User.objects.create_user(
+            username='delete-requester', first_name='رضا', last_name='صادقی',
+        )
+        cls.operator = User.objects.create_user(
+            username='delete-hosseini', first_name='خانم', last_name='حسینی',
+        )
+        cls.other = User.objects.create_user(
+            username='delete-naderi', first_name='آقای', last_name='نادری',
+        )
+        cls.branch = Branch.objects.create(name='Deletion test branch')
+        for user in (cls.requester, cls.operator, cls.other):
+            EmployeeProfile.objects.update_or_create(user=user, defaults={
+                'branch': cls.branch, 'role': 'consultant', 'is_active': True,
+                'can_request_payments': True, 'can_execute_payments': True,
+            })
+            # User creation caches the initial profile before these permissions.
+            user.refresh_from_db()
+
+    def payment(self, **overrides):
+        fields = {
+            'kind': 'payment', 'amount_toman': 3500000,
+            'description': 'Duplicate test payment to remove',
+            'requester': self.requester, 'branch': self.branch,
+        }
+        fields.update(overrides)
+        return PaymentRequest.objects.create(**fields)
+
+    def delete_url(self, payment):
+        return reverse('payments_executive_delete', args=[payment.pk])
+
+    def delete_as_executive(self, payment, **overrides):
+        self.client.force_login(self.executive)
+        payload = {'reason': 'duplicate', 'confirm_delete': 'yes'}
+        payload.update(overrides)
+        return self.client.post(self.delete_url(payment), payload)
+
+    def test_all_unpaid_states_can_be_removed_including_a_cancelled_request(self):
+        for state in ('pending', 'approved', 'rejected', 'needs_info'):
+            with self.subTest(state=state):
+                payment = self.payment(state=state, assigned_to=self.operator)
+                if state == 'rejected':
+                    PaymentEvent.objects.create(
+                        payment=payment, actor=self.executive, action='executive_cancel',
+                        notes='An earlier duplicate cancellation',
+                    )
+                reason = 'mistake' if state == 'needs_info' else 'duplicate'
+                self.assertEqual(self.delete_as_executive(payment, reason=reason).status_code, 302)
+                self.assertFalse(PaymentRequest.objects.filter(pk=payment.pk).exists())
+                retained = PaymentRequest.all_objects.get(pk=payment.pk)
+                self.assertIsNotNone(retained.deleted_at)
+                self.assertEqual(retained.deleted_by_id, self.executive.pk)
+                self.assertEqual(retained.deletion_reason, reason)
+                self.assertEqual(retained.state, state)
+                self.assertEqual(retained.assigned_to_id, self.operator.pk)
+                self.assertEqual(retained.events.filter(action='executive_delete').count(), 1)
+
+    def test_deletion_preserves_original_audit_and_related_record_access(self):
+        payment = self.payment(state='needs_info', clarification_assignee=self.requester)
+        created = PaymentEvent.objects.create(
+            payment=payment, actor=self.requester, action='created', notes='Original event',
+        )
+        clarification = PaymentClarification.objects.create(
+            payment=payment, author=self.executive, message='Original clarification question',
+        )
+        self.assertEqual(self.delete_as_executive(payment).status_code, 302)
+        retained = PaymentRequest.all_objects.get(pk=payment.pk)
+        event = PaymentEvent.objects.get(pk=created.pk)
+        self.assertEqual(event.notes, 'Original event')
+        self.assertEqual(event.payment.pk, retained.pk)
+        self.assertIsNotNone(event.payment.deleted_at)
+        note = PaymentClarification.objects.get(pk=clarification.pk)
+        self.assertEqual(note.message, 'Original clarification question')
+        self.assertEqual(note.payment.pk, retained.pk)
+        audit = retained.events.get(action='executive_delete')
+        self.assertEqual(audit.actor_id, self.executive.pk)
+        self.assertTrue(audit.notes)
+        self.assertFalse(self.requester.requested_payments.filter(pk=payment.pk).exists())
+
+    def test_requester_assignee_and_other_staff_cannot_delete(self):
+        payment = self.payment(state='approved', assigned_to=self.operator, channel='staff')
+        for user in (self.requester, self.operator, self.other):
+            with self.subTest(user=user.username):
+                self.client.force_login(user)
+                response = self.client.post(self.delete_url(payment), {
+                    'reason': 'duplicate', 'confirm_delete': 'yes',
+                    'deleted_by': self.executive.pk,
+                })
+                self.assertEqual(response.status_code, 403)
+        self.assertTrue(PaymentRequest.objects.filter(pk=payment.pk).exists())
+        self.assertFalse(payment.events.exists())
+
+    def test_anonymous_and_inactive_executives_cannot_delete(self):
+        from django.core.exceptions import PermissionDenied
+        from .views import executive_delete_unpaid
+        payment = self.payment()
+        response = self.client.post(self.delete_url(payment), {
+            'reason': 'duplicate', 'confirm_delete': 'yes',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.executive.is_active = False
+        request = RequestFactory().post(self.delete_url(payment), {
+            'reason': 'duplicate', 'confirm_delete': 'yes',
+        })
+        request.user = self.executive
+        with self.assertRaises(PermissionDenied):
+            executive_delete_unpaid(request, payment.pk)
+        self.assertTrue(PaymentRequest.objects.filter(pk=payment.pk).exists())
+
+    def test_read_requests_never_delete_and_confirmation_panel_is_read_only(self):
+        payment = self.payment()
+        self.client.force_login(self.executive)
+        for method in ('get', 'head'):
+            self.assertEqual(getattr(self.client, method)(self.delete_url(payment)).status_code, 405)
+        detail = self.client.get(reverse('payments_detail', args=[payment.pk]), {'panel': '1'})
+        self.assertEqual(detail.status_code, 200)
+        self.assertTrue(detail.context['can_delete'])
+        self.assertContains(detail, self.delete_url(payment))
+        self.assertContains(detail, 'confirm_delete')
+        self.assertContains(detail, 'تکراری')
+        self.assertContains(detail, 'اشتباه')
+        self.assertTrue(PaymentRequest.objects.filter(pk=payment.pk).exists())
+        self.assertFalse(payment.events.exists())
+
+    def test_explicit_confirmation_and_allowed_reason_are_both_required(self):
+        payment = self.payment()
+        self.client.force_login(self.executive)
+        for payload in (
+            {}, {'reason': 'duplicate'}, {'confirm_delete': 'yes'},
+            {'reason': 'duplicate', 'confirm_delete': 'no'},
+            {'reason': 'other', 'confirm_delete': 'yes'},
+            {'reason': 'paid', 'confirm_delete': 'yes'},
+        ):
+            with self.subTest(payload=payload):
+                self.assertEqual(self.client.post(self.delete_url(payment), payload).status_code, 400)
+                self.assertTrue(PaymentRequest.objects.filter(pk=payment.pk).exists())
+        self.assertFalse(payment.events.exists())
+
+    @override_settings(MIDDLEWARE=list(dict.fromkeys([
+        *settings.MIDDLEWARE, 'django.middleware.csrf.CsrfViewMiddleware',
+    ])))
+    def test_delete_requires_csrf_and_accepts_the_confirmed_form_token(self):
+        payment = self.payment()
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.executive)
+        payload = {'reason': 'mistake', 'confirm_delete': 'yes'}
+        detail_url = reverse('payments_detail', args=[payment.pk])
+        rejected = client.post(self.delete_url(payment), payload, HTTP_REFERER=detail_url)
+        # The application's CSRF failure view redirects authenticated users to
+        # a fresh GET instead of displaying a 403; the unsafe action stays blocked.
+        self.assertRedirects(rejected, detail_url, fetch_redirect_response=False)
+        self.assertTrue(PaymentRequest.objects.filter(pk=payment.pk).exists())
+        self.assertFalse(payment.events.exists())
+        form = client.get(detail_url)
+        self.assertEqual(form.status_code, 200)
+        token = client.cookies[settings.CSRF_COOKIE_NAME].value
+        result = client.post(self.delete_url(payment), payload, HTTP_X_CSRFTOKEN=token)
+        self.assertEqual(result.status_code, 302)
+        self.assertFalse(PaymentRequest.objects.filter(pk=payment.pk).exists())
+
+    def test_paid_state_or_any_execution_evidence_blocks_deletion(self):
+        cases = (
+            {'state': 'paid'},
+            {'state': 'approved', 'paid_at': timezone.now()},
+            {'state': 'pending', 'payment_reference': 'ALREADY-PAID'},
+            {'state': 'rejected', 'payment_receipt': 'payment_receipts/existing.pdf'},
+        )
+        self.client.force_login(self.executive)
+        for fields in cases:
+            with self.subTest(fields=fields):
+                payment = self.payment(**fields)
+                before = PaymentRequest.objects.filter(pk=payment.pk).values().get()
+                self.assertEqual(self.delete_as_executive(payment).status_code, 400)
+                self.assertEqual(PaymentRequest.objects.filter(pk=payment.pk).values().get(), before)
+                detail = self.client.get(reverse('payments_detail', args=[payment.pk]))
+                self.assertFalse(detail.context['can_delete'])
+                self.assertNotContains(detail, self.delete_url(payment))
+                self.assertFalse(payment.events.filter(action='executive_delete').exists())
+
+    def test_recorded_paid_event_blocks_deletion_even_if_status_and_fields_were_reset(self):
+        payment = self.payment(state='rejected')
+        PaymentEvent.objects.create(payment=payment, actor=self.operator, action='paid', notes='Recorded payout')
+        self.assertEqual(self.delete_as_executive(payment).status_code, 400)
+        detail = self.client.get(reverse('payments_detail', args=[payment.pk]))
+        self.assertFalse(detail.context['can_delete'])
+        self.assertNotContains(detail, self.delete_url(payment))
+        history = self.client.get(reverse('payments_workspace'))
+        self.assertFalse(history.context['history_page'][0].history_can_delete)
+        self.assertTrue(PaymentRequest.objects.filter(pk=payment.pk).exists())
+        self.assertEqual(payment.events.count(), 1)
+
+    def test_original_personal_expense_invoice_can_be_removed_with_the_unpaid_claim(self):
+        claim = self.payment(
+            kind='personal_expense', state='pending',
+            personal_expense_receipt='personal_expenses/original-invoice.pdf',
+        )
+        self.assertEqual(self.delete_as_executive(claim, reason='mistake').status_code, 302)
+        retained = PaymentRequest.all_objects.get(pk=claim.pk)
+        self.assertEqual(retained.personal_expense_receipt.name, 'personal_expenses/original-invoice.pdf')
+        for user in (self.executive, self.requester):
+            self.client.force_login(user)
+            for route in ('payments_detail', 'payments_receipt', 'payments_receipt_thumbnail',
+                          'payments_personal_receipt', 'payments_personal_receipt_thumbnail'):
+                with self.subTest(user=user.username, route=route):
+                    self.assertEqual(self.client.get(reverse(route, args=[claim.pk])).status_code, 404)
+
+    def test_delete_removes_an_approved_request_from_every_assignees_queue_and_badge(self):
+        from types import SimpleNamespace
+        from .templatetags.finance_alerts import open_payment_count
+        from .templatetags.payment_queue import approved_payment_queue
+        for operator in (self.operator, self.other):
+            with self.subTest(operator=operator.username):
+                target = self.payment(state='approved', assigned_to=operator, channel='staff')
+                keep = self.payment(state='approved', assigned_to=operator, channel='staff',
+                                    description='A legitimate remaining payment')
+                self.assertEqual(open_payment_count(operator), 2)
+                self.assertEqual(self.delete_as_executive(target).status_code, 302)
+                self.client.force_login(operator)
+                page = self.client.get(reverse('payments_workspace'))
+                self.assertEqual(page.status_code, 200)
+                self.assertEqual([p.pk for p in page.context['queue']], [keep.pk])
+                self.assertEqual([p.pk for p in page.context['history_page']], [keep.pk])
+                self.assertEqual(page.context['history_stats']['approved'], 1)
+                self.assertEqual(page.context['history_stats']['assigned'], 1)
+                self.assertEqual(open_payment_count(operator), 1)
+                embedded = approved_payment_queue({'request': SimpleNamespace(user=operator)})
+                self.assertEqual([p.pk for p in embedded['items']], [keep.pk])
+                self.assertFalse(operator.assigned_payments.filter(pk=target.pk).exists())
+
+    def test_deleted_requests_leave_approval_queue_management_history_filters_and_totals(self):
+        removed_pending = self.payment(state='pending', amount_toman=7000000)
+        removed_approved = self.payment(state='approved', assigned_to=self.operator, amount_toman=9000000)
+        keep_pending = self.payment(state='pending', requester=self.other, amount_toman=2000000,
+                                    description='Remaining approval')
+        keep_approved = self.payment(state='approved', requester=self.other, assigned_to=self.operator,
+                                     channel='staff', amount_toman=4000000,
+                                     description='Remaining payout')
+        for payment in (removed_pending, removed_approved):
+            self.assertEqual(self.delete_as_executive(payment).status_code, 302)
+        admin = self.client.get(reverse('payments_admin'))
+        self.assertEqual([p.pk for p in admin.context['pending']], [keep_pending.pk])
+        self.assertEqual([p.pk for p in admin.context['active']], [keep_approved.pk])
+        history = self.client.get(reverse('payments_workspace'))
+        self.assertEqual({p.pk for p in history.context['history_page']}, {keep_pending.pk, keep_approved.pk})
+        self.assertEqual(history.context['history_stats']['total'], 2)
+        self.assertEqual(history.context['history_stats']['pending'], 1)
+        self.assertEqual(history.context['history_stats']['approved'], 1)
+        self.assertEqual([u.pk for u in history.context['history_requesters']], [self.other.pk])
+        ledger = self.client.get(reverse('payments_expenses'))
+        self.assertEqual({p.pk for p in ledger.context['requests_page']}, {keep_pending.pk, keep_approved.pk})
+        self.assertEqual(ledger.context['summary']['pending'], 2000000)
+        self.assertEqual(ledger.context['summary']['approved'], 4000000)
+        self.client.force_login(self.requester)
+        personal = self.client.get(reverse('payments_workspace'))
+        self.assertEqual(list(personal.context['mine']), [])
+        self.assertEqual(personal.context['history_stats']['total'], 0)
+
+    def test_deleted_question_leaves_clarification_queue_and_pending_amount(self):
+        payment = self.payment(state='needs_info', clarification_assignee=self.requester)
+        PaymentClarification.objects.create(payment=payment, author=self.executive, message='Please explain this request')
+        self.assertEqual(self.delete_as_executive(payment).status_code, 302)
+        ledger = self.client.get(reverse('payments_expenses'))
+        self.assertEqual(ledger.context['summary']['pending'], 0)
+        self.client.force_login(self.requester)
+        page = self.client.get(reverse('payments_workspace'))
+        self.assertEqual(list(page.context['clarifications']), [])
+        self.assertEqual(page.context['history_stats']['needs_info'], 0)
+
+    def test_stale_approve_edit_reassign_pay_and_answer_forms_cannot_revive_deleted_requests(self):
+        records = {
+            'pending': self.payment(),
+            'approved': self.payment(state='approved', assigned_to=self.operator, channel='staff'),
+            'needs_info': self.payment(state='needs_info', clarification_assignee=self.requester),
+        }
+        for payment in records.values():
+            self.assertEqual(self.delete_as_executive(payment).status_code, 302)
+        before = list(PaymentRequest.all_objects.order_by('pk').values())
+        actions = (
+            (self.executive, 'payments_review', records['pending'],
+             {'action': 'approve', 'channel': 'staff', 'assigned_to': self.operator.pk}),
+            (self.executive, 'payments_executive_change', records['approved'],
+             {'action': 'edit', 'amount_million': '8', 'description': 'Must not revive deleted request'}),
+            (self.executive, 'payments_executive_change', records['approved'],
+             {'action': 'cancel', 'reason': 'An obsolete cancellation'}),
+            (self.executive, 'payments_reassign', records['approved'], {'assigned_to': self.other.pk}),
+            (self.operator, 'payments_complete', records['approved'],
+             {'reference': 'STALE-PAYMENT', 'receipt': SimpleUploadedFile('stale.pdf', b'%PDF-1.4 stale', content_type='application/pdf')}),
+            (self.requester, 'payments_clarification_answer', records['needs_info'], {'answer': 'An obsolete answer'}),
+        )
+        for user, route, payment, payload in actions:
+            with self.subTest(route=route, action=payload.get('action')):
+                self.client.force_login(user)
+                self.assertEqual(self.client.post(reverse(route, args=[payment.pk]), payload).status_code, 404)
+        self.assertEqual(list(PaymentRequest.all_objects.order_by('pk').values()), before)
+        self.assertEqual(PaymentEvent.objects.count(), 3)
+        self.assertEqual(PaymentEvent.objects.filter(action='executive_delete').count(), 3)
+        self.assertEqual(PaymentClarification.objects.count(), 0)
+
+    def test_already_completed_payment_blocks_an_old_delete_confirmation(self):
+        payment = self.payment(state='approved', assigned_to=self.operator, channel='staff')
+        self.client.force_login(self.executive)
+        self.assertTrue(self.client.get(reverse('payments_detail', args=[payment.pk])).context['can_delete'])
+        media = TemporaryDirectory(prefix='greenlife-delete-race-tests-')
+        self.addCleanup(media.cleanup)
+        with override_settings(MEDIA_ROOT=media.name):
+            self.client.force_login(self.operator)
+            paid = self.client.post(reverse('payments_complete', args=[payment.pk]), {
+                'reference': 'PAID-BEFORE-DELETE',
+                'receipt': SimpleUploadedFile('proof.pdf', b'%PDF-1.4 proof', content_type='application/pdf'),
+            })
+            self.assertEqual(paid.status_code, 302)
+            self.assertEqual(self.delete_as_executive(payment).status_code, 400)
+            retained = PaymentRequest.objects.get(pk=payment.pk)
+            self.assertEqual(retained.state, 'paid')
+            self.assertIsNone(retained.deleted_at)
+            self.assertEqual(retained.events.filter(action='paid').count(), 1)
+            self.assertEqual(retained.events.filter(action='executive_delete').count(), 0)
+
+    def test_repeated_deletion_is_not_a_second_audit_or_mutation(self):
+        payment = self.payment()
+        self.assertEqual(self.delete_as_executive(payment).status_code, 302)
+        before = PaymentRequest.all_objects.filter(pk=payment.pk).values().get()
+        self.assertEqual(self.delete_as_executive(payment, reason='mistake').status_code, 404)
+        self.assertEqual(PaymentRequest.all_objects.filter(pk=payment.pk).values().get(), before)
+        self.assertEqual(payment.events.filter(action='executive_delete').count(), 1)
+
+    def test_only_executives_receive_delete_controls_for_eligible_requests(self):
+        payment = self.payment(state='approved', assigned_to=self.operator, channel='staff')
+        paid = self.payment(state='paid', assigned_to=self.operator)
+        for user, eligible in ((self.executive, True), (self.requester, False), (self.operator, False)):
+            with self.subTest(user=user.username):
+                self.client.force_login(user)
+                history = self.client.get(reverse('payments_workspace'))
+                records = {p.pk: p for p in history.context['history_page']}
+                self.assertEqual(records[payment.pk].history_can_delete, eligible)
+                self.assertFalse(records[paid.pk].history_can_delete)
+                detail = self.client.get(reverse('payments_detail', args=[payment.pk]))
+                self.assertEqual(detail.context['can_delete'], eligible)
+                if eligible:
+                    self.assertContains(detail, self.delete_url(payment))
+                else:
+                    self.assertNotContains(detail, self.delete_url(payment))
+
+    def test_delete_return_destinations_are_local_and_allowlisted(self):
+        for requested, expected in (
+            ('admin', reverse('payments_admin')),
+            ('expenses', reverse('payments_expenses')),
+            ('https://untrusted.invalid/', reverse('payments_workspace') + '#paymentHistory'),
+        ):
+            with self.subTest(return_to=requested):
+                result = self.delete_as_executive(self.payment(), return_to=requested)
+                self.assertEqual(result.status_code, 302)
+                self.assertEqual(result.url, expected)

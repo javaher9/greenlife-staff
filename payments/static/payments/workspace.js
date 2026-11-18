@@ -40,6 +40,11 @@
       if (trigger && trigger.isConnected) trigger.focus({preventScroll: true});
     });
     document.addEventListener('click', async event => {
+      if (dialog.open && event.target.closest('[data-cancel-delete]')) {
+        event.preventDefault();
+        dialog.close();
+        return;
+      }
       const link = event.target.closest('a[data-payment-detail]');
       if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return;
       event.preventDefault();

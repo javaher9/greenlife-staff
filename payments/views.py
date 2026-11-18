@@ -11,6 +11,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST, require_safe
 from django.contrib.auth.models import User
+from django.contrib import messages
+from django.urls import reverse
 from .models import PaymentRequest, PaymentEvent, PettyCashExpense, PaymentClarification, SavedPaymentRecipient
 from .history import (
     EVENT_LABELS, decorate_payment, display_name, history_context,
@@ -335,6 +337,9 @@ def payment_detail(request, pk):
         'payment': payment, 'timeline': timeline,
         'clarification_messages': clarification_messages,
         'can_edit': payment.history_can_edit, 'is_executive': is_executive,
+        'can_delete': payment.history_can_delete,
+        'delete_return_to': request.GET.get('return_to', '') if request.GET.get('return_to') in ('admin', 'expenses') else '',
+        'open_delete': request.GET.get('focus') == 'delete',
         'can_complete': (
             payment.state == 'approved' and payment.assigned_to_id == request.user.pk
             and payment.channel in ('consultant', 'staff')
@@ -469,7 +474,7 @@ def executive_change_unpaid(request, pk):
         p = get_object_or_404(PaymentRequest.objects.select_for_update(), pk=pk)
         if p.state not in ('pending', 'approved'):
             return HttpResponseBadRequest('فقط درخواست‌های پرداخت‌نشده قابل اصلاح یا لغو هستند.')
-        if p.paid_at or p.payment_reference or p.payment_receipt:
+        if p.has_payment_evidence:
             return HttpResponseBadRequest('این درخواست دارای سابقه پرداخت است.')
         if action == 'cancel':
             reason = request.POST.get('reason', '').strip()
@@ -505,6 +510,40 @@ def executive_change_unpaid(request, pk):
     if request.POST.get('return_to') == 'detail':
         return redirect('payments_detail', pk=p.pk)
     return redirect('payments_workspace')
+
+
+@login_required
+@require_POST
+def executive_delete_unpaid(request, pk):
+    """Remove a duplicate/mistaken request from every operational surface."""
+    if not request.user.is_active or not executive(request.user):
+        raise PermissionDenied()
+    reason = request.POST.get('reason', '')
+    if reason not in dict(PaymentRequest.DELETION_REASONS):
+        return HttpResponseBadRequest('حذف فقط برای درخواست تکراری یا ثبت اشتباهی مجاز است؛ علت را انتخاب کنید.')
+    if request.POST.get('confirm_delete') != 'yes':
+        return HttpResponseBadRequest('برای حذف، تکراری یا اشتباهی بودن درخواست را تأیید کنید.')
+    with transaction.atomic():
+        # The same lock is used by payment, review, edit, and reassignment.
+        # A stale page cannot revive a deleted request or delete a payment
+        # that completed while the confirmation screen was open.
+        payment = get_object_or_404(PaymentRequest.objects.select_for_update(), pk=pk)
+        if payment.has_payment_evidence:
+            return HttpResponseBadRequest('درخواست پرداخت‌شده یا دارای سابقه پرداخت قابل حذف نیست.')
+        payment.deleted_at = timezone.now()
+        payment.deleted_by = request.user
+        payment.deletion_reason = reason
+        payment.save(update_fields=['deleted_at', 'deleted_by', 'deletion_reason'])
+        PaymentEvent.objects.create(
+            payment=payment, actor=request.user, action='executive_delete',
+            notes=dict(PaymentRequest.DELETION_REASONS)[reason],
+        )
+    messages.success(request, 'درخواست از سوابق و تمام صف‌های تأیید و پرداخت حذف شد.')
+    return_to = request.POST.get('return_to', '')
+    destinations = {'admin': 'payments_admin', 'expenses': 'payments_expenses'}
+    if return_to in destinations:
+        return redirect(destinations[return_to])
+    return redirect(reverse('payments_workspace') + '#paymentHistory')
 
 
 @login_required
@@ -574,7 +613,7 @@ def admin_dashboard(request):
     if not executive(request.user):
         raise PermissionDenied()
     from django.contrib.auth.models import Permission
-    requests=PaymentRequest.objects.select_related('requester','assigned_to','approved_by','beneficiary','branch')
+    requests=presentation_queryset(PaymentRequest.objects.all())
     consultants=User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant')
     accountants=User.objects.none()
     operators=payment_approved_assignees()
@@ -582,7 +621,7 @@ def admin_dashboard(request):
         is_active=True,username__in=settings.EXECUTIVE_USERNAMES,
     ).values_list('pk',flat=True))
     paid=requests.filter(state='paid')
-    return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants,'operators':operators,'executive_ids':executive_ids,'staff_members':User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant').order_by('first_name','last_name'),'permission_profiles': __import__('core.models',fromlist=['EmployeeProfile']).EmployeeProfile.objects.filter(is_active=True,user__is_active=True).exclude(role__in=['referrer','scan_station']).filter(~Q(role='employee') | Q(branch__isnull=False) | (Q(employee_code__isnull=False) & ~Q(employee_code='')) | ~Q(job_title='')).select_related('user','branch').order_by('user__first_name','user__last_name'),})
+    return render(request,'payments/admin.html',{'pending':[decorate_payment(p, True) for p in requests.filter(state='pending')],'active':[decorate_payment(p, True) for p in requests.filter(state='approved')],'paid':paid[:200],'consultants':consultants,'accountants':accountants,'operators':operators,'executive_ids':executive_ids,'staff_members':User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant').order_by('first_name','last_name'),'permission_profiles': __import__('core.models',fromlist=['EmployeeProfile']).EmployeeProfile.objects.filter(is_active=True,user__is_active=True).exclude(role__in=['referrer','scan_station']).filter(~Q(role='employee') | Q(branch__isnull=False) | (Q(employee_code__isnull=False) & ~Q(employee_code='')) | ~Q(job_title='')).select_related('user','branch').order_by('user__first_name','user__last_name'),})
 
 @login_required
 @require_POST
@@ -688,7 +727,8 @@ def expenses_dashboard(request):
         base_requests = base_requests.filter(created_at__date__lte=to_date)
         base_expenses = base_expenses.filter(created_at__date__lte=to_date)
 
-    requests_page = Paginator(base_requests.order_by('-created_at'), 50).get_page(request.GET.get('requests_page'))
+    requests_page = Paginator(presentation_queryset(base_requests).order_by('-created_at', '-pk'), 50).get_page(request.GET.get('requests_page'))
+    requests_page.object_list = [decorate_payment(p, True) for p in requests_page.object_list]
     petty_page = Paginator(base_expenses.order_by('-created_at'), 30).get_page(request.GET.get('petty_page'))
     from .models import EXPENSE_CATEGORIES, COST_OWNERS
     return render(request, 'payments/expenses_dashboard.html', {

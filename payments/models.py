@@ -26,6 +26,14 @@ COST_OWNERS = [
     ('other', 'سایر / خارج از شرکت'),
 ]
 
+
+class ActivePaymentRequestManager(models.Manager):
+    """Keep removed requests out of every operational queue and total."""
+
+    def get_queryset(self):
+        return super().get_queryset().filter(deleted_at__isnull=True)
+
+
 class PaymentRequest(models.Model):
     TYPES = [('payment','درخواست پرداخت'),('petty_cash','درخواست تنخواه'),('personal_expense','هزینه پرداخت‌شده از حساب شخصی')]
     STATES = [('pending','در انتظار تأیید'),('approved','در صف پرداخت'),('rejected','رد شده'),('needs_info','نیازمند توضیح بیشتر'),('paid','پرداخت شده')]
@@ -40,6 +48,7 @@ class PaymentRequest(models.Model):
         ('personal', 'حساب شخصی مدیر'), ('company', 'حساب شرکت'),
         ('other', 'سایر حساب‌ها'),
     ]
+    DELETION_REASONS = [('duplicate', 'درخواست تکراری'), ('mistake', 'ثبت اشتباهی')]
     kind = models.CharField(max_length=16,choices=TYPES)
     amount_toman = models.PositiveBigIntegerField(validators=[MinValueValidator(1)])
     description = models.TextField()
@@ -68,7 +77,32 @@ class PaymentRequest(models.Model):
     personal_expense_receipt=models.FileField(upload_to='personal_expenses/%Y/%m/',blank=True)
     paid_at = models.DateTimeField(null=True,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    # Operational deletion preserves the audit trail without leaving an active
+    # request in the requester, reviewer, or payment operator's workspace.
+    deleted_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    deleted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True,
+        related_name='deleted_payment_requests',
+    )
+    deletion_reason = models.CharField(max_length=16, choices=DELETION_REASONS, null=True, blank=True)
+
+    objects = ActivePaymentRequestManager()
+    all_objects = models.Manager()
+
+    @property
+    def has_payment_evidence(self):
+        """A wrong state must not make a previously paid request removable."""
+        if self.state == 'paid' or self.paid_at or self.payment_reference or self.payment_receipt:
+            return True
+        recorded = getattr(self, 'history_paid_event', None)
+        if recorded is not None:
+            return recorded
+        return bool(self.pk and self.events.filter(action='paid').exists())
+
     class Meta:
+        default_manager_name = 'objects'
+        # Audit events must still resolve their parent after operational removal.
+        base_manager_name = 'all_objects'
         ordering = ['-created_at']
         indexes = [models.Index(fields=['assigned_to','state'])]
         permissions = [('execute_official_payment','May execute official bank payments')]
