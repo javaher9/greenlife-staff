@@ -98,3 +98,14 @@ docker compose up -d --build
 ```
 
 Before production or enabling HTTPS/subdomains, restore `DISABLE_CSRF=0`.
+
+## دریافت پیام ربات‌های تلگرام و بله
+
+برای هر پیام‌رسان، توکن یک ربات اختصاصی و یک راز جداگانه در متغیرهای محیطی نمونه تنظیم کنید. پس از استقرار و اجرای migration، وضعیت هر ربات را با فرمان زیر بررسی کنید. برای ثبت نشانی دریافت، گزینهٔ `--register` را اضافه کنید.
+
+```sh
+docker compose exec web python manage.py channel_bot_webhook telegram
+docker compose exec web python manage.py channel_bot_webhook bale
+```
+
+در صورت ثبت وب‌هوک دیگری روی ربات، فرمان به‌صورت پیش‌فرض اتصال قبلی را حفظ می‌کند. در بله، راز بخشی از نشانی دریافت است. ثبت نشانی درخواست‌های `/api/channels/bale/` را در تمام پراکسی‌های جلوی اپ غیرفعال کنید. با یک پیام خصوصی به ربات، رسید و شمارنده را در «اتاق فرمان کانال‌ها» بررسی کنید. این نما فقط رسید پیام را نگه می‌دارد.

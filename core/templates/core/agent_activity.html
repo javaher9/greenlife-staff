@@ -5,15 +5,40 @@
 <section class="gl-activity" dir="rtl" data-activity-url="{% url 'agent_activity_snapshot' %}">
   <header class="gl-activity-header">
     <div>
-      <h1>نمای زندهٔ کانال‌ها</h1>
-      <p>وضعیت اتصال و گردش پیام‌ها در گرین‌لایف</p>
+      <h1>اتاق فرمان کانال‌ها</h1>
+      <p>وضعیت اتصال و گردش پیام‌های گرین‌لایف</p>
     </div>
-    <p data-sync role="status">آخرین ثبت سرور</p>
+    <p class="gl-activity-sync" data-sync role="status">آخرین ثبت سرور</p>
   </header>
+
   <div class="gl-activity-grid">
-    <section class="gl-activity-map" aria-labelledby="gl-activity-channels">
-      <h2 id="gl-activity-channels">کانال‌ها</h2>
-      <div class="gl-activity-hub"><span aria-hidden="true">◎</span> صندوق پیام‌های گرین‌لایف</div>
+    <section class="gl-activity-map" aria-labelledby="gl-activity-map-title">
+      <div class="gl-activity-map-head">
+        <h2 id="gl-activity-map-title">نقشهٔ فعالیت</h2>
+        <span>برای فیلتر، یک کانال را انتخاب کنید</span>
+      </div>
+      <div class="gl-activity-orbit" data-orbit>
+        <div class="gl-activity-wires" aria-hidden="true"></div>
+        <button class="gl-activity-hub" data-family="" type="button" aria-pressed="true">
+          <span class="gl-activity-hub-mark" aria-hidden="true">◎</span>
+          <span>صندوق پیام‌ها</span>
+        </button>
+        <button class="gl-orbit-node gl-orbit-instagram" data-family="instagram" type="button" aria-pressed="false">
+          <span class="gl-orbit-mark" aria-hidden="true">◎</span><span>اینستاگرام</span>
+        </button>
+        <button class="gl-orbit-node gl-orbit-whatsapp" data-family="whatsapp" type="button" aria-pressed="false">
+          <span class="gl-orbit-mark" aria-hidden="true">◔</span><span>واتساپ</span>
+        </button>
+        <button class="gl-orbit-node gl-orbit-telegram" data-family="telegram" type="button" aria-pressed="false">
+          <span class="gl-orbit-mark" aria-hidden="true">➤</span><span>تلگرام</span>
+        </button>
+        <button class="gl-orbit-node gl-orbit-bale" data-family="bale" type="button" aria-pressed="false">
+          <span class="gl-orbit-mark" aria-hidden="true">▤</span><span>بله</span>
+        </button>
+        <button class="gl-orbit-node gl-orbit-linkedin" data-family="linkedin" type="button" aria-pressed="false">
+          <span class="gl-orbit-mark gl-orbit-latin" aria-hidden="true">in</span><span>لینکدین</span>
+        </button>
+      </div>
       <div class="gl-activity-nodes" data-channels>
         {% for channel in activity.channels %}
           <article class="gl-activity-node" data-channel="{{ channel.id }}" data-tone="{{ channel.tone }}">

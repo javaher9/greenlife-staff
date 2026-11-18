@@ -19,7 +19,7 @@ class AgentActivityTests(TestCase):
         self.assertEqual(self.client.get(self.snapshot).status_code, 403)
 
         self.client.force_login(self.owner)
-        self.assertContains(self.client.get(page), 'نمای زندهٔ کانال‌ها')
+        self.assertContains(self.client.get(page), 'اتاق فرمان کانال‌ها')
         self.assertIn('no-store', self.client.get(self.snapshot)['Cache-Control'])
 
     def test_snapshot_counts_real_inbound_activity_without_message_content(self):

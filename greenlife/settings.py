@@ -67,3 +67,9 @@ BODY_PROGRESS_UPLOAD_ENABLED = os.getenv('BODY_PROGRESS_UPLOAD_ENABLED', '0') ==
 
 # Canonical member app; keep Django CSRF verification on every write.
 CSRF_TRUSTED_ORIGINS.append("https://greenlife-me-preview.vercel.app")
+
+# Dedicated bot tokens and webhook secrets are provided by the runtime environment.
+CHANNEL_BOTS = {
+    'telegram': (os.getenv('TELEGRAM_CHANNEL_BOT_TOKEN', ''), os.getenv('TELEGRAM_CHANNEL_WEBHOOK_SECRET', '')),
+    'bale': (os.getenv('BALE_CHANNEL_BOT_TOKEN', ''), os.getenv('BALE_CHANNEL_WEBHOOK_SECRET', '')),
+}

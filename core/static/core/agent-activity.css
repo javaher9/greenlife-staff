@@ -36,31 +36,10 @@
   gap: 14px;
   align-items: start;
 }
-.gl-activity .gl-activity-hub {
-  position: relative;
-  width: fit-content;
-  margin: 20px auto 26px;
-  padding: 12px 18px;
-  border: 1px solid #7153a1;
-  border-radius: 24px;
-  background: #241a3b;
-  text-align: center;
-}
-.gl-activity .gl-activity-hub span { color: var(--activity-accent); }
-.gl-activity .gl-activity-hub::after {
-  content: '';
-  position: absolute;
-  inset: 100% calc(50% - 1px) auto;
-  width: 2px;
-  height: 26px;
-  background: #7153a1;
-}
 .gl-activity .gl-activity-nodes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
   gap: 10px;
-  padding-top: 12px;
-  border-top: 1px solid #564275;
 }
 .gl-activity .gl-activity-node {
   position: relative;
@@ -119,4 +98,153 @@
 @media (prefers-reduced-motion: reduce) {
   .gl-activity .is-recent .gl-activity-ring,
   .gl-activity .is-recent::before { animation: none; }
+}
+
+.gl-activity .gl-activity-map-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px 16px;
+}
+.gl-activity-map-head span { color: var(--activity-muted); font-size: 12px; }
+.gl-activity .gl-activity-orbit {
+  --gl-orbit-radius: clamp(64px, 19vw, 125px);
+  position: relative;
+  isolation: isolate;
+  min-height: 350px;
+  margin: 12px 0 16px;
+  overflow: hidden;
+  border: 1px solid #343151;
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse at center, #3b275c 0%, transparent 63%),
+    repeating-linear-gradient(0deg, #9b80de12 0 1px, transparent 1px 29px),
+    repeating-linear-gradient(90deg, #9b80de12 0 1px, transparent 1px 29px),
+    #0c1427;
+}
+.gl-activity .gl-activity-orbit::before {
+  content: '';
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: calc(var(--gl-orbit-radius) * 2);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border: 1px solid #a780e84f;
+  border-radius: 50%;
+  box-shadow: 0 0 0 25px #a780e817, 0 0 0 54px #a780e80f, inset 0 0 38px #b584f522;
+  pointer-events: none;
+  animation: gl-orbit-breathe 5s ease-in-out infinite alternate;
+}
+.gl-activity .gl-activity-orbit::after {
+  content: '';
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: calc(var(--gl-orbit-radius) * 2 + 48px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px dashed #bda4ef55;
+  animation: gl-orbit-spin 32s linear infinite;
+  pointer-events: none;
+}
+.gl-activity .gl-activity-wires { position: absolute; inset: 0; pointer-events: none; }
+.gl-activity .gl-activity-wire {
+  position: absolute;
+  height: 1px;
+  transform-origin: left center;
+  background: linear-gradient(90deg, var(--wire-color, #8770bc), #a486e24a);
+}
+.gl-activity .gl-activity-wire.is-recent { height: 2px; }
+.gl-activity .gl-activity-wire.is-recent::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  position: absolute;
+  left: 0;
+  top: -4px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px 3px var(--wire-color, #b586ff), 0 0 22px 5px var(--wire-color, #b586ff);
+  animation: gl-orbit-message 1.2s cubic-bezier(.24,.63,.41,1) 2;
+}
+.gl-activity .gl-activity-hub,
+.gl-activity .gl-orbit-node {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  color: #f5f1ff;
+  text-align: center;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.gl-activity .gl-activity-hub {
+  top: 50%;
+  left: 50%;
+  width: 114px;
+  aspect-ratio: 1;
+  border: 1px solid #bf9bff;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 25%, #54327c, #221934 66%);
+  box-shadow: 0 0 24px #b586ff55, inset 0 0 15px #b586ff35;
+  font-size: 13px;
+}
+.gl-activity .gl-activity-hub .gl-activity-hub-mark { color: #e3d2ff; font-size: 27px; }
+.gl-activity .gl-activity-hub.is-recent { animation: gl-hub-receive .75s 1.15s 2 alternate; }
+.gl-activity .gl-orbit-node {
+  --node-color: #83b4ff;
+  top: var(--node-y);
+  left: var(--node-x);
+  width: 86px;
+  min-height: 64px;
+  padding: 7px 4px;
+  border: 1px solid #54496c;
+  border-radius: 14px;
+  background: #131c30;
+  font-size: 12px;
+}
+.gl-activity .gl-orbit-node[data-active="true"] {
+  border-color: var(--node-color);
+  animation: gl-node-breathe 3s ease-in-out infinite alternate;
+}
+.gl-activity .gl-orbit-node:nth-of-type(even) { animation-delay: -1.4s; }
+.gl-activity .is-recent .gl-activity-metric b { display: inline-block; animation: gl-activity-count .55s ease-out; }
+.gl-activity .gl-orbit-node[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--node-color), 0 0 20px #b586ff40; }
+.gl-activity .gl-orbit-node:focus-visible,
+.gl-activity .gl-activity-hub:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+.gl-activity .gl-orbit-mark { color: var(--node-color); font-size: 19px; line-height: 1; }
+.gl-activity .gl-orbit-latin { font-weight: bold; }
+.gl-activity .gl-orbit-instagram { --node-x: 50%; --node-y: 14%; --node-color: #fc91cc; }
+.gl-activity .gl-orbit-whatsapp { --node-x: 81%; --node-y: 34%; --node-color: #78e8b2; }
+.gl-activity .gl-orbit-telegram { --node-x: 77%; --node-y: 79%; --node-color: #82c6ff; }
+.gl-activity .gl-orbit-bale { --node-x: 23%; --node-y: 79%; --node-color: #ffc882; }
+.gl-activity .gl-orbit-linkedin { --node-x: 19%; --node-y: 34%; --node-color: #a0abff; }
+.gl-activity .gl-activity-sync {
+  border: 1px solid #40536a;
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: #121f31;
+}
+@keyframes gl-orbit-spin { from { transform: translate(-50%, -50%); } to { transform: translate(-50%, -50%) rotate(1turn); } }
+@keyframes gl-orbit-breathe { to { opacity: .58; } }
+@keyframes gl-node-breathe { to { filter: brightness(1.24); } }
+@keyframes gl-activity-count { from { transform: translateY(6px); opacity: .45; } }
+@keyframes gl-orbit-message { to { left: 100%; } }
+@keyframes gl-hub-receive { to { box-shadow: 0 0 45px #ce9effbf, inset 0 0 18px #d8afff30; } }
+@media (max-width: 500px) {
+  .gl-activity .gl-activity-orbit { min-height: 300px; }
+  .gl-activity .gl-activity-hub { width: 87px; font-size: 11px; }
+  .gl-activity .gl-orbit-node { width: 68px; min-height: 54px; font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gl-activity .gl-activity-wire.is-recent::before,
+  .gl-activity .gl-activity-orbit::before,
+  .gl-activity .gl-activity-orbit::after,
+  .gl-activity .gl-orbit-node[data-active="true"],
+  .gl-activity .is-recent .gl-activity-metric b,
+  .gl-activity .gl-activity-hub.is-recent { animation: none; }
 }

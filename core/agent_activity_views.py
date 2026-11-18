@@ -8,7 +8,11 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
-from .models import InstagramIntegrationSettings, InstagramWebhookEvent, WhatsAppMessage, WhatsAppNumber
+from .channel_webhook_views import bot_connection
+from .models import (
+    ChannelMessageReceipt, InstagramIntegrationSettings, InstagramWebhookEvent,
+    WhatsAppMessage, WhatsAppNumber,
+)
 from .views import credential_admin_required
 
 
@@ -90,20 +94,49 @@ def _whatsapp_activity(now):
     return channels, events
 
 
+def _bot_activity(provider, name, now):
+    account = bot_connection(provider)
+    channel = {
+        'id': provider, 'name': name, 'account': '', 'state': 'در انتظار تنظیم ربات', 'tone': 'pending',
+    }
+    if not account:
+        return channel, []
+
+    receipts = ChannelMessageReceipt.objects.filter(provider=provider, bot_id=account.bot_id)
+    start = timezone.localtime(now).replace(hour=0, minute=0, second=0, microsecond=0)
+    recent = list(receipts.filter(received_at__gte=start).values('id', 'received_at')[:20])
+    confirmed = bool(recent) or receipts.exists()
+    channel.update(
+        state='دریافت تأیید شده' if confirmed else 'در انتظار اولین پیام',
+        tone='connected' if confirmed else 'pending',
+        metric='پیام ورودی امروز', count=receipts.filter(received_at__gte=start).count(),
+    )
+    return channel, [{
+        'id': f'{provider}-{event["id"]}', 'channel': provider, 'name': name,
+        'label': 'پیام ربات دریافت شد', 'time': event['received_at'],
+    } for event in recent]
+
+
 def _snapshot():
     now = timezone.now()
     instagram, instagram_events = _instagram_activity(now)
     whatsapp, whatsapp_events = _whatsapp_activity(now)
-    events = sorted(instagram_events + whatsapp_events, key=lambda event: event['time'], reverse=True)[:20]
+    telegram, telegram_events = _bot_activity('telegram', 'تلگرام', now)
+    bale, bale_events = _bot_activity('bale', 'بله', now)
+    linkedin = {
+        'id': 'linkedin', 'name': 'لینکدین', 'account': '',
+        'state': 'در انتظار اتصال', 'tone': 'pending',
+    }
+    channels = [instagram, *whatsapp, telegram, bale, linkedin]
+    events = sorted(
+        instagram_events + whatsapp_events + telegram_events + bale_events,
+        key=lambda event: event['time'], reverse=True,
+    )[:20]
     for event in events:
         event['time'] = timezone.localtime(event['time']).isoformat()
-    pending = [
-        {'id': key, 'name': name, 'account': '', 'state': 'در این صفحه متصل نیست', 'tone': 'pending'}
-        for key, name in [('telegram', 'تلگرام'), ('bale', 'بله'), ('linkedin', 'لینکدین')]
-    ]
+
     return {
-        'channels': [instagram, *whatsapp, *pending],
-        'events': events,
+        'channels': channels, 'events': events,
         'updated_at': timezone.localtime(now).isoformat(),
     }
 

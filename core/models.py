@@ -2302,3 +2302,24 @@ from .intake_models import CustomerIntake, CustomerIntakePhoto, CustomerRequestE
 
 from .me_members_models import MeMemberCare, MeMemberAction
 from .call_plaque_models import LeadCallProfile, LeadCallSession
+
+
+class ChannelMessageReceipt(models.Model):
+    """Inbound message metadata used by the management activity map."""
+
+    PROVIDERS = [('telegram', 'تلگرام'), ('bale', 'بله')]
+    provider = models.CharField(max_length=12, choices=PROVIDERS)
+    bot_id = models.PositiveBigIntegerField()
+    update_id = models.PositiveBigIntegerField()
+    received_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-received_at', '-id']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['provider', 'bot_id', 'update_id'], name='channel_receipt_update_unique',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['provider', 'bot_id', '-received_at'], name='channel_receipt_recent_idx'),
+        ]
