@@ -31,6 +31,15 @@ class PaymentRequest(models.Model):
     STATES = [('pending','در انتظار تأیید'),('approved','در صف پرداخت'),('rejected','رد شده'),('needs_info','نیازمند توضیح بیشتر'),('paid','پرداخت شده')]
     CHANNELS = [('consultant','مشاور'),('accountant','حسابدار'),('staff','کارمند منتخب')]
     PRIORITIES = [('urgent','فوری'),('today','امروز'),('normal','عادی'),('low','کم‌اولویت')]
+    PAYMENT_METHODS = [
+        ('smartpay', 'SmartPay'), ('bank_transfer', 'حواله بانکی'),
+        ('card_to_card', 'کارت‌به‌کارت'), ('pos', 'کارت‌خوان'),
+        ('cash', 'نقدی'), ('other', 'سایر'),
+    ]
+    FUNDING_SOURCES = [
+        ('personal', 'حساب شخصی مدیر'), ('company', 'حساب شرکت'),
+        ('other', 'سایر حساب‌ها'),
+    ]
     kind = models.CharField(max_length=16,choices=TYPES)
     amount_toman = models.PositiveBigIntegerField(validators=[MinValueValidator(1)])
     description = models.TextField()
@@ -51,6 +60,9 @@ class PaymentRequest(models.Model):
     approved_by = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT,null=True,blank=True,related_name='approved_payments')
     clarification_assignee = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT,null=True,blank=True,related_name='payment_clarifications')
     approved_at = models.DateTimeField(null=True,blank=True)
+    # Filled at execution, not when the payment order is created.
+    payment_method = models.CharField(max_length=24, choices=PAYMENT_METHODS, blank=True)
+    funding_source = models.CharField(max_length=16, choices=FUNDING_SOURCES, blank=True)
     payment_reference = models.CharField(max_length=120,blank=True)
     payment_receipt = models.FileField(upload_to='payment_receipts/%Y/%m/',blank=True)
     personal_expense_receipt=models.FileField(upload_to='personal_expenses/%Y/%m/',blank=True)
