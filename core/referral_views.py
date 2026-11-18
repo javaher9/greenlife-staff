@@ -1646,6 +1646,16 @@ def call_center_group_create(request):
         })
     if request.method!='POST':
         return redirect('call_center_group_create')
+    guidance = request.POST.get('guidance', '').strip()
+    if len(guidance) > 2000:
+        messages.error(request, 'راهنما باید حداکثر ۲۰۰۰ نویسه باشد.')
+        return redirect('call_center_group_create')
+    if request.POST.get('action') == 'edit_guidance':
+        group = get_object_or_404(CallCenterLeadGroup, pk=request.POST.get('group_id'))
+        group.guidance = guidance
+        group.save(update_fields=['guidance'])
+        messages.success(request, 'راهنمای گروه ذخیره شد.')
+        return redirect('call_center_group_create')
     name=' '.join((request.POST.get('name') or '').strip().split())
     if not name:
         messages.error(request,'نام گروه را وارد کنید.')
@@ -1666,7 +1676,7 @@ def call_center_group_create(request):
         created=group is None
         if created:
             group=CallCenterLeadGroup.objects.create(
-                name=preferred_group_name(name),owner=None,is_default=False,
+                name=preferred_group_name(name),owner=None,is_default=False,guidance=guidance,
             )
         elif group.owner_id is not None:
             group.owner=None
