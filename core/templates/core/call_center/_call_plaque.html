@@ -1,5 +1,5 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'core/call-plaque.css' %}?v=20261118-2">
+<link rel="stylesheet" href="{% static 'core/call-plaque.css' %}?v=20261118-assess1">
 <dialog id="glCallPlaque" aria-labelledby="cpTitle" aria-describedby="cpSubtitle" data-operator="{{ user.get_full_name|default:user.username }}">
   <div class="cp-shell">
     <header class="cp-header">
@@ -33,7 +33,7 @@
             <div class="cp-guide-actions"><button type="button" data-cp-back>→ مرحله قبل</button><button type="button" data-cp-restart>از شروع مکالمه</button><button type="button" class="cp-primary" data-cp-go-after>ثبت نتیجه تماس</button></div>
             <article class="cp-card cp-quick"><h3>پاسخ‌های سریع</h3><div data-cp-quick></div></article>
           </div>
-          <div class="cp-record-column"><article class="cp-card"><h3>ثبت پاسخ‌ها در همین مکالمه</h3><p class="cp-muted">جواب واقعی مخاطب را ثبت کنید. پاسخ‌ندادن یا نپرسیدن، امتیاز منفی نیست.</p><div data-cp-questions></div><details class="cp-question" data-cp-communication><summary>سبک ارتباط در این تماس · برداشت قابل اصلاح</summary><p class="cp-muted">این برداشت، نتیجه آزمون شخصیت نیست؛ پاسخ یا شاهد را بنویسید. در تماس بعدی دوباره بررسی شود.</p><label>ترجیح دریافت توضیح<select data-cp-field="communication_style"><option value="unknown">هنوز مشخص نیست</option><option value="direct">مستقیم و کوتاه</option><option value="details">جزئیات و شواهد</option><option value="social">گفت‌وگو و مثال</option><option value="support">آرام و قدم‌به‌قدم</option><option value="mixed">ترکیبی</option></select></label><label>شاهد این برداشت<input type="text" maxlength="400" data-cp-field="communication_evidence" placeholder="مثلاً خودش خواست روش کار را مرحله‌به‌مرحله بداند"></label><div class="cp-hint" data-cp-style-advice></div></details></article></div>
+          <div class="cp-record-column"><article class="cp-card"><h3>ثبت پاسخ‌ها در همین مکالمه</h3><p class="cp-muted">جواب واقعی مخاطب را ثبت کنید. پاسخ‌ندادن یا نپرسیدن، امتیاز منفی نیست.</p><div data-cp-questions></div><div data-cp-assessment-during></div></article></div>
         </div>
       </section>
       <section id="cpAfter" role="tabpanel" aria-labelledby="cpAfterTab" hidden>
@@ -49,8 +49,24 @@
                 <label>ساعت (۲۴ ساعته)<select data-cp-hour></select></label><label>دقیقه<select data-cp-minute></select></label>
               </div><input type="hidden" data-cp-followup><span class="cp-muted" data-cp-followup-preview></span>
             </fieldset>
+            <div class="cp-wide" data-cp-assessment-after>
+              <div class="cp-assessment" data-cp-assessment>
+                <section aria-labelledby="cpStyleTitle">
+                  <h4 id="cpStyleTitle">سبک شخصیتی در گفت‌وگو</h4>
+                  <label>مخاطب چه نوع توضیحی را ترجیح داد؟<select data-cp-field="communication_style"></select></label>
+                  <p class="cp-muted" data-cp-style-advice></p>
+                  <label>نشانه‌ای از همین مکالمه<input type="text" maxlength="400" data-cp-field="communication_evidence" placeholder="مثلاً گفت «اول نتیجه را کوتاه بگویید»"></label>
+                </section>
+                <section aria-labelledby="cpRatingsTitle">
+                  <h4 id="cpRatingsTitle">اشتیاق و توان پرداخت</h4>
+                  <div data-cp-stars></div>
+                </section>
+              </div>
+            </div>
+            <details class="cp-wide cp-question" data-cp-legacy-rating hidden><summary>برداشت کلی ذخیره‌شده در پیش‌نویس</summary>
             <label>برداشت کارشناس از آمادگی<select data-cp-field="operator_rating"><option value="">هنوز ارزیابی نکرده‌ام</option><option value="1">۱ از ۵ · پایین</option><option value="2">۲ از ۵</option><option value="3">۳ از ۵ · متوسط</option><option value="4">۴ از ۵</option><option value="5">۵ از ۵ · بالا</option></select></label>
             <label>دلیل کوتاه ارزیابی<input type="text" maxlength="400" data-cp-field="operator_reason" placeholder="براساس کدام پاسخ یا اقدام؟"></label>
+            </details>
             <label class="cp-wide">یادداشت تماس<textarea rows="3" maxlength="2000" data-cp-field="notes" placeholder="موضوع مهم، توافق و نکته لازم برای تماس بعدی"></textarea></label>
             <label class="cp-wide cp-checkbox"><input type="checkbox" data-cp-field="do_not_contact">مخاطب صریحاً درخواست کرده دوباره تماس نگیریم</label>
           </div><div class="cp-hint">اجازه واتساپ و اجازه تماس بعدی جدا هستند. نوبت یا فروش فقط در مسیر واقعی نوبت‌دهی و فروش ثبت می‌شود. ثبت این پلاک هیچ پیام یا تماسی ارسال نمی‌کند.</div></article>
@@ -72,4 +88,4 @@
 })();
 </script>
 <script src="{% static 'core/call-plaque-calendar.js' %}?v=1"></script>
-<script src="{% static 'core/call-plaque.js' %}?v=20261118-2"></script>
+<script src="{% static 'core/call-plaque.js' %}?v=20261118-assess1"></script>

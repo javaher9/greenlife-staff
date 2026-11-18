@@ -33,7 +33,7 @@ class CallPlaqueIntegrationTests(TestCase):
             self.assertContains(response, 'اطلاعات ناکافی')
             self.assertContains(response, 'data-cp-operator-only')
             self.assertContains(response, 'data-cp-prior-title')
-            self.assertContains(response, 'call-plaque.js?v=20261118-2')
+            self.assertContains(response, 'call-plaque.js?v=20261118-assess1')
 
     def test_scheduled_followup_opens_same_plaque(self):
         ReferralLead.objects.filter(pk=self.lead.pk).update(next_follow_up=timezone.localdate() + timedelta(days=2), contact_result='follow_up')

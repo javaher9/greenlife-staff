@@ -1,6 +1,7 @@
 from datetime import timedelta
 from importlib.util import find_spec
 import os
+from pathlib import Path
 from unittest import skipUnless
 
 from django.conf import settings
@@ -41,6 +42,21 @@ class UnifiedCallBrowserTests(StaticLiveServerTestCase):
                 dialog.get_by_text('یادداشت پیگیری قدیمی', exact=True).wait_for()
                 if user==worker:
                     dialog.locator('#cpAfterTab').click()
+                    dialog.locator('[data-cp-field=communication_style]').select_option('details')
+                    dialog.locator('[data-cp-field=communication_evidence]').fill('درباره جزئیات روش پرسید')
+                    for key, stars in [('interest', '4'), ('budget_fit', '2')]:
+                        dialog.locator(f'input[name="cp-rating-{key}"][value="{stars}"]').check()
+                    dialog.locator('#cpDuringTab').click()
+                    self.assertTrue(dialog.locator('input[name="cp-rating-interest"][value="4"]').is_checked())
+                    dialog.locator('#cpAfterTab').click()
+                    for width in (1280, 768, 390):
+                        page.set_viewport_size({'width': width, 'height': 800})
+                        area = dialog.locator('[data-cp-assessment]')
+                        directory = Path('test-artifacts')
+                        directory.mkdir(exist_ok=True)
+                        area.screenshot(path=directory / f'all-leads-call-assessment-{width}.png')
+                        self.assertTrue(area.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1'))
+                    page.set_viewport_size({'width': 1280, 'height': 800})
                     dialog.locator('[data-cp-field=followup_consent]').select_option('yes')
                     dialog.locator('[data-cp-interval]').select_option('days:2')
                     dialog.locator('[data-cp-field=notes]').fill('پیگیری بعد از سفر')
@@ -48,6 +64,9 @@ class UnifiedCallBrowserTests(StaticLiveServerTestCase):
                     dialog.locator('.cp-history-item').wait_for()
                 else:
                     dialog.locator('.cp-manager-note').filter(has_text='پیگیری بعد از سفر').wait_for()
+                    summary = dialog.locator('#cpBefore')
+                    for value in ('۴ از ۵', '۲ از ۵', 'جزئیات‌محور (C)'):
+                        self.assertIn(value, summary.inner_text())
                     self.assertTrue(dialog.locator('#cpBeforeTab').is_visible())
                     self.assertFalse(dialog.locator('[data-cp-finalize]').first.is_visible())
                 page.close()
