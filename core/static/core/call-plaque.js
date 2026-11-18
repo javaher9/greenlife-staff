@@ -15,8 +15,8 @@
     {key:'goal',title:'هدف یا موضوع مورد علاقه',kind:'text',hint:'مخاطب دوست دارد درباره چه موضوع یا خدمتی بداند؟ نیاز درمانی را فرض نکن.'},
     {key:'timing',title:'زمان احتمالی تصمیم',kind:'select',options:{exploring:'فعلاً فقط آشنایی',later:'بعدتر',soon:'در آینده نزدیک',now:'آماده بررسی قدم بعدی'}},
     {key:'barrier',title:'موضوعی که مانع ادامه است',kind:'select',options:{none:'مانع مشخصی بیان نکرد',cost:'هزینه',time:'زمان',distance:'فاصله و رفت‌وآمد',uncertainty:'ابهام درباره خدمات یا نتیجه',consult:'نیاز به مشورت',other:'موضوع دیگر'}},
-    {key:'interest',title:'اشتیاق برای ادامه',kind:'stars',hint:'از مخاطب بپرسید «دوست دارید قدم بعدی چه باشد؟»'},
-    {key:'budget_fit',title:'تناسب هزینه با بودجه',kind:'stars',hint:'بعد از اعلام هزینه بپرسید «این مبلغ با بودجه‌ای که در نظر داشتید چقدر هماهنگ است؟»'},
+    {key:'interest',title:'اشتیاق و علاقه',kind:'stars',hint:'چقدر دوست دارید وزن کم کنید؟ تصمیمتان برای شروع چقدر جدی است؟'},
+    {key:'budget_fit',title:'توان پرداخت',kind:'stars',hint:'چه بازهٔ هزینه‌ای برایتان مناسب است؟'},
     {key:'height_cm',title:'قد · سانتی‌متر',kind:'number',hint:'اختیاری و فقط با اجازه و در صورت ارتباط با خدمت؛ اظهار خود مخاطب، بدون اثر بر امتیاز فروش.'},
     {key:'weight_kg',title:'وزن · کیلوگرم',kind:'number',hint:'اختیاری و فقط با اجازه و در صورت ارتباط با خدمت؛ اظهار خود مخاطب، بدون اثر بر امتیاز فروش.'}
   ];
@@ -134,7 +134,9 @@
     if(!payload.editable)return;
     for(const q of QUESTIONS.filter(question=>question.kind==='stars')){
       const group=element('fieldset',null,{class:'cp-rating-group','data-cp-scale':q.key});
-      group.append(element('legend',q.title),element('p',q.hint,{class:'cp-muted'}));
+      const help=element('details',null,{class:'cp-scale-help'});
+      help.append(element('summary','؟',{'aria-label':'سؤال پیشنهادی برای '+q.title}),element('small',q.hint));
+      group.append(element('legend',q.title),help);
       const choices=element('div',null,{class:'cp-star-choices'});
       const note=element('small',null,{'aria-live':'polite',class:'cp-rating-note'});
       const inputs=[];
