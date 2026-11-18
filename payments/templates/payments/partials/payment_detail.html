@@ -1,4 +1,4 @@
-{% load jalali_tags money_display %}
+{% load jalali_tags money_display payment_display %}
 <div class="payment-detail state-{{ payment.state }}">
   <header class="detail-heading">
     <div><div class="row-meta">درخواست #{{ payment.pk }} · {{ payment.get_kind_display }}</div><h2>{{ payment.description|truncatechars:120 }}</h2><span class="status">{{ payment.history_state_label }}</span></div>
@@ -22,8 +22,8 @@
       <div><dt>موضوع هزینه</dt><dd>{{ payment.get_category_display }}</dd></div>
       <div><dt>متعلق به</dt><dd>{{ payment.get_cost_owner_display }}</dd></div>
       {% if payment.cost_center %}<div><dt>مرکز هزینه / پروژه</dt><dd>{{ payment.cost_center }}</dd></div>{% endif %}
-      {% if payment.beneficiary %}<div><dt>ذی‌نفع</dt><dd>{{ payment.beneficiary.get_full_name|default:payment.beneficiary.username }}</dd></div>{% endif %}
-      {% if payment.approved_by %}<div><dt>تأییدکننده</dt><dd>{{ payment.approved_by.get_full_name|default:payment.approved_by.username }}</dd></div>{% endif %}
+      {% if payment.beneficiary %}<div><dt>ذی‌نفع</dt><dd>{{ payment.beneficiary|payment_person }}</dd></div>{% endif %}
+      {% if payment.approved_by %}<div><dt>تأییدکننده</dt><dd>{{ payment.approved_by|payment_person }}</dd></div>{% endif %}
       {% if payment.approved_at %}<div><dt>زمان تأیید</dt><dd>{{ payment.approved_at|jdatetime_en }}</dd></div>{% endif %}
     </dl>
   </section>
@@ -65,7 +65,7 @@
   </section>
 
   {% if clarification_messages %}
-    <section class="detail-block"><h3>توضیحات و پاسخ‌ها</h3>{% for note in clarification_messages %}<div class="clarification-note"><div class="timeline-head"><strong>{{ note.author.get_full_name|default:note.author.username }}</strong><time>{{ note.created_at|jdatetime_en }}</time></div><p>{{ note.message }}</p></div>{% endfor %}</section>
+    <section class="detail-block"><h3>توضیحات و پاسخ‌ها</h3>{% for note in clarification_messages %}<div class="clarification-note"><div class="timeline-head"><strong>{{ note.author|payment_person }}</strong><time>{{ note.created_at|jdatetime_en }}</time></div><p>{{ note.message }}</p></div>{% endfor %}</section>
   {% endif %}
 
   {% if can_edit %}

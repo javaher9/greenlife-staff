@@ -3,6 +3,7 @@
 from pathlib import PurePosixPath
 from urllib.parse import urlencode
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.db.models import Count, Exists, OuterRef, Q
@@ -43,7 +44,14 @@ def presentation_queryset(queryset):
 
 
 def display_name(user):
-    return (user.get_full_name().strip() or user.username) if user else 'تعیین نشده'
+    if not user:
+        return 'تعیین نشده'
+    full_name = user.get_full_name().strip()
+    if full_name:
+        return full_name
+    if user.username.lower() in settings.EXECUTIVE_USERNAMES:
+        return 'دکتر جواهریان'
+    return user.username
 
 
 def receipt_kind(receipt):

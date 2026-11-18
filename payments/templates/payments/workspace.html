@@ -1,4 +1,4 @@
-{% load static tz jalali_tags money_display %}
+{% load static tz jalali_tags money_display payment_display %}
 <!doctype html>
 <html lang="fa" dir="rtl">
 <head>
@@ -35,7 +35,7 @@
     <h2>درخواست‌های نیازمند توضیح شما</h2>
     {% for p in clarifications %}<div class="clarification-item">
       <strong class="request-title">{{ p.description }}</strong><span class="small muted">{{ p.amount_toman|million_toman }} میلیون تومان</span>
-      {% for note in p.clarifications.all %}<p class="small">{{ note.author.get_full_name|default:note.author.username }}: {{ note.message }}</p>{% endfor %}
+      {% for note in p.clarifications.all %}<p class="small">{{ note.author|payment_person }}: {{ note.message }}</p>{% endfor %}
       <form method="post" action="{% url 'payments_clarification_answer' p.pk %}">{% csrf_token %}<label for="answer-{{ p.pk }}">توضیح برای مدیریت</label><textarea id="answer-{{ p.pk }}" name="answer" minlength="5" required></textarea><button class="btn compact" type="submit">ارسال توضیحات</button></form>
     </div>{% endfor %}
   </section>
@@ -45,7 +45,7 @@
     {% if queue %}<div class="queue-grid">{% for p in queue %}
       <article class="payment-task">
         <div class="payment-task-head">
-          <div class="payment-task-title"><a href="{% url 'payments_detail' p.pk %}" data-payment-detail>{{ p.description }}</a><div class="muted">درخواست‌دهنده: {{ p.requester.get_full_name|default:p.requester.username }}{% if p.requester_id == request.user.id %} · شما{% endif %}</div>{% if p.priority != 'normal' %}<span class="priority">اولویت: {{ p.get_priority_display }}</span>{% endif %}</div>
+          <div class="payment-task-title"><a href="{% url 'payments_detail' p.pk %}" data-payment-detail>{{ p.description }}</a><div class="muted">درخواست‌دهنده: {{ p.requester|payment_person }}{% if p.requester_id == request.user.id %} · شما{% endif %}</div>{% if p.priority != 'normal' %}<span class="priority">اولویت: {{ p.get_priority_display }}</span>{% endif %}</div>
           <div class="payment-amount">{{ p.amount_toman|million_toman }}<small>میلیون تومان</small></div>
         </div>
         <details class="form-disclosure">
@@ -77,7 +77,7 @@
       <div class="field search-field"><label for="historySearch">جست‌وجو در سوابق</label><input id="historySearch" name="q" type="search" maxlength="120" placeholder="شرح، نام، شناسه یا شماره پیگیری…" value="{{ history_filters.q }}"></div>
       <div class="field"><label for="historyStatus">وضعیت</label><select id="historyStatus" name="status"><option value="">همه وضعیت‌ها</option>{% for value,label in history_statuses %}<option value="{{ value }}" {% if history_filters.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
       <div class="field"><label for="historyScope">نمایش درخواست‌ها</label><select id="historyScope" name="scope"><option value="all" {% if history_filters.scope == 'all' %}selected{% endif %}>{% if is_executive %}همه درخواست‌ها{% else %}همه سوابق من{% endif %}</option><option value="mine" {% if history_filters.scope == 'mine' %}selected{% endif %}>درخواست‌های من</option><option value="assigned" {% if history_filters.scope == 'assigned' %}selected{% endif %}>ارجاع‌شده به من</option></select></div>
-      {% if is_executive %}<div class="field"><label for="historyRequester">درخواست‌دهنده</label><select id="historyRequester" name="requester"><option value="">همه درخواست‌دهندگان</option>{% for person in history_requesters %}<option value="{{ person.pk }}" {% if history_filters.requester == person.pk|stringformat:'s' %}selected{% endif %}>{{ person.get_full_name|default:person.username }}{% if person.pk == request.user.pk %} · شما{% endif %}</option>{% endfor %}</select></div>{% endif %}
+      {% if is_executive %}<div class="field"><label for="historyRequester">درخواست‌دهنده</label><select id="historyRequester" name="requester"><option value="">همه درخواست‌دهندگان</option>{% for person in history_requesters %}<option value="{{ person.pk }}" {% if history_filters.requester == person.pk|stringformat:'s' %}selected{% endif %}>{{ person|payment_person }}{% if person.pk == request.user.pk %} · شما{% endif %}</option>{% endfor %}</select></div>{% endif %}
       <div class="history-filter-actions"><button class="btn compact" type="submit">نمایش</button><a href="{% url 'payments_workspace' %}#paymentHistory" class="btn quiet compact" aria-label="پاک کردن فیلترها">پاک کردن</a></div>
     </form>
     <div class="filter-secondary">
