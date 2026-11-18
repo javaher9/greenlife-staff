@@ -11,6 +11,7 @@
     <p class="gl-activity-sync" data-sync role="status">آخرین ثبت سرور</p>
   </header>
 
+  {% include 'core/agent_flow.html' %}
   <div class="gl-activity-grid">
     <section class="gl-activity-map" aria-labelledby="gl-activity-map-title">
       <div class="gl-activity-map-head">
@@ -64,5 +65,6 @@
   </div>
   {{ activity|json_script:"gl-activity-initial" }}
 </section>
+<script src="{% static 'core/agent-flow.js' %}" defer></script>
 <script src="{% static 'core/agent-activity.js' %}" defer></script>
 {% endblock %}

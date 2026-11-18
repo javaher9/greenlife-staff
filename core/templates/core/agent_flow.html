@@ -1,0 +1,20 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'core/agent-flow.css' %}">
+<section id="gl-flow" dir="rtl" aria-labelledby="gl-flow-title">
+  <header class="flow-heading">
+    <div><h2 id="gl-flow-title">اطلس جریان گرین‌لایف</h2><p>از عضویت و درخواست ویزیت تا ورود لید و ارجاع</p></div>
+    <div class="flow-controls"><span data-flow-mode>امروز · تهران</span><button type="button" data-flow-pause aria-pressed="false">توقف حرکت</button></div>
+  </header>
+  <nav class="flow-views" aria-label="انتخاب نمای اطلس">
+    <button data-atlas-view="overview" type="button" aria-pressed="true">نمای کلی</button>
+    <button data-atlas-view="members" type="button" aria-pressed="false">داخل گرین‌لایف ME</button>
+    <button data-atlas-view="leads" type="button" aria-pressed="false">لیدهای فشرده</button>
+  </nav>
+  <div data-flow-map></div>
+  <footer class="flow-detail" aria-live="polite">
+    <div><strong data-flow-title>لیدهای فشرده</strong><p data-flow-description></p></div>
+    <span data-flow-count></span>
+  </footer>
+  <div class="flow-breakdown" data-flow-breakdown></div>
+  <div class="flow-links"><a href="{% url 'me_members' %}">اعضای گرین‌لایف ME</a><a href="{% url 'lead_management_dashboard' %}">میز مدیریت لیدها</a></div>
+</section>

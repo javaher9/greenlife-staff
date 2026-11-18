@@ -1,0 +1,21 @@
+#gl-flow {box-sizing:border-box;background:#0b1424;border:1px solid #34415b;border-radius:19px;color:#eff5ff;overflow:hidden;margin:0 0 16px;font-family:inherit}
+#gl-flow .flow-heading,#gl-flow .flow-detail,#gl-flow .flow-links {padding:14px clamp(12px,2.2vw,25px);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px}
+#gl-flow .flow-heading h2 {color:#f2f6ff;margin:0;font-size:clamp(18px,2.5vw,25px)}
+#gl-flow p {margin:3px 0 0;color:#bdcbe0;font-size:13px}
+#gl-flow .flow-controls,#gl-flow .flow-links {display:flex;gap:10px;align-items:center}
+#gl-flow .flow-controls span {color:#a9dfd6;font-size:12px}
+#gl-flow button,#gl-flow .flow-links a {font:inherit;font-size:13px;border-radius:9px;background:#18253c;border:1px solid #405674;color:#e9eeff;padding:7px 11px;cursor:pointer;text-decoration:none}
+#gl-flow [data-flow-map] {direction:ltr;width:100%;background:#0a1120}
+#gl-flow svg {width:100%;height:auto;display:block}
+#gl-flow svg [role=button] {cursor:pointer}
+#gl-flow svg [role=button]:focus-visible .flow-plate {stroke:white;stroke-width:3px}
+#gl-flow .flow-detail {background:#141f32;border-top:1px solid #32405a;min-height:64px}
+#gl-flow [data-flow-count] {color:#8debd2;font-variant-numeric:tabular-nums}
+#gl-flow .flow-links {justify-content:flex-start;padding-block:9px}
+@media(prefers-reduced-motion:reduce){#gl-flow * {scroll-behavior:auto}}
+
+#gl-flow .flow-breakdown {display:flex;flex-wrap:wrap;gap:6px 16px;padding:7px 20px;background:#141f32;color:#c7d5e9;font-size:12px}
+#gl-flow .flow-breakdown:empty {display:none}
+
+#gl-flow .flow-views {display:flex;flex-wrap:wrap;gap:6px;padding:0 clamp(12px,2.2vw,25px) 13px}
+#gl-flow .flow-views [aria-pressed="true"] {background:#342c50;border-color:#a38ac5}

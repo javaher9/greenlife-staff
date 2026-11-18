@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
+from .agent_flow import daily_flow
 from .channel_webhook_views import bot_connection
 from .models import (
     ChannelMessageReceipt, InstagramIntegrationSettings, InstagramWebhookEvent,
@@ -137,6 +138,7 @@ def _snapshot():
 
     return {
         'channels': channels, 'events': events,
+        'flow': daily_flow(timezone.localtime(now)),
         'updated_at': timezone.localtime(now).isoformat(),
     }
 

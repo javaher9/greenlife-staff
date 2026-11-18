@@ -1,0 +1,222 @@
+(() => {
+  'use strict';
+  const format = new Intl.NumberFormat('fa-IR');
+  // Each station declares its own label, definition and desktop/mobile anchors.
+  // The two systems share a dashboard, but an account is never implicitly a lead.
+  const stations = {
+    me: ['گرین‌لایف ME', 'مسیر حساب مشترک، همگام‌سازی در اپ و درخواست ویزیت.', [722,116], [332,124]],
+    account: ['ثبت‌نام با شماره', 'حساب‌های مشترک جدید امروز با ورود تأییدشده. شمارهٔ شخص روی نقشه نمایش داده نمی‌شود.', [500,55], [185,66]],
+    sync: ['همگام‌سازی اپ', 'تعداد ذخیره‌های موفق حساب در اپ ME امروز. یک عضو می‌تواند چند بار ذخیره کند.', [500,175], [184,190]],
+    request: ['درخواست ویزیت', 'درخواست‌های ویزیت ثبت‌شدهٔ امروز در مسیر مشترک اعضا و ME.', [354,116], [188,129]],
+    booked: ['نوبت تأییدشده', 'از درخواست‌های ویزیت امروز، چند درخواست اکنون نوبت تأییدشده و متصل دارند.', [137,116], [59,129]],
+    website: ['وب‌سایت', 'لیدهای امروز در گروه وب‌سایت.', [783,261], [329,289]],
+    instagram: ['اینستاگرام', 'لیدهای امروز در گروه اینستاگرام. دریافت دایرکت به‌تنهایی شمارندهٔ لید را بالا نمی‌برد.', [783,320], [329,354]],
+    school: ['مدارس', 'لیدهای امروز با ثبت‌نام مدرسهٔ مرتبط. هر پرونده فقط در یک شاخه شمرده می‌شود.', [783,379], [329,419]],
+    other: ['سایر منابع', 'سایر پرونده‌های لید امروز، از جمله گروه‌های معرفی و کمپ.', [783,438], [329,484]],
+    crm: ['لیدهای فشرده', 'کل پرونده‌های لید ثبت‌شدهٔ امروز از چهار مسیر ورودی.', [488,350], [185,383]],
+    assigned: ['دارای مسئول', 'از لیدهای ثبت‌شدهٔ امروز، چند پرونده هم‌اکنون مسئول پیگیری دارد.', [179,350], [57,383]],
+  };
+  const routes = [
+    ['me','account','account'], ['me','sync','sync'], ['me','request','request'], ['request','booked','booked'],
+    ['website','crm','website'], ['instagram','crm','instagram'], ['school','crm','school'], ['other','crm','other'],
+    ['crm','assigned','assigned'],
+  ];
+  const aquamarine = '#6eeac7', lilac = '#bc9aff';
+  const isMe = key => ['me','account','sync','request','booked'].includes(key);
+  const tint = key => isMe(key) ? aquamarine : lilac;
+  const isHub = key => key === 'me' || key === 'crm';
+  const coord = (key, narrow) => stations[key][narrow ? 3 : 2];
+  const arabic = 'Noto Sans Arabic,Tahoma,Arial,sans-serif';
+  function label(x,y,value,size,color,weight=500) {
+    return '<text direction="rtl" unicode-bidi="plaintext" x="'+x+'" y="'+y+'" text-anchor="middle" font-family="'+arabic+'" font-size="'+size+'" font-weight="'+weight+'" fill="'+color+'">'+value+'</text>';
+  }
+  function curve(route,narrow) {
+    const [x,y]=coord(route[0],narrow), [u,v]=coord(route[1],narrow);
+    const mid=(x+u)/2;
+    return {path:'M '+x+' '+y+' C '+mid+' '+y+' '+mid+' '+v+' '+u+' '+v,
+      point(t) {
+        const z=1-t;
+        return [z*z*z*x+3*z*t*mid+t*t*t*u, z*z*z*y+3*z*z*t*y+3*z*t*t*v+t*t*t*v];
+      }};
+  }
+  const rooms = {
+    members: { hub:'me', caption:'داخل گرین‌لایف ME', color:aquamarine,
+      keys:['account','sync','request','diet','device','network'] },
+    leads: { hub:'crm', caption:'وضعیت فعلی لیدهای ثبت‌شدهٔ امروز', color:lilac,
+      keys:['lead_new','lead_contacted','lead_appointment','lead_visited','lead_won','lead_lost'] },
+  };
+  const extras={
+    diet:['پیگیری رژیم','درخواست‌های کمک و پیگیری رژیم ثبت‌شدهٔ امروز.'],
+    device:['نوبت دستگاه','درخواست‌های نوبت دستگاه ثبت‌شدهٔ امروز.'],
+    network:['شبکهٔ فروش','درخواست‌های عضویت در شبکهٔ فروش امروز.'],
+    lead_new:['جدید','پرونده‌های امروز با وضعیت فعلی جدید.'],
+    lead_contacted:['تماس گرفته شد','پرونده‌های امروز با وضعیت فعلی تماس گرفته شد.'],
+    lead_appointment:['نوبت ثبت شد','پرونده‌های امروز با وضعیت فعلی نوبت ثبت شد.'],
+    lead_visited:['مراجعه کرد','پرونده‌های امروز با وضعیت فعلی مراجعه کرد.'],
+    lead_won:['فروش موفق','پرونده‌های امروز با وضعیت فعلی فروش موفق.'],
+    lead_lost:['ناموفق','پرونده‌های امروز با وضعیت فعلی ناموفق.'],
+  };
+  const info=key=>stations[key] || extras[key];
+  function roomGraph(room,narrow) {
+    const [cx,cy]=narrow?[200,191]:[460,177];
+    const rx=narrow?134:258, ry=narrow?127:119;
+    const positions={[room.hub]:[cx,cy]};
+    room.keys.forEach((key,i)=>{
+      const angle=(i*60-90)*Math.PI/180;
+      positions[key]=[Math.round(cx+rx*Math.cos(angle)),Math.round(cy+ry*Math.sin(angle))];
+    });
+    return positions;
+  }
+  function roomDrawing(room,counts,narrow,selected){
+    const nodes=roomGraph(room,narrow), w=narrow?400:920,h=narrow?380:355;
+    const [cx,cy]=nodes[room.hub], c=room.color;
+    let tracks='<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+(narrow?134:258)+'" ry="'+(narrow?127:119)+'" fill="none" stroke="'+c+'" stroke-opacity=".23" stroke-dasharray="2 7"/>';
+    for(const key of room.keys){
+      const [x,y]=nodes[key];
+      tracks+='<path d="M '+cx+' '+cy+' L '+x+' '+y+'" stroke="'+c+'" stroke-opacity=".48"/>';
+    }
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" role="group" aria-label="'+room.caption+'"><rect width="100%" height="100%" fill="#10192b"/>'+
+      label(w/2,26,room.caption,15,c)+tracks+'<g data-particles="" pointer-events="none"></g>'+
+      Object.keys(nodes).map(key=>station(key,counts,narrow,selected,nodes[key],c)).join('')+
+      '<g data-rings="" pointer-events="none"></g></svg>';
+  }
+  function station(key,counts,narrow,selected,position,color) {
+    const [x,y]=position || coord(key,narrow), c=color || tint(key), hub=isHub(key), width=narrow?105:140;
+    const number=counts[key] || 0;
+    let shape;
+    if (hub) {
+      const r=narrow?40:48;
+      shape='<circle r="'+(r+14)+'" fill="none" stroke="'+c+'" stroke-opacity=".1" stroke-width="5"/>'+
+        '<circle r="'+(r+11)+'" fill="none" stroke="'+c+'" stroke-opacity=".6" stroke-dasharray="3 30 1 6"/>'+
+        '<circle r="'+(r+7)+'" fill="none" stroke="'+c+'" stroke-opacity=".27" stroke-dasharray="1 5"/>'+
+        '<circle class="flow-plate" r="'+r+'" fill="'+(key==='me'?'#113537':'#2a2144')+'" stroke="'+c+'" stroke-width="1.7"/>'+
+        '<circle r="'+(r-5)+'" fill="none" stroke="'+c+'" stroke-opacity=".45" stroke-dasharray="22 11 2 8"/>'+
+        label(0,0,info(key)[0],narrow?11:14,'#f6f4ff',700)+
+        label(0,20,key==='crm'?format.format(number):'ME',14,c,700);
+    } else {
+      shape='<rect class="flow-plate" x="'+(-width/2)+'" y="-23" width="'+width+'" height="46" rx="12" fill="#162439" stroke="'+(selected===key?c:'#394960')+'"/>'+
+        label(0,-3,info(key)[0],narrow?12:14,'#edf2fc')+label(0,15,format.format(number),13,c,700);
+    }
+    return '<g role="button" tabindex="0" aria-pressed="'+(selected===key)+'" aria-label="'+info(key)[0]+'" data-station="'+key+'" transform="translate('+x+' '+y+')">'+shape+'</g>';
+  }
+  function drawing(counts,narrow,selected,view) {
+    if (rooms[view]) return roomDrawing(rooms[view],counts,narrow,selected);
+    const w=narrow?400:920, h=narrow?526:485, split=narrow?228:215;
+    const tracks=routes.map(route=>'<path d="'+curve(route,narrow).path+'" fill="none" stroke="'+tint(route[2])+'" stroke-opacity=".47" stroke-width="1.5"/>').join('');
+    const nodes=Object.keys(stations).map(k=>station(k,counts,narrow,selected)).join('');
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" role="group" aria-label="نقشه مسیر اعضا و منابع لید">'+
+      '<defs><pattern id="gl-flow-grid" width="17" height="17" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".8" fill="#34455d"/></pattern></defs>'+
+      '<rect width="100%" height="100%" fill="#0c1626"/><rect width="100%" height="100%" fill="url(#gl-flow-grid)"/>'+
+      '<path d="M 15 '+split+' H '+(w-15)+'" stroke="#33445b"/>'+
+      label(narrow?67:95,24,'مسیر اعضا',14,aquamarine,700)+label(narrow?80:104,split+25,'مسیر جذب لید',14,lilac,700)+tracks+
+      '<g data-particles="" pointer-events="none"></g>'+nodes+'<g data-rings="" pointer-events="none"></g></svg>';
+  }
+  // Topology and animation geometry are shared by the live UI and the example.
+  function motion(events,narrow,view) {
+    const room=rooms[view], positions=room && roomGraph(room,narrow);
+    let particles='', rings='';
+    for (const {key,t} of events) {
+      const route=routes.find(item=>item[2]===key);
+      if (t<0 || t>=1 || (room ? !room.keys.includes(key) : !route)) continue;
+      const ends=room?[room.hub,key]:route;
+      const c=room?room.color:tint(key), p=Math.min(1,t/.75);
+      const arc=room?{point(f){
+        const [x,y]=positions[room.hub], [u,v]=positions[key];
+        return [x+(u-x)*f,y+(v-y)*f];
+      }}:curve(route,narrow);
+      for (let j=4;j>=0;j--) {
+        const [x,y]=arc.point(Math.max(0,p-j*.032));
+        particles+='<circle cx="'+x+'" cy="'+y+'" r="'+(j===0?3.8:3-j*.35)+'" fill="'+(j===0?'#efffff':c)+'" opacity="'+(1-j*.16)+'"/>';
+      }
+      const terminal=t<.40?ends[0]:t>.64?ends[1]:null;
+      if (terminal) {
+        const [x,y]=room?positions[terminal]:coord(terminal,narrow), r=isHub(terminal)?(narrow?44:52):26;
+        rings+='<g transform="translate('+x+' '+y+') rotate('+Math.round(260*t)+')"><circle r="'+r+'" fill="none" stroke="'+c+'" stroke-width="2" stroke-dasharray="14 17" opacity="'+Math.min(1,(1-t)*8)+'"/></g>';
+      }
+    }
+    return {particles,rings};
+  }
+  const panel=document.getElementById('gl-flow');
+  if (!panel) return;
+  const root=panel.closest('[data-activity-url]') || panel;
+  const host=panel.querySelector('[data-flow-map]'), toggle=panel.querySelector('[data-flow-pause]');
+  const initial=JSON.parse(root.querySelector('#gl-activity-initial').textContent).flow;
+  let view='overview';
+  let snapshot=initial, selected='crm', narrow=false, active=[], raf=0, paused=false;
+  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
+  function details() {
+    panel.querySelector('[data-flow-title]').textContent=info(selected)[0];
+    panel.querySelector('[data-flow-description]').textContent=info(selected)[1];
+    const c=snapshot.counts;
+    panel.querySelector('[data-flow-count]').textContent=selected==='me'?'':format.format(c[selected] || 0);
+    const target=panel.querySelector('[data-flow-breakdown]');
+    let rows=[];
+    if (selected==='me' || selected==='request') {
+      rows=[['ویزیت',c.request],['پیگیری رژیم',c.diet],['نوبت دستگاه',c.device],['عضویت شبکه فروش',c.network]];
+    } else if (selected==='crm' || selected==='assigned') {
+      rows=[['دارای مسئول',c.assigned],['در انتظار مسئول',(c.crm || 0)-(c.assigned || 0)]];
+    }
+    target.replaceChildren(...rows.map(([name,value])=>{
+      const item=document.createElement('span');
+      item.textContent=name+'  ·  '+format.format(value || 0);
+      return item;
+    }));
+  }
+  function draw() {
+    const focused=document.activeElement?.dataset.station;
+    narrow=host.getBoundingClientRect().width<640;
+    host.innerHTML=drawing(snapshot.counts,narrow,selected,view);
+    if (focused) host.querySelector('[data-station="'+focused+'"]')?.focus({preventScroll:true});
+    details();
+  }
+  function tick(time) {
+    active=active.filter(a=>time-a.start<2400);
+    const layers=motion(active.map(a=>({key:a.key,t:(time-a.start)/2400})),narrow,view);
+    host.querySelector('[data-particles]').innerHTML=layers.particles;
+    host.querySelector('[data-rings]').innerHTML=layers.rings;
+    raf=active.length?requestAnimationFrame(tick):0;
+  }
+  function stop() { active=[]; cancelAnimationFrame(raf); tick(performance.now()); }
+  function select(event) {
+    const key=event.target.closest('[data-station]')?.dataset.station;
+    if (!key) return;
+    if (event.type==='keydown' && !['Enter',' '].includes(event.key)) return;
+    event.preventDefault(); selected=key; draw();
+  }
+  panel.querySelector('.flow-views').addEventListener('click',event=>{
+    const button=event.target.closest('[data-atlas-view]');
+    if (!button) return;
+    stop(); view=button.dataset.atlasView;
+    selected=view==='members'?'me':'crm';
+    for (const item of panel.querySelectorAll('[data-atlas-view]')) {
+      item.setAttribute('aria-pressed',String(button===item));
+    }
+    draw();
+  });
+  host.addEventListener('click',select); host.addEventListener('keydown',select);
+  toggle.addEventListener('click',()=>{
+    paused=!paused; toggle.setAttribute('aria-pressed',String(paused));
+    toggle.textContent=paused?'ادامهٔ حرکت':'توقف حرکت';
+    if (paused) stop();
+  });
+  root.addEventListener('flowupdate',event=>{
+    const next=event.detail;
+    if (!next || JSON.stringify(next)===JSON.stringify(snapshot)) return;
+    const previous=snapshot; snapshot=next;
+    if(next.day!==previous.day) stop();
+    if (!paused && !reduced.matches && next.day===previous.day) {
+      const start=performance.now();
+      for(const key of (rooms[view]?.keys || routes.map(route=>route[2]))) {
+        if ((next.counts[key]||0)>(previous.counts[key]||0)) {
+          active=active.filter(a=>a.key!==key);
+          active.push({key,start});
+        }
+      }
+    }
+    draw();
+    if (!raf && active.length) raf=requestAnimationFrame(tick);
+  });
+  draw();
+  new ResizeObserver(()=>{if((host.getBoundingClientRect().width<640)!==narrow) draw();}).observe(host);
+  reduced.addEventListener('change',()=>{if(reduced.matches) stop();});
+})();

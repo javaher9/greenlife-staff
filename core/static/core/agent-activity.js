@@ -139,6 +139,7 @@
         previous = new Set(snapshot.events.map(event => event.id));
         lastSnapshot = serialized;
       }
+      root.dispatchEvent(new CustomEvent('flowupdate', { detail: snapshot.flow }));
       syncText(snapshot);
     } catch {
       status.dataset.state = 'stale';
