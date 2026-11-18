@@ -1,9 +1,9 @@
-/* Shared executive actions: compact icon, full tablet touch target. */
-.payment-delete-link{display:inline-flex;align-items:center;justify-content:center;flex:0 0 44px;width:44px;height:44px;padding:0;border:1px solid transparent;border-radius:10px;color:#f3a4b4;background:transparent;vertical-align:middle;text-decoration:none;touch-action:manipulation}
-.payment-delete-link svg{display:block;width:18px;height:18px;pointer-events:none}
+/* Shared executive actions: compact label, full tablet touch target. */
+.payment-delete-link{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;gap:6px;min-height:44px;padding:7px 11px;border:1px solid #684454;border-radius:10px;color:#f3a4b4;background:transparent;vertical-align:middle;font-size:12px;font-weight:700;white-space:nowrap;text-decoration:none;touch-action:manipulation}
+.payment-delete-link svg{display:block;width:16px;height:16px;pointer-events:none}
 .payment-delete-link:hover{background:#452733;border-color:#925266;color:#ffd0da}
 .payment-delete-link:focus-visible{outline:2px solid #ffb4c1;outline-offset:2px;background:#452733}
-.payment-delete-cell{width:60px;text-align:left!important}
+.payment-delete-cell{width:80px;text-align:left!important}
 .payment-item-tools{display:flex;align-items:center;gap:10px;margin-inline-start:auto}
 .payment-delete-section{border-color:#925266;background:#2b202b;scroll-margin-block:14px}
 .payment-delete-section>summary{color:#ffb4c1;font-size:13px}
