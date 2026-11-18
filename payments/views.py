@@ -123,6 +123,19 @@ def five_payment_assignees():
             results.append((slug,title,matched[0]))
     return results
 
+def six_payment_assignees(executive_user):
+    """Append exactly the authenticated owner as sixth recipient of orders.
+
+    Match by executive permission/username, never by shared surname.
+    Do not grant general payment-operator permissions to other users.
+    """
+    people=five_payment_assignees()
+    if executive_user and executive_user.is_active and executive(executive_user):
+        if not any(user.pk==executive_user.pk for _,_,user in people):
+            people.append(('executive','دکتر جواهریان',executive_user))
+    return people
+
+
 class ExecutiveQuickPaymentForm(forms.Form):
     amount_million=forms.DecimalField(label='مبلغ (میلیون تومان)',min_value=0.001,max_digits=14,decimal_places=3,widget=forms.NumberInput(attrs={'step':'0.001','placeholder':'مثلاً ۳۲'}))
     description=forms.CharField(label='شرح پرداخت',max_length=500,widget=forms.Textarea(attrs={'rows':2,'placeholder':'بابت چه کاری؟'}))
@@ -131,9 +144,9 @@ class ExecutiveQuickPaymentForm(forms.Form):
     recipient_name=forms.CharField(label='نام گیرنده',max_length=160)
     recipient_iban=forms.CharField(label='شماره شبا',max_length=34,required=False)
     recipient_card=forms.CharField(label='شماره کارت',max_length=24,required=False)
-    def __init__(self,*args,**kwargs):
+    def __init__(self,*args,executive_user=None,**kwargs):
         super().__init__(*args,**kwargs)
-        self.assignees=five_payment_assignees()
+        self.assignees=six_payment_assignees(executive_user)
         self.fields['assigned_to'].queryset=User.objects.filter(pk__in=[user.pk for _,_,user in self.assignees])
     def clean(self):
         cleaned=super().clean()
@@ -175,7 +188,7 @@ def request_permission_settings(request):
 def executive_quick_payment(request):
     if not executive(request.user):
         raise PermissionDenied()
-    form=ExecutiveQuickPaymentForm(request.POST or None)
+    form=ExecutiveQuickPaymentForm(request.POST or None,executive_user=request.user)
     if request.method=='POST' and form.is_valid():
         with transaction.atomic():
             item=PaymentRequest.objects.create(
@@ -195,9 +208,16 @@ def executive_quick_payment(request):
             )
             PaymentEvent.objects.create(payment=item,actor=request.user,action='created',notes='دستور مستقیم مدیریت')
             PaymentEvent.objects.create(payment=item,actor=request.user,action='approve',notes='تأیید مستقیم مدیریت')
+        if item.assigned_to_id == request.user.pk:
+            from django.urls import reverse
+            return redirect(reverse('payments_workspace') + '#assignedPayments')
         return redirect('payments_expenses')
     saved_recipients = SavedPaymentRecipient.objects.filter(owner=request.user)
-    return render(request,'payments/executive_quick_payment.html',{'form':form,'assignees':form.assignees,'missing_count':5-len(form.assignees),'saved_recipients':saved_recipients})
+    named_staff_count=sum(1 for slug,_,_ in form.assignees if slug!='executive')
+    return render(request,'payments/executive_quick_payment.html',{
+        'form':form,'assignees':form.assignees,
+        'missing_count':5-named_staff_count,'saved_recipients':saved_recipients,
+    })
 
 @login_required
 @require_POST
@@ -280,7 +300,7 @@ def workspace(request):
     expenses=PettyCashExpense.objects.filter(holder=request.user)
     received=PaymentRequest.objects.filter(kind='petty_cash',beneficiary=request.user,state='paid').aggregate(x=Sum('amount_toman'))['x'] or 0
     spent=expenses.aggregate(x=Sum('amount_toman'))['x'] or 0
-    return render(request,'payments/workspace.html',dict(personal_form=personal_form,can_request=staff(request.user) or executive(request.user),can_petty=executive(request.user) or getattr(getattr(request.user,'profile',None),'can_manage_petty_cash',False), can_personal=executive(request.user) or getattr(getattr(request.user,'profile',None),'can_claim_personal_expense',False),submit_operation=operation,posted_million=request.POST.get('req-amount_million','') if operation=='request' else '',posted_exp_million=request.POST.get('exp-amount_million','') if operation=='expense' else '',form=form,expense_form=expense_form,queue=queue,completed=completed,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,has_petty_cash=(received>0 or spent>0),is_executive=executive(request.user), can_submit=staff(request.user) or executive(request.user)))
+    return render(request,'payments/workspace.html',dict(personal_form=personal_form,can_request=staff(request.user) or executive(request.user),can_petty=executive(request.user) or getattr(getattr(request.user,'profile',None),'can_manage_petty_cash',False), can_personal=executive(request.user) or getattr(getattr(request.user,'profile',None),'can_claim_personal_expense',False),submit_operation=operation,posted_million=request.POST.get('req-amount_million','') if operation=='request' else '',posted_exp_million=request.POST.get('exp-amount_million','') if operation=='expense' else '',form=form,expense_form=expense_form,queue=queue,completed=completed,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,has_petty_cash=(received>0 or spent>0),is_executive=executive(request.user),payment_methods=PaymentRequest.PAYMENT_METHODS,funding_sources=PaymentRequest.FUNDING_SOURCES, can_submit=staff(request.user) or executive(request.user)))
 
 def payment_approved_assignees():
     """Only explicitly designated Green Life payment operators, never the whole workforce."""
@@ -288,7 +308,14 @@ def payment_approved_assignees():
     match=Q(pk__in=[])
     for name in names:
         match |= Q(last_name__icontains=name) | Q(first_name__icontains=name)
-    return User.objects.filter(is_active=True,profile__is_active=True,profile__can_execute_payments=True).filter(match).exclude(profile__role__in=('referrer','referral_supervisor','scan_station')).select_related('profile','profile__branch').distinct().order_by('last_name','first_name')
+    authorized_operator=(
+        Q(profile__is_active=True,profile__can_execute_payments=True)
+        & match
+        & ~Q(profile__role__in=('referrer','referral_supervisor','scan_station'))
+    )
+    return User.objects.filter(is_active=True).filter(
+        authorized_operator | Q(username__in=settings.EXECUTIVE_USERNAMES),
+    ).select_related('profile','profile__branch').distinct().order_by('last_name','first_name')
 
 
 @login_required
@@ -323,7 +350,7 @@ def review(request,pk):
                 return HttpResponseBadRequest('مسیر پرداخت نامعتبر است.')
             if channel=='consultant' and (assignee.profile.role != 'consultant' or not assignee.profile.can_execute_payments):
                 return HttpResponseBadRequest('پرداخت‌کننده باید مشاور یا منشی فعال باشد.')
-            if channel=='staff' and not (getattr(getattr(assignee,'profile',None),'can_execute_payments',False)):
+            if channel=='staff' and not (executive(assignee) or getattr(getattr(assignee,'profile',None),'can_execute_payments',False)):
                 return HttpResponseBadRequest('مسئول پرداخت فعال نیست.')
             p.state='approved'
             p.channel=channel
@@ -417,16 +444,35 @@ def mark_paid(request,pk):
             raise PermissionDenied()
         reference=request.POST.get('reference','').strip()
         receipt=request.FILES.get('receipt')
+        payment_method=(request.POST.get('payment_method') or '').strip()
+        funding_source=(request.POST.get('funding_source') or '').strip()
+        if payment_method and payment_method not in dict(PaymentRequest.PAYMENT_METHODS):
+            return HttpResponseBadRequest('روش پرداخت نامعتبر است.')
+        if funding_source and funding_source not in dict(PaymentRequest.FUNDING_SOURCES):
+            return HttpResponseBadRequest('حساب مبدأ معتبر نیست.')
+        # The owner must explicitly identify both how and from which account
+        # the money was actually paid. SmartPay alone does not imply personal funds.
+        if executive(request.user) and (not payment_method or not funding_source):
+            return HttpResponseBadRequest('روش پرداخت و حساب مبدأ را انتخاب کنید.')
         if not reference or not receipt:
             return HttpResponseBadRequest('شماره پیگیری و رسید الزامی است.')
         if receipt.size>10*1024*1024 or receipt.content_type not in ('image/jpeg','image/png','image/webp','application/pdf'):
             return HttpResponseBadRequest('رسید نامعتبر است.')
         p.payment_reference=reference[:120]
+        p.payment_method=payment_method
+        p.funding_source=funding_source
         p.payment_receipt=receipt
         p.paid_at=timezone.now()
         p.state='paid'
         p.save()
-        PaymentEvent.objects.create(payment=p,actor=request.user,action='paid',notes=reference[:120])
+        details=[
+            dict(PaymentRequest.PAYMENT_METHODS).get(payment_method,'روش نامشخص'),
+            dict(PaymentRequest.FUNDING_SOURCES).get(funding_source,'مبدأ نامشخص'),
+            reference[:100],
+        ]
+        PaymentEvent.objects.create(
+            payment=p,actor=request.user,action='paid',notes=' · '.join(details)[:250],
+        )
     return redirect('payments_workspace')
 
 @login_required
@@ -438,8 +484,11 @@ def admin_dashboard(request):
     consultants=User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant')
     accountants=User.objects.none()
     operators=payment_approved_assignees()
+    executive_ids=list(User.objects.filter(
+        is_active=True,username__in=settings.EXECUTIVE_USERNAMES,
+    ).values_list('pk',flat=True))
     paid=requests.filter(state='paid')
-    return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants,'operators':operators,'staff_members':User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant').order_by('first_name','last_name'),'permission_profiles': __import__('core.models',fromlist=['EmployeeProfile']).EmployeeProfile.objects.filter(is_active=True,user__is_active=True).exclude(role__in=['referrer','scan_station']).filter(~Q(role='employee') | Q(branch__isnull=False) | (Q(employee_code__isnull=False) & ~Q(employee_code='')) | ~Q(job_title='')).select_related('user','branch').order_by('user__first_name','user__last_name'),})
+    return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants,'operators':operators,'executive_ids':executive_ids,'staff_members':User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant').order_by('first_name','last_name'),'permission_profiles': __import__('core.models',fromlist=['EmployeeProfile']).EmployeeProfile.objects.filter(is_active=True,user__is_active=True).exclude(role__in=['referrer','scan_station']).filter(~Q(role='employee') | Q(branch__isnull=False) | (Q(employee_code__isnull=False) & ~Q(employee_code='')) | ~Q(job_title='')).select_related('user','branch').order_by('user__first_name','user__last_name'),})
 
 @login_required
 @require_POST
