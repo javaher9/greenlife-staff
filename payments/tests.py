@@ -244,6 +244,115 @@ class PaymentWorkflowTests(TestCase):
         self.assertEqual(order.assigned_to,self.worker)
         self.assertEqual(order.approved_by,self.executive)
 
+    def test_owner_is_sixth_named_assignee_without_staff_permission(self):
+        from .views import six_payment_assignees, five_payment_assignees
+        self.client.force_login(self.executive)
+        staff_members=five_payment_assignees()
+        slots=six_payment_assignees(self.executive)
+        self.assertEqual(len(slots),len(staff_members)+1)
+        self.assertEqual(slots[-1][0],'executive')
+        self.assertEqual(slots[-1][1],'دکتر جواهریان')
+        self.assertEqual(slots[-1][2].pk,self.executive.pk)
+        form_page=self.client.get(reverse('payments_executive_quick'))
+        self.assertEqual(form_page.status_code,200)
+        self.assertContains(form_page,'دکتر جواهریان')
+        self.assertContains(form_page,'person--executive')
+        self.assertContains(form_page,f'value="{self.executive.pk}"')
+        self.assertFalse(self.executive.has_perm('payments.execute_official_payment'))
+
+    def test_owner_direct_order_can_be_paid_using_smartpay_from_personal_account(self):
+        self.client.force_login(self.executive)
+        response=self.client.post(reverse('payments_executive_quick'),{
+            'amount_million':'35',
+            'priority':'normal',
+            'description':'خرید قطعات گرین لایف',
+            'assigned_to':self.executive.pk,
+            'recipient_name':'تأمین‌کننده',
+            'recipient_card':'6037991234567890',
+        })
+        self.assertEqual(response.status_code,302)
+        self.assertIn('#assignedPayments',response.url)
+        order=PaymentRequest.objects.get(description='خرید قطعات گرین لایف')
+        self.assertEqual(order.amount_toman,35000000)
+        self.assertEqual(order.state,'approved')
+        self.assertEqual(order.assigned_to_id,self.executive.pk)
+        self.assertEqual(order.approved_by_id,self.executive.pk)
+        queue=self.client.get(reverse('payments_workspace'))
+        self.assertContains(queue,'SmartPay')
+        self.assertContains(queue,'حساب شخصی مدیر')
+        paid=self.client.post(reverse('payments_complete',args=[order.pk]),{
+            'payment_method':'smartpay',
+            'funding_source':'personal',
+            'reference':'SMARTPAY-TEST-001',
+            'receipt':SimpleUploadedFile('proof.pdf',b'%PDF-1.4\\nproof',content_type='application/pdf'),
+        })
+        self.assertEqual(paid.status_code,302)
+        order.refresh_from_db()
+        self.assertEqual(order.state,'paid')
+        self.assertEqual(order.payment_method,'smartpay')
+        self.assertEqual(order.funding_source,'personal')
+        self.assertEqual(order.payment_reference,'SMARTPAY-TEST-001')
+        self.assertTrue(order.payment_receipt)
+        self.assertEqual(PaymentEvent.objects.filter(payment=order,action='paid',actor=self.executive).count(),1)
+        self.assertIn('SmartPay',PaymentEvent.objects.get(payment=order,action='paid').notes)
+        self.assertEqual(PaymentRequest.objects.filter(pk=order.pk).count(),1)
+        history=self.client.get(reverse('payments_workspace'))
+        self.assertContains(history,'SMARTPAY-TEST-001')
+        self.assertContains(history,'SmartPay')
+        self.assertEqual(self.client.post(reverse('payments_complete',args=[order.pk]),{
+            'payment_method':'smartpay','funding_source':'company','reference':'DUP',
+            'receipt':SimpleUploadedFile('proof.pdf',b'%PDF-1.4\\nproof',content_type='application/pdf'),
+        }).status_code,400)
+        self.assertEqual(PaymentEvent.objects.filter(payment=order,action='paid').count(),1)
+
+    def test_owner_cannot_mark_paid_without_method_funding_account_or_receipt(self):
+        order=self._request()
+        order.state='approved'
+        order.channel='staff'
+        order.assigned_to=self.executive
+        order.save(update_fields=['state','channel','assigned_to'])
+        self.client.force_login(self.executive)
+        url=reverse('payments_complete',args=[order.pk])
+        for method,funding in (('', 'company'),('smartpay',''),('invalid','company'),('smartpay','invalid')):
+            response=self.client.post(url,{
+                'reference':'PENDING-TEST',
+                'payment_method':method,'funding_source':funding,
+                'receipt':SimpleUploadedFile('proof.pdf',b'%PDF-1.4\\nproof',content_type='application/pdf'),
+            })
+            self.assertEqual(response.status_code,400)
+        order.refresh_from_db()
+        self.assertEqual(order.state,'approved')
+        self.assertEqual(order.payment_method,'')
+        self.assertFalse(PaymentEvent.objects.filter(payment=order,action='paid').exists())
+
+    def test_pending_request_can_be_approved_for_executive_self(self):
+        order=self._request()
+        self.client.force_login(self.executive)
+        result=self.client.post(reverse('payments_review',args=[order.pk]),{
+            'action':'approve','channel':'staff','assigned_to':self.executive.pk,
+        })
+        self.assertEqual(result.status_code,302)
+        order.refresh_from_db()
+        self.assertEqual(order.state,'approved')
+        self.assertEqual(order.assigned_to_id,self.executive.pk)
+        admin_page=self.client.get(reverse('payments_admin'))
+        self.assertContains(admin_page,'دکتر جواهریان')
+
+    def test_unauthorized_user_cannot_complete_executive_order(self):
+        order=self._request()
+        order.state='approved'
+        order.channel='staff'
+        order.assigned_to=self.executive
+        order.save(update_fields=['state','channel','assigned_to'])
+        self.client.force_login(self.worker)
+        response=self.client.post(reverse('payments_complete',args=[order.pk]),{
+            'payment_method':'smartpay','funding_source':'personal','reference':'SPOOF',
+            'receipt':SimpleUploadedFile('proof.pdf',b'%PDF-1.4\\nproof',content_type='application/pdf'),
+        })
+        self.assertEqual(response.status_code,404)
+        order.refresh_from_db()
+        self.assertEqual(order.state,'approved')
+
     def test_nonexecutive_cannot_create_direct_payment(self):
         self.client.force_login(self.worker)
         self.assertEqual(self.client.get(reverse('payments_executive_quick')).status_code,403)
