@@ -350,7 +350,7 @@ def review(request,pk):
                 return HttpResponseBadRequest('مسیر پرداخت نامعتبر است.')
             if channel=='consultant' and (assignee.profile.role != 'consultant' or not assignee.profile.can_execute_payments):
                 return HttpResponseBadRequest('پرداخت‌کننده باید مشاور یا منشی فعال باشد.')
-            if channel=='staff' and not (getattr(getattr(assignee,'profile',None),'can_execute_payments',False)):
+            if channel=='staff' and not (executive(assignee) or getattr(getattr(assignee,'profile',None),'can_execute_payments',False)):
                 return HttpResponseBadRequest('مسئول پرداخت فعال نیست.')
             p.state='approved'
             p.channel=channel
