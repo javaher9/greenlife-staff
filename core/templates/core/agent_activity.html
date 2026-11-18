@@ -1,0 +1,42 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'core/agent-activity.css' %}">
+<section class="gl-activity" dir="rtl" data-activity-url="{% url 'agent_activity_snapshot' %}">
+  <header class="gl-activity-header">
+    <div>
+      <h1>نمای زندهٔ کانال‌ها</h1>
+      <p>وضعیت اتصال و گردش پیام‌ها در گرین‌لایف</p>
+    </div>
+    <p data-sync role="status">آخرین ثبت سرور</p>
+  </header>
+  <div class="gl-activity-grid">
+    <section class="gl-activity-map" aria-labelledby="gl-activity-channels">
+      <h2 id="gl-activity-channels">کانال‌ها</h2>
+      <div class="gl-activity-hub"><span aria-hidden="true">◎</span> صندوق پیام‌های گرین‌لایف</div>
+      <div class="gl-activity-nodes" data-channels>
+        {% for channel in activity.channels %}
+          <article class="gl-activity-node" data-channel="{{ channel.id }}" data-tone="{{ channel.tone }}">
+            <div class="gl-activity-node-title"><span class="gl-activity-ring" aria-hidden="true"></span><h3>{{ channel.name }}</h3></div>
+            {% if channel.account %}<p>{{ channel.account }}</p>{% endif %}
+            <p class="gl-activity-state">{{ channel.state }}</p>
+            {% if channel.metric %}<p class="gl-activity-metric"><b>{{ channel.count }}</b> {{ channel.metric }}</p>{% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+    <section class="gl-activity-feed" aria-labelledby="gl-activity-events">
+      <h2 id="gl-activity-events">آخرین فعالیت‌ها</h2>
+      <ol data-events>
+        {% for event in activity.events %}
+          <li><strong>{{ event.label }}</strong><small>{{ event.name }}</small><time datetime="{{ event.time }}"></time></li>
+        {% empty %}
+          <li class="gl-activity-empty">فعالیت تازه‌ای ثبت نشده است.</li>
+        {% endfor %}
+      </ol>
+    </section>
+  </div>
+  {{ activity|json_script:"gl-activity-initial" }}
+</section>
+<script src="{% static 'core/agent-activity.js' %}" defer></script>
+{% endblock %}
