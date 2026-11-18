@@ -1396,7 +1396,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-follow-footer [data-follow-cancel]{
   <nav class="ccx-group-strip" aria-label="گروه‌های مشترک کال‌سنتر">
     <span class="ccx-group-strip-title">گروه‌ها</span>
     <a href="{% url 'call_center_dashboard' %}" class="{% if not group_filter %}active{% endif %}">همه</a>
-    {% for group in groups %}<span class="ccx-group-pair"><a href="?group={{ group.pk }}" class="{% if group_filter == group.pk|stringformat:'s' %}active{% endif %}">{{ group.name }} <b>{{ group.lead_count }}</b></a><button type="button" class="ccx-group-guide" data-group-guide="{{ group.name }}" title="راهنمای مکالمه {{ group.name }}" aria-label="راهنمای مکالمه {{ group.name }}">؟</button></span>{% endfor %}
+    {% for group in groups %}<span class="ccx-group-pair"><a href="?group={{ group.pk }}" class="{% if group_filter == group.pk|stringformat:'s' %}active{% endif %}">{{ group.name }} <b>{{ group.lead_count }}</b></a><button type="button" class="ccx-group-guide" data-group-guide="{{ group.name }}" data-guidance="{{ group.display_guidance }}" data-group-id="{{ group.pk }}" title="راهنمای مکالمه {{ group.name }}" aria-label="راهنمای مکالمه {{ group.name }}">؟</button></span>{% endfor %}
   </nav>
 
   <details class="ccx-card" id="ccxLeadHistory" {% if group_filter or history_q %}open{% endif %} style="padding:12px 15px;border:1px solid #dce8e5;border-radius:14px;background:#fff">
