@@ -4,8 +4,9 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>پرداخت‌ها و سوابق مالی | گرین‌لایف</title>
-  <link rel="stylesheet" href="{% static 'payments/workspace.css' %}">
+  <link rel="stylesheet" href="{% static 'payments/workspace.css' %}?v=2">
   <link rel="stylesheet" href="{% static 'payments/actions.css' %}">
+  <link rel="stylesheet" href="{% static 'payments/history.css' %}">
   <script src="{% static 'payments/workspace.js' %}" defer></script>
 </head>
 <body>
@@ -73,37 +74,51 @@
   </section>
 
   <section id="paymentHistory" class="glass history" aria-labelledby="historyTitle">
-    <div class="section-head"><div><h2 id="historyTitle">سوابق درخواست‌ها و پرداخت‌ها</h2><p class="muted small">برای دیدن اطلاعات و گردش هر درخواست، روی عنوان یا «جزئیات» بزنید.</p></div><span class="history-count">{{ history_page.paginator.count }} نتیجه</span></div>
+    <div class="section-head"><div><h2 id="historyTitle">پیگیری پرداخت‌ها</h2></div><span class="history-count">{{ history_page.paginator.count }} نتیجه</span></div>
     {% include 'payments/partials/messages.html' %}
-    <form class="history-filters" method="get" action="{% url 'payments_workspace' %}#paymentHistory" id="historyFilters">
+    <form method="get" action="{% url 'payments_workspace' %}#paymentHistory" id="historyFilters" class="history-filters{% if is_executive %} executive-filters{% endif %}">
       <div class="field search-field"><label for="historySearch">جست‌وجو در سوابق</label><input id="historySearch" name="q" type="search" maxlength="120" placeholder="شرح، نام، شناسه یا شماره پیگیری…" value="{{ history_filters.q }}"></div>
       <div class="field"><label for="historyStatus">وضعیت</label><select id="historyStatus" name="status"><option value="">همه وضعیت‌ها</option>{% for value,label in history_statuses %}<option value="{{ value }}" {% if history_filters.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
       <div class="field"><label for="historyScope">نمایش درخواست‌ها</label><select id="historyScope" name="scope"><option value="all" {% if history_filters.scope == 'all' %}selected{% endif %}>{% if is_executive %}همه درخواست‌ها{% else %}همه سوابق من{% endif %}</option><option value="mine" {% if history_filters.scope == 'mine' %}selected{% endif %}>درخواست‌های من</option><option value="assigned" {% if history_filters.scope == 'assigned' %}selected{% endif %}>ارجاع‌شده به من</option></select></div>
       {% if is_executive %}<div class="field"><label for="historyRequester">درخواست‌دهنده</label><select id="historyRequester" name="requester"><option value="">همه درخواست‌دهندگان</option>{% for person in history_requesters %}<option value="{{ person.pk }}" {% if history_filters.requester == person.pk|stringformat:'s' %}selected{% endif %}>{{ person|payment_person }}{% if person.pk == request.user.pk %} · شما{% endif %}</option>{% endfor %}</select></div>{% endif %}
+      <div class="field"><label for="historyReceipt">رسید پرداخت</label><select id="historyReceipt" name="receipt"><option value="">همه</option><option value="yes" {% if history_filters.receipt == 'yes' %}selected{% endif %}>دارای رسید</option><option value="no" {% if history_filters.receipt == 'no' %}selected{% endif %}>بدون رسید</option></select></div>
       <div class="history-filter-actions"><button class="btn compact" type="submit">نمایش</button><a href="{% url 'payments_workspace' %}#paymentHistory" class="btn quiet compact" aria-label="پاک کردن فیلترها">پاک کردن</a></div>
     </form>
     <div class="filter-secondary">
       <div class="history-legend" aria-label="راهنمای وضعیت‌ها"><span class="state-pending"><i aria-hidden="true"></i>در انتظار تأیید</span><span class="state-approved"><i aria-hidden="true"></i>در صف پرداخت</span><span class="state-paid"><i aria-hidden="true"></i>پرداخت‌شده</span></div>
-      <div class="field"><label for="historyReceipt">رسید پرداخت</label><select id="historyReceipt" name="receipt" form="historyFilters"><option value="">همه</option><option value="yes" {% if history_filters.receipt == 'yes' %}selected{% endif %}>دارای رسید</option><option value="no" {% if history_filters.receipt == 'no' %}selected{% endif %}>بدون رسید</option></select></div>
     </div>
     {% if history_page.object_list %}
     <div class="table-scroll"><table class="history-table" aria-labelledby="historyTitle">
       <colgroup><col class="col-title"><col class="col-person"><col class="col-assignee"><col class="col-amount"><col class="col-status"><col class="col-receipt"><col class="col-actions"></colgroup>
-      <thead><tr><th scope="col">شرح درخواست</th><th scope="col">درخواست‌دهنده</th><th scope="col" class="cell-assignee">مسئول پرداخت</th><th scope="col">مبلغ<small>میلیون تومان</small></th><th scope="col">وضعیت</th><th scope="col">رسید پرداخت</th><th scope="col">مشاهده / اصلاح</th></tr></thead>
+      <thead><tr><th scope="col">شرح درخواست</th><th scope="col">درخواست‌دهنده</th><th scope="col" class="cell-assignee">مسئول پرداخت</th><th scope="col">مبلغ<small>میلیون تومان</small></th><th scope="col">وضعیت</th><th scope="col">رسید پرداخت</th><th scope="col" class="actions-heading">عملیات</th></tr></thead>
       <tbody>{% for p in history_page %}
         <tr class="history-row state-{{ p.state }}" id="payment-{{ p.pk }}">
-          <td class="cell-title" data-label="شرح"><a href="{% url 'payments_detail' p.pk %}" class="request-title" data-payment-detail>{{ p.description|truncatechars:100 }}</a><div class="row-meta"><span class="request-id">#{{ p.pk }}</span><time datetime="{{ p.created_at|date:'c' }}">{{ p.created_at|localtime|jdate_en }}</time>{% if p.recipient_name %}<span>گیرنده: {{ p.recipient_name|truncatechars:28 }}</span>{% endif %}</div></td>
-          <td class="cell-person" data-label="درخواست‌دهنده"><span class="person-name">{{ p.requester_name }}</span>{% if p.requester_id == request.user.id %}<span class="self-label">شما</span>{% endif %}<span class="mobile-assignee">مسئول پرداخت: {{ p.assignee_name|default:'تعیین نشده' }}</span></td>
+          <td class="cell-title" data-label="شرح"><a href="{% url 'payments_detail' p.pk %}" class="request-title" data-payment-detail>{{ p.description|truncatechars:100 }}</a><div class="row-meta"><span class="request-id">#{{ p.pk }}</span><time datetime="{{ p.created_at|date:'c' }}" dir="ltr">{{ p.created_at|jdatetime_en }}</time>{% if p.recipient_name %}<span>گیرنده: {{ p.recipient_name|truncatechars:28 }}</span>{% endif %}</div></td>
+          <td class="cell-person" data-label="درخواست‌دهنده"><span class="person-name">{{ p.requester_name }}</span>{% if p.requester_id == request.user.id %}<span class="self-label">شما</span>{% endif %}</td>
           <td class="cell-assignee" data-label="مسئول پرداخت"><span class="person-name">{{ p.assignee_name|default:'تعیین نشده' }}</span>{% if p.assigned_to_id == request.user.id %}<span class="self-label">شما</span>{% endif %}</td>
           <td class="cell-amount" data-label="مبلغ · میلیون تومان"><bdi class="payment-table-amount">{{ p.amount_toman|million_toman }}</bdi></td>
           <td class="cell-status" data-label="وضعیت"><span class="status">{{ p.history_state_label }}</span>{% if p.state == 'paid' %}<div class="row-payment-meta">{% if p.payment_method %}{{ p.get_payment_method_display }}{% endif %}{% if p.payment_reference %}<span dir="ltr">{{ p.payment_reference }}</span>{% endif %}</div>{% endif %}</td>
           <td class="cell-receipt" data-label="رسید پرداخت">
-            {% if p.receipt_kind == 'image' %}<a href="{% url 'payments_detail' p.pk %}#paymentReceipt" class="receipt-thumb" data-payment-detail data-detail-section="receipt" aria-label="مشاهده رسید پرداخت شماره {{ p.pk }}"><span class="receipt-fallback">تصویر</span><img src="{% url 'payments_receipt_thumbnail' p.pk %}" alt="تصویر رسید" width="46" height="50" loading="lazy" decoding="async" data-receipt-image></a>
+            {% if p.receipt_kind == 'image' %}<a href="{% url 'payments_detail' p.pk %}#paymentReceipt" class="receipt-thumb" data-payment-detail data-detail-section="receipt" aria-label="مشاهده رسید پرداخت شماره {{ p.pk }}"><span class="receipt-fallback">تصویر</span><img src="{% url 'payments_receipt_thumbnail' p.pk %}" alt="تصویر رسید" width="46" height="54" loading="lazy" decoding="async" data-receipt-image></a>
             {% elif p.receipt_kind == 'pdf' %}<a href="{% url 'payments_detail' p.pk %}#paymentReceipt" class="receipt-thumb pdf" data-payment-detail data-detail-section="receipt" aria-label="مشاهده رسید PDF پرداخت شماره {{ p.pk }}">PDF</a>
             {% elif p.receipt_kind == 'file' %}<a href="{% url 'payments_detail' p.pk %}#paymentReceipt" class="receipt-thumb" data-payment-detail data-detail-section="receipt">فایل</a>
             {% else %}<span class="no-receipt">بدون رسید</span>{% endif %}
           </td>
-          <td class="cell-actions"><div class="row-actions"><a href="{% url 'payments_detail' p.pk %}" class="btn quiet compact" data-payment-detail aria-label="جزئیات درخواست {{ p.pk }}">جزئیات</a>{% if p.history_can_edit %}<a href="{% url 'payments_detail' p.pk %}#paymentActions" class="btn quiet compact" data-payment-detail data-detail-section="actions" aria-label="ویرایش درخواست {{ p.pk }}">ویرایش</a>{% endif %}{% include 'payments/partials/delete_link.html' %}</div></td>
+          <td class="cell-actions">
+            <div class="row-actions">
+              <a href="{% url 'payments_detail' p.pk %}" class="btn quiet compact view-action" data-payment-detail aria-label="جزئیات درخواست {{ p.pk }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                جزئیات
+              </a>
+              {% if p.history_can_edit %}
+                <a href="{% url 'payments_detail' p.pk %}#paymentActions" class="btn quiet compact" data-payment-detail data-detail-section="actions" aria-label="ویرایش درخواست {{ p.pk }}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="m4 20 5-.9L20 8l-4-4L5 15l-1 5Zm10-14 4 4"/></svg>
+                  ویرایش
+                </a>
+              {% endif %}
+              {% include 'payments/partials/delete_link.html' %}
+            </div>
+          </td>
         </tr>
       {% endfor %}</tbody>
     </table></div>

@@ -1,3 +1,4 @@
+from datetime import datetime, timezone as datetime_timezone
 from io import BytesIO
 from tempfile import TemporaryDirectory
 from urllib.parse import parse_qs
@@ -774,8 +775,13 @@ class PaymentHistoryTests(TestCase):
     def test_executive_history_identifies_requester_separately_from_operator(self):
         team_payment = self.payment(state='approved', assigned_to=self.operator)
         own_payment = self.payment(requester=self.executive)
+        PaymentRequest.objects.filter(pk=team_payment.pk).update(
+            created_at=datetime(2026, 11, 18, 10, 15, tzinfo=datetime_timezone.utc),
+        )
         self.client.force_login(self.executive)
-        response = self.history()
+        with timezone.override('Asia/Tehran'):
+            response = self.history()
+        self.assertContains(response, '1405/08/27 13:45')
         self.assertEqual(set(self.history_ids(response)), {team_payment.pk, own_payment.pk})
         record = next(p for p in response.context['history_page'] if p.pk == team_payment.pk)
         self.assertEqual(record.requester_name, 'رضا صادقی')
