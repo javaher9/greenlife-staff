@@ -1111,6 +1111,7 @@ class PaymentDeletionTests(TestCase):
         self.assertTrue(detail.context['can_delete'])
         self.assertContains(detail, self.delete_url(payment))
         self.assertContains(detail, 'confirm_delete')
+        self.assertContains(detail, 'formmethod="dialog" formnovalidate')
         self.assertContains(detail, 'تکراری')
         self.assertContains(detail, 'اشتباه')
         select = '<option value="outdated">درخواست قدیمی و منتفی‌شده</option>'

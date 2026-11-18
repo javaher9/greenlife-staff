@@ -329,16 +329,14 @@ def payment_detail(request, pk):
         event.action_label = EVENT_LABELS.get(event.action, 'رویداد ثبت‌شده')
         event.actor_name = display_name(event.actor)
     clarification_messages = payment.clarifications.select_related('author').order_by('created_at', 'pk')
-    template = (
-        'payments/partials/payment_detail.html' if request.GET.get('panel') == '1'
-        else 'payments/history_detail.html'
-    )
+    in_dialog = request.GET.get('panel') == '1'
+    template = 'payments/partials/payment_detail.html' if in_dialog else 'payments/history_detail.html'
     response = render(request, template, {
         'payment': payment, 'timeline': timeline,
         'clarification_messages': clarification_messages,
         'can_edit': payment.history_can_edit, 'is_executive': is_executive,
         'can_delete': payment.history_can_delete,
-        'deletion_reasons': PaymentRequest.DELETION_REASONS,
+        'deletion_reasons': PaymentRequest.DELETION_REASONS, 'in_dialog': in_dialog,
         'delete_return_to': request.GET.get('return_to', '') if request.GET.get('return_to') in ('admin', 'expenses') else '',
         'open_delete': request.GET.get('focus') == 'delete',
         'can_complete': (

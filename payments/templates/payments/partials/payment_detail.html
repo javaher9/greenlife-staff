@@ -95,7 +95,14 @@
         {% csrf_token %}<input type="hidden" name="return_to" value="{{ delete_return_to }}">
         <div class="field"><label for="deleteReason-{{ payment.pk }}">علت حذف</label><select name="reason" id="deleteReason-{{ payment.pk }}" required><option value="">انتخاب کنید</option>{% for value, label in deletion_reasons %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
         <label class="payment-delete-confirm" for="confirmDelete-{{ payment.pk }}"><input type="checkbox" name="confirm_delete" value="yes" id="confirmDelete-{{ payment.pk }}" required><span>حذف این درخواست را تأیید می‌کنم.</span></label>
-        <div class="payment-delete-footer"><button class="btn danger compact" type="submit">حذف درخواست از همه صف‌ها</button><a class="btn quiet compact" data-cancel-delete href="{% if delete_return_to == 'admin' %}{% url 'payments_admin' %}{% elif delete_return_to == 'expenses' %}{% url 'payments_expenses' %}{% else %}{% url 'payments_workspace' %}#paymentHistory{% endif %}">انصراف</a></div>
+        <div class="payment-delete-footer">
+          <button class="btn danger compact" type="submit">حذف درخواست از همه صف‌ها</button>
+          {% if in_dialog %}
+            <button class="btn quiet compact" type="submit" formmethod="dialog" formnovalidate>انصراف</button>
+          {% else %}
+            <a class="btn quiet compact" href="{% if delete_return_to == 'admin' %}{% url 'payments_admin' %}{% elif delete_return_to == 'expenses' %}{% url 'payments_expenses' %}{% else %}{% url 'payments_workspace' %}#paymentHistory{% endif %}">انصراف</a>
+          {% endif %}
+        </div>
       </form>
     </details>
   {% endif %}
