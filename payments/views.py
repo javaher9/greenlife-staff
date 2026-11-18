@@ -300,7 +300,7 @@ def workspace(request):
     expenses=PettyCashExpense.objects.filter(holder=request.user)
     received=PaymentRequest.objects.filter(kind='petty_cash',beneficiary=request.user,state='paid').aggregate(x=Sum('amount_toman'))['x'] or 0
     spent=expenses.aggregate(x=Sum('amount_toman'))['x'] or 0
-    return render(request,'payments/workspace.html',dict(personal_form=personal_form,can_request=staff(request.user) or executive(request.user),can_petty=executive(request.user) or getattr(getattr(request.user,'profile',None),'can_manage_petty_cash',False), can_personal=executive(request.user) or getattr(getattr(request.user,'profile',None),'can_claim_personal_expense',False),submit_operation=operation,posted_million=request.POST.get('req-amount_million','') if operation=='request' else '',posted_exp_million=request.POST.get('exp-amount_million','') if operation=='expense' else '',form=form,expense_form=expense_form,queue=queue,completed=completed,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,has_petty_cash=(received>0 or spent>0),is_executive=executive(request.user), can_submit=staff(request.user) or executive(request.user)))
+    return render(request,'payments/workspace.html',dict(personal_form=personal_form,can_request=staff(request.user) or executive(request.user),can_petty=executive(request.user) or getattr(getattr(request.user,'profile',None),'can_manage_petty_cash',False), can_personal=executive(request.user) or getattr(getattr(request.user,'profile',None),'can_claim_personal_expense',False),submit_operation=operation,posted_million=request.POST.get('req-amount_million','') if operation=='request' else '',posted_exp_million=request.POST.get('exp-amount_million','') if operation=='expense' else '',form=form,expense_form=expense_form,queue=queue,completed=completed,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,has_petty_cash=(received>0 or spent>0),is_executive=executive(request.user),payment_methods=PaymentRequest.PAYMENT_METHODS,funding_sources=PaymentRequest.FUNDING_SOURCES, can_submit=staff(request.user) or executive(request.user)))
 
 def payment_approved_assignees():
     """Only explicitly designated Green Life payment operators, never the whole workforce."""
@@ -484,8 +484,11 @@ def admin_dashboard(request):
     consultants=User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant')
     accountants=User.objects.none()
     operators=payment_approved_assignees()
+    executive_ids=list(User.objects.filter(
+        is_active=True,username__in=settings.EXECUTIVE_USERNAMES,
+    ).values_list('pk',flat=True))
     paid=requests.filter(state='paid')
-    return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants,'operators':operators,'staff_members':User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant').order_by('first_name','last_name'),'permission_profiles': __import__('core.models',fromlist=['EmployeeProfile']).EmployeeProfile.objects.filter(is_active=True,user__is_active=True).exclude(role__in=['referrer','scan_station']).filter(~Q(role='employee') | Q(branch__isnull=False) | (Q(employee_code__isnull=False) & ~Q(employee_code='')) | ~Q(job_title='')).select_related('user','branch').order_by('user__first_name','user__last_name'),})
+    return render(request,'payments/admin.html',{'pending':requests.filter(state='pending'),'active':requests.filter(state='approved'),'paid':paid[:200],'consultants':consultants,'accountants':accountants,'operators':operators,'executive_ids':executive_ids,'staff_members':User.objects.filter(is_active=True,profile__is_active=True,profile__role='consultant').order_by('first_name','last_name'),'permission_profiles': __import__('core.models',fromlist=['EmployeeProfile']).EmployeeProfile.objects.filter(is_active=True,user__is_active=True).exclude(role__in=['referrer','scan_station']).filter(~Q(role='employee') | Q(branch__isnull=False) | (Q(employee_code__isnull=False) & ~Q(employee_code='')) | ~Q(job_title='')).select_related('user','branch').order_by('user__first_name','user__last_name'),})
 
 @login_required
 @require_POST
