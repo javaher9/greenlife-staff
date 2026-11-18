@@ -1,7 +1,7 @@
 /* Call plaque uses the existing operational LIGHT palette and KPI card discipline.
    Its read-only management variant is DARK. Scoped guards contain legacy globals. */
-#glCallPlaque{--cp-ink:#263f51;--cp-muted:#617682;--cp-line:#dce6e3;--cp-card:#fff;--cp-page:#f6f9f8;--cp-soft:#edf4f0;--cp-purple:#684995;--cp-purple-soft:#eee5f7;--cp-green:#176e4f;--cp-script:#f0f7f3;--cp-script-ink:#224e3e;--cp-hint:#fff8e9;--cp-hint-ink:#775f27;width:min(1280px,97vw);height:min(940px,94dvh);max-width:97vw;max-height:94dvh;margin:auto;padding:0;border:1px solid var(--cp-line)!important;border-radius:22px!important;background:var(--cp-page)!important;color:var(--cp-ink)!important;box-shadow:0 24px 80px #1e303d50!important;direction:rtl;overflow:hidden;color-scheme:light;font:14px/1.9 Tahoma,"Segoe UI",Arial,sans-serif!important}
-#glCallPlaque.cp-management{--cp-ink:#edf5f8;--cp-muted:#b7c7d4;--cp-line:#2b4a5d;--cp-card:#0d1f2c;--cp-page:#07131d;--cp-soft:#152c39;--cp-purple:#a585d8;--cp-purple-soft:#35254b;--cp-green:#71dcb3;--cp-script:#103b2c;--cp-script-ink:#b8eed8;--cp-hint:#352e1d;--cp-hint-ink:#f0d694;color-scheme:dark}
+#glCallPlaque{--cp-ink:#263f51;--cp-muted:#617682;--cp-line:#c7d5d0;--cp-card:#fff;--cp-page:#f6f9f8;--cp-soft:#edf4f0;--cp-purple:#684995;--cp-purple-soft:#eee5f7;--cp-green:#176e4f;--cp-script:#f0f7f3;--cp-script-ink:#224e3e;--cp-hint:#fff8e9;--cp-hint-ink:#775f27;width:min(1280px,97vw);height:min(940px,94dvh);max-width:97vw;max-height:94dvh;margin:auto;padding:0;border:1px solid var(--cp-line)!important;border-radius:22px!important;background:var(--cp-page)!important;color:var(--cp-ink)!important;box-shadow:0 24px 80px #1e303d50!important;direction:rtl;overflow:hidden;color-scheme:light;font:14px/1.9 Tahoma,"Segoe UI",Arial,sans-serif!important}
+#glCallPlaque.cp-management{--cp-ink:#edf5f8;--cp-muted:#b7c7d4;--cp-line:#395a6d;--cp-card:#0d1f2c;--cp-page:#07131d;--cp-soft:#152c39;--cp-purple:#a585d8;--cp-purple-soft:#35254b;--cp-green:#71dcb3;--cp-script:#103b2c;--cp-script-ink:#b8eed8;--cp-hint:#352e1d;--cp-hint-ink:#f0d694;color-scheme:dark}
 #glCallPlaque::backdrop{background:#19242d99;backdrop-filter:blur(3px)}
 #glCallPlaque *,#glCallPlaque *::before{box-sizing:border-box}
 #glCallPlaque [hidden]{display:none!important}
@@ -165,3 +165,9 @@
 #glCallPlaque .cp-disc-choices button{width:36px;height:36px;border-color:#cbb6df}
 #glCallPlaque .cp-disc-row .cp-disc-help{position:absolute;inset-inline-end:0;top:0}
 @media(max-width:680px){#glCallPlaque .cp-assessment{grid-template-columns:minmax(0,1fr)}}
+
+#glCallPlaque .cp-assessment { gap: 14px; }
+#glCallPlaque .cp-assessment .cp-disc { background: var(--cp-card); border-color: var(--cp-line); }
+#glCallPlaque .cp-disc-row h4 { flex-basis: 100%; }
+#glCallPlaque .cp-rating-group .cp-star-choices { clear: both; }
+#glCallPlaque .cp-star small { font-size: 11px; color: var(--cp-muted); line-height: 1; }
