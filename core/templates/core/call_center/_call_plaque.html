@@ -1,5 +1,5 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'core/call-plaque.css' %}?v=disc-1">
+<link rel="stylesheet" href="{% static 'core/call-plaque.css' %}?v=disc-cards-2">
 <dialog id="glCallPlaque" aria-labelledby="cpTitle" aria-describedby="cpSubtitle" data-operator="{{ user.get_full_name|default:user.username }}">
   <div class="cp-shell">
     <header class="cp-header">
@@ -33,7 +33,8 @@
             <div class="cp-guide-actions"><button type="button" data-cp-back>→ مرحله قبل</button><button type="button" data-cp-restart>از شروع مکالمه</button><button type="button" class="cp-primary" data-cp-go-after>ثبت نتیجه تماس</button></div>
             <article class="cp-card cp-quick"><h3>پاسخ‌های سریع</h3><div data-cp-quick></div></article>
           </div>
-          <div class="cp-record-column"><article class="cp-card"><h3>ثبت پاسخ‌ها در همین مکالمه</h3><p class="cp-muted">جواب واقعی مخاطب را ثبت کنید. پاسخ‌ندادن یا نپرسیدن، امتیاز منفی نیست.</p><div data-cp-questions></div><div data-cp-assessment-during></div></article></div>
+          <div class="cp-record-column"><article class="cp-card"><h3>ثبت پاسخ‌ها در همین مکالمه</h3><p class="cp-muted">جواب واقعی مخاطب را ثبت کنید. پاسخ‌ندادن یا نپرسیدن، امتیاز منفی نیست.</p><div data-cp-questions></div></article></div>
+          <div class="cp-wide" data-cp-assessment-during></div>
         </div>
       </section>
       <section id="cpAfter" role="tabpanel" aria-labelledby="cpAfterTab" hidden>
@@ -51,9 +52,11 @@
             </fieldset>
             <div class="cp-wide" data-cp-assessment-after>
               <div class="cp-assessment" data-cp-assessment>
+                <div data-cp-stars></div>
                 <section class="cp-disc" aria-labelledby="cpStyleTitle">
                   <div class="cp-disc-row">
                     <h4 id="cpStyleTitle">تست دیسک</h4>
+                    <p class="cp-disc-prompt">چه سبک گفت‌وگویی برای مخاطب راحت‌تر است؟</p>
                     <div class="cp-disc-choices" dir="ltr" role="group" aria-labelledby="cpStyleTitle">
                       {% for letter in "DISC" %}<button type="button" data-disc-letter="{{ letter }}" aria-pressed="false">{{ letter }}</button>{% endfor %}
                     </div>
@@ -90,9 +93,7 @@
                     <p class="cp-muted" data-cp-style-advice></p>
                   </div>
                 </section>
-                <section aria-label="ارزیابی تماس">
-                  <div data-cp-stars></div>
-                </section>
+
               </div>
             </div>
             <details class="cp-wide cp-question" data-cp-legacy-rating hidden><summary>برداشت کلی ذخیره‌شده در پیش‌نویس</summary>
@@ -120,4 +121,4 @@
 })();
 </script>
 <script src="{% static 'core/call-plaque-calendar.js' %}?v=1"></script>
-<script src="{% static 'core/call-plaque.js' %}?v=disc-1"></script>
+<script src="{% static 'core/call-plaque.js' %}?v=disc-cards-2"></script>
