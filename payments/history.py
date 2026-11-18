@@ -21,7 +21,7 @@ EVENT_LABELS = {
     'reassigned': 'تغییر مسئول پرداخت',
     'executive_edit': 'اصلاح مبلغ یا شرح',
     'executive_cancel': 'لغو درخواست',
-    'executive_delete': 'حذف درخواست تکراری یا اشتباهی',
+    'executive_delete': 'حذف درخواست پرداخت',
     'paid': 'ثبت پرداخت و رسید',
 }
 
