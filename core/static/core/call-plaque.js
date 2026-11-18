@@ -134,11 +134,8 @@
     if(!payload.editable)return;
     for(const q of QUESTIONS.filter(question=>question.kind==='stars')){
       const group=element('fieldset',null,{class:'cp-rating-group','data-cp-scale':q.key});
-      const help=element('details',null,{class:'cp-scale-help'});
-      help.append(element('summary','؟',{'aria-label':'سؤال پیشنهادی برای '+q.title}),element('small',q.hint));
-      group.append(element('legend',q.title),help);
+      group.append(element('legend',q.title));
       const choices=element('div',null,{class:'cp-star-choices'});
-      const note=element('small',null,{'aria-live':'polite',class:'cp-rating-note'});
       const inputs=[];
       function paint(){
         const answer=data.answers[q.key];
@@ -147,8 +144,6 @@
           input.checked=selected===input.value;
           input.parentElement.classList.toggle('cp-filled',Number(input.value)<=Number(selected));
         });
-        note.textContent=answer?.state==='answered' ? payload.labels.answers[q.key][selected] :
-          (answer?.state==='declined'?'مخاطب نخواست پاسخ بدهد':'هنوز ارزیابی نشده');
       }
       function update(state,value){
         if(busy||completed||!payload.editable)return;
@@ -162,17 +157,11 @@
         const option=element('label',null,{class:'cp-star',title:label});
         const input=element('input',null,{type:'radio',name:'cp-rating-'+q.key,value,'aria-label':label});
         input.addEventListener('change',()=>update('answered',value));
-        option.append(input,element('span','★',{'aria-hidden':'true'}));
+        option.append(input,element('span','★',{'aria-hidden':'true'}),element('small',n.toLocaleString('fa-IR'),{'aria-hidden':'true'}));
         inputs.push(input);
         choices.append(option);
       }
-      const clear=element('button','مطرح نشد',{type:'button','data-cp-rating-action':''});
-      clear.addEventListener('click',()=>update('unasked',''));
-      const declined=element('button','نخواست پاسخ بدهد',{type:'button','data-cp-rating-action':''});
-      declined.addEventListener('click',()=>update('declined',''));
-      const row=element('div',null,{class:'cp-rating-row'});
-      row.append(choices,clear,declined);
-      group.append(row,note);
+      group.append(choices);
       host.append(group);
       paint();
     }
