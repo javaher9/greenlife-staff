@@ -1,10 +1,10 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'core/call-plaque.css' %}?v=20261118-1">
+<link rel="stylesheet" href="{% static 'core/call-plaque.css' %}?v=20261118-2">
 <dialog id="glCallPlaque" aria-labelledby="cpTitle" aria-describedby="cpSubtitle" data-operator="{{ user.get_full_name|default:user.username }}">
   <div class="cp-shell">
     <header class="cp-header">
       <div><div class="cp-eyebrow" id="cpSubtitle">پلاک تماس · پرونده و راهنمای مکالمه</div><h2 id="cpTitle">پلاک تماس</h2><div class="cp-muted" data-cp-identity></div></div>
-      <div class="cp-header-actions"><a data-cp-dial hidden>شماره‌گیری</a><button type="button" data-cp-font aria-pressed="false">متن درشت‌تر</button><button type="button" data-cp-close aria-label="بستن پلاک تماس">بستن ×</button></div>
+      <div class="cp-header-actions"><a data-cp-dial hidden>شماره‌گیری</a><a data-cp-book data-cp-edit-only target="_blank" rel="noopener" hidden>نوبت‌دهی</a><button type="button" data-cp-font aria-pressed="false">متن درشت‌تر</button><button type="button" data-cp-close aria-label="بستن پلاک تماس">بستن ×</button></div>
     </header>
     <div class="cp-summary-bar">
       <div class="cp-readiness"><div><strong data-cp-score>—</strong><span data-cp-score-label>اطلاعات ناکافی</span></div><div class="cp-meter" role="meter" aria-label="امتیاز آمادگی ثبت‌شده" aria-valuemin="0" aria-valuemax="100"><i data-cp-meter></i></div><small data-cp-confidence>امتیاز آمادگی است؛ درصد احتمال خرید نیست.</small></div>
@@ -23,7 +23,7 @@
         <div class="cp-purpose" data-cp-purpose></div>
         <div class="cp-grid">
           <article class="cp-card" data-cp-operator-only><h3>پیش از مکالمه</h3><ul class="cp-checklist" data-cp-checklist></ul><button type="button" class="cp-primary" data-cp-begin data-cp-edit-only>باز کردن مسیر مکالمه</button><p class="cp-muted cp-gap">باز کردن این پلاک، تماس یا پیام ارسال نمی‌کند. شماره‌گیری فقط با دکمه جداگانه انجام می‌شود.</p></article>
-          <article class="cp-card cp-prior-card"><h3 data-cp-prior-title>از تماس‌های قبل چه می‌دانیم؟</h3><div data-cp-prior></div><div class="cp-hint" data-cp-edit-only>پاسخ قبلی، پاسخ تازه محسوب نمی‌شود. اگر مخاطب آن را تأیید کرد، در بخش ثبت پاسخ روی «تأیید پاسخ قبلی» بزنید.</div></article>
+          <article class="cp-card cp-prior-card"><h3 data-cp-prior-title>از تماس‌های قبل چه می‌دانیم؟</h3><div data-cp-operational></div><div data-cp-prior></div><div class="cp-hint" data-cp-edit-only>پاسخ قبلی، پاسخ تازه محسوب نمی‌شود. اگر مخاطب آن را تأیید کرد، در بخش ثبت پاسخ روی «تأیید پاسخ قبلی» بزنید.</div></article>
         </div>
       </section>
       <section id="cpDuring" role="tabpanel" aria-labelledby="cpDuringTab" hidden>
@@ -42,7 +42,13 @@
             <label class="cp-wide">نتیجه تماس<select data-cp-field="outcome"><option value="">هنوز انتخاب نشده</option><option value="answered">گفت‌وگو انجام شد</option><option value="no_answer">پاسخ نداد</option><option value="follow_up">پیگیری با اجازه</option><option value="not_interested">تمایل ندارد</option><option value="wrong_number">شماره اشتباه</option><option value="do_not_contact">درخواست عدم تماس</option></select></label>
             <label>اجازه ارسال واتساپ<select data-cp-field="whatsapp_consent"><option value="unknown">مطرح نشد / مشخص نیست</option><option value="yes">صریحاً اجازه داد</option><option value="no">اجازه نداد</option></select></label>
             <label>اجازه تماس بعدی<select data-cp-field="followup_consent"><option value="unknown">مطرح نشد / مشخص نیست</option><option value="yes">صریحاً اجازه داد</option><option value="no">اجازه نداد</option></select></label>
-            <label class="cp-wide" data-cp-followup-wrap hidden>زمان توافق‌شده · ساعت تهران<input type="datetime-local" data-cp-followup><span class="cp-muted" data-cp-followup-preview></span></label>
+            <fieldset class="cp-wide" data-cp-followup-wrap hidden><legend>زمان پیگیری · ساعت تهران</legend>
+              <label>فاصله تا پیگیری<select data-cp-interval></select></label>
+              <div class="cp-form-grid">
+                <label>ماه شمسی<select data-cp-month></select></label><label>روز<select data-cp-day></select></label>
+                <label>ساعت (۲۴ ساعته)<select data-cp-hour></select></label><label>دقیقه<select data-cp-minute></select></label>
+              </div><input type="hidden" data-cp-followup><span class="cp-muted" data-cp-followup-preview></span>
+            </fieldset>
             <label>برداشت کارشناس از آمادگی<select data-cp-field="operator_rating"><option value="">هنوز ارزیابی نکرده‌ام</option><option value="1">۱ از ۵ · پایین</option><option value="2">۲ از ۵</option><option value="3">۳ از ۵ · متوسط</option><option value="4">۴ از ۵</option><option value="5">۵ از ۵ · بالا</option></select></label>
             <label>دلیل کوتاه ارزیابی<input type="text" maxlength="400" data-cp-field="operator_reason" placeholder="براساس کدام پاسخ یا اقدام؟"></label>
             <label class="cp-wide">یادداشت تماس<textarea rows="3" maxlength="2000" data-cp-field="notes" placeholder="موضوع مهم، توافق و نکته لازم برای تماس بعدی"></textarea></label>
@@ -65,4 +71,5 @@
   window.GreenLifeCallPlaqueGuide={profiles:guideProfiles,defaults:defaultGuideProfile,nodes:guideNodes};
 })();
 </script>
-<script src="{% static 'core/call-plaque.js' %}?v=20261118-1"></script>
+<script src="{% static 'core/call-plaque-calendar.js' %}?v=1"></script>
+<script src="{% static 'core/call-plaque.js' %}?v=20261118-2"></script>
