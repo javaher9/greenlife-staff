@@ -152,3 +152,16 @@
 #glCallPlaque .cp-rating-group legend{padding-inline-end:28px}
 #glCallPlaque .cp-scale-help summary{cursor:pointer;list-style:none;position:absolute;inset-inline-end:0;top:0;text-align:center;width:24px;border-radius:50%;background:var(--cp-card)}
 #glCallPlaque .cp-rating-group .cp-star{width:clamp(28px,5vw,36px);margin:0}
+#glCallPlaque .cp-assessment{grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;direction:rtl}
+#glCallPlaque .cp-assessment [data-cp-stars]{display:contents}
+#glCallPlaque .cp-assessment .cp-rating-group,#glCallPlaque .cp-assessment .cp-disc{box-sizing:border-box;border:1px solid var(--cp-line);border-radius:14px;margin:0;padding:14px;background:var(--cp-card)}
+#glCallPlaque .cp-rating-group legend{float:right;width:100%;box-sizing:border-box}
+#glCallPlaque .cp-scale-help{clear:both}
+#glCallPlaque .cp-scale-help summary{top:10px;inset-inline-end:10px}
+#glCallPlaque .cp-assessment .cp-disc{background:linear-gradient(135deg,#f4eefb,var(--cp-card));border-color:#d8c9e7}
+#glCallPlaque .cp-disc-row{position:relative}
+#glCallPlaque .cp-disc-row h4{font-size:16px!important}
+#glCallPlaque .cp-disc-prompt{flex-basis:100%;margin:0}
+#glCallPlaque .cp-disc-choices button{width:36px;height:36px;border-color:#cbb6df}
+#glCallPlaque .cp-disc-row .cp-disc-help{position:absolute;inset-inline-end:0;top:0}
+@media(max-width:680px){#glCallPlaque .cp-assessment{grid-template-columns:minmax(0,1fr)}}
