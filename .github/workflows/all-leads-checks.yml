@@ -6,6 +6,9 @@ on:
       - 'core/all_leads_views.py'
       - 'core/follow_up_views.py'
       - 'core/follow_up_agenda.py'
+      - 'core/call_plaque*.py'
+      - 'core/static/core/call-plaque*.js'
+      - 'core/tests/test_call_plaque*.py'
       - 'core/forms.py'
       - 'core/call_center_views.py'
       - 'core/referral_views.py'
@@ -55,7 +58,7 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - run: python manage.py check
       - run: python manage.py makemigrations --check --dry-run
-      - run: python manage.py test core.tests.test_all_leads core.tests.test_all_leads_browser core.tests.test_follow_up_agenda --verbosity 2
+      - run: python manage.py test core.tests.test_all_leads core.tests.test_all_leads_browser core.tests.test_follow_up_agenda core.tests.test_call_plaque_unified_browser core.tests.test_call_plaque_integration --verbosity 2
       - uses: actions/upload-artifact@v4
         if: always()
         with:

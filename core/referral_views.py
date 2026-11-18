@@ -1762,11 +1762,19 @@ def call_center_lead(request,pk):
         ReferralLead.objects.select_for_update(of=('self',)).select_related('assigned_to','group') if request.method=='POST' else ReferralLead.objects.select_related('assigned_to','group'),
         pk=pk,assigned_to=request.user.profile,
     )
-    form=CallCenterLeadForm(request.POST or None,instance=lead,operator=request.user.profile)
+    from django.forms import modelform_factory
+    metadata_type = modelform_factory(ReferralLead, fields=('group','interested_service'),
+                                      labels={'group':'گروه لید','interested_service':'خدمت موردنظر'})
+    editing_metadata = request.method == 'POST' and request.POST.get('edit_metadata') == '1'
+    metadata_form = metadata_type(request.POST if editing_metadata else None, instance=lead)
+    if editing_metadata and metadata_form.is_valid():
+        metadata_form.save()
+        return redirect('call_center_lead', pk=pk)
+    form=CallCenterLeadForm(request.POST if request.method=='POST' and not editing_metadata else None,instance=lead,operator=request.user.profile)
     contact_blocked=lead_do_not_contact(lead)
-    if request.method=='POST' and contact_blocked:
+    if request.method=='POST' and not editing_metadata and contact_blocked:
         form.add_error(None,'درخواست عدم تماس در پلاک این مخاطب ثبت شده است؛ پیگیری تازه ذخیره نشد.')
-    if request.method=='POST' and not contact_blocked and form.is_valid():
+    if request.method=='POST' and not editing_metadata and not contact_blocked and form.is_valid():
         from .follow_up_agenda import saved_follow_up_snapshot, record_follow_up
         with transaction.atomic():
             previous=saved_follow_up_snapshot(lead)
@@ -1785,7 +1793,7 @@ def call_center_lead(request,pk):
         return redirect('call_center_dashboard')
     real_appointments=lead.appointments.exclude(status='cancelled').select_related('branch').order_by('-appointment_date','-appointment_time')[:5]
     return render(request,'core/call_center/lead.html',{
-        'lead':FlowerLeadProxy(lead),'form':form,'real_appointments':real_appointments,
+        'lead':FlowerLeadProxy(lead),'form':form,'metadata_form':metadata_form,'real_appointments':real_appointments,
         'call_readiness':call_plaque_summaries([lead.pk]).get(lead.pk,{'score':None,'band':'unknown','label':'اطلاعات ناکافی'}),
     })
 
