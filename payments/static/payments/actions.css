@@ -1,0 +1,20 @@
+/* Shared executive actions: compact label, full tablet touch target. */
+.payment-delete-link{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;gap:6px;min-height:44px;padding:7px 11px;border:1px solid #684454;border-radius:10px;color:#f3a4b4;background:transparent;vertical-align:middle;font-size:12px;font-weight:700;white-space:nowrap;text-decoration:none;touch-action:manipulation}
+.payment-delete-link svg{display:block;width:16px;height:16px;pointer-events:none}
+.payment-delete-link:hover{background:#452733;border-color:#925266;color:#ffd0da}
+.payment-delete-link:focus-visible{outline:2px solid #ffb4c1;outline-offset:2px;background:#452733}
+.payment-delete-cell{width:80px;text-align:left!important}
+.payment-item-tools{display:flex;align-items:center;gap:10px;margin-inline-start:auto}
+.payment-delete-section{border-color:#925266;background:#2b202b;scroll-margin-block:14px}
+.payment-delete-section>summary{color:#ffb4c1;font-size:13px}
+.payment-delete-section[open]>summary{margin-bottom:14px}
+.payment-delete-warning{color:#ffe2e8;font-size:13px;line-height:1.9;margin:0 0 12px}
+.payment-delete-warning strong{display:block;margin-bottom:5px}
+.payment-delete-summary{border:1px solid #684454;background:#221d28;border-radius:10px;padding:10px 12px;margin:12px 0;font-size:12px;overflow-wrap:anywhere}
+.payment-delete-summary strong{display:block;margin-bottom:3px;color:#fff}
+.payment-delete-section .payment-delete-confirm{display:flex;align-items:flex-start;gap:10px;min-height:44px;padding:10px 0;margin:8px 0 13px;font-size:12px;font-weight:normal;cursor:pointer;color:#ffe2e8}
+.payment-delete-confirm input[type=checkbox]{flex:0 0 20px;width:20px;height:20px;min-height:20px;margin:2px 0 0;padding:0;accent-color:#db7e92}
+.payment-delete-footer{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.payment-messages{border:1px solid #277c59;background:#103e2d;color:#c5f8de;border-radius:12px;padding:12px 16px;margin:0 0 18px;font-size:13px;line-height:1.9}
+.payment-messages p{margin:0}
+.history .payment-messages{margin:0 20px 16px}

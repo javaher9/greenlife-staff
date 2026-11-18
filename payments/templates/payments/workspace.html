@@ -5,6 +5,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>پرداخت‌ها و سوابق مالی | گرین‌لایف</title>
   <link rel="stylesheet" href="{% static 'payments/workspace.css' %}">
+  <link rel="stylesheet" href="{% static 'payments/actions.css' %}">
   <script src="{% static 'payments/workspace.js' %}" defer></script>
 </head>
 <body>
@@ -73,6 +74,7 @@
 
   <section id="paymentHistory" class="glass history" aria-labelledby="historyTitle">
     <div class="section-head"><div><h2 id="historyTitle">سوابق درخواست‌ها و پرداخت‌ها</h2><p class="muted small">برای دیدن اطلاعات و گردش هر درخواست، روی عنوان یا «جزئیات» بزنید.</p></div><span class="history-count">{{ history_page.paginator.count }} نتیجه</span></div>
+    {% include 'payments/partials/messages.html' %}
     <form class="history-filters" method="get" action="{% url 'payments_workspace' %}#paymentHistory" id="historyFilters">
       <div class="field search-field"><label for="historySearch">جست‌وجو در سوابق</label><input id="historySearch" name="q" type="search" maxlength="120" placeholder="شرح، نام، شناسه یا شماره پیگیری…" value="{{ history_filters.q }}"></div>
       <div class="field"><label for="historyStatus">وضعیت</label><select id="historyStatus" name="status"><option value="">همه وضعیت‌ها</option>{% for value,label in history_statuses %}<option value="{{ value }}" {% if history_filters.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
@@ -101,7 +103,7 @@
             {% elif p.receipt_kind == 'file' %}<a href="{% url 'payments_detail' p.pk %}#paymentReceipt" class="receipt-thumb" data-payment-detail data-detail-section="receipt">فایل</a>
             {% else %}<span class="no-receipt">بدون رسید</span>{% endif %}
           </td>
-          <td class="cell-actions"><div class="row-actions"><a href="{% url 'payments_detail' p.pk %}" class="btn quiet compact" data-payment-detail aria-label="جزئیات درخواست {{ p.pk }}">جزئیات</a>{% if p.history_can_edit %}<a href="{% url 'payments_detail' p.pk %}#paymentActions" class="btn quiet compact" data-payment-detail data-detail-section="actions" aria-label="ویرایش درخواست {{ p.pk }}">ویرایش</a>{% endif %}</div></td>
+          <td class="cell-actions"><div class="row-actions"><a href="{% url 'payments_detail' p.pk %}" class="btn quiet compact" data-payment-detail aria-label="جزئیات درخواست {{ p.pk }}">جزئیات</a>{% if p.history_can_edit %}<a href="{% url 'payments_detail' p.pk %}#paymentActions" class="btn quiet compact" data-payment-detail data-detail-section="actions" aria-label="ویرایش درخواست {{ p.pk }}">ویرایش</a>{% endif %}{% include 'payments/partials/delete_link.html' %}</div></td>
         </tr>
       {% endfor %}</tbody>
     </table></div>
