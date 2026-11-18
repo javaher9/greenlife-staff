@@ -248,3 +248,66 @@
   .gl-activity .is-recent .gl-activity-metric b,
   .gl-activity .gl-activity-hub.is-recent { animation: none; }
 }
+
+.gl-activity .gl-activity-wires { direction: ltr; }
+.gl-activity .gl-activity-orbit::after { transform: translate(-50%, -50%); z-index: -1; }
+.gl-activity .gl-activity-header { border-inline-start: 3px solid var(--activity-accent); }
+.gl-activity .gl-activity-sync::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-inline-end: 7px;
+  border-radius: 50%;
+  background: #9da9b9;
+}
+.gl-activity .gl-activity-sync[data-state="live"]::before { background: #73e6b6; box-shadow: 0 0 8px #73e6b65c; }
+.gl-activity .gl-activity-sync[data-state="stale"]::before { background: #ffc882; }
+.gl-activity .gl-orbit-node { background: linear-gradient(150deg, #232e43, #101828); }
+.gl-activity .gl-orbit-mark, .gl-activity .gl-activity-hub-mark {
+  display: grid;
+  place-items: center;
+  height: 28px;
+}
+.gl-activity .gl-orbit-latin { font: bold 20px/1 Arial, sans-serif; }
+.gl-activity .gl-activity-hub::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1px dashed #d6b8ff59;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.gl-activity .gl-activity-hub.is-recent::after { animation: gl-activity-turn 2.4s linear; }
+.gl-activity .gl-channel-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-block: 16px 10px;
+}
+.gl-channel-heading span { color: var(--activity-muted); font-size: 12px; }
+.gl-activity .gl-activity-metric b { font-size: 19px; color: #fbf7ff; }
+.gl-activity .gl-activity-feed li[data-family] {
+  padding-inline-start: 22px;
+  position: relative;
+}
+.gl-activity .gl-activity-feed li[data-family]::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 4px;
+  top: 18px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--event-color, #b8ace5);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--event-color, #b8ace5) 45%, transparent);
+}
+.gl-activity .gl-activity-feed [data-family="instagram"] { --event-color: #fc91cc; }
+.gl-activity .gl-activity-feed [data-family="whatsapp"] { --event-color: #78e8b2; }
+.gl-activity .gl-activity-feed [data-family="telegram"] { --event-color: #82c6ff; }
+.gl-activity .gl-activity-feed [data-family="bale"] { --event-color: #ffc882; }
+@media (prefers-reduced-motion: reduce) {
+  .gl-activity .gl-activity-hub.is-recent::after { animation: none; }
+}

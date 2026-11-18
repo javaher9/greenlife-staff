@@ -51,6 +51,7 @@
 
   function eventRow(event) {
     const row = element('li', '');
+    row.dataset.family = family(event.channel);
     const stamp = element('time', clock.format(new Date(event.time)));
     stamp.dateTime = event.time;
     row.append(element('strong', event.label), element('small', event.name), stamp);
@@ -86,7 +87,11 @@
   function render(snapshot, active = new Set()) {
     current = snapshot;
     const shown = item => !selected || family(item) === selected;
-    channels.replaceChildren(...snapshot.channels.filter(channel => shown(channel.id))
+    const visible = snapshot.channels.filter(channel => shown(channel.id));
+    const connected = visible.filter(channel => channel.tone === 'connected').length;
+    root.querySelector('[data-connected-count]').textContent =
+      number.format(connected) + ' از ' + number.format(visible.length) + ' حساب متصل';
+    channels.replaceChildren(...visible
       .map(channel => channelCard(channel, active.has(channel.id))));
     const rows = snapshot.events.filter(event => shown(event.channel)).map(eventRow);
     if (!rows.length) rows.push(element('li', 'فعالیت تازه‌ای ثبت نشده است.', 'gl-activity-empty'));
@@ -113,6 +118,7 @@
   }
 
   function syncText(snapshot) {
+    status.dataset.state = 'live';
     status.textContent = 'آخرین به‌روزرسانی ' + clock.format(new Date(snapshot.updated_at));
   }
 
@@ -135,6 +141,7 @@
       }
       syncText(snapshot);
     } catch {
+      status.dataset.state = 'stale';
       status.textContent = 'به‌روزرسانی قطع شده؛ آخرین دادهٔ دریافت‌شده نمایش داده می‌شود.';
     } finally {
       refreshing = false;

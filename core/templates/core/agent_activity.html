@@ -20,25 +20,26 @@
       <div class="gl-activity-orbit" data-orbit>
         <div class="gl-activity-wires" aria-hidden="true"></div>
         <button class="gl-activity-hub" data-family="" type="button" aria-pressed="true">
-          <span class="gl-activity-hub-mark" aria-hidden="true">◎</span>
+          <span class="gl-activity-hub-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m12 2 8 5v10l-8 5-8-5V7z"/><path d="m4 7 8 5 8-5m-8 5v10"/><path d="m8 5 8 5"/></svg></span>
           <span>صندوق پیام‌ها</span>
         </button>
         <button class="gl-orbit-node gl-orbit-instagram" data-family="instagram" type="button" aria-pressed="false">
-          <span class="gl-orbit-mark" aria-hidden="true">◎</span><span>اینستاگرام</span>
+          <span class="gl-orbit-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="3.6"/><circle cx="17" cy="7" r=".8" fill="currentColor"/></svg></span><span>اینستاگرام</span>
         </button>
         <button class="gl-orbit-node gl-orbit-whatsapp" data-family="whatsapp" type="button" aria-pressed="false">
-          <span class="gl-orbit-mark" aria-hidden="true">◔</span><span>واتساپ</span>
+          <span class="gl-orbit-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 20l1-4a8.2 8.2 0 1 1 3 3z"/><path d="M9 8c.4 3 3.2 6 6.5 6.8l1-1.7-2-1.1-1 1c-1.5-.7-2.3-1.5-3-3l.8-.8-1-2z"/></svg></span><span>واتساپ</span>
         </button>
         <button class="gl-orbit-node gl-orbit-telegram" data-family="telegram" type="button" aria-pressed="false">
-          <span class="gl-orbit-mark" aria-hidden="true">➤</span><span>تلگرام</span>
+          <span class="gl-orbit-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m3 11 17-7-3 16-5-4-3 2v-5l8-6-10 5z"/></svg></span><span>تلگرام</span>
         </button>
         <button class="gl-orbit-node gl-orbit-bale" data-family="bale" type="button" aria-pressed="false">
-          <span class="gl-orbit-mark" aria-hidden="true">▤</span><span>بله</span>
+          <span class="gl-orbit-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M5 5h14v8a5 5 0 0 1-5 5h-3l-5 3v-4l-1-1z"/><path d="m8 11 3 3 5-6"/></svg></span><span>بله</span>
         </button>
         <button class="gl-orbit-node gl-orbit-linkedin" data-family="linkedin" type="button" aria-pressed="false">
           <span class="gl-orbit-mark gl-orbit-latin" aria-hidden="true">in</span><span>لینکدین</span>
         </button>
       </div>
+      <div class="gl-channel-heading"><h2>وضعیت حساب‌ها</h2><span data-connected-count></span></div>
       <div class="gl-activity-nodes" data-channels>
         {% for channel in activity.channels %}
           <article class="gl-activity-node" data-channel="{{ channel.id }}" data-tone="{{ channel.tone }}">
