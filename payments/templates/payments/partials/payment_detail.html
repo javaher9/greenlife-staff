@@ -88,13 +88,13 @@
   {% endif %}
   {% if can_delete %}
     <details id="paymentDelete" class="detail-block payment-delete-section" data-detail-section="delete" {% if open_delete %}open{% endif %}>
-      <summary>حذف درخواست تکراری یا اشتباه</summary>
-      <p class="payment-delete-warning"><strong>فقط اگر این درخواست تکراری است یا اشتباه ثبت شده، آن را حذف کنید.</strong>با حذف، درخواست از سوابق، صف تأیید و صف پرداخت همه افراد، از جمله مسئول فعلی آن، برداشته می‌شود و دیگر قابل تأیید یا پرداخت نیست.</p>
+      <summary>حذف درخواست پرداخت‌نشده</summary>
+      <p class="payment-delete-warning"><strong>پیش از حذف، شرح و مبلغ درخواست را بررسی کنید.</strong>با حذف، درخواست از سوابق، صف تأیید و صف پرداخت همه افراد، از جمله مسئول فعلی آن، برداشته می‌شود و دیگر قابل تأیید یا پرداخت نیست.</p>
       <div class="payment-delete-summary"><strong>درخواست #{{ payment.pk }} · {{ payment.description|truncatechars:120 }}</strong>{{ payment.amount_toman|million_toman }} میلیون تومان · {{ payment.history_state_label }}<br>درخواست‌دهنده: {{ payment.requester_name }} · مسئول پرداخت: {{ payment.assignee_name }}</div>
       <form method="post" action="{% url 'payments_executive_delete' payment.pk %}" data-payment-delete-form>
         {% csrf_token %}<input type="hidden" name="return_to" value="{{ delete_return_to }}">
-        <div class="field"><label for="deleteReason-{{ payment.pk }}">علت حذف</label><select name="reason" id="deleteReason-{{ payment.pk }}" required><option value="">انتخاب کنید</option value="duplicate">درخواست تکراری است</option><option value="mistake">درخواست اشتباه ثبت شده است</option></select></div>
-        <label class="payment-delete-confirm" for="confirmDelete-{{ payment.pk }}"><input type="checkbox" name="confirm_delete" value="yes" id="confirmDelete-{{ payment.pk }}" required><span>تأیید می‌کنم این درخواست تکراری یا اشتباه ثبت شده است.</span></label>
+        <div class="field"><label for="deleteReason-{{ payment.pk }}">علت حذف</label><select name="reason" id="deleteReason-{{ payment.pk }}" required><option value="">انتخاب کنید</option>{% for value, label in deletion_reasons %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+        <label class="payment-delete-confirm" for="confirmDelete-{{ payment.pk }}"><input type="checkbox" name="confirm_delete" value="yes" id="confirmDelete-{{ payment.pk }}" required><span>حذف این درخواست را تأیید می‌کنم.</span></label>
         <div class="payment-delete-footer"><button class="btn danger compact" type="submit">حذف درخواست از همه صف‌ها</button><a class="btn quiet compact" data-cancel-delete href="{% if delete_return_to == 'admin' %}{% url 'payments_admin' %}{% elif delete_return_to == 'expenses' %}{% url 'payments_expenses' %}{% else %}{% url 'payments_workspace' %}#paymentHistory{% endif %}">انصراف</a></div>
       </form>
     </details>

@@ -1038,7 +1038,7 @@ class PaymentDeletionTests(TestCase):
                         payment=payment, actor=self.executive, action='executive_cancel',
                         notes='An earlier duplicate cancellation',
                     )
-                reason = 'mistake' if state == 'needs_info' else 'duplicate'
+                reason = {'approved': 'outdated', 'needs_info': 'mistake'}.get(state, 'duplicate')
                 self.assertEqual(self.delete_as_executive(payment, reason=reason).status_code, 302)
                 self.assertFalse(PaymentRequest.objects.filter(pk=payment.pk).exists())
                 retained = PaymentRequest.all_objects.get(pk=payment.pk)
@@ -1113,6 +1113,9 @@ class PaymentDeletionTests(TestCase):
         self.assertContains(detail, 'confirm_delete')
         self.assertContains(detail, 'تکراری')
         self.assertContains(detail, 'اشتباه')
+        select = '<option value="outdated">درخواست قدیمی و منتفی‌شده</option>'
+        self.assertContains(detail, select, html=True)
+        self.assertContains(detail, '<option value="duplicate">درخواست تکراری</option>', html=True)
         self.assertTrue(PaymentRequest.objects.filter(pk=payment.pk).exists())
         self.assertFalse(payment.events.exists())
 

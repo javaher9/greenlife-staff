@@ -338,6 +338,7 @@ def payment_detail(request, pk):
         'clarification_messages': clarification_messages,
         'can_edit': payment.history_can_edit, 'is_executive': is_executive,
         'can_delete': payment.history_can_delete,
+        'deletion_reasons': PaymentRequest.DELETION_REASONS,
         'delete_return_to': request.GET.get('return_to', '') if request.GET.get('return_to') in ('admin', 'expenses') else '',
         'open_delete': request.GET.get('focus') == 'delete',
         'can_complete': (
@@ -515,14 +516,15 @@ def executive_change_unpaid(request, pk):
 @login_required
 @require_POST
 def executive_delete_unpaid(request, pk):
-    """Remove a duplicate/mistaken request from every operational surface."""
+    """Remove an unpaid request from every operational surface."""
     if not request.user.is_active or not executive(request.user):
         raise PermissionDenied()
     reason = request.POST.get('reason', '')
-    if reason not in dict(PaymentRequest.DELETION_REASONS):
-        return HttpResponseBadRequest('حذف فقط برای درخواست تکراری یا ثبت اشتباهی مجاز است؛ علت را انتخاب کنید.')
+    deletion_reasons = dict(PaymentRequest.DELETION_REASONS)
+    if reason not in deletion_reasons:
+        return HttpResponseBadRequest('علت حذف درخواست را انتخاب کنید.')
     if request.POST.get('confirm_delete') != 'yes':
-        return HttpResponseBadRequest('برای حذف، تکراری یا اشتباهی بودن درخواست را تأیید کنید.')
+        return HttpResponseBadRequest('حذف این درخواست را تأیید کنید.')
     with transaction.atomic():
         # The same lock is used by payment, review, edit, and reassignment.
         # A stale page cannot revive a deleted request or delete a payment
@@ -536,7 +538,7 @@ def executive_delete_unpaid(request, pk):
         payment.save(update_fields=['deleted_at', 'deleted_by', 'deletion_reason'])
         PaymentEvent.objects.create(
             payment=payment, actor=request.user, action='executive_delete',
-            notes=dict(PaymentRequest.DELETION_REASONS)[reason],
+            notes=deletion_reasons[reason],
         )
     messages.success(request, 'درخواست از سوابق و تمام صف‌های تأیید و پرداخت حذف شد.')
     return_to = request.POST.get('return_to', '')

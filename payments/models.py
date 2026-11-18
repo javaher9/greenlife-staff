@@ -48,7 +48,11 @@ class PaymentRequest(models.Model):
         ('personal', 'حساب شخصی مدیر'), ('company', 'حساب شرکت'),
         ('other', 'سایر حساب‌ها'),
     ]
-    DELETION_REASONS = [('duplicate', 'درخواست تکراری'), ('mistake', 'ثبت اشتباهی')]
+    DELETION_REASONS = [
+        ('duplicate', 'درخواست تکراری'),
+        ('outdated', 'درخواست قدیمی و منتفی‌شده'),
+        ('mistake', 'ثبت اشتباهی'),
+    ]
     kind = models.CharField(max_length=16,choices=TYPES)
     amount_toman = models.PositiveBigIntegerField(validators=[MinValueValidator(1)])
     description = models.TextField()
