@@ -232,6 +232,13 @@ class ReferralProfile(models.Model):
 
 class CallCenterLeadGroup(models.Model):
     """Shared call-center folders visible to every flower/operator."""
+    guidance = models.TextField(blank=True, default="")
+
+    @property
+    def display_guidance(self):
+        from .group_guidance import default_group_guidance
+        return self.guidance or default_group_guidance(self.name)
+
     owner=models.ForeignKey(
         EmployeeProfile,on_delete=models.SET_NULL,null=True,blank=True,
         related_name='call_center_lead_groups',
