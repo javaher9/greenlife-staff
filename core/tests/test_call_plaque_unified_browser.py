@@ -24,12 +24,15 @@ class UnifiedCallBrowserTests(StaticLiveServerTestCase):
         lead = ReferralLead.objects.create(full_name='تست یکپارچگی', phone='09120000001',
             referrer=referrer, assigned_to=worker.profile, status='contacted', contact_result='follow_up',
             next_follow_up=timezone.localdate(), notes='یادداشت پیگیری قدیمی')
+        sessions = {}
+        for user in (worker, manager):
+            self.client.force_login(user)
+            sessions[user.pk] = self.client.cookies[settings.SESSION_COOKIE_NAME].value
         with sync_playwright() as driver:
             browser = driver.chromium.launch(executable_path=os.environ.get('PLAQUE_TEST_BROWSER'))
             for user, path in [(worker,'/call-center/follow-ups/?tab=today'), (manager,'/management/all-leads/')]:
-                self.client.force_login(user)
                 page = browser.new_page(viewport={'width': 1280 if user==worker else 768, 'height': 720})
-                page.context.add_cookies([{'name':settings.SESSION_COOKIE_NAME, 'value':self.client.cookies[settings.SESSION_COOKIE_NAME].value,'url':self.live_server_url}])
+                page.context.add_cookies([{'name':settings.SESSION_COOKIE_NAME, 'value':sessions[user.pk],'url':self.live_server_url}])
                 page.goto(self.live_server_url+path)
                 page.locator('[data-call-plaque-url]').first.click()
                 dialog = page.locator('dialog[open]')
@@ -41,12 +44,12 @@ class UnifiedCallBrowserTests(StaticLiveServerTestCase):
                     dialog.locator('[data-cp-field=notes]').fill('پیگیری بعد از سفر')
                     dialog.locator('[data-cp-finalize]').first.click()
                     dialog.locator('.cp-history-item').wait_for()
-                    lead.refresh_from_db()
-                    self.assertEqual(lead.next_follow_up, timezone.localdate()+timedelta(days=2))
-                    self.assertEqual(lead.call_sessions.filter(state='final').count(), 1)
                 else:
-                    dialog.get_by_text('پیگیری بعد از سفر', exact=True).wait_for()
+                    dialog.locator('.cp-manager-note').filter(has_text='پیگیری بعد از سفر').wait_for()
                     self.assertTrue(dialog.locator('#cpBeforeTab').is_visible())
                     self.assertFalse(dialog.locator('[data-cp-finalize]').first.is_visible())
                 page.close()
             browser.close()
+        lead.refresh_from_db()
+        self.assertEqual(lead.next_follow_up, timezone.localdate()+timedelta(days=2))
+        self.assertEqual(lead.call_sessions.filter(state='final').count(), 1)
