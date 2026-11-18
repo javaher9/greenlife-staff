@@ -1,5 +1,5 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'core/call-plaque.css' %}?v=disc-cards-2">
+<link rel="stylesheet" href="{% static 'core/call-plaque.css' %}?v=numbered-cards-3">
 <dialog id="glCallPlaque" aria-labelledby="cpTitle" aria-describedby="cpSubtitle" data-operator="{{ user.get_full_name|default:user.username }}">
   <div class="cp-shell">
     <header class="cp-header">
@@ -56,7 +56,6 @@
                 <section class="cp-disc" aria-labelledby="cpStyleTitle">
                   <div class="cp-disc-row">
                     <h4 id="cpStyleTitle">تست دیسک</h4>
-                    <p class="cp-disc-prompt">چه سبک گفت‌وگویی برای مخاطب راحت‌تر است؟</p>
                     <div class="cp-disc-choices" dir="ltr" role="group" aria-labelledby="cpStyleTitle">
                       {% for letter in "DISC" %}<button type="button" data-disc-letter="{{ letter }}" aria-pressed="false">{{ letter }}</button>{% endfor %}
                     </div>
@@ -121,4 +120,4 @@
 })();
 </script>
 <script src="{% static 'core/call-plaque-calendar.js' %}?v=1"></script>
-<script src="{% static 'core/call-plaque.js' %}?v=disc-cards-2"></script>
+<script src="{% static 'core/call-plaque.js' %}?v=numbered-cards-3"></script>
