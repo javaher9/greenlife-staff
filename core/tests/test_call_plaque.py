@@ -347,3 +347,15 @@ class CallPlaqueTests(TestCase):
             summaries = call_plaque_summaries([self.lead.pk, self.other_lead.pk])
         self.assertIsNone(summaries[self.lead.pk]['score'])
         self.assertNotIn(self.other_lead.pk, summaries)
+
+    def test_disc_codes_reflect_finalized_style_without_guessing_legacy_mixed(self):
+        data = self.answered()
+        for version, style in enumerate(('direct', 'mixed', 'DS', 'DC', 'CD')):
+            data['communication_style'] = style
+            response = self.post(data, version=version)
+            self.assertEqual(response.status_code, 200)
+            expected = {'direct':'D', 'mixed':''}.get(style, style)
+            self.assertEqual(response.json()['profile']['disc_code'], expected)
+            self.assertEqual(call_plaque_summaries([self.lead.pk])[self.lead.pk]['disc_code'], expected)
+        data['communication_style'] = 'DD'
+        self.assertEqual(self.post(data, version=5).status_code, 400)

@@ -13,7 +13,7 @@ from django.views.decorators.http import require_http_methods
 
 from .call_center_identity import call_center_display_name
 from .call_plaque import (
-    COMMUNICATION_STYLES, ENUMS, OUTCOMES, empty_data, merge_profile,
+    COMMUNICATION_STYLES, ENUMS, OUTCOMES, disc_code, empty_data, merge_profile,
     normalize_data, safe_data, score_readiness,
 )
 from .follow_up_agenda import previous_follow_up, record_follow_up
@@ -58,6 +58,7 @@ def _payload(lead, user, *, editable, restricted, profile=None):
         profile = LeadCallProfile.objects.filter(lead=lead).select_related('draft__actor', 'latest_session').first()
     data = safe_data(profile.data if profile else empty_data(), restricted=restricted)
     profile_data = dict(data)
+    profile_data['disc_code'] = disc_code(data.get('communication_style'))
     profile_data['readiness'] = (profile.readiness if profile else {}) or score_readiness({}, do_not_contact=bool(profile and profile.do_not_contact))
     profile_data['do_not_contact'] = bool(profile and profile.do_not_contact)
     profile_data['updated_at'] = timezone.localtime(profile.latest_session.created_at).isoformat() if profile and profile.latest_session_id else None

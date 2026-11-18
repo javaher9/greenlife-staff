@@ -33,6 +33,20 @@ COMMUNICATION_STYLES = {
     'unknown': 'هنوز مشخص نیست', 'direct': 'خلاصه و نتیجه‌محور', 'details': 'جزئیات و روش کار',
     'social': 'گفت‌وگو و تجربه مراجعه', 'support': 'آرام و مرحله‌به‌مرحله', 'mixed': 'ترکیبی',
 }
+DISC_CODES = {'direct': 'D', 'social': 'I', 'support': 'S', 'details': 'C'}
+for primary, first in DISC_CODES.items():
+    for secondary, second in DISC_CODES.items():
+        if primary != secondary:
+            pair = first + second
+            COMMUNICATION_STYLES[pair] = f'{pair} · {COMMUNICATION_STYLES[primary]} و {COMMUNICATION_STYLES[secondary]}'
+
+
+def disc_code(style):
+    if style in DISC_CODES:
+        return DISC_CODES[style]
+    return style if style in COMMUNICATION_STYLES and len(style) == 2 else ''
+
+
 OUTCOMES = {
     'answered': 'گفت‌وگو انجام شد', 'no_answer': 'پاسخ نداد', 'follow_up': 'پیگیری با اجازه',
     'not_interested': 'فعلاً تمایل ندارد', 'wrong_number': 'شماره یا مخاطب اشتباه', 'do_not_contact': 'درخواست عدم تماس',
@@ -246,8 +260,11 @@ def lead_do_not_contact(lead):
 def call_plaque_summaries(leads_or_ids):
     ids = [getattr(item, 'pk', item) for item in leads_or_ids]
     result = {}
-    for row in LeadCallProfile.objects.filter(lead_id__in=ids).only('lead_id', 'readiness', 'do_not_contact'):
-        value = row.readiness or score_readiness({}, do_not_contact=row.do_not_contact)
-        result[row.lead_id] = {key: value.get(key) for key in ('score', 'band', 'label', 'confidence')}
-        result[row.lead_id]['do_not_contact'] = row.do_not_contact
+    profiles = LeadCallProfile.objects.filter(lead_id__in=ids).values_list(
+        'lead_id', 'readiness', 'do_not_contact', 'data__communication_style',
+    )
+    for lead_id, readiness, blocked, style in profiles:
+        value = readiness or score_readiness({}, do_not_contact=blocked)
+        result[lead_id] = {key: value.get(key) for key in ('score', 'band', 'label', 'confidence')}
+        result[lead_id].update(do_not_contact=blocked, disc_code=disc_code(style))
     return result

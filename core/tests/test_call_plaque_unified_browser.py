@@ -37,12 +37,19 @@ class UnifiedCallBrowserTests(StaticLiveServerTestCase):
                 page = browser.new_page(viewport={'width': 1280 if user==worker else 768, 'height': 720})
                 page.context.add_cookies([{'name':settings.SESSION_COOKIE_NAME, 'value':sessions[user.pk],'url':self.live_server_url}])
                 page.goto(self.live_server_url+path)
+                if user == manager:
+                    page.locator('.al-plaque .al-disc').filter(has_text='DC').wait_for()
                 page.locator('[data-call-plaque-url]').first.click()
                 dialog = page.locator('dialog[open]')
                 dialog.get_by_text('یادداشت پیگیری قدیمی', exact=True).wait_for()
                 if user==worker:
                     dialog.locator('#cpAfterTab').click()
-                    dialog.locator('[data-cp-field=communication_style]').select_option('details')
+                    dialog.get_by_role('button', name='راهنمای تست دیسک').click()
+                    self.assertTrue(dialog.locator('#cpDiscGuide').is_visible())
+                    dialog.get_by_role('button', name='راهنمای تست دیسک').click()
+                    for letter in ('D', 'I', 'I', 'C'):
+                        dialog.locator(f'[data-disc-letter="{letter}"]').click()
+                    self.assertEqual(dialog.locator('[data-disc-result]').inner_text(), 'DC')
                     dialog.locator('[data-cp-field=communication_evidence]').fill('درباره جزئیات روش پرسید')
                     for key, stars in [('interest', '4'), ('budget_fit', '2')]:
                         dialog.locator(f'input[name="cp-rating-{key}"][value="{stars}"]').check()
@@ -54,6 +61,7 @@ class UnifiedCallBrowserTests(StaticLiveServerTestCase):
                         area = dialog.locator('[data-cp-assessment]')
                         directory = Path('test-artifacts')
                         directory.mkdir(exist_ok=True)
+                        area.locator('.cp-disc').screenshot(path=directory / f'all-leads-disc-{width}.png')
                         ratings = area.locator('section[aria-labelledby="cpRatingsTitle"]')
                         ratings.screenshot(path=directory / f'all-leads-call-assessment-{width}.png')
                         self.assertTrue(area.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1'))
@@ -66,7 +74,7 @@ class UnifiedCallBrowserTests(StaticLiveServerTestCase):
                 else:
                     dialog.locator('.cp-manager-note').filter(has_text='پیگیری بعد از سفر').wait_for()
                     summary = dialog.locator('#cpBefore')
-                    for value in ('۴ از ۵', '۲ از ۵', 'جزئیات‌محور (C)'):
+                    for value in ('۴ از ۵', '۲ از ۵', 'DC'):
                         self.assertIn(value, summary.inner_text())
                     self.assertTrue(dialog.locator('#cpBeforeTab').is_visible())
                     self.assertFalse(dialog.locator('[data-cp-finalize]').first.is_visible())

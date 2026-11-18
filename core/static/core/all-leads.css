@@ -1,4 +1,6 @@
 /* Executive management context: dark at every viewport. Lead Hub semantic colors. */
+.al-plaque-head .al-disc{flex:none;font-size:10px;font-weight:700;border:1px solid #776589;color:#e5cfff;border-radius:5px;padding:0 4px;line-height:15px}
+.al-plaque-head .al-name{margin-inline-end:auto}
 body.gl-premium-dark.gl-page-management_all_leads #all-leads .al-heading{background:transparent!important;box-shadow:none!important;border:0!important;padding:0!important;min-height:0!important;position:static!important}
 body.gl-premium-dark.gl-page-management_all_leads #all-leads .al-heading h1{color:#f5f7fb!important;font-size:22px!important;margin:3px 0!important}
 body.gl-premium-dark.gl-page-management_all_leads #all-leads .al-filters label{margin:0!important;white-space:nowrap}

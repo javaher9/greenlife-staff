@@ -1,5 +1,5 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'core/call-plaque.css' %}?v=20261118-assess2">
+<link rel="stylesheet" href="{% static 'core/call-plaque.css' %}?v=disc-1">
 <dialog id="glCallPlaque" aria-labelledby="cpTitle" aria-describedby="cpSubtitle" data-operator="{{ user.get_full_name|default:user.username }}">
   <div class="cp-shell">
     <header class="cp-header">
@@ -51,11 +51,28 @@
             </fieldset>
             <div class="cp-wide" data-cp-assessment-after>
               <div class="cp-assessment" data-cp-assessment>
-                <section aria-labelledby="cpStyleTitle">
-                  <h4 id="cpStyleTitle">سبک شخصیتی در گفت‌وگو</h4>
-                  <label>مخاطب چه نوع توضیحی را ترجیح داد؟<select data-cp-field="communication_style"></select></label>
-                  <p class="cp-muted" data-cp-style-advice></p>
-                  <label>نشانه‌ای از همین مکالمه<input type="text" maxlength="400" data-cp-field="communication_evidence" placeholder="مثلاً گفت «اول نتیجه را کوتاه بگویید»"></label>
+                <section class="cp-disc" aria-labelledby="cpStyleTitle">
+                  <div class="cp-disc-row">
+                    <h4 id="cpStyleTitle">تست دیسک</h4>
+                    <div class="cp-disc-choices" dir="ltr" role="group" aria-labelledby="cpStyleTitle">
+                      {% for letter in "DISC" %}<button type="button" data-disc-letter="{{ letter }}" aria-pressed="false">{{ letter }}</button>{% endfor %}
+                    </div>
+                    <output dir="auto" data-disc-result></output>
+                    <button type="button" class="cp-disc-help" aria-label="راهنمای تست دیسک" aria-expanded="false" aria-controls="cpDiscGuide">؟</button>
+                  </div>
+                  <div id="cpDiscGuide" hidden>
+                    <p>سبک گفت‌وگو را از روی ترجیحی که مخاطب بیان کرد انتخاب کنید. حرف اول اصلی و حرف دوم مکمل است. لمس دوباره، حرف را برمی‌دارد. انتخاب سوم، حرف مکمل را عوض می‌کند.</p>
+                    <dl>
+                      <dt>D</dt><dd>نتیجه‌محور · می‌پرسد «نتیجه چیست؟» مستقیم سر اصل موضوع بروید.</dd>
+                      <dt>I</dt><dd>گفت‌وگومحور · از شنیدن تجربه و مثال استقبال می‌کند. فرصت گفت‌وگو بدهید.</dd>
+                      <dt>S</dt><dd>آرام و مرحله‌ای · می‌خواهد بداند قدم بعدی چیست. مراحل را با حوصله توضیح دهید.</dd>
+                      <dt>C</dt><dd>جزئیات‌محور · دربارهٔ روش و شواهد می‌پرسد. پاسخ دقیق بدهید.</dd>
+                    </dl>
+                  </div>
+                  <div data-disc-observation hidden>
+                    <label>نشانه‌ای از همین مکالمه<input type="text" maxlength="400" data-cp-field="communication_evidence" placeholder="مثلاً گفت «اول نتیجه را کوتاه بگویید»"></label>
+                    <p class="cp-muted" data-cp-style-advice></p>
+                  </div>
                 </section>
                 <section aria-labelledby="cpRatingsTitle">
                   <h4 id="cpRatingsTitle">اشتیاق و توان پرداخت</h4>
@@ -88,4 +105,4 @@
 })();
 </script>
 <script src="{% static 'core/call-plaque-calendar.js' %}?v=1"></script>
-<script src="{% static 'core/call-plaque.js' %}?v=20261118-assess1"></script>
+<script src="{% static 'core/call-plaque.js' %}?v=disc-1"></script>
