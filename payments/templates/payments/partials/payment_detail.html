@@ -1,0 +1,89 @@
+{% load jalali_tags money_display %}
+<div class="payment-detail state-{{ payment.state }}">
+  <header class="detail-heading">
+    <div><div class="row-meta">درخواست #{{ payment.pk }} · {{ payment.get_kind_display }}</div><h2>{{ payment.description|truncatechars:120 }}</h2><span class="status">{{ payment.history_state_label }}</span></div>
+    <div class="payment-amount">{{ payment.amount_toman|million_toman }}<small>میلیون تومان</small><small>{{ payment.amount_toman }} تومان · مبلغ دقیق</small></div>
+  </header>
+  <dl class="detail-grid">
+    <div><dt>درخواست‌دهنده</dt><dd>{{ payment.requester_name }}{% if payment.requester_id == request.user.id %} <span class="self-label">شما</span>{% endif %}</dd></div>
+    <div><dt>مسئول پرداخت</dt><dd>{{ payment.assignee_name|default:'هنوز تعیین نشده' }}{% if payment.assigned_to_id == request.user.id %} <span class="self-label">شما</span>{% endif %}</dd></div>
+    <div><dt>زمان ثبت درخواست</dt><dd><time datetime="{{ payment.created_at|date:'c' }}">{{ payment.created_at|jdatetime_en }}</time></dd></div>
+    <div><dt>اولویت / مهلت پرداخت</dt><dd>{{ payment.get_priority_display }}{% if payment.due_date %} · {{ payment.due_date|jdate_en }}{% else %} · بدون مهلت ثبت‌شده{% endif %}</dd></div>
+    <div class="span-two"><dt>شرح کامل</dt><dd class="detail-description">{{ payment.description }}</dd></div>
+  </dl>
+
+  <section class="detail-block">
+    <h3>اطلاعات درخواست و گیرنده</h3>
+    <dl class="detail-grid">
+      <div><dt>نام گیرنده</dt><dd>{{ payment.recipient_name|default:'ثبت نشده' }}</dd></div>
+      <div><dt>شعبه</dt><dd>{{ payment.branch.name|default:'ثبت نشده' }}</dd></div>
+      {% if payment.recipient_card %}<div><dt>شماره کارت گیرنده</dt><dd><bdi class="bank-value">{{ payment.recipient_card }}</bdi></dd></div>{% endif %}
+      {% if payment.recipient_iban %}<div><dt>شماره شبای گیرنده</dt><dd><bdi class="bank-value">{{ payment.recipient_iban }}</bdi></dd></div>{% endif %}
+      <div><dt>موضوع هزینه</dt><dd>{{ payment.get_category_display }}</dd></div>
+      <div><dt>متعلق به</dt><dd>{{ payment.get_cost_owner_display }}</dd></div>
+      {% if payment.cost_center %}<div><dt>مرکز هزینه / پروژه</dt><dd>{{ payment.cost_center }}</dd></div>{% endif %}
+      {% if payment.beneficiary %}<div><dt>ذی‌نفع</dt><dd>{{ payment.beneficiary.get_full_name|default:payment.beneficiary.username }}</dd></div>{% endif %}
+      {% if payment.approved_by %}<div><dt>تأییدکننده</dt><dd>{{ payment.approved_by.get_full_name|default:payment.approved_by.username }}</dd></div>{% endif %}
+      {% if payment.approved_at %}<div><dt>زمان تأیید</dt><dd>{{ payment.approved_at|jdatetime_en }}</dd></div>{% endif %}
+    </dl>
+  </section>
+
+  <section id="paymentReceipt" class="detail-block" data-detail-section="receipt">
+    <h3>اطلاعات پرداخت و رسید</h3>
+    {% if payment.state == 'paid' %}
+      <dl class="detail-grid">
+        <div><dt>زمان پرداخت</dt><dd>{{ payment.paid_at|jdatetime_en|default:'ثبت نشده' }}</dd></div>
+        <div><dt>شماره پیگیری</dt><dd><bdi class="bank-value">{{ payment.payment_reference|default:'ثبت نشده' }}</bdi></dd></div>
+        <div><dt>روش پرداخت</dt><dd>{% if payment.payment_method %}{{ payment.get_payment_method_display }}{% else %}ثبت نشده{% endif %}</dd></div>
+        <div><dt>حساب مبدأ پرداخت</dt><dd>{% if payment.funding_source %}{{ payment.get_funding_source_display }}{% else %}ثبت نشده{% endif %}</dd></div>
+      </dl>
+      {% if payment.receipt_kind != 'none' %}
+        <div class="receipt-card">
+          <a href="{% url 'payments_receipt' payment.pk %}" class="receipt-thumb {% if payment.receipt_kind == 'pdf' %}pdf{% endif %}" aria-label="دریافت اصل رسید پرداخت">
+            {% if payment.receipt_kind == 'image' %}<span class="receipt-fallback">تصویر</span><img src="{% url 'payments_receipt_thumbnail' payment.pk %}" alt="پیش‌نمایش رسید پرداخت" width="110" height="132" decoding="async" data-receipt-image>{% elif payment.receipt_kind == 'pdf' %}PDF{% else %}فایل{% endif %}
+          </a>
+          <div><strong>رسید پرداخت نهایی</strong><p>برای دیدن نسخه کامل، اصل رسید را دریافت کنید.</p><a class="btn quiet compact" href="{% url 'payments_receipt' payment.pk %}">دریافت اصل رسید</a></div>
+        </div>
+      {% else %}<p class="hint" style="margin-top:14px">برای این پرداخت، رسیدی در سامانه ثبت نشده است.</p>{% endif %}
+      <p class="detail-notice">این درخواست پرداخت شده است؛ اطلاعات پرداخت برای حفظ سابقه قابل ویرایش نیست.</p>
+    {% else %}<p class="muted small">پرداخت نهایی این درخواست هنوز ثبت نشده است.</p>{% if can_complete %}<a class="btn compact" style="margin-top:12px" href="{% url 'payments_workspace' %}#assignedPayments">رفتن به دستورهای پرداخت من</a>{% endif %}{% endif %}
+  </section>
+
+  {% if payment.personal_receipt_kind != 'none' %}
+    <section class="detail-block">
+      <h3>فاکتور هزینه اولیه</h3>
+      <p class="hint">مدرک هزینه‌ای که درخواست‌دهنده قبلاً پرداخت کرده است؛ رسید بازپرداخت در بخش «اطلاعات پرداخت و رسید» نمایش داده می‌شود.</p>
+      <div class="receipt-card"><a href="{% url 'payments_personal_receipt' payment.pk %}" class="receipt-thumb {% if payment.personal_receipt_kind == 'pdf' %}pdf{% endif %}" aria-label="دریافت فاکتور هزینه اولیه">{% if payment.personal_receipt_kind == 'image' %}<span class="receipt-fallback">تصویر</span><img src="{% url 'payments_personal_receipt_thumbnail' payment.pk %}" alt="پیش‌نمایش فاکتور اولیه" width="110" height="132" data-receipt-image>{% elif payment.personal_receipt_kind == 'pdf' %}PDF{% else %}فایل{% endif %}</a><a class="btn quiet compact" href="{% url 'payments_personal_receipt' payment.pk %}">دریافت فاکتور اولیه</a></div>
+    </section>
+  {% endif %}
+
+  <section class="detail-block" aria-labelledby="paymentTimelineTitle">
+    <h3 id="paymentTimelineTitle">گردش درخواست</h3>
+    {% if timeline %}<ol class="timeline">{% for event in timeline %}
+      <li><div class="timeline-head"><strong>{{ event.action_label }}</strong><time datetime="{{ event.created_at|date:'c' }}">{{ event.created_at|jdatetime_en }}</time></div><p class="timeline-actor">{{ event.actor_name }}</p>{% if event.notes %}<p class="timeline-notes">{{ event.notes }}</p>{% endif %}</li>
+    {% endfor %}</ol>{% else %}<p class="hint">برای این درخواست رویداد جداگانه‌ای در سامانه ثبت نشده است.</p>{% endif %}
+  </section>
+
+  {% if clarification_messages %}
+    <section class="detail-block"><h3>توضیحات و پاسخ‌ها</h3>{% for note in clarification_messages %}<div class="clarification-note"><div class="timeline-head"><strong>{{ note.author.get_full_name|default:note.author.username }}</strong><time>{{ note.created_at|jdatetime_en }}</time></div><p>{{ note.message }}</p></div>{% endfor %}</section>
+  {% endif %}
+
+  {% if can_edit %}
+    <details id="paymentActions" class="detail-block detail-actions" data-detail-section="actions">
+      <summary>ویرایش یا لغو درخواست</summary>
+      <form method="post" action="{% url 'payments_executive_change' payment.pk %}">
+        {% csrf_token %}<input type="hidden" name="action" value="edit"><input type="hidden" name="return_to" value="detail">
+        <div class="field"><label for="editAmount-{{ payment.pk }}">مبلغ (میلیون تومان)</label><input id="editAmount-{{ payment.pk }}" type="number" name="amount_million" min="0.000001" step="0.000001" value="{{ payment.amount_toman|toman_million }}" required></div>
+        <div class="field"><label for="editDescription-{{ payment.pk }}">شرح درخواست</label><textarea id="editDescription-{{ payment.pk }}" name="description" maxlength="2000" required>{{ payment.description }}</textarea></div>
+        <button class="btn compact" type="submit">ذخیره اصلاحات</button>
+      </form>
+      <details class="cancel-area"><summary>لغو درخواست</summary><p class="hint">درخواست از صف پرداخت خارج می‌شود و علت لغو در سابقه باقی می‌ماند.</p>
+        <form method="post" action="{% url 'payments_executive_change' payment.pk %}" data-confirm-cancel>
+          {% csrf_token %}<input type="hidden" name="action" value="cancel"><input type="hidden" name="return_to" value="detail">
+          <div class="field"><label for="cancelReason-{{ payment.pk }}">علت لغو</label><textarea id="cancelReason-{{ payment.pk }}" name="reason" minlength="5" maxlength="200" placeholder="مثلاً درخواست تکراری یا منتفی‌شدن هزینه" required></textarea></div>
+          <button class="btn danger compact" type="submit">تأیید لغو درخواست</button>
+        </form>
+      </details>
+    </details>
+  {% endif %}
+</div>

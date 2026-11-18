@@ -1,0 +1,18 @@
+{% load static %}
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>سابقه درخواست {{ payment.pk }} | گرین‌لایف</title>
+  <link rel="stylesheet" href="{% static 'payments/workspace.css' %}">
+  <script src="{% static 'payments/workspace.js' %}" defer></script>
+</head>
+<body>
+<main class="payment-workspace">
+  <div class="detail-layout">
+    <header class="hero"><div><div class="eyebrow">GREEN LIFE · FINANCE</div><h1>جزئیات و گردش درخواست</h1></div><a class="btn quiet" href="{% url 'payments_workspace' %}#paymentHistory">بازگشت به سوابق</a></header>
+    <article class="glass">{% include 'payments/partials/payment_detail.html' %}</article>
+  </div>
+</main>
+</body>
+</html>

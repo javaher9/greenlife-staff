@@ -6,12 +6,16 @@ from django.db import transaction, models
 from django.db.models import Sum, Q
 from django.core.paginator import Paginator
 from django.utils.dateparse import parse_date
-from django.http import HttpResponseBadRequest, FileResponse, Http404
+from django.http import HttpResponse, HttpResponseBadRequest, FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_safe
 from django.contrib.auth.models import User
 from .models import PaymentRequest, PaymentEvent, PettyCashExpense, PaymentClarification, SavedPaymentRecipient
+from .history import (
+    EVENT_LABELS, decorate_payment, display_name, history_context,
+    presentation_queryset, visible_payments,
+)
 
 def executive(user):
     return user.is_authenticated and user.username.lower() in settings.EXECUTIVE_USERNAMES
@@ -240,6 +244,8 @@ def executive_save_recipient(request):
 
 @login_required
 def workspace(request):
+    if not request.user.is_active:
+        raise PermissionDenied()
     if not staff(request.user) and not executive(request.user) and not assigned_operator(request.user) and not getattr(getattr(request.user,'profile',None),'can_manage_petty_cash',False) and not getattr(getattr(request.user,'profile',None),'can_claim_personal_expense',False):
         raise PermissionDenied()
     operation=request.POST.get('operation') if request.method=='POST' else None
@@ -300,7 +306,93 @@ def workspace(request):
     expenses=PettyCashExpense.objects.filter(holder=request.user)
     received=PaymentRequest.objects.filter(kind='petty_cash',beneficiary=request.user,state='paid').aggregate(x=Sum('amount_toman'))['x'] or 0
     spent=expenses.aggregate(x=Sum('amount_toman'))['x'] or 0
-    return render(request,'payments/workspace.html',dict(personal_form=personal_form,can_request=staff(request.user) or executive(request.user),can_petty=executive(request.user) or getattr(getattr(request.user,'profile',None),'can_manage_petty_cash',False), can_personal=executive(request.user) or getattr(getattr(request.user,'profile',None),'can_claim_personal_expense',False),submit_operation=operation,posted_million=request.POST.get('req-amount_million','') if operation=='request' else '',posted_exp_million=request.POST.get('exp-amount_million','') if operation=='expense' else '',form=form,expense_form=expense_form,queue=queue,completed=completed,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,has_petty_cash=(received>0 or spent>0),is_executive=executive(request.user),payment_methods=PaymentRequest.PAYMENT_METHODS,funding_sources=PaymentRequest.FUNDING_SOURCES, can_submit=staff(request.user) or executive(request.user)))
+    response = render(request,'payments/workspace.html',dict(personal_form=personal_form,can_request=staff(request.user) or executive(request.user),can_petty=executive(request.user) or getattr(getattr(request.user,'profile',None),'can_manage_petty_cash',False), can_personal=executive(request.user) or getattr(getattr(request.user,'profile',None),'can_claim_personal_expense',False),submit_operation=operation,posted_million=request.POST.get('req-amount_million','') if operation=='request' else '',posted_exp_million=request.POST.get('exp-amount_million','') if operation=='expense' else '',form=form,expense_form=expense_form,queue=queue,completed=completed,clarifications=clarifications,mine=mine,expenses=expenses[:20],balance=received-spent,has_petty_cash=(received>0 or spent>0),is_executive=executive(request.user),payment_methods=PaymentRequest.PAYMENT_METHODS,funding_sources=PaymentRequest.FUNDING_SOURCES, can_submit=staff(request.user) or executive(request.user),**history_context(request,executive(request.user))))
+    response['Cache-Control'] = 'no-store, private'
+    return response
+
+
+@login_required
+@require_safe
+def payment_detail(request, pk):
+    """Read a payment and its recorded audit trail inside the viewer's scope."""
+    if not request.user.is_active:
+        raise PermissionDenied()
+    is_executive = executive(request.user)
+    payment = get_object_or_404(
+        presentation_queryset(visible_payments(request.user, is_executive)), pk=pk,
+    )
+    decorate_payment(payment, is_executive)
+    timeline = list(payment.events.select_related('actor').order_by('created_at', 'pk'))
+    for event in timeline:
+        event.action_label = EVENT_LABELS.get(event.action, 'رویداد ثبت‌شده')
+        event.actor_name = display_name(event.actor)
+    clarification_messages = payment.clarifications.select_related('author').order_by('created_at', 'pk')
+    template = (
+        'payments/partials/payment_detail.html' if request.GET.get('panel') == '1'
+        else 'payments/history_detail.html'
+    )
+    response = render(request, template, {
+        'payment': payment, 'timeline': timeline,
+        'clarification_messages': clarification_messages,
+        'can_edit': payment.history_can_edit, 'is_executive': is_executive,
+        'can_complete': (
+            payment.state == 'approved' and payment.assigned_to_id == request.user.pk
+            and payment.channel in ('consultant', 'staff')
+            and (is_executive or getattr(getattr(request.user, 'profile', None), 'can_execute_payments', False))
+        ),
+    })
+    response['Cache-Control'] = 'no-store, private'
+    response['X-Content-Type-Options'] = 'nosniff'
+    return response
+
+
+def _receipt_thumbnail(request, pk, *, personal=False):
+    """Decode a small protected preview without publishing or modifying originals."""
+    from io import BytesIO
+    import warnings
+    from PIL import Image, ImageOps, UnidentifiedImageError
+
+    if not request.user.is_active:
+        raise PermissionDenied()
+    payments = visible_payments(request.user, executive(request.user))
+    payments = payments.filter(kind='personal_expense') if personal else payments.filter(state='paid')
+    payment = get_object_or_404(payments, pk=pk)
+    receipt_file = payment.personal_expense_receipt if personal else payment.payment_receipt
+    if not receipt_file:
+        raise Http404()
+    try:
+        if receipt_file.size > 10 * 1024 * 1024:
+            raise Http404()
+        with receipt_file.open('rb') as source, warnings.catch_warnings():
+            warnings.simplefilter('error', Image.DecompressionBombWarning)
+            with Image.open(source) as original:
+                if original.format not in ('JPEG', 'PNG', 'WEBP') or original.width * original.height > 40000000:
+                    raise Http404()
+                original.thumbnail((160, 160), Image.Resampling.LANCZOS)
+                preview = ImageOps.exif_transpose(original).convert('RGBA')
+                flattened = Image.new('RGB', preview.size, 'white')
+                flattened.paste(preview, mask=preview.getchannel('A'))
+                output = BytesIO()
+                flattened.save(output, format='JPEG', quality=82, optimize=True)
+    except (OSError, ValueError, UnidentifiedImageError, Image.DecompressionBombError, Image.DecompressionBombWarning):
+        raise Http404()
+    response = HttpResponse(output.getvalue(), content_type='image/jpeg')
+    response['Cache-Control'] = 'no-store, private'
+    response['X-Content-Type-Options'] = 'nosniff'
+    response['Content-Disposition'] = 'inline; filename="payment-thumbnail.jpg"'
+    return response
+
+
+@login_required
+@require_safe
+def receipt_thumbnail(request, pk):
+    return _receipt_thumbnail(request, pk)
+
+
+@login_required
+@require_safe
+def personal_receipt_thumbnail(request, pk):
+    return _receipt_thumbnail(request, pk, personal=True)
 
 def payment_approved_assignees():
     """Only explicitly designated Green Life payment operators, never the whole workforce."""
@@ -410,6 +502,8 @@ def executive_change_unpaid(request, pk):
             PaymentEvent.objects.create(payment=p, actor=request.user, action='executive_edit',
                                         notes=(f'amount: {before_amount} -> {p.amount_toman}; '
                                                f'description: {before_description[:45]} -> {description[:45]}')[:250])
+    if request.POST.get('return_to') == 'detail':
+        return redirect('payments_detail', pk=p.pk)
     return redirect('payments_workspace')
 
 

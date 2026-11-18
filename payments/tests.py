@@ -1,8 +1,10 @@
 from io import BytesIO
+from tempfile import TemporaryDirectory
+from urllib.parse import parse_qs
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from core.models import Branch, EmployeeProfile
 from .models import PaymentRequest, PaymentEvent, PettyCashExpense
@@ -708,3 +710,275 @@ class SavedPaymentRecipientTests(TestCase):
         response=self.client.post(reverse('payments_executive_recipient_save'),{'name':'سنا','iban':'IR123'})
         self.assertEqual(response.status_code,400)
         self.assertEqual(SavedPaymentRecipient.objects.count(),0)
+
+
+class PaymentHistoryTests(TestCase):
+    """History discovery must not widen receipt or financial-record access."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.executive = User.objects.create_user(
+            username=next(iter(settings.EXECUTIVE_USERNAMES)),
+            first_name='علی', last_name='جواهریان', password='history-test-password',
+        )
+        cls.requester = User.objects.create_user(
+            username='history-requester', first_name='رضا', last_name='صادقی',
+            password='history-test-password',
+        )
+        cls.operator = User.objects.create_user(
+            username='history-operator', first_name='نادر', last_name='نادری',
+            password='history-test-password',
+        )
+        cls.outsider = User.objects.create_user(
+            username='history-outsider', password='history-test-password',
+        )
+        cls.branch = Branch.objects.create(name='History test branch')
+        for user in (cls.requester, cls.operator, cls.outsider):
+            EmployeeProfile.objects.update_or_create(user=user, defaults={
+                'branch': cls.branch, 'role': 'consultant', 'is_active': True,
+                'can_request_payments': True, 'can_execute_payments': True,
+            })
+
+    def setUp(self):
+        media = TemporaryDirectory(prefix='greenlife-history-tests-')
+        self.addCleanup(media.cleanup)
+        media_settings = override_settings(MEDIA_ROOT=media.name)
+        media_settings.enable()
+        self.addCleanup(media_settings.disable)
+
+    def payment(self, **overrides):
+        fields = {
+            'kind': 'payment', 'amount_toman': 3500000,
+            'description': 'هزینه تجهیزات آزمایشی مرکز',
+            'recipient_name': 'گیرنده آزمایشی',
+            'requester': self.requester, 'branch': self.branch,
+        }
+        fields.update(overrides)
+        return PaymentRequest.objects.create(**fields)
+
+    def history(self, **query):
+        response = self.client.get(reverse('payments_workspace'), query)
+        self.assertEqual(response.status_code, 200)
+        return response
+
+    def history_ids(self, response):
+        return [p.pk for p in response.context['history_page'].object_list]
+
+    def image_receipt(self):
+        from PIL import Image
+        buffer = BytesIO()
+        Image.new('RGB', (1200, 800), color='#186452').save(buffer, format='PNG')
+        return SimpleUploadedFile('receipt.png', buffer.getvalue(), content_type='image/png')
+
+    def test_executive_history_identifies_requester_separately_from_operator(self):
+        team_payment = self.payment(state='approved', assigned_to=self.operator)
+        own_payment = self.payment(requester=self.executive)
+        self.client.force_login(self.executive)
+        response = self.history()
+        self.assertEqual(set(self.history_ids(response)), {team_payment.pk, own_payment.pk})
+        record = next(p for p in response.context['history_page'] if p.pk == team_payment.pk)
+        self.assertEqual(record.requester_name, 'رضا صادقی')
+        self.assertEqual(record.assignee_name, 'نادر نادری')
+        self.assertEqual(response.context['history_stats']['total'], 2)
+        self.assertEqual(response.context['history_stats']['approved'], 1)
+
+    def test_staff_queries_cannot_expand_history_or_requester_directory(self):
+        own = self.payment(requester=self.operator)
+        assigned = self.payment(state='approved', assigned_to=self.operator)
+        hidden = self.payment(requester=self.outsider, description='Hidden financial request')
+        self.client.force_login(self.operator)
+        response = self.history(scope='all', requester=str(self.outsider.pk))
+        self.assertEqual(set(self.history_ids(response)), {own.pk, assigned.pk})
+        self.assertNotContains(response, hidden.description)
+        self.assertEqual(response.context['history_stats']['total'], 2)
+        self.assertFalse(response.context['history_requesters'])
+        self.assertEqual(response.context['history_filters']['requester'], '')
+
+    def test_mine_and_assigned_scopes_have_distinct_meanings(self):
+        own = self.payment(requester=self.executive, assigned_to=self.operator)
+        assigned = self.payment(state='approved', assigned_to=self.executive)
+        self.payment()
+        self.client.force_login(self.executive)
+        self.assertEqual(self.history_ids(self.history(scope='mine')), [own.pk])
+        self.assertEqual(self.history_ids(self.history(scope='assigned')), [assigned.pk])
+
+    def test_pagination_includes_older_records_and_filters_before_slicing(self):
+        oldest = self.payment(description='Unique older archived request', state='paid')
+        for index in range(27):
+            self.payment(description=f'Recent request {index}')
+        self.client.force_login(self.executive)
+        first = self.history()
+        second = self.history(page=2)
+        self.assertEqual(first.context['history_page'].paginator.count, 28)
+        self.assertEqual(len(self.history_ids(first)), 25)
+        self.assertEqual(len(self.history_ids(second)), 3)
+        self.assertNotIn(oldest.pk, self.history_ids(first))
+        self.assertIn(oldest.pk, self.history_ids(second))
+        self.assertFalse(set(self.history_ids(first)) & set(self.history_ids(second)))
+        self.assertEqual(self.history_ids(self.history(status='paid')), [oldest.pk])
+        self.assertEqual(self.history_ids(self.history(q='Unique older archived')), [oldest.pk])
+
+    def test_search_finds_requester_recipient_reference_and_persian_request_id(self):
+        payment = self.payment(
+            recipient_name='فروشنده آزمایشی ویژه', payment_reference='HISTORY-REF-445',
+        )
+        self.payment(requester=self.outsider, recipient_name='Someone else')
+        self.client.force_login(self.executive)
+        persian_id = str(payment.pk).translate(str.maketrans('0123456789', '۰۱۲۳۴۵۶۷۸۹'))
+        for query in ('رضا صادقی', 'فروشنده آزمایشی ویژه', 'HISTORY-REF-445', persian_id):
+            with self.subTest(query=query):
+                self.assertEqual(self.history_ids(self.history(q=query)), [payment.pk])
+
+    def test_filters_compose_and_pagination_query_preserves_the_selection(self):
+        target = self.payment(state='paid', description='Target transfer',
+                              payment_receipt='payment_receipts/target.png')
+        self.payment(state='approved', description='Target transfer')
+        self.payment(requester=self.outsider, state='paid', description='Target transfer',
+                     payment_receipt='payment_receipts/other.png')
+        self.client.force_login(self.executive)
+        response = self.history(q='Target', status='paid', scope='all',
+                                requester=str(self.requester.pk), receipt='yes', page=1)
+        self.assertEqual(self.history_ids(response), [target.pk])
+        query = parse_qs(response.context['history_query'])
+        self.assertNotIn('page', query)
+        for name, value in (('q', 'Target'), ('status', 'paid'),
+                            ('requester', str(self.requester.pk)), ('receipt', 'yes')):
+            self.assertEqual(query[name], [value])
+
+    def test_original_expense_invoice_does_not_count_as_payment_receipt(self):
+        claim = self.payment(kind='personal_expense', personal_expense_receipt='claims/invoice.pdf')
+        paid = self.payment(state='paid', payment_receipt='payment_receipts/settled.pdf')
+        self.client.force_login(self.executive)
+        self.assertEqual(self.history_ids(self.history(receipt='yes')), [paid.pk])
+        response = self.history(receipt='no')
+        self.assertEqual(self.history_ids(response), [claim.pk])
+        record = response.context['history_page'][0]
+        self.assertEqual(record.receipt_kind, 'none')
+        self.assertEqual(record.personal_receipt_kind, 'pdf')
+
+    def test_invalid_filters_and_page_do_not_error_or_hide_the_default_history(self):
+        payment = self.payment()
+        self.client.force_login(self.executive)
+        response = self.history(status='unknown', scope='foreign', requester='not-an-id',
+                                receipt='unsafe', page='not-a-page')
+        self.assertEqual(self.history_ids(response), [payment.pk])
+        self.assertEqual(response.context['history_filters']['status'], '')
+        self.assertEqual(response.context['history_filters']['scope'], 'all')
+        self.assertEqual(response.context['history_filters']['receipt'], '')
+
+    def test_full_detail_and_panel_use_the_same_record_permissions(self):
+        payment = self.payment(state='approved', assigned_to=self.operator)
+        detail_url = reverse('payments_detail', args=[payment.pk])
+        for user in (self.executive, self.requester, self.operator):
+            self.client.force_login(user)
+            for query in ({}, {'panel': '1'}):
+                with self.subTest(user=user.username, query=query):
+                    response = self.client.get(detail_url, query)
+                    self.assertEqual(response.status_code, 200)
+                    self.assertEqual(response.context['payment'].pk, payment.pk)
+        self.client.force_login(self.outsider)
+        for query in ({}, {'panel': '1'}):
+            self.assertEqual(self.client.get(detail_url, query).status_code, 404)
+        self.client.logout()
+        self.assertEqual(self.client.get(detail_url).status_code, 302)
+
+    def test_timeline_reports_only_recorded_events_with_actor_and_order(self):
+        from .models import PaymentClarification
+        payment = self.payment(state='approved', assigned_to=self.operator)
+        created = PaymentEvent.objects.create(payment=payment, actor=self.requester, action='created')
+        approved = PaymentEvent.objects.create(payment=payment, actor=self.executive,
+                                               action='approve', notes='Approved after review')
+        note = PaymentClarification.objects.create(payment=payment, author=self.requester,
+                                                   message='Original explanatory note')
+        self.client.force_login(self.executive)
+        response = self.client.get(reverse('payments_detail', args=[payment.pk]))
+        self.assertEqual(response.status_code, 200)
+        timeline = list(response.context['timeline'])
+        self.assertEqual([event.pk for event in timeline], [created.pk, approved.pk])
+        self.assertEqual([event.actor_id for event in timeline], [self.requester.pk, self.executive.pk])
+        self.assertTrue(all(event.action_label and event.action_label != event.action for event in timeline))
+        self.assertEqual(timeline[1].notes, approved.notes)
+        self.assertEqual(list(response.context['clarification_messages']), [note])
+        self.assertEqual(payment.events.count(), 2)
+
+    def test_cancelled_detail_preserves_audit_and_edit_returns_to_the_detail(self):
+        payment = self.payment(state='approved', assigned_to=self.operator, channel='staff')
+        self.client.force_login(self.executive)
+        detail_url = reverse('payments_detail', args=[payment.pk])
+        result = self.client.post(reverse('payments_executive_change', args=[payment.pk]), {
+            'action': 'cancel', 'reason': 'Duplicate test request', 'return_to': 'detail',
+        })
+        self.assertRedirects(result, detail_url)
+        payment.refresh_from_db()
+        self.assertEqual(payment.state, 'rejected')
+        response = self.client.get(detail_url)
+        self.assertTrue(response.context['payment'].history_cancelled)
+        self.assertIn('لغو', response.context['payment'].history_state_label)
+        self.assertFalse(response.context['can_edit'])
+        self.assertEqual(payment.events.filter(action='executive_cancel').count(), 1)
+
+    def test_detail_never_offers_edits_for_a_payment_with_execution_evidence(self):
+        payment = self.payment(state='approved', payment_reference='ALREADY-RECORDED')
+        self.client.force_login(self.executive)
+        detail_url = reverse('payments_detail', args=[payment.pk])
+        response = self.client.get(detail_url)
+        self.assertFalse(response.context['can_edit'])
+        self.assertEqual(self.client.post(detail_url).status_code, 405)
+        self.assertEqual(payment.events.count(), 0)
+
+    def test_edit_return_target_cannot_be_used_as_external_redirect(self):
+        payment = self.payment()
+        self.client.force_login(self.executive)
+        result = self.client.post(reverse('payments_executive_change', args=[payment.pk]), {
+            'action': 'edit', 'description': 'Updated test description', 'amount_million': '4',
+            'return_to': 'https://untrusted.invalid/',
+        })
+        self.assertRedirects(result, reverse('payments_workspace'))
+
+    def test_thumbnail_is_a_small_private_image_and_does_not_modify_payment(self):
+        from PIL import Image
+        payment = self.payment(state='paid', assigned_to=self.operator,
+                               payment_receipt=self.image_receipt(), payment_reference='BANK-IMAGE')
+        before = PaymentRequest.objects.filter(pk=payment.pk).values().get()
+        url = reverse('payments_receipt_thumbnail', args=[payment.pk])
+        for user in (self.executive, self.requester, self.operator):
+            self.client.force_login(user)
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response['Content-Type'], 'image/jpeg')
+            self.assertIn('no-store', response['Cache-Control'])
+            self.assertIn('private', response['Cache-Control'])
+            self.assertEqual(response['X-Content-Type-Options'], 'nosniff')
+            content = b''.join(response.streaming_content) if response.streaming else response.content
+            with Image.open(BytesIO(content)) as image:
+                self.assertLessEqual(max(image.size), 160)
+                self.assertGreater(min(image.size), 0)
+        self.assertEqual(PaymentRequest.objects.filter(pk=payment.pk).values().get(), before)
+        self.assertEqual(payment.events.count(), 0)
+        self.client.force_login(self.outsider)
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.client.logout()
+        self.assertEqual(self.client.get(url).status_code, 302)
+
+    def test_thumbnail_rejects_pdf_corrupt_missing_and_unpaid_receipts(self):
+        cases = [
+            ('paid', SimpleUploadedFile('proof.pdf', b'%PDF-1.4 test', content_type='application/pdf')),
+            ('paid', SimpleUploadedFile('corrupt.png', b'not an image', content_type='image/png')),
+            ('paid', 'payment_receipts/missing.png'),
+            ('approved', self.image_receipt()),
+        ]
+        self.client.force_login(self.executive)
+        for state, receipt in cases:
+            with self.subTest(state=state, receipt=str(receipt)):
+                payment = self.payment(state=state, payment_receipt=receipt)
+                response = self.client.get(reverse('payments_receipt_thumbnail', args=[payment.pk]))
+                self.assertEqual(response.status_code, 404)
+
+    def test_personal_invoice_thumbnail_remains_private_and_distinct_from_payment(self):
+        payment = self.payment(kind='personal_expense', personal_expense_receipt=self.image_receipt())
+        url = reverse('payments_personal_receipt_thumbnail', args=[payment.pk])
+        self.client.force_login(self.requester)
+        self.assertEqual(self.client.get(url).status_code, 200)
+        self.assertEqual(self.client.get(reverse('payments_receipt_thumbnail', args=[payment.pk])).status_code, 404)
+        self.client.force_login(self.outsider)
+        self.assertEqual(self.client.get(url).status_code, 404)
