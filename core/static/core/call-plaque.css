@@ -145,3 +145,10 @@
 #glCallPlaque #cpDiscGuide dl{display:grid;grid-template-columns:auto 1fr;gap:4px 8px;margin:6px 0 0}
 #glCallPlaque #cpDiscGuide dt{font-weight:bold;color:var(--cp-purple)}
 #glCallPlaque #cpDiscGuide dd{margin:0}
+#glCallPlaque #cpAfter .cp-grid{grid-template-columns:minmax(0,1fr)}
+#glCallPlaque .cp-assessment,#glCallPlaque .cp-assessment section{min-width:0}
+#glCallPlaque [data-cp-stars]{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px}
+#glCallPlaque .cp-rating-group{position:relative;margin:0;padding:6px 10px;border-inline-start:2px solid var(--cp-line)}
+#glCallPlaque .cp-rating-group legend{padding-inline-end:28px}
+#glCallPlaque .cp-scale-help summary{cursor:pointer;list-style:none;position:absolute;inset-inline-end:0;top:0;text-align:center;width:24px;border-radius:50%;background:var(--cp-card)}
+#glCallPlaque .cp-rating-group .cp-star{width:clamp(28px,5vw,36px);margin:0}
