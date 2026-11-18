@@ -121,7 +121,7 @@
 #glCallPlaque .cp-assessment section{border:1px solid var(--cp-line);border-radius:14px;padding:12px;background:var(--cp-card)}
 #glCallPlaque .cp-assessment h4{font-size:15px!important;margin:0 0 8px}
 #glCallPlaque .cp-rating-group{min-inline-size:0;margin:6px 0 0;padding:6px 0;border:0}
-#glCallPlaque .cp-rating-group legend{font-weight:bold}
+#glCallPlaque .cp-rating-group legend{font-weight:800;color:var(--cp-ink)!important;-webkit-text-fill-color:var(--cp-ink)!important;opacity:1!important}
 #glCallPlaque .cp-rating-row,#glCallPlaque .cp-star-choices{display:flex;align-items:center;flex-wrap:wrap;gap:4px}
 #glCallPlaque .cp-rating-row{margin:4px 0}
 #glCallPlaque .cp-star-choices{gap:0}
