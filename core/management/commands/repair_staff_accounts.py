@@ -9,6 +9,7 @@ from django.core.management import CommandError
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.test import Client
+from django.template import Node, VariableDoesNotExist
 
 from core.models import EmployeeProfile
 
@@ -140,7 +141,16 @@ class Command(BaseCommand):
                         if response.status_code >= 500:
                             errors[f'DJANGO_ADMIN_HTTP_{response.status_code}'] += 1
                 except Exception as exc:
-                    errors[type(exc).__name__] += 1
+                    failure = type(exc).__name__
+                    if isinstance(exc, VariableDoesNotExist):
+                        # Log only template source locations, never context or exception text.
+                        frame = exc.__traceback__
+                        while frame:
+                            node = frame.tb_frame.f_locals.get('self')
+                            if isinstance(node, Node) and getattr(node, 'origin', None) and getattr(node, 'token', None):
+                                failure = f'VariableDoesNotExist@{node.origin.template_name}:{node.token.lineno}'
+                            frame = frame.tb_next
+                    errors[failure] += 1
                 finally:
                     try:
                         client.session.flush()
