@@ -62,7 +62,9 @@ class UnifiedCallBrowserTests(StaticLiveServerTestCase):
                         directory = Path('test-artifacts')
                         directory.mkdir(exist_ok=True)
                         area.locator('.cp-disc').screenshot(path=directory / f'all-leads-disc-{width}.png')
-                        ratings = area.locator('section[aria-labelledby="cpRatingsTitle"]')
+                        ratings = area.locator('[data-cp-stars]')
+                        for key, stars in [('interest', '4'), ('budget_fit', '2')]:
+                            self.assertTrue(ratings.locator(f'input[name="cp-rating-{key}"][value="{stars}"]').is_checked())
                         ratings.screenshot(path=directory / f'all-leads-call-assessment-{width}.png')
                         self.assertTrue(area.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1'))
                     page.set_viewport_size({'width': 1280, 'height': 800})
