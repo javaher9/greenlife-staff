@@ -1343,7 +1343,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-follow-footer [data-follow-cancel]{
    <summary><strong>☎ تماس‌های مقرر امروز</strong><b>{{ callback_counts.today }}</b><small>برای باز کردن فهرست بزنید</small></summary>
    <div class="cc-cb-open">
      {% for lead in callback_today_preview %}
-       <a href="{% url 'call_center_lead' lead.pk %}">{{ lead.full_name }} <small>· {% if lead.next_follow_up_time %}{{ lead.next_follow_up_time|time:"H:i" }}{% else %}بدون ساعت{% endif %}</small></a>
+       <a  data-call-plaque-url="{% url 'call_center_call_plaque' lead.pk %}" data-call-phone="{{ lead.phone }}" data-call-start-url="{% url 'call_center_mark_call_started' lead.pk %}" data-lead-name="{{ lead.full_name }}" href="{% url 'call_center_lead' lead.pk %}">{{ lead.full_name }} <small>· {% if lead.next_follow_up_time %}{{ lead.next_follow_up_time|time:"H:i" }}{% else %}بدون ساعت{% endif %}</small></a>
      {% empty %}<small>برای امروز موعدی ثبت نشده است.</small>{% endfor %}
      <a class="cc-cb-view-all" href="{% url 'call_center_follow_up_agenda' %}?tab=today">مشاهده همه {{ callback_counts.today }} مورد</a>
    </div>
@@ -1396,7 +1396,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-follow-footer [data-follow-cancel]{
   <nav class="ccx-group-strip" aria-label="گروه‌های مشترک کال‌سنتر">
     <span class="ccx-group-strip-title">گروه‌ها</span>
     <a href="{% url 'call_center_dashboard' %}" class="{% if not group_filter %}active{% endif %}">همه</a>
-    {% for group in groups %}<span class="ccx-group-pair"><a href="?group={{ group.pk }}" class="{% if group_filter == group.pk|stringformat:'s' %}active{% endif %}">{{ group.name }} <b>{{ group.lead_count }}</b></a><button type="button" class="ccx-group-guide" data-group-guide="{{ group.name }}" title="راهنمای مکالمه {{ group.name }}" aria-label="راهنمای مکالمه {{ group.name }}">؟</button></span>{% endfor %}
+    {% for group in groups %}<span class="ccx-group-pair"><a href="?group={{ group.pk }}" class="{% if group_filter == group.pk|stringformat:'s' %}active{% endif %}">{{ group.name }} <b>{{ group.lead_count }}</b></a><button type="button" class="ccx-group-guide" data-group-guide="{{ group.name }}" data-guidance="{{ group.display_guidance }}" data-group-id="{{ group.pk }}" title="راهنمای مکالمه {{ group.name }}" aria-label="راهنمای مکالمه {{ group.name }}">؟</button></span>{% endfor %}
   </nav>
 
   <details class="ccx-card" id="ccxLeadHistory" {% if group_filter or history_q %}open{% endif %} style="padding:12px 15px;border:1px solid #dce8e5;border-radius:14px;background:#fff">
@@ -1467,41 +1467,9 @@ body.gl-page-call_center_dashboard .ccx .ccx-follow-footer [data-follow-cancel]{
           <div class="ccx-actions">
             <a class="ccx-action call" href="tel:{{ row.lead.phone }}" data-call-plaque-url="{% url 'call_center_call_plaque' row.lead.pk %}" data-call-phone="{{ row.lead.phone }}" data-lead-name="{{ row.lead.full_name }}" data-lead-group="{{ row.lead.group.name|default:'' }}" aria-label="پلاک تماس {{ row.lead.full_name }}">☎ پلاک تماس</a>
             {% if row.wa_url %}<a class="ccx-action wa" href="{{ row.wa_url }}" target="_blank" rel="noopener">واتساپ</a>{% else %}<span class="ccx-action wa" style="opacity:.45">واتساپ</span>{% endif %}
-            <div class="ccx-result-wrap">
-              <button class="ccx-action result" type="button" data-result-toggle aria-expanded="false"><span>نتیجه تماس</span><span aria-hidden="true">▾</span></button>
-              <div class="ccx-result-panel" aria-hidden="true">
-                <div class="ccx-result-pop-head"><strong>نتیجه تماس را انتخاب کنید</strong><small>ثبت مستقیم در پرونده لید</small></div>
-                <div class="ccx-result-options">
-                  <button type="button" class="no-answer" data-quick-result="no_answer">☎ پاسخ نداد</button>
-                  <button type="button" class="follow" data-follow-open>◷ پیگیری</button>
-                  <button type="button" class="danger" data-quick-result="not_interested">× تمایل ندارد</button>
-                  <a class="good" href="{% url 'appointment_schedule' %}?lead={{ row.lead.pk }}">＋ نوبت</a>
-                </div>
-                <div class="ccx-follow-form" role="group" aria-label="تنظیم پیگیری">
-                  <div class="ccx-follow-tabs"><button type="button" class="active" data-follow-mode="interval" aria-pressed="true">فاصلهٔ زمانی</button><button type="button" data-follow-mode="exact" aria-pressed="false">تاریخ و ساعت دقیق</button></div>
-                  <div class="ccx-follow-mode active" data-follow-pane="interval">
-                    <div class="ccx-follow-steps" role="group" aria-label="فاصله تا پیگیری">
-                      <button type="button" data-follow-interval="minutes:30">نیم ساعت</button>
-                      <button type="button" data-follow-interval="hours:1">۱ ساعت</button><button type="button" data-follow-interval="hours:2">۲ ساعت</button><button type="button" data-follow-interval="hours:3">۳ ساعت</button><button type="button" data-follow-interval="hours:4">۴ ساعت</button><button type="button" data-follow-interval="hours:6">۶ ساعت</button><button type="button" data-follow-interval="hours:8">۸ ساعت</button><button type="button" data-follow-interval="hours:10">۱۰ ساعت</button>
-                      <button type="button" data-follow-interval="days:1">۱ روز</button><button type="button" data-follow-interval="days:2">۲ روز</button><button type="button" data-follow-interval="days:3">۳ روز</button><button type="button" data-follow-interval="days:4">۴ روز</button><button type="button" data-follow-interval="days:5">۵ روز</button><button type="button" data-follow-interval="days:6">۶ روز</button>
-                      <button type="button" data-follow-interval="weeks:1">۱ هفته</button><button type="button" data-follow-interval="weeks:2">۲ هفته</button><button type="button" data-follow-interval="weeks:3">۳ هفته</button>
-                      <button type="button" data-follow-interval="months:1">۱ ماه</button><button type="button" data-follow-interval="months:2">۲ ماه</button><button type="button" data-follow-interval="months:3">۳ ماه</button><button type="button" data-follow-interval="months:4">۴ ماه</button><button type="button" data-follow-interval="months:6">۶ ماه</button>
-                    </div>
-                  </div>
-                  <div class="ccx-follow-mode" data-follow-pane="exact">
-                    <label>تاریخ پیگیری شمسی<input type="text" name="next_follow_up" inputmode="numeric" autocomplete="off" value="{{ tomorrow|jdate_en }}" placeholder="1405/07/16" pattern="[0-9۰-۹٠-٩]{4}[/.-][0-9۰-۹٠-٩]{1,2}[/.-][0-9۰-۹٠-٩]{1,2}" title="تاریخ را به شکل 1405/07/16 وارد کنید"></label>
-                    <label>ساعت<input type="time" name="follow_up_time" step="300" value="10:00"></label>
-                  </div>
-                  {% if row.lead.notes %}<div class="ccx-follow-previous"><strong>یادداشت قبلی</strong><p>{{ row.lead.notes|truncatechars:220 }}</p></div>{% endif %}
-                  <label class="ccx-follow-note">توضیحات تماس<textarea name="follow_up_note" maxlength="2000" rows="3" placeholder="مشتری چه گفت و در تماس بعدی چه چیزی را یادآوری کنم؟"></textarea></label>
-                  <div class="ccx-follow-footer"><button type="button" data-follow-cancel>انصراف</button><button type="button" data-follow-save>ثبت پیگیری</button></div>
-                </div>
-                <div class="ccx-result-msg"></div>
-              </div>
-            </div>
             <a class="ccx-action appt" href="{% url 'appointment_schedule' %}?lead={{ row.lead.pk }}">نوبت</a>
             <a class="ccx-action p360-action" href="{% url 'patient_360_from_lead' row.lead.pk %}">◉ پرونده 360</a>
-            <button class="ccx-action note-action" type="button" data-follow-direct>✎ یادداشت/پیگیری</button>
+
           </div>
         </article>
         {% empty %}<div class="ccx-empty">صف کاری برای امروز ندارید.</div>{% endfor %}
@@ -1515,7 +1483,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-follow-footer [data-follow-cancel]{
       </section>
       <section class="ccx-card">
         <header class="ccx-head"><div><h3>پیگیری‌های نزدیک</h3><p>۳ روز آینده</p></div></header>
-        <div class="ccx-side-list">{% for lead in upcoming_followups %}<a class="ccx-side-item ccx-side-actionable" href="{% url 'call_center_lead' lead.pk %}" data-focus-lead="{{ lead.pk }}" title="باز کردن و ادامه پیگیری {{ lead.full_name }}"><div class="ccx-side-copy"><strong>{{ lead.full_name }}</strong><small>☎ {{ lead.phone }}</small></div><div class="ccx-side-right"><b>{{ lead.next_follow_up|jdate }}</b><span class="ccx-side-go">ادامه ←</span></div></a>{% empty %}<div class="ccx-side-empty">پیگیری آینده‌ای ثبت نشده.</div>{% endfor %}</div>
+        <div class="ccx-side-list">{% for lead in upcoming_followups %}<a class="ccx-side-item ccx-side-actionable" href="{% url 'call_center_lead' lead.pk %}"  data-call-plaque-url="{% url 'call_center_call_plaque' lead.pk %}" data-call-phone="{{ lead.phone }}" data-call-start-url="{% url 'call_center_mark_call_started' lead.pk %}" data-lead-name="{{ lead.full_name }}" title="باز کردن و ادامه پیگیری {{ lead.full_name }}"><div class="ccx-side-copy"><strong>{{ lead.full_name }}</strong><small>☎ {{ lead.phone }}</small></div><div class="ccx-side-right"><b>{{ lead.next_follow_up|jdate }}</b><span class="ccx-side-go">ادامه ←</span></div></a>{% empty %}<div class="ccx-side-empty">پیگیری آینده‌ای ثبت نشده.</div>{% endfor %}</div>
       </section>
       {% include "core/_live_status_plaques.html" with live_status_mode="call_center" %}
       </section>
@@ -1728,75 +1696,14 @@ body.gl-page-call_center_dashboard .ccx .ccx-follow-footer [data-follow-cancel]{
     });
   });
 
-  function postResult(row,result,extra){
-    var fd=new FormData(),token=csrf();if(token)fd.append('csrfmiddlewaretoken',token);fd.append('result',result);
-    Object.keys(extra||{}).forEach(function(k){fd.append(k,extra[k])});
-    var msg=row.querySelector('.ccx-result-msg');msg.textContent='در حال ثبت…';
-    return fetch(row.dataset.resultUrl,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}}).then(function(r){return r.json().then(function(d){if(!r.ok||!d.ok)throw new Error(d.error||'ثبت انجام نشد');return d})}).then(function(d){
-      msg.textContent='✓ '+d.result_label+' ثبت شد';
-      var resultPanel=row.querySelector('.ccx-result-panel'),resultToggle=row.querySelector('[data-result-toggle]');
-      if(resultPanel){setTimeout(function(){resultPanel.classList.remove('open','ccx-follow-expanded');resultPanel.setAttribute('aria-hidden','true');var form=resultPanel.querySelector('.ccx-follow-form');if(form)form.classList.remove('open')},450)}
-      if(resultToggle)setTimeout(function(){resultToggle.setAttribute('aria-expanded','false')},450);
-      row.dataset.done='1';
-      var last=row.querySelector('.ccx-last strong');if(last)last.textContent=d.result_label;
-      if(result!=='follow_up')setTimeout(function(){focusNext(row)},300);
-      return d;
-    }).catch(function(e){msg.textContent=e.message||'خطا در ثبت';throw e});
-  }
-  rows().forEach(function(row){
-    var toggle=row.querySelector('[data-result-toggle]'),panel=row.querySelector('.ccx-result-panel'),follow=row.querySelector('.ccx-follow-form');
-    var selectedInterval='';
-    function closeFollow(){follow.classList.remove('open');panel.classList.remove('open','ccx-follow-expanded');panel.setAttribute('aria-hidden','true');toggle.setAttribute('aria-expanded','false');toggle.focus()}
-    function openFollow(){
-      document.querySelectorAll('.ccx-result-panel.open').forEach(function(other){if(other!==panel){other.classList.remove('open','ccx-follow-expanded');other.setAttribute('aria-hidden','true')}});
-      panel.classList.add('open','ccx-follow-expanded');follow.classList.add('open');panel.setAttribute('aria-hidden','false');toggle.setAttribute('aria-expanded','true');
-      var wrap=toggle.getBoundingClientRect(),width=Math.min(620,window.innerWidth-24);
-      var left=Math.max(12,Math.min(wrap.left+wrap.width/2-width/2,window.innerWidth-width-12));
-      panel.style.left=(left-wrap.left)+'px';
-      var note=follow.querySelector('[name="follow_up_note"]');if(note)note.focus();
+  document.addEventListener('call-plaque-saved', function(event) {
+    if (event.detail.action !== 'finalize') return;
+    var row = rows().find(function(item){return item.dataset.leadId === String(event.detail.leadId)});
+    if (row) {
+      row.dataset.done = '1';
+      row.querySelector('.ccx-last strong').textContent = event.detail.label;
+      row.querySelector('.ccx-next-action-label').textContent = event.detail.due || event.detail.label;
     }
-    if(toggle)toggle.addEventListener('click',function(e){
-      e.stopPropagation();
-      var willOpen=!panel.classList.contains('open');
-      document.querySelectorAll('.ccx-result-panel.open').forEach(function(other){
-        if(other!==panel){other.classList.remove('open');other.setAttribute('aria-hidden','true');var t=other.closest('.ccx-result-wrap')&&other.closest('.ccx-result-wrap').querySelector('[data-result-toggle]');if(t)t.setAttribute('aria-expanded','false')}
-      });
-      panel.classList.toggle('open',willOpen);
-      panel.setAttribute('aria-hidden',willOpen?'false':'true');
-      toggle.setAttribute('aria-expanded',willOpen?'true':'false');
-      if(!willOpen&&follow){follow.classList.remove('open');panel.classList.remove('ccx-follow-expanded');panel.style.left=''}
-    });
-    if(panel)panel.addEventListener('click',function(e){e.stopPropagation()});
-    row.querySelectorAll('[data-quick-result]').forEach(function(b){b.addEventListener('click',function(){b.disabled=true;postResult(row,b.dataset.quickResult,{}).finally(function(){b.disabled=false})})});
-    var fo=row.querySelector('[data-follow-open]');if(fo)fo.addEventListener('click',openFollow);
-    var direct=row.querySelector('[data-follow-direct]');if(direct)direct.addEventListener('click',function(e){e.stopPropagation();openFollow()});
-    var cancel=follow.querySelector('[data-follow-cancel]');if(cancel)cancel.addEventListener('click',closeFollow);
-    follow.querySelectorAll('[data-follow-mode]').forEach(function(b){b.addEventListener('click',function(){
-      follow.querySelectorAll('[data-follow-mode]').forEach(function(x){var active=x===b;x.classList.toggle('active',active);x.setAttribute('aria-pressed',active?'true':'false')});
-      follow.querySelectorAll('[data-follow-pane]').forEach(function(x){x.classList.toggle('active',x.dataset.followPane===b.dataset.followMode)});
-    })});
-    follow.querySelectorAll('[data-follow-interval]').forEach(function(b){b.addEventListener('click',function(){selectedInterval=b.dataset.followInterval;follow.querySelectorAll('[data-follow-interval]').forEach(function(x){x.classList.toggle('active',x===b)})})});
-    var jalaliInput=follow&&follow.querySelector('[name="next_follow_up"]');
-    if(jalaliInput)jalaliInput.addEventListener('input',function(){
-      var v=jalaliInput.value.replace(/[۰-۹]/g,function(x){return '۰۱۲۳۴۵۶۷۸۹'.indexOf(x)}).replace(/[٠-٩]/g,function(x){return '٠١٢٣٤٥٦٧٨٩'.indexOf(x)}).replace(/[^0-9]/g,'').slice(0,8);
-      if(v.length>6)v=v.slice(0,4)+'/'+v.slice(4,6)+'/'+v.slice(6);
-      else if(v.length>4)v=v.slice(0,4)+'/'+v.slice(4);
-      jalaliInput.value=v;
-    });
-    var fs=row.querySelector('[data-follow-save]');if(fs)fs.addEventListener('click',function(){
-      var mode=follow.querySelector('[data-follow-mode].active').dataset.followMode;
-      var extra={follow_up_note:follow.querySelector('[name="follow_up_note"]').value};
-      if(mode==='interval'){
-        if(!selectedInterval){row.querySelector('.ccx-result-msg').textContent='فاصلهٔ زمانی را انتخاب کنید.';return}
-        extra.follow_up_interval=selectedInterval;
-      }else{
-        extra.next_follow_up=follow.querySelector('[name="next_follow_up"]').value;
-        extra.follow_up_time=follow.querySelector('[name="follow_up_time"]').value;
-        if(!extra.next_follow_up){row.querySelector('.ccx-result-msg').textContent='تاریخ را وارد کنید.';return}
-      }
-      fs.disabled=true;postResult(row,'follow_up',extra).then(function(){follow.querySelector('[name="follow_up_note"]').value='';selectedInterval='';follow.querySelectorAll('[data-follow-interval]').forEach(function(b){b.classList.remove('active')})}).catch(function(){}).finally(function(){fs.disabled=false});
-    });
-    var call=row.querySelector('.ccx-action.call');if(call&&!call.dataset.callPlaqueUrl)call.addEventListener('click',function(){var fd=new FormData(),token=csrf();if(token)fd.append('csrfmiddlewaretoken',token);fetch(row.dataset.callUrl,{method:'POST',body:fd,credentials:'same-origin',keepalive:true,headers:{'X-Requested-With':'XMLHttpRequest'}}).catch(function(){})});
   });
 
   var drawer=document.getElementById('ccxChatDrawer'),back=document.querySelector('.ccx-drawer-backdrop');

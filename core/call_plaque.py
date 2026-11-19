@@ -11,16 +11,42 @@ from .models import LeadCallProfile
 
 SCHEMA_VERSION = 1
 ANSWER_STATES = {'unasked', 'answered', 'declined', 'not_applicable'}
-ANSWER_KEYS = {'goal', 'priority', 'timing', 'barrier', 'budget_fit', 'height_cm', 'weight_kg'}
+ANSWER_KEYS = {'goal', 'priority', 'timing', 'barrier', 'interest', 'budget_fit', 'height_cm', 'weight_kg'}
 ENUMS = {
     'timing': {'exploring': 'فعلاً آشنایی', 'later': 'بعداً', 'soon': 'در آینده نزدیک', 'now': 'آماده بررسی اکنون'},
     'barrier': {'none': 'مانع مشخصی ندارد', 'cost': 'هزینه', 'time': 'زمان', 'distance': 'فاصله', 'uncertainty': 'نیاز به اطلاعات بیشتر', 'consult': 'مشورت با دیگری', 'other': 'سایر'},
-    'budget_fit': {'suitable': 'هزینه اعلام‌شده مناسب است', 'needs_review': 'نیاز به بررسی هزینه', 'not_suitable': 'هزینه اعلام‌شده مناسب نیست'},
+    'interest': {
+        '1': 'فعلاً تمایلی ندارد', '2': 'فقط مایل به شنیدن معرفی است',
+        '3': 'درباره خدمت سؤال مشخصی دارد', '4': 'می‌خواهد گزینه‌ها یا زمان‌ها را بررسی کند',
+        '5': 'خودش درخواست قدم بعدی کرده است',
+    },
+    'budget_fit': {
+        '1': 'هزینه فعلاً خارج از بودجه است', '2': 'فقط با کاهش هزینه قابل بررسی است',
+        '3': 'باید مبلغ را با بودجه‌اش بسنجد', '4': 'با شرایط پرداخت موردنظرش قابل تأمین است',
+        '5': 'مبلغ اعلام‌شده در بودجه‌اش است',
+        # Original categorical responses remain readable without inventing a star rating.
+        'suitable': 'هزینه اعلام‌شده مناسب است', 'needs_review': 'نیاز به بررسی هزینه',
+        'not_suitable': 'هزینه اعلام‌شده مناسب نیست',
+    },
 }
 COMMUNICATION_STYLES = {
     'unknown': 'هنوز مشخص نیست', 'direct': 'خلاصه و نتیجه‌محور', 'details': 'جزئیات و روش کار',
     'social': 'گفت‌وگو و تجربه مراجعه', 'support': 'آرام و مرحله‌به‌مرحله', 'mixed': 'ترکیبی',
 }
+DISC_CODES = {'direct': 'D', 'social': 'I', 'support': 'S', 'details': 'C'}
+for primary, first in DISC_CODES.items():
+    for secondary, second in DISC_CODES.items():
+        if primary != secondary:
+            pair = first + second
+            COMMUNICATION_STYLES[pair] = f'{pair} · {COMMUNICATION_STYLES[primary]} و {COMMUNICATION_STYLES[secondary]}'
+
+
+def disc_code(style):
+    if style in DISC_CODES:
+        return DISC_CODES[style]
+    return style if style in COMMUNICATION_STYLES and len(style) == 2 else ''
+
+
 OUTCOMES = {
     'answered': 'گفت‌وگو انجام شد', 'no_answer': 'پاسخ نداد', 'follow_up': 'پیگیری با اجازه',
     'not_interested': 'فعلاً تمایل ندارد', 'wrong_number': 'شماره یا مخاطب اشتباه', 'do_not_contact': 'درخواست عدم تماس',
@@ -234,8 +260,11 @@ def lead_do_not_contact(lead):
 def call_plaque_summaries(leads_or_ids):
     ids = [getattr(item, 'pk', item) for item in leads_or_ids]
     result = {}
-    for row in LeadCallProfile.objects.filter(lead_id__in=ids).only('lead_id', 'readiness', 'do_not_contact'):
-        value = row.readiness or score_readiness({}, do_not_contact=row.do_not_contact)
-        result[row.lead_id] = {key: value.get(key) for key in ('score', 'band', 'label', 'confidence')}
-        result[row.lead_id]['do_not_contact'] = row.do_not_contact
+    profiles = LeadCallProfile.objects.filter(lead_id__in=ids).values_list(
+        'lead_id', 'readiness', 'do_not_contact', 'data__communication_style',
+    )
+    for lead_id, readiness, blocked, style in profiles:
+        value = readiness or score_readiness({}, do_not_contact=blocked)
+        result[lead_id] = {key: value.get(key) for key in ('score', 'band', 'label', 'confidence')}
+        result[lead_id].update(do_not_contact=blocked, disc_code=disc_code(style))
     return result

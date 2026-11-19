@@ -19,3 +19,11 @@
 
 #gl-flow .flow-views {display:flex;flex-wrap:wrap;gap:6px;padding:0 clamp(12px,2.2vw,25px) 13px}
 #gl-flow .flow-views [aria-pressed="true"] {background:#342c50;border-color:#a38ac5}
+#gl-flow .flow-map-tools {display:flex;align-items:center;gap:6px;padding:0 14px 10px}
+#gl-flow .flow-map-tools button {min-height:40px;min-width:40px}
+#gl-flow .flow-map-tools button:disabled {opacity:.48}
+#gl-flow .flow-viewport {direction:ltr;overflow:auto;max-height:70vh;overscroll-behavior:contain}
+#gl-flow .flow-viewport [data-flow-map] {width:var(--atlas-width,100%)}
+#gl-map-dialog {width:min(98vw,1660px);max-width:98vw;max-height:96dvh;padding:0;border:1px solid #516789;border-radius:16px;background:#0b1424;color:#edf5ff}
+#gl-map-dialog::backdrop {background:#050a15de}
+#gl-map-dialog #gl-flow {margin:0;border:none}

@@ -140,6 +140,7 @@
   if (!panel) return;
   const root=panel.closest('[data-activity-url]') || panel;
   const host=panel.querySelector('[data-flow-map]'), toggle=panel.querySelector('[data-flow-pause]');
+  const viewport=host.parentElement;
   const initial=JSON.parse(root.querySelector('#gl-activity-initial').textContent).flow;
   let view='overview';
   let snapshot=initial, selected='crm', narrow=false, active=[], raf=0, paused=false;
@@ -164,7 +165,7 @@
   }
   function draw() {
     const focused=document.activeElement?.dataset.station;
-    narrow=host.getBoundingClientRect().width<640;
+    narrow=viewport.getBoundingClientRect().width<640;
     host.innerHTML=drawing(snapshot.counts,narrow,selected,view);
     if (focused) host.querySelector('[data-station="'+focused+'"]')?.focus({preventScroll:true});
     details();
@@ -217,6 +218,6 @@
     if (!raf && active.length) raf=requestAnimationFrame(tick);
   });
   draw();
-  new ResizeObserver(()=>{if((host.getBoundingClientRect().width<640)!==narrow) draw();}).observe(host);
+  new ResizeObserver(()=>{if((viewport.getBoundingClientRect().width<640)!==narrow) draw();}).observe(viewport);
   reduced.addEventListener('change',()=>{if(reduced.matches) stop();});
 })();

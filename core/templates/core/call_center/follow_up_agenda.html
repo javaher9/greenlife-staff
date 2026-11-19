@@ -56,7 +56,7 @@
       </div>
       <div><small>آخرین نتیجه: {{ row.lead.get_contact_result_display|default:"—" }}</small>
         <small>{{ row.lead.interested_service|truncatechars:100|default:"بدون توضیح" }}</small></div>
-      <div class="ag-actions"><a href="tel:{{ row.lead.phone }}" data-call-plaque-url="{% url 'call_center_call_plaque' row.lead.pk %}" data-call-start-url="{% url 'call_center_mark_call_started' row.lead.pk %}" data-call-phone="{{ row.lead.phone }}" data-lead-name="{{ row.lead.full_name }}" data-lead-group="{{ row.lead.group.name|default:'' }}">☎ پلاک تماس</a><a href="{% url 'call_center_lead' row.lead.pk %}">ثبت نتیجه / تغییر موعد</a></div>
+      <div class="ag-actions"><a href="tel:{{ row.lead.phone }}" data-call-plaque-url="{% url 'call_center_call_plaque' row.lead.pk %}" data-call-start-url="{% url 'call_center_mark_call_started' row.lead.pk %}" data-call-phone="{{ row.lead.phone }}" data-lead-name="{{ row.lead.full_name }}" data-lead-group="{{ row.lead.group.name|default:'' }}">☎ پلاک تماس</a></div>
       <details><summary>سابقه ثبت و تغییر پیگیری ({{ row.history|length }} مورد آخر)</summary>
         <ol class="ag-history">{% for e in row.history %}
           <li>{{ e.created_at|jdate }} · {{ e.created_at|date:"H:i" }} —

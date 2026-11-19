@@ -311,3 +311,11 @@
 @media (prefers-reduced-motion: reduce) {
   .gl-activity .gl-activity-hub.is-recent::after { animation: none; }
 }
+
+.gl-bot-setup {padding:16px 20px;background:#0d192a;border:1px solid #34415b;border-radius:16px;margin-bottom:12px}
+.gl-bot-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;margin-top:10px}
+.gl-bot-grid details {padding:10px 14px;border-radius:10px;background:#172438;color:#edf3ff}
+.gl-bot-grid summary {cursor:pointer;font-weight:bold}
+.gl-bot-grid form {display:grid;gap:9px;margin:12px 0}
+.gl-bot-grid input,.gl-bot-grid button {font:inherit;padding:8px;border-radius:8px;border:1px solid #56708a;color:#f3f7ff;background:#101c2e}
+.gl-bot-grid a {color:#a6dcff}

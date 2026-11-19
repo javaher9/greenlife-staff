@@ -294,6 +294,33 @@ class CallPlaqueTests(TestCase):
         self.assertEqual(self.post(data).status_code, 400)
         self.assertFalse(LeadCallSession.objects.exists())
 
+    def test_ratings_are_independent_and_unasked_preserves_each_previous_value(self):
+        data = self.answered()
+        answers = data['answers']
+        answers['interest'] = {'state': 'answered', 'value': '5'}
+        answers['budget_fit'] = {'state': 'answered', 'value': '2'}
+        self.assertEqual(self.post(data).status_code, 200)
+        second = empty_data()
+        second['outcome'] = 'answered'
+        second['answers']['interest'] = {'state': 'answered', 'value': '3'}
+        result = self.post(second, version=1).json()
+        self.assertEqual(result['profile']['answers']['budget_fit'], answers['budget_fit'])
+        self.assertEqual(result['profile']['answers']['interest']['value'], '3')
+        self.assertEqual(result['history'][1]['data']['answers']['interest']['value'], '5')
+
+    def test_replay_from_before_star_ratings_preserves_old_snapshot(self):
+        data = self.answered()
+        request_id = uuid.uuid4()
+        del data['answers']['interest']
+        self.assertEqual(self.post(data, request_id=request_id).status_code, 200)
+        session = LeadCallSession.objects.get(request_id=request_id)
+        del session.data['answers']['interest']
+        session.save(update_fields=['data'])
+        retry = self.post(data, request_id=request_id)
+        self.assertTrue(retry.json()['replayed'])
+        session.refresh_from_db()
+        self.assertNotIn('interest', session.data['answers'])
+
     def test_csrf_is_required(self):
         client = Client(enforce_csrf_checks=True)
         client.force_login(self.operator)
@@ -320,3 +347,15 @@ class CallPlaqueTests(TestCase):
             summaries = call_plaque_summaries([self.lead.pk, self.other_lead.pk])
         self.assertIsNone(summaries[self.lead.pk]['score'])
         self.assertNotIn(self.other_lead.pk, summaries)
+
+    def test_disc_codes_reflect_finalized_style_without_guessing_legacy_mixed(self):
+        data = self.answered()
+        for version, style in enumerate(('direct', 'mixed', 'DS', 'DC', 'CD')):
+            data['communication_style'] = style
+            response = self.post(data, version=version)
+            self.assertEqual(response.status_code, 200)
+            expected = {'direct':'D', 'mixed':''}.get(style, style)
+            self.assertEqual(response.json()['profile']['disc_code'], expected)
+            self.assertEqual(call_plaque_summaries([self.lead.pk])[self.lead.pk]['disc_code'], expected)
+        data['communication_style'] = 'DD'
+        self.assertEqual(self.post(data, version=5).status_code, 400)

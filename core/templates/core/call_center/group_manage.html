@@ -9,17 +9,17 @@
 .ccgm-note{margin-top:9px;padding:8px 10px;border-radius:9px;background:#fff8e9;border:1px solid #eee0bb;color:#7b642e;font-size:8px;line-height:1.8}
 .ccgm-list{display:grid;gap:7px}.ccgm-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border-radius:12px;background:#f8faf9;border:1px solid #e3e9e7}.ccgm-row strong{color:#2b443e;font-size:10px}.ccgm-row span{color:#7a8984;font-size:8px}
 @media(max-width:640px){.ccgm{padding:0 8px;margin-top:10px}.ccgm-head{padding:14px}.ccgm-form{grid-template-columns:1fr}.ccgm-form button{width:100%}}
-</style>
+.ccgm-row{flex-wrap:wrap}.ccgm-row details[open]{flex-basis:100%}.ccgm textarea{width:100%;box-sizing:border-box;border:1px solid #d7e2e5;border-radius:9px;background:white;color:#263e4f;padding:8px}</style>
 <section class="ccgm">
   <header class="ccgm-head"><h1>گروه‌های سراسری کال‌سنتر</h1><p>فقط گروه‌های مصوب نمایش داده می‌شوند؛ لیدها با منبع مناسب در همین گروه‌ها ثبت می‌شوند.</p></header>
   {% if can_manage_groups %}
   <article class="ccgm-card">
     <form method="post" class="ccgm-form">{% csrf_token %}
       <input name="name" maxlength="80" required placeholder="نام گروه مصوب" aria-label="نام گروه مصوب">
-      <button type="submit">ثبت گروه</button>
+      <textarea name="guidance" maxlength="2000" aria-label="راهنمای گروه" placeholder="معرفی گروه و جملهٔ پیشنهادی برای شروع تماس"></textarea><button type="submit">ثبت گروه</button>
     </form>
   </article>
   {% endif %}
-  <article class="ccgm-card"><div class="ccgm-list">{% for group in groups %}<div class="ccgm-row"><strong>{{ group.name }}</strong><span>{{ group.lead_count }} لید{% if group.is_default %} · پیش‌فرض{% endif %}</span></div>{% empty %}<div class="ccgm-row"><strong>هنوز گروهی ثبت نشده است.</strong></div>{% endfor %}</div></article>
+  <article class="ccgm-card"><div class="ccgm-list">{% for group in groups %}<div class="ccgm-row"><strong>{{ group.name }}</strong><span>{{ group.lead_count }} لید{% if group.is_default %} · پیش‌فرض{% endif %}</span><details id="guide-{{ group.pk }}"><summary>ویرایش راهنما</summary><form method="post">{% csrf_token %}<input type="hidden" name="action" value="edit_guidance"><input type="hidden" name="group_id" value="{{ group.pk }}"><textarea name="guidance" rows="5" maxlength="2000" aria-label="راهنمای {{ group.name }}">{{ group.display_guidance }}</textarea><button>ذخیره راهنما</button></form></details></div>{% empty %}<div class="ccgm-row"><strong>هنوز گروهی ثبت نشده است.</strong></div>{% endfor %}</div></article>
 </section>
 {% endblock %}

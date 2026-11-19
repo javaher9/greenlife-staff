@@ -10,7 +10,13 @@
     <button data-atlas-view="members" type="button" aria-pressed="false">داخل گرین‌لایف ME</button>
     <button data-atlas-view="leads" type="button" aria-pressed="false">لیدهای فشرده</button>
   </nav>
-  <div data-flow-map></div>
+  <div class="flow-map-tools" data-map-tools role="group" aria-label="اندازهٔ نقشه">
+    <button type="button" data-expand aria-controls="gl-map-dialog" aria-expanded="false">نمای بزرگ</button>
+    <button type="button" data-zoom="in" aria-label="بزرگ‌نمایی">＋</button>
+    <button type="button" data-zoom="reset" aria-label="بازنشانی زوم">۱۰۰٪</button>
+    <button type="button" data-zoom="out" aria-label="کوچک‌نمایی">−</button>
+  </div>
+  <div class="flow-viewport" data-map-viewport><div data-flow-map></div></div>
   <footer class="flow-detail" aria-live="polite">
     <div><strong data-flow-title>لیدهای فشرده</strong><p data-flow-description></p></div>
     <span data-flow-count></span>
@@ -18,3 +24,5 @@
   <div class="flow-breakdown" data-flow-breakdown></div>
   <div class="flow-links"><a href="{% url 'me_members' %}">اعضای گرین‌لایف ME</a><a href="{% url 'lead_management_dashboard' %}">میز مدیریت لیدها</a></div>
 </section>
+<dialog id="gl-map-dialog" aria-label="نمای بزرگ اطلس جریان گرین‌لایف"></dialog>
+<script src="{% static 'core/agent-map-zoom.js' %}" defer></script>

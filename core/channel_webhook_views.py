@@ -9,7 +9,8 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .models import ChannelMessageReceipt
+from .credential_security import decrypt_secret
+from .models import ChannelBotSetup, ChannelMessageReceipt
 
 
 @dataclass(frozen=True)
@@ -22,10 +23,19 @@ class BotConnection:
         return int(self.token.split(':', 1)[0])
 
 
+def valid_token(token):
+    return bool(re.fullmatch(r'[1-9][0-9]{0,17}:[A-Za-z0-9_-]{15,180}', token))
+
+
 def bot_connection(provider):
     token, secret = settings.CHANNEL_BOTS[provider]
+    if not (token or secret):
+        saved = ChannelBotSetup.objects.filter(pk=provider).first()
+        if saved:
+            token = decrypt_secret(saved.token_cipher)
+            secret = decrypt_secret(saved.secret_cipher)
     if (
-        re.fullmatch(r'[1-9][0-9]{0,17}:[A-Za-z0-9_-]{15,180}', token)
+        valid_token(token)
         and re.fullmatch(r'[A-Za-z0-9_-]{32,128}', secret)
     ):
         return BotConnection(token, secret)

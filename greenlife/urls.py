@@ -4,11 +4,12 @@ from django.conf import settings
 from django.conf.urls.static import static
 from core import call_center_views, consultant_sales_views, instagram_views, instagram_api_views, lead_ingest_views, lead_action_views, lead_admin_views, lead_management_fixed_views, website_integration_views, website_public_lead_views, whatsapp_views
 
-from core import agent_activity_views, channel_webhook_views
+from core import agent_activity_views, channel_setup_views, channel_webhook_views
 
 urlpatterns=[
     path('admin/',admin.site.urls),
     path('management/agent-activity/', agent_activity_views.agent_activity, name='agent_activity'),
+    path('management/agent-activity/connect/<str:provider>/', channel_setup_views.connect, name='agent_channel_connect'),
     path('management/agent-activity/snapshot/', agent_activity_views.agent_activity_snapshot, name='agent_activity_snapshot'),
     path('payments/',include('payments.urls')),
     path('management/recruitment/',include('recruitment.urls')),

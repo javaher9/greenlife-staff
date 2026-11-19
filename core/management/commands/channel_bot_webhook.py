@@ -29,6 +29,22 @@ def _provider_request(provider, token, method, parameters):
     return result.get('result')
 
 
+def webhook_target(provider, connection):
+    base = settings.PUBLIC_BASE_URL
+    origin = urlsplit(base)
+    if origin.scheme != 'https' or not origin.hostname or origin.username or origin.path or origin.query or origin.fragment:
+        raise CommandError('PUBLIC_BASE_URL must be a public HTTPS origin.')
+
+    parameters = {}
+    if provider == 'telegram':
+        path = reverse('telegram_channel_webhook')
+        parameters.update(secret_token=connection.secret, allowed_updates=['message'])
+    else:
+        path = reverse('bale_channel_webhook', kwargs={'secret': connection.secret})
+    url = base + path
+    return url, parameters
+
+
 class Command(BaseCommand):
     help = 'Inspect or register the GreenLife webhook for a configured channel bot.'
 
@@ -41,19 +57,7 @@ class Command(BaseCommand):
         connection = bot_connection(provider)
         if connection is None:
             raise CommandError('Configure the bot token and a separate random webhook secret first.')
-        base = settings.PUBLIC_BASE_URL
-        origin = urlsplit(base)
-        if origin.scheme != 'https' or not origin.hostname or origin.username or origin.path or origin.query or origin.fragment:
-            raise CommandError('PUBLIC_BASE_URL must be a public HTTPS origin.')
-
-        parameters = {}
-        if provider == 'telegram':
-            path = reverse('telegram_channel_webhook')
-            parameters.update(secret_token=connection.secret, allowed_updates=['message'])
-        else:
-            path = reverse('bale_channel_webhook', kwargs={'secret': connection.secret})
-        url = base + path
-
+        url, parameters = webhook_target(provider, connection)
         info = _provider_request(provider, connection.token, 'getWebhookInfo', {})
         if not isinstance(info, dict) or not isinstance(info.get('url'), str):
             raise CommandError('The provider returned unrecognized webhook information.')

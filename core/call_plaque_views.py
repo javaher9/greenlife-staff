@@ -13,10 +13,12 @@ from django.views.decorators.http import require_http_methods
 
 from .call_center_identity import call_center_display_name
 from .call_plaque import (
-    COMMUNICATION_STYLES, ENUMS, OUTCOMES, empty_data, merge_profile,
+    COMMUNICATION_STYLES, ENUMS, OUTCOMES, disc_code, empty_data, merge_profile,
     normalize_data, safe_data, score_readiness,
 )
 from .follow_up_agenda import previous_follow_up, record_follow_up
+from .jalali import format_jalali
+from django.urls import reverse
 from .models import AuditLog, LeadCallProfile, LeadCallSession, ReferralLead
 
 
@@ -56,6 +58,7 @@ def _payload(lead, user, *, editable, restricted, profile=None):
         profile = LeadCallProfile.objects.filter(lead=lead).select_related('draft__actor', 'latest_session').first()
     data = safe_data(profile.data if profile else empty_data(), restricted=restricted)
     profile_data = dict(data)
+    profile_data['disc_code'] = disc_code(data.get('communication_style'))
     profile_data['readiness'] = (profile.readiness if profile else {}) or score_readiness({}, do_not_contact=bool(profile and profile.do_not_contact))
     profile_data['do_not_contact'] = bool(profile and profile.do_not_contact)
     profile_data['updated_at'] = timezone.localtime(profile.latest_session.created_at).isoformat() if profile and profile.latest_session_id else None
@@ -68,6 +71,14 @@ def _payload(lead, user, *, editable, restricted, profile=None):
         draft = _session_payload(profile.draft)
     history = [_session_payload(item, restricted=restricted) for item in lead.call_sessions.filter(state='final').select_related('actor')[:30]]
     return {
+        'server_now': timezone.now().isoformat(),
+        'operational': {
+            'result': lead.get_contact_result_display() if lead.contact_result else '',
+            'due': format_jalali(lead.next_follow_up) if lead.next_follow_up else '',
+            'time': lead.next_follow_up_time.strftime('%H:%M') if lead.next_follow_up_time else '',
+            'notes': lead.notes if not restricted else '',
+            'appointment_url': reverse('appointment_schedule') + f'?lead={lead.pk}' if editable else '',
+        },
         'ok': True, 'lead': {'id': lead.pk, 'name': lead.full_name, 'group': lead.group.name if lead.group_id else '',
                             'group_id': lead.group_id, 'owner': _actor(lead.assigned_to.user) if lead.assigned_to_id else ''},
         'editable': editable, 'restricted': restricted, 'version': profile.revision if profile else 0,
@@ -114,7 +125,7 @@ def _apply_operational_result(lead, data, actor, *, do_not_contact):
     lead.save(update_fields=['status', 'contact_result', 'next_follow_up', 'next_follow_up_time', 'updated_at'])
     record_follow_up(lead, actor=actor, previous=previous,
                      result='not_interested' if do_not_contact else outcome if outcome in ('follow_up', 'no_answer', 'not_interested', 'wrong_number') else '',
-                     note='پلاک تماس: ' + OUTCOMES[outcome])
+                     note=data['notes'] or 'پلاک تماس: ' + OUTCOMES[outcome])
 
 
 @login_required
@@ -156,7 +167,9 @@ def call_center_call_plaque(request, pk):
             profile = LeadCallProfile.objects.filter(lead=lead).select_related('draft__actor', 'latest_session').first()
             old = LeadCallSession.objects.filter(request_id=key).first()
             if old:
-                if old.lead_id != lead.pk or old.actor_id != request.user.pk or old.state != state or old.data != data:
+                # Compare older snapshots with today's defaults for unanswered questions.
+                saved_data = normalize_data(old.data) if old.state != 'discard' else {}
+                if old.lead_id != lead.pk or old.actor_id != request.user.pk or old.state != state or saved_data != data:
                     return JsonResponse({'ok': False, 'error': 'شناسه این درخواست قبلاً برای اطلاعات دیگری استفاده شده است.'}, status=409)
                 payload = _payload(lead, request.user, editable=True, restricted=False, profile=profile)
                 payload['replayed'] = True

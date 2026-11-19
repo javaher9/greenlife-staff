@@ -42,7 +42,15 @@
       const track = span('cp-readiness-track', ''); track.setAttribute('aria-hidden', 'true');
       const fill = document.createElement('i'); fill.dataset.callScoreFill = ''; fill.style.width = `${r.score == null ? 0 : Math.max(0, Math.min(100, r.score))}%`;
       track.append(fill); score.append(label, number, track);
-      head.append(name, flower); meta.append(span('al-date', item.date), status); link.append(head, meta, score); fragment.append(link);
+      head.append(name);
+      if (r.disc_code) {
+        const badge = span('al-disc', r.disc_code);
+        badge.dir = 'ltr';
+        badge.title = 'تست دیسک · ' + r.disc_code;
+        link.setAttribute('aria-label', link.getAttribute('aria-label') + '، دیسک ' + r.disc_code);
+        head.append(badge);
+      }
+      head.append(flower); meta.append(span('al-date', item.date), status); link.append(head, meta, score); fragment.append(link);
     });
     before.style.height = `${Math.floor(start / columns) * rowHeight}px`;
     after.style.height = `${Math.max(0, Math.ceil(items.length / columns) - Math.ceil(end / columns)) * rowHeight}px`;
@@ -87,7 +95,7 @@
   document.addEventListener('call-plaque-saved', event => {
     if (!event.detail || event.detail.action !== 'finalize') return;
     const item = items.find(row => String(row.id) === String(event.detail.leadId));
-    if (item) { item.readiness = {...event.detail.profile.readiness, do_not_contact:event.detail.profile.do_not_contact}; renderedWindow = null; draw(); }
+    if (item) { item.readiness = {...event.detail.profile.readiness, do_not_contact:event.detail.profile.do_not_contact, disc_code:event.detail.profile.disc_code}; renderedWindow = null; draw(); }
   });
   reload();
 })();

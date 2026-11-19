@@ -1,6 +1,7 @@
 from datetime import timedelta
 from hashlib import sha256
 
+from django.conf import settings
 from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -11,7 +12,7 @@ from django.views.decorators.http import require_GET
 from .agent_flow import daily_flow
 from .channel_webhook_views import bot_connection
 from .models import (
-    ChannelMessageReceipt, InstagramIntegrationSettings, InstagramWebhookEvent,
+    ChannelBotSetup, ChannelMessageReceipt, InstagramIntegrationSettings, InstagramWebhookEvent,
     WhatsAppMessage, WhatsAppNumber,
 )
 from .views import credential_admin_required
@@ -147,7 +148,12 @@ def _snapshot():
 @credential_admin_required
 @require_GET
 def agent_activity(request):
-    return render(request, 'core/agent_activity.html', {'activity': _snapshot()})
+    saved = ChannelBotSetup.objects.in_bulk()
+    bots = [{
+        'id': key, 'name': name, 'setup': saved.get(key),
+        'managed': any(settings.CHANNEL_BOTS[key]),
+    } for key, name in ChannelMessageReceipt.PROVIDERS]
+    return render(request, 'core/agent_activity.html', {'activity': _snapshot(), 'bots': bots})
 
 
 @never_cache
