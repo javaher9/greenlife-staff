@@ -17,6 +17,7 @@
     const halfwayY = (viewport.scrollTop + viewport.clientHeight / 2) / scale;
     scale = Math.max(100, Math.min(300, next));
     viewport.style.setProperty('--atlas-width', scale + '%');
+    viewport.classList.toggle('flow-zoomed',scale > 100);
     reset.textContent = new Intl.NumberFormat('fa-IR-u-nu-latn').format(scale) + '٪';
     plus.disabled = scale === 300;
     minus.disabled = scale === 100;

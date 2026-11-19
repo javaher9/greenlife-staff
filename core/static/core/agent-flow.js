@@ -1,51 +1,31 @@
 (() => {
   'use strict';
   const format = new Intl.NumberFormat('fa-IR-u-nu-latn');
-  // Each station declares its own label, definition and desktop/mobile anchors.
   // The two systems share a dashboard, but an account is never implicitly a lead.
   const stations = {
-    me: ['گرین‌لایف ME', 'مسیر حساب مشترک، همگام‌سازی در اپ و درخواست ویزیت.', [722,116], [332,124]],
-    account: ['ثبت‌نام با شماره', 'حساب‌های مشترک جدید امروز با ورود تأییدشده. شمارهٔ شخص روی نقشه نمایش داده نمی‌شود.', [500,55], [185,66]],
-    sync: ['همگام‌سازی اپ', 'تعداد ذخیره‌های موفق حساب در اپ ME امروز. یک عضو می‌تواند چند بار ذخیره کند.', [500,175], [184,190]],
-    request: ['درخواست ویزیت', 'درخواست‌های ویزیت ثبت‌شدهٔ امروز در مسیر مشترک اعضا و ME.', [354,116], [188,129]],
-    booked: ['نوبت تأییدشده', 'از درخواست‌های ویزیت امروز، چند درخواست اکنون نوبت تأییدشده و متصل دارند.', [137,116], [59,129]],
-    website: ['وب‌سایت', 'لیدهای امروز در گروه وب‌سایت.', [783,261], [329,289]],
-    instagram: ['اینستاگرام', 'لیدهای امروز در گروه اینستاگرام. دریافت دایرکت به‌تنهایی شمارندهٔ لید را بالا نمی‌برد.', [783,320], [329,354]],
-    school: ['مدارس', 'لیدهای امروز با ثبت‌نام مدرسهٔ مرتبط. هر پرونده فقط در یک شاخه شمرده می‌شود.', [783,379], [329,419]],
-    other: ['سایر منابع', 'سایر پرونده‌های لید امروز، از جمله گروه‌های معرفی و کمپ.', [783,438], [329,484]],
-    crm: ['لیدهای فشرده', 'کل پرونده‌های لید ثبت‌شدهٔ امروز از چهار مسیر ورودی.', [488,350], [185,383]],
-    assigned: ['دارای مسئول', 'از لیدهای ثبت‌شدهٔ امروز، چند پرونده هم‌اکنون مسئول پیگیری دارد.', [179,350], [57,383]],
+    me: ['گرین‌لایف ME', 'مسیر حساب مشترک، همگام‌سازی در اپ و درخواست ویزیت.'],
+    account: ['ثبت‌نام با شماره', 'حساب‌های مشترک جدید امروز با ورود تأییدشده. شمارهٔ شخص روی نقشه نمایش داده نمی‌شود.'],
+    sync: ['همگام‌سازی اپ', 'تعداد ذخیره‌های موفق حساب در اپ ME امروز. یک عضو می‌تواند چند بار ذخیره کند.'],
+    request: ['درخواست ویزیت', 'درخواست‌های ویزیت ثبت‌شدهٔ امروز در مسیر مشترک اعضا و ME.'],
+    booked: ['نوبت تأییدشده', 'از درخواست‌های ویزیت امروز، چند درخواست اکنون نوبت تأییدشده و متصل دارند.'],
+    website: ['وب‌سایت', 'لیدهای امروز در گروه وب‌سایت.'],
+    instagram: ['اینستاگرام', 'لیدهای امروز در گروه اینستاگرام. دریافت دایرکت به‌تنهایی شمارندهٔ لید را بالا نمی‌برد.'],
+    school: ['مدارس', 'لیدهای امروز با ثبت‌نام مدرسهٔ مرتبط. هر پرونده فقط در یک شاخه شمرده می‌شود.'],
+    other: ['سایر منابع', 'سایر پرونده‌های لید امروز، از جمله گروه‌های معرفی و کمپ.'],
+    crm: ['لیدهای فشرده', 'کل پرونده‌های لید ثبت‌شدهٔ امروز از چهار مسیر ورودی.'],
+    assigned: ['دارای مسئول', 'از لیدهای ثبت‌شدهٔ امروز، چند پرونده هم‌اکنون مسئول پیگیری دارد.'],
   };
-  const routes = [
-    ['me','account','account'], ['me','sync','sync'], ['me','request','request'], ['request','booked','booked'],
-    ['website','crm','website'], ['instagram','crm','instagram'], ['school','crm','school'], ['other','crm','other'],
-    ['crm','assigned','assigned'],
-  ];
+  const layout = window.GreenLifeFlowLayout.layout;
   const vessels = window.GreenLifeFlowVessels;
   const tint = key => vessels.groups[vessels.groupFor(key)].color;
-  const aquamarine = tint('me'), lilac = tint('crm');
   const isHub = key => key === 'me' || key === 'crm';
-  const coord = (key, narrow) => stations[key][narrow ? 3 : 2];
+  const bodyWidth = narrow => narrow ? 48 : 56;
+  const hubRadius = narrow => narrow ? 28 : 34;
   const arabic = 'Noto Sans Arabic,Tahoma,Arial,sans-serif';
   function label(x,y,value,size,color,weight=500,reading=false) {
     const attribute=reading?' data-station-count=""':'';
     return '<text'+attribute+' direction="rtl" unicode-bidi="plaintext" x="'+x+'" y="'+y+'" text-anchor="middle" font-family="'+arabic+'" font-size="'+size+'" font-weight="'+weight+'" fill="'+color+'">'+value+'</text>';
   }
-  function curve(route,narrow) {
-    const [x,y]=coord(route[0],narrow), [u,v]=coord(route[1],narrow);
-    const mid=(x+u)/2;
-    return {path:'M '+x+' '+y+' C '+mid+' '+y+' '+mid+' '+v+' '+u+' '+v,
-      point(t) {
-        const z=1-t;
-        return [z*z*z*x+3*z*t*mid+t*t*t*u, z*z*z*y+3*z*z*t*y+3*z*t*t*v+t*t*t*v];
-      }};
-  }
-  const rooms = {
-    members: { hub:'me', caption:'داخل گرین‌لایف ME', color:aquamarine,
-      keys:['account','sync','request','diet','device','network'] },
-    leads: { hub:'crm', caption:'وضعیت فعلی لیدهای ثبت‌شدهٔ امروز', color:lilac,
-      keys:['lead_new','lead_contacted','lead_appointment','lead_visited','lead_won','lead_lost'] },
-  };
   const extras={
     diet:['پیگیری رژیم','درخواست‌های کمک و پیگیری رژیم ثبت‌شدهٔ امروز.'],
     device:['نوبت دستگاه','درخواست‌های نوبت دستگاه ثبت‌شدهٔ امروز.'],
@@ -58,16 +38,6 @@
     lead_lost:['ناموفق','پرونده‌های امروز با وضعیت فعلی ناموفق.'],
   };
   const info=key=>stations[key] || extras[key];
-  function roomGraph(room,narrow) {
-    const [cx,cy]=narrow?[200,191]:[460,177];
-    const rx=narrow?134:258, ry=narrow?127:119;
-    const positions={[room.hub]:[cx,cy]};
-    room.keys.forEach((key,i)=>{
-      const angle=(i*60-90)*Math.PI/180;
-      positions[key]=[Math.round(cx+rx*Math.cos(angle)),Math.round(cy+ry*Math.sin(angle))];
-    });
-    return positions;
-  }
   // The same upper-left light models every station, including the expanded rooms.
   function spaceBackdrop() {
     const materials = [
@@ -123,45 +93,29 @@
       </g>
     </g>`;
   }
-  function roomDrawing(room,counts,narrow,selected){
-    const nodes=roomGraph(room,narrow), w=narrow?400:920,h=narrow?380:355;
-    const [cx,cy]=nodes[room.hub], c=room.color;
-    let tracks='';
-    for(const key of room.keys){
-      const [x,y]=nodes[key];
-      tracks+=conduit(`M ${cx} ${cy} L ${x} ${y}`, tint(key));
-    }
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" role="group" aria-label="'+room.caption+'">'+spaceBackdrop()+vessels.defs()+
-      label(w/2,26,room.caption,15,c)+tracks+'<g data-glows="" pointer-events="none"></g><g data-particles="" pointer-events="none"></g>'+
-      Object.keys(nodes).map(key=>station(key,counts,narrow,selected,nodes[key])).join('')+
-      '</svg>';
+  function station(key,counts,narrow,selected,[x,y]) {
+    const color = tint(key);
+    const active = selected === key;
+    const body = isHub(key) ? planet(key,hubRadius(narrow),color,active) : vessels.shape(key,bodyWidth(narrow),active);
+    const caption = label(0,54,info(key)[0],narrow?13:14,'#f4f8fc',600);
+    const number = key==='me' ? '' : label(0,71,format.format(counts[key] || 0),14,color,700,true);
+    return `<g role="button" tabindex="0" aria-pressed="${active}" aria-label="${info(key)[0]}" data-station="${key}" data-station-group="${vessels.groupFor(key)}" transform="translate(${x} ${y})">
+      <rect x="-35" y="-39" width="70" height="83" rx="16" fill="none" pointer-events="all"/>
+      ${body}<g data-station-caption="">${caption}${number}</g>
+    </g>`;
   }
-  function station(key,counts,narrow,selected,position) {
-    const [x,y]=position || coord(key,narrow), c=tint(key), hub=isHub(key), width=narrow?105:140;
-    const number=counts[key] || 0;
-    let shape;
-    if (hub) {
-      const r=narrow?40:48;
-      shape=planet(key,r,c,selected===key)+
-        label(0,0,info(key)[0],narrow?11:14,'#f6f4ff',700)+
-        label(0,20,key==='crm'?format.format(number):'ME',14,c,700,key==='crm');
-    } else {
-      shape=vessels.shape(key,width,selected===key)+
-        label(0,-3,info(key)[0],narrow?12:14,'#f4f8fc',600)+
-        label(0,14,format.format(number),13,'#fcfdff',700,true);
-    }
-    return '<g role="button" tabindex="0" aria-pressed="'+(selected===key)+'" aria-label="'+info(key)[0]+'" data-station="'+key+'" data-station-group="'+vessels.groupFor(key)+'" transform="translate('+x+' '+y+')">'+shape+'</g>';
-  }
+
   function drawing(counts,narrow,selected,view) {
-    if (rooms[view]) return roomDrawing(rooms[view],counts,narrow,selected);
-    const w=narrow?400:920, h=narrow?526:485, split=narrow?228:215;
-    const tracks=routes.map(route=>conduit(curve(route,narrow).path,tint(route[2]))).join('');
-    const nodes=Object.keys(stations).map(k=>station(k,counts,narrow,selected)).join('');
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" role="group" aria-label="نقشه مسیر اعضا و منابع لید">'+
-      spaceBackdrop()+vessels.defs()+
-      '<path d="M 15 '+split+' H '+(w-15)+'" stroke="#33445b"/>'+
-      label(narrow?67:95,24,'مسیر اعضا',14,aquamarine,700)+label(narrow?80:104,split+25,'مسیر جذب لید',14,lilac,700)+tracks+
-      '<g data-glows="" pointer-events="none"></g><g data-particles="" pointer-events="none"></g>'+nodes+'</svg>';
+    const scene = layout(view,narrow);
+    const tracks = Object.entries(scene.paths).map(([key,route]) => conduit(route.d,tint(key))).join('');
+    const titles = scene.titles.map(t => label(t.x,t.y,t.text,15,vessels.groups[t.group].color,700)).join('');
+    const divider = scene.separator ? `<path d="${scene.separator}" stroke="#33445b" fill="none"/>` : '';
+    const nodes = Object.entries(scene.positions).map(([key,point]) => station(key,counts,narrow,selected,point)).join('');
+    const title = scene.titles.map(t=>t.text).join(' و ');
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${scene.width} ${scene.height}" role="group" aria-label="${title}">
+      ${spaceBackdrop()}${vessels.defs()}${divider}${tracks}${titles}
+      <g data-glows="" pointer-events="none"></g><g data-particles="" pointer-events="none"></g>${nodes}
+    </svg>`;
   }
   // Topology and animation geometry are shared by the live UI and the example.
   // Clip the trajectory to the visible surfaces. A flash at a node's center
@@ -171,16 +125,13 @@
     const cacheKey = view + '/' + narrow + '/' + key;
     if (transferPaths.has(cacheKey)) return transferPaths.get(cacheKey);
 
-    const room = rooms[view];
-    const route = room ? [room.hub, key] : routes.find(item => item[2] === key);
-    if (!route || (room && !room.keys.includes(key))) return null;
-    const positions = room && roomGraph(room, narrow);
-    const center = stationKey => room ? positions[stationKey] : coord(stationKey, narrow);
-    const from = center(route[0]), to = center(route[1]);
-    const point = room ? t => [from[0]+(to[0]-from[0])*t, from[1]+(to[1]-from[1])*t] : curve(route, narrow).point;
-
+    const scene = layout(view,narrow);
+    const route = scene.paths[key];
+    if (!route) return null;
+    const from = scene.positions[route.from], to = scene.positions[route.to];
+    const point = route.point;
     function surface(atSource) {
-      const stationKey = route[atSource ? 0 : 1];
+      const stationKey = atSource ? route.from : route.to;
       const [cx,cy] = atSource ? from : to;
       let inside = atSource ? 0 : 1;
       let outside = 1-inside;
@@ -188,8 +139,8 @@
         const mid = (inside+outside)/2;
         const [x,y] = point(mid);
         const dx = x-cx, dy = y-cy;
-        const inBody = isHub(stationKey) ? Math.hypot(dx,dy) <= (narrow?40:48)
-          : vessels.contains(stationKey,dx,dy,narrow?105:140);
+        const inBody = isHub(stationKey) ? Math.hypot(dx,dy) <= hubRadius(narrow)
+          : vessels.contains(stationKey,dx,dy,bodyWidth(narrow));
         if (inBody) inside = mid;
         else outside = mid;
       }
@@ -197,11 +148,11 @@
     }
     const entry = surface(true), exit = surface(false);
     // Place each surface ripple below its own port, including diagonal connections.
-    const width = narrow ? 105 : 140;
+    const width = bodyWidth(narrow);
     const rippleX = (t, origin) => Math.max(-38,Math.min(38,(point(t)[0]-origin[0])*100/width));
     const path = {
       point: progress => point(entry+(exit-entry)*progress), color:tint(key),
-      from:route[0], to:route[1], fromX:rippleX(entry,from), toX:rippleX(exit,to),
+      from:route.from, to:route.to, fromX:rippleX(entry,from), toX:rippleX(exit,to),
     };
     transferPaths.set(cacheKey,path);
     return path;
@@ -321,7 +272,7 @@
     if(next.day!==previous.day) stop();
     if (!paused && !reduced.matches && next.day===previous.day) {
       const start=performance.now();
-      for(const key of (rooms[view]?.keys || routes.map(route=>route[2]))) {
+      for(const key of Object.keys(layout(view,narrow).paths)) {
         if ((next.counts[key]||0)>(previous.counts[key]||0)) {
           active=active.filter(a=>a.key!==key);
           active.push({key,start});
