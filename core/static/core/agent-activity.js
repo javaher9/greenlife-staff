@@ -183,6 +183,7 @@
         .map(item => [item.dataset.targetKey,item]));
       for (const card of department.querySelectorAll('[data-target-key]')) {
         const oldCard = previousCards.get(card.dataset.targetKey);
+        if (oldCard?.querySelector('details')?.open && card.querySelector('details')) card.querySelector('details').open=true;
         if (oldCard && oldCard.dataset.targetReading !== card.dataset.targetReading) card.classList.add('is-updated');
       }
     }
@@ -198,6 +199,48 @@
     }
   }
 
+  function updateBoard(markup) {
+    const currentBoard=board.querySelector('#gl-neon-board');
+    if (!markup || !currentBoard || markup===previousBoard) return;
+    previousBoard=markup;
+    const template=document.createElement('template');
+    template.innerHTML=markup;
+    const nextBoard=template.content.querySelector('#gl-neon-board');
+    if (!nextBoard) return;
+    const oldCards=new Map([...currentBoard.querySelectorAll('[data-board-key]')].map(card=>[card.dataset.boardKey,card]));
+    const focus=document.activeElement;
+    const focusKey=focus.closest('[data-board-key]')?.dataset.boardKey;
+    const bounds=new Map([...currentBoard.querySelectorAll('[data-visitor]')].map(dot=>[
+      dot.dataset.visitor,{stage:dot.dataset.stage,rect:dot.getBoundingClientRect()}]));
+    for (const card of nextBoard.querySelectorAll('[data-board-key]')) {
+      const old=oldCards.get(card.dataset.boardKey);
+      if (!old) continue;
+      card.open=old.open;
+      if (old.dataset.dm && Number(card.dataset.dm)>Number(old.dataset.dm)) card.classList.add('received');
+    }
+    currentBoard.replaceWith(nextBoard);
+    if (focusKey) {
+      const card=[...nextBoard.querySelectorAll('[data-board-key]')].find(el=>el.dataset.boardKey===focusKey);
+      const link=focus.closest('a');
+      (link ? [...card?.querySelectorAll('a')||[]].find(a=>a.href===link.href) : card?.querySelector('summary'))?.focus({preventScroll:true});
+    }
+    if (reducedMotion.matches) return;
+    for (const dot of nextBoard.querySelectorAll('[data-visitor]')) {
+      const old=bounds.get(dot.dataset.visitor);
+      if (!old || old.stage===dot.dataset.stage) continue;
+      const r=dot.getBoundingClientRect();
+      dot.animate([{transform:'translate('+(old.rect.left-r.left)+'px,'+(old.rect.top-r.top)+'px)',opacity:.55},
+                   {transform:'translate(0,0)',opacity:1}],{duration:950,easing:'ease-out'});
+    }
+  }
+  board.addEventListener('click', e=>{
+    const card=e.target.closest('[data-target-key]');
+    if (card && !e.target.closest('details,a,button')) {
+      const details=card.querySelector('details');
+      if (details) details.open=!details.open;
+    }
+  });
+  let previousBoard='';
   async function refresh() {
     if (document.hidden || refreshing) return;
     refreshing = true;
@@ -217,6 +260,7 @@
         previous = new Set(snapshot.events.map(event => event.id));
         lastSnapshot = serialized;
       }
+      updateBoard(snapshot.board_html);
       root.dispatchEvent(new CustomEvent('flowupdate', { detail: snapshot.flow }));
       if (typeof snapshot.target_html === 'string') updateTargets(snapshot.target_html);
       syncText(snapshot);

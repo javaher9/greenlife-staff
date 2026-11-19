@@ -5,10 +5,13 @@ from zoneinfo import ZoneInfo
 
 from .call_center_identity import call_center_display_name
 from .jalali import gregorian_to_jalali
+from django.db.models import Sum
+from django.db.models.functions import Coalesce
+from .executive_board import presence_by_user
 from .models import EmployeeProfile
 from .sales_target_metrics import (
     active_sales_branches, approved_sales, jalali_month_dates, monthly_plans,
-    monthly_policy, sales_by_branch_and_flower,
+    monthly_policy, sales_by_branch_and_flower, million_toman,
 )
 
 
@@ -58,20 +61,35 @@ def target_context(now):
     )
     plans = monthly_plans(monthly_policy(year, month))
     by_branch, by_flower = sales_by_branch_and_flower(income)
-    flowers = (EmployeeProfile.objects.filter(is_active=True, user__is_active=True, role="call_center")
-               .select_related("user").order_by("user__first_name", "user__last_name", "user__username"))
+    staff = list(EmployeeProfile.objects.filter(is_active=True, user__is_active=True, role__in=("call_center","consultant"))
+                 .select_related("user","branch").order_by("user__first_name", "user__last_name", "user__username"))
+    flowers = [p for p in staff if p.role == "call_center"]
 
     def row(scope, identifier, label, sales):
         key = f"{scope}:{identifier}"
         return _vessel(key, label, sales.get(identifier, Decimal(0)), plans.get(key))
 
+    presence = presence_by_user(now.astimezone(tehran))
+    def person(profile, scope, name, sales):
+        vessel = row(scope, profile.user_id, name, sales)
+        state, label = presence.get(profile.user_id, ('unknown','ورود ثبت نشده'))
+        vessel.update(presence=state, presence_label=label, profile_pk=profile.pk,
+                      branch_name=profile.branch.name if profile.branch_id else '')
+        return vessel
+
+    consultants = [p for p in staff if p.role == 'consultant']
+    by_consultant = {uid:million_toman(value) for uid,value in income.order_by().annotate(
+        seller=Coalesce('appointment__consultation_plan__consultant_id','recorded_by_id')
+    ).values('seller').annotate(total=Sum('amount')).values_list('seller','total')} if consultants else {}
+    consultant_rows = [person(p, 'consultant', p.user.get_full_name() or p.user.username, by_consultant) for p in consultants]
     return {
         "target_period": f"{year}/{month:02d}",
         "target_departments": [
             {"key": "call_center", "title": "تارگت گل‌های کال‌سنتر",
-             "vessels": [row("flower", p.user_id, call_center_display_name(p.user), by_flower) for p in flowers]},
+             "vessels": [person(p, "flower", call_center_display_name(p.user), by_flower) for p in flowers]},
             {"key": "centers", "title": "تارگت فروش مراکز",
              "vessels": [row("branch", pk, name, by_branch)
                          for pk, name in active_sales_branches().values_list("pk", "name")]},
-        ],
+        ] + ([{"key":"consultants", "title":"مشاوران مراکز", "vessels":consultant_rows}]
+             if consultant_rows else []),
     }

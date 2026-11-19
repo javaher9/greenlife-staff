@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
+from .executive_board import board
 from .agent_flow import daily_flow
 from .agent_target_departments import target_context
 from .device_booking_models import BranchDeviceTypeStatus, PhysicalDevice
@@ -145,6 +146,7 @@ def _snapshot():
     return {
         'channels': channels, 'events': events,
         'flow': daily_flow(timezone.localtime(now)),
+        'board': board(timezone.localtime(now), instagram),
         'updated_at': timezone.localtime(now).isoformat(),
     }
 
@@ -222,6 +224,7 @@ def agent_activity(request):
 @require_GET
 def agent_activity_snapshot(request):
     data = _snapshot()
+    data['board_html'] = render_to_string('core/agent_neon_board.html', {'board':data.pop('board')}, request=request)
     if request.GET.get('targets') == '1':
         data['target_html'] = render_to_string(
             'core/agent_target_departments.html', target_context(timezone.now()), request=request,

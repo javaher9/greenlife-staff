@@ -52,7 +52,8 @@ class AgentTargetTests(TestCase):
             {'occurred_at': now.replace(minute=29)}, {'entry_type':'exp'}, {'source':'crm'}, {'review_status':'pending'},
         ]:
             FinancialTransaction.objects.create(**{**base, **excluded})
-        with self.assertNumQueries(6):
+        # Attendance, approved leave and shift assignments each use one bulk query.
+        with self.assertNumQueries(9):
             context=target_context(now)
         self.assertEqual(context['target_period'], '1405/08')
         flowers, centers = context['target_departments']

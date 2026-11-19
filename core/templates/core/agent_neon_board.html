@@ -1,0 +1,25 @@
+{% load l10n %}
+<div id="gl-neon-board" class="gl-neon-board" dir="rtl">
+  <section aria-labelledby="gl-media-title"><header><h2 id="gl-media-title">رصد سایت‌ها</h2><small>پایش هر 30 ثانیه</small></header>
+  <div class="neon-sites">{% for s in board.sites %}
+    <details data-board-key="{{ s.domain }}" class="neon-site" data-state="{{ s.status }}">
+      <summary><span class="neon-screen" aria-hidden="true"><i class="neon-top"></i><i class="neon-window"></i><i class="neon-rail"></i><i class="neon-beacon"></i></span>
+        <strong dir="ltr">{{ s.domain }}</strong><small>{{ s.label }}</small>
+        <span class="neon-readouts"><span><b>{{ s.visits|unlocalize|default_if_none:'—' }}</b>بازدید امروز</span><span><b>{{ s.month|unlocalize|default_if_none:'—' }}</b>بازدید ماه</span><span><b>{{ s.forms|unlocalize }}</b>فرم در CRM</span></span>
+      </summary>
+      <div class="neon-detail"><p>آخرین بررسی <bdi>{{ s.checked }}</bdi></p>{% if s.visits == None %}<p>آمار بازدید در دسترس نیست.</p>{% endif %}
+      <p>نوبت از فرم‌های امروز <b>{{ s.bookings|unlocalize }}</b></p><p>ریتم ساعتی فرم‌های ثبت‌شده</p>
+      <span class="neon-bars" dir="ltr" aria-hidden="true">{% for h in s.hours %}<i style="--h:{{ h|unlocalize }}%"></i>{% endfor %}</span>
+      <a href="https://{{ s.domain }}/" target="_blank" rel="noopener">ورود به سایت ↗</a></div>
+    </details>{% endfor %}</div></section>
+  <section><header><h2>پیج‌های اینستاگرام</h2><a href="{% url 'instagram_settings' %}">مدیریت اتصال</a></header>
+    <div class="neon-pages">{% for p in board.pages %}<details data-board-key="{{ p.handle }}" data-dm="{{ p.dm|unlocalize|default_if_none:'' }}"><summary>
+      <span class="neon-lens" aria-hidden="true">{% if p.avatar %}<img alt="" loading="lazy" src="{{ p.avatar }}">{% else %}{{ p.mark }}{% endif %}</span><strong dir="ltr">{{ p.handle }}</strong><small>{{ p.leads|unlocalize }} لید امروز</small></summary>
+      <div class="neon-detail"><p>دایرکت ورودی در رویدادهای اخیر امروز <b>{{ p.dm|unlocalize|default_if_none:'در دسترس نیست' }}</b></p><p>نوبت از لیدهای امروز <b>{{ p.booked|unlocalize }}</b></p><a href="https://www.instagram.com/{{ p.handle }}/" target="_blank" rel="noopener">مشاهدهٔ پیج ↗</a></div></details>{% endfor %}</div></section>
+  <details id="gl-network-summary" class="neon-network" data-board-key="network"><summary><span class="neon-branch" aria-hidden="true">⑂</span><strong>شبکهٔ فروش</strong><span><b>{{ board.network.members|unlocalize }}</b> عضو جدید امروز</span><span><b>{{ board.network.leads|unlocalize }}</b> لید امروز</span></summary>
+    <div class="neon-detail">{% for r in board.network.rows %}<p>{{ r.name }} · {{ r.n|unlocalize }} لید · {{ r.bookings|unlocalize }} دارای نوبت</p>{% empty %}<p>امروز لیدی برای این شبکه ثبت نشده است.</p>{% endfor %}<a href="{% url 'referral_supervisor_dashboard' %}">مشاهدهٔ شبکهٔ فروش</a></div></details>
+  <section><header><h2>حرکت مراجعین مراکز</h2><small>{{ board.scans|unlocalize }} اسکن ثبت‌شده امروز در مجموعه</small></header>
+    {% for room in board.rooms %}<details class="neon-room" data-board-key="room-{{ room.name }}"><summary><strong>{{ room.name }}</strong><span class="neon-runway">{% for st in room.stages %}<span class="neon-stop"><b>{{ st.count|unlocalize }}</b><small>{{ st.name }}</small><span class="neon-dots">{% for token in st.tokens %}<i data-visitor="{{ token }}" data-stage="{{ st.key }}"></i>{% endfor %}</span></span>{% endfor %}</span></summary><div class="neon-detail"><p>هر نقطه یک نوبت است. حداکثر 10 نقطه در هر مرحله دیده می‌شود.</p><a href="{% url 'appointment_schedule' %}">تقویم نوبت‌ها</a></div></details>{% endfor %}</section>
+  <section><header><h2>اعضای سازمان</h2><a href="{% url 'attendance_team' %}">حضور و غیاب</a></header><div class="neon-team">{% for t in board.teams %}<details data-board-key="team-{{ t.name }}"><summary><strong>{{ t.name }}</strong> · {{ t.present|unlocalize }} حاضر</summary><div class="neon-detail">{% for p in t.people %}<a href="{% url 'employee_file' p.pk %}" data-presence="{{ p.state }}"><i></i>{{ p.name }} · {{ p.role }} · {{ p.label }}</a>{% endfor %}</div></details>{% empty %}<small>پرسنل فعالی برای مراکز ثبت نشده است.</small>{% endfor %}</div></section>
+  <nav class="neon-links" aria-label="دسترسی مدیریت"><a href="{% url 'management_all_leads' %}">لیدهای فشرده</a><a href="{% url 'attendance_team' %}">حضور تیم</a><a href="{% url 'employee_list' %}">اعضای سازمان</a><a href="{% url 'sales_targets_dashboard' %}">تارگت‌ها</a><a href="{% url 'finance_dashboard' %}">مالی</a><a href="{% url 'kpi_list' %}">ارزیابی کارکنان</a></nav>
+</div>

@@ -14,8 +14,9 @@
       <h3 id="gl-target-title-{{ department.key }}">{{ department.title }}</h3>
       <div class="gl-target-vessels" tabindex="0" role="group" aria-labelledby="gl-target-title-{{ department.key }}">
         {% for vessel in department.vessels %}
-        <article class="gl-target-card" data-target-key="{{ vessel.key }}" data-target-reading="{{ vessel.reading }}">
+        <article class="gl-target-card" data-target-key="{{ vessel.key }}" data-target-reading="{{ vessel.reading }}"{% if vessel.presence %} data-presence="{{ vessel.presence }}"{% endif %}>
           <h4>{{ vessel.name }}</h4>
+          {% if vessel.profile_pk %}<details><summary>{{ vessel.presence_label }}</summary><p>{{ vessel.branch_name }}</p><a href="{% url 'employee_file' vessel.profile_pk %}">پروندهٔ عضو تیم</a></details>{% elif department.key == "centers" %}<details><summary>جزئیات مرکز</summary><a href="{% url 'sales_targets_dashboard' %}">گزارش فروش مراکز</a></details>{% endif %}
           <div class="gl-target-vessel" aria-hidden="true">
             <div class="gl-target-chamber">
               {% if vessel.level != None %}

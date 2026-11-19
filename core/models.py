@@ -2338,3 +2338,12 @@ class ChannelBotSetup(models.Model):
     secret_cipher = models.TextField(blank=True)
     username = models.CharField(max_length=80, blank=True)
     verified_at = models.DateTimeField(null=True, blank=True)
+
+
+class ExecutiveSiteReading(models.Model):
+    domain = models.CharField(max_length=80, primary_key=True)
+    checked_at = models.DateTimeField()
+    state = models.CharField(max_length=12)
+    failures = models.PositiveIntegerField(default=0)
+    status_code = models.PositiveSmallIntegerField(null=True)
+    analytics = models.JSONField(default=dict)

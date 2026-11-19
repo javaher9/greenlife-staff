@@ -16,6 +16,8 @@
     <nav class="gl-cycle-toolbar" aria-label="بخش‌های چرخه">
       <div class="gl-cycle-jumps">
         <a href="#gl-flow-title">اطلس و کانال‌ها</a>
+        <a href="#gl-media-title">تابلوهای سایت‌ها و پیج‌ها</a>
+        <a href="#gl-network-summary">شبکهٔ فروش</a>
         <a href="#gl-target-call_center">گل‌های کال‌سنتر</a>
         <a href="#gl-target-centers">فروش مراکز</a>
         <a href="#gl-bookings-title">نوبت‌دهی مراکز</a>
@@ -53,6 +55,8 @@
       </div>
     </section>
   </div>
+  <link rel="stylesheet" href="{% static 'core/agent-neon.css' %}">
+  {% include 'core/agent_neon_board.html' with board=activity.board %}
   {% include 'core/agent_target_departments.html' %}
   <div class="gl-activity-grid">
     <section class="gl-account-panel" aria-labelledby="gl-account-title">
