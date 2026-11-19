@@ -156,7 +156,7 @@ class EmployeeProfile(models.Model):
     @property
     def dm_lead_enabled(self):
         # Her operational role is manual Instagram-DM lead entry, not personal referrals.
-        return bool(self.can_register_instagram_dm_lead or self.is_fatemeh_rad)
+        return bool(self.can_register_instagram_dm_lead or self.is_fatemeh_rad or self.role == 'quality_control')
 
     def __str__(self): return self.user.get_full_name() or self.user.username
 
