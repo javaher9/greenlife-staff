@@ -1,4 +1,5 @@
-from datetime import timedelta
+from datetime import datetime, time, timedelta
+from zoneinfo import ZoneInfo
 from hashlib import sha256
 
 from django.conf import settings
@@ -10,9 +11,10 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
 from .agent_flow import daily_flow
+from .jalali import format_jalali, parse_jalali
 from .channel_webhook_views import bot_connection
 from .models import (
-    ChannelBotSetup, ChannelMessageReceipt, InstagramIntegrationSettings, InstagramWebhookEvent,
+    Branch, VisitAppointment, ChannelBotSetup, ChannelMessageReceipt, InstagramIntegrationSettings, InstagramWebhookEvent,
     WhatsAppMessage, WhatsAppNumber,
 )
 from .views import credential_admin_required
@@ -144,6 +146,48 @@ def _snapshot():
     }
 
 
+def _appointment_cards(now):
+    tehran = ZoneInfo('Asia/Tehran')
+    today = now.astimezone(tehran).date()
+    month = format_jalali(today, persian_digits=False).rsplit('/', 1)[0]
+    start = datetime.combine(parse_jalali(f'{month}/01'), time.min, tzinfo=tehran)
+    names = ('نیاوران', 'پونک', 'اصفهان')
+    branch_ids = {name: [] for name in names}
+    for pk, label in Branch.objects.values_list('pk', 'name'):
+        normalized = label.translate(str.maketrans('يك', 'یک')).replace('\u200c', '')
+        for name in names:
+            if name in normalized:
+                branch_ids[name].append(pk)
+                break
+    rows = VisitAppointment.objects.filter(
+        branch_id__in=[pk for ids in branch_ids.values() for pk in ids],
+        created_at__lte=now,
+    ).values('branch_id').annotate(
+        total=Count('pk'),
+        done=Count('pk', filter=Q(status='completed')),
+        month_total=Count('pk', filter=Q(created_at__gte=start)),
+        month_done=Count('pk', filter=Q(created_at__gte=start, status='completed')),
+    ).order_by()
+    by_id = {row['branch_id']: row for row in rows}
+    periods = []
+    for prefix in ('month_', ''):
+        cards = []
+        for name, ids in branch_ids.items():
+            total = sum(by_id.get(pk, {}).get(prefix + 'total', 0) for pk in ids)
+            done = sum(by_id.get(pk, {}).get(prefix + 'done', 0) for pk in ids)
+            cards.append({
+                'name': name, 'available': bool(ids), 'total': total, 'done': done,
+                'rate': round(100 * done / total) if total else None,
+            })
+        maximum = max(1, *(card['total'] for card in cards))
+        for card in cards:
+            for metric in ('total', 'done'):
+                count = card[metric]
+                card[f'{metric}_level'] = max(1, round(20 * count / maximum)) if count else 0
+        periods.append(cards)
+    return periods
+
+
 @never_cache
 @credential_admin_required
 @require_GET
@@ -153,7 +197,7 @@ def agent_activity(request):
         'id': key, 'name': name, 'setup': saved.get(key),
         'managed': any(settings.CHANNEL_BOTS[key]),
     } for key, name in ChannelMessageReceipt.PROVIDERS]
-    return render(request, 'core/agent_activity.html', {'activity': _snapshot(), 'bots': bots})
+    return render(request, 'core/agent_activity.html', {'activity': _snapshot(), 'bots': bots, 'appointment_periods': _appointment_cards(timezone.now())})
 
 
 @never_cache

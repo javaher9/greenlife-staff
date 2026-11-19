@@ -1,5 +1,5 @@
 {% extends 'core/base.html' %}
-{% load static %}
+{% load static l10n %}
 {% block content %}
 <link rel="stylesheet" href="{% static 'core/agent-activity.css' %}">
 <section class="gl-activity" dir="rtl" data-activity-url="{% url 'agent_activity_snapshot' %}">
@@ -64,6 +64,55 @@
       </ol>
     </section>
   </div>
+  <section class="gl-bookings" aria-labelledby="gl-bookings-title">
+    <h2 id="gl-bookings-title">نوبت‌دهی مراکز</h2>
+    <fieldset class="gl-booking-periods">
+      <legend>بازهٔ ثبت نوبت</legend>
+      <input type="radio" name="gl-booking-period" id="gl-booking-month" checked>
+      <label for="gl-booking-month">این ماه</label>
+      <input type="radio" name="gl-booking-period" id="gl-booking-all">
+      <label for="gl-booking-all">از ابتدا تا امروز</label>
+      {% for cards in appointment_periods %}
+      <div class="gl-booking-grid" data-period="{% if forloop.first %}month{% else %}all{% endif %}">
+        {% for card in cards %}
+        <details class="gl-booking-card">
+          <summary>
+            <strong>{{ card.name }}</strong>
+            {% if card.available %}
+            <span class="gl-booking-pair" dir="ltr">
+              <span>
+                <span class="gl-booking-tube">
+                  <span class="gl-booking-liquid gl-booking-level-{{ card.total_level|unlocalize }}" aria-hidden="true"></span>
+                  <b>{{ card.total|unlocalize }}</b>
+                </span>
+                ثبت‌شده
+              </span>
+              <span>
+                <span class="gl-booking-tube gl-booking-completed">
+                  <span class="gl-booking-liquid gl-booking-level-{{ card.done_level|unlocalize }}" aria-hidden="true"></span>
+                  <b>{{ card.done|unlocalize }}</b>
+                </span>
+                انجام‌شده
+              </span>
+            </span>
+            {% else %}
+            <span>شعبه در سامانه پیدا نشد</span>
+            {% endif %}
+            <small>جزئیات مرکز</small>
+          </summary>
+          {% if card.available and card.total %}
+          <p>نرخ انجام نوبت‌های ثبت‌شده در این بازه <bdi>{{ card.rate|unlocalize }}%</bdi></p>
+          {% elif card.available %}
+          <p>در این بازه نوبتی ثبت نشده است.</p>
+          {% else %}
+          <p>آمار نوبت‌های این مرکز در دسترس نیست.</p>
+          {% endif %}
+        </details>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </fieldset>
+  </section>
   {{ activity|json_script:"gl-activity-initial" }}
 </section>
 <script src="{% static 'core/agent-flow.js' %}" defer></script>
