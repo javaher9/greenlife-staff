@@ -1,6 +1,6 @@
 {% load static %}
 <link rel="stylesheet" href="{% static 'core/agent-flow.css' %}">
-<section id="gl-flow" dir="rtl" aria-labelledby="gl-flow-title">
+<section id="gl-flow" dir="rtl" data-flow-view="overview" aria-labelledby="gl-flow-title">
   <header class="flow-heading">
     <div><h2 id="gl-flow-title">اطلس جریان گرین‌لایف</h2><p>از عضویت و درخواست ویزیت تا ورود لید و ارجاع</p></div>
     <div class="flow-controls"><span data-flow-mode>امروز · تهران</span><button type="button" data-flow-pause aria-pressed="false">توقف حرکت</button></div>
@@ -16,6 +16,36 @@
     <button type="button" data-zoom="reset" aria-label="بازنشانی زوم">100٪</button>
     <button type="button" data-zoom="out" aria-label="کوچک‌نمایی">−</button>
   </div>
+  <ul class="flow-legend" aria-label="راهنمای شکل‌های اطلس">
+    <li data-legend-group="member">
+      <svg viewBox="0 0 26 20" width="26" height="20" aria-hidden="true" focusable="false">
+        <path d="M2 11C4 4 13 2 24 5C22 13 15 18 8 17C4 16 2 14 2 11Z" fill="currentColor" fill-opacity=".24" stroke="currentColor"/>
+        <path d="M5 13Q12 6 20 6" fill="none" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      عضویت و همگام‌سازی
+    </li>
+    <li data-legend-group="intake">
+      <svg viewBox="0 0 26 20" width="26" height="20" aria-hidden="true" focusable="false">
+        <path d="M2 9L7 4H19L24 9L18 16H8Z" fill="currentColor" fill-opacity=".27" stroke="currentColor"/>
+        <path d="M2 9L9 8H17L24 9M9 8L7 4M17 8L19 4M9 8L8 16M17 8L18 16" fill="none" stroke="currentColor" stroke-opacity=".8"/>
+      </svg>
+      منابع جذب لید
+    </li>
+    <li data-legend-group="service">
+      <svg viewBox="0 0 26 20" width="26" height="20" aria-hidden="true" focusable="false">
+        <rect x="2" y="4" width="22" height="13" rx="4" fill="currentColor" fill-opacity=".24" stroke="currentColor"/>
+        <path d="M6 7H20" stroke="currentColor" stroke-linecap="round" stroke-opacity=".8"/>
+      </svg>
+      خدمات و نوبت
+    </li>
+    <li data-legend-group="followup">
+      <svg viewBox="0 0 26 20" width="26" height="20" aria-hidden="true" focusable="false">
+        <path d="M3 5A10 3 0 0 1 23 5V14A10 3.5 0 0 1 3 14Z" fill="currentColor" fill-opacity=".27" stroke="currentColor"/>
+        <path d="M3 5A10 3 0 0 0 23 5" fill="none" stroke="currentColor"/>
+      </svg>
+      پیگیری لید
+    </li>
+  </ul>
   <div class="flow-viewport" data-map-viewport><div data-flow-map></div></div>
   <footer class="flow-detail" aria-live="polite">
     <div><strong data-flow-title>لیدهای فشرده</strong><p data-flow-description></p></div>

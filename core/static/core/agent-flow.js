@@ -21,14 +21,15 @@
     ['website','crm','website'], ['instagram','crm','instagram'], ['school','crm','school'], ['other','crm','other'],
     ['crm','assigned','assigned'],
   ];
-  const aquamarine = '#6eeac7', lilac = '#bc9aff';
-  const isMe = key => ['me','account','sync','request','booked'].includes(key);
-  const tint = key => isMe(key) ? aquamarine : lilac;
+  const vessels = window.GreenLifeFlowVessels;
+  const tint = key => vessels.groups[vessels.groupFor(key)].color;
+  const aquamarine = tint('me'), lilac = tint('crm');
   const isHub = key => key === 'me' || key === 'crm';
   const coord = (key, narrow) => stations[key][narrow ? 3 : 2];
   const arabic = 'Noto Sans Arabic,Tahoma,Arial,sans-serif';
-  function label(x,y,value,size,color,weight=500) {
-    return '<text direction="rtl" unicode-bidi="plaintext" x="'+x+'" y="'+y+'" text-anchor="middle" font-family="'+arabic+'" font-size="'+size+'" font-weight="'+weight+'" fill="'+color+'">'+value+'</text>';
+  function label(x,y,value,size,color,weight=500,reading=false) {
+    const attribute=reading?' data-station-count=""':'';
+    return '<text'+attribute+' direction="rtl" unicode-bidi="plaintext" x="'+x+'" y="'+y+'" text-anchor="middle" font-family="'+arabic+'" font-size="'+size+'" font-weight="'+weight+'" fill="'+color+'">'+value+'</text>';
   }
   function curve(route,narrow) {
     const [x,y]=coord(route[0],narrow), [u,v]=coord(route[1],narrow);
@@ -81,24 +82,8 @@
       <radialGradient id="gl-corona-${id}">
         <stop offset=".56" stop-color="${light}" stop-opacity=".32"/><stop offset="1" stop-color="${light}" stop-opacity="0"/>
       </radialGradient>
-      <linearGradient id="gl-tube-${id}" x2="0" y2="1">
-        <stop stop-color="${middle}"/><stop offset=".075" stop-color="${ice}"/><stop offset=".135" stop-color="${middle}"/>
-        <stop offset=".30" stop-color="${shade}"/><stop offset=".64" stop-color="${dark}"/>
-        <stop offset=".83" stop-color="${shade}"/><stop offset=".93" stop-color="${middle}"/><stop offset="1" stop-color="${dark}"/>
-      </linearGradient>
-      <linearGradient id="gl-fiber-${id}" x1="0" y1="0" x2="0" y2="1" gradientUnits="userSpaceOnUse" gradientTransform="scale(1 370)">
-        <stop stop-color="${light}"/><stop offset=".46" stop-color="${ice}"/><stop offset="1" stop-color="${light}"/>
-      </linearGradient>`).join('');
+    `).join('');
     return `<defs>${materials}
-      <linearGradient id="gl-ferrule" x1="0" y1="0" x2=".22" y2="1">
-        <stop stop-color="#718898"/><stop offset=".13" stop-color="#c5d5e9"/>
-        <stop offset=".29" stop-color="#27384e"/><stop offset=".65" stop-color="#0c1626"/>
-        <stop offset=".85" stop-color="#45546e"/><stop offset="1" stop-color="#142437"/>
-      </linearGradient>
-      <linearGradient id="gl-tube-reflection">
-        <stop stop-color="#e3faff" stop-opacity="0"/><stop offset=".58" stop-color="#f1fcff" stop-opacity=".85"/>
-        <stop offset="1" stop-color="#e3faff" stop-opacity="0"/>
-      </linearGradient>
       <radialGradient id="gl-arrival-light">
         <stop stop-color="#e5ddff" stop-opacity=".55"/><stop offset=".54" stop-color="#b9c8ff" stop-opacity=".32"/><stop offset="1" stop-color="#a5b3ff" stop-opacity="0"/>
       </radialGradient>
@@ -113,39 +98,11 @@
       <rect width="100%" height="100%" fill="url(#gl-atlas-stars)"/>`;
   }
   function conduit(path, color) {
-    const fiber = color===aquamarine ? 'me' : 'crm';
     return `<g fill="none" stroke-linecap="round" aria-hidden="true">
-      <path d="${path}" stroke="${color}" stroke-opacity=".055" stroke-width="11"/>
-      <path d="${path}" stroke="${color}" stroke-opacity=".30" stroke-width="5"/>
-      <path d="${path}" stroke="#081523" stroke-width="3.3"/>
-      <path d="${path}" stroke="url(#gl-fiber-${fiber})" stroke-width="1.15" stroke-opacity=".91"/>
-    </g>`;
-  }
-
-  function glassTube(key, width, accent, selected) {
-    const cap = width/2 - 6;
-    const material = accent===aquamarine ? 'me' : 'crm';
-    const left = -cap+5, right = cap-5;
-    // The dark inner chamber sits behind a curved double wall and two recessed couplings.
-    return `<g aria-hidden="true">
-      <defs><clipPath id="gl-glass-${key}"><rect x="${left}" y="-19" width="${right-left}" height="35" rx="4"/></clipPath></defs>
-      <rect x="${-cap}" y="-16" width="${cap*2}" height="42" rx="7" fill="#030810" opacity=".75"/>
-      <path class="flow-plate" d="M ${-cap} -21 Q 0 -23 ${cap} -21 V 21 Q 0 23 ${-cap} 21 Z"
-        fill="url(#gl-tube-${material})" stroke="${selected ? '#ebfaff' : accent}" stroke-opacity="${selected ? '.98' : '.69'}" stroke-width="${selected ? 1.65 : .85}"/>
-      <g clip-path="url(#gl-glass-${key})">
-        <rect x="${left}" y="-11" width="${right-left}" height="25" rx="4" fill="#07111e" opacity=".36"/>
-        <path d="M ${left} -17 Q 0 -19 ${right} -17 M ${left} 16 Q 0 18 ${right} 16" fill="none" stroke="${accent}" stroke-width="1.2" opacity=".82"/>
-        <g class="flow-glint" style="--gl-travel:${width+24}px;--gl-delay:-${(cap+key.length)%7}s">
-          <rect x="${-cap-26}" y="-19" width="30" height="5" fill="url(#gl-tube-reflection)"/>
-          <path d="M ${-cap-20} -16 l 7 3 -11 27 h -6 z" fill="${accent}" opacity=".09"/>
-        </g>
-      </g>
-      <path d="M ${left} -21 v 42 M ${right} -21 v 42" stroke="#060f1f" stroke-width="2"/>
-      <ellipse cx="${-cap}" rx="5.5" ry="22.4" fill="url(#gl-ferrule)" stroke="${accent}" stroke-width=".8"/>
-      <path d="M ${-cap+1.5} -16 q -3 13 -1 25" fill="none" stroke="${accent}" opacity=".87" stroke-width="1.3"/>
-      <ellipse cx="${cap}" rx="5.7" ry="22.4" fill="url(#gl-ferrule)" stroke="${accent}" stroke-width=".9"/>
-      <ellipse cx="${cap+1.1}" rx="3.3" ry="15.4" fill="#081421" stroke="${accent}" stroke-width=".8"/>
-      <ellipse cx="${cap+1.6}" rx="1.35" ry="8" fill="${accent}" opacity=".74"/>
+      <path d="${path}" stroke="${color}" stroke-opacity=".07" stroke-width="10"/>
+      <path d="${path}" stroke="${color}" stroke-opacity=".37" stroke-width="4.5"/>
+      <path d="${path}" stroke="#081523" stroke-width="2.8"/>
+      <path d="${path}" stroke="${color}" stroke-width="1.25"/>
     </g>`;
   }
 
@@ -172,27 +129,28 @@
     let tracks='';
     for(const key of room.keys){
       const [x,y]=nodes[key];
-      tracks+=conduit(`M ${cx} ${cy} L ${x} ${y}`, c);
+      tracks+=conduit(`M ${cx} ${cy} L ${x} ${y}`, tint(key));
     }
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" role="group" aria-label="'+room.caption+'">'+spaceBackdrop()+
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" role="group" aria-label="'+room.caption+'">'+spaceBackdrop()+vessels.defs()+
       label(w/2,26,room.caption,15,c)+tracks+'<g data-glows="" pointer-events="none"></g><g data-particles="" pointer-events="none"></g>'+
-      Object.keys(nodes).map(key=>station(key,counts,narrow,selected,nodes[key],c)).join('')+
+      Object.keys(nodes).map(key=>station(key,counts,narrow,selected,nodes[key])).join('')+
       '</svg>';
   }
-  function station(key,counts,narrow,selected,position,color) {
-    const [x,y]=position || coord(key,narrow), c=color || tint(key), hub=isHub(key), width=narrow?105:140;
+  function station(key,counts,narrow,selected,position) {
+    const [x,y]=position || coord(key,narrow), c=tint(key), hub=isHub(key), width=narrow?105:140;
     const number=counts[key] || 0;
     let shape;
     if (hub) {
       const r=narrow?40:48;
       shape=planet(key,r,c,selected===key)+
         label(0,0,info(key)[0],narrow?11:14,'#f6f4ff',700)+
-        label(0,20,key==='crm'?format.format(number):'ME',14,c,700);
+        label(0,20,key==='crm'?format.format(number):'ME',14,c,700,key==='crm');
     } else {
-      shape=glassTube(key,width,c,selected===key)+
-        label(0,-2,info(key)[0],narrow?12:14,'#f4f8fc',600)+label(0,14,format.format(number),13,c,700);
+      shape=vessels.shape(key,width,selected===key)+
+        label(0,-3,info(key)[0],narrow?12:14,'#f4f8fc',600)+
+        label(0,14,format.format(number),13,'#fcfdff',700,true);
     }
-    return '<g role="button" tabindex="0" aria-pressed="'+(selected===key)+'" aria-label="'+info(key)[0]+'" data-station="'+key+'" transform="translate('+x+' '+y+')">'+shape+'</g>';
+    return '<g role="button" tabindex="0" aria-pressed="'+(selected===key)+'" aria-label="'+info(key)[0]+'" data-station="'+key+'" data-station-group="'+vessels.groupFor(key)+'" transform="translate('+x+' '+y+')">'+shape+'</g>';
   }
   function drawing(counts,narrow,selected,view) {
     if (rooms[view]) return roomDrawing(rooms[view],counts,narrow,selected);
@@ -200,7 +158,7 @@
     const tracks=routes.map(route=>conduit(curve(route,narrow).path,tint(route[2]))).join('');
     const nodes=Object.keys(stations).map(k=>station(k,counts,narrow,selected)).join('');
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" role="group" aria-label="نقشه مسیر اعضا و منابع لید">'+
-      spaceBackdrop()+
+      spaceBackdrop()+vessels.defs()+
       '<path d="M 15 '+split+' H '+(w-15)+'" stroke="#33445b"/>'+
       label(narrow?67:95,24,'مسیر اعضا',14,aquamarine,700)+label(narrow?80:104,split+25,'مسیر جذب لید',14,lilac,700)+tracks+
       '<g data-glows="" pointer-events="none"></g><g data-particles="" pointer-events="none"></g>'+nodes+'</svg>';
@@ -229,16 +187,22 @@
       for (let i=0; i<14; i++) {
         const mid = (inside+outside)/2;
         const [x,y] = point(mid);
-        const dx = Math.abs(x-cx), dy = Math.abs(y-cy);
+        const dx = x-cx, dy = y-cy;
         const inBody = isHub(stationKey) ? Math.hypot(dx,dy) <= (narrow?40:48)
-          : dx <= (narrow?52.5:70) && dy <= 22;
+          : vessels.contains(stationKey,dx,dy,narrow?105:140);
         if (inBody) inside = mid;
         else outside = mid;
       }
       return (inside+outside)/2;
     }
     const entry = surface(true), exit = surface(false);
-    const path = { point: progress => point(entry+(exit-entry)*progress), color: room ? room.color : tint(key) };
+    // Place each surface ripple below its own port, including diagonal connections.
+    const width = narrow ? 105 : 140;
+    const rippleX = (t, origin) => Math.max(-38,Math.min(38,(point(t)[0]-origin[0])*100/width));
+    const path = {
+      point: progress => point(entry+(exit-entry)*progress), color:tint(key),
+      from:route[0], to:route[1], fromX:rippleX(entry,from), toX:rippleX(exit,to),
+    };
     transferPaths.set(cacheKey,path);
     return path;
   }
@@ -255,10 +219,13 @@
 
   function motion(events,narrow,view) {
     let particles='', glows='';
+    const impacts = new Map();
     for (const {key,t} of events) {
       if (t<0 || t>=1) continue;
       const path = transferPath(key,narrow,view);
       if (!path) continue;
+      if (t<.18 && !isHub(path.from)) impacts.set(path.from,path.fromX);
+      if (t>=.79 && !isHub(path.to)) impacts.set(path.to,path.toX);
       glows += contactFlash(path.point(0),path.color,t/.13);
       glows += contactFlash(path.point(1),path.color,(t-.79)/.21);
       const progress = (t-.06)/.73;
@@ -271,7 +238,7 @@
         particles+=`<circle cx="${x}" cy="${y}" r="${j===0?2.7:2.3-j*.22}" fill="${j===0?'#f0ffff':path.color}" opacity="${1-j*.12}"/>`;
       }
     }
-    return {particles,glows};
+    return {particles,glows,impacts};
   }
   const panel=document.getElementById('gl-flow');
   if (!panel) return;
@@ -286,7 +253,9 @@
     panel.querySelector('[data-flow-title]').textContent=info(selected)[0];
     panel.querySelector('[data-flow-description]').textContent=info(selected)[1];
     const c=snapshot.counts;
-    panel.querySelector('[data-flow-count]').textContent=selected==='me'?'':format.format(c[selected] || 0);
+    const count = panel.querySelector('[data-flow-count]');
+    count.style.color=tint(selected);
+    count.textContent=selected==='me'?'':format.format(c[selected] || 0);
     const target=panel.querySelector('[data-flow-breakdown]');
     let rows=[];
     if (selected==='me' || selected==='request') {
@@ -301,6 +270,7 @@
     }));
   }
   function draw() {
+    panel.dataset.flowView = view;
     const focused=document.activeElement?.dataset.station;
     narrow=viewport.getBoundingClientRect().width<640;
     host.innerHTML=drawing(snapshot.counts,narrow,selected,view);
@@ -312,6 +282,13 @@
     const layers=motion(active.map(a=>({key:a.key,t:(time-a.start)/2400})),narrow,view);
     host.querySelector('[data-particles]').innerHTML=layers.particles;
     host.querySelector('[data-glows]').innerHTML=layers.glows;
+    for (const node of host.querySelectorAll('[data-station]')) {
+      const offset = layers.impacts.get(node.dataset.station);
+      if (offset !== undefined && !node.classList.contains('is-flow-impact')) {
+        node.style.setProperty('--glv-impact-x',offset+'px');
+      }
+      node.classList.toggle('is-flow-impact',offset !== undefined);
+    }
     raf=active.length?requestAnimationFrame(tick):0;
   }
   function stop() { active=[]; cancelAnimationFrame(raf); tick(performance.now()); }
@@ -353,7 +330,7 @@
     }
     for (const item of host.querySelectorAll('[data-station]')) {
       const key = item.dataset.station;
-      if (key !== 'me') item.querySelector('text:last-child').textContent = format.format(next.counts[key] || 0);
+      if (key !== 'me') item.querySelector('[data-station-count]').textContent = format.format(next.counts[key] || 0);
     }
     details();
     if (!raf && active.length) raf=requestAnimationFrame(tick);
