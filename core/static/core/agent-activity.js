@@ -10,8 +10,8 @@
   const wires = orbit.querySelector('.gl-activity-wires');
   const nodes = [...orbit.querySelectorAll('.gl-orbit-node')];
   const paths = new Map();
-  const number = new Intl.NumberFormat('fa-IR');
-  const clock = new Intl.DateTimeFormat('fa-IR', {
+  const number = new Intl.NumberFormat('fa-IR-u-nu-latn');
+  const clock = new Intl.DateTimeFormat('fa-IR-u-nu-latn', {
     hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Tehran',
   });
   const initial = JSON.parse(root.querySelector('#gl-activity-initial').textContent);
@@ -62,25 +62,37 @@
     return channel.startsWith('wa-') ? 'whatsapp' : channel;
   }
 
-  function positionWires() {
-    const bounds = orbit.getBoundingClientRect();
-    const center = hub.getBoundingClientRect();
-    const endX = center.left + center.width / 2;
-    const endY = center.top + center.height / 2;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let angle = 0, width = 0, height = 0, frame = 0, lastTime = 0;
+  let visible = false, pointing = false, focused = false;
 
-    for (const node of nodes) {
-      const contact = node.getBoundingClientRect();
-      const x = contact.left + contact.width / 2;
-      const y = contact.top + contact.height / 2;
-      const dx = endX - x;
-      const dy = endY - y;
-      const wire = paths.get(node.dataset.family);
-      Object.assign(wire.style, {
-        left: (x - bounds.left) + 'px',
-        top: (y - bounds.top) + 'px',
-        width: Math.hypot(dx, dy) + 'px',
-        transform: 'rotate(' + Math.atan2(dy, dx) + 'rad)',
+  function positionWires() {
+    nodes.forEach((node, index) => {
+      const theta = angle - Math.PI / 2 + index * 2 * Math.PI / nodes.length;
+      const dx = Math.cos(theta) * Math.min(width * .34, width / 2 - 42);
+      const dy = Math.sin(theta) * height * .35;
+      const left = (width / 2 + dx) + 'px';
+      const top = (height / 2 + dy) + 'px';
+      Object.assign(node.style, { left, top });
+      Object.assign(paths.get(node.dataset.family).style, {
+        left, top, width: Math.hypot(dx, dy) + 'px',
+        transform: 'rotate(' + Math.atan2(-dy, -dx) + 'rad)',
       });
+    });
+  }
+
+  function orbitFrame(time) {
+    if (lastTime) angle += Math.min(time - lastTime, 100) * 2 * Math.PI / 90000;
+    lastTime = time;
+    positionWires();
+    frame = requestAnimationFrame(orbitFrame);
+  }
+
+  function updateMotion() {
+    cancelAnimationFrame(frame);
+    lastTime = 0;
+    if (visible && !document.hidden && !pointing && !focused && !reducedMotion.matches) {
+      frame = requestAnimationFrame(orbitFrame);
     }
   }
 
@@ -161,8 +173,24 @@
     selected = selected === button.dataset.family ? '' : button.dataset.family;
     render(current);
   });
-  new ResizeObserver(positionWires).observe(orbit);
-  positionWires();
+  new ResizeObserver(() => {
+    width = orbit.clientWidth;
+    height = orbit.clientHeight;
+    positionWires();
+  }).observe(orbit);
+  new IntersectionObserver(([entry]) => {
+    visible = entry.isIntersecting;
+    updateMotion();
+  }).observe(orbit);
+  orbit.addEventListener('pointerover', e => {
+    pointing = e.pointerType === 'mouse' && Boolean(e.target.closest('button'));
+    updateMotion();
+  });
+  orbit.addEventListener('pointerleave', () => { pointing = false; updateMotion(); });
+  orbit.addEventListener('focusin', () => { focused = true; updateMotion(); });
+  orbit.addEventListener('focusout', e => { focused = orbit.contains(e.relatedTarget); updateMotion(); });
+  reducedMotion.addEventListener('change', updateMotion);
+  document.addEventListener('visibilitychange', updateMotion);
   render(initial);
   syncText(initial);
   window.setInterval(refresh, 10000);

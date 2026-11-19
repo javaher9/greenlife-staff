@@ -17,7 +17,7 @@
     const halfwayY = (viewport.scrollTop + viewport.clientHeight / 2) / scale;
     scale = Math.max(100, Math.min(300, next));
     viewport.style.setProperty('--atlas-width', scale + '%');
-    reset.textContent = new Intl.NumberFormat('fa-IR').format(scale) + '٪';
+    reset.textContent = new Intl.NumberFormat('fa-IR-u-nu-latn').format(scale) + '٪';
     plus.disabled = scale === 300;
     minus.disabled = scale === 100;
     viewport.scrollLeft = halfwayX * scale - viewport.clientWidth / 2;

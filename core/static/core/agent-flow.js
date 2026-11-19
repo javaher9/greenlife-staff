@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const format = new Intl.NumberFormat('fa-IR');
+  const format = new Intl.NumberFormat('fa-IR-u-nu-latn');
   // Each station declares its own label, definition and desktop/mobile anchors.
   // The two systems share a dashboard, but an account is never implicitly a lead.
   const stations = {

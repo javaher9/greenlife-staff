@@ -3,7 +3,7 @@ from zoneinfo import ZoneInfo
 from hashlib import sha256
 
 from django.conf import settings
-from django.db.models import Count, Q
+from django.db.models import Count, Exists, OuterRef, Q
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
@@ -11,6 +11,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
 from .agent_flow import daily_flow
+from .device_booking_models import BranchDeviceTypeStatus, PhysicalDevice
 from .jalali import format_jalali, parse_jalali
 from .channel_webhook_views import bot_connection
 from .models import (
@@ -31,7 +32,7 @@ def _instagram_activity(now):
         'id': 'instagram', 'name': 'اینستاگرام',
         'account': account.username if account and account.username else 'greenlifeclinics',
         'state': 'در انتظار اتصال', 'tone': 'pending',
-        'metric': 'دایرکت در ۲۵۰ رویداد اخیر امروز', 'count': 0,
+        'metric': 'دایرکت در 250 رویداد اخیر امروز', 'count': 0,
     }
     if not account or not (account.is_enabled and account.is_connected and account.is_configured):
         return channel, []
@@ -159,8 +160,16 @@ def _appointment_cards(now):
             if name in normalized:
                 branch_ids[name].append(pk)
                 break
+    ids_to_show = [pk for ids in branch_ids.values() for pk in ids]
+    disabled_types = BranchDeviceTypeStatus.objects.filter(
+        branch_id=OuterRef('branch_id'), device_type_id=OuterRef('device_type_id'), is_active=False,
+    )
+    devices = dict(PhysicalDevice.objects.filter(branch_id__in=ids_to_show)
+        .values('branch_id').annotate(active=Count('pk', filter=(
+            Q(is_active=True, device_type__is_active=True) & ~Exists(disabled_types)
+        ))).order_by().values_list('branch_id', 'active'))
     rows = VisitAppointment.objects.filter(
-        branch_id__in=[pk for ids in branch_ids.values() for pk in ids],
+        branch_id__in=ids_to_show,
         created_at__lte=now,
     ).values('branch_id').annotate(
         total=Count('pk'),
@@ -177,13 +186,15 @@ def _appointment_cards(now):
             done = sum(by_id.get(pk, {}).get(prefix + 'done', 0) for pk in ids)
             cards.append({
                 'name': name, 'available': bool(ids), 'total': total, 'done': done,
+                'devices': sum(devices[pk] for pk in ids) if ids and all(pk in devices for pk in ids) else None,
                 'rate': round(100 * done / total) if total else None,
             })
-        maximum = max(1, *(card['total'] for card in cards))
+        maximum = max(card['total'] for card in cards)
         for card in cards:
+            card['scale'] = maximum
             for metric in ('total', 'done'):
                 count = card[metric]
-                card[f'{metric}_level'] = max(1, round(20 * count / maximum)) if count else 0
+                card[f'{metric}_level'] = 100 * count / maximum if maximum else 0
         periods.append(cards)
     return periods
 

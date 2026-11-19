@@ -48,7 +48,7 @@
             <div class="gl-activity-node-title"><span class="gl-activity-ring" aria-hidden="true"></span><h3>{{ channel.name }}</h3></div>
             {% if channel.account %}<p>{{ channel.account }}</p>{% endif %}
             <p class="gl-activity-state">{{ channel.state }}</p>
-            {% if channel.metric %}<p class="gl-activity-metric"><b>{{ channel.count }}</b> {{ channel.metric }}</p>{% endif %}
+            {% if channel.metric %}<p class="gl-activity-metric"><b>{{ channel.count|unlocalize }}</b> {{ channel.metric }}</p>{% endif %}
           </article>
         {% endfor %}
       </div>
@@ -74,39 +74,25 @@
       <label for="gl-booking-all">از ابتدا تا امروز</label>
       {% for cards in appointment_periods %}
       <div class="gl-booking-grid" data-period="{% if forloop.first %}month{% else %}all{% endif %}">
+        <p class="gl-booking-scale">{% if cards.0.scale %}مقیاس مشترک مخزن‌ها <bdi>0–{{ cards.0.scale|unlocalize }}</bdi> نوبت{% else %}نوبتی برای مقایسه ثبت نشده است{% endif %}</p>
         {% for card in cards %}
         <details class="gl-booking-card">
           <summary>
-            <strong>{{ card.name }}</strong>
-            {% if card.available %}
+            <span class="gl-booking-name"><strong>{{ card.name }}</strong><span class="gl-booking-chevron" aria-hidden="true">⌄</span></span>
             <span class="gl-booking-pair" dir="ltr">
-              <span>
-                <span class="gl-booking-tube">
-                  <span class="gl-booking-liquid gl-booking-level-{{ card.total_level|unlocalize }}" aria-hidden="true"></span>
-                  <b>{{ card.total|unlocalize }}</b>
-                </span>
-                ثبت‌شده
-              </span>
-              <span>
-                <span class="gl-booking-tube gl-booking-completed">
-                  <span class="gl-booking-liquid gl-booking-level-{{ card.done_level|unlocalize }}" aria-hidden="true"></span>
-                  <b>{{ card.done|unlocalize }}</b>
-                </span>
-                انجام‌شده
-              </span>
+              {% include "core/agent_booking_tank.html" with label="ثبت‌شده" value=card.total level=card.total_level tone="registered" %}
+              {% include "core/agent_booking_tank.html" with label="انجام‌شده" value=card.done level=card.done_level tone="completed" %}
             </span>
-            {% else %}
-            <span>شعبه در سامانه پیدا نشد</span>
-            {% endif %}
-            <small>جزئیات مرکز</small>
+            <span class="gl-booking-device">دستگاه فعال <b>{% if card.devices != None %}{{ card.devices|unlocalize }}{% else %}نامشخص{% endif %}</b></span>
           </summary>
-          {% if card.available and card.total %}
-          <p>نرخ انجام نوبت‌های ثبت‌شده در این بازه <bdi>{{ card.rate|unlocalize }}%</bdi></p>
-          {% elif card.available %}
-          <p>در این بازه نوبتی ثبت نشده است.</p>
-          {% else %}
-          <p>آمار نوبت‌های این مرکز در دسترس نیست.</p>
-          {% endif %}
+          <div class="gl-booking-detail">
+            {% if card.available and card.total %}
+            از <bdi>{{ card.total|unlocalize }}</bdi> نوبت ثبت‌شده در این بازه، <bdi>{{ card.done|unlocalize }}</bdi> نوبت انجام شده است.
+            <p>درصد انجام <bdi>{{ card.rate|unlocalize }}%</bdi></p>
+            {% elif card.available %}در این بازه نوبتی ثبت نشده است.
+            {% else %}آمار نوبت‌های این مرکز در دسترس نیست.{% endif %}
+            <p>{% if card.devices == None %}فهرست تجهیزات این مرکز در دسترس نیست.{% else %}تعداد دستگاه‌های فعال از فهرست فعلی تجهیزات مرکز محاسبه شده است.{% endif %}</p>
+          </div>
         </details>
         {% endfor %}
       </div>

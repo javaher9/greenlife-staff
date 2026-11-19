@@ -1,0 +1,12 @@
+{% load l10n %}
+<span class="gl-booking-gauge gl-booking-{{ tone }}" dir="rtl">
+  <span class="gl-booking-tube" aria-hidden="true">
+    <span class="gl-booking-well">
+      <span class="gl-booking-liquid" style="height:{{ level|floatformat:'5u' }}%">
+        <i></i><i></i><i></i>
+      </span>
+    </span>
+  </span>
+  <bdi>{% if card.available %}{{ value|unlocalize }}{% else %}—{% endif %}</bdi>
+  <span>{{ label }}</span>
+</span>
