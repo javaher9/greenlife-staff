@@ -21,6 +21,27 @@
   let selected = '';
   let current = initial;
 
+  const board = root.querySelector('#gl-cycle-board');
+  const cycleDialog = root.querySelector('#gl-cycle-dialog');
+  const expandCycle = board.querySelector('[data-expand-cycle]');
+  const boardAnchor = document.createComment('cycle board position');
+  board.before(boardAnchor);
+  expandCycle.addEventListener('click', () => {
+    if (cycleDialog.open) { cycleDialog.close(); return; }
+    cycleDialog.append(board);
+    cycleDialog.showModal();
+    cycleDialog.scrollTop = 0;
+    expandCycle.textContent = 'بستن نمای گسترده';
+    expandCycle.setAttribute('aria-expanded','true');
+    expandCycle.focus({preventScroll:true});
+  });
+  cycleDialog.addEventListener('close', () => {
+    boardAnchor.after(board);
+    expandCycle.textContent = 'نمای گستردهٔ چرخه';
+    expandCycle.setAttribute('aria-expanded','false');
+    expandCycle.focus({preventScroll:true});
+  });
+
   function element(tag, text, className) {
     const node = document.createElement(tag);
     node.textContent = text;
@@ -65,18 +86,26 @@
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let angle = 0, width = 0, height = 0, frame = 0, lastTime = 0;
   let visible = false, pointing = false, focused = false;
+  let hubRadius = 0, nodeRadius = 0;
 
   function positionWires() {
+    if (!width || !height) return;
     nodes.forEach((node, index) => {
       const theta = angle - Math.PI / 2 + index * 2 * Math.PI / nodes.length;
       const dx = Math.cos(theta) * Math.min(width * .34, width / 2 - 42);
       const dy = Math.sin(theta) * height * .35;
       const left = (width / 2 + dx) + 'px';
       const top = (height / 2 + dy) + 'px';
-      node.style.setProperty('--depth-scale', (1 + .075 * Math.sin(theta)).toFixed(3));
+      const depth = 1 + .075 * Math.sin(theta);
+      node.style.setProperty('--depth-scale', depth.toFixed(3));
       Object.assign(node.style, { left, top });
+      // End each conduit at the glass surface so packets and flashes meet the rim.
+      const distance = Math.hypot(dx, dy);
+      const fraction = 1 - nodeRadius * depth / distance;
       Object.assign(paths.get(node.dataset.family).style, {
-        left, top, width: Math.hypot(dx, dy) + 'px',
+        left: (width / 2 + dx * fraction) + 'px',
+        top: (height / 2 + dy * fraction) + 'px',
+        width: Math.max(0, distance - nodeRadius * depth - hubRadius) + 'px',
         transform: 'rotate(' + Math.atan2(-dy, -dx) + 'rad)',
       });
     });
@@ -117,10 +146,9 @@
         family(channel.id) === key && channel.tone === 'connected'
       ));
     }
-    if (!active.size) return;
-    const activityPaths = [hub, ...[...new Set([...active].map(family))]
-      .map(key => paths.get(key)).filter(Boolean)];
-    for (const path of activityPaths) {
+    for (const key of new Set([...active].map(family))) {
+      const path = paths.get(key);
+      if (!path) continue;
       path.classList.remove('is-recent');
       // Restart the animation when the same channel receives another message.
       void path.offsetWidth;
@@ -135,11 +163,48 @@
     status.textContent = 'آخرین به‌روزرسانی ' + clock.format(new Date(snapshot.updated_at));
   }
 
+  let targetsCheckedAt = Date.now();
+  let previousTargetMarkup = '';
+
+  function updateTargets(markup) {
+    targetsCheckedAt = Date.now();
+    if (markup === previousTargetMarkup) return;
+    const currentSection = board.querySelector('#gl-targets');
+    const nextSection = new DOMParser().parseFromString(markup,'text/html').querySelector('#gl-targets');
+    if (!currentSection || !nextSection) return;
+    previousTargetMarkup = markup;
+
+    const departmentNodes = new Map([...currentSection.querySelectorAll('[data-target-department]')]
+      .map(item => [item.id,item]));
+    for (const department of nextSection.querySelectorAll('[data-target-department]')) {
+      const previousDepartment = departmentNodes.get(department.id);
+      if (!previousDepartment) continue;
+      const previousCards = new Map([...previousDepartment.querySelectorAll('[data-target-key]')]
+        .map(item => [item.dataset.targetKey,item]));
+      for (const card of department.querySelectorAll('[data-target-key]')) {
+        const oldCard = previousCards.get(card.dataset.targetKey);
+        if (oldCard && oldCard.dataset.targetReading !== card.dataset.targetReading) card.classList.add('is-updated');
+      }
+    }
+
+    const focusedDepartment = document.activeElement?.closest('[data-target-department]')?.id;
+    const offsets = [...departmentNodes].map(([id,node]) => [id,node.querySelector('.gl-target-vessels').scrollLeft]);
+    currentSection.replaceWith(nextSection);
+    for (const [id,offset] of offsets) {
+      const row = document.getElementById(id)?.querySelector('.gl-target-vessels');
+      if (!row) continue;
+      row.scrollLeft = offset;
+      if (id === focusedDepartment) row.focus({preventScroll:true});
+    }
+  }
+
   async function refresh() {
     if (document.hidden || refreshing) return;
     refreshing = true;
     try {
-      const response = await fetch(root.dataset.activityUrl, {
+      const url = new URL(root.dataset.activityUrl,document.baseURI);
+      if (Date.now()-targetsCheckedAt >= 60000) url.searchParams.set('targets','1');
+      const response = await fetch(url, {
         cache: 'no-store', headers: { Accept: 'application/json' },
         signal: AbortSignal.timeout(8000),
       });
@@ -153,6 +218,7 @@
         lastSnapshot = serialized;
       }
       root.dispatchEvent(new CustomEvent('flowupdate', { detail: snapshot.flow }));
+      if (typeof snapshot.target_html === 'string') updateTargets(snapshot.target_html);
       syncText(snapshot);
     } catch {
       status.dataset.state = 'stale';
@@ -165,6 +231,7 @@
   for (const node of nodes) {
     const wire = element('div', '', 'gl-activity-wire');
     wire.style.setProperty('--wire-color', getComputedStyle(node).getPropertyValue('--node-color'));
+    wire.append(element('span', '', 'gl-wire-packet'));
     wires.append(wire);
     paths.set(node.dataset.family, wire);
   }
@@ -175,6 +242,8 @@
     render(current);
   });
   new ResizeObserver(() => {
+    hubRadius = hub.offsetWidth / 2;
+    nodeRadius = nodes[0].offsetWidth / 2;
     width = orbit.clientWidth;
     height = orbit.clientHeight;
     positionWires();

@@ -6,11 +6,13 @@ from django.conf import settings
 from django.db.models import Count, Exists, OuterRef, Q
 from django.http import JsonResponse
 from django.shortcuts import render
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
 
 from .agent_flow import daily_flow
+from .agent_target_departments import target_context
 from .device_booking_models import BranchDeviceTypeStatus, PhysicalDevice
 from .jalali import format_jalali, parse_jalali
 from .channel_webhook_views import bot_connection
@@ -208,11 +210,20 @@ def agent_activity(request):
         'id': key, 'name': name, 'setup': saved.get(key),
         'managed': any(settings.CHANNEL_BOTS[key]),
     } for key, name in ChannelMessageReceipt.PROVIDERS]
-    return render(request, 'core/agent_activity.html', {'activity': _snapshot(), 'bots': bots, 'appointment_periods': _appointment_cards(timezone.now())})
+    now = timezone.now()
+    return render(request, 'core/agent_activity.html', {
+        'activity': _snapshot(), 'bots': bots, 'appointment_periods': _appointment_cards(now),
+        **target_context(now),
+    })
 
 
 @never_cache
 @credential_admin_required
 @require_GET
 def agent_activity_snapshot(request):
-    return JsonResponse(_snapshot())
+    data = _snapshot()
+    if request.GET.get('targets') == '1':
+        data['target_html'] = render_to_string(
+            'core/agent_target_departments.html', target_context(timezone.now()), request=request,
+        )
+    return JsonResponse(data)

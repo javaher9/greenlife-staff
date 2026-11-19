@@ -133,24 +133,47 @@
 }
 .gl-activity .gl-activity-wires { position: absolute; inset: 0; pointer-events: none; }
 .gl-activity .gl-activity-wire {
+  --flight-time: 980ms;
   position: absolute;
-  height: 1px;
-  transform-origin: left center;
-  background: linear-gradient(90deg, var(--wire-color, #8770bc), #a486e24a);
-}
-.gl-activity .gl-activity-wire.is-recent { height: 2px; }
-.gl-activity .gl-activity-wire.is-recent::before {
-  content: '';
-  width: 28px;
   height: 3px;
-  position: absolute;
-  left: 0;
-  top: -1px;
-  transform: translateX(-100%);
-  border-radius: 100%;
-  background: linear-gradient(90deg,transparent,var(--wire-color) 72%,#fff);
-  filter: drop-shadow(2px 0 4px var(--wire-color));
-  animation: gl-orbit-message 1.2s cubic-bezier(.24,.63,.41,1) 2;
+  margin-top: -1.5px;
+  transform-origin: left center;
+  border-radius: 3px;
+  background:
+    linear-gradient(0deg,#030d18 0%,transparent 46%,#e8f9ff61 88%,#030d18 100%),
+    linear-gradient(90deg,var(--wire-color),#75829e73 48%,#a39bcead 86%,#ddd3ff);
+  box-shadow: 0 1px 2px #050911,0 0 4px color-mix(in srgb,var(--wire-color) 18%,transparent);
+}
+.gl-wire-packet { position:absolute; inset:0; overflow:hidden; border-radius:inherit; }
+.gl-activity-wire.is-recent .gl-wire-packet::after {
+  content:'';
+  position:absolute;
+  left:0;
+  inset-block:0;
+  width:min(34px,70%);
+  border-radius:50%;
+  background:linear-gradient(90deg,transparent,var(--wire-color) 52%,#fff 96%);
+  transform:translateX(-100%);
+  animation:gl-orbit-message var(--flight-time) ease-in-out forwards;
+}
+/* The two ports share the packet's clock; each flashes once per delivery. */
+.gl-activity-wire.is-recent::before,.gl-activity-wire.is-recent::after {
+  content:'';
+  position:absolute;
+  left:0;
+  top:50%;
+  width:21px;
+  height:21px;
+  opacity:0;
+  pointer-events:none;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:radial-gradient(circle,#fff 0 5%,var(--wire-color) 12%,color-mix(in srgb,var(--wire-color) 34%,transparent) 32%,transparent 72%);
+  animation:gl-port-flash 400ms ease-out both;
+}
+.gl-activity-wire.is-recent::after {
+  left:100%;
+  animation-delay:var(--flight-time);
 }
 .gl-activity .gl-activity-hub,
 .gl-activity .gl-orbit-node {
@@ -175,14 +198,29 @@
   border: 1px solid #c9b6f4a8;
   border-radius: 50%;
   background:
-    radial-gradient(ellipse at 29% 16%,#f9e8ff85,transparent 24%),
-    radial-gradient(circle at 34% 24%,#9778c3 0%,#59427e 32%,#291e45 60%,#141327 81%,#524267 98%);
+    radial-gradient(ellipse at 32% 15%,#f4f9ffb3,transparent 14%),
+    radial-gradient(ellipse at 7% 39%,#7ae4e9a1,transparent 30%),
+    radial-gradient(ellipse at 82% 89%,#d89bfa5e,transparent 22%),
+    radial-gradient(circle at 36% 27%,#7566ad 2%,#443c7b 36%,#201c42 62%,#0d162c 80%,#514a75 97%);
   box-shadow: inset 2px 3px 5px #e2cdff72,inset -4px -6px 12px #12152e,0 15px 18px -6px #030610,0 0 30px #b38bea24;
   text-shadow: 0 1px 4px #100c20;
   font-size: 13px;
 }
 .gl-activity .gl-activity-hub .gl-activity-hub-mark { color: #e3d2ff; font-size: 27px; }
-.gl-activity .gl-activity-hub.is-recent { animation: gl-hub-receive 1.2s ease-out 2; }
+/* A tilted glass equator passes behind the upright label. */
+.gl-activity .gl-activity-hub::before {
+  content:'';
+  position:absolute;
+  inset:25% -9%;
+  transform:rotate(-24deg);
+  border-radius:50%;
+  border:1px solid transparent;
+  border-top-color:#ccefff50;
+  border-bottom:3px solid #bea5eac9;
+  box-shadow:0 2px 3px #0c153358,0 4px 5px -3px #c1a5ff;
+  pointer-events:none;
+}
+.gl-activity-hub > span { position:relative; }
 .gl-activity .gl-orbit-node {
   --node-color: #83b4ff;
   top: var(--node-y);
@@ -206,10 +244,13 @@
   display:inline-block;
   min-width:70%;
   padding:2px 7px 3px;
-  border:1px solid #9cabc261;
+  --sleeve-tint:var(--node-color,#c9b6fc);
+  border:1px solid color-mix(in srgb,var(--sleeve-tint) 48%,#273649);
   border-radius:10% / 50%;
-  background:linear-gradient(#6c809477,#2b394be8 22%,#162036 52%,#253245 82%,#627284);
-  box-shadow:inset 2px 0 0 #bdcfd76b,inset -2px 0 0 #9cb5c552,0 3px 4px #090c1780;
+  background:
+    linear-gradient(90deg,#151e30 1%,transparent 9% 91%,#142131 99%),
+    linear-gradient(#c5d7eb85 0%,color-mix(in srgb,var(--sleeve-tint) 35%,#172434) 12%,#19253a 37%,#112032 70%,#3e5369 88%,#a3b6c6 96%,#263344);
+  box-shadow:inset 2px 0 0 #d4f2ff82,inset -2px 0 0 #bacee271,0 3px 5px #070e1dbf;
   white-space:nowrap;
   line-height:1.2;
 }
@@ -234,8 +275,17 @@
   background: #121f31;
 }
 @keyframes gl-activity-count { from { transform: translateY(6px); opacity: .45; } }
-@keyframes gl-orbit-message { to { left: 100%; } }
-@keyframes gl-hub-receive { 0%,68%,100% { filter: brightness(1); } 86% { filter: brightness(1.35); } }
+@keyframes gl-orbit-message {
+  0% { left:0; opacity:0; }
+  8% { opacity:1; }
+  94% { opacity:1; }
+  100% { left:100%; opacity:0; }
+}
+@keyframes gl-port-flash {
+  0% { opacity:0; transform:translate(-50%,-50%) scale(.55); }
+  25% { opacity:1; transform:translate(-50%,-50%) scale(1); }
+  100% { opacity:0; transform:translate(-50%,-50%) scale(1.25); }
+}
 @media (max-width: 500px) {
   .gl-activity .gl-activity-orbit { min-height: 300px; }
   .gl-activity .gl-activity-hub { width: 87px; font-size: 11px; }
@@ -243,8 +293,9 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .gl-activity .gl-activity-wire.is-recent::before,
-  .gl-activity .is-recent .gl-activity-metric b,
-  .gl-activity .gl-activity-hub.is-recent { animation: none; }
+  .gl-activity .gl-activity-wire.is-recent::after,
+  .gl-activity .gl-activity-wire.is-recent .gl-wire-packet::after,
+  .gl-activity .is-recent .gl-activity-metric b { animation: none; }
 }
 
 .gl-activity .gl-activity-wires { direction: ltr; }
@@ -367,3 +418,43 @@
   .gl-booking-scale { position:sticky; right:0; justify-self:start; }
 }
 @media(prefers-reduced-motion:reduce) { .gl-booking-liquid i { animation:none; } }
+
+.gl-activity { max-width:1820px; }
+.gl-cycle-board { container:gl-cycle / inline-size; min-width:0; }
+.gl-cycle-board [id] { scroll-margin-block-start:1rem; }
+.gl-cycle-toolbar,.gl-cycle-jumps { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.gl-cycle-toolbar { justify-content:space-between; margin:0 0 14px; }
+.gl-cycle-toolbar a,.gl-cycle-toolbar button {
+  display:inline-flex; align-items:center; min-height:38px; padding:5px 12px;
+  border:1px solid #344860; border-radius:9px; background:#131f30; color:#d2e1ef;
+  font:inherit; font-size:13px; text-decoration:none;
+}
+.gl-cycle-toolbar button { color:#efe7ff; background:#2c2543; border-color:#75638d; cursor:pointer; }
+.gl-cycle-toolbar a:hover,.gl-cycle-toolbar a:focus-visible { color:#fff; border-color:#9b89c2; }
+.gl-cycle-overview { display:grid; grid-template-columns:minmax(0,1.12fr) minmax(0,1fr); align-items:stretch; gap:16px; }
+.gl-cycle-overview #gl-flow { min-width:0; margin:0; }
+.gl-cycle-overview .gl-activity-map { display:flex; flex-direction:column; min-width:0; }
+.gl-cycle-overview .gl-activity-orbit { flex:1; margin-bottom:0; }
+.gl-cycle-board .gl-targets { position:relative; margin-block:24px 16px; }
+.gl-cycle-board .gl-targets::before {
+  content:''; position:absolute; pointer-events:none; bottom:100%; left:23%; right:23%; height:24px;
+  background:linear-gradient(#8ed6d2,#438581) left / 2px 100% no-repeat,
+             linear-gradient(#9a84ba,#594e73) right / 2px 100% no-repeat;
+}
+.gl-activity .gl-account-panel {
+  min-width:0; padding:clamp(14px,2vw,24px); background:var(--activity-bg); border:1px solid var(--activity-border); border-radius:16px;
+}
+.gl-account-panel .gl-channel-heading { margin:0 0 10px; }
+.gl-activity .gl-cycle-dialog {
+  box-sizing:border-box; width:min(98vw,1920px); max-width:98vw; max-height:96dvh;
+  border:1px solid #4a536c; border-radius:16px; padding:clamp(10px,1.4vw,24px);
+  color:#eff3ff; background:#0a1321; overscroll-behavior:contain;
+}
+.gl-cycle-dialog::backdrop { background:#040912dd; }
+@container gl-cycle (max-width:740px) {
+  .gl-cycle-overview { grid-template-columns:1fr; }
+  .gl-cycle-board .gl-targets::before { left:50%; right:auto; width:2px; }
+  .gl-cycle-jumps { gap:5px; }
+  .gl-cycle-toolbar a { font-size:12px; }
+}
+@media (pointer:coarse) { .gl-cycle-toolbar a,.gl-cycle-toolbar button { min-height:44px; } }

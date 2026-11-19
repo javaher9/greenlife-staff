@@ -69,27 +69,31 @@
   }
   // The same upper-left light models every station, including the expanded rooms.
   function spaceBackdrop() {
-    const planets = [
-      ['me', '#b2ebdd', '#35756d', '#123a42', '#081824'],
-      ['crm', '#d9c2ee', '#766391', '#382d55', '#111424'],
-    ].map(([id, light, middle, shade, dark]) =>
-      `<radialGradient id="gl-sphere-${id}" cx="32%" cy="22%" r="80%">
-        <stop stop-color="${light}"/><stop offset=".24" stop-color="${middle}"/>
-        <stop offset=".6" stop-color="${shade}"/><stop offset=".91" stop-color="${dark}"/>
-        <stop offset="1" stop-color="${shade}"/></radialGradient>`
-    ).join('');
-    return `<defs>${planets}
-      <linearGradient id="gl-tube-wall" x2="0" y2="1">
-        <stop stop-color="#34485d"/><stop offset=".07" stop-color="#93a7ba"/>
-        <stop offset=".15" stop-color="#40566a"/><stop offset=".35" stop-color="#1a2b3c"/>
-        <stop offset=".68" stop-color="#0c1725"/><stop offset=".86" stop-color="#273a4d"/>
-        <stop offset=".96" stop-color="#43566b"/><stop offset="1" stop-color="#152131"/>
+    const materials = [
+      { id:'me', ice:'#d3fff0', light:'#72eed7', middle:'#297f83', shade:'#153d51', dark:'#091825' },
+      { id:'crm', ice:'#f4e6ff', light:'#c1a4ff', middle:'#8263b4', shade:'#403257', dark:'#17152c' },
+    ].map(({id, ice, light, middle, shade, dark}) => `
+      <radialGradient id="gl-sphere-${id}" cx=".29" cy=".22" r=".86">
+        <stop stop-color="${ice}"/><stop offset=".08" stop-color="${light}"/>
+        <stop offset=".31" stop-color="${middle}"/><stop offset=".63" stop-color="${shade}"/>
+        <stop offset=".87" stop-color="${dark}"/><stop offset="1" stop-color="${middle}"/>
+      </radialGradient>
+      <radialGradient id="gl-corona-${id}">
+        <stop offset=".56" stop-color="${light}" stop-opacity=".32"/><stop offset="1" stop-color="${light}" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="gl-tube-${id}" x2="0" y2="1">
+        <stop stop-color="${middle}"/><stop offset=".075" stop-color="${ice}"/><stop offset=".135" stop-color="${middle}"/>
+        <stop offset=".30" stop-color="${shade}"/><stop offset=".64" stop-color="${dark}"/>
+        <stop offset=".83" stop-color="${shade}"/><stop offset=".93" stop-color="${middle}"/><stop offset="1" stop-color="${dark}"/>
       </linearGradient>
-      <linearGradient id="gl-tube-collar" x2=".12" y2="1">
-        <stop stop-color="#7891a5"/><stop offset=".12" stop-color="#d2e2e9"/>
-        <stop offset=".24" stop-color="#566979"/><stop offset=".48" stop-color="#2d4254"/>
-        <stop offset=".77" stop-color="#111d2c"/><stop offset=".94" stop-color="#7890a2"/>
-        <stop offset="1" stop-color="#27384b"/>
+      <linearGradient id="gl-fiber-${id}" x1="0" y1="0" x2="0" y2="1" gradientUnits="userSpaceOnUse" gradientTransform="scale(1 370)">
+        <stop stop-color="${light}"/><stop offset=".46" stop-color="${ice}"/><stop offset="1" stop-color="${light}"/>
+      </linearGradient>`).join('');
+    return `<defs>${materials}
+      <linearGradient id="gl-ferrule" x1="0" y1="0" x2=".22" y2="1">
+        <stop stop-color="#718898"/><stop offset=".13" stop-color="#c5d5e9"/>
+        <stop offset=".29" stop-color="#27384e"/><stop offset=".65" stop-color="#0c1626"/>
+        <stop offset=".85" stop-color="#45546e"/><stop offset="1" stop-color="#142437"/>
       </linearGradient>
       <linearGradient id="gl-tube-reflection">
         <stop stop-color="#e3faff" stop-opacity="0"/><stop offset=".58" stop-color="#f1fcff" stop-opacity=".85"/>
@@ -109,28 +113,57 @@
       <rect width="100%" height="100%" fill="url(#gl-atlas-stars)"/>`;
   }
   function conduit(path, color) {
+    const fiber = color===aquamarine ? 'me' : 'crm';
     return `<g fill="none" stroke-linecap="round" aria-hidden="true">
-      <path d="${path}" stroke="#040a13" stroke-width="5"/>
-      <path d="${path}" stroke="${color}" stroke-width="3" stroke-opacity=".35"/>
-      <path d="${path}" stroke="#c2d6ee" stroke-width=".85" stroke-opacity=".58"/>
+      <path d="${path}" stroke="${color}" stroke-opacity=".055" stroke-width="11"/>
+      <path d="${path}" stroke="${color}" stroke-opacity=".30" stroke-width="5"/>
+      <path d="${path}" stroke="#081523" stroke-width="3.3"/>
+      <path d="${path}" stroke="url(#gl-fiber-${fiber})" stroke-width="1.15" stroke-opacity=".91"/>
     </g>`;
   }
 
   function glassTube(key, width, accent, selected) {
-    const cap = width / 2 - 6;
+    const cap = width/2 - 6;
+    const material = accent===aquamarine ? 'me' : 'crm';
+    const left = -cap+5, right = cap-5;
+    // The dark inner chamber sits behind a curved double wall and two recessed couplings.
     return `<g aria-hidden="true">
-      <defs><clipPath id="gl-glass-${key}"><rect x="${-cap+4}" y="-16" width="${2*cap-8}" height="6" rx="3"/></clipPath></defs>
-      <rect x="${-cap}" y="-19" width="${2*cap}" height="46" rx="6" fill="#030912" opacity=".62"/>
-      <rect class="flow-plate" x="${-cap}" y="-22" width="${2*cap}" height="44" rx="4" fill="url(#gl-tube-wall)" stroke="${selected ? accent : '#6a8296'}"/>
-      <rect x="${-cap}" y="-21" width="${2*cap}" height="42" rx="4" fill="${accent}" opacity=".095"/>
-      <path d="M ${-cap+6} -15 H ${cap-6}" stroke="${accent}" opacity=".49" stroke-width="1.8"/>
+      <defs><clipPath id="gl-glass-${key}"><rect x="${left}" y="-19" width="${right-left}" height="35" rx="4"/></clipPath></defs>
+      <rect x="${-cap}" y="-16" width="${cap*2}" height="42" rx="7" fill="#030810" opacity=".75"/>
+      <path class="flow-plate" d="M ${-cap} -21 Q 0 -23 ${cap} -21 V 21 Q 0 23 ${-cap} 21 Z"
+        fill="url(#gl-tube-${material})" stroke="${selected ? '#ebfaff' : accent}" stroke-opacity="${selected ? '.98' : '.69'}" stroke-width="${selected ? 1.65 : .85}"/>
       <g clip-path="url(#gl-glass-${key})">
-        <rect class="flow-glint" style="--gl-travel:${width+24}px;--gl-delay:-${(cap+key.length)%7}s" x="${-cap-26}" y="-16" width="27" height="4" fill="url(#gl-tube-reflection)"/>
+        <rect x="${left}" y="-11" width="${right-left}" height="25" rx="4" fill="#07111e" opacity=".36"/>
+        <path d="M ${left} -17 Q 0 -19 ${right} -17 M ${left} 16 Q 0 18 ${right} 16" fill="none" stroke="${accent}" stroke-width="1.2" opacity=".82"/>
+        <g class="flow-glint" style="--gl-travel:${width+24}px;--gl-delay:-${(cap+key.length)%7}s">
+          <rect x="${-cap-26}" y="-19" width="30" height="5" fill="url(#gl-tube-reflection)"/>
+          <path d="M ${-cap-20} -16 l 7 3 -11 27 h -6 z" fill="${accent}" opacity=".09"/>
+        </g>
       </g>
-      <path d="M ${-cap+4} 17 H ${cap-4}" stroke="${accent}" opacity=".29"/>
-      <ellipse cx="${-cap}" rx="5.5" ry="22.4" fill="url(#gl-tube-collar)" stroke="#8097ab" stroke-width=".7"/>
-      <ellipse cx="${cap}" rx="5.5" ry="22.4" fill="url(#gl-tube-collar)" stroke="#a2b5c4" stroke-width=".7"/>
-      <ellipse cx="${cap+1}" rx="2.8" ry="17.5" fill="#152538" stroke="${accent}" stroke-opacity=".79" stroke-width=".8"/>
+      <path d="M ${left} -21 v 42 M ${right} -21 v 42" stroke="#060f1f" stroke-width="2"/>
+      <ellipse cx="${-cap}" rx="5.5" ry="22.4" fill="url(#gl-ferrule)" stroke="${accent}" stroke-width=".8"/>
+      <path d="M ${-cap+1.5} -16 q -3 13 -1 25" fill="none" stroke="${accent}" opacity=".87" stroke-width="1.3"/>
+      <ellipse cx="${cap}" rx="5.7" ry="22.4" fill="url(#gl-ferrule)" stroke="${accent}" stroke-width=".9"/>
+      <ellipse cx="${cap+1.1}" rx="3.3" ry="15.4" fill="#081421" stroke="${accent}" stroke-width=".8"/>
+      <ellipse cx="${cap+1.6}" rx="1.35" ry="8" fill="${accent}" opacity=".74"/>
+    </g>`;
+  }
+
+  function planet(key, radius, accent, selected) {
+    // Draw the far side first; the near side runs below the inscription.
+    return `<g transform="scale(${radius/48})" aria-hidden="true">
+      <circle r="65" fill="url(#gl-corona-${key})"/>
+      <g transform="translate(0 10) rotate(-14)">
+        <ellipse rx="66" ry="18" fill="none" stroke="${accent}" stroke-opacity=".43" stroke-width="2.8"/>
+      </g>
+      <circle class="flow-plate" r="48" fill="url(#gl-sphere-${key})" stroke="${selected ? '#dfeeff' : accent}" stroke-width="${selected ? 1.65 : .95}"/>
+      <path d="M -40 -24 Q -28 -45 -9 -44 M -38 -27 Q -27 -42 -18 -41" fill="none" stroke="#ecfffc" stroke-opacity=".67" stroke-linecap="round"/>
+      <path d="M -39 23 Q -22 43 6 42 Q 25 42 39 25 Q 24 46 3 46 Q -23 47 -39 23" fill="${accent}" opacity=".19"/>
+      <g transform="translate(0 10) rotate(-14)" fill="none">
+        <path d="M -66 0 A 66 18 0 0 0 66 0" stroke="#0a1020" stroke-width="4.2"/>
+        <path d="M -66 0 A 66 18 0 0 0 66 0" stroke="${accent}" stroke-width="2" opacity=".81"/>
+        <path d="M -66 0 Q -65 10 -44 13.4" stroke="#effaff" stroke-width="1.15"/>
+      </g>
     </g>`;
   }
   function roomDrawing(room,counts,narrow,selected){
@@ -152,9 +185,7 @@
     let shape;
     if (hub) {
       const r=narrow?40:48;
-      shape=`<ellipse cy="${r*.94}" rx="${r*.83}" ry="${r*.16}" fill="#050a16" opacity=".64"/>
-        <circle class="flow-plate" r="${r}" fill="url(#gl-sphere-${key})" stroke="${selected===key?c:'#8997b0'}" stroke-width="${selected===key?1.8:.8}"/>
-        <path d="M ${-.84*r} ${-.43*r} Q ${-.61*r} ${-.94*r} ${-.12*r} ${-.93*r}" fill="none" stroke="#f0f6ff" stroke-opacity=".64" stroke-linecap="round" stroke-width="1.6"/>`+
+      shape=planet(key,r,c,selected===key)+
         label(0,0,info(key)[0],narrow?11:14,'#f6f4ff',700)+
         label(0,20,key==='crm'?format.format(number):'ME',14,c,700);
     } else {
@@ -175,28 +206,69 @@
       '<g data-glows="" pointer-events="none"></g><g data-particles="" pointer-events="none"></g>'+nodes+'</svg>';
   }
   // Topology and animation geometry are shared by the live UI and the example.
+  // Clip the trajectory to the visible surfaces. A flash at a node's center
+  // would be hidden behind its opaque glass body.
+  const transferPaths = new Map();
+  function transferPath(key, narrow, view) {
+    const cacheKey = view + '/' + narrow + '/' + key;
+    if (transferPaths.has(cacheKey)) return transferPaths.get(cacheKey);
+
+    const room = rooms[view];
+    const route = room ? [room.hub, key] : routes.find(item => item[2] === key);
+    if (!route || (room && !room.keys.includes(key))) return null;
+    const positions = room && roomGraph(room, narrow);
+    const center = stationKey => room ? positions[stationKey] : coord(stationKey, narrow);
+    const from = center(route[0]), to = center(route[1]);
+    const point = room ? t => [from[0]+(to[0]-from[0])*t, from[1]+(to[1]-from[1])*t] : curve(route, narrow).point;
+
+    function surface(atSource) {
+      const stationKey = route[atSource ? 0 : 1];
+      const [cx,cy] = atSource ? from : to;
+      let inside = atSource ? 0 : 1;
+      let outside = 1-inside;
+      for (let i=0; i<14; i++) {
+        const mid = (inside+outside)/2;
+        const [x,y] = point(mid);
+        const dx = Math.abs(x-cx), dy = Math.abs(y-cy);
+        const inBody = isHub(stationKey) ? Math.hypot(dx,dy) <= (narrow?40:48)
+          : dx <= (narrow?52.5:70) && dy <= 22;
+        if (inBody) inside = mid;
+        else outside = mid;
+      }
+      return (inside+outside)/2;
+    }
+    const entry = surface(true), exit = surface(false);
+    const path = { point: progress => point(entry+(exit-entry)*progress), color: room ? room.color : tint(key) };
+    transferPaths.set(cacheKey,path);
+    return path;
+  }
+
+  function contactFlash([x,y], color, phase) {
+    if (phase <= 0 || phase >= 1) return '';
+    const strength = Math.min(1,phase/.18) * Math.pow(1-phase,1.4);
+    return `<g transform="translate(${x} ${y})" opacity="${strength}">
+      <circle r="${8+phase*7}" fill="url(#gl-arrival-light)"/>
+      <circle r="${3.1+phase*2}" fill="${color}" opacity=".62"/>
+      <path d="M -6 0 Q -1 -.5 0 -4 Q .6 -.5 6 0 Q .6 .5 0 4 Q -.6 .5 -6 0" fill="#f3ffff"/>
+      <circle r="1.6" fill="white"/></g>`;
+  }
+
   function motion(events,narrow,view) {
-    const room=rooms[view], positions=room && roomGraph(room,narrow);
     let particles='', glows='';
     for (const {key,t} of events) {
-      const route=routes.find(item=>item[2]===key);
-      if (t<0 || t>=1 || (room ? !room.keys.includes(key) : !route)) continue;
-      const ends=room?[room.hub,key]:route;
-      const c=room?room.color:tint(key), p=Math.min(1,t/.75);
-      const arc=room?{point(f){
-        const [x,y]=positions[room.hub], [u,v]=positions[key];
-        return [x+(u-x)*f,y+(v-y)*f];
-      }}:curve(route,narrow);
-      for (let j=7;j>=0;j--) {
-        const [x,y]=arc.point(Math.max(0,p-j*.018));
-        if (j===0) particles+=`<circle cx="${x}" cy="${y}" r="9" fill="url(#gl-arrival-light)"/>`;
-        particles+='<circle cx="'+x+'" cy="'+y+'" r="'+(j===0?3.8:3.2-j*.31)+'" fill="'+(j===0?'#efffff':c)+'" opacity="'+(1-j*.12)+'"/>';
-      }
-      const terminal=t<.40?ends[0]:t>.64?ends[1]:null;
-      if (terminal) {
-        const [x,y]=room?positions[terminal]:coord(terminal,narrow), r=isHub(terminal)?(narrow?44:52):26;
-        const strength = terminal===ends[0] ? 1-t/.4 : Math.sin(Math.PI*(t-.64)/.36);
-        glows+=`<ellipse cx="${x}" cy="${y}" rx="${r*(isHub(terminal)?1.55:3.25)}" ry="${r*1.58}" fill="url(#gl-arrival-light)" opacity="${strength}"/>`;
+      if (t<0 || t>=1) continue;
+      const path = transferPath(key,narrow,view);
+      if (!path) continue;
+      glows += contactFlash(path.point(0),path.color,t/.13);
+      glows += contactFlash(path.point(1),path.color,(t-.79)/.21);
+      const progress = (t-.06)/.73;
+      if (progress<0 || progress>1.13) continue;
+      for (let j=7; j>=0; j--) {
+        const at = progress-j*.018;
+        if (at<0 || at>1) continue;
+        const [x,y]=path.point(at);
+        if (j===0) particles+=`<circle cx="${x}" cy="${y}" r="7" fill="url(#gl-arrival-light)"/>`;
+        particles+=`<circle cx="${x}" cy="${y}" r="${j===0?2.7:2.3-j*.22}" fill="${j===0?'#f0ffff':path.color}" opacity="${1-j*.12}"/>`;
       }
     }
     return {particles,glows};

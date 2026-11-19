@@ -6,14 +6,24 @@
   <header class="gl-activity-header">
     <div>
       <h1>اتاق فرمان کانال‌ها</h1>
-      <p>وضعیت اتصال و گردش پیام‌های گرین‌لایف</p>
+      <p>گردش پیام‌ها، نوبت‌دهی و تحقق تارگت‌های فروش گرین‌لایف</p>
     </div>
     <p class="gl-activity-sync" data-sync role="status">آخرین ثبت سرور</p>
   </header>
 
   {% include 'core/agent_bot_connections.html' %}
-  {% include 'core/agent_flow.html' %}
-  <div class="gl-activity-grid">
+  <div id="gl-cycle-board" class="gl-cycle-board">
+    <nav class="gl-cycle-toolbar" aria-label="بخش‌های چرخه">
+      <div class="gl-cycle-jumps">
+        <a href="#gl-flow-title">اطلس و کانال‌ها</a>
+        <a href="#gl-target-call_center">گل‌های کال‌سنتر</a>
+        <a href="#gl-target-centers">فروش مراکز</a>
+        <a href="#gl-bookings-title">نوبت‌دهی مراکز</a>
+      </div>
+      <button type="button" data-expand-cycle aria-expanded="false" aria-controls="gl-cycle-dialog">نمای گستردهٔ چرخه</button>
+    </nav>
+    <div class="gl-cycle-overview">
+      {% include 'core/agent_flow.html' %}
     <section class="gl-activity-map" aria-labelledby="gl-activity-map-title">
       <div class="gl-activity-map-head">
         <h2 id="gl-activity-map-title">نقشهٔ فعالیت</h2>
@@ -41,7 +51,12 @@
           <span class="gl-orbit-mark gl-orbit-latin" aria-hidden="true">in</span><span>لینکدین</span>
         </button>
       </div>
-      <div class="gl-channel-heading"><h2>وضعیت حساب‌ها</h2><span data-connected-count></span></div>
+    </section>
+  </div>
+  {% include 'core/agent_target_departments.html' %}
+  <div class="gl-activity-grid">
+    <section class="gl-account-panel" aria-labelledby="gl-account-title">
+      <div class="gl-channel-heading"><h2 id="gl-account-title">وضعیت حساب‌ها</h2><span data-connected-count></span></div>
       <div class="gl-activity-nodes" data-channels>
         {% for channel in activity.channels %}
           <article class="gl-activity-node" data-channel="{{ channel.id }}" data-tone="{{ channel.tone }}">
@@ -99,6 +114,8 @@
       {% endfor %}
     </fieldset>
   </section>
+  </div>
+  <dialog class="gl-cycle-dialog" id="gl-cycle-dialog" aria-label="نمای گستردهٔ چرخهٔ گرین‌لایف"></dialog>
   {{ activity|json_script:"gl-activity-initial" }}
 </section>
 <script src="{% static 'core/agent-flow.js' %}" defer></script>

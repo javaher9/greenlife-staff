@@ -16,16 +16,16 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .call_center_identity import call_center_display_name
-from .jalali import gregorian_to_jalali, jalali_to_gregorian
-from .models import Branch, EmployeeProfile, FinancialTransaction
+from .jalali import gregorian_to_jalali
+from .models import EmployeeProfile
 from .sales_target_models import SalesTargetBand, TargetPercentPolicy
 
-MILLION_TOMAN_RIAL = Decimal("10000000")
+from .sales_target_metrics import (
+    active_sales_branches, approved_sales, jalali_month_dates, million_toman as _money,
+    monthly_plans, monthly_policy, sales_by_branch_and_flower,
+)
+
 ZERO = Decimal("0")
-
-
-def _money(amount):
-    return ((amount or ZERO) / MILLION_TOMAN_RIAL).quantize(Decimal("0.01"))
 
 
 def _month_params(request):
@@ -36,9 +36,7 @@ def _month_params(request):
         month = int(request.POST.get("month") or request.GET.get("month") or jm)
         if not (1300 <= year <= 1500 and 1 <= month <= 12):
             raise ValueError()
-        start_date = datetime(*jalali_to_gregorian(year, month, 1)).date()
-        next_year, next_month = (year + 1, 1) if month == 12 else (year, month + 1)
-        end_date = datetime(*jalali_to_gregorian(next_year, next_month, 1)).date()
+        start_date, end_date = jalali_month_dates(year, month)
         return year, month, start_date, end_date, today
     except (ValueError, TypeError):
         raise ValidationError("دوره شمسی نامعتبر است.")
@@ -93,7 +91,7 @@ def sales_targets_dashboard(request):
     period = f"{jy}-{jm:02d}"
 
     # Inactive branches (including closed Urmia) are intentionally omitted.
-    branches = list(Branch.objects.filter(is_active=True).filter(Q(country__code="IR") | Q(country__isnull=True)).exclude(name__icontains="ارومیه").exclude(name__icontains="افسریه").order_by("name"))
+    branches = list(active_sales_branches())
     profiles = list(EmployeeProfile.objects.filter(
         is_active=True, user__is_active=True, role__in=("call_center", "consultant"),
     ).select_related("user", "branch").order_by("user__first_name", "user__last_name", "user__username"))
@@ -109,9 +107,7 @@ def sales_targets_dashboard(request):
     for p in flowers:
         valid_subjects[f"flower:{p.user_id}"] = ("flower", None, p.user)
 
-    policy = TargetPercentPolicy.objects.filter(period_year=jy, period_month=jm).first()
-    if policy is None:
-        policy = TargetPercentPolicy(period_year=jy, period_month=jm)
+    policy = monthly_policy(jy, jm)
     if request.method == "POST":
         action = (request.POST.get("action") or "set_floor").strip()
         try:
@@ -230,37 +226,17 @@ def sales_targets_dashboard(request):
             messages.error(request, "تارگت ذخیره نشد: عدد واردشده نامعتبر است. مقدارهای مثبت و درصدهای مرتب وارد کنید.")
         return HttpResponseRedirect(f"{reverse('sales_targets_dashboard')}?year={jy}&month={jm}&edit=1")
 
-    configs = SalesTargetBand.objects.filter(period_year=jy, period_month=jm)
-    # Calculate at read time as well: updating global percentages immediately
-    # changes the actual boundaries, colors, and needle positions everywhere.
-    plans = {}
-    for stored in configs:
-        heavy, floor, one, two = policy.bands(stored.sales_floor)
-        plans[stored.key.removeprefix(period + ":")] = SimpleNamespace(
-            heavy_limit=heavy, sales_floor=floor,
-            target_one=one, target_two=two,
-        )
-
+    plans = monthly_plans(policy)
     start = timezone.make_aware(datetime.combine(start_date, time.min))
     end = timezone.make_aware(datetime.combine(end_date, time.min))
-    # Source is restricted to approved manual income; CRM imports can overlap
-    # with these same receipts and must not silently be double counted.
-    income = FinancialTransaction.objects.filter(
-        source="manual", entry_type="inc", review_status="approved",
-        occurred_at__gte=start, occurred_at__lt=end,
-    )
-    by_branch = {r["branch_id"]: _money(r["amount"]) for r in income.values("branch_id").annotate(amount=Sum("amount"))}
+    income = approved_sales(start, end)
+    by_branch, by_flower = sales_by_branch_and_flower(income)
     # The consultant owns the finalized consultation; a receptionist can record
     # the money on their behalf. Use the plan consultant first, then recorder.
     by_consultant = {r["seller_id"]: _money(r["amount"]) for r in
         income.annotate(seller_id=Coalesce(
             "appointment__consultation_plan__consultant_id", "recorded_by_id",
         )).values("seller_id").annotate(amount=Sum("amount"))}
-    # The first booking owner is the fallback for historical rows.
-    by_flower = {r["flower_id"]: _money(r["amount"]) for r in
-        income.annotate(flower_id=Coalesce(
-            "call_center_owner_id", "appointment__lead__first_appointment_by_id",
-        )).filter(flower_id__isnull=False).values("flower_id").annotate(amount=Sum("amount"))}
     total = _money(income.filter(branch__in=branches).aggregate(value=Sum("amount"))["value"])
 
     # This is intentionally conservative: only explicitly identified deposit
@@ -364,9 +340,7 @@ def my_sales_targets(request):
     jy, jm, start_date, end_date, today = _month_params(request)
     period = f"{jy}-{jm:02d}"
     key = f"{'flower' if profile.role == 'call_center' else 'consultant'}:{request.user.pk}"
-    policy = TargetPercentPolicy.objects.filter(period_year=jy, period_month=jm).first()
-    if policy is None:
-        policy = TargetPercentPolicy(period_year=jy, period_month=jm)
+    policy = monthly_policy(jy, jm)
     # Consultants are represented by their branch target, not a second
     # independently configurable target. Keep old rows intact for audit.
     if profile.role == "consultant" and profile.branch_id:
@@ -380,10 +354,7 @@ def my_sales_targets(request):
     period_end = timezone.make_aware(datetime.combine(end_date, time.min))
     today_start = timezone.make_aware(datetime.combine(today, time.min))
     tomorrow_start = today_start + timedelta(days=1)
-    receipts = FinancialTransaction.objects.filter(
-        source="manual", entry_type="inc", review_status="approved",
-        occurred_at__gte=period_start, occurred_at__lt=period_end,
-    )
+    receipts = approved_sales(period_start, period_end)
     if profile.role == "call_center":
         receipts = receipts.annotate(seller=Coalesce(
             "call_center_owner_id", "appointment__lead__first_appointment_by_id",
