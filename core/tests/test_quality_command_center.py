@@ -346,6 +346,10 @@ class QualityCommandCenterTests(TestCase):
         self.naderi.profile.role = "quality_control"
         self.naderi.profile.save(update_fields=["role"])
         operator = self.person("qc-dm-test-cc", "call_center", self.niavaran)
+        Attendance.objects.create(
+            user=operator, branch=self.niavaran,
+            date=timezone.localdate(), check_in=timezone.now(), status="present",
+        )
         self.client.force_login(self.naderi)
         response = self.client.post(reverse("instagram_manual_lead"), {
             "full_name": "لید دایرکت تست QC",
