@@ -7,6 +7,7 @@
   </header>
   <nav class="flow-views" aria-label="انتخاب نمای اطلس">
     <button data-atlas-view="overview" type="button" aria-pressed="true">نمای کلی</button>
+    <button data-atlas-view="sources" type="button" aria-pressed="false">آمار ورودی‌ها</button>
     <button data-atlas-view="members" type="button" aria-pressed="false">داخل گرین‌لایف ME</button>
     <button data-atlas-view="leads" type="button" aria-pressed="false">لیدهای فشرده</button>
   </nav>
@@ -16,6 +17,8 @@
     <button type="button" data-zoom="reset" aria-label="بازنشانی زوم">100٪</button>
     <button type="button" data-zoom="out" aria-label="کوچک‌نمایی">−</button>
   </div>
+  <div class="flow-viewport" data-map-viewport><div class="flow-scene-stack">
+  {% include 'core/agent_lead_journey.html' %}
   <ul class="flow-legend" aria-label="راهنمای شکل‌های اطلس">
     <li data-legend-group="member">
       <svg viewBox="0 0 26 35" width="26" height="35" aria-hidden="true" focusable="false">
@@ -57,7 +60,8 @@
       پیگیری لید
     </li>
   </ul>
-  <div class="flow-viewport" data-map-viewport><div data-flow-map></div></div>
+  <div data-flow-map></div>
+  </div></div>
   <footer class="flow-detail" aria-live="polite">
     <div><strong data-flow-title>لیدهای فشرده</strong><p data-flow-description></p></div>
     <span data-flow-count></span>

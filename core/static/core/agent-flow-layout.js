@@ -90,6 +90,31 @@
     return graph;
   }
 
+  function memberBranch(narrow) {
+    const width = narrow ? 380 : 720;
+    const graph = {width, height: 425, positions: {}, paths: {},
+      titles:[{x:width/2,y:25,text:'شاخهٔ اعضای گرین‌لایف ME',group:'member'}]};
+    const positions = narrow
+      ? {me:[178,333],account:[63,251],sync:[290,158],request:[166,180],booked:[125,82]}
+      : {me:[349,329],account:[130,211],sync:[570,158],request:[357,174],booked:[249,83]};
+    Object.assign(graph.positions, positions);
+    // Each curve grows from its parent. Sample the same curve for the luminous drop.
+    function limb(from, to, c1, c2) {
+      const a=positions[from], b=positions[to];
+      const points=[a];
+      for(let i=1;i<=36;i++){
+        const t=i/36;
+        points.push(mix(mix(mix(a,c1,t),mix(c1,c2,t),t),mix(mix(c1,c2,t),mix(c2,b,t),t),t));
+      }
+      graph.paths[to]={from,to,...roundedTrack(points)};
+    }
+    limb('me','account',narrow?[137,292]:[255,278],narrow?[166,251]:[288,211]);
+    limb('me','sync',narrow?[355,287]:[578,289],narrow?[411,151]:[719,153]);
+    limb('me','request',narrow?[276,280]:[480,283],narrow?[272,176]:[487,174]);
+    limb('request','booked',narrow?[239,160]:[429,156],narrow?[237,83]:[425,82]);
+    return graph;
+  }
+
   const roomKeys = {
     members:['account','sync','request','diet','device','network'],
     leads:['lead_new','lead_contacted','lead_appointment','lead_visited','lead_won','lead_lost'],
@@ -140,7 +165,7 @@
   function layout(view, narrow) {
     const key = view + (narrow ? '/narrow' : '/wide');
     if (!scenes.has(key)) {
-      scenes.set(key, view === 'members' || view === 'leads' ? room(view,narrow) : overview(narrow));
+      scenes.set(key, view === 'overview' ? memberBranch(narrow) : view === 'sources' ? overview(narrow) : room(view,narrow));
     }
     return scenes.get(key);
   }

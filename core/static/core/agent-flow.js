@@ -107,7 +107,14 @@
 
   function drawing(counts,narrow,selected,view) {
     const scene = layout(view,narrow);
-    const tracks = Object.entries(scene.paths).map(([key,route]) => conduit(route.d,tint(key))).join('');
+    const tracks = Object.entries(scene.paths).map(([key,route]) => {
+      if(view!=='overview') return conduit(route.d,tint(key));
+      const [x,y]=route.point(.50), [u,v]=route.point(.58);
+      const angle=Math.atan2(v-y,u-x)*180/Math.PI;
+      return '<g class="member-stem"><path d="'+route.d+'" stroke="#142e2f" stroke-width="7" fill="none"/>'+
+        '<path d="'+route.d+'" stroke="#649d85" stroke-width="2.2" fill="none"/>'+
+        '<g transform="translate('+x+' '+y+') rotate('+angle+')"><path d="M0 0 Q-9 -14 -20 -12 Q-16 -1 0 0Z" fill="#387465" stroke="#83ba91" stroke-width=".7"/></g></g>';
+    }).join('');
     const titles = scene.titles.map(t => label(t.x,t.y,t.text,15,vessels.groups[t.group].color,700)).join('');
     const divider = scene.separator ? `<path d="${scene.separator}" stroke="#33445b" fill="none"/>` : '';
     const nodes = Object.entries(scene.positions).map(([key,point]) => station(key,counts,narrow,selected,point)).join('');
@@ -181,6 +188,14 @@
       glows += contactFlash(path.point(1),path.color,(t-.79)/.21);
       const progress = (t-.06)/.73;
       if (progress<0 || progress>1.13) continue;
+      if (view==='overview' && progress<=1) {
+        const [x,y]=path.point(progress), [aheadX,aheadY]=path.point(Math.min(1,progress+.012));
+        const angle=Math.atan2(aheadY-y,aheadX-x)*180/Math.PI;
+        particles+='<g transform="translate('+x+' '+y+') rotate('+angle+')"><circle r="9" fill="url(#gl-arrival-light)"/>'+
+          '<path d="M-7 0 Q-2 -1 0 -3 C5 -5 7 3 2 3 Q-2 2 -7 0" fill="#9bf5d7" stroke="#e7fff3" stroke-width=".7"/>'+
+          '<ellipse cx="2" cy="-1.2" rx="1.6" ry=".7" fill="white"/></g>';
+        continue;
+      }
       for (let j=7; j>=0; j--) {
         const at = progress-j*.018;
         if (at<0 || at>1) continue;
@@ -195,10 +210,10 @@
   if (!panel) return;
   const root=panel.closest('[data-activity-url]') || panel;
   const host=panel.querySelector('[data-flow-map]'), toggle=panel.querySelector('[data-flow-pause]');
-  const viewport=host.parentElement;
+  const viewport=host.closest('[data-map-viewport]');
   const initial=JSON.parse(root.querySelector('#gl-activity-initial').textContent).flow;
   let view='overview';
-  let snapshot=initial, selected='crm', narrow=false, active=[], raf=0, paused=false;
+  let snapshot=initial, selected='me', narrow=false, active=[], raf=0, paused=false;
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
   function details() {
     panel.querySelector('[data-flow-title]').textContent=info(selected)[0];
@@ -253,7 +268,7 @@
     const button=event.target.closest('[data-atlas-view]');
     if (!button) return;
     stop(); view=button.dataset.atlasView;
-    selected=view==='members'?'me':'crm';
+    selected=view==='members' || view==='overview'?'me':'crm';
     for (const item of panel.querySelectorAll('[data-atlas-view]')) {
       item.setAttribute('aria-pressed',String(button===item));
     }

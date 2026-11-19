@@ -3,6 +3,7 @@ from collections import Counter
 
 from django.db.models import Case, Count, Q, Value, When
 
+from .agent_lead_journeys import recent_lead_journeys
 from .customer_portal_models import CustomerPortalMember, CustomerServiceRequest
 from .lead_group_names import normalized_group_name
 from .me_sync_models import MeSyncAudit
@@ -27,12 +28,14 @@ def daily_flow(now):
     counts.update(requests)
 
     rows = ReferralLead.objects.filter(**window).order_by().values(
-        'group__name', 'status',
+        'group__name', 'status', 'referrer__user__username',
         is_school=Case(When(school_enrollment__isnull=False, then=Value(True)), default=Value(False)),
     ).annotate(total=Count('pk'), assigned=Count('assigned_to'))
     groups = {'وب سایت': 'website', 'اینستاگرام': 'instagram'}
     for row in rows:
         key = groups.get(normalized_group_name(row['group__name']), 'other')
+        if row['referrer__user__username'] in ('lead-source-telegram', 'lead-source-bale', 'lead-source-whatsapp'):
+            key = 'other'
         if row['is_school']:
             key = 'school'
         counts[key] += row['total']
@@ -40,4 +43,4 @@ def daily_flow(now):
         counts['crm'] += row['total']
         counts['assigned'] += row['assigned']
 
-    return {'day': start.date().isoformat(), 'counts': dict(counts)}
+    return {'day': start.date().isoformat(), 'counts': dict(counts), 'journeys': recent_lead_journeys(start, now)}

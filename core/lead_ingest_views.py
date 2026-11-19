@@ -21,6 +21,8 @@ CHANNEL_LABELS = {
     'instagram': 'اینستاگرام',
     'crm': 'CRM',
     'whatsapp': 'واتس‌اپ',
+    'telegram': 'تلگرام',
+    'bale': 'بله',
     'campaign': 'کمپین',
     'partner': 'همکار',
 }
