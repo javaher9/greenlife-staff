@@ -326,6 +326,56 @@ class QualityCommandCenterTests(TestCase):
         self.assertEqual(desktop.status_code, 302)
         self.assertEqual(desktop["Location"], reverse("quality_command_center"))
 
+    def test_quality_control_mobile_has_separate_dm_and_personal_network_shortcuts(self):
+        self.naderi.profile.role = "quality_control"
+        self.naderi.profile.save(update_fields=["role"])
+        self.assertTrue(self.naderi.profile.dm_lead_enabled)
+        self.client.force_login(self.naderi)
+        mobile = {"HTTP_USER_AGENT": "Mozilla/5.0 (Linux; Android 15; Pixel 9) Chrome/130 Mobile Safari/537.36"}
+        page = self.client.get("/", **mobile)
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, reverse("instagram_manual_lead"))
+        self.assertContains(page, "ثبت لید دایرکت")
+        self.assertContains(page, "شبکه فروش من")
+        self.assertContains(page, 'href="/attendance/"')
+        self.assertEqual(self.client.get(reverse("instagram_manual_lead"), **mobile).status_code, 200)
+        self.assertEqual(self.client.get(reverse("referral_dashboard"), **mobile).status_code, 200)
+        self.assertEqual(self.client.get("/", HTTP_USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64)").status_code, 302)
+
+    def test_quality_control_dm_registration_is_attributed_and_not_personal_network_lead(self):
+        self.naderi.profile.role = "quality_control"
+        self.naderi.profile.save(update_fields=["role"])
+        operator = self.person("qc-dm-test-cc", "call_center", self.niavaran)
+        Attendance.objects.create(
+            user=operator, branch=self.niavaran,
+            date=timezone.localdate(), check_in=timezone.now(), status="present",
+        )
+        self.client.force_login(self.naderi)
+        response = self.client.post(reverse("instagram_manual_lead"), {
+            "full_name": "لید دایرکت تست QC",
+            "phone": "09129872345",
+            "interested_service": "مشاوره تخصصی",
+            "instagram_page": "greenlifeclinics",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "لید ثبت شد")
+        lead = ReferralLead.objects.get(phone="09129872345")
+        self.assertEqual(lead.created_by_id, self.naderi.pk)
+        self.assertNotEqual(lead.referrer.user_id, self.naderi.pk)
+        # Live call-center routing can legitimately leave the lead unassigned
+        # when no operator is eligible (e.g. presence-based Friday routing).
+        # This is still a company Instagram DM lead, not Naderi's personal lead.
+        self.assertIn("اینستاگرام - دستی", lead.notes)
+        if lead.assigned_to_id is not None:
+            self.assertEqual(lead.assigned_to.role, "call_center")
+        self.assertNotEqual(lead.assigned_to_id, self.naderi.profile.pk)
+
+    def test_unprivileged_personnel_cannot_register_dm_from_shortcut(self):
+        self.client.force_login(self.employee)
+        self.assertFalse(self.employee.profile.dm_lead_enabled)
+        response = self.client.get(reverse("instagram_manual_lead"))
+        self.assertEqual(response.status_code, 302)
+
     def test_role_is_selectable_for_staff_edit_form(self):
         from core.forms import EmployeeEditForm
         form = EmployeeEditForm(employee=self.naderi.profile)
