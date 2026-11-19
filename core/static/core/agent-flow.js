@@ -67,18 +67,46 @@
     });
     return positions;
   }
+  // The same upper-left light models every station, including the expanded rooms.
+  function spaceBackdrop() {
+    const planets = [
+      ['me', '#b2ebdd', '#35756d', '#123a42', '#081824'],
+      ['crm', '#d9c2ee', '#766391', '#382d55', '#111424'],
+    ].map(([id, light, middle, shade, dark]) =>
+      `<radialGradient id="gl-sphere-${id}" cx="32%" cy="22%" r="80%">
+        <stop stop-color="${light}"/><stop offset=".24" stop-color="${middle}"/>
+        <stop offset=".6" stop-color="${shade}"/><stop offset=".91" stop-color="${dark}"/>
+        <stop offset="1" stop-color="${shade}"/></radialGradient>`
+    ).join('');
+    return `<defs>${planets}
+      <linearGradient id="gl-station-glass" x2=".4" y2="1" gradientUnits="objectBoundingBox">
+        <stop stop-color="#29374e"/><stop offset=".42" stop-color="#1a293e"/><stop offset="1" stop-color="#101c2e"/>
+      </linearGradient>
+      <radialGradient id="gl-arrival-light">
+        <stop stop-color="#e5ddff" stop-opacity=".55"/><stop offset=".54" stop-color="#b9c8ff" stop-opacity=".32"/><stop offset="1" stop-color="#a5b3ff" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="gl-atlas-sky" cx=".64" cy=".44" r=".78">
+        <stop stop-color="#1a2036"/><stop offset=".65" stop-color="#101a2c"/><stop offset="1" stop-color="#091321"/>
+      </radialGradient>
+      <pattern id="gl-atlas-stars" patternUnits="userSpaceOnUse" width="173" height="127" fill="#c5d5f1">
+        <circle cx="13" cy="39" r=".7" opacity=".44"/><circle cx="65" cy="106" r=".9" opacity=".36"/>
+        <circle cx="121" cy="19" r=".5" opacity=".36"/><circle cx="150" cy="73" r=".65" opacity=".52"/>
+      </pattern></defs>
+      <rect width="100%" height="100%" fill="url(#gl-atlas-sky)"/>
+      <rect width="100%" height="100%" fill="url(#gl-atlas-stars)"/>`;
+  }
   function roomDrawing(room,counts,narrow,selected){
     const nodes=roomGraph(room,narrow), w=narrow?400:920,h=narrow?380:355;
     const [cx,cy]=nodes[room.hub], c=room.color;
-    let tracks='<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+(narrow?134:258)+'" ry="'+(narrow?127:119)+'" fill="none" stroke="'+c+'" stroke-opacity=".23" stroke-dasharray="2 7"/>';
+    let tracks='';
     for(const key of room.keys){
       const [x,y]=nodes[key];
       tracks+='<path d="M '+cx+' '+cy+' L '+x+' '+y+'" stroke="'+c+'" stroke-opacity=".48"/>';
     }
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" role="group" aria-label="'+room.caption+'"><rect width="100%" height="100%" fill="#10192b"/>'+
-      label(w/2,26,room.caption,15,c)+tracks+'<g data-particles="" pointer-events="none"></g>'+
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" role="group" aria-label="'+room.caption+'">'+spaceBackdrop()+
+      label(w/2,26,room.caption,15,c)+tracks+'<g data-glows="" pointer-events="none"></g><g data-particles="" pointer-events="none"></g>'+
       Object.keys(nodes).map(key=>station(key,counts,narrow,selected,nodes[key],c)).join('')+
-      '<g data-rings="" pointer-events="none"></g></svg>';
+      '</svg>';
   }
   function station(key,counts,narrow,selected,position,color) {
     const [x,y]=position || coord(key,narrow), c=color || tint(key), hub=isHub(key), width=narrow?105:140;
@@ -86,15 +114,13 @@
     let shape;
     if (hub) {
       const r=narrow?40:48;
-      shape='<circle r="'+(r+14)+'" fill="none" stroke="'+c+'" stroke-opacity=".1" stroke-width="5"/>'+
-        '<circle r="'+(r+11)+'" fill="none" stroke="'+c+'" stroke-opacity=".6" stroke-dasharray="3 30 1 6"/>'+
-        '<circle r="'+(r+7)+'" fill="none" stroke="'+c+'" stroke-opacity=".27" stroke-dasharray="1 5"/>'+
-        '<circle class="flow-plate" r="'+r+'" fill="'+(key==='me'?'#113537':'#2a2144')+'" stroke="'+c+'" stroke-width="1.7"/>'+
-        '<circle r="'+(r-5)+'" fill="none" stroke="'+c+'" stroke-opacity=".45" stroke-dasharray="22 11 2 8"/>'+
+      shape=`<ellipse cy="${r*.94}" rx="${r*.83}" ry="${r*.16}" fill="#050a16" opacity=".64"/>
+        <circle class="flow-plate" r="${r}" fill="url(#gl-sphere-${key})" stroke="${selected===key?c:'#8997b0'}" stroke-width="${selected===key?1.8:.8}"/>
+        <path d="M ${-.84*r} ${-.43*r} Q ${-.61*r} ${-.94*r} ${-.12*r} ${-.93*r}" fill="none" stroke="#f0f6ff" stroke-opacity=".64" stroke-linecap="round" stroke-width="1.6"/>`+
         label(0,0,info(key)[0],narrow?11:14,'#f6f4ff',700)+
         label(0,20,key==='crm'?format.format(number):'ME',14,c,700);
     } else {
-      shape='<rect class="flow-plate" x="'+(-width/2)+'" y="-23" width="'+width+'" height="46" rx="12" fill="#162439" stroke="'+(selected===key?c:'#394960')+'"/>'+
+      shape='<rect class="flow-plate" x="'+(-width/2)+'" y="-23" width="'+width+'" height="46" rx="12" fill="url(#gl-station-glass)" stroke="'+(selected===key?c:'#394960')+'"/>'+
         label(0,-3,info(key)[0],narrow?12:14,'#edf2fc')+label(0,15,format.format(number),13,c,700);
     }
     return '<g role="button" tabindex="0" aria-pressed="'+(selected===key)+'" aria-label="'+info(key)[0]+'" data-station="'+key+'" transform="translate('+x+' '+y+')">'+shape+'</g>';
@@ -105,16 +131,15 @@
     const tracks=routes.map(route=>'<path d="'+curve(route,narrow).path+'" fill="none" stroke="'+tint(route[2])+'" stroke-opacity=".47" stroke-width="1.5"/>').join('');
     const nodes=Object.keys(stations).map(k=>station(k,counts,narrow,selected)).join('');
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" role="group" aria-label="نقشه مسیر اعضا و منابع لید">'+
-      '<defs><pattern id="gl-flow-grid" width="17" height="17" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".8" fill="#34455d"/></pattern></defs>'+
-      '<rect width="100%" height="100%" fill="#0c1626"/><rect width="100%" height="100%" fill="url(#gl-flow-grid)"/>'+
+      spaceBackdrop()+
       '<path d="M 15 '+split+' H '+(w-15)+'" stroke="#33445b"/>'+
       label(narrow?67:95,24,'مسیر اعضا',14,aquamarine,700)+label(narrow?80:104,split+25,'مسیر جذب لید',14,lilac,700)+tracks+
-      '<g data-particles="" pointer-events="none"></g>'+nodes+'<g data-rings="" pointer-events="none"></g></svg>';
+      '<g data-glows="" pointer-events="none"></g><g data-particles="" pointer-events="none"></g>'+nodes+'</svg>';
   }
   // Topology and animation geometry are shared by the live UI and the example.
   function motion(events,narrow,view) {
     const room=rooms[view], positions=room && roomGraph(room,narrow);
-    let particles='', rings='';
+    let particles='', glows='';
     for (const {key,t} of events) {
       const route=routes.find(item=>item[2]===key);
       if (t<0 || t>=1 || (room ? !room.keys.includes(key) : !route)) continue;
@@ -131,10 +156,11 @@
       const terminal=t<.40?ends[0]:t>.64?ends[1]:null;
       if (terminal) {
         const [x,y]=room?positions[terminal]:coord(terminal,narrow), r=isHub(terminal)?(narrow?44:52):26;
-        rings+='<g transform="translate('+x+' '+y+') rotate('+Math.round(260*t)+')"><circle r="'+r+'" fill="none" stroke="'+c+'" stroke-width="2" stroke-dasharray="14 17" opacity="'+Math.min(1,(1-t)*8)+'"/></g>';
+        const strength = terminal===ends[0] ? 1-t/.4 : Math.sin(Math.PI*(t-.64)/.36);
+        glows+=`<ellipse cx="${x}" cy="${y}" rx="${r*(isHub(terminal)?1.55:3.25)}" ry="${r*1.58}" fill="url(#gl-arrival-light)" opacity="${strength}"/>`;
       }
     }
-    return {particles,rings};
+    return {particles,glows};
   }
   const panel=document.getElementById('gl-flow');
   if (!panel) return;
@@ -174,7 +200,7 @@
     active=active.filter(a=>time-a.start<2400);
     const layers=motion(active.map(a=>({key:a.key,t:(time-a.start)/2400})),narrow,view);
     host.querySelector('[data-particles]').innerHTML=layers.particles;
-    host.querySelector('[data-rings]').innerHTML=layers.rings;
+    host.querySelector('[data-glows]').innerHTML=layers.glows;
     raf=active.length?requestAnimationFrame(tick):0;
   }
   function stop() { active=[]; cancelAnimationFrame(raf); tick(performance.now()); }

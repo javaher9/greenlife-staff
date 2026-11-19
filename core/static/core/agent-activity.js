@@ -73,6 +73,7 @@
       const dy = Math.sin(theta) * height * .35;
       const left = (width / 2 + dx) + 'px';
       const top = (height / 2 + dy) + 'px';
+      node.style.setProperty('--depth-scale', (1 + .075 * Math.sin(theta)).toFixed(3));
       Object.assign(node.style, { left, top });
       Object.assign(paths.get(node.dataset.family).style, {
         left, top, width: Math.hypot(dx, dy) + 'px',
