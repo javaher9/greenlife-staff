@@ -77,11 +77,11 @@ def board(now, instagram):
                           month=stats.get('month'),forms=f['count'],bookings=f['bookings'],
                           checked=reading.checked_at.astimezone(now.tzinfo).strftime('%H:%M:%S') if reading else '—',
                           hours=[round(n*100/max(1,max(hours))) for n in hours]))
-    marked = leads.filter(notes__icontains='[instagram_page:').annotate(booked=Exists(booking))
+    marked = leads.filter(notes__icontains='[instagram_page:')
     pages = []
     for slug,label in INSTAGRAM_PAGE_SOURCES.items():
         data = marked.filter(notes__icontains=f'[instagram_page:{slug}]').aggregate(
-            leads=Count('pk'), booked=Count('pk',filter=Q(booked=True)))
+            leads=Count('pk'), booked=Count('pk', filter=Exists(booking)))
         connected = instagram.get('tone')=='connected' and (instagram.get('account') or '').strip('@').lower()==label.lower()
         avatar = os.getenv('EXECUTIVE_IG_AVATAR_' + slug.upper(), '')
         pages.append(dict(handle=label,avatar=avatar if avatar.startswith('https://') else '',
