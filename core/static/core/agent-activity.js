@@ -83,7 +83,7 @@
   }
 
   function orbitFrame(time) {
-    if (lastTime) angle += Math.min(time - lastTime, 100) * 2 * Math.PI / 90000;
+    if (lastTime) angle += Math.min(time - lastTime, 100) * 2 * Math.PI / 56000;
     lastTime = time;
     positionWires();
     frame = requestAnimationFrame(orbitFrame);

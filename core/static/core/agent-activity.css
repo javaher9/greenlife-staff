@@ -200,6 +200,19 @@
   font-size: 12px;
   text-shadow: 0 1px 3px #071020;
 }
+/* A horizontal glass sleeve keeps each caption legible as its globe moves. */
+.gl-orbit-node > span:last-child,.gl-activity-hub > span:last-child {
+  position:relative;
+  display:inline-block;
+  min-width:70%;
+  padding:2px 7px 3px;
+  border:1px solid #9cabc261;
+  border-radius:10% / 50%;
+  background:linear-gradient(#6c809477,#2b394be8 22%,#162036 52%,#253245 82%,#627284);
+  box-shadow:inset 2px 0 0 #bdcfd76b,inset -2px 0 0 #9cb5c552,0 3px 4px #090c1780;
+  white-space:nowrap;
+  line-height:1.2;
+}
 .gl-activity .gl-orbit-node[data-active="true"] {
   border-color: color-mix(in srgb,var(--node-color) 82%,#263349);
 }

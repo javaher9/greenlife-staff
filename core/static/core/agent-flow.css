@@ -27,3 +27,11 @@
 #gl-map-dialog {width:min(98vw,1660px);max-width:98vw;max-height:96dvh;padding:0;border:1px solid #516789;border-radius:16px;background:#0b1424;color:#edf5ff}
 #gl-map-dialog::backdrop {background:#050a15de}
 #gl-map-dialog #gl-flow {margin:0;border:none}
+
+#gl-flow .flow-glint { animation: gl-glass-reflection 5s ease-in-out var(--gl-delay) infinite; }
+#gl-flow.flow-paused .flow-glint { animation-play-state: paused; }
+@keyframes gl-glass-reflection {
+  0%,15% { transform: translateX(0); }
+  80%,100% { transform: translateX(var(--gl-travel)); }
+}
+@media (prefers-reduced-motion:reduce) { #gl-flow .flow-glint { animation:none; } }

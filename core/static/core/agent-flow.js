@@ -79,8 +79,21 @@
         <stop offset="1" stop-color="${shade}"/></radialGradient>`
     ).join('');
     return `<defs>${planets}
-      <linearGradient id="gl-station-glass" x2=".4" y2="1" gradientUnits="objectBoundingBox">
-        <stop stop-color="#29374e"/><stop offset=".42" stop-color="#1a293e"/><stop offset="1" stop-color="#101c2e"/>
+      <linearGradient id="gl-tube-wall" x2="0" y2="1">
+        <stop stop-color="#34485d"/><stop offset=".07" stop-color="#93a7ba"/>
+        <stop offset=".15" stop-color="#40566a"/><stop offset=".35" stop-color="#1a2b3c"/>
+        <stop offset=".68" stop-color="#0c1725"/><stop offset=".86" stop-color="#273a4d"/>
+        <stop offset=".96" stop-color="#43566b"/><stop offset="1" stop-color="#152131"/>
+      </linearGradient>
+      <linearGradient id="gl-tube-collar" x2=".12" y2="1">
+        <stop stop-color="#7891a5"/><stop offset=".12" stop-color="#d2e2e9"/>
+        <stop offset=".24" stop-color="#566979"/><stop offset=".48" stop-color="#2d4254"/>
+        <stop offset=".77" stop-color="#111d2c"/><stop offset=".94" stop-color="#7890a2"/>
+        <stop offset="1" stop-color="#27384b"/>
+      </linearGradient>
+      <linearGradient id="gl-tube-reflection">
+        <stop stop-color="#e3faff" stop-opacity="0"/><stop offset=".58" stop-color="#f1fcff" stop-opacity=".85"/>
+        <stop offset="1" stop-color="#e3faff" stop-opacity="0"/>
       </linearGradient>
       <radialGradient id="gl-arrival-light">
         <stop stop-color="#e5ddff" stop-opacity=".55"/><stop offset=".54" stop-color="#b9c8ff" stop-opacity=".32"/><stop offset="1" stop-color="#a5b3ff" stop-opacity="0"/>
@@ -95,13 +108,38 @@
       <rect width="100%" height="100%" fill="url(#gl-atlas-sky)"/>
       <rect width="100%" height="100%" fill="url(#gl-atlas-stars)"/>`;
   }
+  function conduit(path, color) {
+    return `<g fill="none" stroke-linecap="round" aria-hidden="true">
+      <path d="${path}" stroke="#040a13" stroke-width="5"/>
+      <path d="${path}" stroke="${color}" stroke-width="3" stroke-opacity=".35"/>
+      <path d="${path}" stroke="#c2d6ee" stroke-width=".85" stroke-opacity=".58"/>
+    </g>`;
+  }
+
+  function glassTube(key, width, accent, selected) {
+    const cap = width / 2 - 6;
+    return `<g aria-hidden="true">
+      <defs><clipPath id="gl-glass-${key}"><rect x="${-cap+4}" y="-16" width="${2*cap-8}" height="6" rx="3"/></clipPath></defs>
+      <rect x="${-cap}" y="-19" width="${2*cap}" height="46" rx="6" fill="#030912" opacity=".62"/>
+      <rect class="flow-plate" x="${-cap}" y="-22" width="${2*cap}" height="44" rx="4" fill="url(#gl-tube-wall)" stroke="${selected ? accent : '#6a8296'}"/>
+      <rect x="${-cap}" y="-21" width="${2*cap}" height="42" rx="4" fill="${accent}" opacity=".095"/>
+      <path d="M ${-cap+6} -15 H ${cap-6}" stroke="${accent}" opacity=".49" stroke-width="1.8"/>
+      <g clip-path="url(#gl-glass-${key})">
+        <rect class="flow-glint" style="--gl-travel:${width+24}px;--gl-delay:-${(cap+key.length)%7}s" x="${-cap-26}" y="-16" width="27" height="4" fill="url(#gl-tube-reflection)"/>
+      </g>
+      <path d="M ${-cap+4} 17 H ${cap-4}" stroke="${accent}" opacity=".29"/>
+      <ellipse cx="${-cap}" rx="5.5" ry="22.4" fill="url(#gl-tube-collar)" stroke="#8097ab" stroke-width=".7"/>
+      <ellipse cx="${cap}" rx="5.5" ry="22.4" fill="url(#gl-tube-collar)" stroke="#a2b5c4" stroke-width=".7"/>
+      <ellipse cx="${cap+1}" rx="2.8" ry="17.5" fill="#152538" stroke="${accent}" stroke-opacity=".79" stroke-width=".8"/>
+    </g>`;
+  }
   function roomDrawing(room,counts,narrow,selected){
     const nodes=roomGraph(room,narrow), w=narrow?400:920,h=narrow?380:355;
     const [cx,cy]=nodes[room.hub], c=room.color;
     let tracks='';
     for(const key of room.keys){
       const [x,y]=nodes[key];
-      tracks+='<path d="M '+cx+' '+cy+' L '+x+' '+y+'" stroke="'+c+'" stroke-opacity=".48"/>';
+      tracks+=conduit(`M ${cx} ${cy} L ${x} ${y}`, c);
     }
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" role="group" aria-label="'+room.caption+'">'+spaceBackdrop()+
       label(w/2,26,room.caption,15,c)+tracks+'<g data-glows="" pointer-events="none"></g><g data-particles="" pointer-events="none"></g>'+
@@ -120,15 +158,15 @@
         label(0,0,info(key)[0],narrow?11:14,'#f6f4ff',700)+
         label(0,20,key==='crm'?format.format(number):'ME',14,c,700);
     } else {
-      shape='<rect class="flow-plate" x="'+(-width/2)+'" y="-23" width="'+width+'" height="46" rx="12" fill="url(#gl-station-glass)" stroke="'+(selected===key?c:'#394960')+'"/>'+
-        label(0,-3,info(key)[0],narrow?12:14,'#edf2fc')+label(0,15,format.format(number),13,c,700);
+      shape=glassTube(key,width,c,selected===key)+
+        label(0,-2,info(key)[0],narrow?12:14,'#f4f8fc',600)+label(0,14,format.format(number),13,c,700);
     }
     return '<g role="button" tabindex="0" aria-pressed="'+(selected===key)+'" aria-label="'+info(key)[0]+'" data-station="'+key+'" transform="translate('+x+' '+y+')">'+shape+'</g>';
   }
   function drawing(counts,narrow,selected,view) {
     if (rooms[view]) return roomDrawing(rooms[view],counts,narrow,selected);
     const w=narrow?400:920, h=narrow?526:485, split=narrow?228:215;
-    const tracks=routes.map(route=>'<path d="'+curve(route,narrow).path+'" fill="none" stroke="'+tint(route[2])+'" stroke-opacity=".47" stroke-width="1.5"/>').join('');
+    const tracks=routes.map(route=>conduit(curve(route,narrow).path,tint(route[2]))).join('');
     const nodes=Object.keys(stations).map(k=>station(k,counts,narrow,selected)).join('');
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" role="group" aria-label="نقشه مسیر اعضا و منابع لید">'+
       spaceBackdrop()+
@@ -149,9 +187,10 @@
         const [x,y]=positions[room.hub], [u,v]=positions[key];
         return [x+(u-x)*f,y+(v-y)*f];
       }}:curve(route,narrow);
-      for (let j=4;j>=0;j--) {
-        const [x,y]=arc.point(Math.max(0,p-j*.032));
-        particles+='<circle cx="'+x+'" cy="'+y+'" r="'+(j===0?3.8:3-j*.35)+'" fill="'+(j===0?'#efffff':c)+'" opacity="'+(1-j*.16)+'"/>';
+      for (let j=7;j>=0;j--) {
+        const [x,y]=arc.point(Math.max(0,p-j*.018));
+        if (j===0) particles+=`<circle cx="${x}" cy="${y}" r="9" fill="url(#gl-arrival-light)"/>`;
+        particles+='<circle cx="'+x+'" cy="'+y+'" r="'+(j===0?3.8:3.2-j*.31)+'" fill="'+(j===0?'#efffff':c)+'" opacity="'+(1-j*.12)+'"/>';
       }
       const terminal=t<.40?ends[0]:t>.64?ends[1]:null;
       if (terminal) {
@@ -222,7 +261,7 @@
   });
   host.addEventListener('click',select); host.addEventListener('keydown',select);
   toggle.addEventListener('click',()=>{
-    paused=!paused; toggle.setAttribute('aria-pressed',String(paused));
+    paused=!paused; panel.classList.toggle('flow-paused',paused); toggle.setAttribute('aria-pressed',String(paused));
     toggle.textContent=paused?'ادامهٔ حرکت':'توقف حرکت';
     if (paused) stop();
   });
@@ -240,7 +279,11 @@
         }
       }
     }
-    draw();
+    for (const item of host.querySelectorAll('[data-station]')) {
+      const key = item.dataset.station;
+      if (key !== 'me') item.querySelector('text:last-child').textContent = format.format(next.counts[key] || 0);
+    }
+    details();
     if (!raf && active.length) raf=requestAnimationFrame(tick);
   });
   draw();
