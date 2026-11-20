@@ -12,6 +12,7 @@ services:
 
   web:
     build: .
+    image: greenlife-staff-runtime-web:latest
     restart: unless-stopped
     env_file: .env
     dns:
@@ -40,6 +41,13 @@ services:
     entrypoint: ["python", "manage.py", "process_sms_queue", "--loop", "--interval", "30"]
     volumes:
       - media_data:/app/media
+
+  executive_monitor:
+    image: greenlife-staff-runtime-web:latest
+    restart: unless-stopped
+    env_file: .env
+    depends_on: [db, web]
+    entrypoint: ["python", "manage.py", "monitor_executive_sites", "--loop"]
 
   nginx:
     image: nginx:1.31.3-alpine

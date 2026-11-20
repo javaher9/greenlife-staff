@@ -1,0 +1,460 @@
+.gl-activity {
+  --activity-border: #293a51;
+  --activity-muted: #bacadd;
+  --activity-accent: #b586ff;
+  --activity-bg: #0b1523;
+  max-width: 1500px;
+  margin-inline: auto;
+  color: #f2f6ff;
+}
+.gl-activity .gl-activity-header,
+.gl-activity .gl-activity-map,
+.gl-activity .gl-activity-feed {
+  border: 1px solid var(--activity-border);
+  border-radius: 16px;
+  background: var(--activity-bg);
+  padding: clamp(14px, 2.4vw, 26px);
+}
+.gl-activity .gl-activity-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 24px;
+  margin-bottom: 14px;
+  background: radial-gradient(ellipse at top right, #24203e, var(--activity-bg) 72%);
+}
+.gl-activity h1, .gl-activity h2, .gl-activity h3, .gl-activity p { margin: 0; }
+.gl-activity h1 { font-size: clamp(22px, 3.3vw, 34px); }
+.gl-activity h2 { font-size: 18px; }
+.gl-activity h3 { font-size: 15px; }
+.gl-activity p, .gl-activity small, .gl-activity time { color: var(--activity-muted); }
+.gl-activity [data-sync] { font-size: 12px; }
+.gl-activity .gl-activity-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+.gl-activity .gl-activity-nodes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: 10px;
+}
+.gl-activity .gl-activity-node {
+  position: relative;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--activity-border);
+  border-radius: 12px;
+  background: #101d2e;
+  overflow-wrap: anywhere;
+}
+.gl-activity .gl-activity-node-title { display: flex; align-items: center; gap: 8px; }
+.gl-activity .gl-activity-node p { font-size: 12px; margin-block-start: 5px; }
+.gl-activity .gl-activity-ring {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+  --lamp: #c09d64;
+  border: 1px solid color-mix(in srgb,var(--lamp) 65%,#263042);
+  background: radial-gradient(circle at 33% 26%,#eaf6ff 0%,var(--lamp) 19%,#192539 79%);
+  border-radius: 50%;
+}
+.gl-activity [data-tone="connected"] .gl-activity-ring { --lamp: #70efb0; }
+.gl-activity [data-tone="error"] .gl-activity-ring,
+.gl-activity [data-tone="disconnected"] .gl-activity-ring { --lamp: #ff939f; }
+.gl-activity .gl-activity-node.is-recent { border-color: var(--activity-accent); }
+.gl-activity .is-recent .gl-activity-ring {
+  box-shadow: 0 0 10px var(--lamp);
+}
+.gl-activity .gl-activity-node.is-recent::before {
+  content: '';
+  position: absolute;
+  inset: -13px calc(50% - 3px) auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--activity-accent);
+  box-shadow: 0 0 12px var(--activity-accent);
+  animation: gl-activity-arrival .65s ease-out both;
+}
+.gl-activity .gl-activity-feed ol {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  max-height: 520px;
+  overflow: auto;
+}
+.gl-activity .gl-activity-feed li { padding: 10px 3px; border-bottom: 1px solid var(--activity-border); }
+.gl-activity .gl-activity-feed small { display: inline-block; margin-inline-end: 10px; }
+.gl-activity .gl-activity-feed strong { display: block; }
+.gl-activity .gl-activity-empty { color: var(--activity-muted); }
+@keyframes gl-activity-arrival { from { transform: translateY(-12px); opacity: 0; } }
+@media (max-width: 900px) {
+  .gl-activity .gl-activity-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gl-activity .is-recent .gl-activity-ring,
+  .gl-activity .is-recent::before { animation: none; }
+}
+
+.gl-activity .gl-activity-map-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px 16px;
+}
+.gl-activity-map-head span { color: var(--activity-muted); font-size: 12px; }
+.gl-activity .gl-activity-orbit {
+  position: relative;
+  isolation: isolate;
+  min-height: 350px;
+  margin: 12px 0 16px;
+  overflow: hidden;
+  border: 1px solid #343151;
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse at 28% 38%,#38366466,transparent 44%),
+    radial-gradient(ellipse at 78% 67%,#24445a55,transparent 46%),
+    linear-gradient(164deg,#0a1123,#16182e 54%,#080f1c);
+}
+.gl-activity .gl-activity-orbit::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 29px 17px,#cde4ffb0 85%,transparent),
+    radial-gradient(1.3px 1.3px at 72px 49px,#dbc5ef90 60%,transparent),
+    radial-gradient(.8px .8px at 11px 42px,#acbceea8 75%,transparent);
+  background-size: 143px 103px,223px 163px,79px 81px;
+}
+.gl-activity .gl-activity-wires { position: absolute; inset: 0; pointer-events: none; }
+.gl-activity .gl-activity-wire {
+  --flight-time: 980ms;
+  position: absolute;
+  height: 3px;
+  margin-top: -1.5px;
+  transform-origin: left center;
+  border-radius: 3px;
+  background:
+    linear-gradient(0deg,#030d18 0%,transparent 46%,#e8f9ff61 88%,#030d18 100%),
+    linear-gradient(90deg,var(--wire-color),#75829e73 48%,#a39bcead 86%,#ddd3ff);
+  box-shadow: 0 1px 2px #050911,0 0 4px color-mix(in srgb,var(--wire-color) 18%,transparent);
+}
+.gl-wire-packet { position:absolute; inset:0; overflow:hidden; border-radius:inherit; }
+.gl-activity-wire.is-recent .gl-wire-packet::after {
+  content:'';
+  position:absolute;
+  left:0;
+  inset-block:0;
+  width:min(34px,70%);
+  border-radius:50%;
+  background:linear-gradient(90deg,transparent,var(--wire-color) 52%,#fff 96%);
+  transform:translateX(-100%);
+  animation:gl-orbit-message var(--flight-time) ease-in-out forwards;
+}
+/* The two ports share the packet's clock; each flashes once per delivery. */
+.gl-activity-wire.is-recent::before,.gl-activity-wire.is-recent::after {
+  content:'';
+  position:absolute;
+  left:0;
+  top:50%;
+  width:21px;
+  height:21px;
+  opacity:0;
+  pointer-events:none;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:radial-gradient(circle,#fff 0 5%,var(--wire-color) 12%,color-mix(in srgb,var(--wire-color) 34%,transparent) 32%,transparent 72%);
+  animation:gl-port-flash 400ms ease-out both;
+}
+.gl-activity-wire.is-recent::after {
+  left:100%;
+  animation-delay:var(--flight-time);
+}
+.gl-activity .gl-activity-hub,
+.gl-activity .gl-orbit-node {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  color: #f5f1ff;
+  text-align: center;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.gl-activity .gl-activity-hub {
+  top: 50%;
+  left: 50%;
+  width: 114px;
+  aspect-ratio: 1;
+  border: 1px solid #c9b6f4a8;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 32% 15%,#f4f9ffb3,transparent 14%),
+    radial-gradient(ellipse at 7% 39%,#7ae4e9a1,transparent 30%),
+    radial-gradient(ellipse at 82% 89%,#d89bfa5e,transparent 22%),
+    radial-gradient(circle at 36% 27%,#7566ad 2%,#443c7b 36%,#201c42 62%,#0d162c 80%,#514a75 97%);
+  box-shadow: inset 2px 3px 5px #e2cdff72,inset -4px -6px 12px #12152e,0 15px 18px -6px #030610,0 0 30px #b38bea24;
+  text-shadow: 0 1px 4px #100c20;
+  font-size: 13px;
+}
+.gl-activity .gl-activity-hub .gl-activity-hub-mark { color: #e3d2ff; font-size: 27px; }
+/* A tilted glass equator passes behind the upright label. */
+.gl-activity .gl-activity-hub::before {
+  content:'';
+  position:absolute;
+  inset:25% -9%;
+  transform:rotate(-24deg);
+  border-radius:50%;
+  border:1px solid transparent;
+  border-top-color:#ccefff50;
+  border-bottom:3px solid #bea5eac9;
+  box-shadow:0 2px 3px #0c153358,0 4px 5px -3px #c1a5ff;
+  pointer-events:none;
+}
+.gl-activity-hub > span { position:relative; }
+.gl-activity .gl-orbit-node {
+  --node-color: #83b4ff;
+  top: var(--node-y);
+  left: var(--node-x);
+  width: 78px;
+  aspect-ratio: 1;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb,var(--node-color) 45%,#182331);
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 29% 19%,#ebf6ff57,transparent 24%),
+    radial-gradient(circle at 34% 28%,color-mix(in srgb,var(--node-color) 40%,#20283b),#1d263a 51%,#0a1222 80%,#30354c);
+  box-shadow: inset 1px 2px 3px #dde5ff42, inset -3px -4px 7px #071122a8,0 9px 12px -4px #030713c9;
+  transform: translate(-50%,-50%) scale(var(--depth-scale,1));
+  font-size: 12px;
+  text-shadow: 0 1px 3px #071020;
+}
+/* A horizontal glass sleeve keeps each caption legible as its globe moves. */
+.gl-orbit-node > span:last-child,.gl-activity-hub > span:last-child {
+  position:relative;
+  display:inline-block;
+  min-width:70%;
+  padding:2px 7px 3px;
+  --sleeve-tint:var(--node-color,#c9b6fc);
+  border:1px solid color-mix(in srgb,var(--sleeve-tint) 48%,#273649);
+  border-radius:10% / 50%;
+  background:
+    linear-gradient(90deg,#151e30 1%,transparent 9% 91%,#142131 99%),
+    linear-gradient(#c5d7eb85 0%,color-mix(in srgb,var(--sleeve-tint) 35%,#172434) 12%,#19253a 37%,#112032 70%,#3e5369 88%,#a3b6c6 96%,#263344);
+  box-shadow:inset 2px 0 0 #d4f2ff82,inset -2px 0 0 #bacee271,0 3px 5px #070e1dbf;
+  white-space:nowrap;
+  line-height:1.2;
+}
+.gl-activity .gl-orbit-node[data-active="true"] {
+  border-color: color-mix(in srgb,var(--node-color) 82%,#263349);
+}
+.gl-activity .is-recent .gl-activity-metric b { display: inline-block; animation: gl-activity-count .55s ease-out; }
+.gl-activity .gl-orbit-node[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--node-color), 0 0 20px #b586ff40; }
+.gl-activity .gl-orbit-node:focus-visible,
+.gl-activity .gl-activity-hub:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+.gl-activity .gl-orbit-mark { color: var(--node-color); font-size: 19px; line-height: 1; }
+.gl-activity .gl-orbit-latin { font-weight: bold; }
+.gl-activity .gl-orbit-instagram { --node-x: 50%; --node-y: 14%; --node-color: #fc91cc; }
+.gl-activity .gl-orbit-whatsapp { --node-x: 81%; --node-y: 34%; --node-color: #78e8b2; }
+.gl-activity .gl-orbit-telegram { --node-x: 77%; --node-y: 79%; --node-color: #82c6ff; }
+.gl-activity .gl-orbit-bale { --node-x: 23%; --node-y: 79%; --node-color: #ffc882; }
+.gl-activity .gl-orbit-linkedin { --node-x: 19%; --node-y: 34%; --node-color: #a0abff; }
+.gl-activity .gl-activity-sync {
+  border: 1px solid #40536a;
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: #121f31;
+}
+@keyframes gl-activity-count { from { transform: translateY(6px); opacity: .45; } }
+@keyframes gl-orbit-message {
+  0% { left:0; opacity:0; }
+  8% { opacity:1; }
+  94% { opacity:1; }
+  100% { left:100%; opacity:0; }
+}
+@keyframes gl-port-flash {
+  0% { opacity:0; transform:translate(-50%,-50%) scale(.55); }
+  25% { opacity:1; transform:translate(-50%,-50%) scale(1); }
+  100% { opacity:0; transform:translate(-50%,-50%) scale(1.25); }
+}
+@media (max-width: 500px) {
+  .gl-activity .gl-activity-orbit { min-height: 300px; }
+  .gl-activity .gl-activity-hub { width: 87px; font-size: 11px; }
+  .gl-activity .gl-orbit-node { width: 63px; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gl-activity .gl-activity-wire.is-recent::before,
+  .gl-activity .gl-activity-wire.is-recent::after,
+  .gl-activity .gl-activity-wire.is-recent .gl-wire-packet::after,
+  .gl-activity .is-recent .gl-activity-metric b { animation: none; }
+}
+
+.gl-activity .gl-activity-wires { direction: ltr; }
+.gl-activity .gl-activity-header { border-inline-start: 3px solid var(--activity-accent); }
+.gl-activity .gl-activity-sync::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-inline-end: 7px;
+  border-radius: 50%;
+  background: #9da9b9;
+}
+.gl-activity .gl-activity-sync[data-state="live"]::before { background: #73e6b6; box-shadow: 0 0 8px #73e6b65c; }
+.gl-activity .gl-activity-sync[data-state="stale"]::before { background: #ffc882; }
+.gl-activity .gl-orbit-mark, .gl-activity .gl-activity-hub-mark {
+  display: grid;
+  place-items: center;
+  height: 28px;
+}
+.gl-activity .gl-orbit-latin { font: bold 20px/1 Arial, sans-serif; }
+.gl-activity .gl-channel-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-block: 16px 10px;
+}
+.gl-channel-heading span { color: var(--activity-muted); font-size: 12px; }
+.gl-activity .gl-activity-metric b { font-size: 19px; color: #fbf7ff; }
+.gl-activity .gl-activity-feed li[data-family] {
+  padding-inline-start: 22px;
+  position: relative;
+}
+.gl-activity .gl-activity-feed li[data-family]::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 4px;
+  top: 18px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--event-color, #b8ace5);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--event-color, #b8ace5) 45%, transparent);
+}
+.gl-activity .gl-activity-feed [data-family="instagram"] { --event-color: #fc91cc; }
+.gl-activity .gl-activity-feed [data-family="whatsapp"] { --event-color: #78e8b2; }
+.gl-activity .gl-activity-feed [data-family="telegram"] { --event-color: #82c6ff; }
+.gl-activity .gl-activity-feed [data-family="bale"] { --event-color: #ffc882; }
+
+.gl-bot-setup {padding:16px 20px;background:#0d192a;border:1px solid #34415b;border-radius:16px;margin-bottom:12px}
+.gl-bot-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;margin-top:10px}
+.gl-bot-grid details {padding:10px 14px;border-radius:10px;background:#172438;color:#edf3ff}
+.gl-bot-grid summary {cursor:pointer;font-weight:bold}
+.gl-bot-grid form {display:grid;gap:9px;margin:12px 0}
+.gl-bot-grid input,.gl-bot-grid button {font:inherit;padding:8px;border-radius:8px;border:1px solid #56708a;color:#f3f7ff;background:#101c2e}
+.gl-bot-grid a {color:#a6dcff}
+
+.gl-activity .gl-bookings {
+  margin-block-start: 14px;
+  padding: clamp(14px,2.4vw,26px);
+  border: 1px solid var(--activity-border);
+  border-radius: 16px;
+  background: radial-gradient(ellipse at top right,#192135,transparent 65%),var(--activity-bg);
+}
+.gl-booking-periods { min-inline-size:0; border:0; padding:0; margin:12px 0 0; }
+.gl-booking-periods legend,.gl-booking-scale { color:var(--activity-muted); font-size:12px; margin-bottom:6px; }
+.gl-booking-periods > input { position:absolute; opacity:0; width:1px; height:1px; }
+.gl-booking-periods > label {
+  display:inline-block; border:1px solid #36455c; color:#d4e1ee; background:#142030;
+  border-radius:9px; padding:8px 14px; cursor:pointer; font-size:13px;
+}
+.gl-booking-periods > input:checked + label { background:#2e2448; color:#eadcff; border-color:#a482cd; }
+.gl-booking-periods > input:focus-visible + label,.gl-booking-card summary:focus-visible { outline:2px solid #c4a0fb; outline-offset:3px; }
+.gl-booking-grid { display:none; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:start; gap:12px; margin-top:12px; }
+#gl-booking-month:checked ~ [data-period="month"],#gl-booking-all:checked ~ [data-period="all"] { display:grid; }
+.gl-booking-scale { grid-column:1/-1; }
+.gl-booking-card {
+  min-width:0; overflow:hidden; border:1px solid #33465d; border-radius:15px;
+  background:radial-gradient(ellipse at 70% 45%,#1f394133,transparent 55%),linear-gradient(155deg,#192639,#0e1726);
+}
+.gl-booking-card summary { list-style:none; cursor:pointer; padding:clamp(9px,1.4vw,19px); }
+.gl-booking-card summary::-webkit-details-marker { display:none; }
+.gl-booking-name,.gl-booking-device { display:flex; align-items:center; justify-content:space-between; gap:4px; }
+.gl-booking-name { font-size:clamp(15px,1.55vw,21px); }
+.gl-booking-chevron { color:#acbdd4; transition:transform .2s; }
+.gl-booking-card[open] .gl-booking-chevron { transform:rotate(180deg); }
+.gl-booking-pair { display:grid; grid-template-columns:1fr 1fr; gap:4px; margin:18px 0 13px; }
+.gl-booking-gauge { --deep:#174283; --body:#258def; --surface:#7eddff; display:grid; justify-items:center; color:#cad9e9; font-size:12px; }
+.gl-booking-completed { --deep:#08684e; --body:#27bd88; --surface:#9af6c5; }
+.gl-booking-gauge bdi { color:var(--surface); font:600 22px/1.3 system-ui,sans-serif; font-variant-numeric:tabular-nums; margin-top:6px; }
+.gl-booking-tube {
+  position:relative; display:block; width:min(78%,65px); height:116px; border-radius:50% / 8%;
+  border:1px solid #b3d7e58c; overflow:hidden;
+  background:linear-gradient(90deg,#09131f,#d8f2ff2f 12%,#202d4030 36%,#293c4a20 65%,#cbe8ff35 92%,#182538);
+  box-shadow:inset 2px 0 3px #e3f8ff24,inset -2px -2px 4px #020c16,0 8px 10px -6px #000;
+}
+.gl-booking-tube::before,.gl-booking-tube::after { content:''; position:absolute; pointer-events:none; z-index:1; }
+.gl-booking-tube::before { inset:0 0 auto; height:10px; border:1px solid #cce8fb9c; border-radius:50%; background:#b6d9f21c; }
+.gl-booking-tube::after { inset:8px 5px 6px; border-radius:35% / 8%; background:linear-gradient(90deg,transparent 2%,#fff4 9%,transparent 14%,transparent 85%,#fff2 90%,transparent); }
+.gl-booking-well { position:absolute; inset:7px 2px 4px; overflow:hidden; border-radius:0 0 50% 50% / 0 0 8% 8%; }
+.gl-booking-liquid { position:absolute; inset:auto 0 0; overflow:hidden; border-radius:50% 50% 0 0 / 5px 5px 0 0;
+  background:linear-gradient(90deg,var(--deep),var(--body) 30%,var(--body) 60%,var(--deep)); }
+.gl-booking-liquid::before { content:''; position:absolute; inset:0 0 auto; height:min(9px,100%); border-radius:50%; background:var(--surface); box-shadow:0 2px 5px var(--body); }
+.gl-booking-liquid i { position:absolute; left:27%; bottom:0; border:1px solid #c7f5ffb0; width:4px; height:4px; border-radius:50%; opacity:0; animation:gl-booking-rise 5.5s ease-in infinite; }
+.gl-booking-liquid i:nth-child(2) { left:61%; width:3px; height:3px; animation-delay:.42s; }
+.gl-booking-liquid i:nth-child(3) { left:45%; animation-delay:.7s; }
+.gl-booking-completed i { animation-duration:6.3s; }
+.gl-booking-card:nth-of-type(2) i { animation-direction:normal; animation-duration:7.2s; }
+.gl-booking-card:nth-of-type(3) i { animation-duration:6.8s; }
+@keyframes gl-booking-rise { 0%,42% { bottom:0; opacity:0; } 49% { opacity:.9; } 80% { opacity:.75; } 90%,100% { bottom:96%; opacity:0; } }
+.gl-booking-device { border-top:1px solid #324256; padding-top:9px; color:#bacadd; font-size:12px; }
+.gl-booking-device b { color:#eff7ff; }
+.gl-booking-detail { padding:12px; border-top:1px solid #324256; background:#0d1929; font-size:13px; line-height:1.8; }
+.gl-booking-detail p { margin-top:5px; }
+@media(max-width:620px) {
+  .gl-booking-grid { grid-template-columns:repeat(3,minmax(162px,1fr)); overflow-x:auto; padding:2px 2px 8px; scroll-snap-type:x proximity; }
+  .gl-booking-card { scroll-snap-align:start; }
+  .gl-booking-scale { position:sticky; right:0; justify-self:start; }
+}
+@media(prefers-reduced-motion:reduce) { .gl-booking-liquid i { animation:none; } }
+
+.gl-activity { max-width:1820px; }
+.gl-cycle-board { container:gl-cycle / inline-size; min-width:0; }
+.gl-cycle-board [id] { scroll-margin-block-start:1rem; }
+.gl-cycle-toolbar,.gl-cycle-jumps { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.gl-cycle-toolbar { justify-content:space-between; margin:0 0 14px; }
+.gl-cycle-toolbar a,.gl-cycle-toolbar button {
+  display:inline-flex; align-items:center; min-height:38px; padding:5px 12px;
+  border:1px solid #344860; border-radius:9px; background:#131f30; color:#d2e1ef;
+  font:inherit; font-size:13px; text-decoration:none;
+}
+.gl-cycle-toolbar button { color:#efe7ff; background:#2c2543; border-color:#75638d; cursor:pointer; }
+.gl-cycle-toolbar a:hover,.gl-cycle-toolbar a:focus-visible { color:#fff; border-color:#9b89c2; }
+.gl-cycle-overview { display:grid; grid-template-columns:minmax(0,1.12fr) minmax(0,1fr); align-items:stretch; gap:16px; }
+.gl-cycle-overview #gl-flow { min-width:0; margin:0; }
+.gl-cycle-overview .gl-activity-map { display:flex; flex-direction:column; min-width:0; }
+.gl-cycle-overview .gl-activity-orbit { flex:1; margin-bottom:0; }
+.gl-cycle-board .gl-targets { position:relative; margin-block:24px 16px; }
+.gl-cycle-board .gl-targets::before {
+  content:''; position:absolute; pointer-events:none; bottom:100%; left:23%; right:23%; height:24px;
+  background:linear-gradient(#8ed6d2,#438581) left / 2px 100% no-repeat,
+             linear-gradient(#9a84ba,#594e73) right / 2px 100% no-repeat;
+}
+.gl-activity .gl-account-panel {
+  min-width:0; padding:clamp(14px,2vw,24px); background:var(--activity-bg); border:1px solid var(--activity-border); border-radius:16px;
+}
+.gl-account-panel .gl-channel-heading { margin:0 0 10px; }
+.gl-activity .gl-cycle-dialog {
+  box-sizing:border-box; width:min(98vw,1920px); max-width:98vw; max-height:96dvh;
+  border:1px solid #4a536c; border-radius:16px; padding:clamp(10px,1.4vw,24px);
+  color:#eff3ff; background:#0a1321; overscroll-behavior:contain;
+}
+.gl-cycle-dialog::backdrop { background:#040912dd; }
+@container gl-cycle (max-width:740px) {
+  .gl-cycle-overview { grid-template-columns:1fr; }
+  .gl-cycle-board .gl-targets::before { left:50%; right:auto; width:2px; }
+  .gl-cycle-jumps { gap:5px; }
+  .gl-cycle-toolbar a { font-size:12px; }
+}
+@media (pointer:coarse) { .gl-cycle-toolbar a,.gl-cycle-toolbar button { min-height:44px; } }

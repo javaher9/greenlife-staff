@@ -1,0 +1,91 @@
+#gl-flow {box-sizing:border-box;background:#0b1424;border:1px solid #34415b;border-radius:19px;color:#eff5ff;overflow:hidden;margin:0 0 16px;font-family:inherit}
+#gl-flow .flow-heading,#gl-flow .flow-detail,#gl-flow .flow-links {padding:14px clamp(12px,2.2vw,25px);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px}
+#gl-flow .flow-heading h2 {color:#f2f6ff;margin:0;font-size:clamp(18px,2.5vw,25px)}
+#gl-flow p {margin:3px 0 0;color:#bdcbe0;font-size:13px}
+#gl-flow .flow-controls,#gl-flow .flow-links {display:flex;gap:10px;align-items:center}
+#gl-flow .flow-controls span {color:#a9dfd6;font-size:12px}
+#gl-flow button,#gl-flow .flow-links a {font:inherit;font-size:13px;border-radius:9px;background:#18253c;border:1px solid #405674;color:#e9eeff;padding:7px 11px;cursor:pointer;text-decoration:none}
+#gl-flow [data-flow-map] {direction:ltr;width:100%;background:#0a1120}
+#gl-flow svg {width:100%;height:auto;display:block}
+#gl-flow svg [role=button] {cursor:pointer}
+#gl-flow svg [role=button]:focus-visible .flow-plate {stroke:white;stroke-width:3px}
+#gl-flow [data-station-count] {paint-order:stroke fill;stroke:#0b1925;stroke-width:2.8px;stroke-linejoin:round}
+#gl-flow .flow-detail {background:#141f32;border-top:1px solid #32405a;min-height:64px}
+#gl-flow [data-flow-count] {color:#8debd2;font-variant-numeric:tabular-nums}
+#gl-flow .flow-links {justify-content:flex-start;padding-block:9px}
+@media(prefers-reduced-motion:reduce){#gl-flow * {scroll-behavior:auto}}
+
+#gl-flow .flow-breakdown {display:flex;flex-wrap:wrap;gap:6px 16px;padding:7px 20px;background:#141f32;color:#c7d5e9;font-size:12px}
+#gl-flow .flow-breakdown:empty {display:none}
+
+#gl-flow .flow-views {display:flex;flex-wrap:wrap;gap:6px;padding:0 clamp(12px,2.2vw,25px) 13px}
+#gl-flow .flow-views [aria-pressed="true"] {background:#342c50;border-color:#a38ac5}
+#gl-flow .flow-map-tools {display:flex;align-items:center;gap:6px;padding:0 14px 10px}
+#gl-flow .flow-map-tools button {min-height:40px;min-width:40px}
+#gl-flow .flow-map-tools button:disabled {opacity:.48}
+#gl-flow .flow-viewport {direction:ltr;overflow:auto;max-height:70vh}
+#gl-flow .flow-viewport.flow-zoomed {overscroll-behavior:contain}
+#gl-flow .flow-scene-stack {width:var(--atlas-width,100%)}
+#gl-flow .flow-viewport:not(.flow-zoomed) {max-height:none;overflow:visible}
+#gl-flow .flow-zoomed .journey-stage svg {max-width:none}
+#gl-map-dialog {width:min(98vw,1660px);max-width:98vw;max-height:96dvh;padding:0;border:1px solid #516789;border-radius:16px;background:#0b1424;color:#edf5ff}
+#gl-map-dialog::backdrop {background:#050a15de}
+#gl-map-dialog #gl-flow {margin:0;border:none}
+@media (max-width:620px) {
+  #gl-flow .flow-viewport:not(.flow-zoomed) {max-height:none;overflow:visible}
+  #gl-map-dialog #gl-flow .flow-viewport {max-height:70dvh;overflow:auto}
+}
+
+#gl-flow .flow-legend {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:5px 18px;
+  margin:0;
+  padding:6px clamp(12px,2.2vw,25px) 10px;
+  list-style:none;
+  color:#cbd6e6;
+  font-size:12px;
+  line-height:1.5;
+}
+#gl-flow .flow-legend li { display:inline-flex; align-items:center; gap:6px; }
+#gl-flow .flow-legend svg {
+  width:25px; height:34px; flex:none;
+  fill:currentColor; fill-opacity:.13; stroke:currentColor; stroke-width:1.25; stroke-linejoin:round;
+}
+#gl-flow .flow-legend .flow-legend-liquid { fill-opacity:.45; stroke-opacity:.7; stroke-width:.8; }
+#gl-flow .flow-legend .flow-legend-facet { fill:none; stroke-width:.85; stroke-opacity:.72; }
+#gl-flow .flow-legend .flow-legend-shine { fill:none; stroke:#e4faff; stroke-opacity:.84; stroke-linecap:round; }
+#gl-flow .flow-legend .flow-legend-bubble { fill:#d6f6ff; fill-opacity:.8; stroke:none; }
+#gl-flow [data-legend-group="member"] svg { color:#74e2c4; }
+#gl-flow [data-legend-group="intake"] svg { color:#bf9aef; }
+#gl-flow [data-legend-group="service"] svg { color:#f5c378; }
+#gl-flow [data-legend-group="followup"] svg { color:#8ec9fa; }
+#gl-flow[data-flow-view="members"] .flow-legend :is([data-legend-group="intake"],[data-legend-group="followup"]),
+#gl-flow[data-flow-view="leads"] .flow-legend li:not([data-legend-group="followup"]) { display:none; }
+@media (max-width:540px) {
+  #gl-flow .flow-legend { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px 8px; }
+}
+
+#gl-flow .gl-journey {margin:2px clamp(8px,1.5vw,18px) 15px;overflow:hidden;border:1px solid #3f405d;border-radius:15px;background:radial-gradient(ellipse at 53% 51%,#211e37 0%,#121a29 65%,#101826 100%)}
+#gl-flow .gl-journey[hidden],#gl-flow .journey-picker[hidden]{display:none}
+#gl-flow .journey-heading {display:flex;align-items:center;justify-content:space-between;gap:7px;padding:13px 15px 0}
+#gl-flow .journey-heading h3 {margin:0;color:#f1e9ff;font-size:19px}
+#gl-flow .journey-heading p {color:#c9bad9;font-size:12px}
+#gl-flow .journey-heading button{flex:none;background:#302940;border-color:#5e536e}
+#gl-flow .journey-heading button:disabled{opacity:.52}
+#gl-flow .journey-stage svg {direction:ltr;width:100%;max-width:490px;margin:6px auto 0;overflow:visible}
+#gl-flow .journey-stage text{font:600 12px Tahoma,Arial,sans-serif;fill:#e9e2f4;paint-order:stroke;stroke:#171d2c;stroke-width:2px;stroke-linejoin:round}
+#gl-flow .journey-stage .node-label{font-size:13px}
+#gl-flow .journey-tube {fill:none;stroke-linecap:round}
+#gl-flow .journey-tube .outer{stroke:#353446;stroke-width:3.8}
+#gl-flow .journey-tube .inner{stroke:#626078;stroke-width:1}
+#gl-flow .journey-tube.is-lit .outer{stroke:#4e425f;stroke-width:5.5}
+#gl-flow .journey-tube.is-lit .inner{stroke:#bc9ada;stroke-width:1.5}
+#gl-flow .journey-source ellipse:first-child{fill:#1b2538;stroke:#65647d}
+#gl-flow .journey-source ellipse+ellipse{fill:#77738a}
+#gl-flow .journey-source.active ellipse:first-child{stroke:#cdb7ea;fill:#463854}
+#gl-flow .journey-source.active ellipse+ellipse{fill:#f2d8ff}
+#gl-flow .journey-picker{display:flex;align-items:center;gap:10px;padding:9px 14px;color:#ccbedb;background:#181e2d;border-top:1px solid #39364c;font-size:12px}
+#gl-flow .journey-picker select{min-width:0;max-width:100%;flex:1;padding:7px 8px;border:1px solid #4b4c63;border-radius:8px;color:#ede7f3;background:#212637;font:inherit}
+#gl-flow[data-flow-view="overview"] .flow-legend{display:none}

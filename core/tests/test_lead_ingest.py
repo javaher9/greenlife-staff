@@ -110,3 +110,10 @@ class LeadIngestTests(TestCase):
             user = User(username=f'{username}-{index}', first_name=first_name, last_name=last_name)
             operator = EmployeeProfile(user=user, role='call_center')
             self.assertEqual(_operator_weight(operator), expected)
+
+    def test_authenticated_messenger_sources_keep_their_identity(self):
+        for index, channel in enumerate(('telegram', 'bale')):
+            response = self._post({'source': channel, 'phone': f'0912022200{index}', 'name': 'نمونه'})
+            self.assertEqual(response.status_code, 201)
+            lead = ReferralLead.objects.get(phone=f'0912022200{index}')
+            self.assertEqual(lead.referrer.user.username, f'lead-source-{channel}')

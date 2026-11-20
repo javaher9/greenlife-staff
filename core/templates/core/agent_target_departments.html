@@ -1,0 +1,47 @@
+{% load static l10n %}
+<link rel="stylesheet" href="{% static 'core/agent-targets.css' %}">
+<section id="gl-targets" class="gl-targets" aria-labelledby="gl-targets-title">
+  <header class="gl-target-heading">
+    <div>
+      <h2 id="gl-targets-title">تحقق تارگت‌های فروش</h2>
+      <p>فروش ماهانه به میلیون تومان</p>
+    </div>
+    {% if target_period %}<span>ماه <bdi>{{ target_period }}</bdi></span>{% endif %}
+  </header>
+  <div class="gl-target-departments">
+    {% for department in target_departments %}
+    <section id="gl-target-{{ department.key }}" class="gl-target-department" data-target-department="{{ department.key }}" aria-labelledby="gl-target-title-{{ department.key }}">
+      <h3 id="gl-target-title-{{ department.key }}">{{ department.title }}</h3>
+      <div class="gl-target-vessels" tabindex="0" role="group" aria-labelledby="gl-target-title-{{ department.key }}">
+        {% for vessel in department.vessels %}
+        <article class="gl-target-card" data-target-key="{{ vessel.key }}" data-target-reading="{{ vessel.reading }}"{% if vessel.presence %} data-presence="{{ vessel.presence }}"{% endif %}>
+          <h4>{{ vessel.name }}</h4>
+          {% if vessel.profile_pk %}<details><summary>{{ vessel.presence_label }}</summary><p>{{ vessel.branch_name }}</p><a href="{% url 'employee_file' vessel.profile_pk %}">پروندهٔ عضو تیم</a></details>{% elif department.key == "centers" %}<details><summary>جزئیات مرکز</summary><a href="{% url 'sales_targets_dashboard' %}">گزارش فروش مراکز</a></details>{% endif %}
+          <div class="gl-target-vessel" aria-hidden="true">
+            <div class="gl-target-chamber">
+              {% if vessel.level != None %}
+              <div class="gl-target-fluid" style="height:{{ vessel.level|floatformat:'5u' }}%">
+                <span class="gl-target-surface"></span><i></i><i></i><i></i>
+              </div>
+              {% endif %}
+              {% if vessel.t1_level != None %}<span class="gl-target-ring gl-target-one" style="bottom:{{ vessel.t1_level|floatformat:'5u' }}%"></span>{% endif %}
+              {% if vessel.t2_level != None %}<span class="gl-target-ring gl-target-two" style="bottom:{{ vessel.t2_level|floatformat:'5u' }}%"></span>{% endif %}
+            </div>
+          </div>
+          <dl class="gl-target-readouts">
+            <div class="gl-target-sales"><dt>فروش</dt><dd dir="ltr">{{ vessel.actual_display|default_if_none:'—' }}</dd></div>
+            <div class="gl-target-one"><dt>تارگت 1</dt><dd dir="ltr">{% if vessel.t1_percent != None %}{{ vessel.t1_percent|floatformat:'-1u' }}%{% else %}—{% endif %}</dd></div>
+            <div class="gl-target-two"><dt>تارگت 2</dt><dd dir="ltr">{% if vessel.t2_percent != None %}{{ vessel.t2_percent|floatformat:'-1u' }}%{% else %}—{% endif %}</dd></div>
+          </dl>
+          {% if vessel.availability %}<p class="gl-target-status">{{ vessel.availability }}</p>{% endif %}
+        </article>
+        {% empty %}
+        <p class="gl-target-status">اطلاعات فروش این بخش در دسترس نیست.</p>
+        {% endfor %}
+      </div>
+    </section>
+    {% empty %}
+    <p class="gl-target-status">اطلاعات تارگت‌ها در دسترس نیست.</p>
+    {% endfor %}
+  </div>
+</section>

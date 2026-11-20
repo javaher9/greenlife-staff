@@ -1,0 +1,22 @@
+<section class="gl-bot-setup" aria-labelledby="bot-setup-title">
+  <h2 id="bot-setup-title">اتصال پیام‌رسان‌ها</h2>
+  <div class="gl-bot-grid">
+    {% for bot in bots %}
+    <details id="bot-{{ bot.id }}">
+      <summary>{{ bot.name }} {% if bot.setup.username %}<bdi>@{{ bot.setup.username }}</bdi>{% endif %}</summary>
+      <form method="post" action="{% url 'agent_channel_connect' bot.id %}">
+        {% csrf_token %}
+        {% if bot.setup.verified_at %}<p>آخرین تأیید مسیر دریافت {{ bot.setup.verified_at|date:"Y-m-d H:i" }}</p>{% endif %}
+        {% if bot.managed %}<p>توکن در تنظیمات سرور ثبت شده است.</p>
+        {% else %}<label for="token-{{ bot.id }}">توکن ربات {{ bot.name }}</label>
+        <input id="token-{{ bot.id }}" name="token" type="password" dir="ltr" autocomplete="off" spellcheck="false" maxlength="220" {% if not bot.setup %}required{% endif %}>
+        {% endif %}
+        <button type="submit">بررسی و اتصال {{ bot.name }}</button>
+      </form>
+      {% if bot.setup.username %}
+      <a rel="noopener noreferrer" target="_blank" href="{% if bot.id == 'telegram' %}https://t.me/{% else %}https://ble.ir/{% endif %}{{ bot.setup.username }}">باز کردن ربات برای پیام آزمایشی</a>
+      {% endif %}
+    </details>
+    {% endfor %}
+  </div>
+</section>

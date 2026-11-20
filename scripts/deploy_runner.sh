@@ -473,6 +473,14 @@ for i in {1..6}; do
   sleep 2
 done
 
+# Fixed-domain availability monitoring, isolated from SMS and CRM routing.
+if "${COMPOSE[@]}" config --services | grep -qx executive_monitor; then
+  "${COMPOSE[@]}" up -d --no-deps --no-build --force-recreate executive_monitor
+else
+  docker rm -f greenlife-executive-monitor >/dev/null 2>&1 || true
+  docker run -d --name greenlife-executive-monitor --restart unless-stopped --network "$NETWORK" --env-file "$ENV_FILE" --entrypoint python greenlife-staff-runtime-web:latest manage.py monitor_executive_sites --loop >/dev/null
+fi
+
 # CRM marketing monitor remains disabled during this safety hotfix.
 # Existing independent lead-routing and SMS workers run as before.
 if "${COMPOSE[@]}" config --services | grep -qx sms_worker; then

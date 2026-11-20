@@ -1,0 +1,130 @@
+{% extends 'core/base.html' %}
+{% load static l10n %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'core/agent-activity.css' %}">
+<section class="gl-activity" dir="rtl" data-activity-url="{% url 'agent_activity_snapshot' %}">
+  <header class="gl-activity-header">
+    <div>
+      <h1>اتاق فرمان کانال‌ها</h1>
+      <p>گردش پیام‌ها، نوبت‌دهی و تحقق تارگت‌های فروش گرین‌لایف</p>
+    </div>
+    <p class="gl-activity-sync" data-sync role="status">آخرین ثبت سرور</p>
+  </header>
+
+  {% include 'core/agent_bot_connections.html' %}
+  <div id="gl-cycle-board" class="gl-cycle-board">
+    <nav class="gl-cycle-toolbar" aria-label="بخش‌های چرخه">
+      <div class="gl-cycle-jumps">
+        <a href="#gl-flow-title">اطلس و کانال‌ها</a>
+        <a href="#gl-media-title">تابلوهای سایت‌ها و پیج‌ها</a>
+        <a href="#gl-network-summary">شبکهٔ فروش</a>
+        <a href="#gl-target-call_center">گل‌های کال‌سنتر</a>
+        <a href="#gl-target-centers">فروش مراکز</a>
+        <a href="#gl-bookings-title">نوبت‌دهی مراکز</a>
+      </div>
+      <button type="button" data-expand-cycle aria-expanded="false" aria-controls="gl-cycle-dialog">نمای گستردهٔ چرخه</button>
+    </nav>
+    <div class="gl-cycle-overview">
+      {% include 'core/agent_flow.html' %}
+    <section class="gl-activity-map" aria-labelledby="gl-activity-map-title">
+      <div class="gl-activity-map-head">
+        <h2 id="gl-activity-map-title">نقشهٔ فعالیت</h2>
+        <span>برای فیلتر، یک کانال را انتخاب کنید</span>
+      </div>
+      <div class="gl-activity-orbit" data-orbit>
+        <div class="gl-activity-wires" aria-hidden="true"></div>
+        <button class="gl-activity-hub" data-family="" type="button" aria-pressed="true">
+          <span class="gl-activity-hub-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m12 2 8 5v10l-8 5-8-5V7z"/><path d="m4 7 8 5 8-5m-8 5v10"/><path d="m8 5 8 5"/></svg></span>
+          <span>صندوق پیام‌ها</span>
+        </button>
+        <button class="gl-orbit-node gl-orbit-instagram" data-family="instagram" type="button" aria-pressed="false">
+          <span class="gl-orbit-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="3.6"/><circle cx="17" cy="7" r=".8" fill="currentColor"/></svg></span><span>اینستاگرام</span>
+        </button>
+        <button class="gl-orbit-node gl-orbit-whatsapp" data-family="whatsapp" type="button" aria-pressed="false">
+          <span class="gl-orbit-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 20l1-4a8.2 8.2 0 1 1 3 3z"/><path d="M9 8c.4 3 3.2 6 6.5 6.8l1-1.7-2-1.1-1 1c-1.5-.7-2.3-1.5-3-3l.8-.8-1-2z"/></svg></span><span>واتساپ</span>
+        </button>
+        <button class="gl-orbit-node gl-orbit-telegram" data-family="telegram" type="button" aria-pressed="false">
+          <span class="gl-orbit-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m3 11 17-7-3 16-5-4-3 2v-5l8-6-10 5z"/></svg></span><span>تلگرام</span>
+        </button>
+        <button class="gl-orbit-node gl-orbit-bale" data-family="bale" type="button" aria-pressed="false">
+          <span class="gl-orbit-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M5 5h14v8a5 5 0 0 1-5 5h-3l-5 3v-4l-1-1z"/><path d="m8 11 3 3 5-6"/></svg></span><span>بله</span>
+        </button>
+        <button class="gl-orbit-node gl-orbit-linkedin" data-family="linkedin" type="button" aria-pressed="false">
+          <span class="gl-orbit-mark gl-orbit-latin" aria-hidden="true">in</span><span>لینکدین</span>
+        </button>
+      </div>
+    </section>
+  </div>
+  <link rel="stylesheet" href="{% static 'core/agent-neon.css' %}">
+  {% include 'core/agent_neon_board.html' with board=activity.board %}
+  {% include 'core/agent_target_departments.html' %}
+  <div class="gl-activity-grid">
+    <section class="gl-account-panel" aria-labelledby="gl-account-title">
+      <div class="gl-channel-heading"><h2 id="gl-account-title">وضعیت حساب‌ها</h2><span data-connected-count></span></div>
+      <div class="gl-activity-nodes" data-channels>
+        {% for channel in activity.channels %}
+          <article class="gl-activity-node" data-channel="{{ channel.id }}" data-tone="{{ channel.tone }}">
+            <div class="gl-activity-node-title"><span class="gl-activity-ring" aria-hidden="true"></span><h3>{{ channel.name }}</h3></div>
+            {% if channel.account %}<p>{{ channel.account }}</p>{% endif %}
+            <p class="gl-activity-state">{{ channel.state }}</p>
+            {% if channel.metric %}<p class="gl-activity-metric"><b>{{ channel.count|unlocalize }}</b> {{ channel.metric }}</p>{% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+    <section class="gl-activity-feed" aria-labelledby="gl-activity-events">
+      <h2 id="gl-activity-events">آخرین فعالیت‌ها</h2>
+      <ol data-events>
+        {% for event in activity.events %}
+          <li><strong>{{ event.label }}</strong><small>{{ event.name }}</small><time datetime="{{ event.time }}"></time></li>
+        {% empty %}
+          <li class="gl-activity-empty">فعالیت تازه‌ای ثبت نشده است.</li>
+        {% endfor %}
+      </ol>
+    </section>
+  </div>
+  <section class="gl-bookings" aria-labelledby="gl-bookings-title">
+    <h2 id="gl-bookings-title">نوبت‌دهی مراکز</h2>
+    <fieldset class="gl-booking-periods">
+      <legend>بازهٔ ثبت نوبت</legend>
+      <input type="radio" name="gl-booking-period" id="gl-booking-month" checked>
+      <label for="gl-booking-month">این ماه</label>
+      <input type="radio" name="gl-booking-period" id="gl-booking-all">
+      <label for="gl-booking-all">از ابتدا تا امروز</label>
+      {% for cards in appointment_periods %}
+      <div class="gl-booking-grid" data-period="{% if forloop.first %}month{% else %}all{% endif %}">
+        <p class="gl-booking-scale">{% if cards.0.scale %}مقیاس مشترک مخزن‌ها <bdi>0–{{ cards.0.scale|unlocalize }}</bdi> نوبت{% else %}نوبتی برای مقایسه ثبت نشده است{% endif %}</p>
+        {% for card in cards %}
+        <details class="gl-booking-card">
+          <summary>
+            <span class="gl-booking-name"><strong>{{ card.name }}</strong><span class="gl-booking-chevron" aria-hidden="true">⌄</span></span>
+            <span class="gl-booking-pair" dir="ltr">
+              {% include "core/agent_booking_tank.html" with label="ثبت‌شده" value=card.total level=card.total_level tone="registered" %}
+              {% include "core/agent_booking_tank.html" with label="انجام‌شده" value=card.done level=card.done_level tone="completed" %}
+            </span>
+            <span class="gl-booking-device">دستگاه فعال <b>{% if card.devices != None %}{{ card.devices|unlocalize }}{% else %}نامشخص{% endif %}</b></span>
+          </summary>
+          <div class="gl-booking-detail">
+            {% if card.available and card.total %}
+            از <bdi>{{ card.total|unlocalize }}</bdi> نوبت ثبت‌شده در این بازه، <bdi>{{ card.done|unlocalize }}</bdi> نوبت انجام شده است.
+            <p>درصد انجام <bdi>{{ card.rate|unlocalize }}%</bdi></p>
+            {% elif card.available %}در این بازه نوبتی ثبت نشده است.
+            {% else %}آمار نوبت‌های این مرکز در دسترس نیست.{% endif %}
+            <p>{% if card.devices == None %}فهرست تجهیزات این مرکز در دسترس نیست.{% else %}تعداد دستگاه‌های فعال از فهرست فعلی تجهیزات مرکز محاسبه شده است.{% endif %}</p>
+          </div>
+        </details>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </fieldset>
+  </section>
+  </div>
+  <dialog class="gl-cycle-dialog" id="gl-cycle-dialog" aria-label="نمای گستردهٔ چرخهٔ گرین‌لایف"></dialog>
+  {{ activity|json_script:"gl-activity-initial" }}
+</section>
+<script src="{% static 'core/agent-flow-vessels.js' %}" defer></script>
+<script src="{% static 'core/agent-flow-layout.js' %}" defer></script>
+<script src="{% static 'core/agent-lead-journey.js' %}" defer></script>
+<script src="{% static 'core/agent-flow.js' %}" defer></script>
+<script src="{% static 'core/agent-activity.js' %}" defer></script>
+{% endblock %}

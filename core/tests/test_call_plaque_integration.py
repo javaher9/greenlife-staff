@@ -1,8 +1,10 @@
 import json
+import re
 import uuid
 from datetime import timedelta
 
 from django.contrib.auth.models import User
+from django.templatetags.static import static
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -33,7 +35,8 @@ class CallPlaqueIntegrationTests(TestCase):
             self.assertContains(response, 'اطلاعات ناکافی')
             self.assertContains(response, 'data-cp-operator-only')
             self.assertContains(response, 'data-cp-prior-title')
-            self.assertContains(response, 'call-plaque.js?v=disc-1')
+            script_url = re.escape(static('core/call-plaque.js'))
+            self.assertRegex(response.content.decode(), rf'<script\b[^>]*\bsrc="{script_url}(?:\?[^"]*)?"')
 
     def test_scheduled_followup_opens_same_plaque(self):
         ReferralLead.objects.filter(pk=self.lead.pk).update(next_follow_up=timezone.localdate() + timedelta(days=2), contact_result='follow_up')
