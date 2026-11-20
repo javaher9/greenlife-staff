@@ -1,0 +1,63 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'core/command-room.css' %}">
+<section class="gl-command-room" dir="rtl" aria-labelledby="command-room-title">
+  <header class="gl-command-header">
+    <div>
+      <p class="gl-command-muted">مدیریت کال‌سنتر</p>
+      <h1 id="command-room-title">اتاق فرمان لید</h1>
+    </div>
+    <div class="gl-command-refresh">
+      <span>آخرین خواندن CRM <time dir="ltr" datetime="{{ refreshed|date:'c' }}">{{ refreshed|date:"H:i" }}</time></span>
+      <a class="btn" href="{% url 'management_command_room' %}">تازه‌سازی</a>
+    </div>
+  </header>
+  <section class="gl-command-flow" aria-label="مخزن لیدها و گل‌های کال‌سنتر">
+    <div class="gl-command-reservoir">
+      <div class="gl-command-caption">
+        <h2>صف لیدهای بدون مسئول</h2>
+        <p class="gl-command-muted">درصد پُری مخزن، سهم لیدهای بدون مسئول از کل لیدهای باز است.</p>
+      </div>
+      <a class="gl-command-tank-link" href="{{ unassigned_url }}" aria-label="مشاهدهٔ صف {{ unassigned }} لید بدون مسئول">
+        <svg class="gl-command-tank" viewBox="0 0 120 118" aria-hidden="true">
+          <defs>
+            <clipPath id="command-tank-inner"><path d="M17 24c0-15 86-15 86 0v69c0 15-86 15-86 0Z"/></clipPath>
+            <linearGradient id="command-tank-glass"><stop stop-color="#254b57" stop-opacity=".84"/><stop offset=".5" stop-color="#17394a" stop-opacity=".5"/><stop offset="1" stop-color="#254b57" stop-opacity=".84"/></linearGradient>
+            <linearGradient id="command-tank-liquid" x2="0" y2="1"><stop stop-color="#5bdcbd"/><stop offset="1" stop-color="#307e83"/></linearGradient>
+          </defs>
+          <path d="M60 4v10m0 88v12" stroke="#78989e" stroke-width="2" fill="none"/>
+          <path d="M17 24c0-15 86-15 86 0v69c0 15-86 15-86 0Z" fill="url(#command-tank-glass)" stroke="#9cb9c5"/>
+          <g clip-path="url(#command-tank-inner)"><svg x="0" y="18" width="120" height="85" overflow="visible" viewBox="0 0 120 85">
+            <rect x="17" y="0" width="86" height="{{ fill }}%" fill="url(#command-tank-liquid)" transform="translate(0 85) scale(1 -1)"/>
+          </svg></g>
+          <ellipse cx="60" cy="24" rx="43" ry="10" stroke="#b1d2d7" fill="none"/>
+          <path d="M94 39h-6m6 14h-6m6 14h-6m6 14h-6M25 30v59" stroke="#c5e2e380" fill="none" stroke-linecap="round"/>
+        </svg>
+        <strong dir="ltr">{{ unassigned }}</strong>
+        <span>مشاهدهٔ صف تخصیص</span>
+      </a>
+      <div class="gl-command-total"><strong dir="ltr">{{ total }}</strong><span>کل لیدهای باز</span></div>
+    </div>
+    <h2 class="gl-command-flower-title">گل‌های کال‌سنتر</h2>
+    {% include 'core/_command_flowers.svg.html' %}
+    <div class="gl-command-flowers">
+      {% for flower in flowers %}
+        <a class="gl-command-flower" data-attendance="{{ flower.tone }}" href="{{ flower.url }}">
+          <svg viewBox="-24 -24 48 48" aria-hidden="true"><use href="#command-flower-{{ flower.art }}"></use></svg>
+          <strong>{{ flower.name }}</strong>
+          <span class="gl-command-shift">{{ flower.status }}</span>
+          <small><b dir="ltr">{{ flower.count }}</b> لید باز تخصیص‌یافته</small>
+        </a>
+      {% empty %}
+        <p class="gl-command-muted">گل فعالی برای کال‌سنتر ثبت نشده است.</p>
+      {% endfor %}
+    </div>
+  </section>
+  <nav class="gl-command-links" aria-label="دسترسی سریع">
+    <a class="btn" href="{% url 'lead_management_dashboard' %}">مدیریت لیدها</a>
+    <a class="btn" href="{% url 'management_follow_up_agenda' %}?tab=overdue">پیگیری‌های عقب‌افتاده</a>
+    <a class="btn" href="{% url 'branch_live_dashboard' %}">نمای زندهٔ مراکز</a>
+  </nav>
+</section>
+{% endblock %}
