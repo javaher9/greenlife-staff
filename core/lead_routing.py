@@ -32,15 +32,15 @@ DAILY_LEAD_ROUTING_END = time(20, 0)
 # Attendance is not permission to receive overnight leads.
 DAILY_LEAD_ROUTING_START = time(8, 0)
 
-# Management's ONE-DAY exception (Friday 2026-11-13, Iran local time):
+# Management's ONE-DAY exceptions (November 13 and 20, Iran local time):
 # New leads from ALL channels stay safely unassigned in the existing queue.
-# Saturday morning (2026-11-14) normal queue release resumes automatically.
+# The following Saturday morning normal queue release resumes automatically.
 # Do not turn this into a recurring Friday rule or change prior ownership.
-ONE_TIME_LEAD_HOLD_DATE = date(2026, 11, 13)
+ONE_TIME_LEAD_HOLD_DATES = frozenset({date(2026, 11, 13), date(2026, 11, 20)})
 
 
 def _one_time_lead_hold(now=None):
-    return timezone.localtime(now or timezone.now()).date() == ONE_TIME_LEAD_HOLD_DATE
+    return timezone.localtime(now or timezone.now()).date() in ONE_TIME_LEAD_HOLD_DATES
 
 # Equal-weight rotation requested by management. Laleh is reinstated as
 # the fifth eligible operator, subject to normal attendance/leave checks. Absent operators

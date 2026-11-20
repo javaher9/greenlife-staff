@@ -1,4 +1,4 @@
-"""Regression tests for the non-recurring Nov 13 Friday lead hold."""
+"""Regression tests for the non-recurring Friday lead holds."""
 from datetime import datetime
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
@@ -6,7 +6,6 @@ from zoneinfo import ZoneInfo
 from django.test import SimpleTestCase, override_settings
 
 from .lead_routing import (
-    ONE_TIME_LEAD_HOLD_DATE,
     _live_assignment_allowed,
     _one_time_lead_hold,
 )
@@ -19,7 +18,6 @@ class OneDayLeadHoldTests(SimpleTestCase):
 
     def test_friday_all_live_assignment_paused(self):
         now = self.local(13, 15)
-        self.assertEqual(ONE_TIME_LEAD_HOLD_DATE.isoformat(), '2026-11-13')
         self.assertTrue(_one_time_lead_hold(now))
         self.assertFalse(_live_assignment_allowed(now))
 
@@ -31,6 +29,10 @@ class OneDayLeadHoldTests(SimpleTestCase):
         self.assertTrue(_live_assignment_allowed(self.local(14, 11)))
 
     def test_future_fridays_are_not_paused(self):
-        future_friday = self.local(20, 15)
+        future_friday = self.local(27, 15)
         self.assertFalse(_one_time_lead_hold(future_friday))
         self.assertTrue(_live_assignment_allowed(future_friday))
+
+    def test_november_20_pauses_and_november_21_resumes(self):
+        self.assertFalse(_live_assignment_allowed(self.local(20, 15)))
+        self.assertTrue(_live_assignment_allowed(self.local(21, 11)))
