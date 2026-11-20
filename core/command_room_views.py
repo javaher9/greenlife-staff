@@ -44,13 +44,18 @@ def reservoir_context(request):
                   .annotate(count=Count('pk')).values_list('assigned_to_id', 'count'))
     total = sum(counts.values())
     unassigned = counts.get(None, 0)
-    profiles = list(EmployeeProfile.objects.filter(
+    profiles_query = EmployeeProfile.objects.filter(
         role='call_center', is_active=True, user__is_active=True,
-    ).select_related('user').order_by('pk'))
+    )
+    attendance_query = Attendance.objects.filter(date=now.date())
+    viewer = request.user.profile
+    if viewer.role == 'manager':
+        # Follow the same branch visibility as the team-attendance view.
+        profiles_query = profiles_query.filter(branch_id=viewer.branch_id) if viewer.branch_id else profiles_query.none()
+        attendance_query = attendance_query.filter(branch_id=viewer.branch_id)
+    profiles = list(profiles_query.select_related('user').order_by('pk'))
     user_ids = [profile.user_id for profile in profiles]
-    attendance = {
-        row.user_id: row for row in Attendance.objects.filter(user_id__in=user_ids, date=now.date())
-    }
+    attendance = {row.user_id: row for row in attendance_query.filter(user_id__in=user_ids)}
     leave_ids = set(LeaveRequest.objects.filter(
         user_id__in=user_ids, status='approved', start_date__lte=now.date(), end_date__gte=now.date(),
     ).values_list('user_id', flat=True))

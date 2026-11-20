@@ -7,7 +7,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from core.models import Attendance, ReferralLead, ReferralProfile
+from core.models import Attendance, Branch, ReferralLead, ReferralProfile
 
 
 class LeadCommandRoomTests(TestCase):
@@ -78,6 +78,27 @@ class LeadCommandRoomTests(TestCase):
             self.assertEqual(flower['status'], 'در وقفه')
             self.assertEqual(self.archive_total(second.context['unassigned_url']), 1)
             self.assertEqual(self.archive_total(flower['url']), 1)
+
+    def test_branch_manager_sees_only_their_branch_flowers(self):
+        branch = Branch.objects.create(name='شعبه آزمون اتاق فرمان')
+        outside = Branch.objects.create(name='شعبه دیگر اتاق فرمان')
+        profile = self.manager.profile
+        profile.role = 'manager'
+        profile.branch = branch
+        profile.save(update_fields=['role', 'branch'])
+        self.operator.profile.branch = branch
+        self.operator.profile.save(update_fields=['branch'])
+        other = User.objects.create_user('command-tavana')
+        other.profile.role = 'call_center'
+        other.profile.branch = outside
+        other.profile.save(update_fields=['role', 'branch'])
+        self.client.force_login(self.manager)
+        url = reverse('management_command_room')
+        response = self.client.get(url)
+        self.assertEqual([row['name'] for row in response.context['flowers']], ['نرگس'])
+        profile.branch = None
+        profile.save(update_fields=['branch'])
+        self.assertEqual(self.client.get(url).context['flowers'], [])
 
     def archive_total(self, url):
         response = self.client.get(
