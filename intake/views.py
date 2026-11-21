@@ -57,6 +57,7 @@ def send_link(request, pk):
     profile = getattr(request.user, 'profile', None)
     if not profile or profile.role != 'receptionist' or not profile.is_active:
         raise PermissionDenied('دسترسی فقط برای منشی شعبه است.')
+    return_to = 'dashboard' if request.POST.get('next') == 'dashboard' else 'appointment_schedule'
     with transaction.atomic():
         appointment = get_object_or_404(
             VisitAppointment.objects.select_for_update(),
@@ -65,10 +66,10 @@ def send_link(request, pk):
         invitation = IntakeInvitation.objects.select_for_update().filter(appointment=appointment).first()
         if invitation and invitation.completed_at:
             messages.info(request, 'فرم اطلاعات اولیه قبلاً تکمیل شده است.')
-            return redirect('appointment_schedule')
+            return redirect(return_to)
         if invitation and invitation.sent_at and invitation.sms_status == 'accepted' and not request.POST.get('resend'):
             messages.info(request, 'لینک قبلاً ارسال شده است. برای ارسال دوباره از دکمه مجدد استفاده کنید.')
-            return redirect('appointment_schedule')
+            return redirect(return_to)
         token = secrets.token_urlsafe(32)
         expiry = timezone.now() + timedelta(hours=24)
         if invitation is None:
@@ -99,7 +100,7 @@ def send_link(request, pk):
     AuditLog.objects.create(actor=request.user, action='intake_link_sent', path=request.path,
         method=request.method, object_type='VisitAppointment', object_id=str(appointment_id),
         summary='ارسال لینک توسط منشی؛ وضعیت از طریق پیام سیستم قابل مشاهده است')
-    return redirect('appointment_schedule')
+    return redirect(return_to)
 
 
 @never_cache
