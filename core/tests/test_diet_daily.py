@@ -89,7 +89,7 @@ class OrangeOnlyWeekTests(TestCase):
         self.assertContains(page,'orange-week')
         self.assertNotContains(page,'برنامه غذایی هفت‌روزه')
 
-    def test_generic_weekly_diet_is_unchanged(self):
+    def test_generic_weekly_diet_uses_shared_approved_weekday_mobile_layout(self):
         self.other_content.presentation_template='weekly'
         self.other_content.save(update_fields=['presentation_template'])
         TreatmentRichSection.objects.create(
@@ -98,7 +98,9 @@ class OrangeOnlyWeekTests(TestCase):
         )
         page=self.client.get(reverse('diet_template_preview',args=[self.other.pk]))
         self.assertEqual(page.status_code,200)
-        self.assertContains(page,'برنامه غذایی هفت‌روزه')
+        self.assertContains(page,'orange-week')
+        self.assertContains(page,'فرنی')
+        self.assertNotContains(page,'رژیم پرتقال')
         self.assertNotContains(page,'لاغری یعنی زندگی بهتر')
 
     def test_orange_visual_card_details_stay_inside_white_card(self):
