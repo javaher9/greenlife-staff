@@ -18,3 +18,20 @@ class ConsultantMobileStyleTests(SimpleTestCase):
         self.assertIn('.care-metric small,.care-metric em{color:#516f66}', css)
         self.assertIn('.care-metric strong{color:#173f35}', css)
         self.assertNotIn('background:#1a3040', css)
+
+    def test_mobile_and_tablet_areas_follow_the_single_column_layout(self):
+        template = Path(
+            get_template('core/consultant_sales_outcomes.html').origin.name
+        ).read_text(encoding='utf-8')
+        # At <=1050px the queue/workspace/rail become one column; areas must too.
+        responsive_rule = next(
+            line for line in template.splitlines()
+            if line.startswith(
+                'body.gl-app.gl-authenticated.gl-page-consultant_sales_outcomes '
+                '.app-main .care .care-grid{grid-template-columns:minmax(0,1fr)!important'
+            )
+        )
+        self.assertIn(
+            'grid-template-areas:"queue" "workspace" "rail"!important',
+            responsive_rule,
+        )
