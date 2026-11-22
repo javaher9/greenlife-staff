@@ -46,8 +46,9 @@ def _month_params(request):
 
 def _gauge_row(key, label, value, plans, *, avatar="", people=None, group="", note=""):
     plan = plans.get(key)
-    target_two = plan.target_two if plan else None
-    percent = int(min(999, max(0, (value / target_two) * 100))) if target_two else None
+    target_one = plan.target_one if plan else None
+    # Exactly 100% means Target 1; Target 2 is a higher achievement level.
+    percent = int(min(999, max(0, (value / target_one) * 100))) if target_one else None
     if plan is None:
         level = "unset"
         status = "تارگت تنظیم نشده"
