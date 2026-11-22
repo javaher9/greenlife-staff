@@ -2,7 +2,7 @@ import re
 from unittest.mock import Mock, patch
 
 from django.conf import settings
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from core.models import CustomerPortalMember
@@ -53,6 +53,17 @@ class MemberReviewLoginTests(TestCase):
         sms.assert_not_called()
 
     @patch("core.customer_portal_views.send_sms")
+    def test_public_tls_termination_preserves_browser_origin_checks(self, sms):
+        form = {"action": "send", "phone": "12", "csrfmiddlewaretoken": str(self.open_form())}
+        proxy = {"secure": False, "HTTP_HOST": "staff.greenlifeclinics.com", "HTTP_ORIGIN": self.review}
+        self.assertContains(self.client.post(self.login, form, **proxy), "شماره موبایل معتبر وارد کنید")
+        self.assertEqual(self.client.post(self.login, {"phone": "12"}, **proxy).status_code, 403)
+        self.assertEqual(self.client.post(reverse("login"), form, **proxy).status_code, 403)
+        with override_settings(LAN_MODE=True):
+            self.assertEqual(self.client.post(self.login, form, **proxy).status_code, 403)
+        sms.assert_not_called()
+
+    @patch("core.customer_portal_views.send_sms")
     def test_review_stays_scoped_to_customer_and_requires_token(self, sms):
         form = {"action": "send", "phone": "12", "csrfmiddlewaretoken": str(self.open_form())}
         self.assertNotIn(self.review, settings.CSRF_TRUSTED_ORIGINS)
@@ -67,3 +78,15 @@ class MemberReviewLoginTests(TestCase):
             with self.subTest(path=url, headers=list(headers), has_token="csrfmiddlewaretoken" in fields):
                 self.assertEqual(self.client.post(url, fields, **self.host, **headers).status_code, 403)
         sms.assert_not_called()
+
+    def test_failed_login_offers_a_safe_get_to_continue(self):
+        token = str(self.open_form())
+        form = {"action": "send", "phone": "12"}
+        stale = self.client.post(self.login + "?next=%2Fcustomer%2Fme%2Fconnect%2F", form,
+                                 HTTP_ORIGIN=self.review, **self.host)
+        self.assertContains(stale, "تازه‌سازی فرم ورود", status_code=403)
+        self.assertContains(stale, 'href="/customer/login/?next=%2Fcustomer%2Fme%2Fconnect%2F"', status_code=403)
+        self.assertEqual(stale["Cache-Control"], "private, no-store")
+        unrecognized = self.client.post(self.login, {**form, "csrfmiddlewaretoken": token},
+                                        HTTP_ORIGIN="https://unrelated-preview.vercel.app", **self.host)
+        self.assertContains(unrecognized, "ورود از آدرس اصلی", status_code=403)

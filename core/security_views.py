@@ -2,6 +2,8 @@ from urllib.parse import urlsplit
 
 from django.contrib import messages
 from django.http import HttpResponseRedirect
+from django.middleware.csrf import REASON_BAD_ORIGIN, REASON_BAD_REFERER
+from django.shortcuts import render
 from django.urls import reverse
 from django.views.csrf import csrf_failure as django_csrf_failure
 
@@ -30,6 +32,18 @@ def csrf_failure(request, reason=''):
         )
         response = HttpResponseRedirect(target)
         response['Cache-Control'] = 'no-store'
+        return response
+
+    if request.path_info == reverse('customer_login'):
+        address_mismatch = any(
+            reason.startswith(pattern.partition('%s')[0])
+            for pattern in (REASON_BAD_ORIGIN, REASON_BAD_REFERER)
+        )
+        response = render(request, 'core/customer_portal/login_retry.html', {
+            'address_mismatch': address_mismatch,
+            'retry_url': request.get_full_path(),
+        }, status=403)
+        response['Cache-Control'] = 'private, no-store'
         return response
 
     return django_csrf_failure(request, reason=reason)

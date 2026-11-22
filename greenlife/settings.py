@@ -30,12 +30,12 @@ for _origin in ('https://staff.greenlifeclinics.com','https://app.greenlifeclini
         CSRF_TRUSTED_ORIGINS.append(_origin)
 CSRF_FAILURE_VIEW = 'core.security_views.csrf_failure'
 INSTALLED_APPS = ['django.contrib.admin','django.contrib.auth','django.contrib.contenttypes','django.contrib.sessions','django.contrib.messages','django.contrib.staticfiles','core','public_network','intake','payments','recruitment','schools']
-MIDDLEWARE = ['django.middleware.security.SecurityMiddleware','whitenoise.middleware.WhiteNoiseMiddleware','django.contrib.sessions.middleware.SessionMiddleware','django.middleware.common.CommonMiddleware','core.customer_csrf.CustomerCsrfMiddleware','django.contrib.auth.middleware.AuthenticationMiddleware',
+MIDDLEWARE = ['django.middleware.security.SecurityMiddleware','whitenoise.middleware.WhiteNoiseMiddleware','django.contrib.sessions.middleware.SessionMiddleware','django.middleware.common.CommonMiddleware','core.customer_csrf.CustomerCsrfMiddleware','django.middleware.csrf.CsrfViewMiddleware','django.contrib.auth.middleware.AuthenticationMiddleware',
     'core.language_workspace.StaffLanguageMiddleware','core.country_workspace.CountryWorkspaceMiddleware','core.localized_response.StaticUiLocalizationMiddleware','core.call_center_views.CallCenterCallTrackingMiddleware','public_network.middleware.PublicNetworkMemberMiddleware','core.audit.AuditLogMiddleware','django.contrib.messages.middleware.MessageMiddleware','django.middleware.clickjacking.XFrameOptionsMiddleware']
 
 # This escape hatch is restricted to DEBUG mode and can never disable CSRF in production.
 if DEBUG and os.getenv('DISABLE_CSRF', '0') == '1':
-    MIDDLEWARE = [m for m in MIDDLEWARE if m != 'core.customer_csrf.CustomerCsrfMiddleware']
+    MIDDLEWARE = [m for m in MIDDLEWARE if m not in ('core.customer_csrf.CustomerCsrfMiddleware', 'django.middleware.csrf.CsrfViewMiddleware')]
 
 # Public production remains HTTPS-only. A dedicated LAN container can explicitly
 # enable LAN_MODE=1; it uses separate cookie names and permits HTTP only inside
