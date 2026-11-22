@@ -1,0 +1,114 @@
+.control-workspace .hero > div:last-child { position: relative; z-index: 1; }
+.control-nav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: visible;
+}
+.control-nav .tab { min-width: 0; white-space: normal; padding-inline: 8px; text-align: center; }
+.control-section + .control-section { margin-block-start: clamp(22px, 4vw, 42px); }
+.control-status:empty { display: none; }
+.control-status:not(:empty) { margin-block: 0; }
+.control-modes, .control-metrics, .control-charts, .control-queue-grid, .control-assistants {
+  display: grid;
+  gap: var(--gap);
+  align-items: start;
+}
+.control-modes, .control-assistants { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.control-modes { margin: 0; }
+.control-modes .panel { height: 100%; padding: clamp(12px, 2vw, 18px); }
+.control-modes dt { font-weight: 800; }
+.control-modes dd { color: var(--muted); margin: 4px 0 0; font-size: 13px; }
+.control-metrics, .control-charts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.control-volume { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.control-metrics strong { display: block; font-size: clamp(27px, 4vw, 40px); color: var(--green); }
+.control-charts > *, .control-queue-grid > * { min-width: 0; }
+.control-queue-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.control-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+  min-width: 0;
+}
+.control-filters label { display: grid; gap: 4px; min-width: 0; flex: 1 1 130px; font-size: 13px; }
+.control-filters input, .control-filters select { width: 100%; min-width: 0; min-height: 44px; }
+.control-filters .btn { flex: 0 1 auto; }
+.control-bars {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  list-style: none;
+}
+.control-bars li {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) minmax(62px, max-content);
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.control-bars bdi { text-align: end; }
+.control-bars progress, .control-bars meter {
+  width: 100%;
+  min-width: 0;
+  height: 13px;
+  accent-color: var(--green);
+}
+.control-bars progress::-webkit-progress-bar { background: #233d49; border-radius: 9px; }
+.control-bars progress::-webkit-progress-value { background: var(--green); border-radius: 9px; }
+.control-trend { max-height: 260px; overflow-y: auto; scrollbar-width: thin; }
+.control-results { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.control-results th, .control-results td {
+  padding: 7px 6px;
+  text-align: start;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.control-results tbody th { font-weight: 600; }
+.control-results thead { color: var(--muted); }
+.control-items { display: grid; gap: 8px; }
+.control-items:empty { display: none; }
+.control-item {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.control-item + .control-item { margin-top: 8px; }
+.control-assistants .control-item, #live-list .control-item {
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--panel-fill);
+}
+.control-assistants .control-item { margin: 0; }
+.control-assistant-picker { display: grid; gap: 5px; margin-bottom: 12px; }
+.control-status[data-tone="error"] { color: var(--red); }
+.control-status[data-tone="success"] { color: var(--green); }
+.control-item-copy { min-width: 0; overflow-wrap: anywhere; }
+.control-item-actions, .control-counts, .control-pagination {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.control-pagination { margin-top: 10px; justify-content: space-between; }
+.control-assistants .panel { min-width: 0; }
+.control-assistants .control-counts { margin-block: 9px; }
+@media (max-width: 900px) {
+  .control-layout .sidebar .nav-group { display: flex; flex-wrap: wrap; }
+  .control-queue-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 600px) {
+  .control-layout .sidebar .nav-group { display: grid; }
+  .control-modes, .control-assistants, .control-charts { grid-template-columns: minmax(0, 1fr); }
+  .control-volume { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .control-item-actions { width: 100%; }
+  .control-item-actions > .btn { flex: 1 1 auto; }
+  .control-filters .btn { width: 100%; }
+  .control-nav .tab { font-size: 12px; }
+}

@@ -1,0 +1,239 @@
+{% load static jalali_tags %}
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>کنترل تماس گرین‌لایف | استاف</title>
+  <link rel="stylesheet" href="{% static 'core/phone-center.css' %}?v=2">
+  <link rel="stylesheet" href="{% static 'core/phone-control.css' %}?v=1">
+  <script defer src="{% static 'core/phone-control.js' %}?v=1"></script>
+</head>
+<body>
+  <div class="layout control-layout">
+    <aside id="control-sidebar" class="sidebar" aria-label="منوی مرکز تلفن">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div class="wordmark">GreenLife<small>استاف</small></div>
+      </div>
+      <nav class="nav-group" aria-label="مرکز تلفن">
+        <a class="nav-link back-link" href="{% url 'phone_center' %}">بازگشت به مرکز تلفن</a>
+        <a class="nav-link" href="{% url 'phone_center_control' %}" aria-current="page">کنترل تماس</a>
+        <a class="nav-link" href="{% url 'phone_center' %}#assistants">دستیارهای گرین‌لایف</a>
+      </nav>
+    </aside>
+
+    <div class="app">
+      <header class="topbar">
+        <div class="row">
+          <button id="control-menu" type="button" aria-expanded="false" aria-controls="control-sidebar" class="btn compact mobile-menu">☰ منو</button>
+          <div class="crumb"><span>مدیریت</span><span aria-hidden="true">/</span><strong>مرکز تلفن گرین‌لایف</strong></div>
+        </div>
+      </header>
+
+      <main class="workspace control-workspace" id="phone-control" data-live-url="{% url 'phone_center_live' %}" data-queue-url="{% url 'phone_assistant_queue' %}">
+        <form id="phone-control-csrf" hidden>{% csrf_token %}</form>
+        <header class="hero">
+          <div class="wave" aria-hidden="true"></div>
+          <div>
+            <h1>کنترل تماس گرین‌لایف</h1>
+            <p>نظارت زنده، امتیاز مشتری و مدیریت تماس دستیارها</p>
+          </div>
+        </header>
+        <nav class="tabs control-nav" aria-label="بخش‌های کنترل تماس">
+          <a class="tab" href="#live-calls">تماس‌های زنده</a>
+          <a class="tab" href="#customer-ratings">آمار و امتیاز مشتری</a>
+          <a class="tab" href="#assistant-queue">صف تماس دستیارها</a>
+        </nav>
+        <noscript><p class="panel">برای دریافت وضعیت تماس‌های زنده و مدیریت صف، جاوااسکریپت را فعال کنید.</p></noscript>
+
+        <section id="live-calls" class="stack control-section" aria-labelledby="live-heading">
+          <div class="spread">
+            <div>
+              <h2 id="live-heading">تماس‌های زنده</h2>
+              <p id="live-summary" class="small">در حال بررسی اتصال به مرکز تلفن…</p>
+            </div>
+            <button id="live-refresh" type="button" class="btn compact">تازه‌سازی تماس‌ها</button>
+          </div>
+          <dl class="control-modes">
+            <div class="panel"><dt>شنود</dt><dd>مکالمه را از داخلی مدیریتی‌ات می‌شنوی.</dd></div>
+            <div class="panel"><dt>راهنمایی خصوصی</dt><dd>فقط اپراتور صدایت را می‌شنود.</dd></div>
+            <div class="panel"><dt>ورود به مکالمه</dt><dd>اپراتور و مشتری هر دو صدایت را می‌شنوند.</dd></div>
+          </dl>
+          <p id="live-status" class="small control-status" role="status"></p>
+          <div id="live-list" class="control-items"></div>
+        </section>
+
+        <section id="customer-ratings" class="stack control-section" aria-labelledby="ratings-heading">
+          <div class="spread">
+            <div>
+              <h2 id="ratings-heading">امتیاز مشتری</h2>
+              <p class="small">امتیاز ۱ تا ۵ با کلید تلفن بعد از مکالمه</p>
+            </div>
+            {% if ratings.configured %}
+              <span class="chip">رابط ثبت امتیاز آماده است</span>
+            {% else %}
+              <span class="chip amber">در انتظار اتصال نظرسنجی تلفنی</span>
+            {% endif %}
+          </div>
+          <div class="panel">
+            <form method="get" action="{% url 'phone_center_control' %}#customer-ratings" class="control-filters">
+              <label for="rating-start">از تاریخ
+                <input id="rating-start" type="date" name="start" value="{{ ratings.start }}" dir="ltr" required>
+              </label>
+              <label for="rating-end">تا تاریخ
+                <input id="rating-end" type="date" name="end" value="{{ ratings.end }}" dir="ltr" required>
+              </label>
+              <label for="rating-operator">اپراتور برای گزارش امتیاز
+                <select id="rating-operator" name="operator">
+                  <option value="">همه اپراتورها</option>
+                  {% for operator in ratings.operators %}
+                  <option value="{{ operator.id }}"{% if ratings.operator == operator.id|stringformat:"s" %} selected{% endif %}>{{ operator.name }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <button type="submit" class="btn primary">نمایش گزارش</button>
+            </form>
+            {% if ratings.error %}<p class="control-status" role="status">{{ ratings.error }}</p>{% endif %}
+          </div>
+          <section class="stack" aria-labelledby="volume-heading">
+            <div class="spread">
+              <h3 id="volume-heading">آمار کل تماس‌ها در این بازه</h3>
+              {% if metrics.configured %}
+              <span class="chip">رابط ثبت آمار آماده است</span>
+              {% else %}
+              <span class="chip amber">در انتظار دریافت گزارش مکالمات</span>
+              {% endif %}
+            </div>
+            {% if metrics.count %}
+            <div class="control-metrics control-volume">
+              <article class="panel"><h3>کل تماس‌ها</h3><strong>{{ metrics.count }}</strong></article>
+              <article class="panel"><h3>پاسخ‌داده‌شده</h3><strong>{{ metrics.answered }}</strong></article>
+              <article class="panel"><h3>بی‌پاسخ</h3><strong>{{ metrics.unanswered }}</strong></article>
+              <article class="panel"><h3>میانگین مکالمه</h3>
+                <strong>{% if metrics.average_duration_seconds != None %}{{ metrics.average_duration_seconds|floatformat:0 }} <small>ثانیه</small>{% else %}—{% endif %}</strong>
+              </article>
+            </div>
+            <div class="panel stack">
+              <div class="spread">
+                <h3>حجم تماس روزانه</h3>
+                <div class="row">
+                  <span class="chip">ورودی {{ metrics.inbound }}</span>
+                  <span class="chip">خروجی {{ metrics.outbound }}</span>
+                </div>
+              </div>
+              <ul class="control-bars control-trend">
+                {% for day in metrics.daily %}
+                <li>
+                  <span>{{ day.date|jdate }}</span>
+                  <progress max="{{ metrics.peak }}" value="{{ day.count }}" aria-label="تعداد تماس‌های {{ day.date|jdate }}"></progress>
+                  <bdi>{{ day.count }} تماس</bdi>
+                </li>
+                {% endfor %}
+              </ul>
+            </div>
+            {% else %}
+            <p class="panel small">در بازهٔ انتخاب‌شده گزارشی از مکالمات ثبت نشده است.</p>
+            {% endif %}
+          </section>
+          <h3>ارزیابی مشتریان</h3>
+          <div class="control-metrics">
+            <article class="panel">
+              <h3>تعداد امتیازها</h3><strong>{{ ratings.count }}</strong>
+            </article>
+            <article class="panel">
+              <h3>میانگین رضایت</h3>
+              <strong>{% if ratings.average != None %}{{ ratings.average|floatformat:2 }} <small>از ۵</small>{% else %}—{% endif %}</strong>
+            </article>
+          </div>
+          {% if ratings.count %}
+          <div class="control-charts">
+            <section class="panel stack" aria-labelledby="distribution-heading">
+              <h3 id="distribution-heading">توزیع امتیازها</h3>
+              <ul class="control-bars">
+                {% for bucket in ratings.distribution %}
+                <li>
+                  <span>امتیاز {{ bucket.score }}</span>
+                  <progress max="100" value="{{ bucket.percentage|stringformat:'s' }}" aria-label="درصد امتیاز {{ bucket.score }}"></progress>
+                  <bdi>{{ bucket.count }} رأی</bdi>
+                </li>
+                {% endfor %}
+              </ul>
+            </section>
+            <section class="panel stack" aria-labelledby="trend-heading">
+              <h3 id="trend-heading">روند رضایت روزانه</h3>
+              <ul class="control-bars control-trend">
+                {% for day in ratings.daily %}
+                  {% if day.count %}
+                  <li>
+                    <span>{{ day.date|jdate }}</span>
+                    <meter min="0" max="5" value="{{ day.average|stringformat:'s' }}" aria-label="میانگین امتیاز روز {{ day.date|jdate }}"></meter>
+                    <bdi>{{ day.average|floatformat:2 }} · {{ day.count }} رأی</bdi>
+                  </li>
+                  {% endif %}
+                {% endfor %}
+              </ul>
+            </section>
+          </div>
+          <section class="panel stack" aria-labelledby="operators-heading">
+            <h3 id="operators-heading">امتیاز هر اپراتور</h3>
+            <table class="control-results">
+              <thead><tr><th scope="col">اپراتور</th><th scope="col">میانگین از ۵</th><th scope="col">تعداد رأی</th></tr></thead>
+              <tbody>
+                {% for operator in ratings.by_operator %}
+                <tr><th scope="row">{{ operator.name }}</th><td>{{ operator.average|floatformat:2 }}</td><td>{{ operator.count }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </section>
+          {% else %}
+          <p class="panel small">در بازهٔ انتخاب‌شده امتیازی ثبت نشده است.</p>
+          {% endif %}
+        </section>
+
+        <section id="assistant-queue" class="stack control-section" aria-labelledby="queue-heading">
+          <div class="spread">
+            <div>
+              <h2 id="queue-heading">صف تماس دستیارها</h2>
+              <p class="small">برنامه‌ریزی تماس مجدد برای درخواست‌هایی که اجازهٔ پیگیری دارند</p>
+            </div>
+            <div class="row">
+              <span class="chip amber">تماس خودکار در انتظار اتصال</span>
+              <button class="btn compact" type="button" data-queue-refresh>تازه‌سازی صف</button>
+            </div>
+          </div>
+          <p id="queue-status" class="control-status small" role="status">در حال دریافت وضعیت صف…</p>
+          <div id="queue-assistants" class="control-assistants"></div>
+          <div class="control-queue-grid">
+            <section class="panel stack" aria-labelledby="requests-heading">
+              <h3 id="requests-heading">درخواست‌های قابل برنامه‌ریزی</h3>
+              <div id="queue-requests"></div>
+            </section>
+            <section class="panel stack" aria-labelledby="scheduled-heading">
+              <h3 id="scheduled-heading">تماس‌های برنامه‌ریزی‌شده</h3>
+              <form id="queue-filter" class="control-filters">
+                <label>دستیار
+                  <select name="assistant">
+                    <option value="">همه دستیارها</option>
+                    <option value="yasaman">یاسمن</option><option value="camellia">کاملیا</option><option value="rose">رز</option>
+                  </select>
+                </label>
+                <label>وضعیت
+                  <select name="status">
+                    <option value="">همه وضعیت‌ها</option><option value="queued">در صف</option><option value="retry">تلاش مجدد</option>
+                    <option value="blocked">نیازمند بررسی</option><option value="cancelled">لغوشده</option>
+                    <option value="completed">انجام‌شده</option><option value="failed">ناموفق</option>
+                  </select>
+                </label>
+                <button type="submit" class="btn compact">اعمال فیلتر</button>
+              </form>
+              <div id="queue-jobs"></div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

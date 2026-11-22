@@ -197,7 +197,7 @@
     ).join('')+(followUpsUrl ? '<a class="tab" href="'+e(followUpsUrl)+'">پیگیری‌های کال‌سنتر</a>' : '')+'</nav>';
     const action = activeTab === 'main-line'
       ? '<button type="button" class="btn primary" data-tab="routing">آزمون مسیر</button>'
-      : '<button type="button" class="btn primary" data-tab="main-line">بررسی خط‌ها</button>';
+      : '<a class="btn primary" href="'+e(screen.dataset.controlUrl)+'">کنترل تماس</a>';
     const hero = '<header class="hero"><div class="wave" aria-hidden="true"></div>'+
       '<div class="spread"><div><h1 id="page-heading" tabindex="-1">مرکز تلفن گرین‌لایف</h1>'+
       '<p>آمادگی خط‌ها، گزارش بررسی و آزمون مسیر پاسخ‌گویی</p></div>'+action+'</div></header>';

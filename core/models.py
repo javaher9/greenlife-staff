@@ -2309,3 +2309,7 @@ from .intake_models import CustomerIntake, CustomerIntakePhoto, CustomerRequestE
 
 from .me_members_models import MeMemberCare, MeMemberAction
 from .call_plaque_models import LeadCallProfile, LeadCallSession
+
+from .phone_rating_models import PhoneCallRating
+from .assistant_queue_models import AssistantCallJob, AssistantCallQueue
+from .phone_call_metric_models import PhoneCallMetric
