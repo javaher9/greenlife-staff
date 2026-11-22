@@ -7,6 +7,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_safe
 
 from .follow_up_views import can_access_management_follow_ups, management_follow_up_agenda
+from .models import PhoneVoiceSample
 
 
 PHONE_ASSISTANTS = (
@@ -46,8 +47,14 @@ def can_access_phone_center(user):
 def phone_center(request):
     if not can_access_phone_center(request.user):
         raise PermissionDenied
+    installed = set(PhoneVoiceSample.objects.values_list('assistant', flat=True))
+    assistants = [
+        {**item, 'sample_url': reverse('phone_voice_sample', args=[item['id']])}
+        if item['id'] in installed else item
+        for item in PHONE_ASSISTANTS
+    ]
     return render(request, 'core/phone_center.html', {
-        'phone_assistants': PHONE_ASSISTANTS,
+        'phone_assistants': assistants,
         'phone_follow_ups': (
             reverse('phone_center_follow_ups') if can_access_management_follow_ups(request.user) else ''
         ),

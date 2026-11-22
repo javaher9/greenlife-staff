@@ -14,7 +14,7 @@ window.createPhoneCenterAssistants = function (workspace) {
     const play = row.querySelector('.assistant-play');
     play.disabled = false;
     play.classList.add('primary');
-    row.querySelector('[data-action="assistant-choose"]').classList.remove('primary');
+    row.querySelector('[data-action="assistant-choose"]')?.classList.remove('primary');
     status(row, 'آمادهٔ پخش · ' + sample.name);
   }
 
@@ -52,7 +52,9 @@ window.createPhoneCenterAssistants = function (workspace) {
       });
       audio.play().catch(error => {
         if (row.isConnected && error.name !== 'AbortError') {
-          status(row, 'پخش فایل ممکن نبود. یک فایل WAV یا MP3 سالم انتخاب کنید.');
+          status(row, audio.getAttribute('src')?.startsWith('blob:')
+            ? 'پخش فایل ممکن نبود. یک فایل WAV یا MP3 سالم انتخاب کنید.'
+            : 'دریافت نمونه ممکن نبود. صفحه را تازه کنید و دوباره پخش را بزنید.');
         }
       });
     } else {

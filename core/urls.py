@@ -44,6 +44,7 @@ from . import scan_station_views
 from . import patient_360_views
 from . import phone_center_views, server_health_views
 from . import assistant_queue_views, phone_call_metrics, phone_control_views, phone_ratings
+from . import phone_voice_samples
 from . import live_status_views
 from . import quality_command_views
 from . import lead_freshness_views
@@ -52,6 +53,8 @@ from . import sales_target_views
 from .mcp import mcp_endpoint
 urlpatterns = [
     path("management/phone-center/", phone_center_views.phone_center, name="phone_center"),
+    path("management/phone-center/sample/<slug:assistant>/", phone_voice_samples.play_sample, name="phone_voice_sample"),
+    path("api/private/phone-center/sample/<slug:assistant>/install/", phone_voice_samples.install_sample, name="phone_voice_sample_install"),
     path("management/phone-center/follow-ups/", phone_center_views.phone_center_follow_ups, name="phone_center_follow_ups"),
     path("management/phone-center/control/", phone_control_views.phone_control, name="phone_center_control"),
     path("management/phone-center/control/live/", phone_control_views.phone_control_live, name="phone_center_live"),
