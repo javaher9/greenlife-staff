@@ -12,11 +12,11 @@ from core.models import Branch, Country, EmployeeProfile, FinancialTransaction
 
 class FinanceMonthComparisonTests(TestCase):
     def setUp(self):
-        self.iran = Country.objects.create(
-            code="IR", name_english="Iran", name_local="ایران", currency_code="IRR"
+        self.iran, _ = Country.objects.get_or_create(
+            code="IR", defaults={"name_english": "Iran", "name_local": "ایران", "currency_code": "IRR"}
         )
-        self.turkey = Country.objects.create(
-            code="TR", name_english="Turkey", name_local="ترکیه", currency_code="TRY"
+        self.turkey, _ = Country.objects.get_or_create(
+            code="TR", defaults={"name_english": "Turkey", "name_local": "ترکیه", "currency_code": "TRY"}
         )
         self.nia = Branch.objects.create(name="نیاوران", country=self.iran)
         self.ponak = Branch.objects.create(name="پونک", country=self.iran)
