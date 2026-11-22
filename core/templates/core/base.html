@@ -558,6 +558,11 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     <a href="/tasks/" class="employee-tasks-nav {% if request.path|slice:':7' == '/tasks/' %}is-active{% endif %}"><span class="nav-ico"><svg viewBox="0 0 24 24"><path d="M4 4h11v2H4V4Zm0 7h11v2H4v-2Zm0 7h11v2H4v-2Zm14-14h2v2h-2V4Zm0 7h2v2h-2v-2Zm0 7h2v2h-2v-2Z"/></svg></span><span>{% gl_t 'common.tasks' %}</span></a>
     {% endif %}
     {% if user.profile.role != 'employee' %}<a href="/live/"><span class="nav-ico">⌘</span><span>{% if user.profile.role == "manager" %}{% gl_t 'shell.branch_management' %}{% elif user.profile.role == "internal_manager" %}{% gl_t 'shell.internal_management' %}{% else %}{% gl_t 'shell.management_panel' %}{% endif %}</span></a>{% endif %}
+    {% if phone_center_access %}
+    <div class="gl-settings-submenu">
+      <a href="{% url 'phone_center' %}"><span class="nav-ico" aria-hidden="true">☎</span><span>مرکز تلفن گرین‌لایف</span></a>
+    </div>
+    {% endif %}
     {% if user.profile.role != 'employee' %}<a href="/action-center/"><span class="nav-ico">⚡</span><span>{% gl_t 'shell.action_center' %}</span></a>{% endif %}
     {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}
     <a href="{% url 'management_all_leads' %}" class="{% if request.resolver_match.url_name == 'management_all_leads' %}is-active{% endif %}"><span class="nav-ico">▦</span><span>همه لیدها</span></a>
@@ -642,6 +647,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
           <a href="/logout/" class="employee-more-logout"><span>↪</span>{% gl_t 'common.logout' %}</a>
         {% else %}
           <a href="/live/"><span>⌘</span>{% gl_t 'shell.whats_new' %}</a>
+          {% if phone_center_access %}<a href="{% url 'phone_center' %}"><span aria-hidden="true">☎</span>مرکز تلفن گرین‌لایف</a>{% endif %}
           {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}<a href="/lead-management/"><span>◉</span>{% gl_t 'common.leads' %}</a>{% endif %}
           {% if user.profile.role == 'admin' or user.profile.dm_lead_enabled %}<a href="{% url 'instagram_manual_lead' %}"><span>＋</span>ثبت لید دایرکت</a>{% endif %}
           {% if user.profile.role == 'internal_manager' %}<a href="/meeting-minutes/new/"><span>＋</span>{% gl_t 'shell.meeting_new' %}</a><a href="/meeting-minutes/"><span>▤</span>{% gl_t 'shell.meeting_list' %}</a>{% elif user.profile.role == 'admin' %}<a href="/meeting-minutes/"><span>▤</span>{% gl_t 'shell.meetings' %}</a>{% endif %}

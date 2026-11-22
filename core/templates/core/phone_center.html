@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>مرکز تلفن گرین‌لایف | استاف</title>
+<style>
+:root{--bg:#0a141d;--side:#0d1821;--panel:#122330;--panel-deep:#0e1c28;--line:#263c4c;--ink:#eef5f8;--muted:#a4b8c6;--faint:#8299a9;--green:#71e8bc;--green-dim:#153b35;--violet:#cfbaff;--violet-dim:#352a4b;--amber:#f1cc84;--red:#f9a8a9;--radius:16px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.75 "Noto Sans Arabic",Tahoma,Arial,sans-serif}
+button,input,textarea,select{font:inherit}
+button,a,input,textarea,select{-webkit-tap-highlight-color:transparent}
+button,a{touch-action:manipulation}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+h1,h2,h3,p{margin:0}
+h1{font-size:clamp(25px,3vw,39px);line-height:1.5;font-weight:800}
+h2{font-size:19px;line-height:1.6}
+h3{font-size:16px}
+small,.small{font-size:13px;color:var(--muted)}
+.muted{color:var(--muted)}
+.ltr,bdi{unicode-bidi:isolate}.ltr{direction:ltr}
+.stack{display:grid;gap:14px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);border-radius:10px;padding:7px 13px;min-height:42px;color:var(--ink);background:#142634;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:normal;line-height:1.5}
+.btn:hover:not(:disabled){background:#203749;border-color:#527386}
+.btn.primary{background:var(--green);color:#0c2922;border-color:transparent;font-weight:800}
+.btn.primary:hover:not(:disabled){background:#9bf2d3}
+.btn.purple{background:var(--violet);color:#231735;border-color:transparent;font-weight:800}
+.btn.purple:hover:not(:disabled){background:#e1d4ff}
+.btn.ghost{background:transparent}
+.btn.compact{min-height:35px;padding:4px 10px;font-size:13px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:100px;font-size:12px;font-weight:700;line-height:1.6;background:#203343;color:#c9dbe5;white-space:nowrap}
+.chip.green{background:#173a34;color:var(--green)}.chip.violet{background:var(--violet-dim);color:var(--violet)}.chip.amber{background:#3e3323;color:var(--amber)}.chip.red{background:#412a32;color:var(--red)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block;flex:none}
+.layout{display:grid;grid-template-columns:230px minmax(0,1fr);min-height:100dvh}
+.sidebar{background:var(--side);border-inline-end:1px solid #243646;padding:24px 14px;position:sticky;top:0;height:100dvh;display:flex;flex-direction:column;gap:23px;z-index:5;overflow:auto}
+.brand{display:flex;align-items:center;gap:11px;padding:5px 10px 17px;border-bottom:1px solid #263643}
+.brand .wordmark{direction:ltr;text-align:left;line-height:1.1;font:bold 23px/1.1 Arial,sans-serif}
+.brand small{display:block;font:700 10px/1.7 Arial,sans-serif;letter-spacing:1.7px;color:#a6b9c5}
+.brand-mark{display:grid;place-items:center;width:41px;height:41px;background:linear-gradient(145deg,#254e42,#193733);border:1px solid #3d6555;border-radius:13px;position:relative;flex:none}
+.brand-mark:before,.brand-mark:after{content:"";position:absolute;background:#abec87;width:10px;height:21px;border-radius:90% 0 90% 0;transform:rotate(25deg);top:7px;right:12px}
+.brand-mark:after{background:#64b06a;width:8px;height:14px;transform:rotate(-27deg);right:22px;top:16px}
+.nav-group{display:grid;gap:4px}.nav-group + .nav-group{margin-top:16px}
+.nav-label{display:flex;justify-content:space-between;align-items:center;padding:6px 12px;margin-bottom:2px;color:#bed0db;font-weight:800}
+.nav-link,.nav-context{padding:8px 10px;border:1px solid transparent;border-radius:9px;display:flex;align-items:center;gap:8px;font-size:13px;min-height:40px}
+.nav-link{color:#e5edf4}.nav-context{color:#90a6b5}
+.nav-link:hover{background:#1a2d3b}
+.nav-link[aria-current=page]{background:#163730;border-color:#315d51;color:#a6f4d2;box-shadow:inset -3px 0 #6fe3b4}
+.nav-link.voice[aria-current=page]{background:#2f2544;border-color:#524269;color:#e0ceff;box-shadow:inset -3px 0 #c5a2fc}
+.nav-glyph{width:20px;text-align:center;font-family:Arial,sans-serif;font-size:17px;line-height:1;flex:none;color:inherit}
+.sidebar-note{margin-top:auto;padding:10px 12px;border-top:1px solid #263643;display:flex;align-items:center;gap:8px;color:#adc0cd;font-size:12px}
+.app{min-width:0}
+.topbar{min-height:65px;padding:9px clamp(14px,2.3vw,32px);border-bottom:1px solid #1f3240;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#0c1822}
+.crumb{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:13px;flex-wrap:wrap}
+.crumb strong{color:var(--ink)}
+.mobile-menu{display:none}
+.workspace{max-width:1530px;margin:auto;padding:22px clamp(16px,2.6vw,38px) 35px}
+.hero{position:relative;overflow:hidden;isolation:isolate;min-height:148px;border:1px solid #325249;border-radius:var(--radius);padding:20px 25px;background:radial-gradient(ellipse at 95% 25%,#224940 0%,transparent 67%),linear-gradient(115deg,#142633,#142d33 70%,#182e30);box-shadow:inset 0 1px #ffffff10}
+.hero.voice{border-color:#504465;background:radial-gradient(ellipse at 94% 10%,#423553 0%,transparent 70%),linear-gradient(110deg,#172638,#25283d 78%,#302940)}
+.hero .spread{min-height:98px;position:relative;z-index:1}
+.hero p{color:#c4d6dc;margin-top:4px}
+.hero .wave{position:absolute;left:0;bottom:0;width:43%;height:100%;opacity:.35;background:repeating-linear-gradient(118deg,transparent 0 25px,#a6dada27 25px 26px,transparent 26px 45px);mask-image:linear-gradient(90deg,#000,transparent)}
+.hero.voice .wave{background:repeating-linear-gradient(118deg,transparent 0 25px,#dbc3ff38 25px 26px,transparent 26px 45px)}
+.hero-tag{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--green);margin-bottom:3px}
+.hero.voice .hero-tag{color:var(--violet)}
+.tabs{display:flex;gap:7px;border-bottom:1px solid var(--line);margin:14px 0 16px;overflow-x:auto}
+.tab{background:transparent;border:0;border-bottom:2px solid transparent;padding:9px 12px;color:var(--muted);white-space:nowrap;min-height:44px}
+.tab:hover{color:var(--ink);background:#172837}
+.tab[aria-current=true]{color:var(--green);font-weight:800;border-color:var(--green)}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.metric,.panel{background:linear-gradient(135deg,#152836,#12212e 78%);border:1px solid var(--line);border-radius:var(--radius)}
+.metric{padding:13px 15px;min-height:103px}
+.metric strong{display:block;font-size:22px;line-height:1.65;letter-spacing:-.3px}
+.metric-label{font-size:13px;color:#bed0dc}
+.metric .chip{padding-inline:6px}
+.panel{padding:16px 17px;min-width:0}
+.panel-head{margin-bottom:12px}
+.duo{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:13px;align-items:start}
+.duo.equal{grid-template-columns:repeat(2,minmax(0,1fr))}
+.call-list{display:grid;gap:5px}
+.call-row{display:grid;grid-template-columns:minmax(0,1.34fr) minmax(0,1.15fr) auto;align-items:center;gap:8px;width:100%;text-align:start;background:#11222f;color:var(--ink);border:1px solid #263a4b;border-radius:10px;padding:7px 9px;min-height:58px}
+.call-row:hover{background:#1d3342;border-color:#466073}
+.call-row strong,.call-row small{display:block}.call-row strong{font-size:14px}
+.avatar{width:31px;height:31px;border:1px solid #3b5965;border-radius:9px;background:#203a46;color:#b9d8e4;display:grid;place-items:center;flex:none;font:700 14px/1 Arial,sans-serif}
+.call-person{display:flex;align-items:center;gap:8px;min-width:0}
+.segment{display:inline-flex;border:1px solid #304657;background:#0f202c;padding:2px;border-radius:9px;gap:1px}
+.segment button{border:0;color:var(--muted);background:transparent;border-radius:6px;padding:3px 8px;font-size:12px;min-height:29px}
+.segment button[aria-pressed=true]{background:#274151;color:#f0f7fa}
+.chart{margin-top:13px;min-height:169px}
+.bars{height:140px;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;align-items:end;gap:8px;background:repeating-linear-gradient(to top,transparent 0 34px,#2e4352 34px 35px);padding:0 5px}
+.bar-group{display:flex;justify-content:center;align-items:end;gap:3px;height:100%}
+.bar{width:min(24%,15px);min-width:5px;border-radius:4px 4px 0 0;background:linear-gradient(#71e8bc,#429a97);min-height:2px}
+.bar.miss{background:linear-gradient(#dbb6ff,#8069b4)}
+.chart-labels{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;text-align:center;color:var(--muted);font-size:11px;padding:2px 5px 0}
+.legend{display:flex;gap:12px;flex-wrap:wrap;color:#bacbd6;font-size:12px;margin-top:5px}
+.legend i{display:inline-block;width:7px;height:7px;margin-inline-end:5px;border-radius:2px}
+.route-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.route-step{border:1px solid #35515e;background:#0d202b;border-radius:9px;padding:6px 10px;font-size:13px;color:#e3eff7}
+.route-divider{color:#809caa;font-size:15px;align-self:center}
+.table-wrap{overflow:auto}
+table{border-collapse:collapse;width:100%;white-space:nowrap;text-align:start}
+th,td{text-align:start;padding:9px 8px;border-bottom:1px solid #263c4c}
+th{color:#d7e5eb;font-size:13px;background:#182b38;padding-block:10px}
+td{font-size:14px}
+tr:last-child td{border-bottom:0}
+.empty{color:var(--muted);text-align:center;padding:20px 10px}
+fieldset{margin:0;padding:0;border:0;min-width:0}
+label{display:grid;gap:4px;color:#cbdbe4;font-size:13px;min-width:0}
+input,textarea,select{width:100%;min-height:42px;border-radius:8px;border:1px solid #3a5162;background:#0c1b27;color:var(--ink);padding:6px 9px}
+textarea{resize:vertical}
+input::placeholder,textarea::placeholder{color:#8199aa}
+.filters,.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.filters{grid-template-columns:2fr 1fr 1fr;margin-bottom:12px}
+.wide{grid-column:1/-1}
+.details{display:grid;gap:0;margin:0}
+.details div{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #2b4050}
+.details div:last-child{border-bottom:0}
+.details dt{color:#b7cad6;font-size:13px}
+.details dd{margin:0;font-weight:700;text-align:end}
+.profile-card:hover{background:#243245;border-color:#67557e}
+.profile-card[aria-pressed=true]{border-color:#aa87da;background:linear-gradient(135deg,#352b4a,#21283a);box-shadow:inset 0 1px #e1cfff35}
+.profile-card strong{font-size:16px}
+.profile-card small{display:block;margin:6px 0 3px}
+.profile-card .avatar{background:#382b50;color:var(--violet);border-color:#614a7e;font-family:inherit}
+.editor-actions{padding-top:10px;border-top:1px solid #2a4150;margin-top:6px}
+.result{border:1px solid #3c475c;border-radius:11px;background:#111e2b;margin-top:12px;padding:10px 12px}
+.result .line{padding:6px 0;border-bottom:1px solid #2d4051;overflow-wrap:anywhere}
+.result .line:last-child{border-bottom:none}
+.result blockquote{padding:7px 10px;margin:7px 0;border-inline-start:3px solid #8d70ba;background:#24243a;border-radius:6px;overflow-wrap:anywhere}
+.log{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:6px}
+.log li{padding:7px 9px;border-radius:7px;background:#10212e;border:1px solid #263d4e;overflow-wrap:anywhere}
+.note{border-inline-start:3px solid #ae90d3;padding:6px 10px;background:#23263a;color:#dfd6f4;border-radius:7px;font-size:13px;overflow-wrap:anywhere}
+.form-grid+.note,.note+.form-grid{margin-top:8px}
+dialog{color:var(--ink);background:#142635;border:1px solid #455e70;border-radius:15px;padding:18px;width:min(calc(100% - 24px),600px);max-height:85dvh}
+dialog::backdrop{background:#050b12c9}
+dialog form{margin-top:13px}
+.toast{position:fixed;bottom:16px;inset-inline-end:16px;z-index:12;background:#17362f;border:1px solid #538477;border-radius:12px;color:#e5fff3;padding:9px 14px;max-width:min(430px,calc(100vw - 32px));box-shadow:0 8px 24px #0009}
+.footer{font-size:12px;color:var(--faint);margin-top:15px}
+@media(max-width:1100px){.layout{grid-template-columns:197px minmax(0,1fr)}.sidebar{padding-inline:9px}.metric{padding-inline:10px}.workspace{padding-inline:16px}.duo{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)}}
+@media(max-width:920px){.duo,.duo.equal{grid-template-columns:1fr}.hero{padding-inline:16px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:730px){.layout{display:block}.sidebar{display:none;position:fixed;inset-block-start:58px;inset-inline-start:0;width:min(270px,83vw);height:calc(100dvh - 58px);padding:17px 12px;box-shadow:-15px 10px 55px #000a}.sidebar.open{display:flex}.topbar{min-height:58px;padding-inline:12px}.mobile-menu{display:inline-flex}.topbar .crumb{font-size:12px;gap:4px}.topbar .chip{font-size:11px}.workspace{padding:12px 11px 24px}.tabs{margin-top:9px}.tab{padding-inline:10px}.hero .spread{gap:9px}.hero{min-height:0;padding:13px}.panel{padding:12px}.chart-labels{font-size:10px}}
+@media(max-width:420px){.topbar .crumb span{display:none}.form-grid,.filters{grid-template-columns:1fr}.call-row{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) auto;gap:4px;padding-inline:5px}.call-row .avatar{display:none}.call-row small{font-size:11px}.call-row .chip{font-size:10px;padding-inline:6px}.hero p{font-size:13px}}
+@media(min-width:561px) and (max-width:950px){
+  .layout{display:block}
+  .sidebar,.sidebar.open{display:flex;flex-direction:row;align-items:center;justify-content:space-between;position:sticky;inset:0 auto auto;width:auto;height:auto;padding:7px 18px;gap:12px;box-shadow:none;border-inline-end:0;border-bottom:1px solid var(--line);overflow:visible}
+  .brand{padding:0;border:0;flex:none}.brand .wordmark{font-size:18px}.brand-mark{width:38px;height:38px}
+  .sidebar nav .nav-group{display:flex;gap:6px}.nav-label,.sidebar-note,.mobile-menu.btn{display:none}
+  .nav-link{font-size:14px;min-height:48px}
+  .topbar{min-height:49px;padding-inline:18px}
+  .workspace{padding:16px 18px 28px}
+  .voice-tools{grid-template-columns:minmax(0,1fr)}
+}
+@media(min-width:951px) and (max-width:1450px){
+  .layout{grid-template-columns:198px minmax(0,1fr)}
+  .sidebar{padding-inline:11px}.nav-link{min-height:48px}
+  .workspace{padding:18px clamp(18px,2.2vw,32px) 30px}
+  .voice-tools{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px}
+}
+@media(min-width:561px){
+  .topbar{min-height:52px}
+  .hero{min-height:0;padding-block:14px}.hero .spread{min-height:70px}
+  h1{font-size:clamp(25px,3vw,34px)}
+  .tab,.btn:not(.call-row),.segment button,input,select{min-height:48px}
+  .voice-tools label,.voice-profile .profile-card small{font-size:14px}
+  .voice-tools textarea{min-height:65px}
+}
+@media(max-width:560px){
+  .voice-profile{gap:7px;padding-inline:10px}
+  .voice-profile .profile-card,.voice-profile .profile-card[aria-pressed=true]{grid-template-columns:minmax(0,1fr);gap:3px;justify-items:start}
+  .voice-preview{flex-direction:column-reverse;align-items:end;justify-content:center;gap:4px}
+}
+@media(min-width:561px) and (max-width:680px){.sidebar,.topbar{padding-inline:10px}.nav-link{padding-inline:6px}.brand .wordmark{font-size:16px}.nav-glyph{display:none}}
+@media(prefers-reduced-motion:no-preference){.btn,.profile-card,.nav-link,.call-row{transition:background .15s,border-color .15s}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside id="sidebar" class="sidebar" aria-label="منوی گرین‌لایف">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"></span><div class="wordmark">GreenLife<small>استاف</small></div></div>
+    <nav aria-label="مدیریت">
+      <div class="nav-group">
+        <a class="nav-link" href="{% url 'dashboard' %}"><span class="nav-glyph" aria-hidden="true">⌂</span> بازگشت به استاف</a>
+        <a class="nav-link" href="{% url 'phone_center' %}" aria-current="page"><span class="nav-glyph" aria-hidden="true">☎</span> مرکز تلفن گرین‌لایف</a>
+      </div>
+    </nav>
+  </aside>
+  <div class="app">
+    <header class="topbar">
+      <div class="row">
+        <button id="menu" type="button" aria-label="منوی استاف" aria-expanded="false" aria-controls="sidebar" class="btn compact mobile-menu">☰ منو</button>
+        <div class="crumb"><span>مدیریت</span><span aria-hidden="true">/</span><strong>مرکز تلفن گرین‌لایف</strong></div>
+      </div>
+      <span class="chip amber">داده‌های نمونه</span>
+    </header>
+    <main class="workspace" id="workspace"></main>
+  </div>
+</div>
+<dialog id="detail" aria-labelledby="dialog-title"></dialog>
+<div class="toast" id="toast" role="status" hidden></div>
+<script>
+'use strict';
+
+const $ = id => document.getElementById(id);
+const e = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+const fa = value => Number(value).toLocaleString('en-US');
+const branches = ['افسریه','نیاوران','پونک','اصفهان'];
+const destinations = ['صف کال‌سنتر','صف پیگیری','پذیرش شعبه','داخلی سرپرست'];
+const callStates = {
+  active:['در مکالمه','green'], waiting:['در صف','amber'], answered:['پاسخ داده شد','green'],
+  missed:['بی‌پاسخ','red'], diverted:['ارجاع شد','violet']
+};
+const liveCalls = [
+  {id:'GL-108',time:'۱۲:۰۵',branch:'نیاوران',kind:'ورودی',person:'یاسمن',queue:'پاسخ‌گویی اولیه',duration:'۰۱:۲۱',status:'active'},
+  {id:'GL-109',time:'۱۲:۰۶',branch:'پونک',kind:'ورودی',person:'صف کال‌سنتر',queue:'مشاوره',duration:'۰۰:۴۲',status:'waiting'},
+  {id:'GL-110',time:'۱۲:۰۶',branch:'اصفهان',kind:'ورودی',person:'پذیرش شعبه',queue:'نوبت‌دهی',duration:'۰۰:۱۸',status:'waiting'}
+];
+const historyCalls = [
+  {id:'GL-107',time:'۱۲:۰۲',branch:'پونک',kind:'ورودی',person:'کال‌سنتر',queue:'مشاوره',duration:'۰۳:۱۶',status:'answered',recorded:true},
+  {id:'GL-106',time:'۱۱:۵۶',branch:'نیاوران',kind:'ورودی',person:'یاسمن ← پذیرش',queue:'نوبت‌دهی',duration:'۰۲:۴۸',status:'diverted',recorded:true},
+  {id:'GL-105',time:'۱۱:۴۳',branch:'اصفهان',kind:'ورودی',person:'پذیرش شعبه',queue:'نوبت‌دهی',duration:'۰۰:۵۰',status:'missed'},
+  {id:'GL-104',time:'۱۱:۳۰',branch:'افسریه',kind:'خروجی',person:'کال‌سنتر',queue:'پیگیری',duration:'۰۴:۰۵',status:'answered',recorded:true},
+  {id:'GL-103',time:'۱۱:۱۰',branch:'نیاوران',kind:'ورودی',person:'پذیرش شعبه',queue:'نوبت‌دهی',duration:'۰۰:۳۸',status:'missed'}
+];
+const trend = {
+  today:{labels:['۰۶','۰۷','۰۸','۰۹','۱۰','۱۱','۱۲'],answered:[1,5,11,17,20,19,3],missed:[0,1,1,3,2,3,0],caption:'بازه‌های ساعتی'},
+  week:{labels:['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'],answered:[52,78,86,77,65,59,28],missed:[6,8,7,9,5,5,3],caption:'هفت روز نمونه'}
+};
+const mainPhone = '02191002000';
+const lineChecks = {
+  pbx:'دسترسی به Asterisk', functions:'کنترل مسیر تماس', pilot:'داخلی آزمایشی و دستیار',
+  trunk:'ترانک شاتل', did:'مسیریابی شمارهٔ اصلی', carrier_path:'ثبت SIP یا تطبیق IP',
+  fallback:'مقصد پذیرش قبلی', carrier:'تنظیمات تأییدشدهٔ اپراتور', inbound_call:'تماس از بیرون',
+  duplex:'صدای دوطرفه و کلیدها', handoff:'انتقال به پذیرش', restore:'آزمون بازگشت به مسیر قبلی'
+};
+let lastLineReport = null;
+
+const tabs = [
+  ['overview','نمای کلی'],['main-line','خط اصلی'],['history','سابقه تماس'],
+  ['lines','خطوط و صف‌ها'],['routing','مسیر تماس']
+];
+const key = 'greenlife-staff-phone-preview-v1:{{ request.user.pk|escapejs }}';
+const defaultRoute = {start:'08:00',end:'20:00',fallback:'صف کال‌سنتر',afterHours:'داخلی سرپرست',testProfile:''};
+const testProfiles = [['','مسیر پاسخ‌گویی انسانی'],['pilot','دستیار داخلی آزمایشی']];
+const state = {route:defaultRoute};
+try {
+  const route = JSON.parse(localStorage.getItem(key));
+  const validTime = value => /^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/.test(value);
+  if (route && validTime(route.start) && validTime(route.end) && route.start !== route.end &&
+      destinations.includes(route.fallback) && destinations.includes(route.afterHours) &&
+      testProfiles.some(([id]) => id === route.testProfile)) state.route = route;
+} catch {}
+let activeTab = 'overview';
+let routeEditing = null;
+let toastTimer;
+const screen = $('workspace');
+const toolDialog = $('detail');
+
+let chartPeriod = 'today';
+const options = (items, selected) => items.map(item => {
+  const [value,label] = Array.isArray(item) ? item : [item,item];
+  return '<option value="'+e(value)+'"'+(value === selected ? ' selected' : '')+'>'+e(label)+'</option>';
+}).join('');
+const chip = (label,tone='',dot=false) => '<span class="chip '+tone+'">'+(dot ? '<span class="dot" aria-hidden="true"></span>' : '')+e(label)+'</span>';
+const statusChip = call => chip(...callStates[call.status],true);
+const button = (label, action, kind='', extra='') => '<button type="button" class="btn '+kind+'" data-action="'+action+'" '+extra+'>'+label+'</button>';
+const hero = (type,title,summary,action) => '<header class="hero '+type+'"><div class="wave" aria-hidden="true"></div><div class="spread"><div><h1 id="page-heading" tabindex="-1">'+title+'</h1><p>'+summary+'</p></div>'+action+'</div></header>';
+const detailRows = rows => '<dl class="details">'+rows.map(([label,value])=>'<div><dt>'+label+'</dt><dd>'+value+'</dd></div>').join('')+'</dl>';
+const routeStrip = steps => '<div class="route-strip">'+steps.map((step,index) => (index ? '<span class="route-divider" aria-hidden="true">‹</span>' : '')+'<span class="route-step">'+e(step)+'</span>').join('')+'</div>';
+function notify(message) {
+  clearTimeout(toastTimer);
+  $('toast').textContent = message;
+  $('toast').hidden = false;
+  toastTimer = setTimeout(() => $('toast').hidden = true, 5000);
+}
+function leave() {
+  return !dirty() || window.confirm('تغییرات ذخیره‌نشده کنار گذاشته شوند؟');
+}
+function setMenu(open) {
+  $('sidebar').classList.toggle('open',open);
+  $('menu').setAttribute('aria-expanded',String(open));
+}
+
+function dirty() {
+  if (!routeEditing?.isConnected) return false;
+  const changes = new FormData(routeEditing);
+  return Object.keys(defaultRoute).some(field => changes.get(field) !== state.route[field]);
+}
+
+function render() {
+  const nav = '<nav aria-label="بخش‌های مرکز تلفن" class="tabs">'+tabs.map(([id,label]) =>
+    '<button type="button" class="tab" data-tab="'+id+'" aria-current="'+(id === activeTab)+'">'+label+'</button>'
+  ).join('')+'</nav>';
+  const view = {overview,'main-line':mainLine,history:historyView,lines,routing}[activeTab];
+  screen.innerHTML = hero('','مرکز تلفن گرین‌لایف','وضعیت خط اصلی، صف‌ها و مسیر پاسخ‌گویی شعبه‌ها',
+    '<button type="button" class="btn primary" data-tab="main-line">بررسی خط اصلی</button>') + nav + view() +
+    '<p class="footer">قواعد نمونه فقط روی همین دستگاه ذخیره می‌شوند.</p>';
+  routeEditing = $('route-editor');
+}
+
+function activateTab(id, updateHash = true) {
+  if (id === activeTab) return;
+  if (!leave()) {
+    if (!updateHash) history.replaceState(null, '', '#'+activeTab);
+    return;
+  }
+  activeTab = id;
+  if (updateHash) history.replaceState(null, '', '#'+id);
+  render();
+  screen.querySelector('.tab[aria-current="true"]').focus({preventScroll:true});
+}
+
+function mainLine() {
+  return '<section class="panel"><div class="panel-head spread"><div><h2>خط اصلی گرین‌لایف <bdi>'+mainPhone+'</bdi></h2>'+
+    '<p class="small">وضعیت ثبت‌شدهٔ بررسی پیش از اتصال</p></div></div>'+
+    '<label>بارگذاری گزارش بررسی Asterisk<input id="main-line-report" type="file" accept=".json,application/json"></label>'+
+    '<p class="small" id="main-line-message" role="status"></p><div id="main-line-results" aria-live="polite">'+lineReportView()+'</div></section>';
+}
+function lineReportView() {
+  const report = lastLineReport;
+  const states = {pass:['تأیید شد','green'],fail:['نیاز به بررسی','red'],pending:['در انتظار','amber']};
+  const route = report?.route === 'legacy' ? 'مسیر قبلی' : report?.route === 'pilot' ? 'دستیار آزمایشی' : 'نامشخص';
+  const when = report ? new Intl.DateTimeFormat('fa-IR',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Tehran'}).format(new Date(report.checkedAt)) : 'گزارشی بارگذاری نشده';
+  const confirmed = Object.values(report?.checks || {}).filter(check => check.status === 'pass').length;
+  return '<div class="result"><p class="small">'+e(when)+' · مسیر ثبت‌شده '+e(route)+' · '+fa(confirmed)+' از '+fa(Object.keys(lineChecks).length)+' بررسی تأیید شد</p></div>'+
+    '<ul class="log">'+Object.entries(lineChecks).map(([key,label]) => {
+      const check = report?.checks[key];
+      return '<li><div class="spread"><strong>'+e(label)+'</strong>'+chip(...states[check?.status ?? 'pending'])+'</div>'+
+        (check ? '<p class="small">'+e(check.detail)+' · '+(check.source === 'operator' ? 'آزمون مسئول فنی' : 'بررسی سرور')+'</p>' : '')+'</li>';
+    }).join('')+'</ul>';
+}
+async function importLineReport(file) {
+  const message = $('main-line-message');
+  if (!file || !message) return;
+  try {
+    if (file.size > 65_536) throw new Error();
+    const data = JSON.parse(await file.text());
+    if (!message.isConnected) return;
+    if (data.schema !== 'greenlife-voip-preflight/1' || data.number !== mainPhone ||
+        typeof data.checked_at !== 'string' || !Number.isFinite(Date.parse(data.checked_at)) ||
+        !['legacy','pilot','unknown'].includes(data.route)) throw new Error();
+    const entries = Object.keys(lineChecks).map(key => {
+      const check = data.checks?.[key];
+      if (!check || !['pass','fail','pending'].includes(check.status) || typeof check.detail !== 'string' ||
+          !['pbx','operator'].includes(check.source)) throw new Error();
+      return [key,{status:check.status,detail:check.detail.slice(0,300),source:check.source}];
+    });
+    lastLineReport = {route:data.route,checkedAt:data.checked_at,checks:Object.fromEntries(entries)};
+    $('main-line-results').innerHTML = lineReportView();
+    message.textContent = 'گزارش بررسی بارگذاری شد.';
+  } catch {
+    message.textContent = 'این فایل، گزارش معتبر بررسی خط اصلی نیست.';
+  }
+}
+function metric(label,value,context,tone='') {
+  return '<div class="metric"><div class="metric-label">'+label+'</div><strong>'+value+'</strong>'+chip(context,tone)+'</div>';
+}
+function overview() {
+  return '<div class="stack"><section class="metrics" aria-label="شاخص‌های تلفن">'+
+    metric('پاسخ‌داده‌شده امروز','۷۶','از ۸۶ تماس ورودی','green')+
+    metric('بی‌پاسخ امروز','۱۰','نیاز به پیگیری','red')+
+    metric('منتظر در صف','۲ تماس','طولانی‌ترین انتظار ۴۲ ثانیه','amber')+
+    metric('وضعیت تلفن','پیش‌نمایش','اتصال زنده برقرار نیست','amber')+
+    '</section><div class="duo"><section class="panel"><div class="panel-head spread"><div><h2>نمونهٔ تماس‌های در جریان</h2><p class="small">مکالمه‌ها و صف انتظار شعبه‌ها</p></div>'+chip('۳ تماس','green',true)+'</div><div class="call-list">'+liveCalls.map(call => button(
+      '<span class="call-person"><span class="avatar" aria-hidden="true">☎</span><span><strong>'+e(call.branch)+'</strong><small>'+e(call.queue)+'</small></span></span>'+
+      '<span><strong>'+e(call.person)+'</strong><small>'+e(call.duration)+'</small></span>'+statusChip(call),
+      'call','call-row','data-id="'+call.id+'"')).join('')+'</div></section>'+
+    '<section class="panel"><div class="spread"><h2>روند تماس‌های ورودی</h2><div class="segment" aria-label="بازه نمودار">'+
+    ['today','week'].map(period => '<button type="button" data-period="'+period+'" aria-pressed="'+(chartPeriod === period)+'">'+(period === 'today' ? 'امروز' : '۷ روز')+'</button>').join('')+
+    '</div></div><div id="chart">'+chart()+'</div></section></div>'+
+    '<section class="panel"><div class="spread"><div><h2>مسیر نمونه تماس ورودی</h2><p class="small">ورود از خط اصلی در ساعت کاری</p></div><button type="button" data-tab="routing" class="btn compact">مشاهده مسیر تماس</button></div>'+
+    routeStrip(['خط اصلی','بررسی ساعت کاری','مسیر پاسخ‌گویی',state.route.fallback])+'</section></div>';
+}
+function chart() {
+  const data = trend[chartPeriod];
+  const max = Math.max(...data.answered);
+  const alt = data.labels.map((label,index)=>label+'، '+fa(data.answered[index])+' پاسخ و '+fa(data.missed[index])+' بی‌پاسخ').join('؛ ');
+  return '<div class="chart" role="img" aria-label="'+e(data.caption+'؛ '+alt)+'"><div class="bars">'+data.labels.map((label,index) => {
+    const hit = data.answered[index], miss = data.missed[index];
+    return '<div class="bar-group" title="'+e(label+' | '+fa(hit)+' پاسخ، '+fa(miss)+' بی‌پاسخ')+'"><span class="bar" style="height:'+(hit / max * 92)+'%"></span>'+(miss ? '<span class="bar miss" style="height:'+(miss / max * 92)+'%"></span>' : '')+'</div>';
+  }).join('')+'</div><div class="chart-labels">'+data.labels.map(item=>'<span>'+item+'</span>').join('')+'</div></div>'+
+  '<div class="legend"><span><i style="background:var(--green)"></i>پاسخ داده شد</span><span><i style="background:var(--violet)"></i>بی‌پاسخ</span></div>';
+}
+function historyView() {
+  return '<section class="panel"><div class="panel-head"><h2>سابقه تماس</h2><p class="small">فهرست تماس‌های پایان‌یافته نمونه</p></div>'+
+    '<form id="filters" class="filters" role="search"><label>جست‌وجوی تماس<input name="q" type="search" placeholder="شناسه تماس یا نام پاسخ‌دهنده"></label>'+
+    '<label>شعبه<select name="branch">'+options([['','همه شعبه‌ها'],...branches],'')+'</select></label>'+
+    '<label>نتیجه<select name="status">'+options([['','همه وضعیت‌ها'],...['answered','missed','diverted'].map(value => [value,callStates[value][0]])],'')+'</select></label></form>'+
+    '<div class="table-wrap"><table><thead><tr><th>شناسه و ساعت</th><th>شعبه</th><th>نوع تماس</th><th>پاسخ‌دهنده</th><th>نتیجه</th><th>جزئیات</th></tr></thead><tbody id="history-rows">'+historyRows(historyCalls)+'</tbody></table></div></section>';
+}
+function historyRows(rows) {
+  if (!rows.length) return '<tr><td colspan="6" class="empty">تماسی با این فیلترها پیدا نشد.</td></tr>';
+  return rows.map(call => '<tr><td><bdi>'+call.id+'</bdi> <small>'+call.time+'</small></td><td>'+call.branch+'</td><td>'+call.kind+'</td><td>'+call.person+'</td><td>'+statusChip(call)+'</td><td>'+button('جزئیات','call','compact','data-id="'+call.id+'" aria-label="جزئیات تماس '+call.id+'"')+'</td></tr>').join('');
+}
+function lines() {
+  return '<div class="duo equal"><section class="panel"><div class="panel-head"><h2>خطوط تلفن و داخلی‌ها</h2><p class="small">نمونه نمایش وضعیت اتصال</p></div>'+
+    detailRows([['سامانه تلفنی','<bdi>Asterisk</bdi> '+chip('اتصال زنده برقرار نیست','amber')],['خط اصلی شاتل',chip('در انتظار تأیید اتصال','amber')],['داخلی‌های شعبه‌ها','نیاوران، پونک، اصفهان و افسریه'],['داخلی آزمون تلفن','<bdi>125</bdi> '+chip('آزمون روی سرور')]])+
+    '</section><section class="panel"><div class="panel-head"><h2>صف‌ها و مقصدهای ارجاع</h2><p class="small">صف فعال و تماس‌های منتظر</p></div>'+
+    detailRows([['کال‌سنتر',chip('۱ منتظر','amber')],['پذیرش شعبه',chip('۱ منتظر','amber')],['صف پیگیری',chip('بدون انتظار','green')],['داخلی سرپرست',chip('مقصد جایگزین','violet')]])+
+    '</section></div>';
+}
+function routing() {
+  const route = state.route;
+  return '<div class="duo equal"><section class="panel"><div class="panel-head"><h2>قواعد مسیر تماس</h2><p class="small">ساعت‌ها به وقت تهران. برای توقف تست دستیار، مسیر پاسخ‌گویی انسانی را انتخاب کنید.</p></div>'+
+    '<form id="route-editor" class="form-grid"><label>شروع ساعت کاری<input type="time" name="start" value="'+e(route.start)+'" required></label><label>پایان ساعت کاری<input type="time" name="end" value="'+e(route.end)+'" required></label>'+
+    '<label class="wide">مقصد در ساعت کاری یا هنگام اختلال دستیار<select name="fallback">'+options(destinations,route.fallback)+'</select></label>'+
+    '<label class="wide">مقصد خارج ساعت کاری<select name="afterHours">'+options(destinations,route.afterHours)+'</select></label>'+
+    '<label class="wide">دستیار پیش‌فرض داخلی آزمایشی <bdi>890</bdi><select name="testProfile">'+options(testProfiles,route.testProfile)+'</select></label>'+
+    '<div class="wide"><button class="btn primary" type="submit">ذخیره مسیر نمونه</button></div></form></section>'+
+    '<section class="panel"><div class="panel-head"><h2>آزمون مسیر تماس</h2><p class="small">یک ساعت و وضعیت انتخاب کنید تا مسیر تماس مشخص شود.</p></div>'+
+    '<form id="route-test" class="form-grid"><label>ساعت تماس<input type="time" name="time" value="12:00" required></label>'+
+    '<label>وضعیت تماس<select name="mode"><option value="normal">تماس عادی</option><option value="error">اختلال دستیار</option></select></label>'+
+    '<label class="wide">مسیر این آزمون<select name="profile">'+options([['default','طبق مسیر ذخیره‌شده'],...testProfiles],'default')+'</select></label>'+
+    '<div class="wide"><button class="btn" type="submit">نمایش مسیر</button></div></form><div id="route-result" aria-live="polite" hidden></div></section></div>';
+}
+function showDialog(title,contents) {
+  toolDialog.innerHTML = '<div class="spread"><h2 id="dialog-title">'+title+'</h2>'+button('بستن','close','compact')+'</div>'+contents;
+  toolDialog.showModal();
+}
+function selectCall(id) {
+  const call = [...liveCalls,...historyCalls].find(item => item.id === id);
+  if (!call) return;
+  const sectionTitle = call.kind === 'ورودی' ? 'ورود تماس' : 'تماس خروجی';
+  showDialog('جزئیات تماس <bdi>'+call.id+'</bdi>',
+    detailRows([['شعبه',e(call.branch)],['ساعت شروع',e(call.time)],['نوع',e(call.kind)],['پاسخ‌دهنده یا مقصد',e(call.person)],
+      ['مدت مکالمه یا انتظار',e(call.duration)],['نتیجه',statusChip(call)],['ضبط مکالمه',call.recorded ? 'فایل نمونه در دسترس نیست' : 'فایلی ثبت نشده']])+
+    routeStrip([sectionTitle,call.queue,callStates[call.status][0]]));
+}
+function filterHistory() {
+  const values = new FormData($('filters'));
+  const query = values.get('q').trim().toLowerCase();
+  const branch = values.get('branch');
+  const status = values.get('status');
+  $('history-rows').innerHTML = historyRows(historyCalls.filter(call => {
+    return (!query || [call.id,call.person,call.queue,call.branch].join(' ').toLowerCase().includes(query)) &&
+      (!branch || call.branch === branch) && (!status || call.status === status);
+  }));
+}
+function saveRoute(form) {
+  const data = Object.fromEntries(new FormData(form));
+  if (data.start === data.end) { notify('زمان شروع و پایان باید متفاوت باشد.'); return; }
+  state.route = data;
+  $('route-result').hidden = true;
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+    notify('قواعد مسیر تماس در پیش‌نمایش ذخیره شدند.');
+  } catch {
+    notify('قواعد این نشست تغییر کردند. ذخیره در مرورگر در دسترس نیست.');
+  }
+}
+function testRoute(form) {
+  const data = new FormData(form);
+  const time = data.get('time');
+  const route = state.route;
+  const inHours = route.start < route.end
+    ? time >= route.start && time < route.end
+    : time >= route.start || time < route.end;
+  const target = data.get('profile') === 'default' ? route.testProfile : data.get('profile');
+  const steps = ['ورود تماس نمونه'];
+  if (!inHours) steps.push('خارج ساعت کاری',route.afterHours);
+  else if (!target) steps.push('ساعت کاری','مسیر پاسخ‌گویی انسانی',route.fallback);
+  else if (data.get('mode') === 'error') steps.push('ساعت کاری','داخلی آزمایشی 890','اختلال دستیار',route.fallback);
+  else steps.push('ساعت کاری','داخلی آزمایشی 890','دستیار آزمایشی');
+  $('route-result').innerHTML = '<div class="result"><strong>مسیر تماس در ساعت <bdi>'+e(time)+'</bdi></strong>'+routeStrip(steps)+'</div>';
+  $('route-result').hidden = false;
+}
+
+document.addEventListener('click', event => {
+  const control = event.target.closest('[data-action],[data-tab],[data-period],#menu');
+  if (!control) return;
+  if (control.id === 'menu') setMenu(control.getAttribute('aria-expanded') !== 'true');
+  if (control.dataset.tab) activateTab(control.dataset.tab);
+  if (control.dataset.period) {
+    chartPeriod = control.dataset.period;
+    document.querySelectorAll('[data-period]').forEach(option =>
+      option.setAttribute('aria-pressed',String(option.dataset.period === chartPeriod)));
+    $('chart').innerHTML = chart();
+  }
+  if (control.dataset.action === 'call') selectCall(control.dataset.id);
+  if (control.dataset.action === 'close') toolDialog.close();
+});
+const forms = {'filters':filterHistory,'route-editor':saveRoute,'route-test':testRoute};
+document.addEventListener('submit',event => {
+  const handler = forms[event.target.id];
+  if (!handler) return;
+  event.preventDefault();
+  handler(event.target);
+});
+document.addEventListener('input',event => {
+  if (event.target.form?.id === 'filters') filterHistory();
+});
+document.addEventListener('change',event => {
+  if (event.target.id === 'main-line-report') importLineReport(event.target.files[0]);
+  if (event.target.form?.id === 'filters') filterHistory();
+});
+document.addEventListener('keydown',event => {
+  if (event.key === 'Escape' && $('sidebar').classList.contains('open') && !toolDialog.open) {
+    setMenu(false);
+    $('menu').focus();
+  }
+});
+function tabFromHash() {
+  return tabs.find(([id]) => '#'+id === location.hash)?.[0] ?? 'overview';
+}
+window.addEventListener('hashchange',() => activateTab(tabFromHash(),false));
+activeTab = tabFromHash();
+render();
+</script>
+</body>
+</html>
