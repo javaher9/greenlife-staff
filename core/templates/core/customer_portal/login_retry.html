@@ -1,0 +1,15 @@
+{% extends 'core/customer_portal/layout.html' %}
+{% block title %}ادامهٔ ورود | گرین‌لایف{% endblock %}
+{% block content %}
+<section class="panel">
+  <h1>ادامهٔ ورود به گرین‌لایف</h1>
+  {% if address_mismatch %}
+    <p>آدرس این صفحه برای ورود شناخته نشد. از آدرس اصلی گرین‌لایف وارد شوید.</p>
+    <a class="btn" href="https://greenlife-me-preview.vercel.app/customer/login/?next=%2Fcustomer%2Fme%2Fconnect%2F">ورود از آدرس اصلی</a>
+  {% else %}
+    <p>فرم ورود را تازه کنید و دوباره ادامه دهید.</p>
+    <a class="btn" href="{{ retry_url }}">تازه‌سازی فرم ورود</a>
+  {% endif %}
+</section>
+{% endblock %}
+{% block dock %}{% endblock %}
