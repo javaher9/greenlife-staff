@@ -20,7 +20,7 @@ class FinanceMonthComparisonTests(TestCase):
         )
         self.nia = Branch.objects.create(name="نیاوران", country=self.iran)
         self.ponak = Branch.objects.create(name="پونک", country=self.iran)
-        self.istanbul = Branch.objects.create(name="استانبول", country=self.turkey)
+        self.istanbul, _ = Branch.objects.get_or_create(name="استانبول", defaults={"country": self.turkey})
         self.owner = User.objects.create_user("finance-comparison-admin", password="safe-test")
         EmployeeProfile.objects.create(user=self.owner, role="admin")
         self.manager = User.objects.create_user("finance-comparison-manager", password="safe-test")
