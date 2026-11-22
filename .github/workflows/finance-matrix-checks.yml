@@ -7,6 +7,11 @@ on:
       - 'core/templates/core/finance_dashboard.html'
       - 'core/templatetags/finance_intelligence.py'
       - 'core/tests/test_finance_flower_matrix.py'
+      - 'core/finance_month_comparison_views.py'
+      - 'core/templates/core/finance_month_comparison.html'
+      - 'core/tests/test_finance_month_comparison.py'
+      - 'core/urls.py'
+      - 'core/views.py'
       - '.github/workflows/finance-matrix-checks.yml'
   workflow_dispatch:
 
@@ -50,4 +55,4 @@ jobs:
       - run: python -m compileall -q core
       - run: python manage.py check
       - name: Finance matrix, aliases and finance entry regression
-        run: python manage.py test core.tests.test_finance_flower_matrix core.tests.test_consultant_finance --verbosity 2
+        run: python manage.py test core.tests.test_finance_flower_matrix core.tests.test_consultant_finance core.tests.test_finance_month_comparison --verbosity 2
