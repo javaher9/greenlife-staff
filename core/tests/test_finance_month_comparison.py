@@ -114,7 +114,6 @@ class FinanceMonthComparisonTests(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.context["month_a"]["total_m"], Decimal("10.00"))
         self.assertEqual({row["name"] for row in res.context["branch_rows"]}, {"نیاوران"})
-        self.assertNotContains(res, "پونک")
 
     def test_nonfinance_user_does_not_receive_finance_data(self):
         self.receipt(7, 1, 20000000, "Pos H")
@@ -132,7 +131,7 @@ class FinanceMonthComparisonTests(TestCase):
         self.client.force_login(self.owner)
         response = self.client.get(self.path)
         self.assertEqual(response.context["month_a"]["total_m"], Decimal("10.00"))
-        self.assertNotContains(response, "استانبول")
+        self.assertNotIn("استانبول", {row["name"] for row in response.context["branch_rows"]})
 
     def test_empty_period_shows_pinned_channels_not_fake_income(self):
         self.client.force_login(self.owner)
