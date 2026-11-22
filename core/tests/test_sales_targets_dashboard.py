@@ -297,9 +297,10 @@ class SalesTargetsDashboardTests(TestCase):
         rollover = importlib.import_module(
             "core.migrations.0137_copy_aban_targets_to_azar_1405"
         ).copy_aban_to_azar
-        with connection.schema_editor() as editor:
-            rollover(apps, editor)
-            rollover(apps, editor)
+        from types import SimpleNamespace
+        editor = SimpleNamespace(connection=connection)
+        rollover(apps, editor)
+        rollover(apps, editor)
         azar = SalesTargetBand.objects.filter(period_year=1405, period_month=9)
         self.assertEqual(azar.count(), 4)
         self.assertEqual(azar.get(key="1405-09:overall").sales_floor, Decimal("1000"))
