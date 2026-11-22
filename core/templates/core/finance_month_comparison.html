@@ -1,0 +1,227 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<style>
+body.gl-page-finance_month_comparison {background:#06111b!important;color:#eef7ff!important;color-scheme:dark}
+body.gl-page-finance_month_comparison .app-main,
+body.gl-page-finance_month_comparison main {background:#06111b!important;color:#eef7ff!important}
+.fmc{--bg:#06111b;--panel:#0c1c2c;--border:rgba(128,174,203,.22);--text:#eff8ff;--muted:#9bb3c7;--a:#8c83ff;--b:#27d5ad;max-width:1460px;margin:0 auto;padding:12px 4px 36px;color:var(--text);direction:rtl;display:grid;gap:15px}
+.fmc *{box-sizing:border-box}
+.fmc a{color:#b7edff;text-decoration:none}
+.fmc h1,.fmc h2,.fmc h3{margin:0;color:#fff!important}
+.fmc h1{font-size:clamp(23px,2.8vw,31px)!important;line-height:1.35}
+.fmc h2{font-size:16px!important}
+.fmc small,.fmc .muted{color:var(--muted)}
+.fmc-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.fmc-sub{margin-top:4px;color:#91aec3;font-size:12px}
+.fmc-back,.fmc-button{display:inline-flex;align-items:center;justify-content:center;min-height:41px;padding:9px 16px;border:1px solid #37647e;border-radius:11px;background:#133046!important;color:#e8f7ff!important;font-size:12px;font-weight:800;cursor:pointer}
+.fmc-button{background:linear-gradient(100deg,#6f53df,#239f97)!important;border-color:rgba(167,172,252,.45)}
+.fmc-panel{border:1px solid var(--border);background:linear-gradient(145deg,rgba(13,29,44,.98),rgba(6,18,30,.98))!important;border-radius:16px;padding:16px;box-shadow:0 12px 28px rgba(0,0,0,.19)}
+.fmc-filters{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px;align-items:end}
+.fmc-field label{display:block;margin:0 3px 6px;font-size:11px;font-weight:850;color:#bfd6e6}
+.fmc-field select{display:block;width:100%;min-height:43px;border:1px solid #31516a!important;border-radius:10px;background:#0b2437!important;color:#f6fbff!important;padding:8px;direction:rtl;font-size:12px;outline-offset:2px}
+.fmc-field select:focus-visible{outline:2px solid #75ddce}
+.fmc-field.month label{color:#c5c3ff}
+.fmc-note{margin:0;font-size:11px;line-height:1.9;color:#afc3d2}
+.fmc-warn{border-right:3px solid #eab45a;padding:11px 14px;background:rgba(175,116,29,.1);border-radius:9px;color:#efdbb6;font-size:12px;line-height:1.9}
+.fmc-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.fmc-stat{border:1px solid var(--border);border-radius:14px;padding:16px 13px;min-height:119px;background:linear-gradient(150deg,#12263a,#0a1b2b)!important}
+.fmc-stat span{font-size:11px;font-weight:800;color:#9db7cb;display:block}
+.fmc-stat strong{display:block;margin-top:12px;color:#fff;font:900 clamp(20px,2.25vw,30px)/1.2 Tahoma,Arial,sans-serif;direction:ltr;text-align:right;font-variant-numeric:tabular-nums}
+.fmc-stat small{display:block;margin-top:8px;font-size:10px}
+.fmc-stat.a{border-top:3px solid var(--a)}.fmc-stat.b{border-top:3px solid var(--b)}.fmc-stat.d{border-top:3px solid #ffcb76}
+.fmc-topline{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.fmc-titleline{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.fmc-pill{font-size:10px;font-weight:900;border:1px solid #355b73;border-radius:40px;padding:4px 10px;color:#c2e5fb;background:#102b42}
+.fmc-chart-actions{display:flex;gap:7px;flex-wrap:wrap}
+.fmc-toggle{font:800 11px inherit;cursor:pointer;background:#132b3d;color:#d0e0ec;border:1px solid #34516b;border-radius:9px;padding:8px 12px}
+.fmc-toggle.active{background:#293969!important;border-color:#8983ff!important;color:#fff}
+.fmc-legend{display:flex;align-items:center;gap:18px;flex-wrap:wrap;font-size:11px;color:#bfd4e2;margin:6px 0 10px}
+.fmc-legend i{display:inline-block;width:10px;height:10px;margin-left:6px;border-radius:3px}
+.fmc-svg-scroll{overflow:auto;max-width:100%;border-radius:11px;background:#071925}
+.fmc-svg-scroll svg{width:100%;min-width:680px;height:280px;display:block}
+.fmc-tables{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fmc-data-scroll{overflow-x:auto}
+.fmc-table{width:100%;border-collapse:collapse;min-width:450px;font-size:11px;color:#d7e7f2}
+.fmc-table th{text-align:right;padding:11px 9px;border-bottom:1px solid #426078;color:#a7c6d9;white-space:nowrap;font-size:10px}
+.fmc-table td{padding:11px 9px;border-bottom:1px solid rgba(113,157,182,.12);vertical-align:middle}
+.fmc-table .n{direction:ltr;unicode-bidi:isolate;text-align:right;font-weight:850;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fmc-table tr:last-child td{border-bottom:0}
+.fmc-up{color:#53e0b3!important}.fmc-down{color:#ffa5ab!important}.fmc-neutral{color:#a3b9cb!important}
+.fmc-rails{display:flex;flex-direction:column;gap:4px;min-width:64px}
+.fmc-rail{height:5px;border-radius:3px;overflow:hidden;background:#172e40}
+.fmc-rail i{display:block;height:100%;border-radius:3px;background:var(--a)}
+.fmc-rail.b i{background:var(--b)}
+.fmc-insights{display:grid;gap:8px}
+.fmc-insight{border-right:3px solid #6e86e8;background:rgba(99,123,177,.08);padding:11px 13px;border-radius:8px;color:#dbeafa;font-size:12px;line-height:1.9}
+.fmc-empty{color:#99b1c1;font-size:12px;padding:12px 0}
+@media(max-width:1350px){.fmc-filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:950px){.fmc-tables{grid-template-columns:1fr}.fmc-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.fmc{gap:10px}.fmc-panel{padding:12px}.fmc-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.fmc-field{min-width:0}.fmc-head{align-items:flex-start}.fmc-stat{min-height:107px;padding:11px}.fmc-stat strong{font-size:20px}.fmc-chart-actions{width:100%}.fmc-toggle{flex:1}.fmc-table{font-size:10px}}
+</style>
+<div class="fmc">
+  <div class="fmc-head">
+    <div><h1>مقایسه هوشمند درآمدها</h1><div class="fmc-sub">FINANCE | MONTH-TO-MONTH INTELLIGENCE · داده واقعی و فقط‌خواندنی</div></div>
+    <a class="fmc-back" href="{% url 'finance_dashboard' %}">بازگشت به مالی و درآمد</a>
+  </div>
+  <section class="fmc-panel">
+    <form method="get" class="fmc-filters" aria-label="انتخاب دو ماه برای مقایسه">
+      <div class="fmc-field month"><label for="fmc-a">ماه اول (مبنا)</label><select name="a" id="fmc-a">{% for option in month_options %}<option value="{{ option }}" {% if option == month_a.key %}selected{% endif %}>{{ option }}</option>{% endfor %}</select></div>
+      <div class="fmc-field month"><label for="fmc-b">ماه دوم (مقایسه)</label><select name="b" id="fmc-b">{% for option in month_options %}<option value="{{ option }}" {% if option == month_b.key %}selected{% endif %}>{{ option }}</option>{% endfor %}</select></div>
+      <div class="fmc-field"><label for="fmc-branch">شعبه</label><select name="branch" id="fmc-branch" {% if user.profile.role == 'manager' %}disabled{% endif %}><option value="">همه شعب</option>{% if user.profile.role != 'manager' %}<option value="afsariyeh" {% if afsariyeh_only %}selected{% endif %}>افسریه / بیعانه کال‌سنتر</option>{% endif %}{% for item in branches %}<option value="{{ item.pk }}" {% if branch.pk == item.pk %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select>{% if user.profile.role == 'manager' %}<input type="hidden" name="branch" value="{{ branch.pk }}">{% endif %}</div>
+      <div class="fmc-field"><label for="fmc-flower">گل کال‌سنتر</label><select name="flower" id="fmc-flower"><option value="">همه گل‌ها</option>{% for item in flowers %}<option value="{{ item.user_id }}" {% if item.user_id == flower_id %}selected{% endif %}>{{ item.user.get_full_name|default:item.user.username }}</option>{% endfor %}</select></div>
+      <div class="fmc-field"><label for="fmc-source">منشأ لید</label><select name="source" id="fmc-source"><option value="">همه منابع</option>{% for code,label in source_options %}<option value="{{ code }}" {% if source == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="fmc-field"><label for="fmc-service">خدمت</label><select name="service" id="fmc-service"><option value="">همه خدمات</option>{% for code,label in service_options %}<option value="{{ code }}" {% if service == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div style="grid-column:1/-1;display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between">
+        <p class="fmc-note">دو ماه دلخواه از ۵ سال اخیر؛ تمام بخش‌ها از فیلترهای همین فرم پیروی می‌کنند. واحد مبلغ: میلیون تومان.</p>
+        <button class="fmc-button" type="submit">مقایسه دو ماه</button>
+      </div>
+    </form>
+  </section>
+  {% if invalid_month %}<div class="fmc-warn">ماه انتخاب‌شده معتبر نبود؛ آخرین دو ماه کامل جایگزین شدند.</div>{% endif %}
+  <div class="fmc-kpis">
+    <section class="fmc-stat a"><span>درآمد تأییدشده · {{ month_a.key }}</span><strong>{{ month_a.total_m|floatformat:2 }}</strong><small>میلیون تومان · {{ month_a.count }} فیش</small></section>
+    <section class="fmc-stat b"><span>درآمد تأییدشده · {{ month_b.key }}</span><strong>{{ month_b.total_m|floatformat:2 }}</strong><small>میلیون تومان · {{ month_b.count }} فیش</small></section>
+    <section class="fmc-stat d"><span>تغییر درآمد ماه دوم نسبت به اول</span><strong class="{% if delta_m > 0 %}fmc-up{% elif delta_m < 0 %}fmc-down{% endif %}">{{ delta_m|floatformat:2 }}</strong><small>{% if delta_pct is not None %}{{ delta_pct }}٪ تغییر{% else %}مبنای اول صفر؛ درصد قابل محاسبه نیست{% endif %}{% if incomplete %} · ماه جاری ناقص است{% endif %}</small></section>
+    <section class="fmc-stat"><span>میانگین هر فیش</span><strong>{{ month_a.average_m|floatformat:2 }} / {{ month_b.average_m|floatformat:2 }}</strong><small>ماه اول / ماه دوم · میلیون تومان</small></section>
+  </div>
+  <div class="fmc-warn">
+    این تحلیل از <strong>اسناد تأییدشده موجود در GreenLife Staff</strong> ساخته شده است، نه موجودی حساب بانکی یا سود حسابداری. داده‌های ماه‌های قدیمی فقط در صورتی کامل‌اند که قبلاً در Staff ثبت یا از CRM همگام شده باشند؛ نبود رکورد الزاماً به معنی درآمد صفر نیست. دریافت‌های در انتظار تأیید در جمع قطعی لحاظ نمی‌شوند.
+  </div>
+  <section class="fmc-panel">
+    <div class="fmc-topline">
+      <div><h2>منحنی مقایسه‌ای روزبه‌روز</h2><small>دو ماه با محور مشترک روز شمسی · روزانه، تجمعی یا تعداد فیش</small></div>
+      <div class="fmc-chart-actions" role="group" aria-label="نمایش نمودار">
+        <button type="button" class="fmc-toggle active" data-mode="daily" aria-pressed="true">درآمد روزانه</button>
+        <button type="button" class="fmc-toggle" data-mode="cumulative" aria-pressed="false">درآمد تجمعی</button>
+        <button type="button" class="fmc-toggle" data-mode="count" aria-pressed="false">تعداد فیش</button>
+      </div>
+    </div>
+    <div class="fmc-legend"><span><i style="background:#8c83ff"></i>{{ month_a.key }} · ماه اول</span><span><i style="background:#27d5ad"></i>{{ month_b.key }} · ماه دوم</span></div>
+    <div class="fmc-svg-scroll"><svg id="fmc-plot" viewBox="0 0 980 270" preserveAspectRatio="xMidYMid meet" role="img" aria-label="مقایسه روزانه درآمد دو ماه"></svg></div>
+    {{ chart_data|json_script:"fmc-chart-data" }}
+    <p class="fmc-note" id="fmc-chart-note">نمودار روزانه غیرتجمعی است؛ هر نقطه فقط فروش همان روز را نشان می‌دهد. ارقام از اسناد تأییدشده محاسبه شده‌اند.</p>
+  </section>
+  <div class="fmc-tables">
+    <section class="fmc-panel">
+      <div class="fmc-topline"><h2>روش‌های پرداخت</h2><span class="fmc-pill">POS-H · POS-S · CC-G و سایر کانال‌ها</span></div>
+      <div class="fmc-data-scroll"><table class="fmc-table"><thead><tr><th>کانال</th><th>{{ month_a.key }}</th><th>{{ month_b.key }}</th><th>اختلاف</th><th>نمودار</th></tr></thead><tbody>
+      {% for row in payments %}<tr><td><strong>{{ row.name }}</strong><div class="muted">{{ row.share_a }}٪ ← {{ row.share_b }}٪ سهم</div></td><td class="n">{{ row.a|floatformat:2 }}</td><td class="n">{{ row.b|floatformat:2 }}</td><td class="n {% if row.delta > 0 %}fmc-up{% elif row.delta < 0 %}fmc-down{% endif %}">{{ row.delta|floatformat:2 }}</td><td><div class="fmc-rails"><div class="fmc-rail"><i style="width:{{ row.bar_a }}%"></i></div><div class="fmc-rail b"><i style="width:{{ row.bar_b }}%"></i></div></div></td></tr>{% empty %}<tr><td colspan="5" class="fmc-empty">داده‌ای در دو ماه انتخاب‌شده ثبت نشده است.</td></tr>{% endfor %}
+      </tbody></table></div><p class="fmc-note">هر فیش فقط در یک روش پرداخت شمارش شده است؛ دسته‌های بدون دریافت، با عدد صفر نمایش داده می‌شوند.</p>
+    </section>
+    <section class="fmc-panel">
+      <div class="fmc-topline"><h2>عملکرد شعب</h2><span class="fmc-pill">مبلغ تأییدشده</span></div>
+      <div class="fmc-data-scroll"><table class="fmc-table"><thead><tr><th>شعبه / واحد</th><th>{{ month_a.key }}</th><th>{{ month_b.key }}</th><th>اختلاف</th><th>نمودار</th></tr></thead><tbody>
+      {% for row in branch_rows %}<tr><td><strong>{{ row.name }}</strong><div class="muted">{{ row.share_a }}٪ ← {{ row.share_b }}٪ سهم</div></td><td class="n">{{ row.a|floatformat:2 }}</td><td class="n">{{ row.b|floatformat:2 }}</td><td class="n {% if row.delta > 0 %}fmc-up{% elif row.delta < 0 %}fmc-down{% endif %}">{{ row.delta|floatformat:2 }}</td><td><div class="fmc-rails"><div class="fmc-rail"><i style="width:{{ row.bar_a }}%"></i></div><div class="fmc-rail b"><i style="width:{{ row.bar_b }}%"></i></div></div></td></tr>{% empty %}<tr><td colspan="5" class="fmc-empty">داده شعبه موجود نیست.</td></tr>{% endfor %}
+      </tbody></table></div><p class="fmc-note">بیعانه کال‌سنتر در واحد افسریه نمایش داده می‌شود؛ مبلغ آن به جمع درآمد اضافه نمی‌شود.</p>
+    </section>
+    <section class="fmc-panel">
+      <div class="fmc-topline"><h2>ترکیب خدمات</h2><span class="fmc-pill">پکیج، دستگاه، دایا، پوست و ...</span></div>
+      <div class="fmc-data-scroll"><table class="fmc-table"><thead><tr><th>نوع خدمت</th><th>{{ month_a.key }}</th><th>{{ month_b.key }}</th><th>تغییر مبلغ</th></tr></thead><tbody>
+      {% for row in services %}<tr><td>{{ row.name }}</td><td class="n">{{ row.a|floatformat:2 }}</td><td class="n">{{ row.b|floatformat:2 }}</td><td class="n {% if row.delta > 0 %}fmc-up{% elif row.delta < 0 %}fmc-down{% endif %}">{{ row.delta|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="4" class="fmc-empty">اطلاعاتی ثبت نشده است.</td></tr>{% endfor %}
+      </tbody></table></div>
+    </section>
+    <section class="fmc-panel">
+      <div class="fmc-topline"><h2>منشأ فروش و لید</h2><span class="fmc-pill">فقط دریافت‌های دارای انتساب</span></div>
+      <div class="fmc-data-scroll"><table class="fmc-table"><thead><tr><th>منشأ</th><th>{{ month_a.key }}</th><th>{{ month_b.key }}</th><th>تغییر مبلغ</th></tr></thead><tbody>
+      {% for row in sources %}<tr><td>{{ row.name }}</td><td class="n">{{ row.a|floatformat:2 }}</td><td class="n">{{ row.b|floatformat:2 }}</td><td class="n {% if row.delta > 0 %}fmc-up{% elif row.delta < 0 %}fmc-down{% endif %}">{{ row.delta|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="4" class="fmc-empty">اطلاعاتی ثبت نشده است.</td></tr>{% endfor %}
+      </tbody></table></div>
+    </section>
+    <section class="fmc-panel">
+      <div class="fmc-topline"><h2>درآمد منتسب به گل‌های کال‌سنتر</h2><span class="fmc-pill">زیرمجموعه درآمد کل، نه درآمد اضافی</span></div>
+      <div class="fmc-data-scroll"><table class="fmc-table"><thead><tr><th>گل</th><th>{{ month_a.key }}</th><th>{{ month_b.key }}</th><th>تغییر مبلغ</th></tr></thead><tbody>
+      {% for row in flower_rows %}<tr><td>{{ row.name }}</td><td class="n">{{ row.a|floatformat:2 }}</td><td class="n">{{ row.b|floatformat:2 }}</td><td class="n {% if row.delta > 0 %}fmc-up{% elif row.delta < 0 %}fmc-down{% endif %}">{{ row.delta|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="4" class="fmc-empty">دریافت منتسب به گل کال‌سنتر در این دو ماه موجود نیست.</td></tr>{% endfor %}
+      </tbody></table></div>
+    </section>
+    <section class="fmc-panel">
+      <div class="fmc-topline"><h2>دریافت‌های هنوز تأییدنشده</h2><span class="fmc-pill">جدا از فروش قطعی</span></div>
+      <div class="fmc-kpis" style="grid-template-columns:1fr 1fr">
+        <div class="fmc-stat a"><span>در انتظار تأیید · {{ month_a.key }}</span><strong>{{ month_a.pending_m|floatformat:2 }}</strong><small>{{ month_a.pending_count }} فیش · میلیون تومان</small></div>
+        <div class="fmc-stat b"><span>در انتظار تأیید · {{ month_b.key }}</span><strong>{{ month_b.pending_m|floatformat:2 }}</strong><small>{{ month_b.pending_count }} فیش · میلیون تومان</small></div>
+      </div>
+      <p class="fmc-note" style="margin-top:10px">این مبالغ در درآمد تاییدشده، نمودار روزانه و مقایسه روش‌های پرداخت لحاظ نشده‌اند.</p>
+    </section>
+  </div>
+  <section class="fmc-panel">
+    <div class="fmc-topline"><h2>تحلیل خودکار تغییرات</h2><span class="fmc-pill">محاسبه مستقیم از داده‌های ثبت‌شده · بدون حدس</span></div>
+    <div class="fmc-insights">{% for insight in insights %}<div class="fmc-insight">{{ insight }}</div>{% endfor %}</div>
+    <p class="fmc-note" style="margin-top:9px">تغییر در یک روش پرداخت یا شعبه لزوماً علت رشد یا افت کل نیست؛ برای نتیجه‌گیری مدیریتی، کامل‌بودن داده‌های دو ماه را بررسی کنید.</p>
+  </section>
+</div>
+<script>
+(function(){
+  'use strict';
+  var node=document.getElementById('fmc-chart-data');
+  var svg=document.getElementById('fmc-plot');
+  var note=document.getElementById('fmc-chart-note');
+  if(!node||!svg)return;
+  var payload;
+  try {payload=JSON.parse(node.textContent);} catch(_error) {return;}
+  var rows=payload.rows||[];
+  var ns='http://www.w3.org/2000/svg', W=980,H=270,L=58,R=24,T=20,B=41;
+  function add(tag,attrs,value,parent) {
+    var element=document.createElementNS(ns,tag);
+    Object.keys(attrs||{}).forEach(function(key){element.setAttribute(key,attrs[key]);});
+    if(value!==undefined&&value!==null)element.textContent=String(value);
+    (parent||svg).appendChild(element);
+    return element;
+  }
+  function series(field,mode){
+    var running=0;
+    return rows.map(function(row){
+      var value=row[field];
+      if(value===null || value===undefined)return null;
+      if(mode==='count')return Number(row[field+'_count']||0);
+      if(mode==='cumulative'){running+=Number(value);return running;}
+      return Number(value);
+    });
+  }
+  function render(mode){
+    while(svg.firstChild)svg.removeChild(svg.firstChild);
+    var A=series('a',mode),B=series('b',mode);
+    var observed=A.concat(B).filter(function(v){return v!==null&&Number.isFinite(v)});
+    var maximum=Math.max(1,Math.max.apply(null,observed.length?observed:[0]));
+    var span=W-L-R;
+    var x=function(i){return L+(rows.length<=1?span/2:i*span/(rows.length-1));};
+    var y=function(v){return H-B-(v/maximum)*(H-B-T);};
+    for(var i=0;i<=4;i++){
+      var gy=T+i*(H-B-T)/4;
+      add('line',{x1:L,x2:W-R,y1:gy,y2:gy,stroke:'#214054','stroke-width':'1'},null);
+      var tick=(maximum*(4-i)/4).toLocaleString('en-US',{maximumFractionDigits:1});
+      add('text',{x:L-9,y:gy+4,fill:'#9bb2c6','font-size':'10','text-anchor':'end'},tick);
+    }
+    rows.forEach(function(row,i){
+      if(i%3===0||i===rows.length-1){
+        add('text',{x:x(i),y:H-12,fill:'#92acc2','font-size':'10','text-anchor':'middle'},row.day);
+      }
+    });
+    [[A,'#8c83ff',payload.a],[B,'#27d5ad',payload.b]].forEach(function(item){
+      var values=item[0],color=item[1],label=item[2],path='';
+      values.forEach(function(value,i){
+        if(value===null)return;
+        path+=(path?' L ':'M ')+x(i).toFixed(1)+' '+y(value).toFixed(1);
+      });
+      if(path)add('path',{d:path,fill:'none',stroke:color,'stroke-width':'3.2','stroke-linejoin':'round','stroke-linecap':'round'},null);
+      values.forEach(function(value,i){
+        if(value===null)return;
+        var dot=add('circle',{cx:x(i),cy:y(value),r:'3.7',fill:color,stroke:'#071925','stroke-width':'1.8'},null);
+        var unit=mode==='count'?' فیش':' میلیون تومان';
+        add('title',{},label+' · روز '+rows[i].day+' · '+value.toLocaleString('en-US',{maximumFractionDigits:2})+unit,dot);
+      });
+    });
+    svg.setAttribute('aria-label','مقایسه '+(mode==='count'?'تعداد فیش':mode==='cumulative'?'درآمد تجمعی':'درآمد روزانه')+' دو ماه '+payload.a+' و '+payload.b);
+    if(note)note.textContent=mode==='count'?'تعداد فیش‌های تأییدشده در هر روز؛ هر فیش یک‌بار شمرده شده است.':mode==='cumulative'?'منحنی تجمعی از ابتدای هر ماه تا روز موردنظر؛ بدون افزودن تراکنش تکراری.':'مبالغ هر روز مستقل از روز قبل هستند. روزهای فاقد تراکنش ثبت‌شده صفر نمایش داده می‌شوند.';
+  }
+  document.querySelectorAll('.fmc-toggle').forEach(function(button){
+    button.addEventListener('click',function(){
+      var mode=button.getAttribute('data-mode');
+      document.querySelectorAll('.fmc-toggle').forEach(function(other){
+        other.classList.toggle('active',other===button);
+        other.setAttribute('aria-pressed',other===button?'true':'false');
+      });
+      render(mode);
+    });
+  });
+  render('daily');
+})();
+</script>
+{% endblock %}
