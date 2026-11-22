@@ -259,7 +259,9 @@ def finance_month_comparison(request):
 
     role = role_of(request.user)
     branch = None
-    branches = Branch.objects.all().order_by("name")
+    branches = Branch.objects.filter(
+        Q(country__code="IR") | Q(country__isnull=True)
+    ).order_by("name")
     requested_branch = request.GET.get("branch", "")
     afsariyeh_only = False
     if role == "manager":
