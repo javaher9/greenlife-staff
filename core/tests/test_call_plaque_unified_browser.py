@@ -65,7 +65,7 @@ class UnifiedCallBrowserTests(StaticLiveServerTestCase):
                         ratings = area.locator('[data-cp-stars]')
                         self.assertTrue(ratings.locator('[data-cp-scale="interest"]').is_visible())
                         self.assertTrue(ratings.locator('[data-cp-scale="budget_fit"]').is_visible())
-                        ratings.screenshot(path=directory / f'all-leads-call-assessment-{width}.png')
+                        area.screenshot(path=directory / f'all-leads-call-assessment-{width}.png')
                         self.assertTrue(area.evaluate('(el) => el.scrollWidth <= el.clientWidth + 1'))
                     page.set_viewport_size({'width': 1280, 'height': 800})
                     dialog.locator('[data-cp-field=followup_consent]').select_option('yes')

@@ -127,14 +127,14 @@
   color: var(--fu-ink);
 }
 
-.fu-workspace button.fu-primary {
+body.gl-premium-dark .fu-workspace .fu-filter button.fu-primary {
   background: var(--fu-green) !important;
   color: #082a1e !important;
   border-color: transparent !important;
   font-weight: 800;
 }
 
-.fu-workspace button.fu-primary:hover {
+body.gl-premium-dark .fu-workspace .fu-filter button.fu-primary:hover {
   background: #a2f4d2 !important;
 }
 
