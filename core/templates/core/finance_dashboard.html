@@ -161,6 +161,10 @@ body.gl-page-finance_dashboard .msg.warning{
 <div class="fin44 fin-page">
   <div class="fin44-head">
     <div class="fin44-title"><span class="fin44-logo"><i></i><i></i><i></i></span><div><h1>مالی و درآمد</h1><div class="fin44-sub">FINANCE | REVENUE INTELLIGENCE</div></div></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <a href="{% url 'finance_month_comparison' %}" class="fin44-sync" style="display:inline-flex;align-items:center;justify-content:center;min-height:41px;padding:9px 15px;border:1px solid #7961ce;border-radius:11px;background:linear-gradient(100deg,#4d328e,#176d78)!important;color:white!important;font-size:12px;font-weight:900">⇄ مقایسه ماه‌ها، شعب و پوزها</a>
+      <a href="{% url 'finance_dashboard' %}?date={{ previous_month_date|urlencode }}&amp;period=month{% if intel.branch %}&amp;branch={{ intel.branch.id }}{% elif intel.afsariyeh_only %}&amp;branch=afsariyeh{% endif %}{% if intel.flower_id %}&amp;flower={{ intel.flower_id }}{% endif %}{% if intel.source %}&amp;source={{ intel.source|urlencode }}{% endif %}{% if intel.service %}&amp;service={{ intel.service|urlencode }}{% endif %}" style="display:inline-flex;align-items:center;justify-content:center;min-height:41px;padding:9px 13px;border:1px solid #32627a;border-radius:11px;background:#112b3c!important;color:#e3f5ff!important;font-size:12px;font-weight:850;text-decoration:none">درآمد ماه قبل</a>
+    </div>
     {% if user.profile.role == 'admin' %}<form method="post" action="/finance/sync/">{% csrf_token %}<button class="fin44-sync">↻ همگام‌سازی CRM</button></form>{% endif %}
   </div>
 
