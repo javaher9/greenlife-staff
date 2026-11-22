@@ -241,6 +241,79 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertNotContains(response, "<small>فروش</small>", html=False)
         self.assertContains(response, "7000", html=False)
 
+    def test_target_one_is_100_percent_and_target_two_above_100(self):
+        from core.sales_target_views import _gauge_row
+        from types import SimpleNamespace
+        plan = SimpleNamespace(
+            heavy_limit=Decimal("70"), sales_floor=Decimal("100"),
+            target_one=Decimal("130"), target_two=Decimal("160"),
+        )
+        goals = {"branch:1": plan}
+        at_one = _gauge_row("branch:1", "مرکز", Decimal("130"), goals)
+        self.assertEqual(at_one["percentage"], 100)
+        self.assertEqual(at_one["level"], "one")
+        at_two = _gauge_row("branch:1", "مرکز", Decimal("160"), goals)
+        self.assertEqual(at_two["percentage"], 123)
+        self.assertEqual(at_two["level"], "two")
+        below = _gauge_row("branch:1", "مرکز", Decimal("65"), goals)
+        self.assertEqual(below["percentage"], 50)
+        self.assertEqual(below["level"], "heavy")
+
+    def test_azar_rollover_copies_missing_aban_targets_only(self):
+        import importlib
+        from django.apps import apps
+        from django.db import connection
+        from core.models import TargetPercentPolicy
+        prior = (1405, 8)
+        this_month = (1405, 9)
+        TargetPercentPolicy.objects.create(
+            period_year=prior[0], period_month=prior[1],
+            heavy_percent=Decimal("55"),
+            target_one_percent=Decimal("140"),
+            target_two_percent=Decimal("175"),
+        )
+        def legacy(scope, subject, floor, branch=None, employee=None):
+            SalesTargetBand.objects.create(
+                key=f"1405-08:{subject}", scope=scope,
+                period_year=prior[0], period_month=prior[1],
+                branch=branch, employee=employee,
+                heavy_limit=Decimal(floor) * Decimal(".55"),
+                sales_floor=Decimal(floor),
+                target_one=Decimal(floor) * Decimal("1.4"),
+                target_two=Decimal(floor) * Decimal("1.75"),
+            )
+        legacy("overall", "overall", "8000")
+        legacy("branch", f"branch:{self.branch.pk}", "4500", branch=self.branch)
+        legacy("flower", f"flower:{self.flower.pk}", "300", employee=self.flower)
+        legacy("call_center", "call_center", "500")
+        legacy("branch", f"branch:{self.closed.pk}", "900", branch=self.closed)
+        # Previously configured Azar row is authoritative; never overwrite it.
+        SalesTargetBand.objects.create(
+            key="1405-09:overall", scope="overall",
+            period_year=this_month[0], period_month=this_month[1],
+            heavy_limit=Decimal("700"), sales_floor=Decimal("1000"),
+            target_one=Decimal("1300"), target_two=Decimal("1600"),
+        )
+        rollover = importlib.import_module(
+            "core.migrations.0137_copy_aban_targets_to_azar_1405"
+        ).copy_aban_to_azar
+        with connection.schema_editor() as editor:
+            rollover(apps, editor)
+            rollover(apps, editor)
+        azar = SalesTargetBand.objects.filter(period_year=1405, period_month=9)
+        self.assertEqual(azar.count(), 4)
+        self.assertEqual(azar.get(key="1405-09:overall").sales_floor, Decimal("1000"))
+        copied = azar.get(key=f"1405-09:branch:{self.branch.pk}")
+        self.assertEqual(copied.sales_floor, Decimal("4500"))
+        self.assertEqual(copied.target_one, Decimal("6300"))
+        self.assertFalse(azar.filter(key=f"1405-09:branch:{self.closed.pk}").exists())
+        self.assertEqual(azar.get(key="1405-09:call_center").sales_floor, Decimal("500"))
+        self.assertEqual(azar.get(key=f"1405-09:flower:{self.flower.pk}").sales_floor, Decimal("300"))
+        policy = TargetPercentPolicy.objects.get(period_year=1405, period_month=9)
+        self.assertEqual(policy.heavy_percent, Decimal("55"))
+        self.assertEqual(policy.target_one_percent, Decimal("140"))
+        self.assertEqual(policy.target_two_percent, Decimal("175"))
+
     def test_non_management_user_forbidden(self):
         self.client.force_login(self.staff)
         response = self.client.get(self.url)
