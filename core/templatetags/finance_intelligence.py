@@ -118,7 +118,7 @@ def _period_bounds(day, period):
         start_day = datetime(*jalali_to_gregorian(jy, jm, 1)).date()
         ny, nm = (jy + 1, 1) if jm == 12 else (jy, jm + 1)
         end_day = datetime(*jalali_to_gregorian(ny, nm, 1)).date()
-        return _aware_start(start_day), _aware_start(end_day), 'ماه جاری'
+        return _aware_start(start_day), _aware_start(end_day), f'ماه {jy}/{jm:02d}'
     if period == 'year':
         start_day = datetime(*jalali_to_gregorian(jy, 1, 1)).date()
         end_day = datetime(*jalali_to_gregorian(jy + 1, 1, 1)).date()
