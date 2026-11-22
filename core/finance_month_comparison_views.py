@@ -299,6 +299,13 @@ def finance_month_comparison(request):
 
     first = _month_snapshot(approved, pending, *selected_a)
     second = _month_snapshot(approved, pending, *selected_b)
+    # Keep the important payment terminals visible even when neither month has
+    # a receipt. Pinned zeros are labels only, never artificial transactions.
+    for channel in ("POS-S", "POS-H", "CC-S", "CC-G"):
+        for snapshot in (first, second):
+            snapshot["parts"]["payments"].setdefault(
+                channel, {"total": ZERO, "count": 0}
+            )
     comparisons = {
         kind: _comparison_rows(
             first["parts"][kind], second["parts"][kind], first["total"], second["total"]
