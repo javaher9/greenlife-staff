@@ -37,4 +37,10 @@ class PhoneCenterTests(TestCase):
     def test_management_home_links_to_phone_center(self):
         self.client.force_login(self.admin)
         response = self.client.get(reverse('branch_live_dashboard'))
-        self.assertContains(response, f'href="{reverse("phone_center")}"')
+        url = reverse('phone_center')
+        self.assertContains(response, f'class="cmd-module" href="{url}"')
+        # Executive navigation only groups direct links or links in a settings details element.
+        self.assertRegex(
+            response.content.decode(),
+            rf'<a href="{reverse("branch_live_dashboard")}">[^\n]+</a>\s*<a href="{url}">',
+        )
