@@ -6,10 +6,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark">
   <title>مرکز تلفن گرین‌لایف | استاف</title>
-  <link rel="stylesheet" href="{% static 'core/phone-center.css' %}?v=1">
+  <link rel="stylesheet" href="{% static 'core/phone-center.css' %}?v=2">
   <script defer src="{% static 'core/phone-center-readiness.js' %}?v=1"></script>
   <script defer src="{% static 'core/phone-center-activity.js' %}?v=1"></script>
-  <script defer src="{% static 'core/phone-center.js' %}?v=1"></script>
+  <script defer src="{% static 'core/phone-center-assistants.js' %}?v=1"></script>
+  <script defer src="{% static 'core/phone-center.js' %}?v=2"></script>
 </head>
 <body>
   <div class="layout">
@@ -22,8 +23,9 @@
         <div class="nav-group">
           <a class="nav-link back-link" href="{% url 'dashboard' %}"><span class="nav-glyph" aria-hidden="true">⌂</span> بازگشت به استاف</a>
           <a class="nav-link" href="{% url 'phone_center' %}" aria-current="page"><span class="nav-glyph" aria-hidden="true">☎︎</span> مرکز تلفن گرین‌لایف</a>
-          {% if user.profile.is_active and user.profile.role == 'admin' or user.profile.is_active and user.profile.role == 'internal_manager' %}
-          <a class="nav-link" href="{% url 'management_follow_up_agenda' %}"><span class="nav-glyph" aria-hidden="true">↶</span> پیگیری‌های کال‌سنتر</a>
+          <a class="nav-link" href="#assistants" data-tab="assistants"><span class="nav-glyph" aria-hidden="true">◉</span> دستیارهای گرین‌لایف</a>
+          {% if phone_follow_ups %}
+          <a class="nav-link" href="{{ phone_follow_ups }}"><span class="nav-glyph" aria-hidden="true">↶</span> پیگیری‌های کال‌سنتر</a>
           {% endif %}
         </div>
       </nav>
@@ -36,11 +38,12 @@
         </div>
         <span class="chip source-indicator">وضعیت بر اساس گزارش</span>
       </header>
-      <main class="workspace" id="workspace" data-user-id="{{ request.user.pk }}" data-main-phone="02191002000" data-inbound-phone="02134247">
+      <main class="workspace" id="workspace" data-user-id="{{ request.user.pk }}" data-main-phone="02191002000" data-inbound-phone="02134247"{% if phone_follow_ups %} data-follow-ups="{{ phone_follow_ups }}"{% endif %}>
         <noscript>برای نمایش وضعیت خط‌ها و آزمون مسیر، جاوااسکریپت را فعال کنید.</noscript>
       </main>
     </div>
   </div>
+  {% include 'core/partials/phone_center_assistants.html' %}
   <dialog id="detail" aria-labelledby="dialog-title"></dialog>
   <div class="toast" id="toast" role="status" hidden></div>
 </body>

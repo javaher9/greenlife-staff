@@ -10,11 +10,13 @@
   const dialog = byId('detail');
   const mainPhone = screen.dataset.mainPhone;
   const inboundPhone = screen.dataset.inboundPhone;
+  const followUpsUrl = screen.dataset.followUps;
   const key = 'greenlife-staff-phone-preview-v1:' + screen.dataset.userId;
   const destinations = ['صف کال‌سنتر','صف پیگیری','پذیرش شعبه','داخلی سرپرست'];
   const tabs = [
     ['overview','نمای کلی'],
     ['main-line','بررسی خط‌ها'],
+    ['assistants','دستیارهای گرین‌لایف'],
     ['history','سابقه تماس'],
     ['lines','خطوط و صف‌ها'],
     ['routing','آزمون مسیر']
@@ -78,6 +80,7 @@
   const activity = window.createPhoneCenterActivity({
     e,fa,chip,button,options,detailRows,routeStrip,showDialog
   });
+  const assistants = window.createPhoneCenterAssistants(screen);
 
   function overview() {
     return '<div class="stack"><section class="stack overview-readiness" aria-labelledby="readiness-heading">'+
@@ -188,17 +191,20 @@
   }
 
   function render() {
+    assistants.pause();
     const nav = '<nav aria-label="بخش‌های مرکز تلفن" class="tabs workspace-nav">'+tabs.map(([id,label]) =>
       '<button type="button" class="tab" data-tab="'+id+'" aria-current="'+(id === activeTab)+'">'+label+'</button>'
-    ).join('')+'</nav>';
+    ).join('')+(followUpsUrl ? '<a class="tab" href="'+e(followUpsUrl)+'">پیگیری‌های کال‌سنتر</a>' : '')+'</nav>';
     const action = activeTab === 'main-line'
       ? '<button type="button" class="btn primary" data-tab="routing">آزمون مسیر</button>'
       : '<button type="button" class="btn primary" data-tab="main-line">بررسی خط‌ها</button>';
     const hero = '<header class="hero"><div class="wave" aria-hidden="true"></div>'+
       '<div class="spread"><div><h1 id="page-heading" tabindex="-1">مرکز تلفن گرین‌لایف</h1>'+
       '<p>آمادگی خط‌ها، گزارش بررسی و آزمون مسیر پاسخ‌گویی</p></div>'+action+'</div></header>';
-    const view = {overview,'main-line':readiness.mainLine,history:activity.historyView,lines,routing}[activeTab];
+    const view = {overview,'main-line':readiness.mainLine,history:activity.historyView,lines,routing,
+      assistants:assistants.view}[activeTab];
     screen.innerHTML = hero+nav+view();
+    if (activeTab === 'assistants') assistants.restore();
   }
 
   function activateTab(id, updateHash=true, focusTarget='') {
@@ -226,12 +232,14 @@
     if (control.id === 'menu') {
       setMenu(control.getAttribute('aria-expanded') !== 'true');
     } else if (control.dataset.tab) {
+      event.preventDefault();
+      setMenu(false);
       activateTab(control.dataset.tab,true,control.dataset.focusTarget);
     } else if (control.dataset.action === 'close') {
       dialog.close();
     } else if (control.dataset.action === 'route-scenario') {
       fillScenario(control.dataset.scenario);
-    } else if (!readiness.handleClick(control)) {
+    } else if (!assistants.handleClick(control) && !readiness.handleClick(control)) {
       activity.handleClick(control);
     }
   });
@@ -252,7 +260,7 @@
     if (!readiness.handleInput(event.target)) activity.handleInput(event.target);
   });
   document.addEventListener('change',event => {
-    if (!readiness.handleChange(event.target)) activity.handleChange(event.target);
+    if (!assistants.handleChange(event.target) && !readiness.handleChange(event.target)) activity.handleChange(event.target);
   });
   document.addEventListener('keydown',event => {
     if (event.key === 'Escape' && byId('sidebar').classList.contains('open') && !dialog.open) {

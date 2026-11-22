@@ -1,0 +1,35 @@
+<template id="phone-assistants-template">
+  <section class="stack assistant-workspace" aria-labelledby="assistant-heading">
+    <div class="section-heading">
+      <div>
+        <h2 id="assistant-heading">دستیارهای گرین‌لایف</h2>
+        <p>برای شنیدن نمونه، فایل صدای هر دستیار را انتخاب کنید. پخش در همین مرورگر انجام می‌شود.</p>
+      </div>
+      <span class="chip violet">پیش‌نمایش</span>
+    </div>
+    {% for assistant in phone_assistants %}
+    <article class="panel assistant-card" data-assistant="{{ assistant.id }}">
+      <div class="assistant-info">
+        <span class="assistant-initial" aria-hidden="true">{{ assistant.name|first }}</span>
+        <div>
+          <h3>{{ assistant.name }}</h3>
+          <p class="assistant-role">{{ assistant.role }}</p>
+          <p class="assistant-greeting">«{{ assistant.greeting }}»</p>
+        </div>
+      </div>
+      <div class="assistant-controls">
+        <div class="assistant-actions">
+          <button type="button" class="btn assistant-play" data-action="assistant-play"
+                  aria-label="پخش نمونهٔ {{ assistant.name }}" disabled>
+            <span class="assistant-play-icon" aria-hidden="true">▶︎</span><span class="assistant-play-text">پخش نمونه</span>
+          </button>
+          <button type="button" class="btn primary" data-action="assistant-choose" aria-label="انتخاب فایل صدای {{ assistant.name }}">انتخاب فایل صدا</button>
+        </div>
+        <input class="assistant-file" type="file" accept=".wav,.mp3,audio/wav,audio/mpeg" hidden>
+        <audio preload="none"></audio>
+        <p class="assistant-audio-status" role="status">نمونهٔ صدا انتخاب نشده</p>
+      </div>
+    </article>
+    {% endfor %}
+  </section>
+</template>

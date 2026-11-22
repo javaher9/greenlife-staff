@@ -1,22 +1,40 @@
-"""Full, paginated callback agenda for call center and internal management.
-
-The existing ReferralLead.next_follow_up date remains authoritative, including
-promises made six months ago. Lists are recomputed from the database each
-request; nothing can disappear due to the dashboard's 50-row work queue limit.
-"""
-from datetime import date, timedelta
+"""Date-driven callback agendas for call center and internal management."""
+from datetime import date
+from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Count, F, OuterRef, Q, Subquery
 from django.http import HttpResponseForbidden
 from django.shortcuts import render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 
 from .call_center_identity import call_center_display_name
 from .follow_up_agenda import due_follow_up_scope
 from .models import EmployeeProfile, LeadFollowUpLog, ReferralLead
+
+
+MANAGEMENT_TABS = {
+    'today': 'تماس‌های مقرر امروز',
+    'overdue': 'عقب‌افتاده',
+    'future': 'آینده',
+    'done': 'اقدام ثبت‌شده برای موعد امروز',
+    'unscheduled': 'بدون موعد',
+    'all': 'همه پیگیری‌های باز',
+}
+MANAGEMENT_DATE_TABS = {'today', 'overdue', 'future', 'all'}
+CONTACT_RESULTS = dict(ReferralLead.CONTACT_RESULT)
+
+
+def _completed_logs(today):
+    # Only a recorded action on a callback already due today belongs to this history.
+    return LeadFollowUpLog.objects.filter(
+        created_at__date=today,
+        previous_date=today,
+        action__in=('attempt', 'scheduled', 'closed'),
+    ).order_by()
 
 
 def _active_due_leads():
@@ -55,6 +73,24 @@ def _category_counts(scope, today, user_id=None):
         'done':complete.values('lead_id').distinct().count(),
         'unscheduled':scope.filter(contact_result='follow_up',next_follow_up__isnull=True).count(),
     }
+
+
+def _date_from(request):
+    try:
+        return date.fromisoformat(request.GET.get('date', '').strip())
+    except ValueError:
+        return None
+
+
+def _query_string(tab, query, due_date, operator=''):
+    params = {'tab': tab}
+    if query:
+        params['q'] = query
+    if due_date and tab in MANAGEMENT_DATE_TABS:
+        params['date'] = due_date.isoformat()
+    if operator:
+        params['operator'] = operator
+    return urlencode(params)
 
 
 @login_required
@@ -115,48 +151,137 @@ def call_center_follow_up_agenda(request):
     })
 
 
+def can_access_management_follow_ups(user):
+    profile = getattr(user, 'profile', None)
+    return bool(user.is_active and profile and profile.is_active and
+                profile.role in ('admin', 'manager', 'internal_manager'))
+
+
 @login_required
 @require_GET
 def management_follow_up_agenda(request):
-    profile=getattr(request.user,'profile',None)
-    if not profile or not profile.is_active or not request.user.is_active or profile.role not in ('admin','manager','internal_manager'):
+    if not can_access_management_follow_ups(request.user):
         return HttpResponseForbidden('دسترسی مجاز نیست.')
-    today=timezone.localdate()
-    leads=_active_due_leads()
-    users=EmployeeProfile.objects.filter(
-        role='call_center',is_active=True,user__is_active=True,
-    ).select_related('user').order_by('pk')
-    completed=LeadFollowUpLog.objects.filter(
-        created_at__date=today,previous_date=today,
-        action__in=('attempt','scheduled','closed'),
-        actor__profile__role='call_center',
+
+    today = timezone.localdate()
+    operators = {
+        str(operator.pk): call_center_display_name(operator)
+        for operator in EmployeeProfile.objects.filter(
+            role='call_center', is_active=True, user__is_active=True,
+        ).select_related('user').order_by('pk')
+    }
+    tab = request.GET.get('tab', '').strip()
+    if tab not in MANAGEMENT_TABS:
+        tab = 'today'
+    query = request.GET.get('q', '').strip()[:100]
+    exact_date = _date_from(request) if tab in MANAGEMENT_DATE_TABS else None
+    operator_filter = request.GET.get('operator', '').strip()
+    if operator_filter != 'unassigned' and operator_filter not in operators:
+        operator_filter = ''
+
+    due = {
+        'today': Q(next_follow_up=today),
+        'overdue': Q(next_follow_up__lt=today),
+        'future': Q(next_follow_up__gt=today),
+        'unscheduled': Q(contact_result='follow_up', next_follow_up__isnull=True),
+    }
+    active = due_follow_up_scope(ReferralLead.objects.all()).filter(
+        Q(next_follow_up__isnull=False) | due['unscheduled'],
     )
-    counts=_category_counts(leads,today)
-    totals=[]
-    for operator in users:
-        own=leads.filter(assigned_to=operator)
-        handled=completed.filter(actor=operator.user).values('lead_id').distinct().count()
-        totals.append({
-            'name':call_center_display_name(operator),
-            'today':own.filter(next_follow_up=today).count(),
-            'overdue':own.filter(next_follow_up__lt=today).count(),
-            'future':own.filter(next_follow_up__gt=today).count(),
-            'done':handled,
-        })
-    # All callbacks still requiring a call across all operators, no 5-row limit.
-    filter_name=(request.GET.get('tab') or 'today').strip()
-    if filter_name=='overdue':
-        view=leads.filter(next_follow_up__lt=today)
-    elif filter_name=='future':
-        view=leads.filter(next_follow_up__gt=today)
-    elif filter_name=='unscheduled':
-        view=leads.filter(contact_result='follow_up',next_follow_up__isnull=True)
+    aggregates = {key: Count('pk', filter=condition) for key, condition in due.items()}
+    active_per_operator = {
+        row['assigned_to_id']: row
+        for row in active.order_by().values('assigned_to_id').annotate(**aggregates)
+    }
+    counts = {key: sum(row[key] for row in active_per_operator.values()) for key in due}
+    counts['all'] = sum(counts.values())
+
+    completed = _completed_logs(today).filter(actor__profile__role='call_center')
+    counts['done'] = completed.values('lead_id').distinct().count()
+    handled_per_operator = {
+        str(row['actor__profile__pk']): row['total']
+        for row in completed.values('actor__profile__pk').annotate(total=Count('lead_id', distinct=True))
+    }
+    unassigned = sum(active_per_operator.get(None, {}).get(key, 0) for key in due)
+    totals = [
+        {
+            'operator_id': key, 'name': name,
+            **{category: active_per_operator.get(int(key), {}).get(category, 0) for category in due},
+            'done': handled_per_operator.get(key, 0),
+            'url': '?' + _query_string(tab, query, exact_date, key) + '#follow-up-list',
+        }
+        for key, name in operators.items()
+    ]
+
+    if tab == 'done':
+        # Past actions belong to the actor even when the lead has since been reassigned.
+        if operator_filter == 'unassigned':
+            completed = completed.none()
+        elif operator_filter:
+            completed = completed.filter(actor__profile__pk=operator_filter)
+        latest = completed.filter(lead_id=OuterRef('pk')).order_by('-created_at', '-pk')
+        rows = ReferralLead.objects.filter(pk__in=completed.values('lead_id')).annotate(
+            handled_log_id=Subquery(latest.values('pk')[:1]),
+            handled_at=Subquery(latest.values('created_at')[:1]),
+        ).order_by('-handled_at', 'pk')
     else:
-        filter_name='today'
-        view=leads.filter(next_follow_up=today)
-    page=Paginator(view.select_related('assigned_to__user').order_by(
-        'next_follow_up','next_follow_up_time','pk'
-    ),50).get_page(request.GET.get('page'))
-    return render(request,'core/call_center/follow_up_management.html',{
-        'today':today,'tab':filter_name,'counts':counts,'totals':totals,'page':page,
+        rows = active.filter(due.get(tab, Q())).order_by(
+            F('next_follow_up').asc(nulls_last=True),
+            F('next_follow_up_time').asc(nulls_last=True),
+            'pk',
+        )
+        if operator_filter:
+            rows = rows.filter(assigned_to_id=None if operator_filter == 'unassigned' else operator_filter)
+        if exact_date:
+            rows = rows.filter(next_follow_up=exact_date)
+    if query:
+        rows = rows.filter(full_name__icontains=query)
+
+    page = Paginator(rows.select_related('assigned_to__user').only(
+        'full_name', 'contact_result', 'next_follow_up', 'next_follow_up_time',
+        'assigned_to__user__first_name', 'assigned_to__user__last_name', 'assigned_to__user__username',
+    ), 50).get_page(request.GET.get('page'))
+    page.object_list = list(page.object_list)
+    handled = {}
+    if tab == 'done':
+        handled = LeadFollowUpLog.objects.select_related('actor').in_bulk(
+            lead.handled_log_id for lead in page.object_list
+        )
+    # The lead management form renders a phone number in its subtitle.
+    can_open_lead = request.user.profile.role in ('admin', 'manager')
+    cards = []
+    for lead in page.object_list:
+        event = handled.get(getattr(lead, 'handled_log_id', None))
+        cards.append({
+            'id': lead.pk, 'full_name': lead.full_name,
+            'assigned_name': call_center_display_name(lead.assigned_to),
+            'next_follow_up': event.previous_date if event else lead.next_follow_up,
+            'next_follow_up_time': event.previous_time if event else lead.next_follow_up_time,
+            'result_label': (
+                CONTACT_RESULTS.get(event.result, event.get_action_display())
+                if event else lead.get_contact_result_display()
+            ),
+            'handled_at': event.created_at if event else None,
+            'handled_by': call_center_display_name(event.actor) if event else '',
+            'detail_url': reverse('management_lead_follow_up', args=[lead.pk]) if can_open_lead else '',
+        })
+    page.object_list = cards
+    tabs = [
+        {
+            'key': key, 'label': label, 'count': counts[key],
+            'url': '?' + _query_string(key, query, exact_date, operator_filter),
+        }
+        for key, label in MANAGEMENT_TABS.items()
+    ]
+    return render(request, 'core/call_center/follow_up_management.html', {
+        'today': today, 'tab': tab, 'counts': counts, 'totals': totals, 'page': page,
+        'q': query, 'operator_filter': operator_filter,
+        'operator_options': [{'id': key, 'name': name} for key, name in operators.items()],
+        'exact_date_input': exact_date.isoformat() if exact_date else '',
+        'date_filter_allowed': tab in MANAGEMENT_DATE_TABS,
+        'has_filters': bool(query or operator_filter or exact_date),
+        'unassigned': unassigned,
+        'unassigned_url': '?' + _query_string('all', query, exact_date, 'unassigned') + '#follow-up-list',
+        'tabs': tabs,
+        'page_query': _query_string(tab, query, exact_date, operator_filter),
     })
