@@ -1,5 +1,6 @@
 from django.conf import settings
 from .call_center_identity import FlowerUserProxy
+from .phone_center_views import can_access_phone_center
 
 
 def recruitment_access(request):
@@ -9,7 +10,7 @@ def recruitment_access(request):
 def executive_access(request):
     user=getattr(request,'user',None)
     allowed=bool(user and getattr(user,'is_authenticated',False) and (user.username or '').lower() in settings.EXECUTIVE_USERNAMES)
-    data={'executive_access':allowed}
+    data={'executive_access':allowed,'phone_center_access':can_access_phone_center(user)}
     if allowed and request.path.startswith('/executive/'):
         try:
             from .executive_dashboard_context import build_executive_summary

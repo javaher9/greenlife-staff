@@ -42,7 +42,7 @@ from . import consultant_expense_views
 from . import body_progress_views
 from . import scan_station_views
 from . import patient_360_views
-from . import server_health_views
+from . import phone_center_views, server_health_views
 from . import live_status_views
 from . import quality_command_views
 from . import lead_freshness_views
@@ -50,6 +50,7 @@ from . import call_center_deposit_views
 from . import sales_target_views
 from .mcp import mcp_endpoint
 urlpatterns = [
+    path("management/phone-center/", phone_center_views.phone_center, name="phone_center"),
     path("greenlife-me/members/", me_members_views.dashboard, name="me_members"),
     path("greenlife-me/members/<int:pk>/", me_members_views.detail, name="me_member_detail"),
     path("customer/me/messages/", me_members_views.inbox, name="me_member_inbox"),
