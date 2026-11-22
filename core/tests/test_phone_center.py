@@ -30,6 +30,8 @@ class PhoneCenterTests(TestCase):
                 response = self.client.get(url)
                 self.assertContains(response, 'مرکز تلفن گرین‌لایف')
                 self.assertContains(response, '02191002000')
+                self.assertContains(response, '02134247')
+                self.assertContains(response, 'فقط ورودی')
                 self.assertContains(response, 'داده‌های نمونه')
                 self.assertIn('no-store', response.headers['Cache-Control'])
                 self.assertEqual(self.client.post(url).status_code, 405)

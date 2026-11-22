@@ -232,6 +232,7 @@ const trend = {
   week:{labels:['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'],answered:[52,78,86,77,65,59,28],missed:[6,8,7,9,5,5,3],caption:'هفت روز نمونه'}
 };
 const mainPhone = '02191002000';
+const inboundOnlyPhone = '02134247';
 const lineChecks = {
   pbx:'دسترسی به Asterisk', functions:'کنترل مسیر تماس', pilot:'داخلی آزمایشی و دستیار',
   trunk:'ترانک شاتل', did:'مسیریابی شمارهٔ اصلی', carrier_path:'ثبت SIP یا تطبیق IP',
@@ -315,10 +316,16 @@ function activateTab(id, updateHash = true) {
   screen.querySelector('.tab[aria-current="true"]').focus({preventScroll:true});
 }
 
+function inboundOnlyStatus() {
+  return chip('فقط ورودی','violet')+' '+chip('آزمون ورودی ثبت نشده','amber');
+}
+
 function mainLine() {
   return '<section class="panel"><div class="panel-head spread"><div><h2>خط اصلی گرین‌لایف <bdi>'+mainPhone+'</bdi></h2>'+
     '<p class="small">وضعیت ثبت‌شدهٔ بررسی پیش از اتصال</p></div></div>'+
-    '<label>بارگذاری گزارش بررسی Asterisk<input id="main-line-report" type="file" accept=".json,application/json"></label>'+
+    '<div class="panel-head result spread" id="inbound-only-line"><strong>خط ورودی گرین‌لایف <bdi>'+inboundOnlyPhone+'</bdi></strong>'+
+    '<span class="row">'+inboundOnlyStatus()+'</span></div>'+
+    '<label><span>بارگذاری گزارش بررسی Asterisk برای خط اصلی <bdi>'+mainPhone+'</bdi></span><input id="main-line-report" type="file" accept=".json,application/json"></label>'+
     '<p class="small" id="main-line-message" role="status"></p><div id="main-line-results" aria-live="polite">'+lineReportView()+'</div></section>';
 }
 function lineReportView() {
@@ -399,7 +406,13 @@ function historyRows(rows) {
 }
 function lines() {
   return '<div class="duo equal"><section class="panel"><div class="panel-head"><h2>خطوط تلفن و داخلی‌ها</h2><p class="small">نمونه نمایش وضعیت اتصال</p></div>'+
-    detailRows([['سامانه تلفنی','<bdi>Asterisk</bdi> '+chip('اتصال زنده برقرار نیست','amber')],['خط اصلی شاتل',chip('در انتظار تأیید اتصال','amber')],['داخلی‌های شعبه‌ها','نیاوران، پونک، اصفهان و افسریه'],['داخلی آزمون تلفن','<bdi>125</bdi> '+chip('آزمون روی سرور')]])+
+    detailRows([
+      ['سامانه تلفنی','<bdi>Asterisk</bdi> '+chip('اتصال زنده برقرار نیست','amber')],
+      ['خط اصلی شاتل','<bdi>'+mainPhone+'</bdi> '+chip('در انتظار تأیید اتصال','amber')],
+      ['خط ورودی گرین‌لایف','<bdi>'+inboundOnlyPhone+'</bdi> '+inboundOnlyStatus()],
+      ['داخلی‌های شعبه‌ها','نیاوران، پونک، اصفهان و افسریه'],
+      ['داخلی آزمون تلفن','<bdi>125</bdi> '+chip('آزمون روی سرور')]
+    ])+
     '</section><section class="panel"><div class="panel-head"><h2>صف‌ها و مقصدهای ارجاع</h2><p class="small">صف فعال و تماس‌های منتظر</p></div>'+
     detailRows([['کال‌سنتر',chip('۱ منتظر','amber')],['پذیرش شعبه',chip('۱ منتظر','amber')],['صف پیگیری',chip('بدون انتظار','green')],['داخلی سرپرست',chip('مقصد جایگزین','violet')]])+
     '</section></div>';
