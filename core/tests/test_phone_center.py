@@ -34,9 +34,27 @@ class PhoneCenterTests(TestCase):
                 self.assertContains(response, f'data-user-id="{user.pk}"')
                 self.assertContains(response, 'phone-center-readiness.js')
                 self.assertContains(response, 'phone-center-activity.js')
+                self.assertContains(response, 'phone-center-assistants.js')
+                self.assertContains(response, f'data-follow-ups="{reverse("phone_center_follow_ups")}"')
+                for assistant in ('یاسمن', 'کاملیا', 'رز'):
+                    self.assertContains(response, f'<h3>{assistant}</h3>')
                 self.assertContains(response, 'phone-center.js')
                 self.assertIn('no-store', response.headers['Cache-Control'])
                 self.assertEqual(self.client.post(url).status_code, 405)
+
+    def test_phone_follow_ups_uses_the_management_queue_with_phone_center_access(self):
+        url = reverse('phone_center_follow_ups')
+        self.assertRedirects(self.client.get(url), f'/login/?next={url}', fetch_redirect_response=False)
+        self.client.force_login(self.branch_manager)
+        self.assertEqual(self.client.get(url).status_code, 403)
+        for user in (self.admin, self.internal_manager):
+            with self.subTest(user=user):
+                self.client.force_login(user)
+                response = self.client.get(url, {'tab': 'done'})
+                self.assertTemplateUsed(response, 'core/call_center/follow_up_management.html')
+                self.assertContains(response, f'href="{reverse("phone_center")}"')
+                self.assertEqual(response.context['tab'], 'done')
+                self.assertIn('no-store', response.headers['Cache-Control'])
 
     def test_management_home_links_to_phone_center(self):
         self.client.force_login(self.admin)

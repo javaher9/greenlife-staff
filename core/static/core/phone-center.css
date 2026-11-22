@@ -243,6 +243,12 @@ bdi { font-variant-numeric: tabular-nums; }
 }
 .workspace-nav .tabs { margin: 0; padding: 0; border: 0; background: transparent; }
 .workspace-nav > .tabs { flex: 1 1 auto; }
+.tabs.workspace-nav {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+}
+.tabs.workspace-nav .tab { min-width: 0; padding-inline: 7px; white-space: normal; text-align: center; }
 .tab {
   display: inline-flex;
   align-items: center;
@@ -287,6 +293,33 @@ bdi { font-variant-numeric: tabular-nums; }
 .panel-head { margin-bottom: 13px; }
 .section-heading { display: flex; align-items: start; justify-content: space-between; gap: 9px; flex-wrap: wrap; min-width: 0; }
 .section-heading p { color: var(--muted); font-size: 13px; }
+.assistant-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px 18px;
+}
+.assistant-info { display: flex; align-items: flex-start; gap: 12px; flex: 1 1 320px; min-width: 0; }
+.assistant-initial {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border: 1px solid #496f62;
+  border-radius: 13px;
+  background: var(--green-dim);
+  color: var(--green);
+  font-size: 20px;
+  font-weight: 800;
+}
+.assistant-role { color: var(--ink); font-size: 13px; }
+.assistant-greeting { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+.assistant-controls { min-width: 0; }
+.assistant-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.assistant-audio-status { margin: 6px 0 0; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.assistant-play-icon { font: 13px system-ui, sans-serif; }
 .overview-readiness { gap: 10px; }
 .duo { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: var(--gap); align-items: start; }
 .duo.equal { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -732,9 +765,16 @@ dialog form { margin-top: 13px; }
   .crumb span { display: none; }
   .topbar .chip { font-size: 11px; padding: 3px 6px; }
   .tabs, .workspace-nav { margin-block-start: 10px; border-radius: 12px; }
-  .tabs.workspace-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; }
+  .tabs.workspace-nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-flow: row;
+    overflow: visible;
+  }
   .tab { padding-inline: 10px; font-size: 13px; }
   .tabs.workspace-nav .tab { min-width: 0; padding-inline: 5px; white-space: normal; text-align: center; }
+  .tabs.workspace-nav a.tab { grid-column: 1 / -1; }
+  .assistant-controls { flex-basis: 100%; padding-block-start: 10px; border-block-start: 1px solid var(--line); }
+  .assistant-actions > .btn { flex: 1 1 auto; }
   .hero { padding: 15px; }
   .hero p { font-size: 13px; }
   .hero .spread { gap: 10px; }

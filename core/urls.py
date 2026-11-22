@@ -51,6 +51,7 @@ from . import sales_target_views
 from .mcp import mcp_endpoint
 urlpatterns = [
     path("management/phone-center/", phone_center_views.phone_center, name="phone_center"),
+    path("management/phone-center/follow-ups/", phone_center_views.phone_center_follow_ups, name="phone_center_follow_ups"),
     path("greenlife-me/members/", me_members_views.dashboard, name="me_members"),
     path("greenlife-me/members/<int:pk>/", me_members_views.detail, name="me_member_detail"),
     path("customer/me/messages/", me_members_views.inbox, name="me_member_inbox"),

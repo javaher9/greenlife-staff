@@ -1,55 +1,153 @@
-{% extends 'core/base.html' %}{% load jalali_tags %}
+{% extends 'core/base.html' %}
+{% load jalali_tags static %}
+
 {% block content %}
-<style>
-.fm{max-width:1350px;margin:auto;padding:16px;direction:rtl;color:#eaf3fd}.fm *{box-sizing:border-box}
-.fm h1{font-size:25px;margin:8px 0}.fm small{color:#a7b9ce}.fm a{color:#ccb9ff}
-.fm .fm-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:15px 0}
-.fm .fm-cards a{padding:15px;background:#191d2d;border:1px solid #4b3a6b;border-radius:14px;text-decoration:none;color:#eef2ff}
-.fm .fm-cards b{display:block;font-size:27px;color:#d5a0fb;margin-top:7px}
-.fm .fm-box{background:#141b28;border:1px solid #303b4d;border-radius:14px;padding:16px;margin-top:15px;overflow-x:auto}
-.fm table{border-collapse:collapse;width:100%;min-width:660px}.fm th,.fm td{padding:11px;border-bottom:1px solid #2a3543;text-align:right;font-size:12px}
-.fm th{color:#abbed0}.fm td{color:#f0f4f7}
-.fm .fm-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:13px}
-.fm .fm-tabs a{border:1px solid #60517e;border-radius:10px;padding:8px 11px;text-decoration:none}
-.fm .fm-tabs a.active{background:#6544a0;color:#fff}
-.fm .fm-pages{padding:15px;text-align:center}
-@media(max-width:750px){.fm .fm-cards{grid-template-columns:repeat(2,1fr)}.fm{padding:10px}.fm h1{font-size:21px}}
-</style>
-<section class="fm">
- <a href="{% url 'lead_management_dashboard' %}">بازگشت به مدیریت لید</a>
- <h1>نظارت بر تعهدات تماس کال‌سنتر</h1>
- <p>آمار از موعدهای ثبت‌شده واقعی و تلاش‌های ثبت‌شده امروز محاسبه می‌شود. لیدهایی که برای ماه‌های قبل تعیین شده‌اند نیز شمرده می‌شوند.</p>
- <nav class="fm-cards">
-  <a href="?tab=today">موعد امروز<b>{{ counts.today }}</b></a>
-  <a href="?tab=overdue">عقب‌افتاده<b>{{ counts.overdue }}</b></a>
-  <a href="?tab=future">آینده<b>{{ counts.future }}</b></a>
-  <a href="#fm-staff">ثبت نتیجه تماس امروز<b>{{ counts.done }}</b></a>
- </nav>
- {% if counts.unscheduled %}<p>⚠ {{ counts.unscheduled }} پیگیری با نتیجه «نیاز به پیگیری» تاریخ مشخص ندارد؛ <a href="?tab=unscheduled">بررسی موارد</a></p>{% endif %}
- <section class="fm-box" id="fm-staff">
-  <h2>تعهدات هر گل کال‌سنتر</h2>
-  <table><thead><tr><th>اپراتور</th><th>موعد امروز</th><th>عقب‌افتاده</th><th>آینده</th><th>تماس ثبت‌شده برای موعد امروز</th></tr></thead><tbody>
-   {% for op in totals %}<tr><td>{{ op.name }}</td><td>{{ op.today }}</td><td>{{ op.overdue }}</td><td>{{ op.future }}</td><td>{{ op.done }}</td></tr>{% empty %}<tr><td colspan="5">اپراتور فعالی یافت نشد.</td></tr>{% endfor %}
-  </tbody></table>
- </section>
- <section class="fm-box">
-  <h2>لیست پیگیری‌ها</h2>
-  <nav class="fm-tabs"><a class="{% if tab == 'today' %}active{% endif %}" href="?tab=today">امروز</a><a class="{% if tab == 'overdue' %}active{% endif %}" href="?tab=overdue">عقب‌افتاده</a><a class="{% if tab == 'future' %}active{% endif %}" href="?tab=future">آینده</a><a class="{% if tab == 'unscheduled' %}active{% endif %}" href="?tab=unscheduled">بدون موعد</a></nav>
-  <table><thead><tr><th>مشتری</th><th>مسئول</th><th>موعد</th><th>ساعت</th><th>نتیجه آخرین تماس</th><th>پرونده</th></tr></thead>
-   <tbody>{% for lead in page %}
-    <tr><td>{{ lead.full_name }}<small style="display:block" dir="ltr">{{ lead.phone }}</small></td>
-     <td>{% if lead.assigned_to %}{{ lead.assigned_to.user.get_full_name|default:lead.assigned_to.user.username }}{% else %}بدون مسئول{% endif %}</td>
-     <td>{% if lead.next_follow_up %}{{ lead.next_follow_up|jdate }}{% else %}ثبت نشده{% endif %}</td>
-     <td>{% if lead.next_follow_up_time %}{{ lead.next_follow_up_time|time:"H:i" }}{% else %}—{% endif %}</td>
-     <td>{{ lead.get_contact_result_display|default:"—" }}</td>
-     <td><a href="{% url 'management_lead_follow_up' lead.pk %}">بررسی لید</a></td></tr>
-    {% empty %}<tr><td colspan="6">موردی وجود ندارد.</td></tr>{% endfor %}
-   </tbody></table>
-  <div class="fm-pages">
-   {% if page.has_previous %}<a href="?tab={{ tab }}&amp;page={{ page.previous_page_number }}">قبلی</a>{% endif %}
-   صفحه {{ page.number }} از {{ page.paginator.num_pages }} · تعداد {{ page.paginator.count }}
-   {% if page.has_next %}<a href="?tab={{ tab }}&amp;page={{ page.next_page_number }}">بعدی</a>{% endif %}
+<link rel="stylesheet" href="{% static 'core/follow-up-agenda.css' %}">
+<section class="fu-workspace fu-management" dir="rtl" aria-labelledby="fu-title">
+  <div class="fu-toolbar">
+    {% if request.resolver_match.url_name == "phone_center_follow_ups" %}
+    <a class="fu-button" href="{% url 'phone_center' %}"><span aria-hidden="true">→</span> بازگشت به مرکز تلفن گرین‌لایف</a>
+    {% else %}
+    <a class="fu-button" href="{% url 'lead_management_dashboard' %}"><span aria-hidden="true">→</span> بازگشت به مدیریت لید</a>
+    {% endif %}
+    <time class="fu-date" datetime="{{ today|date:'Y-m-d' }}">{{ today|jdate }}</time>
   </div>
- </section>
+
+  <div class="fu-heading">
+    <div>
+      <h1 id="fu-title">نظارت بر تعهدات تماس کال‌سنتر</h1>
+      <p>موعدهای تماس، نتیجه‌های ثبت‌شده و وضعیت پیگیری هر اپراتور</p>
+    </div>
+    <a class="fu-button" href="#fm-staff">پیگیری‌ها به تفکیک اپراتور <span aria-hidden="true">↓</span></a>
+  </div>
+
+  <nav class="fu-tabs" aria-label="دسته‌های پیگیری">
+    {% for item in tabs %}
+    <a class="fu-tab" data-category="{{ item.key }}" href="{{ item.url }}" {% if tab == item.key %}aria-current="page"{% endif %}>
+      <span>{{ item.label }}</span>
+      <b>{{ item.count }}</b>
+    </a>
+    {% endfor %}
+  </nav>
+
+  <section class="fu-panel" id="follow-up-list" aria-labelledby="fu-list-title">
+    <div class="fu-section-head">
+      <h2 id="fu-list-title">فهرست پیگیری‌ها <span class="fu-count">{{ page.paginator.count }} مورد</span></h2>
+      {% if unassigned %}<a class="fu-button fu-attention" href="{{ unassigned_url }}">بدون مسئول · {{ unassigned }}</a>{% endif %}
+    </div>
+
+    <form method="get" class="fu-filter" role="search" aria-label="فیلتر پیگیری‌ها">
+      <input type="hidden" name="tab" value="{{ tab }}">
+      <label>
+        <span>نام مشتری</span>
+        <input type="search" name="q" value="{{ q }}" placeholder="جست‌وجوی نام مشتری">
+      </label>
+      <label>
+        <span>مسئول پیگیری</span>
+        <select name="operator">
+          <option value="">همه مسئولان</option>
+          <option value="unassigned" {% if operator_filter == "unassigned" %}selected{% endif %}>بدون مسئول</option>
+          {% for option in operator_options %}
+          <option value="{{ option.id }}" {% if operator_filter == option.id|stringformat:"s" %}selected{% endif %}>{{ option.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      {% if date_filter_allowed %}
+      <label>
+        <span>تاریخ موعد</span>
+        <input type="date" name="date" value="{{ exact_date_input }}" dir="ltr">
+      </label>
+      {% endif %}
+      <div class="fu-actions">
+        <button class="fu-button fu-primary" type="submit">اعمال فیلتر</button>
+        {% if has_filters %}
+        <a class="fu-button" href="?tab={{ tab }}">پاک کردن فیلترها</a>
+        {% endif %}
+      </div>
+    </form>
+
+    <div class="fu-list">
+      {% for lead in page %}
+      <article class="fu-record">
+        <div class="fu-record-identity">
+          <h3>{{ lead.full_name|default:"مشتری بدون نام" }}</h3>
+          <p>مسئول پیگیری · {{ lead.assigned_name|default:"بدون مسئول" }}</p>
+        </div>
+        <dl class="fu-fields">
+          {% if lead.handled_at and tab == "done" %}
+          <div>
+            <dt>ثبت نتیجه تماس</dt>
+            <dd><bdi>{{ lead.handled_at|jdate }} · {{ lead.handled_at|date:"H:i" }}</bdi></dd>
+            {% if lead.handled_by %}<dd class="fu-secondary">{{ lead.handled_by }}</dd>{% endif %}
+            {% if lead.next_follow_up %}
+            <dd class="fu-secondary">
+              موعد اولیه <bdi>{{ lead.next_follow_up|jdate }}</bdi>{% if lead.next_follow_up_time %} · <bdi>{{ lead.next_follow_up_time|time:"H:i" }}</bdi>{% endif %}
+            </dd>
+            {% endif %}
+          </div>
+          {% else %}
+          <div>
+            <dt>موعد پیگیری</dt>
+            <dd>{% if lead.next_follow_up %}<bdi>{{ lead.next_follow_up|jdate }}</bdi>{% else %}تعیین نشده{% endif %}</dd>
+            {% if lead.next_follow_up_time %}<dd class="fu-secondary"><bdi>{{ lead.next_follow_up_time|time:"H:i" }}</bdi></dd>{% endif %}
+          </div>
+          {% endif %}
+          <div>
+            <dt>آخرین نتیجه تماس</dt>
+            <dd>{{ lead.result_label|default:"ثبت نشده" }}</dd>
+          </div>
+        </dl>
+        {% if lead.detail_url %}
+        <div class="fu-actions">
+          <a class="fu-button" href="{{ lead.detail_url }}" aria-label="بررسی لید {{ lead.full_name }}">بررسی لید <span aria-hidden="true">←</span></a>
+        </div>
+        {% endif %}
+      </article>
+      {% empty %}
+      <div class="fu-empty">
+        {% if has_filters %}
+        <h3>پیگیری‌ای با این فیلترها پیدا نشد.</h3>
+        <p>نام، مسئول یا تاریخ را تغییر دهید یا فیلترها را پاک کنید.</p>
+        {% else %}
+        <h3>در این دسته پیگیری‌ای ثبت نشده است.</h3>
+        <p>برای دیدن موعدهای دیگر، یکی از دسته‌های بالای صفحه را انتخاب کنید.</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if page.has_other_pages %}
+    <nav class="fu-pager" aria-label="صفحه‌بندی پیگیری‌ها">
+      {% if page.has_previous %}<a class="fu-button" href="?{{ page_query }}&amp;page={{ page.previous_page_number }}#follow-up-list">صفحه قبل</a>{% endif %}
+      <span>صفحه {{ page.number }} از {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}<a class="fu-button" href="?{{ page_query }}&amp;page={{ page.next_page_number }}#follow-up-list">صفحه بعد</a>{% endif %}
+    </nav>
+    {% endif %}
+  </section>
+
+  <section class="fu-panel" id="fm-staff" aria-labelledby="fu-staff-title">
+    <div class="fu-section-head">
+      <h2 id="fu-staff-title">تعهدات هر گل کال‌سنتر</h2>
+    </div>
+    <div class="fu-operators">
+      {% for op in totals %}
+      <article class="fu-operator">
+        <div class="fu-operator-head">
+          <span class="fu-operator-mark" aria-hidden="true">{{ op.name|first }}</span>
+          <h3>{{ op.name }}</h3>
+        </div>
+        <dl class="fu-fields">
+          <div><dt>موعد امروز</dt><dd>{{ op.today }}</dd></div>
+          <div><dt>عقب‌افتاده</dt><dd class="fu-overdue">{{ op.overdue }}</dd></div>
+          <div><dt>آینده</dt><dd>{{ op.future }}</dd></div>
+          <div><dt>نتیجه ثبت‌شده امروز</dt><dd class="fu-completed">{{ op.done }}</dd></div>
+        </dl>
+        <a class="fu-button" href="{{ op.url }}" aria-label="پیگیری‌های {{ op.name }}">دیدن پیگیری‌ها <span aria-hidden="true">←</span></a>
+      </article>
+      {% empty %}
+      <div class="fu-empty"><h3>اپراتور فعالی یافت نشد.</h3></div>
+      {% endfor %}
+    </div>
+  </section>
 </section>
 {% endblock %}
