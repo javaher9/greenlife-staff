@@ -10,7 +10,7 @@
   <script defer src="{% static 'core/phone-center-readiness.js' %}?v=1"></script>
   <script defer src="{% static 'core/phone-center-activity.js' %}?v=1"></script>
   <script defer src="{% static 'core/phone-center-assistants.js' %}?v=1"></script>
-  <script defer src="{% static 'core/phone-center.js' %}?v=2"></script>
+  <script defer src="{% static 'core/phone-center.js' %}?v=3"></script>
 </head>
 <body>
   <div class="layout">
@@ -23,6 +23,7 @@
         <div class="nav-group">
           <a class="nav-link back-link" href="{% url 'dashboard' %}"><span class="nav-glyph" aria-hidden="true">⌂</span> بازگشت به استاف</a>
           <a class="nav-link" href="{% url 'phone_center' %}" aria-current="page"><span class="nav-glyph" aria-hidden="true">☎︎</span> مرکز تلفن گرین‌لایف</a>
+          <a class="nav-link" href="{% url 'phone_center_control' %}"><span class="nav-glyph" aria-hidden="true">◎</span> کنترل تماس</a>
           <a class="nav-link" href="#assistants" data-tab="assistants"><span class="nav-glyph" aria-hidden="true">◉</span> دستیارهای گرین‌لایف</a>
           {% if phone_follow_ups %}
           <a class="nav-link" href="{{ phone_follow_ups }}"><span class="nav-glyph" aria-hidden="true">↶</span> پیگیری‌های کال‌سنتر</a>
@@ -38,7 +39,7 @@
         </div>
         <span class="chip source-indicator">وضعیت بر اساس گزارش</span>
       </header>
-      <main class="workspace" id="workspace" data-user-id="{{ request.user.pk }}" data-main-phone="02191002000" data-inbound-phone="02134247"{% if phone_follow_ups %} data-follow-ups="{{ phone_follow_ups }}"{% endif %}>
+      <main class="workspace" id="workspace" data-user-id="{{ request.user.pk }}" data-main-phone="02191002000" data-inbound-phone="02134247" data-control-url="{% url 'phone_center_control' %}"{% if phone_follow_ups %} data-follow-ups="{{ phone_follow_ups }}"{% endif %}>
         <noscript>برای نمایش وضعیت خط‌ها و آزمون مسیر، جاوااسکریپت را فعال کنید.</noscript>
       </main>
     </div>

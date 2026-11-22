@@ -43,6 +43,7 @@ from . import body_progress_views
 from . import scan_station_views
 from . import patient_360_views
 from . import phone_center_views, server_health_views
+from . import assistant_queue_views, phone_call_metrics, phone_control_views, phone_ratings
 from . import live_status_views
 from . import quality_command_views
 from . import lead_freshness_views
@@ -52,6 +53,11 @@ from .mcp import mcp_endpoint
 urlpatterns = [
     path("management/phone-center/", phone_center_views.phone_center, name="phone_center"),
     path("management/phone-center/follow-ups/", phone_center_views.phone_center_follow_ups, name="phone_center_follow_ups"),
+    path("management/phone-center/control/", phone_control_views.phone_control, name="phone_center_control"),
+    path("management/phone-center/control/live/", phone_control_views.phone_control_live, name="phone_center_live"),
+    path("management/phone-center/assistant-queue/", assistant_queue_views.assistant_queue, name="phone_assistant_queue"),
+    path("api/private/phone-center/ratings/", phone_ratings.ingest_rating, name="phone_center_ingest_rating"),
+    path("api/private/phone-center/metrics/", phone_call_metrics.ingest_metric, name="phone_center_ingest_metric"),
     path("greenlife-me/members/", me_members_views.dashboard, name="me_members"),
     path("greenlife-me/members/<int:pk>/", me_members_views.detail, name="me_member_detail"),
     path("customer/me/messages/", me_members_views.inbox, name="me_member_inbox"),
