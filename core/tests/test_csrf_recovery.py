@@ -9,8 +9,8 @@ class CsrfRecoveryTests(TestCase):
     def setUp(self):
         self.branch=Branch.objects.create(name='CSRF Test')
         self.user=User.objects.create_user('consultant-csrf',password='pass')
-        EmployeeProfile.objects.create(
-            user=self.user,branch=self.branch,role='consultant',is_active=True,
+        EmployeeProfile.objects.update_or_create(
+            user=self.user, defaults={'branch': self.branch, 'role': 'consultant', 'is_active': True},
         )
 
     def test_authenticated_stale_csrf_recovers_with_get_redirect(self):
