@@ -25,7 +25,7 @@
     {% for item in tabs %}
     <a class="fu-tab" data-category="{{ item.key }}" href="{{ item.url }}" {% if tab == item.key %}aria-current="page"{% endif %}>
       <span>{{ item.label }}</span>
-      <b>{{ item.count }}</b>
+      <span class="fu-tab-count">{{ item.count }}</span>
     </a>
     {% endfor %}
   </nav>

@@ -127,17 +127,15 @@
   color: var(--fu-ink);
 }
 
-.fu-workspace .fu-primary {
-  background: var(--fu-green);
-  color: #082a1e;
-  border-color: transparent;
+.fu-workspace button.fu-primary {
+  background: var(--fu-green) !important;
+  color: #082a1e !important;
+  border-color: transparent !important;
   font-weight: 800;
 }
 
-.fu-workspace .fu-primary:hover {
-  background: #a2f4d2;
-  color: #082a1e;
-  border-color: transparent;
+.fu-workspace button.fu-primary:hover {
+  background: #a2f4d2 !important;
 }
 
 .fu-workspace .fu-attention {
@@ -179,9 +177,10 @@
   touch-action: manipulation;
 }
 
-.fu-workspace .fu-tab b {
+.fu-workspace .fu-tab-count {
   color: var(--fu-category);
   font-size: clamp(18px, 2.4vw, 26px);
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 
@@ -392,4 +391,27 @@
 
 @container follow-ups (min-width: 950px) {
   .fu-workspace .fu-tabs { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+
+/* The shared Staff top bar uses desktop-width columns even on some tablets. */
+@media (max-width: 900px) {
+  body:is(.gl-page-phone_center_follow_ups, .gl-page-management_follow_up_agenda) .app-main {
+    margin-left: 0 !important;
+    min-width: 0;
+  }
+
+  body:is(.gl-page-phone_center_follow_ups, .gl-page-management_follow_up_agenda) .topbar {
+    grid-template-columns: minmax(0, 1fr) auto auto !important;
+    gap: 10px !important;
+  }
+
+  body:is(.gl-page-phone_center_follow_ups, .gl-page-management_follow_up_agenda) .topbar-search {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  body:is(.gl-page-phone_center_follow_ups, .gl-page-management_follow_up_agenda) .topbar {
+    margin-inline: -7px !important;
+  }
 }
