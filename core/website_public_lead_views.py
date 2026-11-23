@@ -17,6 +17,14 @@ class WebsiteLeadForm(InstagramLeadForm):
     )
     consent = None
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Match the server's minimum digit count for local and international input.
+        self.fields['phone'].widget.attrs.update({
+            'pattern': r'(?:\P{Nd}*\p{Nd}){10,}\P{Nd}*',
+            'title': 'شماره موبایل باید دست‌کم ۱۰ رقم داشته باشد.',
+        })
+
 
 def _website_page(raw):
     """Accept attribution only from GreenLife's own public website."""
