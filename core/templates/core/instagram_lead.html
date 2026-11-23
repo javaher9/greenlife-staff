@@ -582,10 +582,22 @@
       .approved-poster .poster-field textarea::placeholder{color:#aa96b8!important;opacity:1!important}
       .approved-poster.poster-unavailable .poster-live-form{background:rgba(84,43,109,.75)!important}
     }
+  .website-story{display:grid;width:min(100%,780px);grid-template-columns:minmax(0,260px) minmax(0,440px);justify-content:center;column-gap:clamp(12px,3vw,40px);align-items:end}
+    .website-story .brand,.website-story .card{grid-column:2}
+    .website-story .brand{grid-row:1}
+    .website-story .card{grid-row:2}
+    .website-story-model{grid-column:1;grid-row:1/3;display:block;width:100%;height:auto;max-height:530px;object-fit:contain;object-position:bottom}
+    @media(max-width:600px){
+      .website-story{grid-template-columns:1fr 1fr;max-width:440px;row-gap:10px}
+      .website-story-model{grid-row:1;height:160px}
+      .website-story .brand{align-self:center;margin:0}
+      .website-story .card{grid-column:1/-1}
+    }
   </style>
 </head>
 <body{% if advertising %} class="advertising-page"{% endif %}>
-<main class="wrap">
+<main class="wrap{% if website_form and not completed %} website-story{% endif %}">
+  {% if website_form and not completed %}<img class="website-story-model" src="https://greenlifeclinics.com/wp-content/uploads/2026/11/instagram-model-cutout-final-5e8d8639.png" alt="" decoding="async" fetchpriority="high">{% endif %}
   <div class="brand">
     <div class="brand-mark">GL</div>
     <strong>GreenLife</strong>
