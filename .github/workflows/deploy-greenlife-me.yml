@@ -1,0 +1,53 @@
+name: Deploy GreenLife ME pilot
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/deploy-greenlife-me.yml']
+permissions:
+  contents: read
+concurrency:
+  group: greenlife-me-afserieh
+  cancel-in-progress: false
+jobs:
+  pilot:
+    runs-on: [self-hosted, linux, greenlife-prod]
+    timeout-minutes: 20
+    env:
+      ME_REVISION: a4106688869b1fe370e50f03c5e63e45f2b9dc11
+    steps:
+      - name: Fetch approved ME release
+        shell: bash
+        env:
+          ME_READ_TOKEN: ${{ secrets.GREENLIFE_ME_READ_TOKEN }}
+          GIT_TERMINAL_PROMPT: '0'
+          GIT_SSH_COMMAND: ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=8
+        run: |
+          set -euo pipefail
+          release=$(mktemp -d "$RUNNER_TEMP/greenlife-me.XXXXXXXX")
+          echo "ME_RELEASE=$release" >> "$GITHUB_ENV"
+          git init -q "$release"
+          cd "$release"
+          url=https://github.com/javaher9/greenlife-me.git
+          if [[ -n "$ME_READ_TOKEN" ]]; then
+            auth=$(printf 'x-access-token:%s' "$ME_READ_TOKEN" | base64 -w0)
+            echo "::add-mask::$auth"
+            git -c "http.https://github.com/.extraheader=Authorization: Basic $auth" fetch -q --depth=1 "$url" "$ME_REVISION"
+          elif ! git fetch -q --depth=1 "$url" "$ME_REVISION"; then
+            git fetch -q --depth=1 git@github.com:javaher9/greenlife-me.git "$ME_REVISION" || {
+              echo "::error::The existing runner needs read access to javaher9/greenlife-me. Configure GREENLIFE_ME_READ_TOKEN in Staff or grant an existing deployment identity read access."
+              exit 1
+            }
+          fi
+          git checkout -q --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$ME_REVISION"
+      - name: Deploy and verify pilot
+        shell: bash
+        run: |
+          cd "$ME_RELEASE"
+          GITHUB_SHA="$ME_REVISION" bash deploy/afserieh/release.sh
+      - name: Remove temporary checkout
+        if: always()
+        shell: bash
+        run: |
+          case "${ME_RELEASE:-}" in "$RUNNER_TEMP"/greenlife-me.*) rm -rf -- "$ME_RELEASE";; esac
