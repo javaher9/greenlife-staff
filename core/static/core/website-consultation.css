@@ -1,0 +1,70 @@
+@font-face{font-family:GLVazirmatn;src:url('consultation/vazirmatn.woff2') format('woff2');font-style:normal;font-weight:400;font-display:swap}
+:root{color-scheme:light;--ivory:#fbf4eb;--plum:#570c40;--text:#43233b;--muted:#75656b;--border:#d8cbd1}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;background:var(--ivory)}
+body{margin:0;color:var(--text);font-family:GLVazirmatn,Tahoma,Arial,sans-serif;font-size:16px;line-height:1.65;background:var(--ivory)}
+a{color:var(--plum);text-underline-offset:5px}
+a:focus-visible,summary:focus-visible,button:focus-visible{outline:3px solid #965885;outline-offset:5px}
+.consultation{max-width:1680px;margin:auto;display:grid;grid-template-columns:minmax(0,1fr);min-height:100svh}
+.consultation-brand{grid-row:1;display:flex;align-items:center;justify-content:center;padding:8px 24px;background:var(--ivory);position:relative;z-index:2}
+.consultation-brand a{display:block;line-height:0;border-radius:8px}
+.greenlife-mark{display:block;width:154px;aspect-ratio:300/132;background:var(--plum);-webkit-mask:url('consultation/greenlife-logo-original.png') center/contain no-repeat;mask:url('consultation/greenlife-logo-original.png') center/contain no-repeat}
+.consultation-photo{grid-row:2;position:relative;min-width:0;overflow:hidden;height:clamp(220px,32svh,310px);background:#403c39}
+.consultation-photo img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 27%}
+.consultation-panel{grid-row:3;position:relative;z-index:1;background:var(--ivory);margin-top:-22px;border-radius:28px 28px 0 0;padding:24px 24px max(24px,env(safe-area-inset-bottom));min-width:0}
+.consultation-content{width:100%;max-width:460px;margin:0 auto;text-align:center}
+h1{color:var(--plum);font-weight:900;font-size:clamp(25px,6.6vw,34px);line-height:1.65;letter-spacing:-.7px;margin:0}
+.consultation-intro{font-size:18px;color:var(--plum);margin:2px 0 16px}
+.consultation-caption{display:flex;align-items:center;gap:12px;justify-content:center;color:var(--muted);font-size:14px;font-weight:600;margin:0 0 18px}
+.consultation-caption:before,.consultation-caption:after{content:'';height:1px;background:#d9c4cd;flex:1;max-width:75px}
+.consultation-field{text-align:right;margin:0 0 14px}
+.consultation-field label{display:block;font-weight:700;font-size:16px;color:var(--plum);margin:0 3px 6px}
+.consultation-field input,.consultation-field textarea{display:block;width:100%;min-height:52px;border:1px solid var(--border);border-radius:14px;background:#fffdfc;color:var(--text);padding:11px 16px;font:inherit;font-size:16px;line-height:1.6;box-shadow:0 3px 10px #5c334308;outline:none;transition:border-color .16s,box-shadow .16s}
+.consultation-field input:focus,.consultation-field textarea:focus{border-color:#885074;box-shadow:0 0 0 3px #8850741a}
+.consultation-field input::placeholder,.consultation-field textarea::placeholder{color:#897a80;opacity:1;font-weight:400}
+.consultation-field [name=phone]{direction:ltr;text-align:left;font-family:GLVazirmatn,Tahoma,Arial,sans-serif;unicode-bidi:plaintext}
+.consultation-field textarea{min-height:98px;resize:vertical}
+.optional{font-size:14px;font-weight:400;color:var(--muted)}
+.consultation-details{margin:0 0 16px;text-align:right}
+.consultation-details summary{display:flex;align-items:center;gap:9px;min-height:44px;list-style:none;font-size:14px;cursor:pointer;color:var(--plum);border-radius:6px}
+.consultation-details summary::-webkit-details-marker{display:none}
+.details-icon{width:19px;height:19px;border:1.5px solid currentColor;border-radius:50%;position:relative;flex:0 0 19px}
+.details-icon:before,.details-icon:after{content:'';position:absolute;background:currentColor;inset:7px 3px;height:1.5px}
+.details-icon:after{transform:rotate(90deg)}
+details[open] .details-icon:after{display:none}
+.consultation-details .consultation-field{margin:9px 0 0}
+.consultation-submit{display:block;width:100%;min-height:54px;padding:12px 18px;border:1px solid #843669;border-radius:16px;background:linear-gradient(112deg,#4e0b3c,#6b124e);color:white;font:inherit;font-size:18px;font-weight:800;box-shadow:0 8px 22px #570c401c;cursor:pointer}
+.consultation-submit:hover{background:#631147}
+.consultation-submit:active{transform:translateY(1px)}
+.consultation-submit:disabled{opacity:.7;cursor:wait}
+.consultation-note{font-size:13px;color:var(--muted);margin:12px 0 5px}
+.consultation-back{display:inline-flex;align-items:center;justify-content:center;min-height:44px;font-size:14px;font-weight:600}
+.field-errors,.form-errors{color:#a0203d;font-size:14px;line-height:1.8;margin:8px 0 0;text-align:right}
+.form-errors{padding:12px;background:#fff0f2;border-radius:12px;margin:0 0 16px}
+.field-errors ul,.form-errors ul{list-style:none;margin:0;padding:0}
+.consultation-success{padding:30px 0;text-align:center}
+.consultation-success h1{font-size:30px}
+.consultation-success p{color:var(--muted);line-height:2}
+.success-mark{display:grid;place-items:center;width:66px;height:66px;margin:0 auto 22px;background:#eee1eb;border-radius:50%;color:var(--plum);font-size:32px}
+@media(min-width:600px) and (max-width:899px){.consultation-photo{height:360px}.consultation-photo img{object-position:center 28%}.consultation-panel{padding-top:30px}.greenlife-mark{width:180px}}
+@media(min-width:900px){
+  .consultation{direction:ltr;grid-template-columns:minmax(390px,43%) minmax(0,57%);grid-template-rows:auto 1fr;min-height:100svh}
+  .consultation-brand{grid-column:1;grid-row:1;direction:rtl;padding:clamp(22px,4vh,44px) 32px 0;border-radius:0 36px 0 0;margin-right:-1px;align-items:flex-end}
+  .greenlife-mark{width:clamp(180px,16vw,240px)}
+  .consultation-photo{grid-column:2;grid-row:1/3;height:auto;min-height:100%;align-self:stretch}
+  .consultation-photo img{position:absolute;inset:0;object-position:center center}
+  .consultation-panel{grid-column:1;grid-row:2;direction:rtl;display:flex;align-items:center;margin:0 -1px 0 0;border-radius:0 0 36px 0;padding:22px clamp(28px,4vw,64px) 28px}
+  .consultation-content{max-width:460px}
+  h1{font-size:clamp(27px,2.6vw,40px);line-height:1.75;white-space:nowrap}
+  .consultation-intro{font-size:20px;margin-bottom:22px}
+  .consultation-caption{font-size:15px;margin-bottom:22px}
+  .consultation-field{margin-bottom:18px}
+  .consultation-field label{font-size:17px;margin-bottom:8px}
+  .consultation-field input{min-height:56px}
+  .consultation-details{margin-bottom:22px}
+  .consultation-submit{min-height:58px;font-size:20px}
+  .consultation-note{margin-top:14px}
+}
+@media(min-width:900px) and (max-height:760px){.consultation-brand{padding-top:16px}.greenlife-mark{width:174px}.consultation-panel{padding-top:10px;padding-bottom:16px}.consultation-intro{margin-bottom:14px}.consultation-caption{margin-bottom:16px}.consultation-field{margin-bottom:12px}.consultation-details{margin-bottom:12px}}
+@media(max-width:380px){.consultation-panel{padding-left:18px;padding-right:18px}.consultation-intro{font-size:17px}.consultation-photo{height:220px}h1{font-size:25px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}

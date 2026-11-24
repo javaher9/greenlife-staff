@@ -1,0 +1,65 @@
+{% load static %}<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fbf4eb">
+  <title>درخواست مشاوره رایگان | گرین‌لایف</title>
+  <link rel="stylesheet" href="{% static 'core/website-consultation.css' %}?v=20261124-ghazal-1">
+  <script src="{% static 'core/website-consultation.js' %}?v=20261124-ghazal-1" defer></script>
+</head>
+<body>
+  <main class="consultation" data-design="ghazal-niavaran-v1">
+    <header class="consultation-brand">
+      <a href="https://greenlifeclinics.com/" aria-label="گرین‌لایف؛ بازگشت به سایت">
+        <span class="greenlife-mark" role="img" aria-label="GreenLife"></span>
+      </a>
+    </header>
+    <div class="consultation-photo">
+      <img src="{% static 'core/consultation/ghazal-niavaran.webp' %}"
+           alt="غزال در فضای سالن کلینیک گرین‌لایف نیاوران"
+           width="1198" height="1313" fetchpriority="high" decoding="async">
+    </div>
+    <section class="consultation-panel" aria-labelledby="consultation-title">
+      <div class="consultation-content">
+      {% if completed %}
+        <div class="consultation-success" role="status">
+          <span class="success-mark" aria-hidden="true">✓</span>
+          <h1 id="consultation-title">درخواست شما ثبت شد</h1>
+          <p>کارشناسان گرین‌لایف برای مشاوره با شما تماس می‌گیرند.</p>
+        </div>
+      {% else %}
+        <h1 id="consultation-title">ما شما را لاغر می‌کنیم</h1>
+        <p class="consultation-intro">از یک گفت‌وگو شروع کنیم.</p>
+        <p class="consultation-caption"><span>درخواست مشاوره رایگان</span></p>
+        <form method="post" id="websiteLeadForm" aria-label="درخواست مشاوره رایگان">
+          {% csrf_token %}
+          {% if form.non_field_errors %}<div class="form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+          <div class="consultation-field">
+            <label for="{{ form.full_name.id_for_label }}">{{ form.full_name.label }}</label>
+            {{ form.full_name }}
+            {% if form.full_name.errors %}<div class="field-errors" id="{{ form.full_name.auto_id }}_error" role="alert">{{ form.full_name.errors }}</div>{% endif %}
+          </div>
+          <div class="consultation-field">
+            <label for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+            {{ form.phone }}
+            {% if form.phone.errors %}<div class="field-errors" id="{{ form.phone.auto_id }}_error" role="alert">{{ form.phone.errors }}</div>{% endif %}
+          </div>
+          <details class="consultation-details"{% if form.interested_service.value or form.interested_service.errors %} open{% endif %}>
+            <summary><span class="details-icon" aria-hidden="true"></span>می‌خواهم بیشتر توضیح بدهم</summary>
+            <div class="consultation-field">
+              <label for="{{ form.interested_service.id_for_label }}">توضیحات <span class="optional">(اختیاری)</span></label>
+              {{ form.interested_service }}
+              {% if form.interested_service.errors %}<div class="field-errors" id="{{ form.interested_service.auto_id }}_error" role="alert">{{ form.interested_service.errors }}</div>{% endif %}
+            </div>
+          </details>
+          <button class="consultation-submit" id="submitLeadBtn" type="submit">با من تماس بگیرید</button>
+          <p class="consultation-note">برای مشاوره با شما تماس می‌گیریم.</p>
+        </form>
+      {% endif %}
+        <a class="consultation-back" href="https://greenlifeclinics.com/">بازگشت به سایت</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

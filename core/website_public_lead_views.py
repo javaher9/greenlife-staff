@@ -21,9 +21,13 @@ class WebsiteLeadForm(InstagramLeadForm):
         super().__init__(*args, **kwargs)
         # Match the server's minimum digit count for local and international input.
         self.fields['phone'].widget.attrs.update({
+            'placeholder': '09xxxxxxxxx',
+            'inputmode': 'tel', 'autocomplete': 'tel', 'dir': 'ltr',
             'pattern': r'(?:\P{Nd}*\p{Nd}){10,}\P{Nd}*',
             'title': 'شماره موبایل باید دست‌کم ۱۰ رقم داشته باشد.',
         })
+        self.fields['phone'].widget.input_type = 'tel'
+        self.fields['full_name'].widget.attrs['placeholder'] = 'نام شما'
 
 
 def _website_page(raw):
@@ -69,7 +73,7 @@ def website_lead(request):
             completed = True
             form = WebsiteLeadForm()
 
-    return render(request, 'core/instagram_lead.html', {
+    return render(request, 'core/website_lead.html', {
         'form': form,
         'completed': completed,
         'website_form': True,
