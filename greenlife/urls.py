@@ -3,8 +3,17 @@ from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
 from core import call_center_views, consultant_sales_views, instagram_views, instagram_api_views, lead_ingest_views, lead_action_views, lead_admin_views, lead_management_fixed_views, website_integration_views, website_public_lead_views, whatsapp_views
+from core import accounting_export
 
 urlpatterns=[
+    path('api/integrations/accounting/v1/receipts/', accounting_export.export_feed,
+         {'feed': 'receipts'}, name='accounting_receipt_export'),
+    path('api/integrations/accounting/v1/expenses/', accounting_export.export_feed,
+         {'feed': 'expenses'}, name='accounting_expense_export'),
+    path('api/integrations/accounting/v1/expenses/<int:pk>/invoice/', accounting_export.expense_document,
+         {'kind': 'invoice'}, name='accounting_expense_invoice'),
+    path('api/integrations/accounting/v1/expenses/<int:pk>/receipt/', accounting_export.expense_document,
+         {'kind': 'receipt'}, name='accounting_expense_receipt'),
     path('admin/',admin.site.urls),
     path('payments/',include('payments.urls')),
     path('management/recruitment/',include('recruitment.urls')),

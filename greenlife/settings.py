@@ -62,6 +62,29 @@ LOGIN_URL='/login/'; LOGIN_REDIRECT_URL='/'; LOGOUT_REDIRECT_URL='/login/'
 SECURE_PROXY_SSL_HEADER=('HTTP_X_FORWARDED_PROTO','https')
 PUBLIC_BASE_URL = os.getenv('PUBLIC_BASE_URL','https://staff.greenlifeclinics.com').rstrip('/')
 
+# The dedicated accounting service feed stays disabled without its own token digest.
+ACCOUNTING_EXPORT_TOKEN_SHA256 = os.getenv('ACCOUNTING_EXPORT_TOKEN_SHA256', '').strip().lower()
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {'accounting_export': {'format': '%(asctime)s %(levelname)s %(message)s'}},
+    'handlers': {
+        'accounting_export': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'accounting_export',
+        },
+    },
+    'loggers': {
+        'core.accounting_export': {
+            'handlers': ['accounting_export'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+
 # Activate only after the nginx private photo path has been applied and reloaded.
 BODY_PROGRESS_UPLOAD_ENABLED = os.getenv('BODY_PROGRESS_UPLOAD_ENABLED', '0') == '1'
 
