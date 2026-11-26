@@ -6,7 +6,10 @@ from decimal import Decimal
 from django import forms
 from django.db.models import Q
 
-from .call_center_deposit_views import DEPOSIT_MARKER, DepositAmountField, deposit_patient_reference
+from .call_center_deposit_views import (
+    DEPOSIT_MARKER, DepositMillionsField, deposit_patient_reference, legacy_toman_to_million,
+)
+from .device_pricing import MILLION, from_toman_to_million
 from .models import AuditLog, FinancialTransaction
 
 ZERO = Decimal("0")
@@ -89,17 +92,22 @@ class DepositAllocationForm(forms.Form):
         self.plan = plan
         self.summary = deposit_summary(receipts)
         self.items = list(plan.included_items)
+        if self.is_bound:
+            self.data = self.data.copy()
         for item in self.items:
-            self.fields[f"item_{item.pk}"] = DepositAmountField(
+            name = f"item_million_{item.pk}"
+            legacy_name = f"item_{item.pk}"
+            self.fields[name] = DepositMillionsField(
                 label=item.title, required=False, min_value=ZERO,
-                max_digits=15, decimal_places=0, max_value=item.line_total_toman,
-                initial=self.summary["by_item"].get(item.pk, ZERO),
-                widget=forms.TextInput(attrs={"inputmode": "numeric", "data-money-exempt": "1"}),
+                max_value=item.line_total_toman / MILLION,
+                initial=from_toman_to_million(self.summary["by_item"].get(item.pk, ZERO)),
             )
+            if self.is_bound and name not in self.data and legacy_name in self.data:
+                self.data[name] = legacy_toman_to_million(self.data[legacy_name])
 
     def clean(self):
-        data = super().clean()
-        total = sum((value or ZERO for value in data.values()), ZERO)
+        data = {key: ((value or ZERO) * MILLION).to_integral_exact() for key, value in super().clean().items()}
+        total = sum(data.values(), ZERO)
         if total > self.summary["approved"]:
             raise forms.ValidationError("جمع تخصیص بیشتر از بیعانهٔ تأییدشده است.")
         if total > self.plan.final_amount_toman:
@@ -109,7 +117,7 @@ class DepositAllocationForm(forms.Form):
     def save(self, receipts, *, user, request_path):
         """Called with the visit and receipts locked in the surrounding transaction."""
         pending = {
-            item.pk: self.cleaned_data[f"item_{item.pk}"] or ZERO
+            item.pk: self.cleaned_data[f"item_million_{item.pk}"]
             for item in self.items
         }
         receipt_updates = []

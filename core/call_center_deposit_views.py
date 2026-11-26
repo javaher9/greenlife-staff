@@ -1,7 +1,7 @@
 """Register call-center deposits through the existing executive review queue."""
 
 import uuid
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django import forms
 from django.conf import settings
@@ -9,6 +9,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.validators import DecimalValidator
 from django.db import IntegrityError, connection, transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -18,6 +19,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 
 from .country_workspace import country_for_user
+from .device_pricing import MILLION, from_toman_to_million
 from .jalali import LATIN_DIGITS
 from .lead_contacts import valid_phone
 from .models import (
@@ -68,11 +70,33 @@ def _appointments():
     )
 
 
-class DepositAmountField(forms.DecimalField):
+class DepositMillionsField(forms.DecimalField):
+    def __init__(self, *args, **kwargs):
+        super().__init__(
+            *args, max_digits=15, decimal_places=6,
+            widget=forms.TextInput(attrs={
+                "inputmode": "decimal", "data-money-exempt": "1",
+            }), **kwargs,
+        )
+
     def to_python(self, value):
         if isinstance(value, str):
-            value = value.translate(LATIN_DIGITS).replace("٬", "").replace(",", "").strip()
+            value = value.translate(LATIN_DIGITS).replace("٫", ".").strip()
         return super().to_python(value)
+
+
+def legacy_toman_to_million(value):
+    """Keep a form opened before the unit change in its original unit."""
+    value = value.translate(LATIN_DIGITS).replace("٬", "").replace(",", "").strip()
+    if not value:
+        return ""
+    try:
+        amount = Decimal(value)
+        DecimalValidator(15, 0)(amount)
+        return from_toman_to_million(amount)
+    except (InvalidOperation, ValidationError):
+        # Surface the invalid old amount with its unit so it cannot pass as millions.
+        return f"{value} تومان"
 
 
 class CallCenterDepositForm(forms.Form):
@@ -80,12 +104,12 @@ class CallCenterDepositForm(forms.Form):
         label="نوبت مراجع", queryset=VisitAppointment.objects.none(),
         empty_label="نوبت ثبت‌شده را انتخاب کنید",
     )
-    amount_toman = DepositAmountField(
-        label="مبلغ بیعانه (تومان)", min_value=Decimal("1"),
-        max_digits=15, decimal_places=0,
-        widget=forms.TextInput(attrs={
-            "inputmode": "numeric", "placeholder": "مثلاً ۵۰٬۰۰۰٬۰۰۰", "data-money-exempt": "1",
-        }),
+    amount_million = DepositMillionsField(
+        label="مبلغ بیعانه (میلیون تومان)", min_value=Decimal("0.000001"),
+        error_messages={
+            "invalid": "مبلغ را به میلیون تومان وارد کنید، مثلاً ۵۰ یا ۲٫۵.",
+            "required": "مبلغ بیعانه را وارد کنید.",
+        },
     )
     payment_method = forms.ChoiceField(
         label="روش دریافت",
@@ -107,15 +131,16 @@ class CallCenterDepositForm(forms.Form):
     )
     submission_token = forms.UUIDField(widget=forms.HiddenInput)
 
-    def __init__(self, *args, appointments, appointment_required=True, **kwargs):
+    def __init__(self, *args, appointments=None, appointment_required=True, **kwargs):
         super().__init__(*args, **kwargs)
-        appointment = self.fields["appointment"]
-        appointment.queryset = appointments
-        appointment.label_from_instance = lambda item: f"{item.branch.name}، {item}"
-        if not appointment_required:
-            appointment.required = False
-            appointment.label = "اتصال به نوبت موجود (اختیاری)"
-            appointment.empty_label = "ثبت بدون نوبت"
+        self.fields["amount_million"].widget.attrs["placeholder"] = "مثلاً ۵۰"
+        if appointments is None:
+            del self.fields["appointment"]
+        else:
+            appointment = self.fields["appointment"]
+            appointment.queryset = appointments
+            appointment.label_from_instance = lambda item: f"{item.branch.name}، {item}"
+            appointment.required = appointment_required
         if not self.is_bound:
             self.fields["submission_token"].initial = uuid.uuid4()
 
@@ -149,13 +174,17 @@ def tracking_in_use(method, tracking, *, exclude_pk=None):
 def _save_deposit(request, form, lead=None):
     """Recheck scope under a lock before accepting the receipt."""
     data = form.cleaned_data
-    appointments = _appointments().select_for_update(of=("self",))
-    if lead:
-        appointments = appointments.filter(lead=lead)
     chosen = None
     first_owner_id = None
-    if data["appointment"]:
-        chosen = get_object_or_404(appointments, pk=data["appointment"].pk)
+    if data.get("appointment"):
+        appointments = _appointments().select_for_update(of=("self",))
+        if lead:
+            appointments = appointments.filter(lead=lead)
+        chosen = appointments.filter(pk=data["appointment"].pk).first()
+        if not chosen and not lead:
+            form.add_error("appointment", "این نوبت دیگر قابل انتخاب نیست. نوبت دیگری را جست‌وجو کنید.")
+            return False
+    if chosen:
         first_owner_id = chosen.lead.first_appointment_by_id or chosen.created_by_id
     if lead:
         lead = get_object_or_404(
@@ -201,7 +230,8 @@ def _save_deposit(request, form, lead=None):
         patient_ref = deposit_patient_reference(patient.pk)
         branch = None
     appointment_id = chosen.pk if chosen else None
-    amount_rial = data["amount_toman"] * Decimal("10")
+    amount_toman = int(data["amount_million"] * MILLION)
+    amount_rial = amount_toman * 10
     item = manual.create(
         source="manual", external_id=external_id,
         branch=branch, appointment=chosen,
@@ -219,7 +249,7 @@ def _save_deposit(request, form, lead=None):
             "lead_source": deposit_lead.source,
             "appointment_id": appointment_id,
             "first_appointment_owner_id": first_owner_id,
-            "amount_toman": str(data["amount_toman"]),
+            "amount_toman": str(amount_toman),
             "submission_token": token,
             "approval_required": "executive",
             "country_code": "IR",
@@ -242,7 +272,7 @@ def _save_deposit(request, form, lead=None):
     StaffNotification.objects.bulk_create([
         StaffNotification(
             user=recipient, title="بیعانه کال‌سنتر در انتظار تأیید شما",
-            message=f"{name}، {data['amount_toman']:,} تومان",
+            message=f"{name}، {from_toman_to_million(amount_toman)} میلیون تومان",
             notification_type="finance_review", related_date=timezone.localdate(),
         )
         for recipient in recipients
@@ -251,11 +281,19 @@ def _save_deposit(request, form, lead=None):
     return True
 
 
-def _deposit_page(request, *, appointments, matches, search="", lead=None):
+def _deposit_page(request, *, appointments=None, matches=(), search="", lead=None):
     is_post = request.method == "POST"
+    posted = request.POST if is_post else None
+    if appointments is not None:
+        appointments = appointments.filter(pk__in=[item.pk for item in matches])
+    if is_post and "amount_million" not in posted and "amount_toman" in posted:
+        posted = posted.copy()
+        posted["amount_million"] = legacy_toman_to_million(posted["amount_toman"])
+        if lead and posted.get("appointment"):
+            appointments = _appointments().filter(lead=lead)
     form = CallCenterDepositForm(
-        request.POST if is_post else None, request.FILES if is_post else None,
-        appointments=appointments.filter(pk__in=[item.pk for item in matches]),
+        posted, request.FILES if is_post else None,
+        appointments=appointments,
         appointment_required=lead is None,
     )
     if is_post and form.is_valid():
@@ -280,9 +318,13 @@ def _deposit_page(request, *, appointments, matches, search="", lead=None):
     )
     if lead:
         recent = recent.filter(Q(appointment__lead=lead) | Q(raw_data__lead_id=lead.pk))
+    recent_receipts = list(recent.select_related("branch").order_by("-created_at")[:15])
+    for receipt in recent_receipts:
+        receipt.amount_toman = receipt.amount / 10
     return render(request, "core/call_center_deposit_entry.html", {
         "form": form, "matches": matches, "search": search, "lead": lead,
-        "recent": recent.select_related("branch").order_by("-created_at")[:15],
+        "recent": recent_receipts,
+        "form_url": reverse("call_center_lead_deposit", args=[lead.pk]) if lead else reverse("call_center_deposit_entry"),
         "appointment_url": reverse("appointment_schedule") + f"?lead={lead.pk}" if lead else "",
     })
 
@@ -312,6 +354,4 @@ def call_center_lead_deposit(request, pk):
     if not can_register_own_deposit(request.user):
         raise PermissionDenied("ثبت بیعانه این بخش فقط برای گل کال‌سنتر فعال است.")
     lead = get_object_or_404(ReferralLead, pk=pk, assigned_to=request.user.profile)
-    appointments = _appointments().filter(lead=lead)
-    matches = list(appointments.order_by("-appointment_date", "-appointment_time", "-id"))
-    return _deposit_page(request, appointments=appointments, matches=matches, lead=lead)
+    return _deposit_page(request, lead=lead)

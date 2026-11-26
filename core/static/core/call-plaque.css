@@ -12,8 +12,8 @@
 #glCallPlaque h4{font-size:13px!important;margin:12px 0 5px}
 #glCallPlaque :is(button,input,select,textarea){font-family:inherit!important;-webkit-text-fill-color:currentColor!important}
 #glCallPlaque :is(.cp-header,.cp-footer){position:static!important;inset:auto!important;width:auto!important;max-width:none!important;transform:none!important}
-#glCallPlaque button,#glCallPlaque [data-cp-dial]{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;margin:0;padding:8px 13px;border:1px solid var(--cp-line)!important;border-radius:12px!important;background:var(--cp-card)!important;color:var(--cp-ink)!important;box-shadow:none!important;transform:none!important;text-decoration:none!important;white-space:normal!important;line-height:1.8!important;font-size:12px!important;font-weight:700!important;text-align:center;cursor:pointer}
-#glCallPlaque button:hover,#glCallPlaque [data-cp-dial]:hover{border-color:var(--cp-purple)!important;background:var(--cp-purple-soft)!important}
+#glCallPlaque button,#glCallPlaque [data-cp-dial],#glCallPlaque [data-cp-deposit]{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;margin:0;padding:8px 13px;border:1px solid var(--cp-line)!important;border-radius:12px!important;background:var(--cp-card)!important;color:var(--cp-ink)!important;box-shadow:none!important;transform:none!important;text-decoration:none!important;white-space:normal!important;line-height:1.8!important;font-size:12px!important;font-weight:700!important;text-align:center;cursor:pointer}
+#glCallPlaque button:hover,#glCallPlaque [data-cp-dial]:hover,#glCallPlaque [data-cp-deposit]:hover{border-color:var(--cp-purple)!important;background:var(--cp-purple-soft)!important}
 #glCallPlaque :is(button,input,select,textarea,a):focus-visible{outline:3px solid #9d79c9!important;outline-offset:2px!important}
 #glCallPlaque button:disabled{opacity:.5!important;cursor:default}
 #glCallPlaque .cp-primary{background:#684995!important;border-color:#684995!important;color:#fff!important}
@@ -106,7 +106,7 @@
 #glCallPlaque .cp-empty{padding:17px;border-radius:12px;background:var(--cp-soft)!important;color:var(--cp-muted)!important;font-size:12px!important}
 #glCallPlaque .cp-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 22px;background:var(--cp-card)!important;border-top:1px solid var(--cp-line)!important;color:var(--cp-muted)!important;font-size:11px!important;flex:none}
 #glCallPlaque .cp-footer>div{display:flex;gap:7px;flex-shrink:0}
-#glCallPlaque .cp-footer button{font-size:11px!important;min-height:36px;padding:6px 11px}
+#glCallPlaque .cp-footer :is(button,[data-cp-deposit]){font-size:11px!important;min-height:36px;padding:6px 11px}
 #glCallPlaque .cp-close-confirm{position:absolute;inset:0;z-index:5;display:grid;place-items:center;padding:20px;background:#172531b8}
 #glCallPlaque .cp-close-confirm>div{width:min(520px,100%);padding:24px;background:var(--cp-card)!important;color:var(--cp-ink)!important;border-radius:18px;border:1px solid var(--cp-line)}
 #glCallPlaque .cp-close-confirm>div>div{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
@@ -172,9 +172,7 @@
 #glCallPlaque .cp-rating-group .cp-star-choices { clear: both; }
 #glCallPlaque .cp-star small { font-size: 11px; color: var(--cp-muted); line-height: 1; }
 
-#glCallPlaque .cp-footer [data-cp-deposit]{min-height:36px;display:inline-flex;align-items:center;font-size:11px;padding:6px 11px;background:#e7f6ee;color:#15583e;border-color:#b8ddca}
 @media(max-width:490px){
   #glCallPlaque .cp-footer{flex-wrap:wrap;gap:5px}
   #glCallPlaque .cp-footer>div{flex-wrap:wrap;flex-shrink:1}
-  #glCallPlaque .cp-footer [data-cp-deposit]{font-size:10px;padding-inline:8px}
 }

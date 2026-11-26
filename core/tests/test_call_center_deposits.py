@@ -160,8 +160,9 @@ class CallCenterDepositTests(TestCase):
         page = self.client.get(self.operator_url, HTTP_USER_AGENT="Mozilla/5.0 (Android 15; Mobile)")
         self.assertContains(page, "ثبت مالی بیعانه")
         self.assertContains(page, self.lead.full_name)
-        self.assertFalse(page.context["form"].fields["appointment"].required)
-        self.assertIsNone(page.context["form"]["appointment"].value())
+        self.assertNotIn("appointment", page.context["form"].fields)
+        self.assertNotContains(page, 'name="appointment"')
+        self.assertContains(page, 'placeholder="مثلاً ۵۰"')
         plaque = self.client.get(reverse("call_center_call_plaque", args=[self.lead.pk]))
         self.assertEqual(plaque.json()["operational"]["deposit_url"], self.operator_url)
 
@@ -188,11 +189,15 @@ class CallCenterDepositTests(TestCase):
         self.assertContains(page, 'id="ccdep-form"')
         self.assertNotContains(page, 'name="appointment"')
         token = str(uuid.uuid4())
-        receipt = {"appointment": "", "submission_token": token, "amount_toman": "50000000"}
+        receipt = {"submission_token": token, "amount_million": "۵۰"}
         for _ in range(2):
-            self.assertRedirects(self.client.post(self.operator_url, self.payload(**receipt)), self.operator_url)
+            data = self.payload(**receipt)
+            data.pop("amount_toman")
+            data.pop("appointment")
+            self.assertRedirects(self.client.post(self.operator_url, data), self.operator_url)
 
         deposit = FinancialTransaction.objects.get()
+        self.assertEqual(deposit.amount, Decimal("500000000"))
         patient = PatientProfile.objects.get(phone=self.lead.phone)
         self.assertEqual(deposit.patient_ref, f"patient:{patient.pk}")
         self.assertEqual(deposit.call_center_owner, self.operator)
@@ -202,7 +207,9 @@ class CallCenterDepositTests(TestCase):
         self.assertIsNone(self.lead.first_appointment_by_id)
         self.assertEqual(self.lead.status, "new")
         profile_url = reverse("patient_360", args=[patient.pk])
-        self.assertEqual(self.client.get(profile_url).context["deposit_credit"]["pending"], Decimal("50000000"))
+        profile = self.client.get(profile_url)
+        self.assertEqual(profile.context["deposit_credit"]["pending"], Decimal("50000000"))
+        self.assertContains(profile, "<dd>50</dd>", html=True)
         self.assertEqual(self.client.get(reverse("my_sales_targets")).context["targets"]["personal_deposit"]["value"], 0)
 
         self.client.force_login(self.executive)
@@ -258,13 +265,26 @@ class CallCenterDepositTests(TestCase):
         self.assertEqual(self.client.get(consult, {"appointment": appointment.pk}).context["deposit_credit"]["available"], 50000000)
         self.client.post(consult, {
             "action": "allocate_deposit", "appointment_id": appointment.pk,
-            f"item_{lipolytic.pk}": "25000000", f"item_{device.pk}": "25000000",
+            f"item_million_{lipolytic.pk}": "۲۵", f"item_million_{device.pk}": "۲۵٫۰۰",
         })
         summary = self.client.get(profile_url).context["deposit_credit"]
         self.assertEqual(summary["approved"], 50000000)
         self.assertEqual(summary["applied"], 50000000)
         self.assertEqual(len(summary["services"]), 2)
         self.assertEqual(FinancialTransaction.objects.count(), 1)
+
+    def test_million_receipt_does_not_depend_on_previous_cancelled_appointment(self):
+        self.appt.status = "cancelled"
+        self.appt.save(update_fields=["status"])
+        self.client.force_login(self.operator)
+        data = self.payload(amount_million="۲٫۵۰۰۰۰۱")
+        data.pop("amount_toman")
+        next_page = self.client.post(self.operator_url, data, follow=True)
+        self.assertContains(next_page, "بیعانه برای این مراجع ثبت شد")
+        self.assertContains(next_page, "<td>2.500001</td>", html=True)
+        entry = FinancialTransaction.objects.get()
+        self.assertEqual(entry.amount, Decimal("25000010"))
+        self.assertIsNone(entry.appointment_id)
 
     def test_walk_in_with_the_same_phone_but_a_different_name_does_not_claim_the_credit(self):
         self.client.force_login(self.operator)

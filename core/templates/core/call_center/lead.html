@@ -74,7 +74,7 @@ body.gl-page-call_center_lead .cc-detail .cc-book{
   color:#604287!important;
   border:1px solid #d0bde2!important;
 }
-body.gl-page-call_center_lead .cc-detail .cc-patient360{
+body.gl-page-call_center_lead .cc-detail :is(.cc-patient360,.cc-deposit-link){
   background:#e9f6f0!important;
   color:#236c54!important;
   border:1px solid #cfe6dc!important;
@@ -92,7 +92,8 @@ body.gl-page-call_center_lead .cc-detail .cc-phone a{
   border:1px solid #c4e2d2!important;
   box-shadow:none!important;
 }
-.cc-detail .cc-deposit-link{display:inline-flex;align-items:center;margin:8px 0;padding:7px 12px;border-radius:10px;background:#ecf7f2;color:#175840!important;border:1px solid #c8e7d9;text-decoration:none;font-weight:800}
+.cc-detail .cc-visit-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
+.cc-detail .cc-visit-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:42px;margin:0;padding:9px 13px;border-radius:11px;text-decoration:none;font-weight:900}
 </style>
 <div class="cc-detail-shell">
   <div class="cc-detail-top"><div><span class="eyebrow">{% gl_t 'cc.lead_case_title' %}</span></div><a class="cc-back" href="{% url 'call_center_dashboard' %}">{% gl_t 'cc.back_to_desk' %} ←</a></div>
@@ -102,7 +103,6 @@ body.gl-page-call_center_lead .cc-detail .cc-phone a{
       {% include "core/call_center/_contact_control.html" with lead=lead %}
       <div class="cc-phone"><b>{{ lead.phone }}</b><a href="tel:{{ lead.phone }}" data-phone="{{ lead.phone }}" data-call-phone="{{ lead.phone }}" data-call-start-url="{% url 'call_center_mark_call_started' lead.pk %}" data-call-plaque-url="{% url 'call_center_call_plaque' lead.pk %}" data-lead-name="{{ lead.full_name }}" data-lead-group="{{ lead.group.name|default:'' }}">☎ پلاک تماس و سوابق</a></div>
       {% include "core/call_center/_call_plaque_badge.html" with lead_id=lead.pk summary=call_readiness %}
-      <a class="cc-deposit-link" href="{% url 'call_center_lead_deposit' lead.pk %}">ثبت مالی بیعانه</a>
       <div class="cc-meta">
         <div><span>{% gl_t 'cc.interested_service' %}</span><b>{{ lead.interested_service|default:'—' }}</b></div>
         <div><span>{% gl_t 'cc.market' %}</span><b>{% if lead.country %}{{ lead.country.flag_emoji }} {{ lead.country.name_local }}{% else %}—{% endif %}</b></div>
@@ -111,8 +111,11 @@ body.gl-page-call_center_lead .cc-detail .cc-phone a{
         <div><span>{% gl_t 'cc.alt_phone' %}</span><b dir="ltr">{{ lead.alternate_phone|default:'—' }}</b></div>
       </div>
       {% if lead.notes %}<div class="cc-notes"><strong>{% gl_t 'cc.last_note' %}</strong><br>{{ lead.notes|linebreaksbr }}</div>{% endif %}
-      <a class="cc-book" href="{% url 'appointment_schedule' %}?lead={{ lead.pk }}">＋ {% gl_t 'cc.real_appointment' %}</a>
-      <a class="cc-patient360" href="{% url 'patient_360_from_lead' lead.pk %}">★ پرونده ۳۶۰ / امتیاز بیمار</a>
+      <div class="cc-visit-actions">
+        <a class="cc-deposit-link" href="{% url 'call_center_lead_deposit' lead.pk %}">ثبت مالی بیعانه</a>
+        <a class="cc-book" href="{% url 'appointment_schedule' %}?lead={{ lead.pk }}">＋ {% gl_t 'cc.real_appointment' %}</a>
+        <a class="cc-patient360" href="{% url 'patient_360_from_lead' lead.pk %}">★ پرونده ۳۶۰ / امتیاز بیمار</a>
+      </div>
       {% if real_appointments %}
       <div class="cc-appts">
         {% for item in real_appointments %}
