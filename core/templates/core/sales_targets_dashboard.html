@@ -228,7 +228,7 @@ body.gl-page-sales_targets_dashboard .app-main{
    </section>
    <section class="st-panel">
     <div class="st-title"><h2>تحقق کل مراکز</h2><span class="st-sub">{{ overall.status }}</span></div>
-    <div class="st-meter" data-value="{{ overall.value }}" data-heavy="{{ overall.plan.heavy_limit|default_if_none:'' }}" data-floor="{{ overall.plan.sales_floor|default_if_none:'' }}" data-one="{{ overall.plan.target_one|default_if_none:'' }}" data-two="{{ overall.plan.target_two|default_if_none:'' }}"></div>
+    <div class="st-meter" data-value="{{ overall.value }}" data-percent="{{ overall.percentage|default_if_none:'' }}" data-heavy="{{ overall.plan.heavy_limit|default_if_none:'' }}" data-floor="{{ overall.plan.sales_floor|default_if_none:'' }}" data-one="{{ overall.plan.target_one|default_if_none:'' }}" data-two="{{ overall.plan.target_two|default_if_none:'' }}"></div>
     <div class="st-levels"><span><b style="background:#ff466b"></b>سنگین</span><span><b style="background:#ffd14e"></b>سبک</span><span><b style="background:#20dcb0"></b>نرمال</span><span><b style="background:#26b7ff"></b>۱</span><span><b style="background:#a966f5"></b>۲</span></div>
    </section>
  </div>
@@ -241,11 +241,11 @@ body.gl-page-sales_targets_dashboard .app-main{
   {% for b in branches %}
    <article class="st-branch">
     <div class="st-between"><h3>{{ b.label }}</h3><span class="st-status {{ b.level }}">{{ b.status }}</span>{% if b.key != "call_center" and b.people %}<span class="st-header-photo">{% with p=b.people.0 %}<span class="st-avatar" title="{{ p.label }}">{% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.label }}" loading="lazy">{% else %}{{ p.label|first }}{% endif %}</span>{% endwith %}</span>{% endif %}</div>
-    <div class="st-meter" data-value="{{ b.value }}" data-heavy="{{ b.plan.heavy_limit|default_if_none:'' }}" data-floor="{{ b.plan.sales_floor|default_if_none:'' }}" data-one="{{ b.plan.target_one|default_if_none:'' }}" data-two="{{ b.plan.target_two|default_if_none:'' }}"></div>
+    <div class="st-meter" data-value="{{ b.value }}" data-percent="{{ b.percentage|default_if_none:'' }}" data-heavy="{{ b.plan.heavy_limit|default_if_none:'' }}" data-floor="{{ b.plan.sales_floor|default_if_none:'' }}" data-one="{{ b.plan.target_one|default_if_none:'' }}" data-two="{{ b.plan.target_two|default_if_none:'' }}"></div>
     <div class="st-stats">
-     <div><small>کف</small><strong>{% if b.plan %}{{ b.plan.sales_floor|floatformat:0 }}{% else %}—{% endif %}</strong></div>
-     <div><small>تارگت ۱</small><strong>{% if b.plan %}{{ b.plan.target_one|floatformat:0 }}{% else %}—{% endif %}</strong></div>
-     <div><small>تارگت ۲</small><strong>{% if b.plan %}{{ b.plan.target_two|floatformat:0 }}{% else %}—{% endif %}</strong></div>
+     <div><small>کف</small><strong>{% if b.plan %}{{ b.plan.sales_floor|floatformat:"-2" }}{% else %}—{% endif %}</strong></div>
+     <div><small>تارگت ۱</small><strong>{% if b.plan %}{{ b.plan.target_one|floatformat:"-2" }}{% else %}—{% endif %}</strong></div>
+     <div><small>تارگت ۲</small><strong>{% if b.plan %}{{ b.plan.target_two|floatformat:"-2" }}{% else %}—{% endif %}</strong></div>
     </div>
     {% if b.people %}
      <div class="st-avatars">
@@ -255,7 +255,7 @@ body.gl-page-sales_targets_dashboard .app-main{
       <span class="st-avatar-label">مشاورین {{ b.label }}</span>
      </div>
     {% elif b.key == "call_center" %}
-     <div class="st-hint">بیعانه‌های مشخص‌شده در دریافت‌های تأییدشده: {{ deposit_count }} رسید</div>
+     <div class="st-hint">جمع تارگت اول بیعانهٔ گل‌ها · {{ deposit_count }} رسید بیعانهٔ تأییدشده</div>
     {% endif %}
    </article>
   {% endfor %}
@@ -267,7 +267,7 @@ body.gl-page-sales_targets_dashboard .app-main{
    {% for p in flower_cards %}
     <article class="st-person">
      <div class="st-person-header"><div class="st-person-name" title="{{ p.label }}">{{ p.label }}</div><span class="st-avatar">{% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.label }}" loading="lazy">{% else %}{{ p.label|first }}{% endif %}</span></div>
-     <div class="st-meter" data-value="{{ p.value }}" data-heavy="{{ p.plan.heavy_limit|default_if_none:'' }}" data-floor="{{ p.plan.sales_floor|default_if_none:'' }}" data-one="{{ p.plan.target_one|default_if_none:'' }}" data-two="{{ p.plan.target_two|default_if_none:'' }}"></div>
+     <div class="st-meter" data-value="{{ p.value }}" data-percent="{{ p.percentage|default_if_none:'' }}" data-heavy="{{ p.plan.heavy_limit|default_if_none:'' }}" data-floor="{{ p.plan.sales_floor|default_if_none:'' }}" data-one="{{ p.plan.target_one|default_if_none:'' }}" data-two="{{ p.plan.target_two|default_if_none:'' }}"></div>
      <div class="st-status {{ p.level }}">{{ p.status }}</div>
     </article>
    {% empty %}<div class="st-empty">گل فعال در کال‌سنتر موجود نیست.</div>{% endfor %}
@@ -293,7 +293,7 @@ body.gl-page-sales_targets_dashboard .app-main{
  <form id="st-bulk-form" method="post" action="{% url 'sales_targets_dashboard' %}">
  {% csrf_token %}
  <input type="hidden" name="year" value="{{ period_year }}"><input type="hidden" name="month" value="{{ period_month }}"><input type="hidden" name="action" value="save_all">
- <div class="st-hint">کف هر تارگت را وارد کن. باقی مقادیر خودکار محاسبه می‌شوند. با جابه‌جایی اسلایدرها، نسبت رنگ‌های عقربه نیز پس از ذخیره تغییر می‌کند.</div>
+ <div class="st-hint">کف هر تارگت را وارد کن. تارگت ماهانهٔ بیعانهٔ تیم برابر با مجموع تارگت اول بیعانهٔ گل‌هاست.</div>
  <div class="st-percent-grid">
   <div class="st-slider-field"><label for="st-heavy">پایان جریمه سنگین <b id="st-heavy-value"></b></label>
   <input id="st-heavy" type="range" min="5" max="95" step="1" value="{{ target_policy.heavy_percent|stringformat:'.0f' }}" data-bind="heavy_percent">
@@ -311,10 +311,10 @@ body.gl-page-sales_targets_dashboard .app-main{
  <div class="st-edit-row st-bulk-row">
   <input type="hidden" name="subject" value="{{ r.key }}">
   <label>{{ r.label }} <small class="st-sub">({{ r.scope }})</small></label>
-  <output class="st-auto" data-boundary="heavy">{% if r.band %}{{ r.band.heavy_limit|floatformat:0 }}{% else %}—{% endif %}</output>
+  <output class="st-auto" data-boundary="heavy">{% if r.band %}{{ r.band.heavy_limit|floatformat:"-2" }}{% else %}—{% endif %}</output>
   <input type="number" class="st-floor-input" name="floor_{{ r.key }}" placeholder="{% if r.scope == 'بیعانه' %}کف بیعانه{% else %}کف فروش{% endif %}" step="0.01" min="0.01" value="{% if r.band %}{{ r.band.sales_floor|stringformat:'.2f' }}{% endif %}" aria-label="کف {{ r.scope }} {{ r.label }}">
-  <output class="st-auto" data-boundary="one">{% if r.band %}{{ r.band.target_one|floatformat:0 }}{% else %}—{% endif %}</output>
-  <output class="st-auto" data-boundary="two">{% if r.band %}{{ r.band.target_two|floatformat:0 }}{% else %}—{% endif %}</output>
+  <output class="st-auto" data-boundary="one">{% if r.band %}{{ r.band.target_one|floatformat:"-2" }}{% else %}—{% endif %}</output>
+  <output class="st-auto" data-boundary="two">{% if r.band %}{{ r.band.target_two|floatformat:"-2" }}{% else %}—{% endif %}</output>
  </div>
  {% endfor %}
  <div class="st-save-bar"><span id="st-save-status">تغییرات را تنظیم کن و سپس همه را با هم ذخیره کن.</span><button class="st-button primary" type="submit">✓ ذخیره همه تغییرات</button></div>
@@ -351,7 +351,7 @@ body.gl-page-sales_targets_dashboard .app-main{
      const [px,py]=polar(angle,84),[mx,my]=polar(angle,40);
      svg.appendChild(elem("path",{d:"M "+mx+" "+my+" L "+px+" "+py,stroke:"#edfaff","stroke-width":"7.5","stroke-linecap":"round",fill:"none"}));
      svg.appendChild(elem("circle",{cx:px,cy:py,r:"9",fill:"#12354c",stroke:"#edfaff","stroke-width":"4"}));
-     svg.appendChild(elem("text",{x:110,y:108,fill:"#f1fbff","font-size":"23","text-anchor":"middle","font-family":"Arial,Tahoma","font-weight":"bold"},Math.round(100*value/t[2])+"%"));
+     svg.appendChild(elem("text",{x:110,y:108,fill:"#f1fbff","font-size":"23","text-anchor":"middle","font-family":"Arial,Tahoma","font-weight":"bold"},box.dataset.percent+"%"));
    }else{
      svg.appendChild(elem("text",{x:110,y:108,fill:"#ebf7ff","font-size":"22","text-anchor":"middle","font-family":"Arial,Tahoma","font-weight":"bold"},"—"));
      svg.appendChild(elem("text",{x:110,y:125,fill:"#c6d9e9","font-size":"10","text-anchor":"middle","font-family":"Tahoma"},"بدون تارگت"));
@@ -366,6 +366,7 @@ body.gl-page-sales_targets_dashboard .app-main{
  const form=document.getElementById("st-bulk-form");if(!form)return;
  const fields=["heavy_percent","target_one_percent","target_two_percent"];
  const fmt=n=>Number(n.toFixed(2)).toLocaleString("en-US",{maximumFractionDigits:2});
+ const boundaryFormat=new Intl.NumberFormat("en-US",{maximumFractionDigits:2,roundingMode:"halfEven"});
  function update(){
   const [heavy,one,two]=fields.map(k=>Number(form.elements[k].value));
   const good=heavy>0&&heavy<100&&one>100&&two>one;
@@ -375,7 +376,9 @@ body.gl-page-sales_targets_dashboard .app-main{
   for(const row of form.querySelectorAll(".st-edit-row")){
    const floor=Number(row.querySelector(".st-floor-input").value);
    for(const [k,multiplier] of [["heavy",heavy],["one",one],["two",two]]){
-    row.querySelector('[data-boundary="'+k+'"]').textContent=good&&floor>0?fmt(floor*multiplier/100):"—";
+    // Two decimal places for each input yield at most six in the percentage product.
+    const boundary=Number((floor*multiplier/100).toFixed(6));
+    row.querySelector('[data-boundary="'+k+'"]').textContent=good&&floor>0?boundaryFormat.format(boundary):"—";
    }
   }
  }

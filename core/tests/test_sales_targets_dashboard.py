@@ -1,5 +1,5 @@
 """Regression tests for isolated executive sales-target dashboard."""
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.models import Branch, EmployeeProfile, FinancialTransaction, SalesTargetBand
-from core.jalali import gregorian_to_jalali
+from core.jalali import gregorian_to_jalali, jalali_to_gregorian
 
 
 class SalesTargetsDashboardTests(TestCase):
@@ -142,40 +142,96 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertEqual(own.status_code, 200)
         self.assertEqual(own.context["plan"].sales_floor, Decimal("4500"))
 
-    def test_bulk_call_center_and_flower_goals_are_saved(self):
-        response = self.client.get(self.url+"?edit=1")
-        subjects = [row["key"] for row in response.context["edit_rows"]]
-        payload = {"year":self.year,"month":self.month,"action":"save_all",
-                   "heavy_percent":"70","target_one_percent":"130","target_two_percent":"160",
-                   "subject":subjects,"floor_call_center":"400",
-                   f"floor_flower:{self.flower.pk}":"150",
-                   f"floor_flower_deposit:{self.flower.pk}":"35"}
-        response = self.client.post(self.url,payload)
-        self.assertEqual(response.status_code,302)
-        response = self.client.get(self.url+"?edit=1")
-        self.assertEqual(response.context["branches"][-1]["plan"].sales_floor,Decimal("400"))
-        self.assertEqual(next(row for row in response.context["flower_cards"] if row["key"] == f"flower:{self.flower.pk}")["plan"].sales_floor,Decimal("150"))
-        payload["floor_call_center"] = "350"
-        payload[f"floor_flower:{self.flower.pk}"] = "125"
-        response = self.client.post(self.url,payload,follow=True)
-        feedback = [str(m) for m in list(response.context["messages"])]
-        self.assertEqual(SalesTargetBand.objects.get(key=f"{self.year}-{self.month:02d}:call_center").sales_floor,Decimal("350"), feedback)
-        self.assertEqual(SalesTargetBand.objects.get(key=f"{self.year}-{self.month:02d}:flower:{self.flower.pk}").sales_floor,Decimal("125"))
-        deposit_plan = SalesTargetBand.objects.get(key=f"{self.year}-{self.month:02d}:flower_deposit:{self.flower.pk}")
-        self.assertEqual(deposit_plan.employee, self.flower)
-        self.assertEqual(deposit_plan.sales_floor, Decimal("35"))
+    def test_old_bulk_form_saves_flowers_and_ignores_retired_team_input(self):
+        page = self.client.get(self.url, {"edit": 1})
+        subjects = [row["key"] for row in page.context["edit_rows"]]
+        self.assertNotIn("call_center", subjects)
+        self.assertNotContains(page, 'name="floor_call_center"')
+        sales = f"flower:{self.flower.pk}"
+        deposit = f"flower_deposit:{self.flower.pk}"
+        payload = {
+            "year": self.year, "month": self.month, "action": "save_all",
+            "heavy_percent": "70", "target_one_percent": "130", "target_two_percent": "160",
+            "subject": [*subjects, "call_center"], "floor_call_center": "400",
+            f"floor_{sales}": "150", f"floor_{deposit}": "35",
+        }
+        response = self.client.post(self.url, payload, follow=True)
+        self.assertEqual(response.context["branches"][-1]["plan"].target_one, Decimal("45.50"))
+        self.assertEqual(response.context["flower_cards"][0]["plan"].sales_floor, 150)
+        self.assertEqual(response.context["configured_count"], 2)
+
+        payload.update({"floor_call_center": "350", f"floor_{sales}": "125", f"floor_{deposit}": "40"})
+        response = self.client.post(self.url, payload, follow=True)
+        self.assertEqual(response.context["branches"][-1]["plan"].target_one, 52)
+        self.assertEqual(response.context["flower_cards"][0]["plan"].sales_floor, 125)
+        self.assertEqual(SalesTargetBand.objects.get(scope="flower_deposit").employee, self.flower)
+        self.assertFalse(SalesTargetBand.objects.filter(scope="call_center").exists())
 
     def test_bulk_callcenter_edit_survives_changed_staff_roster(self):
-        # An extra active employee can appear after a form was opened.
         previous = [row["key"] for row in self.client.get(self.url).context["edit_rows"]]
-        extra = get_user_model().objects.create_user(username="new_callcenter",password="test-secret")
-        EmployeeProfile.objects.update_or_create(user=extra,defaults={"role":"call_center","branch":self.branch})
-        payload={"year":self.year,"month":self.month,"action":"save_all","subject":previous,
-                 "floor_call_center":"800","heavy_percent":"70",
-                 "target_one_percent":"130","target_two_percent":"160"}
-        res=self.client.post(self.url,payload)
-        self.assertEqual(res.status_code,302)
-        self.assertEqual(SalesTargetBand.objects.get(key=f"{self.year}-{self.month:02d}:call_center").sales_floor,Decimal("800"))
+        extra = get_user_model().objects.create_user(username="new_callcenter")
+        EmployeeProfile.objects.update_or_create(user=extra, defaults={"role": "call_center", "branch": self.branch})
+        payload = {
+            "year": self.year, "month": self.month, "action": "save_all", "subject": previous,
+            f"floor_flower_deposit:{self.flower.pk}": "800", "heavy_percent": "70",
+            "target_one_percent": "130", "target_two_percent": "160",
+        }
+        res = self.client.post(self.url, payload, follow=True)
+        self.assertEqual(res.context["branches"][-1]["plan"].sales_floor, 800)
+        self.assertFalse(SalesTargetBand.objects.filter(employee=extra).exists())
+
+    def test_monthly_team_goal_is_sum_of_individually_rounded_deposit_target_ones(self):
+        period = {"year": self.year, "month": self.month}
+        prefix = f"{self.year}-{self.month:02d}"
+        old = SalesTargetBand.objects.create(
+            key=f"{prefix}:call_center", scope="call_center", period_year=self.year, period_month=self.month,
+            heavy_limit=560, sales_floor=800, target_one=1040, target_two=1280,
+        )
+        form = {**period, "action": "set_floor"}
+        self.client.post(self.url, {**form, "subject": "call_center", "sales_floor": "1"})
+        old.refresh_from_db()
+        self.assertEqual(old.sales_floor, 800)
+        self.assertIsNone(self.client.get(self.url).context["branches"][-1]["plan"])
+        extra = get_user_model().objects.create_user(username="another_flower")
+        EmployeeProfile.objects.update_or_create(user=extra, defaults={"role": "call_center", "branch": self.branch})
+        for flower, floor in ((self.flower, "10.05"), (extra, "20.05")):
+            self.client.post(self.url, {**form, "subject": f"flower_deposit:{flower.pk}", "sales_floor": floor})
+        self.client.post(self.url, {**form, "subject": f"flower:{extra.pk}", "sales_floor": "900"})
+        self._transaction("391199999", description="بیعانه", origin="afsariyeh", owner=self.flower)
+
+        dashboard = self.client.get(self.url)
+        team = dashboard.context["branches"][-1]
+        expected = Decimal("39.12")
+        self.assertEqual(team["plan"].sales_floor, Decimal("30.10"))
+        self.assertEqual(team["plan"].target_one, expected)
+        self.assertEqual(team["percentage"], 99)
+        self.assertContains(dashboard, 'data-percent="99"')
+        days = len(dashboard.context["trend"])
+        self.client.force_login(self.flower)
+        mine = self.client.get(reverse("my_sales_targets")).context["targets"]
+        self.assertEqual(mine["personal_deposit"]["plan"].target_one, Decimal("13.06"))
+        self.assertEqual(mine["team_month"]["plan"].target_one, expected)
+        self.assertEqual(mine["team_month"]["level"], "neutral")
+        self.assertEqual(mine["team_day"]["plan"].target_one, expected / Decimal(days))
+        self._transaction("1", description="بیعانه", origin="afsariyeh", owner=extra)
+        team = self.client.get(reverse("my_sales_targets")).context["targets"]["team_month"]
+        self.assertEqual((team["level"], team["percentage"]), ("one", 100))
+
+        self.client.force_login(self.admin)
+        self.client.post(self.url, {**form, "subject": f"flower_deposit:{extra.pk}", "sales_floor": "40"})
+        self.assertEqual(self.client.get(self.url).context["branches"][-1]["plan"].target_one, Decimal("65.06"))
+        other_period = dict(year=self.year - 1, month=self.month)
+        self.assertIsNone(self.client.get(self.url, other_period).context["branches"][-1]["plan"])
+
+    def test_archived_month_keeps_its_targets_when_flower_changes_role(self):
+        previous = {"year": self.year - 1, "month": self.month}
+        goal = {"action": "set_floor", "subject": f"flower_deposit:{self.flower.pk}", "sales_floor": "100"}
+        self.client.post(self.url, {**previous, **goal})
+        self.client.post(self.url, {"year": self.year, "month": self.month, **goal})
+        EmployeeProfile.objects.filter(user=self.flower).update(role="employee")
+        self.assertIsNone(self.client.get(self.url).context["branches"][-1]["plan"])
+        archived = self.client.get(self.url, previous).context["branches"][-1]
+        self.assertEqual(archived["plan"].target_one, Decimal("130"))
 
     def test_invalid_bulk_percent_rolls_back_floor_and_policy(self):
         self.client.post(self.url,{"year":self.year,"month":self.month,
@@ -208,7 +264,7 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertContains(view, "بیعانه‌های من")
         self.assertContains(view, "مجموع فروش من")
         self.assertContains(view, "هر دو تارگت ماهانه‌اند")
-        self.assertContains(view, "data-status-only", count=2)
+        self.assertContains(view, "data-status-only", count=4)
         self.assertNotContains(view, 'class="cc-target-amount"')
         self.assertNotContains(view, '<th>مبلغ (تومان)</th>')
         self.assertEqual(view.context["targets"]["personal_deposit"]["value"], Decimal("4.00"))
@@ -270,6 +326,52 @@ class SalesTargetsDashboardTests(TestCase):
         flower_row = next(row for row in res.context["flower_cards"] if row["key"] == f"flower:{self.flower.pk}")
         self.assertEqual(flower_row["value"], Decimal("13.00"))
         self.assertEqual(res.context["overall"]["value"], Decimal("18.00"))
+
+    def test_team_performance_counts_each_flowers_approved_deposits_once(self):
+        extra = get_user_model().objects.create_user(username="flower_without_a_goal")
+        EmployeeProfile.objects.update_or_create(user=extra, defaults={"role": "call_center", "branch": self.branch})
+        today = timezone.localdate()
+        start = datetime(*jalali_to_gregorian(self.year, self.month, 1)).date()
+        other_day = start if start != today else start + timedelta(days=1)
+        for owner, reviewed, day, amount in (
+            (self.flower, "approved", today, 10),
+            (extra, "approved", today, 20),
+            (extra, "approved", other_day, 15),
+            (extra, "pending", today, 60),
+            (self.consultant, "approved", today, 75),
+            (None, "approved", today, 90),
+            (extra, "approved", start - timedelta(days=1), 100),
+        ):
+            FinancialTransaction.objects.create(
+                source="manual", entry_type="inc", review_status=reviewed,
+                occurred_at=timezone.make_aware(datetime.combine(day, time(12))),
+                amount=amount * 10_000_000, branch=self.branch, call_center_owner=owner,
+                raw_data={"payment_kind": "call_center_deposit"},
+            )
+        mgmt = self.client.get(self.url)
+        self.assertEqual(mgmt.context["branches"][-1]["value"], 45)
+        self.assertEqual(mgmt.context["deposit_count"], 3)
+        self.client.force_login(self.flower)
+        own = self.client.get(reverse("my_sales_targets")).context["targets"]
+        self.assertEqual(own["team_month"]["value"], 45)
+        self.assertEqual(own["team_day"]["value"], 30)
+        self.assertEqual(own["personal_deposit"]["value"], 10)
+
+    def test_consultant_workspace_and_personal_page_use_target_one_for_full_attainment(self):
+        self.client.post(self.url, {
+            "year": self.year, "month": self.month, "action": "set_floor",
+            "subject": f"branch:{self.branch.pk}", "sales_floor": "100",
+        })
+        self._transaction("1300000000", recorded=self.consultant)
+        self.client.force_login(self.consultant)
+        branch = self.client.get(reverse("consultant_sales_outcomes")).context["branch_target"]
+        self.assertEqual(branch["monthly"]["percent"], 100)
+        self.assertEqual(Decimal(branch["bands"]["one"]), 100)
+        self.assertGreater(Decimal(branch["bands"]["two"]), 100)
+        page = self.client.get(reverse("my_sales_targets"))
+        self.assertEqual(page.context["row"]["percentage"], 100)
+        self.assertEqual(page.context["daily_target"], Decimal("130") / Decimal(page.context["days"]))
+        self.assertContains(page, "تارگت اول ماه")
 
     def test_branch_cards_display_floor_not_duplicate_sale(self):
         self.client.post(self.url, {
