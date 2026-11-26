@@ -714,18 +714,22 @@ def receptionist_appointment_status(request,pk,status):
         raise PermissionDenied('این اقدام فقط برای منشی است.')
     if status not in ('arrived','completed','no_show','cancelled'):
         raise PermissionDenied('وضعیت نامعتبر است.')
-    item=get_object_or_404(
-        VisitAppointment,
-        pk=pk,
-        branch=request.user.profile.branch,
-    )
     with transaction.atomic():
-        item.status=status
+        item=get_object_or_404(
+            VisitAppointment.objects.select_for_update(),
+            pk=pk,
+            branch=request.user.profile.branch,
+        )
         if status == 'arrived':
+            from .consultation_deposits import link_deposits_at_reception
             from .reception_patient import ensure_reception_patient
-            if ensure_reception_patient(item, request.user) is None:
+            patient = ensure_reception_patient(item, request.user)
+            if patient is None:
                 messages.error(request, 'برای پذیرش و ساخت پرونده، شماره تماس لازم است.')
                 return redirect('appointment_schedule')
+            if item.status in ('booked', 'no_show') and item.care_stage == 'doctor':
+                link_deposits_at_reception(item, patient, user=request.user, request_path=request.path)
+        item.status=status
         item.save(update_fields=['status','updated_at'])
         if status in ('cancelled','no_show'):
             SmsScheduledMessage.objects.filter(

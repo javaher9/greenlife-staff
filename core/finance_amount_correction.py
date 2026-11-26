@@ -7,7 +7,9 @@ from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from .call_center_deposit_views import is_call_center_deposit, lock_deposit_tracking, tracking_in_use
+from .call_center_deposit_views import (
+    DEPOSIT_PATIENT_PREFIX, is_call_center_deposit, lock_deposit_tracking, tracking_in_use,
+)
 from .models import AuditLog, Branch, FinancialTransaction, ReferralLead, StaffNotification, VisitAppointment
 
 MILLION_TOMAN_IN_RIAL = Decimal('10000000')
@@ -141,6 +143,7 @@ def finance_entry_review_with_amount(request, pk, action):
     entry = FinancialTransaction.objects.select_for_update().get(pk=entry.pk)
 
     if action == 'correction':
+        held_deposit = deposit and not entry.appointment_id and entry.patient_ref.startswith(DEPOSIT_PATIENT_PREFIX)
         current_amount_million = _million_toman(entry.amount)
         payment_methods = [
             ('Pos S','Pos S'),('Pos H','Pos H'),('CC G','CC G'),
@@ -150,6 +153,7 @@ def finance_entry_review_with_amount(request, pk, action):
         branches = Branch.objects.filter(is_active=True).order_by('name')
         context = {
             'entry': entry,
+            'held_deposit': held_deposit,
             'current_amount_million': current_amount_million,
             'payment_methods': payment_methods,
             'entry_types': FinancialTransaction.ENTRY_TYPE,
@@ -222,6 +226,9 @@ def finance_entry_review_with_amount(request, pk, action):
         if entry.appointment_id:
             # Appointment attribution is authoritative; do not let an edit break branch/source linkage.
             selected_branch=entry.appointment.branch
+            sale_origin='afsariyeh'
+        elif held_deposit:
+            selected_branch=None
             sale_origin='afsariyeh'
         else:
             if branch_id:

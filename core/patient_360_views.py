@@ -17,6 +17,7 @@ from .models import (
     lead_phone_variants, normalize_lead_phone,
 )
 from .consultation_deposits import appointment_deposits, deposit_summary
+from .reception_patient import ensure_patient_for_contact
 from .sms import SmsGatewayError, send_sms
 from .jalali import format_jalali
 from intake.models import IntakeInvitation
@@ -305,11 +306,21 @@ def patient_360(request, pk):
     appointments=list(appointment_qs[:100])
     appointment_ids=[item.pk for item in appointments]
 
+    credit_receipts = appointment_deposits(
+        appointment_qs.order_by().values('pk'),
+        patient_ids=sibling_ids if profile.role in {'admin', 'internal_manager', 'call_center'} else (),
+    )
+    if profile.role == 'call_center':
+        credit_receipts = credit_receipts.filter(call_center_owner=request.user)
+    elif profile.role not in {'admin', 'internal_manager'} and profile.branch_id:
+        credit_receipts = credit_receipts.filter(appointment__branch_id=profile.branch_id)
+    held_receipts = credit_receipts.filter(appointment__isnull=True).order_by().values('pk')
     finance_qs=(
         FinancialTransaction.objects
         .filter(entry_type='inc')
         .filter(
             Q(appointment_id__in=appointment_ids)
+            | Q(pk__in=held_receipts)
             | Q(patient_ref__in=variants)
             | (Q(patient_ref=patient.crm_id) if patient.crm_id else Q(pk__in=[]))
         )
@@ -317,11 +328,6 @@ def patient_360(request, pk):
         .select_related('branch','appointment','recorded_by')
         .order_by('-occurred_at','-id')
     )
-    credit_receipts = appointment_deposits(appointment_qs.order_by().values('pk'))
-    if profile.role == 'call_center':
-        credit_receipts = credit_receipts.filter(call_center_owner=request.user)
-    elif profile.role not in {'admin', 'internal_manager'} and profile.branch_id:
-        credit_receipts = credit_receipts.filter(appointment__branch_id=profile.branch_id)
     deposit_credit = deposit_summary(credit_receipts)
     approved_paid=finance_qs.filter(review_status='approved').aggregate(v=Sum('amount'))['v'] or Decimal('0')
     pending_paid=finance_qs.filter(review_status='pending').aggregate(v=Sum('amount'))['v'] or Decimal('0')
@@ -703,18 +709,8 @@ def patient_360_from_lead(request, lead_id):
             or lead.created_by_id==request.user.pk
         ):
             raise PermissionDenied('این لید در چرخه کاری شما قرار ندارد.')
-    phone=normalize_lead_phone(lead.phone)
-    if not phone:
+    patient=ensure_patient_for_contact(lead.full_name,lead.phone,request.user)
+    if patient is None:
         messages.error(request,'این لید شماره موبایل معتبر ندارد.')
         return redirect('call_center_lead',pk=lead.pk)
-    patient=next(
-        (item for item in _phone_matched_profiles(phone) if normalize_lead_phone(item.phone)==phone),
-        None,
-    )
-    if not patient:
-        patient=PatientProfile.objects.create(
-            phone=phone,
-            full_name=lead.full_name,
-            created_by=request.user,
-        )
     return redirect('patient_360',pk=patient.pk)

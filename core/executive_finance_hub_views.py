@@ -17,6 +17,7 @@ from django.views.decorators.cache import never_cache
 from .jalali import gregorian_to_jalali, jalali_to_gregorian
 from .models import FinancialTransaction
 from django.contrib.auth.models import User
+from .call_center_deposit_views import DEPOSIT_MARKER
 from .call_center_identity import call_center_display_name
 
 MILLION_TOMAN_RIALS = Decimal("10000000")
@@ -46,16 +47,17 @@ def executive_finance_hub(request):
     start, end = local_boundary(first), local_boundary(last_exclusive)
     today_start, tomorrow_start = local_boundary(today), local_boundary(today + timedelta(days=1))
 
-    # Explicit scope: Iranian company records only. Exclude unassigned/foreign
-    # branches rather than silently mixing TRY and IRR in a Toman summary.
+    # Branchless deposits enter this scope only when registered in the Iranian call-center ledger.
+    iranian_records = Q(branch__country__code="IR") | Q(
+        branch__isnull=True, source="manual", entry_type="inc",
+        raw_data__payment_kind=DEPOSIT_MARKER, raw_data__country_code="IR",
+    )
     approved = FinancialTransaction.objects.filter(
-        review_status="approved", branch__country__code="IR"
+        iranian_records, review_status="approved",
     )
     month = approved.filter(occurred_at__gte=start, occurred_at__lt=end)
     day = approved.filter(occurred_at__gte=today_start, occurred_at__lt=tomorrow_start)
-    pending = FinancialTransaction.objects.filter(
-        review_status="pending", branch__country__code="IR"
-    )
+    pending = FinancialTransaction.objects.filter(iranian_records, review_status="pending")
 
     def totals(queryset):
         result = queryset.aggregate(
@@ -77,7 +79,7 @@ def executive_finance_hub(request):
     month_count = mt["count"]
 
     branches = list(
-        month.annotate(report_branch=Case(When(raw_data__payment_kind="call_center_deposit", then=Value("افسریه")), default="branch__name", output_field=CharField())).values("report_branch").annotate(
+        month.annotate(report_branch=Case(When(raw_data__payment_kind=DEPOSIT_MARKER, then=Value("افسریه")), default="branch__name", output_field=CharField())).values("report_branch").annotate(
             income=Sum("amount", filter=Q(entry_type="inc")),
             expense=Sum("amount", filter=Q(entry_type="exp")),
         ).order_by("-income")[:8]
@@ -153,11 +155,11 @@ def executive_finance_hub(request):
         )
     approved_deposits = month.filter(
         entry_type="inc", source="manual",
-        raw_data__payment_kind="call_center_deposit",
+        raw_data__payment_kind=DEPOSIT_MARKER,
     )
     pending_deposits = pending.filter(
         entry_type="inc", source="manual",
-        raw_data__payment_kind="call_center_deposit",
+        raw_data__payment_kind=DEPOSIT_MARKER,
     )
     pending_deposit_rial = (
         pending_deposits.aggregate(v=Sum("amount"))["v"] or Decimal("0")
