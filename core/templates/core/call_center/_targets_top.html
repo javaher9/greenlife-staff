@@ -1,35 +1,58 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'core/call-center-targets.css' %}?v=status-only">
+<link rel="stylesheet" href="{% static 'core/call-center-targets.css' %}?v=large-dials">
 <section class="cc-targets" aria-label="تارگت‌های کال‌سنتر">
-  <article class="cc-target-card care-target-widget" id="team-targets">
-    <header>
-      <h2>تارگت کل کال‌سنتر</h2>
-      {% if target_links %}<a href="{% url 'my_sales_targets' %}#team-targets">جزئیات تیم ←</a>{% endif %}
-    </header>
+  <article class="cc-target-card" id="team-targets">
+    <div class="cc-target-heading">
+      <span class="cc-target-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="10" cy="8" r="3"/><path d="M3.5 19v-1a6.5 6.5 0 0 1 13 0v1m0-14a3 3 0 0 1 0 6m2 2a5 5 0 0 1 2.5 4.4V19"/>
+        </svg>
+      </span>
+      <div class="cc-target-heading-copy">
+        <h2>تارگت کل کال‌سنتر</h2>
+        <p>بیعانه‌های تأییدشدهٔ تیم</p>
+      </div>
+      {% if target_links %}<a class="cc-target-link" href="{% url 'my_sales_targets' %}#team-targets">جزئیات تیم</a>{% endif %}
+    </div>
     <div class="cc-target-pair">
       {% if targets.current_month %}{% include "core/call_center/_target_gauge.html" with gauge=targets.team_day %}{% endif %}
       {% include "core/call_center/_target_gauge.html" with gauge=targets.team_month %}
     </div>
-    <div class="cc-target-caption">بیعانه‌های تأییدشدهٔ تیم</div>
-    {% if targets.team_month.plan %}<div class="cc-target-legend" aria-label="محدوده‌های تارگت">
-      <span><i style="background:#fc4768"></i>جریمه سنگین</span><span><i style="background:#f5bc31"></i>جریمه سبک</span>
-      <span><i style="background:#1fd8a5"></i>کف فروش</span><span><i style="background:#2caeff"></i>تارگت اول</span>
-      <span><i style="background:#a96bfa"></i>تارگت دوم</span>
-    </div>{% endif %}
   </article>
-  <article class="cc-target-card care-target-widget" id="personal-targets">
-    <header>
-      <h2>تارگت من</h2>
-      {% if target_links %}<a href="{% url 'my_sales_targets' %}#personal-targets">جزئیات من ←</a>{% endif %}
-    </header>
-    <div class="cc-target-pair">
-      {% include "core/call_center/_target_gauge.html" with gauge=targets.personal_deposit %}
-      {% include "core/call_center/_target_gauge.html" with gauge=targets.personal %}
+
+  <article class="cc-target-card cc-personal-card" id="personal-targets">
+    <div class="cc-target-heading">
+      <span class="cc-target-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="3.5"/><path d="M5 20v-1.5a7 7 0 0 1 14 0V20"/>
+        </svg>
+      </span>
+      <div class="cc-target-heading-copy">
+        <h2>تارگت من</h2>
+        <p>هر دو تارگت ماهانه‌اند</p>
+      </div>
+      {% if target_links %}<a class="cc-target-link" href="{% url 'my_sales_targets' %}#personal-targets">جزئیات من</a>{% endif %}
     </div>
-    <div class="cc-target-caption">هر دو تارگت ماهانه‌اند</div>
-    {% if targets.has_pending_deposits %}
-    <div class="cc-target-caption cc-target-pending">بیعانه در انتظار تأیید دارید</div>
-    {% endif %}
+    <div class="cc-target-pair">
+      {% include "core/call_center/_target_gauge.html" with gauge=targets.personal_deposit unset_label="کف بیعانه تعیین نشده" %}
+      {% include "core/call_center/_target_gauge.html" with gauge=targets.personal unset_label="کف فروش تعیین نشده" %}
+    </div>
   </article>
+
+  {% if targets.team_month.plan or targets.personal_deposit.plan or targets.personal.plan or targets.has_approved_deposits or targets.has_pending_deposits %}
+    <div class="cc-target-foot">
+      {% if targets.team_month.plan or targets.personal_deposit.plan or targets.personal.plan %}
+        <div class="cc-target-legend" aria-label="محدوده‌های تارگت">
+          <span class="cc-band-red">جریمه سنگین</span><span class="cc-band-yellow">جریمه سبک</span>
+          <span class="cc-band-green">کف فروش</span><span class="cc-band-blue">تارگت اول</span><span class="cc-band-purple">تارگت دوم</span>
+        </div>
+      {% endif %}
+      {% if targets.has_approved_deposits or targets.has_pending_deposits %}
+        <div class="cc-target-receipts">
+          {% if targets.has_approved_deposits %}<span>بیعانهٔ تأییدشده دارید</span>{% endif %}
+          {% if targets.has_pending_deposits %}<span>بیعانه در انتظار تأیید دارید</span>{% endif %}
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
 </section>
-<script src="{% static 'core/sales-target-gauge.js' %}?v=status-only" defer></script>

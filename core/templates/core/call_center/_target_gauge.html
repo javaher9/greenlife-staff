@@ -1,17 +1,22 @@
-{% load l10n %}
-<div class="care-target-unit cc-target-unit">
-  <span class="care-target-title">{{ gauge.label }}</span>
-  {% if gauge.plan %}
-  <div class="care-target-meter"
-       data-status-only
-       data-percent="{{ gauge.percentage|unlocalize }}"
-       data-heavy="{{ gauge.bands.heavy }}" data-floor="{{ gauge.bands.floor }}"
-       data-one="{{ gauge.bands.one }}" data-two="{{ gauge.bands.two }}"
-       aria-label="{{ gauge.label }}، {{ gauge.display_status }}">
-    <span class="cc-target-fallback">{{ gauge.display_status }}</span>
-  </div>
-  <span class="care-target-state mt-{{ gauge.color }}" hidden>{{ gauge.display_status }}</span>
-  {% else %}
-  <span class="cc-target-empty">تارگت تنظیم نشده</span>
-  {% endif %}
-</div>
+<figure class="cc-target-unit">
+  <figcaption class="cc-target-label">{{ gauge.label }}</figcaption>
+  <svg class="cc-target-dial" viewBox="0 0 220 150" aria-hidden="true" focusable="false"{% if gauge.plan %} data-status-only{% endif %}>
+    {% if gauge.plan %}
+      {% for color, dash in gauge.segments %}
+        <path class="cc-dial-band cc-band-{{ color }}" d="M32.06 134.35 A86 86 0 1 1 187.94 134.35" pathLength="100" stroke-dasharray="{{ dash }}"/>
+      {% endfor %}
+      <path class="cc-dial-rim" d="M45.65 128 A71 71 0 1 1 174.35 128"/>
+      <g transform="rotate({{ gauge.needle_angle }} 110 98)">
+        <path class="cc-dial-needle" d="M106 91 Q109 89.5 113 91 L200 96.5 Q203 98 200 99.5 L113 105 Q109 106.5 106 105 Z"/>
+      </g>
+      <circle class="cc-dial-hub" cx="110" cy="98" r="10"/>
+      <circle class="cc-dial-pin" cx="110" cy="98" r="3.5"/>
+    {% else %}
+      <path class="cc-dial-empty" d="M32.06 134.35 A86 86 0 1 1 187.94 134.35" pathLength="100" stroke-dasharray="19 1.25"/>
+      <path class="cc-dial-rest" d="M101 98h18"/>
+    {% endif %}
+  </svg>
+  <span class="cc-target-status cc-status-{{ gauge.level }}">
+    {% if gauge.plan %}{{ gauge.display_status }}{% else %}{{ unset_label|default:"هدف تعیین نشده" }}{% endif %}
+  </span>
+</figure>
