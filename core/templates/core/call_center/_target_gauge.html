@@ -1,0 +1,18 @@
+{% load l10n %}
+<div class="care-target-unit cc-target-unit">
+  <span class="care-target-title">{{ gauge.label }}</span>
+  {% if gauge.plan %}
+  <div class="care-target-meter"
+       data-percent="{{ gauge.percentage|unlocalize }}"
+       data-heavy="{{ gauge.bands.heavy }}" data-floor="{{ gauge.bands.floor }}"
+       data-one="{{ gauge.bands.one }}" data-two="{{ gauge.bands.two }}"
+       aria-label="{{ gauge.label }}، {{ gauge.percentage }} درصد از تارگت اول">
+    <strong>{{ gauge.percentage }}٪</strong>
+  </div>
+  <span class="care-target-state mt-{{ gauge.color }}" hidden>{{ gauge.status }}</span>
+  <span class="cc-target-amount">{{ gauge.value|floatformat:"-2g" }} از {{ gauge.plan.target_one|floatformat:"-2g" }} میلیون تومان</span>
+  {% else %}
+  <span class="cc-target-empty">تارگت تنظیم نشده</span>
+  <span class="cc-target-amount">{{ gauge.value|floatformat:"-2g" }} میلیون تومان</span>
+  {% endif %}
+</div>

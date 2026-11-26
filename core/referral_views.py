@@ -1326,7 +1326,9 @@ def call_center_dashboard(request):
         ).exclude(pk=operator.pk).select_related('user')
     ]
     transfer_operators.sort(key=lambda item:item['name'])
+    from .sales_target_views import call_center_dashboard_targets
     return render(request,'core/call_center/dashboard.html',{
+        'targets':call_center_dashboard_targets(request.user),
         'leads':[FlowerLeadProxy(lead) for lead in leads],'statuses':ReferralLead.STATUS,'status_filter':status,
         'group_filter':group_filter,'groups':groups,
         'stats':stats,'performance':performance,'today':today,'tomorrow':tomorrow,

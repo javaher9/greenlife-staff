@@ -1,0 +1,35 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'core/call-center-targets.css' %}">
+<section class="cc-targets" aria-label="تارگت‌های کال‌سنتر">
+  <article class="cc-target-card care-target-widget" id="team-targets">
+    <header>
+      <h2>تارگت کل کال‌سنتر</h2>
+      {% if target_links %}<a href="{% url 'my_sales_targets' %}#team-targets">جزئیات تیم ←</a>{% endif %}
+    </header>
+    <div class="cc-target-pair">
+      {% if targets.current_month %}{% include "core/call_center/_target_gauge.html" with gauge=targets.team_day %}{% endif %}
+      {% include "core/call_center/_target_gauge.html" with gauge=targets.team_month %}
+    </div>
+    <div class="cc-target-caption">بیعانه‌های تأییدشدهٔ تیم</div>
+    {% if targets.team_month.plan %}<div class="cc-target-legend" aria-label="محدوده‌های تارگت">
+      <span><i style="background:#fc4768"></i>جریمه سنگین</span><span><i style="background:#f5bc31"></i>جریمه سبک</span>
+      <span><i style="background:#1fd8a5"></i>کف فروش</span><span><i style="background:#2caeff"></i>تارگت ۱</span>
+      <span><i style="background:#a96bfa"></i>تارگت ۲</span>
+    </div>{% endif %}
+  </article>
+  <article class="cc-target-card care-target-widget" id="personal-targets">
+    <header>
+      <h2>تارگت من</h2>
+      {% if target_links %}<a href="{% url 'my_sales_targets' %}#personal-targets">جزئیات من ←</a>{% endif %}
+    </header>
+    <div class="cc-personal-target">
+      {% include "core/call_center/_target_gauge.html" with gauge=targets.personal %}
+      <dl>
+        <div><dt>بیعانه‌های من</dt><dd>{{ targets.my_deposits_approved|floatformat:"-2g" }} میلیون تومان</dd></div>
+        {% if targets.my_deposits_pending %}<div class="cc-target-pending"><dt>در انتظار تأیید</dt><dd>{{ targets.my_deposits_pending|floatformat:"-2g" }} میلیون تومان</dd></div>{% endif %}
+        <div><dt>فروش مراکز از لیدهای من</dt><dd>{{ targets.personal.value|floatformat:"-2g" }} میلیون تومان</dd></div>
+      </dl>
+    </div>
+  </article>
+</section>
+<script src="{% static 'core/sales-target-gauge.js' %}" defer></script>

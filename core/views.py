@@ -2010,6 +2010,10 @@ def finance_entry_delete(request,pk):
         FinancialTransaction.objects.select_related('branch','recorded_by'),
         pk=pk,source='manual',
     )
+    from .call_center_deposit_views import is_call_center_deposit
+    if is_call_center_deposit(entry):
+        messages.error(request, 'برای ابطال بیعانهٔ کال‌سنتر از بررسی مالی استفاده کنید.')
+        return redirect('finance_dashboard')
     entry_id=entry.pk
     receipt_name=entry.receipt_image.name if entry.receipt_image else ''
     receipt_storage=entry.receipt_image.storage if receipt_name else None

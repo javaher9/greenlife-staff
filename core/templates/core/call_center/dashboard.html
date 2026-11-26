@@ -1287,6 +1287,7 @@ body.gl-page-call_center_dashboard .ccx .ccx-follow-footer [data-follow-cancel]{
 .ccx-routing-summary{margin:8px 0 0;padding:7px 10px;border:1px solid #accfbd;border-radius:13px;background:#edf7f2;color:#344c60!important;font-size:12px!important;line-height:1.9;font-weight:700;white-space:normal;overflow-wrap:anywhere}
 </style>
 <div class="ccx" lang="fa" dir="rtl" translate="no">
+  {% include "core/call_center/_targets_top.html" with target_links=True %}
   {% if routing_policy_notice %}<div class="cc-routing-warning">⚠ {{ routing_policy_notice }}</div>{% endif %}
   <header class="ccx-desk ccx-card">
     <div class="ccx-person">

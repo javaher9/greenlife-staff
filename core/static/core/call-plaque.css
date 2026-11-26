@@ -171,3 +171,10 @@
 #glCallPlaque .cp-disc-row h4 { flex-basis: 100%; }
 #glCallPlaque .cp-rating-group .cp-star-choices { clear: both; }
 #glCallPlaque .cp-star small { font-size: 11px; color: var(--cp-muted); line-height: 1; }
+
+#glCallPlaque .cp-footer [data-cp-deposit]{min-height:36px;display:inline-flex;align-items:center;font-size:11px;padding:6px 11px;background:#e7f6ee;color:#15583e;border-color:#b8ddca}
+@media(max-width:490px){
+  #glCallPlaque .cp-footer{flex-wrap:wrap;gap:5px}
+  #glCallPlaque .cp-footer>div{flex-wrap:wrap;flex-shrink:1}
+  #glCallPlaque .cp-footer [data-cp-deposit]{font-size:10px;padding-inline:8px}
+}

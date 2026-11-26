@@ -16,6 +16,7 @@ from .models import (
     PatientProfile, PatientTeamRating, ReferralLead, SmsMessageLog, Task, VisitAppointment,
     lead_phone_variants, normalize_lead_phone,
 )
+from .consultation_deposits import appointment_deposits, deposit_summary
 from .sms import SmsGatewayError, send_sms
 from .jalali import format_jalali
 from intake.models import IntakeInvitation
@@ -316,6 +317,12 @@ def patient_360(request, pk):
         .select_related('branch','appointment','recorded_by')
         .order_by('-occurred_at','-id')
     )
+    credit_receipts = appointment_deposits(appointment_qs.order_by().values('pk'))
+    if profile.role == 'call_center':
+        credit_receipts = credit_receipts.filter(call_center_owner=request.user)
+    elif profile.role not in {'admin', 'internal_manager'} and profile.branch_id:
+        credit_receipts = credit_receipts.filter(appointment__branch_id=profile.branch_id)
+    deposit_credit = deposit_summary(credit_receipts)
     approved_paid=finance_qs.filter(review_status='approved').aggregate(v=Sum('amount'))['v'] or Decimal('0')
     pending_paid=finance_qs.filter(review_status='pending').aggregate(v=Sum('amount'))['v'] or Decimal('0')
 
@@ -497,6 +504,9 @@ def patient_360(request, pk):
 
     latest_intake = IntakeInvitation.objects.filter(appointment_id__in=appointment_ids, completed_at__isnull=False).order_by('-completed_at').first()
     medical_intake_summary = compact_medical_summary(latest_intake.answers if latest_intake else {}) if profile.role in {'doctor','admin','internal_manager'} else None
+    finance_rows = list(finance_qs[:50])
+    for receipt in finance_rows:
+        receipt.amount_toman = receipt.amount / 10
     context={
         'me_meal_reports': MeMealReport.objects.filter(Q(patient_id=patient.pk) | Q(patient__isnull=True, member__phone=patient.phone)).select_related('program').order_by('-day','-updated_at')[:60] if profile.role in {'admin','internal_manager'} or (profile.role in {'doctor','consultant','manager'} and profile.branch_id) else None,
         'medical_intake_summary':medical_intake_summary,
@@ -509,9 +519,12 @@ def patient_360(request, pk):
         'appointments':appointments,
         'appointment_count':appointment_qs.count(),
         'visit_rows':visit_rows,
-        'finance_rows':list(finance_qs[:50]),
+        'finance_rows':finance_rows,
+        'deposit_credit':deposit_credit,
         'approved_paid':approved_paid,
+        'approved_paid_toman':approved_paid / 10,
         'pending_paid':pending_paid,
+        'pending_paid_toman':pending_paid / 10,
         'leads':leads,
         'recorded_contact_count':recorded_contact_count,
         'sms_rows':sms,

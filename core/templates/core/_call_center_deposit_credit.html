@@ -1,0 +1,48 @@
+<style>
+.cc-deposit-credit{margin:12px;padding:12px;border:1px solid #cce6da;border-radius:13px;background:#f1faf5;color:#194c3d}
+.cc-deposit-credit h3{color:#194c3d!important;margin:0 0 8px;font-size:15px!important}
+.cc-deposit-credit dl{display:flex;flex-wrap:wrap;gap:8px 20px;margin:0 0 8px}
+.cc-deposit-credit dt{font-size:12px;color:#4c6b61}
+.cc-deposit-credit dd{font-size:14px;font-weight:800;margin:0;color:#194c3d}
+.cc-deposit-credit .allocation-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(170px,100%),1fr));gap:8px}
+.cc-deposit-credit .allocation-fields label{display:grid;gap:4px;color:#385a50;font-size:12px}
+.cc-deposit-credit .allocation-fields input{width:100%;box-sizing:border-box;min-height:36px;color:#194c3d;background:#fff;border:1px solid #bcd9ce;border-radius:7px}
+.cc-deposit-credit button{margin-top:8px;padding:7px 12px;min-height:36px;border:0;border-radius:8px;background:#15654d;color:#fff;font-weight:800}
+.cc-deposit-credit summary{cursor:pointer;color:#1a604c;font-weight:800;font-size:13px}
+.cc-deposit-credit ul{margin:0;padding-inline-start:18px}
+.cc-deposit-credit li,.cc-deposit-credit p{font-size:12px;color:#4c6b61}
+</style>
+<section class="cc-deposit-credit" aria-label="بیعانهٔ تلفنی مراجع">
+  <h3>بیعانهٔ تلفنی مراجع</h3>
+  <dl>
+    <div><dt>تأییدشده</dt><dd>{{ deposit_credit.approved|floatformat:"0g" }} تومان</dd></div>
+    <div><dt>تخصیص‌یافته</dt><dd>{{ deposit_credit.applied|floatformat:"0g" }} تومان</dd></div>
+    <div><dt>ماندهٔ قابل تخصیص</dt><dd>{{ deposit_credit.available|floatformat:"0g" }} تومان</dd></div>
+    {% if deposit_credit.pending %}
+    <div><dt>در انتظار تأیید</dt><dd>{{ deposit_credit.pending|floatformat:"0g" }} تومان</dd></div>
+    {% endif %}
+  </dl>
+  {% if deposit_credit.services %}
+  <ul>
+    {% for title, amount in deposit_credit.services.items %}<li>{{ title }}، {{ amount|floatformat:"0g" }} تومان</li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% if deposit_allocation_form %}
+    {% if deposit_allocation_form.fields %}
+    <details>
+      <summary>تخصیص بیعانه به خدمات</summary>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="allocate_deposit">
+        <input type="hidden" name="appointment_id" value="{{ selected.pk }}">
+        <div class="allocation-fields">
+          {% for field in deposit_allocation_form %}<label for="{{ field.id_for_label }}">{{ field.label }} (تومان){{ field }}</label>{% endfor %}
+        </div>
+        <button type="submit">ثبت تخصیص</button>
+      </form>
+    </details>
+    {% else %}
+    <p>برای تخصیص بیعانه، خدمت را در پکیج مراجع ثبت کنید.</p>
+    {% endif %}
+  {% endif %}
+</section>

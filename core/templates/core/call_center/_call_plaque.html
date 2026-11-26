@@ -1,5 +1,5 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'core/call-plaque.css' %}?v=numbered-cards-3">
+<link rel="stylesheet" href="{% static 'core/call-plaque.css' %}?v=deposit-action-1">
 <dialog id="glCallPlaque" aria-labelledby="cpTitle" aria-describedby="cpSubtitle" data-operator="{{ user.get_full_name|default:user.username }}">
   <div class="cp-shell">
     <header class="cp-header">
@@ -102,7 +102,7 @@
             <label class="cp-wide">یادداشت تماس<textarea rows="3" maxlength="2000" data-cp-field="notes" placeholder="موضوع مهم، توافق و نکته لازم برای تماس بعدی"></textarea></label>
             <label class="cp-wide cp-checkbox"><input type="checkbox" data-cp-field="do_not_contact">مخاطب صریحاً درخواست کرده دوباره تماس نگیریم</label>
           </div><div class="cp-hint">اجازه واتساپ و اجازه تماس بعدی جدا هستند. نوبت یا فروش فقط در مسیر واقعی نوبت‌دهی و فروش ثبت می‌شود. ثبت این پلاک هیچ پیام یا تماسی ارسال نمی‌کند.</div></article>
-          <article class="cp-card"><h3>جمع‌بندی این تماس</h3><div data-cp-review></div><div class="cp-hint">امتیاز سیستم با ثبت نهایی و براساس شواهد محاسبه می‌شود. قد، وزن و برداشت از ثروت یا شخصیت، مبنای این امتیاز نیستند.</div><div class="cp-save-actions" data-cp-edit-only><button type="button" class="cp-primary" data-cp-finalize>ثبت نهایی نتیجه تماس</button><button type="button" data-cp-draft>ذخیره پیش‌نویس</button><button type="button" data-cp-discard hidden>کنار گذاشتن پیش‌نویس</button><button type="button" data-cp-new hidden>پلاک تماس تازه</button></div></article>
+          <article class="cp-card"><h3>جمع‌بندی این تماس</h3><div data-cp-review></div><div class="cp-hint">امتیاز سیستم با ثبت نهایی و براساس شواهد محاسبه می‌شود. قد، وزن و برداشت از ثروت یا شخصیت، مبنای این امتیاز نیستند.</div><div class="cp-save-actions" data-cp-edit-only><button type="button" class="cp-primary" data-cp-finalize>ثبت نهایی نتیجه تماس</button><button type="button" data-cp-draft>ذخیره پیش‌نویس</button><a data-cp-deposit data-cp-edit-only target="_blank" rel="noopener" hidden>ثبت مالی بیعانه</a><button type="button" data-cp-discard hidden>کنار گذاشتن پیش‌نویس</button><button type="button" data-cp-new hidden>پلاک تماس تازه</button></div></article>
         </div>
       </section>
       <section id="cpHistory" role="tabpanel" aria-labelledby="cpHistoryTab" hidden><div class="cp-history-head"><h3>سابقه پلاک‌های ثبت‌شده</h3><p class="cp-muted">هر تماس با زمان و نام ثبت‌کننده نگهداری می‌شود؛ پاسخ جدید جای سابقه قبلی را حذف نمی‌کند.</p></div><div data-cp-history></div></section>
@@ -120,4 +120,4 @@
 })();
 </script>
 <script src="{% static 'core/call-plaque-calendar.js' %}?v=1"></script>
-<script src="{% static 'core/call-plaque.js' %}?v=numbered-cards-3"></script>
+<script src="{% static 'core/call-plaque.js' %}?v=deposit-action-1"></script>
