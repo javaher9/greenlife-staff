@@ -557,8 +557,8 @@ body.gl-patient360-workspace .p360-mini-btn.secondary{
   </section>
 
   <section class="p360-kpis">
-    <div class="p360-kpi"><small>کل پرداخت تأییدشده</small><strong>{{ approved_paid_toman|floatformat:"0g" }}</strong><em>تومان</em></div>
-    <div class="p360-kpi"><small>در انتظار تأیید</small><strong>{{ pending_paid_toman|floatformat:"0g" }}</strong><em>تومان</em></div>
+    <div class="p360-kpi"><small>کل پرداخت تأییدشده</small><strong>{{ approved_paid_toman|toman_million }}</strong><em>میلیون تومان</em></div>
+    <div class="p360-kpi"><small>در انتظار تأیید</small><strong>{{ pending_paid_toman|toman_million }}</strong><em>میلیون تومان</em></div>
     <div class="p360-kpi"><small>مراجعه‌ها</small><strong>{{ appointment_count }}</strong><em>کل مراجعات ثبت‌شده</em></div>
     <div class="p360-kpi"><small>پیامک‌ها</small><strong>{{ sms_count }}</strong><em>ثبت‌شده در Staff App</em></div>
     <div class="p360-kpi"><small>نتیجه تماس ثبت‌شده</small><strong>{{ recorded_contact_count }}</strong><em>لیدها و پیگیری‌ها</em></div>
@@ -692,9 +692,9 @@ body.gl-patient360-workspace .p360-mini-btn.secondary{
       {% endif %}
 
       <section class="p360-card" id="p360-finance">
-        <div class="p360-head"><h2>مالی</h2><span>پرداخت‌های مرتبط</span></div>
+        <div class="p360-head"><h2>مالی</h2><span>پرداخت‌های مرتبط · میلیون تومان</span></div>
         {% if deposit_credit.approved or deposit_credit.pending %}{% include 'core/_call_center_deposit_credit.html' %}{% endif %}
-        <div class="p360-body"><div class="p360-side-list">{% for f in finance_rows %}<div class="p360-row {% if f.review_status == 'approved' %}green{% elif f.review_status == 'pending' %}amber{% endif %}"><div><strong>{{ f.amount_toman|floatformat:"0g" }} تومان</strong><small>{{ f.occurred_at|date:"Y/m/d H:i" }}{% if f.service %} · {{ f.service }}{% endif %}</small></div><b>{{ f.get_review_status_display }}</b></div>{% empty %}<div class="p360-empty">پرداختی در Staff App پیدا نشد.</div>{% endfor %}</div></div>
+        <div class="p360-body"><div class="p360-side-list">{% for f in finance_rows %}<div class="p360-row {% if f.review_status == 'approved' %}green{% elif f.review_status == 'pending' %}amber{% endif %}"><div><strong>{{ f.amount_toman|toman_million }}</strong><small>{{ f.occurred_at|date:"Y/m/d H:i" }}{% if f.service %} · {{ f.service }}{% endif %}</small></div><b>{{ f.get_review_status_display }}</b></div>{% empty %}<div class="p360-empty">پرداختی در Staff App پیدا نشد.</div>{% endfor %}</div></div>
       </section>
 
       <section class="p360-card" id="p360-leads">
