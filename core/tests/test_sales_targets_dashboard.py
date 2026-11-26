@@ -226,6 +226,33 @@ class SalesTargetsDashboardTests(TestCase):
         self.client.force_login(self.staff)
         self.assertEqual(self.client.get(personal_url).status_code, 403)
 
+    def test_deposit_receipt_is_visible_even_before_its_goal_is_set(self):
+        self._transaction("40000000", description="بیعانه", origin="afsariyeh", owner=self.flower)
+        self.client.force_login(self.flower)
+        page = self.client.get(reverse("my_sales_targets"))
+        self.assertContains(page, "بیعانهٔ تأییدشده دارید")
+        self.assertContains(page, "کف بیعانه تعیین نشده")
+        self.assertNotContains(page, 'class="cc-dial-needle"')
+
+    def test_call_center_needle_uses_the_configured_scale_even_above_target(self):
+        from types import SimpleNamespace
+        from core.sales_target_views import MILLION_TOMAN_RIAL, _call_center_gauge
+
+        plans = {"call_center": SimpleNamespace(
+            heavy_limit=Decimal("40"), sales_floor=Decimal("100"),
+            target_one=Decimal("130"), target_two=Decimal("160"),
+        )}
+        def dial(sales):
+            return _call_center_gauge("call_center", "ماهانه", Decimal(sales) * MILLION_TOMAN_RIAL, plans)
+
+        empty, halfway, above = dial("0"), dial("96"), dial("900")
+        self.assertEqual([g["needle_angle"] for g in (empty, halfway, above)], ["155.0000", "270.0000", "385.0000"])
+        self.assertEqual(halfway["level"], "light")
+        self.assertEqual(dial("130")["level"], "one")
+        self.assertEqual(above["level"], "two")
+        self.assertEqual(empty["segments"], above["segments"])
+        self.assertEqual(len(above["segments"]), 5)
+
     def test_call_center_deposit_only_counts_explicit_deposit_transactions(self):
         self._transaction("40000000", description="بیعانه", origin="afsariyeh", owner=self.flower)
         self._transaction("90000000", description="پکیج کامل", origin="afsariyeh", owner=self.flower)

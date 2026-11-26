@@ -151,6 +151,29 @@ def _band_from_policy(policy, floor):
     return SimpleNamespace(heavy_limit=heavy, sales_floor=floor, target_one=one, target_two=two)
 
 
+def _call_center_gauge(key, label, amount, plans):
+    gauge = _gauge_row(key, label, _money(amount), plans)
+    plan = gauge["plan"]
+    if plan is None:
+        return gauge
+
+    # SVG pathLength is 100. Keep the dial fixed to the configured bands,
+    # including when an operator exceeds the end of the scale.
+    maximum = plan.target_two * Decimal("1.20")
+    stops = [ZERO, plan.heavy_limit, plan.sales_floor, plan.target_one, plan.target_two, maximum]
+    positions = [float(stop / maximum * 100) for stop in stops]
+    segments = []
+    for color, start, end in zip(("red", "yellow", "green", "blue", "purple"), positions, positions[1:]):
+        gap = min(0.42, (end - start) / 4)
+        left = start + gap if start else start
+        right = end - gap if end < 100 else end
+        segments.append((color, f"0 {left:.4f} {right - left:.4f} 100"))
+    gauge["segments"] = segments
+    fraction = min(Decimal("1"), max(ZERO, gauge["value"] / maximum))
+    gauge["needle_angle"] = format(155 + 230 * fraction, ".4f")
+    return gauge
+
+
 def _call_center_targets(user, jy, jm, start_date, end_date, today):
     """Build the shared and personal cards from the same month and management settings."""
     period = f"{jy}-{jm:02d}"
@@ -187,11 +210,12 @@ def _call_center_targets(user, jy, jm, start_date, end_date, today):
     own_sales = own_deposit + sum(sales.values(), ZERO)
     return {
         "period_label": f"{jy}/{jm:02d}",
-        "team_month": _gauge_row("call_center", "ماهانه", _money(team_totals["month"]), plans),
-        "team_day": _gauge_row("call_center", "روزانه", _money(team_totals["day"]), daily_plans),
-        "personal_deposit": _gauge_row(deposit_key, "بیعانه‌های من", _money(own_deposit), plans),
-        "personal": _gauge_row(personal_key, "مجموع فروش من", _money(own_sales), plans),
+        "team_month": _call_center_gauge("call_center", "ماهانه", team_totals["month"], plans),
+        "team_day": _call_center_gauge("call_center", "روزانه", team_totals["day"], daily_plans),
+        "personal_deposit": _call_center_gauge(deposit_key, "بیعانه‌های من", own_deposit, plans),
+        "personal": _call_center_gauge(personal_key, "مجموع فروش من", own_sales, plans),
         "current_month": start_date <= today < end_date,
+        "has_approved_deposits": own_deposit > ZERO,
         "has_pending_deposits": bool(own_totals["pending"]),
         "own_deposits": own_deposits, "own_branch_sales": sales,
     }
