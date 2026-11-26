@@ -196,10 +196,10 @@ class SalesTargetsDashboardTests(TestCase):
         self.client.force_login(self.flower)
         view = self.client.get(personal_url)
         self.assertEqual(view.status_code, 200)
-        self.assertContains(view, "تارگت امروز")
-        self.assertEqual(view.context["monthly"], Decimal("4.00"))
-        self.assertEqual(view.context["plan"].sales_floor, Decimal("300"))
-        self.assertContains(view, "هیچ جریمه‌ای")
+        self.assertContains(view, "تارگت کل کال‌سنتر")
+        self.assertEqual(view.context["targets"]["my_deposits_approved"], Decimal("4.00"))
+        self.assertEqual(view.context["targets"]["personal"]["value"], Decimal("0.00"))
+        self.assertEqual(view.context["targets"]["personal"]["plan"].sales_floor, Decimal("300"))
         self.assertEqual(self.client.get(self.url).status_code, 403)
         self.client.force_login(self.consultant)
         other = self.client.get(personal_url)
@@ -226,7 +226,7 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertEqual(res.context["branches"][-1]["value"], Decimal("4.00"))
         self.assertEqual(res.context["deposit_count"], 1)
         flower_row = next(row for row in res.context["flower_cards"] if row["key"] == f"flower:{self.flower.pk}")
-        self.assertEqual(flower_row["value"], Decimal("13.00"))
+        self.assertEqual(flower_row["value"], Decimal("9.00"))
         self.assertEqual(res.context["overall"]["value"], Decimal("18.00"))
 
     def test_branch_cards_display_floor_not_duplicate_sale(self):

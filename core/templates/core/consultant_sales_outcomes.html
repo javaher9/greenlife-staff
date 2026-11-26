@@ -1,4 +1,4 @@
-{% extends 'core/base.html' %}{% load jalali_tags staff_i18n privacy_filters l10n %}{% block content %}
+{% extends 'core/base.html' %}{% load static %}{% load jalali_tags staff_i18n privacy_filters l10n %}{% block content %}
 <style>
 .care{display:grid;gap:14px}.care-hero{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:18px 20px;border:1px solid #31465a;border-radius:20px;background:linear-gradient(145deg,#182838,#111d2a);box-shadow:0 14px 34px rgba(0,0,0,.16)}.care-hero h1{margin:2px 0 5px;font-size:22px;color:#fff}.care-hero p{margin:0;color:#a9bac9;font-size:11px}.care-count{min-width:70px;text-align:center;padding:12px;border-radius:15px;background:#20374a;border:1px solid #3b5870}.care-count strong{display:block;font-size:24px;color:#fff}.care-count span{font-size:9px;color:#a7b8c7}
 .care-grid{display:grid;grid-template-columns:minmax(280px,.72fr) minmax(0,1.7fr);gap:14px}.queue,.workspace{border:1px solid #2e4254;border-radius:18px;background:#111d29;overflow:hidden}.care-head{padding:13px 15px;border-bottom:1px solid #263949;display:flex;justify-content:space-between;align-items:center}.care-head h2{margin:0;font-size:14px;color:#fff}.care-head small{color:#8fa4b7;font-size:9px}.queue-list{padding:8px;display:grid;gap:6px;max-height:72vh;overflow:auto}.queue-row{display:grid;grid-template-columns:1fr auto;gap:10px;padding:11px;border:1px solid #263a4b;border-radius:12px;background:#152431;text-decoration:none;color:#eaf2f8}.queue-row:hover,.queue-row.active{border-color:#526e85;background:#1a2c3a}.queue-row strong{display:block;font-size:11px}.queue-row small{display:block;margin-top:3px;color:#91a5b5;font-size:8px}.queue-row time{font-size:8px;color:#bdaeff}.empty{padding:26px;text-align:center;color:#879caf;font-size:10px}
@@ -1036,6 +1036,7 @@ body.gl-page-consultant_sales_outcomes .care-funnel-sale{background:#24aa7a}
         {% for x in selected.device_programs.all %}<span>{{ x.device_name }} · {{ x.area|default:"—" }} · {% gl_t "con.session_count_text" count=x.sessions_prescribed %}</span>{% endfor %}
         {% for x in selected.lipolytic_programs.all %}<span>{{ x.protocol_name }} · {{ x.area|default:"—" }} · {% gl_t "con.session_count_text" count=x.sessions_prescribed %}</span>{% endfor %}
       </div>{% for n in doctor_notes %}<div class="doctor-note">{{ n.body }}</div>{% endfor %}</div>
+      {% if deposit_credit %}{% include 'core/_call_center_deposit_credit.html' %}{% endif %}
       <div class="plan">
         <div class="plan-title"><h3>{% gl_t 'con.final_package' %}</h3><small>{% gl_t 'con.package_help' %}</small></div>
         {% for item in plan_items %}
@@ -1093,62 +1094,5 @@ body.gl-page-consultant_sales_outcomes .care-funnel-sale{background:#24aa7a}
 </script>
 <!-- deploy retry after proxy/healthcheck recovery -->
 
-<script>
-/* Same polar/arc/needle construction used by the executive targets page.
-   Receives only percentages: never inserts sales amounts into the DOM. */
-(function(){
-  const root=document.querySelector("body.gl-page-consultant_sales_outcomes .care-target-widget");
-  if(!root)return;
-  const ns="http://www.w3.org/2000/svg";
-  function elem(tag,attrs,content){
-    const el=document.createElementNS(ns,tag);
-    Object.entries(attrs||{}).forEach(([k,v])=>el.setAttribute(k,v));
-    if(content!=null)el.textContent=content;
-    return el;
-  }
-  function polar(deg,r){return [110+r*Math.cos(deg*Math.PI/180),111+r*Math.sin(deg*Math.PI/180)];}
-  function arc(a,b,r){
-    const [x1,y1]=polar(a,r),[x2,y2]=polar(b,r);
-    return "M "+x1.toFixed(2)+" "+y1.toFixed(2)+" A "+r+" "+r+" 0 "+(b-a>180?1:0)+" 1 "+x2.toFixed(2)+" "+y2.toFixed(2);
-  }
-  const colors=["#fc4768","#f5bc31","#1fd8a5","#2caeff","#a96bfa"];
-  root.querySelectorAll(".care-target-meter").forEach(box=>{
-    const parsePercent=(raw)=>{
-      const normalized=String(raw??"").trim()
-        .replace(/[۰-۹]/g,ch=>String(ch.charCodeAt(0)-1776))
-        .replace(/[٠-٩]/g,ch=>String(ch.charCodeAt(0)-1632))
-        .replace(/٫/g,".").replace(/٬/g,"").replace(",",".");
-      return Number(normalized);
-    };
-    const value=Math.max(0,parsePercent(box.dataset.percent)||0);
-    const t=["heavy","floor","one","two"].map(k=>parsePercent(box.dataset[k]));
-    const ready=t.every(Number.isFinite)&&t[0]>0&&t[0]<t[1]&&t[1]<t[2]&&Math.abs(t[3]-100)<0.00001;
-    const svg=elem("svg",{viewBox:"0 15 220 180",role:"img","aria-label":box.getAttribute("aria-label")||"درصد تحقق تارگت"});
-    const unit=box.closest(".care-target-unit");
-    const title=unit.querySelector(".care-target-title").textContent.trim();
-    const state=unit.querySelector(".care-target-state");
-    const stateColors={red:"#bd334e",yellow:"#94600d",green:"#187550",blue:"#176ea6",purple:"#7850ae"};
-    const stateKey=Object.keys(stateColors).find(key=>state.classList.contains("mt-"+key));
-    function labels(){
-      svg.appendChild(elem("text",{x:110,y:79,fill:"#4d7168","font-size":17,"text-anchor":"middle","font-family":"Tahoma,Arial","font-weight":"bold"},title));
-      svg.appendChild(elem("text",{x:110,y:116,fill:"#244f49","font-size":29,"text-anchor":"middle","font-family":"Arial,Tahoma","font-weight":"bold"},Math.round(value)+"%"));
-      svg.appendChild(elem("text",{x:110,y:143,fill:stateColors[stateKey]||"#4d7168","font-size":15,"text-anchor":"middle","font-family":"Tahoma,Arial","font-weight":"bold"},state.textContent.trim()));
-    }
-    if(!ready){labels();box.replaceChildren(svg);return;}
-    const upper=Math.max(120,value);
-    const edges=[0,...t,upper];
-    for(let i=0;i<5;i++){
-      const a=130+280*edges[i]/upper,b=130+280*edges[i+1]/upper;
-      const gap=Math.min(.72,(b-a)/8);
-      if(b-a>1.5)svg.appendChild(elem("path",{d:arc(a+gap,b-gap,78),fill:"none",stroke:colors[i],"stroke-width":22,"stroke-linecap":"butt"}));
-    }
-    const angle=130+280*Math.min(value/upper,1);
-    const [px,py]=polar(angle,84),[mx,my]=polar(angle,40);
-    svg.appendChild(elem("path",{d:"M "+mx+" "+my+" L "+px+" "+py,stroke:"#edfaff","stroke-width":7.5,"stroke-linecap":"round",fill:"none"}));
-    svg.appendChild(elem("circle",{cx:px,cy:py,r:9,fill:"#12354c",stroke:"#edfaff","stroke-width":4}));
-    labels();
-    box.replaceChildren(svg);
-  });
-})();
-</script>
+<script src="{% static 'core/sales-target-gauge.js' %}"></script>
 {% endblock %}

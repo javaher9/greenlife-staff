@@ -1,0 +1,72 @@
+.cc-targets{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;
+  margin:0 0 14px;padding:12px;border:1px solid #dce9e4;border-radius:20px;
+  background:linear-gradient(115deg,#e8f6ef,#f3f7f6 53%,#f2eefb);
+  direction:rtl;min-width:0;
+}
+.cc-targets .cc-target-card,.cc-target-details .cc-target-card{
+  position:relative;min-width:0;padding:12px 15px;
+  background:rgba(255,255,255,.95);border:1px solid #dceae4;border-radius:15px;
+  box-shadow:0 6px 18px rgba(19,72,53,.065);color:#143e34;
+}
+.cc-targets .cc-target-card>header{
+  position:static;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:0 0 8px;border:0;border-bottom:1px solid #e9f1ed;background:none;
+}
+.cc-targets .cc-target-card h2,.cc-target-details .cc-target-card h2{
+  margin:0;color:#163d33!important;font-size:16px!important;font-weight:900;line-height:1.5;
+}
+.cc-targets .cc-target-card>header a{
+  padding:5px 8px;border:1px solid #d9ebe2;border-radius:8px;background:#f1faf5;
+  color:#196250!important;font-size:12px;font-weight:800;text-decoration:none;white-space:nowrap;
+}
+.cc-targets .cc-target-card>header a::after{content:"";position:absolute;inset:0;border-radius:15px}
+.cc-targets .cc-target-card:has(header a):hover{border-color:#a5d6c0}
+.cc-targets .cc-target-card a:focus-visible,.cc-target-details a:focus-visible{outline:2px solid #1b7860;outline-offset:3px}
+.cc-target-pair,.cc-personal-target{display:flex;align-items:center;justify-content:center;gap:12px}
+.cc-target-pair .cc-target-unit{flex:1}
+.cc-target-unit{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-width:0;padding:4px 0 3px;
+}
+.cc-target-unit .care-target-meter{
+  width:min(100%,136px);height:100px;display:grid;place-items:center;
+  color:#244f49;font-size:23px;
+}
+.cc-target-unit .care-target-meter svg{width:100%;height:100%;display:block}
+.cc-target-unit .care-target-title{font-size:12px;color:#466b61}
+.cc-target-unit.target-gauge-rendered .care-target-title{display:none}
+.cc-target-unit .care-target-state[hidden]{display:none!important}
+.cc-target-unit .cc-target-empty{
+  display:grid;place-items:center;min-height:82px;text-align:center;color:#526f64;font-size:13px;
+}
+.cc-target-unit .cc-target-amount{
+  display:block;font-size:12px;font-weight:800;color:#274e44;text-align:center;
+}
+.cc-target-caption{margin-top:5px;color:#527267;text-align:center;font-size:11px}
+.cc-target-legend{display:flex;justify-content:center;flex-wrap:wrap;gap:4px 11px;margin-top:4px;color:#4c695f;font-size:10px}
+.cc-target-legend span{white-space:nowrap}
+.cc-target-legend i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-inline-end:3px}
+.cc-personal-target{justify-content:space-around}
+.cc-personal-target dl{flex:0 1 56%;margin:0;min-width:0;padding-inline-start:10px;border-inline-start:1px solid #edf2ef}
+.cc-personal-target dl div{padding:5px 0}
+.cc-personal-target dt{color:#536e64;font-size:12px}
+.cc-personal-target dd{margin:0;font-weight:800;font-size:13px;color:#174f3c}
+.cc-personal-target .cc-target-pending dd{color:#8a5a16}
+.cc-target-details{max-width:1080px;margin:0 auto;padding:12px;color:#193c34;direction:rtl}
+.cc-target-details h1{margin:0;color:#173e34!important;font-size:24px!important}
+.cc-target-details .cc-target-detail-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 12px}
+.cc-target-details .cc-target-detail-head a{color:#15664d;font-weight:800}
+.cc-target-details .cc-period-form{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
+.cc-target-details .cc-period-form label{display:grid;gap:3px;font-size:12px}
+.cc-target-details .cc-period-form input{width:92px}
+.cc-target-details .cc-target-card{margin:0 0 12px}
+.cc-target-details .cc-target-card .cc-table-scroll{overflow:auto}
+.cc-target-details table{width:100%;border-collapse:collapse;text-align:right}
+.cc-target-details th,.cc-target-details td{padding:9px;border-bottom:1px solid #e7eeeb;white-space:nowrap;font-size:13px;color:#193c34}
+.cc-target-details .cc-commission{font-size:13px;color:#36594c}
+@media(max-width:720px){
+  .cc-targets{grid-template-columns:minmax(0,1fr);gap:8px;padding:8px;margin-bottom:10px}
+  .cc-targets .cc-target-card{padding:9px 11px}
+  .cc-target-unit .care-target-meter{height:89px;width:min(100%,120px)}
+}

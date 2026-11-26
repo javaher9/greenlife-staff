@@ -5,10 +5,12 @@ from decimal import Decimal
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
+from django.urls import reverse
 from django.utils import timezone
 
 from core.models import (
-    AuditLog, Branch, EmployeeProfile, FinancialTransaction,
+    AuditLog, Branch, ConsultationPlan, ConsultationPlanItem, EmployeeProfile, FinancialTransaction,
+    PatientProfile,
     ReferralLead, ReferralProfile, ReferralSale, VisitAppointment,
 )
 
@@ -27,7 +29,7 @@ class CallCenterDepositTests(TestCase):
         )
         self.lead = ReferralLead.objects.create(
             referrer=referrer, full_name="مراجع بیعانه",
-            phone="09120005555", first_appointment_by=self.operator,
+            phone="09120005555", first_appointment_by=self.operator, assigned_to=self.operator.profile,
         )
         self.appt = VisitAppointment.objects.create(
             lead=self.lead, branch=self.branch, full_name=self.lead.full_name,
@@ -36,6 +38,7 @@ class CallCenterDepositTests(TestCase):
             created_by=self.operator, status="booked",
         )
         self.url = "/call-center/deposits/new/"
+        self.operator_url = reverse("call_center_lead_deposit", args=[self.lead.pk])
 
     def make_user(self, username, first, last, role):
         user = User.objects.create_user(
@@ -151,3 +154,129 @@ class CallCenterDepositTests(TestCase):
         page = self.client.get("/finance/executive/")
         self.assertContains(page, "گل خورشیدی")
         self.assertContains(page, "0.25")
+
+    def test_operator_can_register_from_assigned_lead_on_mobile_and_replay_safely(self):
+        self.client.force_login(self.operator)
+        page = self.client.get(self.operator_url, HTTP_USER_AGENT="Mozilla/5.0 (Android 15; Mobile)")
+        self.assertContains(page, "ثبت مالی بیعانه")
+        self.assertContains(page, self.lead.full_name)
+        self.assertEqual(page.context["form"]["appointment"].value(), self.appt.pk)
+        plaque = self.client.get(reverse("call_center_call_plaque", args=[self.lead.pk]))
+        self.assertEqual(plaque.json()["operational"]["deposit_url"], self.operator_url)
+
+        token = str(uuid.uuid4())
+        payment = {"amount_toman": "۵۰٬۰۰۰٬۰۰۰", "payment_method": "CC G", "submission_token": token}
+        self.assertRedirects(self.client.post(self.operator_url, self.payload(**payment)), self.operator_url)
+        self.assertRedirects(self.client.post(self.operator_url, self.payload(**payment)), self.operator_url)
+        deposit = FinancialTransaction.objects.get()
+        self.assertEqual(deposit.amount, Decimal("500000000"))
+        self.assertEqual(deposit.raw_data["entry_channel"], "call_center_operator")
+        self.assertEqual(deposit.appointment_id, self.appt.pk)
+        self.assertEqual(deposit.recorded_by_id, self.operator.pk)
+        self.assertEqual(deposit.call_center_owner_id, self.operator.pk)
+        personal = self.client.get(reverse("my_sales_targets"))
+        self.assertEqual(personal.context["targets"]["my_deposits_pending"], Decimal("50"))
+        self.assertEqual(personal.context["targets"]["team_month"]["value"], Decimal("0"))
+
+    def test_operator_cannot_register_against_an_unassigned_lead_or_foreign_appointment(self):
+        second = self.make_user("another-flower", "", "", "call_center")
+        self.client.force_login(second)
+        self.assertEqual(self.client.post(self.operator_url, self.payload()).status_code, 404)
+        other_lead = ReferralLead.objects.create(
+            referrer=self.lead.referrer, full_name="مراجع ثبت‌نشده",
+            phone="09120001113", assigned_to=second.profile,
+        )
+        other_url = reverse("call_center_lead_deposit", args=[other_lead.pk])
+        response = self.client.post(other_url, self.payload())
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("appointment", response.context["form"].errors)
+        self.assertFalse(FinancialTransaction.objects.exists())
+        self.client.force_login(self.naderi)
+        self.assertEqual(self.client.get(self.operator_url).status_code, 403)
+
+    def test_executive_confirmation_does_not_close_the_future_visit(self):
+        self.client.force_login(self.operator)
+        self.client.post(self.operator_url, self.payload())
+        deposit = FinancialTransaction.objects.get()
+        manager = self.make_user("branch-manager", "", "", "manager")
+        manager.profile.branch = self.branch
+        manager.profile.save(update_fields=["branch"])
+        self.client.force_login(manager)
+        approval = reverse("finance_entry_review", args=[deposit.pk, "approve"])
+        self.assertEqual(self.client.post(approval).status_code, 403)
+        self.client.force_login(self.executive)
+        self.assertEqual(self.client.post(approval).status_code, 302)
+        deposit.refresh_from_db()
+        self.appt.refresh_from_db()
+        self.lead.refresh_from_db()
+        self.assertEqual(deposit.review_status, "approved")
+        self.assertEqual(self.appt.status, "booked")
+        self.assertEqual(self.appt.care_stage, "doctor")
+        self.assertNotEqual(self.lead.status, "won")
+
+    def test_credit_visible_and_allocated_then_only_one_final_sale_counts(self):
+        self.client.force_login(self.operator)
+        self.client.post(self.operator_url, self.payload(amount_toman="50000000"))
+        deposit = FinancialTransaction.objects.get()
+        self.client.force_login(self.executive)
+        self.client.post(reverse("finance_entry_review", args=[deposit.pk, "approve"]))
+        self.appt.status = "arrived"
+        self.appt.care_stage = "consultant"
+        self.appt.save(update_fields=["status", "care_stage"])
+        consultant = self.make_user("credit-consultant", "", "", "consultant")
+        consultant.profile.branch = self.branch
+        consultant.profile.save(update_fields=["branch"])
+        plan = ConsultationPlan.objects.create(
+            appointment=self.appt, consultant=consultant, status="finalized",
+            subtotal_toman=80000000, final_amount_toman=80000000, finalized_at=timezone.now(),
+        )
+        lipolytic = ConsultationPlanItem.objects.create(
+            plan=plan, kind="lipolytic", title="لیپولیتیک آزمایشی", unit_price_toman=40000000,
+        )
+        device = ConsultationPlanItem.objects.create(
+            plan=plan, kind="device", title="دستگاه آزمایشی", unit_price_toman=40000000,
+        )
+        self.client.force_login(consultant)
+        consult = reverse("consultant_sales_outcomes")
+        page = self.client.get(consult, {"appointment": self.appt.pk})
+        self.assertEqual(page.context["deposit_credit"]["available"], Decimal("50000000"))
+        params = {"action": "allocate_deposit", "appointment_id": self.appt.pk}
+        self.client.post(consult, {
+            **params, f"item_{lipolytic.pk}": "۳۵٬۰۰۰٬۰۰۰", f"item_{device.pk}": "۲۵٬۰۰۰٬۰۰۰",
+        })
+        deposit.refresh_from_db()
+        self.assertNotIn("service_allocations", deposit.raw_data)
+        request = {**params, f"item_{lipolytic.pk}": "۲۵٬۰۰۰٬۰۰۰", f"item_{device.pk}": "۲۵٬۰۰۰٬۰۰۰"}
+        self.client.post(consult, request)
+        self.client.post(consult, request)
+        self.assertEqual(AuditLog.objects.filter(action="call_center_deposit_allocate").count(), 1)
+        self.assertEqual(FinancialTransaction.objects.count(), 1)
+        patient = PatientProfile.objects.create(full_name=self.appt.full_name, phone=self.appt.phone, home_branch=self.branch)
+        profile = self.client.get(reverse("patient_360", args=[patient.pk]))
+        self.assertContains(profile, "ماندهٔ قابل تخصیص")
+        summary = profile.context["deposit_credit"]
+        self.assertEqual(summary["approved"], Decimal("50000000"))
+        self.assertEqual(summary["available"], Decimal("0"))
+        self.assertEqual(summary["services"], {
+            "لیپولیتیک آزمایشی": Decimal("25000000"), "دستگاه آزمایشی": Decimal("25000000"),
+        })
+        self.client.force_login(self.operator)
+        before = self.client.get(reverse("my_sales_targets")).context["targets"]
+        self.assertEqual(before["personal"]["value"], Decimal("0"))
+        self.assertEqual(before["team_month"]["value"], Decimal("50"))
+        self.assertEqual(before["team_day"]["value"], Decimal("50"))
+
+        balance = FinancialTransaction.objects.create(
+            occurred_at=timezone.now(), source="manual", entry_type="inc",
+            branch=self.branch, appointment=self.appt, recorded_by=consultant,
+            review_status="pending", amount=300000000, call_center_owner=self.operator,
+        )
+        self.client.force_login(self.executive)
+        self.client.post(reverse("finance_entry_review", args=[balance.pk, "approve"]))
+        plan.refresh_from_db()
+        self.assertEqual(plan.status, "paid")
+        self.client.force_login(self.operator)
+        cards = self.client.get(reverse("my_sales_targets")).context["targets"]
+        self.assertEqual(cards["personal"]["value"], Decimal("80"))
+        self.assertEqual(cards["my_deposits_approved"], Decimal("50"))
+        self.assertEqual(cards["team_month"]["value"], Decimal("50"))

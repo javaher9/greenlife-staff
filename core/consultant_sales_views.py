@@ -13,6 +13,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .call_center_identity import call_center_display_name
+from .consultation_deposits import DepositAllocationForm, appointment_deposits, deposit_summary
 from .patient_ui import attach_patient_photos, patient_photo_url_for_phone
 from .device_pricing import device_unit_price
 from .sales_target_models import SalesTargetBand, TargetPercentPolicy
@@ -251,6 +252,7 @@ def _service_summary(plan):
 
 
 @login_required
+@transaction.atomic
 def consultant_sales_outcomes(request):
     profile=_consultant(request)
     if not profile:
@@ -258,15 +260,36 @@ def consultant_sales_outcomes(request):
         return redirect('dashboard')
 
     appointments=_queue(profile)
+    selection = appointments.select_for_update(of=('self',)) if request.method == 'POST' else appointments
     selected_id=(request.POST.get('appointment_id') if request.method=='POST' else request.GET.get('appointment')) or ''
-    selected=appointments.filter(pk=int(selected_id)).first() if str(selected_id).isdigit() else appointments.first()
+    selected=selection.filter(pk=int(selected_id)).first() if str(selected_id).isdigit() else selection.first()
     plan=_ensure_plan(selected,request.user) if selected else None
+    allocation_form = None
+    deposits = appointment_deposits([selected.pk]) if selected else FinancialTransaction.objects.none()
 
     if request.method=='POST':
         if not selected or not plan:
             messages.error(request,'پرونده انتخاب‌شده در صف مشاوره شما نیست.')
             return redirect('consultant_sales_outcomes')
         action=(request.POST.get('action') or '').strip()
+
+        if action == 'allocate_deposit':
+            if not request.user.is_active or not profile.is_active:
+                from django.core.exceptions import PermissionDenied
+                raise PermissionDenied('ثبت تخصیص برای این حساب فعال نیست.')
+            receipts = list(deposits.filter(review_status='approved').select_for_update())
+            allocation_form = DepositAllocationForm(request.POST, plan=plan, receipts=receipts)
+            if not receipts:
+                messages.error(request, 'برای این نوبت بیعانهٔ تأییدشده‌ای وجود ندارد.')
+            elif allocation_form.is_valid():
+                allocation_form.save(receipts, user=request.user, request_path=request.path)
+                messages.success(request, 'تخصیص بیعانه به خدمات ثبت شد.')
+            else:
+                for errors in allocation_form.errors.values():
+                    for error in errors:
+                        messages.error(request, error)
+            return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
+
 
         if action=='update_item':
             item=get_object_or_404(plan.items,pk=request.POST.get('item_id'))
@@ -287,6 +310,10 @@ def consultant_sales_outcomes(request):
                 item.units_per_session=1
             item.included=request.POST.get('included')=='1'
             item.note=(request.POST.get('item_note') or '').strip()[:2000]
+            allocation = deposit_summary(deposits)['by_item'].get(item.pk, 0)
+            if allocation > item.line_total_toman:
+                messages.error(request, 'ابتدا مبلغ بیعانهٔ تخصیص‌یافته به این خدمت را اصلاح کنید.')
+                return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
             item.save()
             _recalculate(plan)
             messages.success(request,'پکیج نهایی به‌روزرسانی شد؛ نسخه پزشک دست‌نخورده باقی ماند.')
@@ -326,6 +353,10 @@ def consultant_sales_outcomes(request):
                 discount=max(Decimal('0'),Decimal(raw_discount or '0') * Decimal('1000000'))
             except InvalidOperation:
                 discount=Decimal('0')
+            subtotal = sum(item.line_total_toman for item in plan.included_items)
+            if deposit_summary(deposits)['applied'] > max(0, subtotal - discount):
+                messages.error(request, 'مبلغ نهایی پکیج از بیعانهٔ تخصیص‌یافته کمتر است.')
+                return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
             plan.note=(request.POST.get('plan_note') or '').strip()[:3000]
             _recalculate(plan,discount)
             if not plan.items.filter(included=True).exists():
@@ -335,7 +366,15 @@ def consultant_sales_outcomes(request):
             plan.finalized_at=timezone.now()
             plan.consultant=request.user
             plan.save(update_fields=['status','finalized_at','consultant','note','updated_at'])
-            messages.success(request,'پکیج نهایی شد. حالا پرداخت را خودتان ثبت کنید یا برای منشی بفرستید.')
+            approved_deposit = deposits.filter(review_status='approved').first()
+            if approved_deposit:
+                from .finance_amount_correction import _reconcile_appointment_finance
+                _reconcile_appointment_finance(approved_deposit, approved_deposit.reviewed_by)
+                plan.refresh_from_db(fields=['status'])
+            if plan.status == 'paid':
+                messages.success(request, 'پکیج با بیعانهٔ تأییدشده تسویه شد.')
+            else:
+                messages.success(request, 'پکیج نهایی شد. ماندهٔ پرداخت را ثبت کنید یا پرونده را برای منشی بفرستید.')
             return redirect(f"{reverse('consultant_sales_outcomes')}?appointment={selected.pk}")
 
         if action=='send_to_reception':
@@ -443,7 +482,13 @@ def consultant_sales_outcomes(request):
     if selected:
         doctor_notes=list(selected.care_notes.filter(note_type='clinical')[:8])
 
+    receipts = list(deposits)
+    deposit_credit = deposit_summary(receipts) if receipts else None
+    if deposit_credit and deposit_credit['approved'] and plan:
+        allocation_form = DepositAllocationForm(plan=plan, receipts=receipts)
+
     return render(request,'core/consultant_sales_outcomes.html',{
+        'deposit_credit': deposit_credit, 'deposit_allocation_form': allocation_form,
         'pending':pending,'selected':selected,'plan':plan,
         'plan_items':list(plan.items.all()) if plan else [],
         'doctor_notes':doctor_notes,'recent_paid':recent_paid,'kpis':kpis,

@@ -8,16 +8,17 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
-from django.db.models import Sum, Q
-from django.db.models.functions import TruncDate, Coalesce
+from django.db.models import Sum, Q, F
+from django.db.models.functions import Coalesce, TruncDate
 from django.http import HttpResponseRedirect
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
+from .call_center_deposit_views import DEPOSIT_MARKER
 from .call_center_identity import call_center_display_name
 from .jalali import gregorian_to_jalali, jalali_to_gregorian
-from .models import Branch, EmployeeProfile, FinancialTransaction
+from .models import Branch, ConsultationPlan, EmployeeProfile, FinancialTransaction
 from .sales_target_models import SalesTargetBand, TargetPercentPolicy
 
 MILLION_TOMAN_RIAL = Decimal("10000000")
@@ -62,11 +63,132 @@ def _gauge_row(key, label, value, plans, *, avatar="", people=None, group="", no
         level, status = "one", "تارگت ۱"
     else:
         level, status = "two", "تارگت ۲"
+    bands = {
+        key: format(limit * 100 / target_one, ".8f")
+        for key, limit in zip(("heavy", "floor", "one", "two"),
+                              (plan.heavy_limit, plan.sales_floor, plan.target_one, plan.target_two))
+    } if target_one else {}
     return {
+        "bands": bands,
+        "color": {"heavy": "red", "light": "yellow", "neutral": "green", "one": "blue", "two": "purple"}.get(level, ""),
         "key": key, "label": label, "value": value, "plan": plan,
         "percentage": percent, "level": level, "status": status,
         "avatar": avatar, "people": people or [], "group": group, "note": note,
     }
+
+
+def _period_receipts(start_date, end_date):
+    return FinancialTransaction.objects.filter(
+        source="manual", entry_type="inc",
+        occurred_at__gte=timezone.make_aware(datetime.combine(start_date, time.min)),
+        occurred_at__lt=timezone.make_aware(datetime.combine(end_date, time.min)),
+    )
+
+
+def _deposit_filter():
+    # The typed marker is authoritative. Keep older explicitly labeled
+    # Afseriyeh deposits in both management and staff targets.
+    return (Q(raw_data__has_key="payment_kind") & Q(raw_data__payment_kind=DEPOSIT_MARKER)) | (
+        Q(sale_origin="afsariyeh") &
+        (Q(description__icontains="بیعانه") | Q(service__icontains="بیعانه"))
+    )
+
+
+def _attributed_flower_receipts(receipts):
+    return receipts.annotate(flower_id=Coalesce(
+        "call_center_owner_id", "appointment__lead__first_appointment_by_id",
+    )).filter(flower_id__isnull=False)
+
+
+def _flower_sales(start_date, end_date, *, user_id=None):
+    """Settled packages at the branch, plus approved legacy sales without a package."""
+    start = timezone.make_aware(datetime.combine(start_date, time.min))
+    end = timezone.make_aware(datetime.combine(end_date, time.min))
+    plans = ConsultationPlan.objects.filter(
+        status="paid", final_amount_toman__gt=0,
+        appointment__lead__first_appointment_by__isnull=False,
+    ).filter(
+        Q(paid_at__gte=start, paid_at__lt=end) |
+        Q(paid_at__isnull=True, appointment__appointment_date__gte=start_date,
+          appointment__appointment_date__lt=end_date)
+    ).exclude(appointment__status__in=("cancelled", "no_show")).annotate(
+        flower_id=F("appointment__lead__first_appointment_by_id"),
+        branch_id=F("appointment__branch_id"),
+    )
+    legacy = _attributed_flower_receipts(
+        _period_receipts(start_date, end_date).filter(
+            review_status="approved", appointment__consultation_plan__isnull=True,
+        ).exclude(_deposit_filter()).exclude(sale_reason="skin_care"),
+    )
+    if user_id is not None:
+        plans = plans.filter(flower_id=user_id)
+        legacy = legacy.filter(flower_id=user_id)
+    # Both sources use rial here so that rounding only occurs on display.
+    totals = defaultdict(lambda: ZERO)
+    for row in plans.order_by().values("flower_id", "branch_id").annotate(value=Sum("final_amount_toman")):
+        totals[row["flower_id"], row["branch_id"]] += row["value"] * Decimal("10")
+    for row in legacy.order_by().values("flower_id", "branch_id").annotate(value=Sum("amount")):
+        totals[row["flower_id"], row["branch_id"]] += row["value"]
+    return totals
+
+
+def _band_from_policy(policy, floor):
+    heavy, floor, one, two = policy.bands(floor)
+    return SimpleNamespace(heavy_limit=heavy, sales_floor=floor, target_one=one, target_two=two)
+
+
+def _call_center_targets(user, jy, jm, start_date, end_date, today):
+    """Build the shared and personal cards from the same month and management settings."""
+    period = f"{jy}-{jm:02d}"
+    personal_key = f"flower:{user.pk}"
+    policy = TargetPercentPolicy.objects.filter(period_year=jy, period_month=jm).first()
+    if policy is None:
+        policy = TargetPercentPolicy(period_year=jy, period_month=jm)
+    floors = SalesTargetBand.objects.filter(
+        key__in=(f"{period}:call_center", f"{period}:{personal_key}"),
+    ).values_list("key", "sales_floor")
+    plans = {key.split(":", 1)[1]: _band_from_policy(policy, floor) for key, floor in floors}
+    daily_plans = {}
+    if "call_center" in plans:
+        plan = plans["call_center"]
+        days = Decimal((end_date - start_date).days)
+        daily_plans["call_center"] = SimpleNamespace(**{
+            name: value / days for name, value in vars(plan).items()
+        })
+
+    deposits = _period_receipts(start_date, end_date).filter(_deposit_filter())
+    team = deposits.filter(review_status="approved")
+    day_start = timezone.make_aware(datetime.combine(today, time.min))
+    day_end = timezone.make_aware(datetime.combine(today + timedelta(days=1), time.min))
+    day_filter = Q(occurred_at__gte=day_start, occurred_at__lt=day_end)
+    team_totals = team.aggregate(month=Sum("amount"), day=Sum("amount", filter=day_filter))
+    own_deposits = _attributed_flower_receipts(deposits).filter(flower_id=user.pk)
+    own_totals = own_deposits.aggregate(
+        approved=Sum("amount", filter=Q(review_status="approved")),
+        pending=Sum("amount", filter=Q(review_status="pending")),
+    )
+    sales = _flower_sales(start_date, end_date, user_id=user.pk)
+    own_sales = _money(sum(sales.values(), ZERO))
+    day = _gauge_row("call_center", "روزانه", _money(team_totals["day"]), daily_plans)
+    month = _gauge_row("call_center", "ماهانه", _money(team_totals["month"]), plans)
+    personal = _gauge_row(personal_key, "ماهانه", own_sales, plans)
+    return {
+        "period_label": f"{jy}/{jm:02d}",
+        "team_month": month, "team_day": day, "personal": personal,
+        "current_month": start_date <= today < end_date,
+        "my_deposits_approved": _money(own_totals["approved"]),
+        "my_deposits_pending": _money(own_totals["pending"]),
+        "own_deposits": own_deposits, "own_branch_sales": sales,
+    }
+
+
+def call_center_dashboard_targets(user):
+    today = timezone.localdate()
+    jy, jm, _ = gregorian_to_jalali(today.year, today.month, today.day)
+    ny, nm = (jy+1, 1) if jm == 12 else (jy, jm+1)
+    start = datetime(*jalali_to_gregorian(jy, jm, 1)).date()
+    end = datetime(*jalali_to_gregorian(ny, nm, 1)).date()
+    return _call_center_targets(user, jy, jm, start, end, today)
 
 
 @login_required
@@ -232,24 +354,14 @@ def sales_targets_dashboard(request):
         return HttpResponseRedirect(f"{reverse('sales_targets_dashboard')}?year={jy}&month={jm}&edit=1")
 
     configs = SalesTargetBand.objects.filter(period_year=jy, period_month=jm)
-    # Calculate at read time as well: updating global percentages immediately
-    # changes the actual boundaries, colors, and needle positions everywhere.
-    plans = {}
-    for stored in configs:
-        heavy, floor, one, two = policy.bands(stored.sales_floor)
-        plans[stored.key.removeprefix(period + ":")] = SimpleNamespace(
-            heavy_limit=heavy, sales_floor=floor,
-            target_one=one, target_two=two,
-        )
+    # Changes to the shared policy apply to every card immediately.
+    plans = {
+        stored.key.removeprefix(period + ":"): _band_from_policy(policy, stored.sales_floor)
+        for stored in configs
+    }
 
-    start = timezone.make_aware(datetime.combine(start_date, time.min))
-    end = timezone.make_aware(datetime.combine(end_date, time.min))
-    # Source is restricted to approved manual income; CRM imports can overlap
-    # with these same receipts and must not silently be double counted.
-    income = FinancialTransaction.objects.filter(
-        source="manual", entry_type="inc", review_status="approved",
-        occurred_at__gte=start, occurred_at__lt=end,
-    )
+    # CRM imports may overlap with these same receipts.
+    income = _period_receipts(start_date, end_date).filter(review_status="approved")
     by_branch = {r["branch_id"]: _money(r["amount"]) for r in income.values("branch_id").annotate(amount=Sum("amount"))}
     # The consultant owns the finalized consultation; a receptionist can record
     # the money on their behalf. Use the plan consultant first, then recorder.
@@ -257,19 +369,11 @@ def sales_targets_dashboard(request):
         income.annotate(seller_id=Coalesce(
             "appointment__consultation_plan__consultant_id", "recorded_by_id",
         )).values("seller_id").annotate(amount=Sum("amount"))}
-    # The first booking owner is the fallback for historical rows.
-    by_flower = {r["flower_id"]: _money(r["amount"]) for r in
-        income.annotate(flower_id=Coalesce(
-            "call_center_owner_id", "appointment__lead__first_appointment_by_id",
-        )).filter(flower_id__isnull=False).values("flower_id").annotate(amount=Sum("amount"))}
+    by_flower = defaultdict(lambda: ZERO)
+    for (flower_id, _branch_id), amount in _flower_sales(start_date, end_date).items():
+        by_flower[flower_id] += amount
     total = _money(income.filter(branch__in=branches).aggregate(value=Sum("amount"))["value"])
-
-    # This is intentionally conservative: only explicitly identified deposit
-    # transactions qualify. Other Afseriyeh receipts must not be presented as
-    # deposits, even if they were brought in by call-center operators.
-    deposits = income.filter(sale_origin="afsariyeh").filter(
-        Q(description__icontains="بیعانه") | Q(service__icontains="بیعانه")
-    )
+    deposits = income.filter(_deposit_filter())
     call_center_deposit = _money(deposits.aggregate(value=Sum("amount"))["value"])
     deposit_count = deposits.count()
 
@@ -295,7 +399,7 @@ def sales_targets_dashboard(request):
     flower_cards = [
         _gauge_row(
             f"flower:{p.user_id}", call_center_display_name(p.user),
-            by_flower.get(p.user_id, ZERO), plans,
+            _money(by_flower[p.user_id]), plans,
             avatar=p.avatar.url if p.avatar else "", group="کال‌سنتر",
         ) for p in flowers
     ]
@@ -359,12 +463,38 @@ def sales_targets_dashboard(request):
 def my_sales_targets(request):
     """Read-only personal sales goals; monthly statuses only, no daily penalties."""
     profile = getattr(request.user, "profile", None)
-    if not profile or not profile.is_active or profile.role not in ("call_center", "consultant"):
+    if not request.user.is_active or not profile or not profile.is_active or profile.role not in ("call_center", "consultant"):
         raise PermissionDenied("این صفحه مختص گل‌های کال‌سنتر و مشاوران فروش است.")
     # Staff must never choose another person's ID.
-    jy, jm, start_date, end_date, today = _month_params(request)
+    try:
+        jy, jm, start_date, end_date, today = _month_params(request)
+    except ValidationError:
+        messages.error(request, "دوره شمسی نامعتبر است.")
+        return redirect("my_sales_targets")
+    if profile.role == "call_center":
+        cx = _call_center_targets(request.user, jy, jm, start_date, end_date, today)
+        branch_ids = {branch_id for _, branch_id in cx["own_branch_sales"] if branch_id}
+        branches = Branch.objects.in_bulk(branch_ids)
+        branch_sales = sorted([
+            (branches[branch_id].name if branch_id in branches else "بدون شعبه", _money(total))
+            for (_, branch_id), total in cx["own_branch_sales"].items()
+        ], key=lambda row: -row[1])
+        # Read the existing payroll result, including closed-month snapshots.
+        from .payroll_views import _payroll_row
+        payroll = _payroll_row(profile, start_date, end_date)
+        deposits = list(cx["own_deposits"].select_related("branch").order_by("-occurred_at")[:60])
+        for receipt in deposits:
+            receipt.amount_toman = receipt.amount / Decimal("10")
+        return render(request, "core/call_center/targets.html", {
+            "targets": cx, "period_year": jy, "period_month": jm,
+            "deposits": deposits,
+            "branch_sales": branch_sales,
+            "commission": payroll["commission"] if payroll["rule"] or payroll["closed"] else None,
+            "commission_percent": payroll["percent"],
+            "flower_name": call_center_display_name(request.user),
+        })
     period = f"{jy}-{jm:02d}"
-    key = f"{'flower' if profile.role == 'call_center' else 'consultant'}:{request.user.pk}"
+    key = f"consultant:{request.user.pk}"
     policy = TargetPercentPolicy.objects.filter(period_year=jy, period_month=jm).first()
     if policy is None:
         policy = TargetPercentPolicy(period_year=jy, period_month=jm)
@@ -385,16 +515,10 @@ def my_sales_targets(request):
         source="manual", entry_type="inc", review_status="approved",
         occurred_at__gte=period_start, occurred_at__lt=period_end,
     )
-    if profile.role == "call_center":
-        receipts = receipts.annotate(seller=Coalesce(
-            "call_center_owner_id", "appointment__lead__first_appointment_by_id",
-        ))
-        display_name = call_center_display_name(request.user)
-    else:
-        receipts = receipts.annotate(seller=Coalesce(
-            "appointment__consultation_plan__consultant_id", "recorded_by_id",
-        ))
-        display_name = request.user.get_full_name() or request.user.username
+    receipts = receipts.annotate(seller=Coalesce(
+        "appointment__consultation_plan__consultant_id", "recorded_by_id",
+    ))
+    display_name = request.user.get_full_name() or request.user.username
     mine = receipts.filter(seller=request.user.pk)
     monthly = _money(mine.aggregate(value=Sum("amount"))["value"])
     daily = _money(mine.filter(occurred_at__gte=today_start, occurred_at__lt=tomorrow_start).aggregate(value=Sum("amount"))["value"])
@@ -412,7 +536,7 @@ def my_sales_targets(request):
     return render(request, "core/my_sales_targets.html", {
         "row":row, "period_label":f"{jy}/{jm:02d}", "monthly":monthly,
         "daily":daily, "daily_floor":daily_floor, "days":days,
-        "is_flower":profile.role=="call_center", "plan":plan,
+        "is_flower":False, "plan":plan,
         "policy":policy, "segments":segments, "avatar":profile.avatar.url if profile.avatar else "",
         "source_note":"فقط دریافت‌های دستی تأییدشده منتسب به حساب شما در این گزارش نمایش داده شده‌اند.",
     })

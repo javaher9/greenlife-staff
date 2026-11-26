@@ -7,6 +7,7 @@ from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
+from .call_center_deposit_views import is_call_center_deposit, lock_deposit_tracking, tracking_in_use
 from .models import AuditLog, Branch, FinancialTransaction, ReferralLead, StaffNotification, VisitAppointment
 
 MILLION_TOMAN_IN_RIAL = Decimal('10000000')
@@ -55,6 +56,12 @@ def _reconcile_appointment_finance(entry, reviewer=None):
         .aggregate(total=Sum('amount'))['total'] or Decimal('0')
     )
     plan=getattr(appointment,'consultation_plan',None)
+    # A telephone deposit is a credit before the actual consultation, not a
+    # reason to close a booked visit or move it out of the doctor queue.
+    if is_call_center_deposit(entry) and (
+        not plan or plan.status in ('draft', 'no_sale') or appointment.status in ('booked', 'cancelled', 'no_show')
+    ):
+        return
     if plan:
         required=(plan.final_amount_toman or Decimal('0'))*Decimal('10')
         fully_paid=bool(required>0 and approved>=required)
@@ -100,6 +107,7 @@ def _reconcile_appointment_finance(entry, reviewer=None):
             )
 
 
+@transaction.atomic
 def finance_entry_review_with_amount(request, pk, action):
     """Finance review with an in-place, audited amount correction flow.
 
@@ -116,6 +124,11 @@ def finance_entry_review_with_amount(request, pk, action):
         raise PermissionDenied('دسترسی مالی مجاز نیست.')
 
     entry = get_object_or_404(FinancialTransaction, pk=pk, source='manual')
+    deposit = is_call_center_deposit(entry)
+    if deposit:
+        from .views import _is_executive_user
+        if not _is_executive_user(request.user):
+            raise PermissionDenied('تأیید یا اصلاح بیعانهٔ کال‌سنتر فقط توسط مدیرعامل مجاز است.')
     if role == 'manager' and entry.branch_id != getattr(request.user.profile, 'branch_id', None):
         messages.error(request, 'این تراکنش مربوط به شعبه شما نیست.')
         return redirect('finance_dashboard')
@@ -123,12 +136,16 @@ def finance_entry_review_with_amount(request, pk, action):
     if request.method != 'POST':
         return redirect('finance_dashboard')
 
+    if entry.appointment_id:
+        VisitAppointment.objects.select_for_update().get(pk=entry.appointment_id)
+    entry = FinancialTransaction.objects.select_for_update().get(pk=entry.pk)
+
     if action == 'correction':
         current_amount_million = _million_toman(entry.amount)
         payment_methods = [
             ('Pos S','Pos S'),('Pos H','Pos H'),('CC G','CC G'),
             ('CC P','CC P'),('CC D','CC D'),('CC S','CC S'),
-            ('LINK','LINK'),('Cash','نقدی'),
+            ('LINK','LINK'),('TRANSFER','کارت‌به‌کارت / حواله'),('Cash','نقدی'),
         ]
         branches = Branch.objects.filter(is_active=True).order_by('name')
         context = {
@@ -149,7 +166,7 @@ def finance_entry_review_with_amount(request, pk, action):
             entered_million = Decimal(raw_amount)
         except (InvalidOperation, ValueError):
             entered_million = Decimal('0')
-        if entered_million <= 0:
+        if not entered_million.is_finite() or entered_million <= 0:
             messages.error(request, 'مبلغ صحیح باید بیشتر از صفر باشد.')
             context['entered_amount'] = raw_amount
             return render(request, 'core/finance_amount_correction.html', context)
@@ -175,6 +192,19 @@ def finance_entry_review_with_amount(request, pk, action):
         valid_cash_currencies=dict(FinancialTransaction.CASH_CURRENCY)
 
         errors=[]
+        if deposit:
+            if entry_type != 'inc':
+                errors.append('بیعانه باید در نوع درآمد بماند.')
+            if not tracking_number:
+                errors.append('شماره پیگیری بیعانه لازم است.')
+            else:
+                lock_deposit_tracking(payment_method, tracking_number)
+                if tracking_in_use(payment_method, tracking_number, exclude_pk=entry.pk):
+                    errors.append('این شماره پیگیری قبلاً ثبت شده است.')
+            allocations = entry.raw_data.get('service_allocations', [])
+            applied = sum(Decimal(row['amount_toman']) for row in allocations)
+            if applied * 10 > entered_million * MILLION_TOMAN_IN_RIAL:
+                errors.append('ابتدا تخصیص بیعانه را به مبلغ صحیح اصلاح کنید.')
         if entry_type not in valid_entry_types:
             errors.append('نوع ثبت معتبر نیست.')
         if payment_method not in valid_payment_methods:
@@ -302,12 +332,20 @@ def finance_entry_review_with_amount(request, pk, action):
         messages.error(request, 'عملیات نامعتبر است.')
         return redirect('finance_dashboard')
 
+    if deposit and action == 'approve' and entry.tracking_number:
+        lock_deposit_tracking(entry.payment_method, entry.tracking_number)
+        if tracking_in_use(entry.payment_method, entry.tracking_number, exclude_pk=entry.pk):
+            messages.error(request, 'یکی از دریافت‌ها با این شماره پیگیری قبلاً ثبت شده است.')
+            return redirect('finance_dashboard')
     before = entry.review_status
+    removed_allocations = []
+    if deposit and action == 'cancel':
+        removed_allocations = entry.raw_data.pop('service_allocations', [])
     entry.review_status = status_map[action]
     entry.reviewed_by = request.user
     entry.reviewed_at = timezone.now()
     entry.review_note = (request.POST.get('review_note') or '').strip()[:300]
-    entry.save(update_fields=['review_status', 'reviewed_by', 'reviewed_at', 'review_note'])
+    entry.save(update_fields=['review_status', 'reviewed_by', 'reviewed_at', 'review_note', 'raw_data'])
     AuditLog.objects.create(
         actor=request.user,
         action='finance_review',
@@ -316,7 +354,7 @@ def finance_entry_review_with_amount(request, pk, action):
         object_type='FinancialTransaction',
         object_id=str(entry.pk),
         summary=f'وضعیت مالی از {before} به {entry.review_status}'[:250],
-        metadata={'before': before, 'after': entry.review_status},
+        metadata={'before': before, 'after': entry.review_status, 'removed_allocations': removed_allocations},
         ip_address=_request_ip(request),
     )
     if entry.recorded_by_id:

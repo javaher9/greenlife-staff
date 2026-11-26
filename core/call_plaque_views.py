@@ -78,6 +78,7 @@ def _payload(lead, user, *, editable, restricted, profile=None):
             'time': lead.next_follow_up_time.strftime('%H:%M') if lead.next_follow_up_time else '',
             'notes': lead.notes if not restricted else '',
             'appointment_url': reverse('appointment_schedule') + f'?lead={lead.pk}' if editable else '',
+            'deposit_url': reverse('call_center_lead_deposit', args=[lead.pk]) if editable else '',
         },
         'ok': True, 'lead': {'id': lead.pk, 'name': lead.full_name, 'group': lead.group.name if lead.group_id else '',
                             'group_id': lead.group_id, 'owner': _actor(lead.assigned_to.user) if lead.assigned_to_id else ''},
