@@ -29,11 +29,14 @@
       </table>
     </div>
   </section>
-  <section class="cc-target-card">
-    <h2>مراکز دارای فروش قطعی برای لیدهای من</h2>
+  <section class="cc-target-card{% if targets.personal.level == 'paused' %} cc-attribution-paused{% endif %}">
+    <div class="cc-branch-title"><h2>مراکز دارای فروش قطعی برای لیدهای من</h2>
+      {% if targets.personal.level == 'paused' %}<span class="cc-paused-badge">تارگت غیرفعال</span>{% endif %}
+    </div>
+    {% if targets.personal.level == 'paused' %}<p>انتساب فروش مراکز به گل‌ها هنوز کامل نیست. فعلاً عملکرد شما با بیعانه‌ها سنجیده می‌شود.</p>{% endif %}
     {% if branch_names %}
     <ul>{% for branch in branch_names %}<li>{{ branch }}</li>{% endfor %}</ul>
-    {% else %}<p>برای این دوره فروش در مراکز ثبت نشده است.</p>{% endif %}
+    {% elif targets.personal.level != 'paused' %}<p>برای این دوره فروش در مراکز ثبت نشده است.</p>{% endif %}
   </section>
 </div>
 {% endblock %}

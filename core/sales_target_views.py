@@ -1,9 +1,10 @@
 """Executive-only sales target dashboard (approved/manual receipts, no fabricated targets)."""
 from collections import defaultdict
 from datetime import datetime, time, timedelta
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_DOWN
 from types import SimpleNamespace
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -49,12 +50,14 @@ def _month_params(request):
         raise ValidationError("دوره شمسی نامعتبر است.")
 
 
-def _gauge_row(key, label, value, plans, *, avatar="", people=None, group="", note=""):
+def _gauge_row(key, label, value, plans, *, avatar="", people=None, group="", note="", paused=False):
     plan = plans.get(key)
-    target_one = plan.target_one if plan else None
+    target_one = plan.target_one if plan and not paused else None
     # Exactly 100% means Target 1; Target 2 is a higher achievement level.
     percent = int(min(999, max(0, (value / target_one) * 100))) if target_one else None
-    if plan is None:
+    if paused:
+        level, status = "paused", "غیرفعال"
+    elif plan is None:
         level = "unset"
         status = "تارگت تنظیم نشده"
     elif value < plan.heavy_limit:
@@ -77,7 +80,7 @@ def _gauge_row(key, label, value, plans, *, avatar="", people=None, group="", no
         "color": {"heavy": "red", "light": "yellow", "neutral": "green", "one": "blue", "two": "purple"}.get(level, ""),
         "key": key, "label": label, "value": value, "plan": plan,
         "percentage": percent, "level": level, "status": status,
-        "display_status": {"one": "تارگت اول", "two": "تارگت دوم"}.get(level, status),
+        "display_status": {"neutral": "کف فروش", "one": "تارگت اول", "two": "تارگت دوم"}.get(level, status),
         "avatar": avatar, "people": people or [], "group": group, "note": note,
     }
 
@@ -192,11 +195,37 @@ def _monthly_target_plans(policy, flower_ids, *, for_user_id=None):
     return plans
 
 
-def _call_center_gauge(key, label, amount, plans):
-    gauge = _gauge_row(key, label, _millions(amount), plans)
+def _percent_text(value, *, rounding=None):
+    rounded = value.quantize(Decimal("0.01"), rounding=rounding)
+    return format(rounded, "f").rstrip("0").rstrip(".")
+
+
+def _call_center_color_guides(gauges):
+    # Individual monetary bands are rounded before aggregation. Share a legend
+    # only when its displayed boundaries are the same for all relevant gauges.
+    grouped = {}
+    for label, gauge in gauges:
+        bands = gauge["bands"]
+        if bands:
+            boundaries = tuple(_percent_text(Decimal(bands[key])) for key in ("heavy", "floor", "two"))
+            grouped.setdefault(boundaries, []).append(label)
+    return [
+        {"heavy": heavy, "floor": floor, "two": two, "label": " و ".join(labels) if len(grouped) > 1 else ""}
+        for (heavy, floor, two), labels in grouped.items()
+    ] or [{}]
+
+
+def _call_center_gauge(key, label, amount, plans, *, paused=False):
+    gauge = _gauge_row(key, label, _millions(amount), plans, paused=paused)
     plan = gauge["plan"]
-    if plan is None:
+    if paused or plan is None:
         return gauge
+
+    progress = max(ZERO, gauge["value"]) * 100 / plan.target_one
+    # Do not round a near miss to 100% or turn a small first deposit into zero.
+    gauge["progress_text"] = "<0.01%" if 0 < progress < Decimal("0.01") else _percent_text(
+        progress, rounding=ROUND_DOWN,
+    ) + "%"
 
     # SVG pathLength is 100. Keep the dial fixed to the configured bands,
     # including when an operator exceeds the end of the scale.
@@ -246,12 +275,20 @@ def _call_center_targets(user, jy, jm, start_date, end_date, today):
     own_deposit = own_totals["approved"] or ZERO
     sales = _flower_branch_sales(start_date, end_date, user_id=user.pk)
     own_sales = own_deposit + sum(sales.values(), ZERO)
+    team_month = _call_center_gauge("call_center", "ماهانه", team_totals["month"], plans)
+    personal_deposit = _call_center_gauge(deposit_key, "بیعانه‌های من", own_deposit, plans)
+    personal = _call_center_gauge(
+        personal_key, "مجموع فروش من", own_sales, plans,
+        paused=not settings.CALL_CENTER_COMBINED_SALES_TARGET_ENABLED,
+    )
     return {
         "period_label": f"{jy}/{jm:02d}",
-        "team_month": _call_center_gauge("call_center", "ماهانه", team_totals["month"], plans),
+        "team_month": team_month,
         "team_day": _call_center_gauge("call_center", "روزانه", team_totals["day"], daily_plans),
-        "personal_deposit": _call_center_gauge(deposit_key, "بیعانه‌های من", own_deposit, plans),
-        "personal": _call_center_gauge(personal_key, "مجموع فروش من", own_sales, plans),
+        "personal_deposit": personal_deposit, "personal": personal,
+        "color_guides": _call_center_color_guides((
+            ("بیعانهٔ تیم", team_month), (personal_deposit["label"], personal_deposit), (personal["label"], personal),
+        )),
         "current_month": start_date <= today < end_date,
         "has_approved_deposits": own_deposit > ZERO,
         "has_pending_deposits": bool(own_totals["pending"]),
@@ -479,6 +516,7 @@ def sales_targets_dashboard(request):
             f"flower:{p.user_id}", call_center_display_name(p.user),
             _millions(by_flower.get(p.user_id, ZERO)), plans,
             avatar=p.avatar.url if p.avatar else "", group="کال‌سنتر",
+            paused=not settings.CALL_CENTER_COMBINED_SALES_TARGET_ENABLED,
         ) for p in flowers
     ]
     call_center_card = _gauge_row(
@@ -513,7 +551,8 @@ def sales_targets_dashboard(request):
     projection = (total * Decimal(len(trend)) / Decimal(elapsed)).quantize(Decimal("0.01")) if now_in_period and elapsed > 0 else None
 
     edit_rows = [
-        {"key":key, "label":label, "band":plans.get(key), "scope":scope}
+        {"key": key, "label": label, "band": plans.get(key), "scope": scope,
+         "paused": key.startswith("flower:") and not settings.CALL_CENTER_COMBINED_SALES_TARGET_ENABLED}
         for key, label, scope in (
             [("overall", "مجموع مراکز", "کل")]
             + [(f"branch:{b.pk}", b.name, "مرکز") for b in branches]

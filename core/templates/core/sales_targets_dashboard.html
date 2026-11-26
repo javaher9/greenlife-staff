@@ -194,6 +194,12 @@ body.gl-page-sales_targets_dashboard .app-main{
 @media(prefers-reduced-motion:no-preference){.st .st-branch,.st .st-person{transition:border-color .18s ease,box-shadow .18s ease}.st .st-branch:hover,.st .st-person:hover{border-color:rgba(115,225,220,.38)!important;box-shadow:0 10px 24px rgba(0,9,18,.3)!important}}
 @media(max-width:700px){.st .st-panel{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}}
 
+/* Combined flower targets stay identifiable while center attribution is paused. */
+.st .st-person-paused { background: #24303b; border-color: #47535e; }
+.st-person-paused .st-avatar { filter: grayscale(1); border-color: #768591; }
+.st-paused-meter { display: block; width: 86px; margin: 3px auto 5px; color: #8c9ba5; }
+.st .st-paused-badge { display: inline-block; padding: 1px 7px; border: 1px solid #667580; border-radius: 15px; background: #34414c; color: #e2e8eb; font-size: 10px; line-height: 1.55; font-weight: 700; }
+.st-edit-row .st-paused-badge { margin-inline-start: 4px; }
 </style>
 <div class="st">
  <div class="st-head">
@@ -265,10 +271,18 @@ body.gl-page-sales_targets_dashboard .app-main{
    <div class="st-title"><h2>◉ مجموع فروش گل‌های کال‌سنتر</h2><span class="st-sub">{{ flower_cards|length }} نفر — بیعانه و فروش مراکز منتسب به هر گل</span></div>
    <div class="st-persons">
    {% for p in flower_cards %}
-    <article class="st-person">
+    <article class="st-person{% if p.level == 'paused' %} st-person-paused{% endif %}">
      <div class="st-person-header"><div class="st-person-name" title="{{ p.label }}">{{ p.label }}</div><span class="st-avatar">{% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.label }}" loading="lazy">{% else %}{{ p.label|first }}{% endif %}</span></div>
+     {% if p.level == 'paused' %}
+     <svg class="st-paused-meter" viewBox="0 0 100 62" aria-hidden="true" fill="none" stroke="currentColor">
+       <path d="M13 55a40 40 0 1 1 74 0" pathLength="100" stroke-width="8" stroke-dasharray="19 1.25"/>
+       <path d="M46 32v11m8-11v11" stroke-width="3" stroke-linecap="round"/>
+     </svg>
+     <span class="st-paused-badge">غیرفعال</span>
+     {% else %}
      <div class="st-meter" data-value="{{ p.value }}" data-percent="{{ p.percentage|default_if_none:'' }}" data-heavy="{{ p.plan.heavy_limit|default_if_none:'' }}" data-floor="{{ p.plan.sales_floor|default_if_none:'' }}" data-one="{{ p.plan.target_one|default_if_none:'' }}" data-two="{{ p.plan.target_two|default_if_none:'' }}"></div>
      <div class="st-status {{ p.level }}">{{ p.status }}</div>
+     {% endif %}
     </article>
    {% empty %}<div class="st-empty">گل فعال در کال‌سنتر موجود نیست.</div>{% endfor %}
    </div>
@@ -310,7 +324,7 @@ body.gl-page-sales_targets_dashboard .app-main{
  {% for r in edit_rows %}
  <div class="st-edit-row st-bulk-row">
   <input type="hidden" name="subject" value="{{ r.key }}">
-  <label>{{ r.label }} <small class="st-sub">({{ r.scope }})</small></label>
+  <label>{{ r.label }} <small class="st-sub">({{ r.scope }})</small>{% if r.paused %}<span class="st-paused-badge">غیرفعال</span>{% endif %}</label>
   <output class="st-auto" data-boundary="heavy">{% if r.band %}{{ r.band.heavy_limit|floatformat:"-2" }}{% else %}—{% endif %}</output>
   <input type="number" class="st-floor-input" name="floor_{{ r.key }}" placeholder="{% if r.scope == 'بیعانه' %}کف بیعانه{% else %}کف فروش{% endif %}" step="0.01" min="0.01" value="{% if r.band %}{{ r.band.sales_floor|stringformat:'.2f' }}{% endif %}" aria-label="کف {{ r.scope }} {{ r.label }}">
   <output class="st-auto" data-boundary="one">{% if r.band %}{{ r.band.target_one|floatformat:"-2" }}{% else %}—{% endif %}</output>

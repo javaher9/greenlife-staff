@@ -1,5 +1,5 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'core/call-center-targets.css' %}?v=large-dials">
+<link rel="stylesheet" href="{% static 'core/call-center-targets.css' %}?v=deposit-focus">
 <section class="cc-targets" aria-label="تارگت‌های کال‌سنتر">
   <article class="cc-target-card" id="team-targets">
     <div class="cc-target-heading">
@@ -15,8 +15,8 @@
       {% if target_links %}<a class="cc-target-link" href="{% url 'my_sales_targets' %}#team-targets">جزئیات تیم</a>{% endif %}
     </div>
     <div class="cc-target-pair">
-      {% if targets.current_month %}{% include "core/call_center/_target_gauge.html" with gauge=targets.team_day %}{% endif %}
-      {% include "core/call_center/_target_gauge.html" with gauge=targets.team_month %}
+      {% if targets.current_month %}{% include "core/call_center/_target_gauge.html" with gauge=targets.team_day detail_anchor="team-targets" %}{% endif %}
+      {% include "core/call_center/_target_gauge.html" with gauge=targets.team_month detail_anchor="team-targets" %}
     </div>
   </article>
 
@@ -34,25 +34,29 @@
       {% if target_links %}<a class="cc-target-link" href="{% url 'my_sales_targets' %}#personal-targets">جزئیات من</a>{% endif %}
     </div>
     <div class="cc-target-pair">
-      {% include "core/call_center/_target_gauge.html" with gauge=targets.personal_deposit unset_label="کف بیعانه تعیین نشده" %}
-      {% include "core/call_center/_target_gauge.html" with gauge=targets.personal unset_label="کف فروش تعیین نشده" %}
+      {% include "core/call_center/_target_gauge.html" with gauge=targets.personal_deposit detail_anchor="personal-targets" unset_label="کف بیعانه تعیین نشده" %}
+      {% include "core/call_center/_target_gauge.html" with gauge=targets.personal detail_anchor="personal-targets" unset_label="کف فروش تعیین نشده" %}
     </div>
   </article>
 
-  {% if targets.team_month.plan or targets.personal_deposit.plan or targets.personal.plan or targets.has_approved_deposits or targets.has_pending_deposits %}
-    <div class="cc-target-foot">
-      {% if targets.team_month.plan or targets.personal_deposit.plan or targets.personal.plan %}
-        <div class="cc-target-legend" aria-label="محدوده‌های تارگت">
-          <span class="cc-band-red">جریمه سنگین</span><span class="cc-band-yellow">جریمه سبک</span>
-          <span class="cc-band-green">کف فروش</span><span class="cc-band-blue">تارگت اول</span><span class="cc-band-purple">تارگت دوم</span>
-        </div>
-      {% endif %}
-      {% if targets.has_approved_deposits or targets.has_pending_deposits %}
-        <div class="cc-target-receipts">
-          {% if targets.has_approved_deposits %}<span>بیعانهٔ تأییدشده دارید</span>{% endif %}
-          {% if targets.has_pending_deposits %}<span>بیعانه در انتظار تأیید دارید</span>{% endif %}
-        </div>
-      {% endif %}
-    </div>
-  {% endif %}
+  <footer class="cc-target-foot">
+    {% for guide in targets.color_guides %}
+      <div class="cc-target-legend" role="group" aria-label="راهنمای رنگ‌ها{% if guide.label %}، {{ guide.label }}{% endif %}">
+        <div class="cc-legend-title">راهنمای رنگ‌ها{% if guide.label %}<small>{{ guide.label }}</small>{% endif %}</div>
+        <ul class="cc-legend-list">
+          <li class="cc-band-red"><span>جریمه سنگین</span><small>قرمز{% if guide.heavy %} · زیر <bdi dir="ltr">{{ guide.heavy }}%</bdi>{% endif %}</small></li>
+          <li class="cc-band-yellow"><span>جریمه سبک</span><small>زرد{% if guide.heavy %} · از <bdi dir="ltr">{{ guide.heavy }}%</bdi>{% endif %}</small></li>
+          <li class="cc-band-green"><span>کف فروش</span><small>سبز{% if guide.floor %} · از <bdi dir="ltr">{{ guide.floor }}%</bdi>{% endif %}</small></li>
+          <li class="cc-band-blue"><span>تارگت اول</span><small>آبی{% if guide.floor %} · از <bdi dir="ltr">100%</bdi>{% endif %}</small></li>
+          <li class="cc-band-purple"><span>تارگت دوم</span><small>بنفش{% if guide.two %} · از <bdi dir="ltr">{{ guide.two }}%</bdi>{% endif %}</small></li>
+        </ul>
+      </div>
+    {% endfor %}
+    {% if targets.has_approved_deposits or targets.has_pending_deposits %}
+      <div class="cc-target-receipts">
+        {% if targets.has_approved_deposits %}<span>بیعانهٔ تأییدشده دارید</span>{% endif %}
+        {% if targets.has_pending_deposits %}<span>بیعانه در انتظار تأیید دارید</span>{% endif %}
+      </div>
+    {% endif %}
+  </footer>
 </section>
