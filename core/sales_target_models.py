@@ -12,6 +12,7 @@ class SalesTargetBand(models.Model):
         ("branch", "مرکز"),
         ("call_center", "بیعانه کال‌سنتر"),
         ("flower", "گل کال‌سنتر"),
+        ("flower_deposit", "بیعانهٔ گل کال‌سنتر"),
         ("consultant", "مشاور"),
     ]
     key = models.CharField(max_length=96, unique=True)

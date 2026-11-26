@@ -58,7 +58,7 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertContains(response, "تارگت فروش مراکز و کال‌سنتر")
         self.assertContains(response, "مشاورین نیاوران تست")
         self.assertNotContains(response, "◉ مشاورین فروش شعب")
-        self.assertContains(response, "◉ فروش گل‌های کال‌سنتر")
+        self.assertContains(response, "◉ مجموع فروش گل‌های کال‌سنتر")
         self.assertContains(response, "هنوز هیچ کف فروش یا تارگتی")
         self.assertContains(response, 'const colors=["#fc4768"')
         self.assertFalse(response.context["has_sales"])
@@ -148,7 +148,8 @@ class SalesTargetsDashboardTests(TestCase):
         payload = {"year":self.year,"month":self.month,"action":"save_all",
                    "heavy_percent":"70","target_one_percent":"130","target_two_percent":"160",
                    "subject":subjects,"floor_call_center":"400",
-                   f"floor_flower:{self.flower.pk}":"150"}
+                   f"floor_flower:{self.flower.pk}":"150",
+                   f"floor_flower_deposit:{self.flower.pk}":"35"}
         response = self.client.post(self.url,payload)
         self.assertEqual(response.status_code,302)
         response = self.client.get(self.url+"?edit=1")
@@ -160,6 +161,9 @@ class SalesTargetsDashboardTests(TestCase):
         feedback = [str(m) for m in list(response.context["messages"])]
         self.assertEqual(SalesTargetBand.objects.get(key=f"{self.year}-{self.month:02d}:call_center").sales_floor,Decimal("350"), feedback)
         self.assertEqual(SalesTargetBand.objects.get(key=f"{self.year}-{self.month:02d}:flower:{self.flower.pk}").sales_floor,Decimal("125"))
+        deposit_plan = SalesTargetBand.objects.get(key=f"{self.year}-{self.month:02d}:flower_deposit:{self.flower.pk}")
+        self.assertEqual(deposit_plan.employee, self.flower)
+        self.assertEqual(deposit_plan.sales_floor, Decimal("35"))
 
     def test_bulk_callcenter_edit_survives_changed_staff_roster(self):
         # An extra active employee can appear after a form was opened.
@@ -190,6 +194,10 @@ class SalesTargetsDashboardTests(TestCase):
             "year":self.year, "month":self.month, "action":"set_floor",
             "subject":f"flower:{self.flower.pk}", "sales_floor":"300",
         })
+        self.client.post(self.url, {
+            "year": self.year, "month": self.month, "action": "set_floor",
+            "subject": f"flower_deposit:{self.flower.pk}", "sales_floor": "12",
+        })
         self._transaction("40000000", description="بیعانه", origin="afsariyeh", owner=self.flower)
         self._transaction("100000000", recorded=self.consultant)
         personal_url = reverse("my_sales_targets")
@@ -197,8 +205,15 @@ class SalesTargetsDashboardTests(TestCase):
         view = self.client.get(personal_url)
         self.assertEqual(view.status_code, 200)
         self.assertContains(view, "تارگت کل کال‌سنتر")
-        self.assertEqual(view.context["targets"]["my_deposits_approved"], Decimal("4.00"))
-        self.assertEqual(view.context["targets"]["personal"]["value"], Decimal("0.00"))
+        self.assertContains(view, "بیعانه‌های من")
+        self.assertContains(view, "مجموع فروش من")
+        self.assertContains(view, "هر دو تارگت ماهانه‌اند")
+        self.assertContains(view, "data-status-only", count=2)
+        self.assertNotContains(view, 'class="cc-target-amount"')
+        self.assertNotContains(view, '<th>مبلغ (تومان)</th>')
+        self.assertEqual(view.context["targets"]["personal_deposit"]["value"], Decimal("4.00"))
+        self.assertEqual(view.context["targets"]["personal_deposit"]["plan"].sales_floor, Decimal("12"))
+        self.assertEqual(view.context["targets"]["personal"]["value"], Decimal("4.00"))
         self.assertEqual(view.context["targets"]["personal"]["plan"].sales_floor, Decimal("300"))
         self.assertEqual(self.client.get(self.url).status_code, 403)
         self.client.force_login(self.consultant)
@@ -207,7 +222,7 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertIsNone(other.context["plan"])
         self.assertEqual(other.context["monthly"], Decimal("10.00"))
         self.assertEqual(self.client.post(personal_url, {"sales_floor":"1"}).status_code, 200)
-        self.assertEqual(SalesTargetBand.objects.count(), 1)
+        self.assertEqual(SalesTargetBand.objects.count(), 2)
         self.client.force_login(self.staff)
         self.assertEqual(self.client.get(personal_url).status_code, 403)
 
@@ -226,7 +241,7 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertEqual(res.context["branches"][-1]["value"], Decimal("4.00"))
         self.assertEqual(res.context["deposit_count"], 1)
         flower_row = next(row for row in res.context["flower_cards"] if row["key"] == f"flower:{self.flower.pk}")
-        self.assertEqual(flower_row["value"], Decimal("9.00"))
+        self.assertEqual(flower_row["value"], Decimal("13.00"))
         self.assertEqual(res.context["overall"]["value"], Decimal("18.00"))
 
     def test_branch_cards_display_floor_not_duplicate_sale(self):

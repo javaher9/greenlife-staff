@@ -8,8 +8,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
-from django.db.models import Sum, Q, F
-from django.db.models.functions import Coalesce, TruncDate
+from django.db.models import Count, F, OuterRef, Q, Subquery, Sum, Value
+from django.db.models.functions import Coalesce, Greatest, TruncDate
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -73,6 +73,7 @@ def _gauge_row(key, label, value, plans, *, avatar="", people=None, group="", no
         "color": {"heavy": "red", "light": "yellow", "neutral": "green", "one": "blue", "two": "purple"}.get(level, ""),
         "key": key, "label": label, "value": value, "plan": plan,
         "percentage": percent, "level": level, "status": status,
+        "display_status": {"one": "تارگت اول", "two": "تارگت دوم"}.get(level, status),
         "avatar": avatar, "people": people or [], "group": group, "note": note,
     }
 
@@ -100,8 +101,8 @@ def _attributed_flower_receipts(receipts):
     )).filter(flower_id__isnull=False)
 
 
-def _flower_sales(start_date, end_date, *, user_id=None):
-    """Settled packages at the branch, plus approved legacy sales without a package."""
+def _flower_branch_sales(start_date, end_date, *, user_id=None):
+    """Branch sales in rial, excluding deposits already credited to the receipt owner."""
     start = timezone.make_aware(datetime.combine(start_date, time.min))
     end = timezone.make_aware(datetime.combine(end_date, time.min))
     plans = ConsultationPlan.objects.filter(
@@ -123,10 +124,23 @@ def _flower_sales(start_date, end_date, *, user_id=None):
     if user_id is not None:
         plans = plans.filter(flower_id=user_id)
         legacy = legacy.filter(flower_id=user_id)
-    # Both sources use rial here so that rounding only occurs on display.
+    # A deposit belongs to the month and operator on its receipt. Deduct it
+    # from the corresponding settled invoice even if the sale or deposit was
+    # credited to a different month or operator.
+    booked_deposits = FinancialTransaction.objects.filter(
+        source="manual", entry_type="inc", review_status="approved",
+        appointment_id=OuterRef("appointment_id"),
+        occurred_at__lte=Coalesce(OuterRef("paid_at"), Value(end)),
+    ).filter(_deposit_filter()).order_by().values("appointment_id").annotate(
+        total=Sum("amount"),
+    ).values("total")
+    plans = plans.annotate(branch_amount=Greatest(
+        F("final_amount_toman") * Decimal("10") - Coalesce(Subquery(booked_deposits), Value(ZERO)),
+        Value(ZERO),
+    ))
     totals = defaultdict(lambda: ZERO)
-    for row in plans.order_by().values("flower_id", "branch_id").annotate(value=Sum("final_amount_toman")):
-        totals[row["flower_id"], row["branch_id"]] += row["value"] * Decimal("10")
+    for row in plans.order_by().values("flower_id", "branch_id").annotate(value=Sum("branch_amount")):
+        totals[row["flower_id"], row["branch_id"]] += row["value"]
     for row in legacy.order_by().values("flower_id", "branch_id").annotate(value=Sum("amount")):
         totals[row["flower_id"], row["branch_id"]] += row["value"]
     return totals
@@ -141,11 +155,12 @@ def _call_center_targets(user, jy, jm, start_date, end_date, today):
     """Build the shared and personal cards from the same month and management settings."""
     period = f"{jy}-{jm:02d}"
     personal_key = f"flower:{user.pk}"
+    deposit_key = f"flower_deposit:{user.pk}"
     policy = TargetPercentPolicy.objects.filter(period_year=jy, period_month=jm).first()
     if policy is None:
         policy = TargetPercentPolicy(period_year=jy, period_month=jm)
     floors = SalesTargetBand.objects.filter(
-        key__in=(f"{period}:call_center", f"{period}:{personal_key}"),
+        key__in=(f"{period}:call_center", f"{period}:{personal_key}", f"{period}:{deposit_key}"),
     ).values_list("key", "sales_floor")
     plans = {key.split(":", 1)[1]: _band_from_policy(policy, floor) for key, floor in floors}
     daily_plans = {}
@@ -165,19 +180,19 @@ def _call_center_targets(user, jy, jm, start_date, end_date, today):
     own_deposits = _attributed_flower_receipts(deposits).filter(flower_id=user.pk)
     own_totals = own_deposits.aggregate(
         approved=Sum("amount", filter=Q(review_status="approved")),
-        pending=Sum("amount", filter=Q(review_status="pending")),
+        pending=Count("pk", filter=Q(review_status="pending")),
     )
-    sales = _flower_sales(start_date, end_date, user_id=user.pk)
-    own_sales = _money(sum(sales.values(), ZERO))
-    day = _gauge_row("call_center", "روزانه", _money(team_totals["day"]), daily_plans)
-    month = _gauge_row("call_center", "ماهانه", _money(team_totals["month"]), plans)
-    personal = _gauge_row(personal_key, "ماهانه", own_sales, plans)
+    own_deposit = own_totals["approved"] or ZERO
+    sales = _flower_branch_sales(start_date, end_date, user_id=user.pk)
+    own_sales = own_deposit + sum(sales.values(), ZERO)
     return {
         "period_label": f"{jy}/{jm:02d}",
-        "team_month": month, "team_day": day, "personal": personal,
+        "team_month": _gauge_row("call_center", "ماهانه", _money(team_totals["month"]), plans),
+        "team_day": _gauge_row("call_center", "روزانه", _money(team_totals["day"]), daily_plans),
+        "personal_deposit": _gauge_row(deposit_key, "بیعانه‌های من", _money(own_deposit), plans),
+        "personal": _gauge_row(personal_key, "مجموع فروش من", _money(own_sales), plans),
         "current_month": start_date <= today < end_date,
-        "my_deposits_approved": _money(own_totals["approved"]),
-        "my_deposits_pending": _money(own_totals["pending"]),
+        "has_pending_deposits": bool(own_totals["pending"]),
         "own_deposits": own_deposits, "own_branch_sales": sales,
     }
 
@@ -231,6 +246,7 @@ def sales_targets_dashboard(request):
         valid_subjects[f"branch:{b.pk}"] = ("branch", b, None)
     for p in flowers:
         valid_subjects[f"flower:{p.user_id}"] = ("flower", None, p.user)
+        valid_subjects[f"flower_deposit:{p.user_id}"] = ("flower_deposit", None, p.user)
 
     policy = TargetPercentPolicy.objects.filter(period_year=jy, period_month=jm).first()
     if policy is None:
@@ -369,11 +385,14 @@ def sales_targets_dashboard(request):
         income.annotate(seller_id=Coalesce(
             "appointment__consultation_plan__consultant_id", "recorded_by_id",
         )).values("seller_id").annotate(amount=Sum("amount"))}
-    by_flower = defaultdict(lambda: ZERO)
-    for (flower_id, _branch_id), amount in _flower_sales(start_date, end_date).items():
-        by_flower[flower_id] += amount
-    total = _money(income.filter(branch__in=branches).aggregate(value=Sum("amount"))["value"])
     deposits = income.filter(_deposit_filter())
+    by_flower = {
+        row["flower_id"]: row["amount"]
+        for row in _attributed_flower_receipts(deposits).order_by().values("flower_id").annotate(amount=Sum("amount"))
+    }
+    for (flower_id, _branch_id), amount in _flower_branch_sales(start_date, end_date).items():
+        by_flower[flower_id] = by_flower.get(flower_id, ZERO) + amount
+    total = _money(income.filter(branch__in=branches).aggregate(value=Sum("amount"))["value"])
     call_center_deposit = _money(deposits.aggregate(value=Sum("amount"))["value"])
     deposit_count = deposits.count()
 
@@ -399,7 +418,7 @@ def sales_targets_dashboard(request):
     flower_cards = [
         _gauge_row(
             f"flower:{p.user_id}", call_center_display_name(p.user),
-            _money(by_flower[p.user_id]), plans,
+            _money(by_flower.get(p.user_id, ZERO)), plans,
             avatar=p.avatar.url if p.avatar else "", group="کال‌سنتر",
         ) for p in flowers
     ]
@@ -439,7 +458,12 @@ def sales_targets_dashboard(request):
         for key, label, scope in (
             [("overall", "مجموع مراکز", "کل"), ("call_center", "کال‌سنتر ـ بیعانه", "کال‌سنتر")]
             + [(f"branch:{b.pk}", b.name, "مرکز") for b in branches]
-            + [(f"flower:{p.user_id}", call_center_display_name(p.user), "گل") for p in flowers]
+            + [
+                row for p in flowers for row in (
+                    (f"flower:{p.user_id}", call_center_display_name(p.user), "مجموع فروش"),
+                    (f"flower_deposit:{p.user_id}", call_center_display_name(p.user), "بیعانه"),
+                )
+            ]
         )
     ]
     return render(request, "core/sales_targets_dashboard.html", {
@@ -473,24 +497,17 @@ def my_sales_targets(request):
         return redirect("my_sales_targets")
     if profile.role == "call_center":
         cx = _call_center_targets(request.user, jy, jm, start_date, end_date, today)
-        branch_ids = {branch_id for _, branch_id in cx["own_branch_sales"] if branch_id}
-        branches = Branch.objects.in_bulk(branch_ids)
-        branch_sales = sorted([
-            (branches[branch_id].name if branch_id in branches else "بدون شعبه", _money(total))
-            for (_, branch_id), total in cx["own_branch_sales"].items()
-        ], key=lambda row: -row[1])
-        # Read the existing payroll result, including closed-month snapshots.
-        from .payroll_views import _payroll_row
-        payroll = _payroll_row(profile, start_date, end_date)
-        deposits = list(cx["own_deposits"].select_related("branch").order_by("-occurred_at")[:60])
-        for receipt in deposits:
-            receipt.amount_toman = receipt.amount / Decimal("10")
+        branch_ids = {
+            branch_id for (_, branch_id), amount in cx["own_branch_sales"].items()
+            if amount > ZERO
+        }
+        branch_names = list(Branch.objects.filter(pk__in=branch_ids).order_by("name").values_list("name", flat=True))
+        if None in branch_ids:
+            branch_names.append("بدون شعبه")
+        deposits = cx["own_deposits"].select_related("branch").order_by("-occurred_at")[:60]
         return render(request, "core/call_center/targets.html", {
             "targets": cx, "period_year": jy, "period_month": jm,
-            "deposits": deposits,
-            "branch_sales": branch_sales,
-            "commission": payroll["commission"] if payroll["rule"] or payroll["closed"] else None,
-            "commission_percent": payroll["percent"],
+            "deposits": deposits, "branch_names": branch_names,
             "flower_name": call_center_display_name(request.user),
         })
     period = f"{jy}-{jm:02d}"
