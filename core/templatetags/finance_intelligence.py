@@ -250,6 +250,15 @@ def _app_revenue_snapshot(day, branch=None, afsariyeh_only=False):
         'source_label': 'ثبت مالی App',
     }
 
+def _transaction_source(source):
+    recorded_lead = Q(
+        appointment__lead__isnull=True, raw_data__has_key='payment_kind', raw_data__payment_kind=DEPOSIT_KIND,
+    )
+    if source == 'direct':
+        return Q(appointment__isnull=True) & ~(recorded_lead & Q(raw_data__has_key='lead_source'))
+    return Q(appointment__lead__source=source) | (recorded_lead & Q(raw_data__lead_source=source))
+
+
 def _apply_transaction_filters(qs, branch, flower_id, source, service):
     if branch:
         qs = qs.filter(branch=branch)
@@ -265,10 +274,7 @@ def _apply_transaction_filters(qs, branch, flower_id, source, service):
             )
         )
     if source:
-        if source == 'direct':
-            qs = qs.filter(appointment__isnull=True)
-        else:
-            qs = qs.filter(appointment__lead__source=source)
+        qs = qs.filter(_transaction_source(source))
     if service:
         qs = qs.filter(sale_reason=service)
     return qs
@@ -421,11 +427,7 @@ def finance_intelligence(context):
     source_rows = []
     source_defs = list(ReferralLead.SOURCE) + [('direct', 'مراجعه مستقیم')]
     for idx, (code, label) in enumerate(source_defs):
-        sq = income
-        if code == 'direct':
-            sq = sq.filter(appointment__isnull=True)
-        else:
-            sq = sq.filter(appointment__lead__source=code)
+        sq = income.filter(_transaction_source(code))
         amount = _money(sq.aggregate(v=Sum('amount'))['v'])
         if amount or (source == code):
             source_rows.append({
@@ -604,7 +606,7 @@ def finance_intelligence(context):
             | Q(call_center_owner_id__isnull=True,appointment__lead__first_appointment_by_id=flower_id)
         )
     if source:
-        entries = entries.filter(appointment__isnull=True) if source == 'direct' else entries.filter(appointment__lead__source=source)
+        entries = entries.filter(_transaction_source(source))
     if service:
         entries = entries.filter(sale_reason=service)
 

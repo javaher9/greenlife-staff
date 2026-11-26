@@ -11,15 +11,23 @@
 .ccdep-page .ccdep-btn.secondary{background:#19384b;border-color:#537b91}.ccdep-page .ccdep-help{font-size:12px;color:#bfd7e3;line-height:1.8}.ccdep-page .ccdep-table{overflow:auto}
 .ccdep-page table{width:100%;border-collapse:collapse}.ccdep-page th,.ccdep-page td{text-align:right;padding:10px;border-bottom:1px solid #37546a;font-size:12px;color:#eaf7ff}.ccdep-page th{color:#9fcee2}.ccdep-page .errorlist{color:#ffaeab}
 .ccdep-page .ccdep-options{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.ccdep-page .ccdep-options span{font-size:12px;border:1px solid #4a6a7b;border-radius:8px;padding:7px;color:#c6dbe8}
+.ccdep-page .ccdep-actions{display:flex;gap:8px;flex-wrap:wrap}
 
-.ccdep-page.ccdep-operator{color:#173d35;background:linear-gradient(145deg,#f1f8f4,#fafcfd);border-color:#d6e6e0;max-width:920px}
-.ccdep-page.ccdep-operator h1,.ccdep-page.ccdep-operator h2,.ccdep-page.ccdep-operator label{color:#173d35!important}
+.ccdep-page.ccdep-operator{color:#173d35;color-scheme:light;background:linear-gradient(145deg,#f1f8f4,#fafcfd);border-color:#d6e6e0;max-width:920px}
 .ccdep-page.ccdep-operator .ccdep-panel{background:#fff;border-color:#deebe6}
-.ccdep-page.ccdep-operator p,.ccdep-page.ccdep-operator small{color:#4b625b}
-.ccdep-page.ccdep-operator input,.ccdep-page.ccdep-operator select,.ccdep-page.ccdep-operator textarea{background:#f7faf9;color:#173d35;border-color:#c5d9d1}
-.ccdep-page.ccdep-operator .secondary{background:#edf7f1;color:#185c45;border-color:#bedbd0}
-.ccdep-page.ccdep-operator th,.ccdep-page.ccdep-operator td{color:#284e44;border-color:#e0eae6}
-.ccdep-page.ccdep-operator .errorlist{color:#a32846}
+body.gl-page-call_center_lead_deposit .app-main .ccdep-page.ccdep-operator :is(h1,h2,label){color:#173d35!important}
+body.gl-page-call_center_lead_deposit .app-main .ccdep-page.ccdep-operator :is(p,small){color:#4b625b!important}
+body.gl-page-call_center_lead_deposit .app-main .ccdep-page.ccdep-operator :is(input,select,textarea){
+  background:#f7faf9!important;color:#173d35!important;border-color:#c5d9d1!important;
+}
+body.gl-page-call_center_lead_deposit .app-main .ccdep-page.ccdep-operator .secondary{
+  background:#edf7f1!important;color:#185c45!important;border-color:#bedbd0!important;
+}
+body.gl-page-call_center_lead_deposit .app-main .ccdep-page.ccdep-operator :is(th,td){color:#284e44!important;border-color:#e0eae6!important}
+body.gl-page-call_center_lead_deposit .app-main .ccdep-page.ccdep-operator .errorlist li{color:#a32846!important}
+@media(min-width:701px){
+  .ccdep-page.ccdep-operator{margin-inline-start:max(106px, calc((100% - 920px) / 2))}
+}
 @media(max-width:680px){.ccdep-page{padding:12px;margin:6px auto}.ccdep-page .ccdep-panel{padding:13px}.ccdep-page .ccdep-grid{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:900px){.ccdep-page:not(.ccdep-operator){display:none!important}}
 </style>
@@ -27,12 +35,6 @@
   {% if lead %}
   <h1>ثبت مالی بیعانه</h1>
   <p><strong>{{ lead.full_name }}</strong></p>
-  {% if not matches %}
-  <div class="ccdep-panel">
-    <p>برای اتصال بیعانه به پروندهٔ مراجع، نوبت او را ثبت کنید.</p>
-    <a class="ccdep-btn" href="{{ appointment_url }}">ثبت نوبت</a>
-  </div>
-  {% endif %}
   {% else %}
   <h1>ثبت بیعانه کال‌سنتر</h1>
   <p>ثبت توسط مسئول کنترل کیفیت کال‌سنتر · تأیید فقط توسط مدیرعامل · مبالغ بر حسب تومان</p>
@@ -49,35 +51,38 @@
     </tbody></table></div>{% endif %}
   </div>
   {% endif %}
-  {% if not lead or matches %}
   <div class="ccdep-panel">
     <h2>اطلاعات بیعانه</h2>
-    <p class="ccdep-help">{% if not lead %}مراجع را جست‌وجو کنید و نوبت مرتبط را انتخاب کنید. {% endif %}مبلغ به تومان است و بیعانه برای تأیید مدیرعامل ارسال می‌شود.</p>
+    <p class="ccdep-help">{% if lead %}بیعانه در پروندهٔ مراجع ثبت می‌شود. می‌توانید مرکز و زمان مراجعه را بعداً مشخص کنید.{% else %}مراجع را جست‌وجو کنید و نوبت مرتبط را انتخاب کنید.{% endif %} مبلغ به تومان است و بیعانه برای تأیید مدیرعامل ارسال می‌شود.</p>
     <form method="post" enctype="multipart/form-data" id="ccdep-form">
       {% csrf_token %}
       <input type="hidden" name="q" value="{{ search }}">
       {{ form.submission_token }}
       {{ form.non_field_errors }}
       <div class="ccdep-grid">
-        <label>{{ form.appointment.label }}{{ form.appointment }}{{ form.appointment.errors }}</label>
+        {% if not lead %}<label>{{ form.appointment.label }}{{ form.appointment }}{{ form.appointment.errors }}</label>{% endif %}
         <label>{{ form.amount_toman.label }}{{ form.amount_toman }}{{ form.amount_toman.errors }}</label>
         <label>{{ form.payment_method.label }}{{ form.payment_method }}{{ form.payment_method.errors }}</label>
         <label>{{ form.tracking_number.label }}{{ form.tracking_number }}{{ form.tracking_number.errors }}</label>
         <label>{{ form.receipt_image.label }}{{ form.receipt_image }}{{ form.receipt_image.errors }}</label>
         <label>{{ form.description.label }}{{ form.description }}{{ form.description.errors }}</label>
+        {% if lead and matches %}<label>{{ form.appointment.label }}{{ form.appointment }}{{ form.appointment.errors }}</label>{% elif lead %}{{ form.appointment.errors }}{% endif %}
       </div>
       <p><button class="ccdep-btn" id="ccdep-submit" type="submit">ثبت بیعانه و ارسال برای تأیید مدیرعامل</button></p>
     </form>
   </div>
-  {% endif %}
   <div class="ccdep-panel">
     <h2>آخرین بیعانه‌های ثبت‌شده توسط شما</h2>
     <div class="ccdep-table"><table><thead><tr><th>مراجع</th><th>شعبه</th><th>مبلغ (میلیون تومان)</th><th>وضعیت</th></tr></thead><tbody>
-      {% for x in recent %}<tr><td>{{ x.person_name }}</td><td>{{ x.branch.name }}</td><td>{{ x.amount|million_toman }}</td><td>{{ x.get_review_status_display }}</td></tr>{% empty %}<tr><td colspan="4">هنوز بیعانه‌ای ثبت نشده است.</td></tr>{% endfor %}
+      {% for x in recent %}<tr><td>{{ x.person_name }}</td><td>{{ x.branch.name|default:"تعیین نشده" }}</td><td>{{ x.amount|million_toman }}</td><td>{{ x.get_review_status_display }}</td></tr>{% empty %}<tr><td colspan="4">هنوز بیعانه‌ای ثبت نشده است.</td></tr>{% endfor %}
     </tbody></table></div>
   </div>
   {% if lead %}
-  <a class="ccdep-btn secondary" href="{% url 'call_center_lead' lead.pk %}">بازگشت به پروندهٔ لید</a>
+  <div class="ccdep-actions">
+    <a class="ccdep-btn secondary" href="{% url 'call_center_lead' lead.pk %}">بازگشت به پروندهٔ لید</a>
+    <a class="ccdep-btn secondary" href="{% url 'patient_360_from_lead' lead.pk %}">پروندهٔ ۳۶۰ مراجع</a>
+    <a class="ccdep-btn secondary" href="{{ appointment_url }}">ثبت نوبت</a>
+  </div>
   {% else %}
   <a class="ccdep-btn secondary" href="{% url 'quality_command_center' %}">بازگشت به داشبورد کنترل کیفیت</a>
   {% endif %}

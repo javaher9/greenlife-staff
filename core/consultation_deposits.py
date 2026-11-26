@@ -4,18 +4,57 @@ from collections import defaultdict
 from decimal import Decimal
 
 from django import forms
+from django.db.models import Q
 
-from .call_center_deposit_views import DEPOSIT_MARKER, DepositAmountField
+from .call_center_deposit_views import DEPOSIT_MARKER, DepositAmountField, deposit_patient_reference
 from .models import AuditLog, FinancialTransaction
 
 ZERO = Decimal("0")
 
 
-def appointment_deposits(appointment_ids):
+def appointment_deposits(appointment_ids, *, patient_ids=()):
+    scope = Q(appointment_id__in=appointment_ids)
+    if patient_ids:
+        scope |= Q(appointment__isnull=True, patient_ref__in=[
+            deposit_patient_reference(pk) for pk in patient_ids
+        ])
     return FinancialTransaction.objects.filter(
-        appointment_id__in=appointment_ids, source="manual", entry_type="inc",
+        scope, source="manual", entry_type="inc",
         raw_data__payment_kind=DEPOSIT_MARKER, review_status__in=("approved", "pending"),
     ).order_by("occurred_at", "pk")
+
+
+def _normalized_name(name):
+    spelling = str.maketrans({"ي": "ی", "ك": "ک", "\u200c": " "})
+    return " ".join(name.translate(spelling).casefold().split())
+
+
+def link_deposits_at_reception(appointment, patient, *, user, request_path):
+    """Link each held receipt once, inside the transaction recording arrival."""
+    if getattr(appointment.branch.country, "code", "") != "IR":
+        return
+    receipts = appointment_deposits((), patient_ids=(patient.pk,)).filter(
+        branch__isnull=True, raw_data__country_code="IR",
+    ).order_by("pk").select_for_update(of=("self",))
+    name = _normalized_name(appointment.full_name)
+    linked = []
+    for receipt in receipts:
+        same_lead = appointment.lead_id and receipt.raw_data.get("lead_id") == appointment.lead_id
+        # A family can share one phone. A walk-in must also match the name on the receipt.
+        if not same_lead and _normalized_name(receipt.person_name) != name:
+            continue
+        receipt.appointment = appointment
+        receipt.branch = appointment.branch
+        receipt.raw_data = {**receipt.raw_data, "appointment_id": appointment.pk}
+        linked.append(receipt)
+    if linked:
+        FinancialTransaction.objects.bulk_update(linked, ["appointment", "branch", "raw_data"])
+        AuditLog.objects.create(
+            actor=user, action="call_center_deposit_link", path=request_path, method="POST",
+            object_type="VisitAppointment", object_id=str(appointment.pk),
+            summary="اتصال بیعانهٔ کال‌سنتر به مراجعه هنگام پذیرش",
+            metadata={"receipts": [receipt.pk for receipt in linked], "patient_id": patient.pk},
+        )
 
 
 def _receipt_allocations(receipt):

@@ -11,8 +11,7 @@ from django.utils import timezone
 from core.jalali import gregorian_to_jalali, jalali_to_gregorian
 from core.models import (
     AuditLog, Branch, ConsultationPlan, ConsultationPlanItem, EmployeeProfile, FinancialTransaction,
-    PatientProfile,
-    ReferralLead, ReferralProfile, ReferralSale, VisitAppointment,
+    PatientProfile, ReferralLead, ReferralProfile, ReferralSale, VisitAppointment,
 )
 
 
@@ -161,7 +160,8 @@ class CallCenterDepositTests(TestCase):
         page = self.client.get(self.operator_url, HTTP_USER_AGENT="Mozilla/5.0 (Android 15; Mobile)")
         self.assertContains(page, "ثبت مالی بیعانه")
         self.assertContains(page, self.lead.full_name)
-        self.assertEqual(page.context["form"]["appointment"].value(), self.appt.pk)
+        self.assertFalse(page.context["form"].fields["appointment"].required)
+        self.assertIsNone(page.context["form"]["appointment"].value())
         plaque = self.client.get(reverse("call_center_call_plaque", args=[self.lead.pk]))
         self.assertEqual(plaque.json()["operational"]["deposit_url"], self.operator_url)
 
@@ -179,6 +179,113 @@ class CallCenterDepositTests(TestCase):
         self.assertTrue(personal.context["targets"]["has_pending_deposits"])
         self.assertEqual(personal.context["targets"]["personal_deposit"]["value"], Decimal("0"))
         self.assertEqual(personal.context["targets"]["team_month"]["value"], Decimal("0"))
+
+    def test_deposit_before_booking_is_available_for_the_same_patient_on_arrival(self):
+        self.appt.delete()
+        ReferralLead.objects.filter(pk=self.lead.pk).update(first_appointment_by=None)
+        self.client.force_login(self.operator)
+        page = self.client.get(self.operator_url, HTTP_USER_AGENT="Mozilla/5.0 (Android 15; Mobile)")
+        self.assertContains(page, 'id="ccdep-form"')
+        self.assertNotContains(page, 'name="appointment"')
+        token = str(uuid.uuid4())
+        receipt = {"appointment": "", "submission_token": token, "amount_toman": "50000000"}
+        for _ in range(2):
+            self.assertRedirects(self.client.post(self.operator_url, self.payload(**receipt)), self.operator_url)
+
+        deposit = FinancialTransaction.objects.get()
+        patient = PatientProfile.objects.get(phone=self.lead.phone)
+        self.assertEqual(deposit.patient_ref, f"patient:{patient.pk}")
+        self.assertEqual(deposit.call_center_owner, self.operator)
+        self.assertEqual((deposit.appointment_id, deposit.branch_id), (None, None))
+        self.assertFalse(VisitAppointment.objects.exists())
+        self.lead.refresh_from_db()
+        self.assertIsNone(self.lead.first_appointment_by_id)
+        self.assertEqual(self.lead.status, "new")
+        profile_url = reverse("patient_360", args=[patient.pk])
+        self.assertEqual(self.client.get(profile_url).context["deposit_credit"]["pending"], Decimal("50000000"))
+        self.assertEqual(self.client.get(reverse("my_sales_targets")).context["targets"]["personal_deposit"]["value"], 0)
+
+        self.client.force_login(self.executive)
+        hub = reverse("executive_finance_hub")
+        self.assertEqual(self.client.get(hub).context["deposit_pending_amount"], 50)
+        self.client.post(reverse("finance_entry_review", args=[deposit.pk, "approve"]))
+        self.assertEqual(self.client.get(hub).context["deposit_approved_amount"], 50)
+
+        self.client.force_login(self.operator)
+        self.assertEqual(self.client.get(profile_url).context["deposit_credit"]["available"], Decimal("50000000"))
+        self.assertEqual(self.client.get(reverse("my_sales_targets")).context["targets"]["personal_deposit"]["value"], 50)
+        day = timezone.localdate() + timedelta(days=1)
+        if day.weekday() == 4:
+            day += timedelta(days=1)
+        booking = self.client.post(reverse("call_center_appointment_slot_create", args=[self.lead.pk]), {
+            "branch": self.branch.pk, "appointment_date": day.isoformat(), "appointment_time": "10:15",
+        })
+        self.assertEqual(booking.status_code, 200)
+        appointment = VisitAppointment.objects.get(pk=booking.json()["appointment"]["id"])
+        deposit.refresh_from_db()
+        self.assertIsNone(deposit.appointment_id)
+
+        receptionist = self.make_user("receive-held-deposit", "", "", "receptionist")
+        receptionist.profile.branch = self.branch
+        receptionist.profile.save(update_fields=["branch"])
+        self.client.force_login(receptionist)
+        arrival = reverse("receptionist_appointment_status", args=[appointment.pk, "arrived"])
+        for _ in range(2):
+            self.assertEqual(self.client.post(arrival).status_code, 302)
+        deposit.refresh_from_db()
+        self.assertEqual(deposit.appointment_id, appointment.pk)
+        self.assertEqual(deposit.branch_id, self.branch.pk)
+        self.assertEqual(deposit.review_status, "approved")
+        self.assertEqual(AuditLog.objects.filter(action="call_center_deposit_link").count(), 1)
+
+        consultant = self.make_user("allocate-held-deposit", "", "", "consultant")
+        consultant.profile.branch = self.branch
+        consultant.profile.save(update_fields=["branch"])
+        appointment.care_stage = "consultant"
+        appointment.save(update_fields=["care_stage"])
+        plan = ConsultationPlan.objects.create(
+            appointment=appointment, consultant=consultant, status="finalized",
+            subtotal_toman=80000000, final_amount_toman=80000000, finalized_at=timezone.now(),
+        )
+        lipolytic = ConsultationPlanItem.objects.create(
+            plan=plan, kind="lipolytic", title="لیپولیتیک آزمایشی", unit_price_toman=40000000,
+        )
+        device = ConsultationPlanItem.objects.create(
+            plan=plan, kind="device", title="دستگاه آزمایشی", unit_price_toman=40000000,
+        )
+        self.client.force_login(consultant)
+        consult = reverse("consultant_sales_outcomes")
+        self.assertEqual(self.client.get(consult, {"appointment": appointment.pk}).context["deposit_credit"]["available"], 50000000)
+        self.client.post(consult, {
+            "action": "allocate_deposit", "appointment_id": appointment.pk,
+            f"item_{lipolytic.pk}": "25000000", f"item_{device.pk}": "25000000",
+        })
+        summary = self.client.get(profile_url).context["deposit_credit"]
+        self.assertEqual(summary["approved"], 50000000)
+        self.assertEqual(summary["applied"], 50000000)
+        self.assertEqual(len(summary["services"]), 2)
+        self.assertEqual(FinancialTransaction.objects.count(), 1)
+
+    def test_walk_in_with_the_same_phone_but_a_different_name_does_not_claim_the_credit(self):
+        self.client.force_login(self.operator)
+        self.assertRedirects(self.client.post(self.operator_url, self.payload(appointment="")), self.operator_url)
+        receipt = FinancialTransaction.objects.get()
+        receptionist = self.make_user("receive-walk-in", "", "", "receptionist")
+        receptionist.profile.branch = self.branch
+        receptionist.profile.save(update_fields=["branch"])
+        self.client.force_login(receptionist)
+        for full_name, hour in (("همراه مراجع", 11), (self.lead.full_name, 12)):
+            with self.subTest(full_name=full_name):
+                visit = VisitAppointment.objects.create(
+                    branch=self.branch, full_name=full_name, phone=self.lead.phone,
+                    appointment_date=timezone.localdate(), appointment_time=time(hour),
+                    source="receptionist", created_by=receptionist,
+                )
+                self.assertEqual(self.client.post(reverse("receptionist_appointment_status", args=[visit.pk, "arrived"])).status_code, 302)
+                receipt.refresh_from_db()
+                self.assertEqual(receipt.appointment_id, visit.pk if full_name == self.lead.full_name else None)
+                self.assertEqual(receipt.review_status, "pending")
+        self.assertEqual(AuditLog.objects.filter(action="call_center_deposit_link").count(), 1)
 
     def test_operator_cannot_register_against_an_unassigned_lead_or_foreign_appointment(self):
         second = self.make_user("another-flower", "", "", "call_center")

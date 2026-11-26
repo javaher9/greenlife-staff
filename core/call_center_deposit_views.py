@@ -8,7 +8,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, connection, transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -17,14 +17,22 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 
+from .country_workspace import country_for_user
 from .jalali import LATIN_DIGITS
+from .lead_contacts import valid_phone
 from .models import (
     AuditLog, EmployeeProfile, FinancialTransaction, ReferralLead,
     StaffNotification, VisitAppointment,
 )
+from .reception_patient import ensure_patient_for_contact
 
 DEPOSIT_MARKER = "call_center_deposit"
 DEPOSIT_HEADING = "بیعانه کال‌سنتر"
+DEPOSIT_PATIENT_PREFIX = "patient:"
+
+
+def deposit_patient_reference(patient_id):
+    return f"{DEPOSIT_PATIENT_PREFIX}{patient_id}"
 
 
 def is_deposit_registrar(user):
@@ -99,10 +107,15 @@ class CallCenterDepositForm(forms.Form):
     )
     submission_token = forms.UUIDField(widget=forms.HiddenInput)
 
-    def __init__(self, *args, appointments, **kwargs):
+    def __init__(self, *args, appointments, appointment_required=True, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["appointment"].queryset = appointments
-        self.fields["appointment"].label_from_instance = lambda item: f"{item.branch.name}، {item}"
+        appointment = self.fields["appointment"]
+        appointment.queryset = appointments
+        appointment.label_from_instance = lambda item: f"{item.branch.name}، {item}"
+        if not appointment_required:
+            appointment.required = False
+            appointment.label = "اتصال به نوبت موجود (اختیاری)"
+            appointment.empty_label = "ثبت بدون نوبت"
         if not self.is_bound:
             self.fields["submission_token"].initial = uuid.uuid4()
 
@@ -139,18 +152,30 @@ def _save_deposit(request, form, lead=None):
     appointments = _appointments().select_for_update(of=("self",))
     if lead:
         appointments = appointments.filter(lead=lead)
-    chosen = get_object_or_404(appointments, pk=data["appointment"].pk)
+    chosen = None
+    first_owner_id = None
+    if data["appointment"]:
+        chosen = get_object_or_404(appointments, pk=data["appointment"].pk)
+        first_owner_id = chosen.lead.first_appointment_by_id or chosen.created_by_id
     if lead:
-        get_object_or_404(
-            ReferralLead.objects.select_for_update(of=("self",)), pk=lead.pk,
+        lead = get_object_or_404(
+            ReferralLead.objects.select_related("country").select_for_update(of=("self",)), pk=lead.pk,
             assigned_to__user=request.user, assigned_to__is_active=True,
             assigned_to__role="call_center",
         )
-    first_owner_id = chosen.lead.first_appointment_by_id or chosen.created_by_id
     owner_id = request.user.pk if lead else first_owner_id
     if not lead and not EmployeeProfile.objects.filter(user_id=owner_id, role="call_center").exists():
         form.add_error("appointment", "مالک گل کال‌سنتر برای این نوبت مشخص نیست.")
         return False
+    if not chosen:
+        if getattr(lead.country or country_for_user(request.user), "code", "") != "IR":
+            form.add_error(None, "ثبت بیعانه به تومان برای پروندهٔ ایران فعال است.")
+            return False
+        try:
+            phone = valid_phone(lead.phone)
+        except ValidationError:
+            form.add_error(None, "شماره تماس مراجع را در پروندهٔ لید اصلاح کنید.")
+            return False
 
     token = data["submission_token"].hex
     external_id = f"ccdep:{request.user.pk}:{token}"
@@ -164,13 +189,25 @@ def _save_deposit(request, form, lead=None):
         form.add_error("tracking_number", "این شماره پیگیری قبلاً ثبت شده است.")
         return False
 
+    if chosen:
+        deposit_lead = chosen.lead
+        name = chosen.full_name
+        patient_ref = str(deposit_lead.pk)
+        branch = chosen.branch
+    else:
+        deposit_lead = lead
+        name = lead.full_name
+        patient = ensure_patient_for_contact(name, phone, request.user)
+        patient_ref = deposit_patient_reference(patient.pk)
+        branch = None
+    appointment_id = chosen.pk if chosen else None
     amount_rial = data["amount_toman"] * Decimal("10")
     item = manual.create(
         source="manual", external_id=external_id,
-        branch=chosen.branch, appointment=chosen,
+        branch=branch, appointment=chosen,
         occurred_at=timezone.now(), amount=amount_rial,
         entry_type="inc", review_status="pending", analysis_status="skipped",
-        person_name=chosen.full_name, patient_ref=str(chosen.lead_id),
+        person_name=name, patient_ref=patient_ref,
         sale_origin="afsariyeh", sale_reason="other",
         service=DEPOSIT_HEADING, account_heading=DEPOSIT_HEADING,
         payment_method=method, tracking_number=tracking, receipt_image=data["receipt_image"],
@@ -178,23 +215,25 @@ def _save_deposit(request, form, lead=None):
         raw_data={
             "payment_kind": DEPOSIT_MARKER,
             "entry_channel": "call_center_operator" if lead else "qc_desktop",
-            "lead_id": chosen.lead_id,
-            "appointment_id": chosen.pk,
+            "lead_id": deposit_lead.pk,
+            "lead_source": deposit_lead.source,
+            "appointment_id": appointment_id,
             "first_appointment_owner_id": first_owner_id,
             "amount_toman": str(data["amount_toman"]),
             "submission_token": token,
             "approval_required": "executive",
+            "country_code": "IR",
         },
     )
     AuditLog.objects.create(
         actor=request.user, action="call_center_deposit_entry",
         path=request.path, method="POST",
         object_type="FinancialTransaction", object_id=str(item.pk),
-        summary=f"ثبت بیعانه کال‌سنتر - {chosen.full_name}"[:250],
+        summary=f"ثبت بیعانه کال‌سنتر - {name}"[:250],
         metadata={
             "status": "pending", "amount_rial": str(amount_rial),
-            "lead_id": chosen.lead_id, "appointment_id": chosen.pk,
-            "owner_id": owner_id, "branch_id": chosen.branch_id,
+            "lead_id": deposit_lead.pk, "appointment_id": appointment_id,
+            "owner_id": owner_id, "branch_id": item.branch_id, "patient_ref": patient_ref,
         },
     )
     recipients = User.objects.filter(
@@ -203,7 +242,7 @@ def _save_deposit(request, form, lead=None):
     StaffNotification.objects.bulk_create([
         StaffNotification(
             user=recipient, title="بیعانه کال‌سنتر در انتظار تأیید شما",
-            message=f"{chosen.full_name}، {data['amount_toman']:,} تومان",
+            message=f"{name}، {data['amount_toman']:,} تومان",
             notification_type="finance_review", related_date=timezone.localdate(),
         )
         for recipient in recipients
@@ -217,7 +256,7 @@ def _deposit_page(request, *, appointments, matches, search="", lead=None):
     form = CallCenterDepositForm(
         request.POST if is_post else None, request.FILES if is_post else None,
         appointments=appointments.filter(pk__in=[item.pk for item in matches]),
-        initial={"appointment": matches[0].pk} if lead and len(matches) == 1 else None,
+        appointment_required=lead is None,
     )
     if is_post and form.is_valid():
         data = form.cleaned_data
@@ -240,7 +279,7 @@ def _deposit_page(request, *, appointments, matches, search="", lead=None):
         source="manual", recorded_by=request.user, raw_data__payment_kind=DEPOSIT_MARKER,
     )
     if lead:
-        recent = recent.filter(appointment__lead=lead)
+        recent = recent.filter(Q(appointment__lead=lead) | Q(raw_data__lead_id=lead.pk))
     return render(request, "core/call_center_deposit_entry.html", {
         "form": form, "matches": matches, "search": search, "lead": lead,
         "recent": recent.select_related("branch").order_by("-created_at")[:15],
