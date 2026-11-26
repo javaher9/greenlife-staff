@@ -266,7 +266,8 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertContains(view, "بیعانه‌های من")
         self.assertContains(view, "مجموع فروش من")
         self.assertContains(view, "هر دو تارگت ماهانه‌اند")
-        self.assertContains(view, "data-status-only", count=4)
+        self.assertContains(view, 'class="cc-target-percent"', count=3)
+        self.assertContains(view, 'class="cc-paused-badge">غیرفعال')
         self.assertNotContains(view, 'class="cc-target-amount"')
         self.assertNotContains(view, '<th>مبلغ (تومان)</th>')
         self.assertEqual(view.context["targets"]["personal_deposit"]["value"], Decimal("4.00"))
@@ -283,6 +284,82 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertEqual(SalesTargetBand.objects.count(), 2)
         self.client.force_login(self.staff)
         self.assertEqual(self.client.get(personal_url).status_code, 403)
+
+    def test_paused_combined_sales_are_unscored_across_operator_and_management_pages(self):
+        for scope in ("flower", "flower_deposit"):
+            self.client.post(self.url, {
+                "action": "set_floor", "year": self.year, "month": self.month,
+                "subject": f"{scope}:{self.flower.pk}", "sales_floor": "100",
+            })
+        self._transaction("650000000", description="بیعانه", origin="afsariyeh", owner=self.flower)
+        sales_key = f"flower:{self.flower.pk}"
+
+        manager = self.client.get(self.url, {"edit": 1})
+        personal = next(card for card in manager.context["flower_cards"] if card["key"] == sales_key)
+        self.assertEqual((personal["level"], personal["percentage"]), ("paused", None))
+        self.assertNotIn(sales_key, {row["key"] for row in manager.context["ranking"] + manager.context["warnings"]})
+        saved = next(row for row in manager.context["edit_rows"] if row["key"] == sales_key)
+        self.assertTrue(saved["paused"])
+        self.assertEqual(saved["band"].sales_floor, 100)
+        self.assertEqual(manager.context["branches"][-1]["percentage"], 50)
+
+        self.client.force_login(self.flower)
+        for url in ("call_center_dashboard", "my_sales_targets"):
+            with self.subTest(url=url):
+                response = self.client.get(reverse(url))
+                targets = response.context["targets"]
+                self.assertEqual(targets["personal_deposit"]["progress_text"], "50%")
+                self.assertEqual(targets["team_month"]["progress_text"], "50%")
+                self.assertEqual(targets["personal"]["level"], "paused")
+                self.assertNotIn("progress_text", targets["personal"])
+                self.assertContains(response, 'class="cc-target-percent"', count=3)
+                self.assertContains(response, 'class="cc-dial-needle"', count=3)
+                self.assertContains(response, 'class="cc-target-legend"', count=1)
+                figure = response.content.decode().split('class="cc-target-unit cc-target-paused"', 1)[1].split("</figure>", 1)[0]
+                self.assertIn('aria-disabled="true"', figure)
+                self.assertIn("غیرفعال", figure)
+                for misleading in ("%", "تومان", "cc-dial-needle", "جریمه", "<a "):
+                    self.assertNotIn(misleading, figure)
+
+        with self.settings(CALL_CENTER_COMBINED_SALES_TARGET_ENABLED=True):
+            active = self.client.get(reverse("my_sales_targets"))
+            self.assertEqual(active.context["targets"]["personal"]["progress_text"], "50%")
+            self.assertContains(active, 'class="cc-target-percent"', count=4)
+            self.assertNotContains(active, 'aria-disabled="true"', html=False)
+            self.client.force_login(self.admin)
+            active_manager = self.client.get(self.url)
+            self.assertIn(sales_key, {r["key"] for r in active_manager.context["ranking"]})
+            self.assertIn(sales_key, {r["key"] for r in active_manager.context["warnings"]})
+
+    def test_percentages_and_color_guide_use_the_selected_months_first_target(self):
+        self.client.post(self.url, {
+            "year": self.year, "month": self.month, "action": "set_floor",
+            "subject": f"flower_deposit:{self.flower.pk}", "sales_floor": "100",
+        })
+        self.client.post(self.url, {
+            "year": self.year, "month": self.month, "action": "set_policy",
+            "heavy_percent": "60", "target_one_percent": "150", "target_two_percent": "180",
+        })
+        self.client.force_login(self.flower)
+        url = reverse("my_sales_targets")
+        self.assertEqual(self.client.get(url).context["targets"]["personal_deposit"]["progress_text"], "0%")
+        self._transaction("1", description="بیعانه", origin="afsariyeh", owner=self.flower)
+        tiny = self.client.get(url)
+        self.assertEqual(tiny.context["targets"]["personal_deposit"]["progress_text"], "<0.01%")
+        self.assertContains(tiny, 'dir="ltr">&lt;0.01%</bdi>')
+        self._transaction("1499999998", description="بیعانه", origin="afsariyeh", owner=self.flower)
+        targets = self.client.get(url).context["targets"]
+        self.assertEqual(targets["personal_deposit"]["progress_text"], "99.99%")
+        self.assertEqual(targets["color_guides"], [{"heavy": "40", "floor": "66.67", "two": "120", "label": ""}])
+        self._transaction("1", description="بیعانه", origin="afsariyeh", owner=self.flower)
+        full = self.client.get(url).context["targets"]["personal_deposit"]
+        self.assertEqual((full["progress_text"], full["level"]), ("100%", "one"))
+
+        other = self.client.get(url, {"year": self.year - 1, "month": self.month})
+        self.assertEqual(other.context["targets"]["color_guides"], [{}])
+        self.assertNotContains(other, 'class="cc-target-percent"')
+        self.assertContains(other, 'class="cc-target-legend"', count=1)
+        self.assertNotContains(other, 'class="cc-dial-needle"')
 
     def test_deposit_receipt_is_visible_even_before_its_goal_is_set(self):
         self._transaction("40000000", description="بیعانه", origin="afsariyeh", owner=self.flower)

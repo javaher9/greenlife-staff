@@ -1,7 +1,15 @@
-<figure class="cc-target-unit">
-  <figcaption class="cc-target-label">{{ gauge.label }}</figcaption>
-  <svg class="cc-target-dial" viewBox="0 0 220 150" aria-hidden="true" focusable="false"{% if gauge.plan %} data-status-only{% endif %}>
-    {% if gauge.plan %}
+<figure class="cc-target-unit{% if gauge.level == 'paused' %} cc-target-paused{% endif %}"{% if gauge.level == 'paused' %} aria-disabled="true"{% endif %}>
+  <figcaption class="cc-target-label">
+    {% if target_links and gauge.level != 'paused' %}
+      <a class="cc-gauge-link" href="{% url 'my_sales_targets' %}#{{ detail_anchor }}">{{ gauge.label }}</a>
+    {% else %}<span>{{ gauge.label }}</span>{% endif %}
+    {% if gauge.level == 'paused' %}<span class="cc-paused-badge">غیرفعال</span>{% endif %}
+  </figcaption>
+  <svg class="cc-target-dial" viewBox="0 0 220 150" aria-hidden="true" focusable="false">
+    {% if gauge.level == 'paused' %}
+      <path class="cc-dial-paused" d="M32.06 134.35 A86 86 0 1 1 187.94 134.35" pathLength="100" stroke-dasharray="19 1.25"/>
+      <path class="cc-dial-pause-mark" d="M103 86v23m14-23v23"/>
+    {% elif gauge.plan %}
       {% for color, dash in gauge.segments %}
         <path class="cc-dial-band cc-band-{{ color }}" d="M32.06 134.35 A86 86 0 1 1 187.94 134.35" pathLength="100" stroke-dasharray="{{ dash }}"/>
       {% endfor %}
@@ -16,7 +24,14 @@
       <path class="cc-dial-rest" d="M101 98h18"/>
     {% endif %}
   </svg>
-  <span class="cc-target-status cc-status-{{ gauge.level }}">
-    {% if gauge.plan %}{{ gauge.display_status }}{% else %}{{ unset_label|default:"هدف تعیین نشده" }}{% endif %}
-  </span>
+  <div class="cc-target-reading">
+    {% if gauge.level == 'paused' %}
+      <span class="cc-paused-caption">در انتظار انتساب فروش مراکز</span>
+    {% elif gauge.plan %}
+      <strong class="cc-target-percent"><span class="cc-sr-only">درصد تحقق تارگت اول </span><bdi dir="ltr">{{ gauge.progress_text }}</bdi></strong>
+      <span class="cc-target-status cc-status-{{ gauge.level }}">{{ gauge.display_status }}</span>
+    {% else %}
+      <span class="cc-target-status cc-status-unset">{{ unset_label|default:"هدف تعیین نشده" }}</span>
+    {% endif %}
+  </div>
 </figure>
