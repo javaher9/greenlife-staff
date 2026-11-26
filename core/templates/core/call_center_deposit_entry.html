@@ -13,14 +13,21 @@
 .ccdep-page .ccdep-options{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.ccdep-page .ccdep-options span{font-size:12px;border:1px solid #4a6a7b;border-radius:8px;padding:7px;color:#c6dbe8}
 .ccdep-page .ccdep-actions{display:flex;gap:8px;flex-wrap:wrap}
 
-.ccdep-page.ccdep-operator{color:#173d35;background:linear-gradient(145deg,#f1f8f4,#fafcfd);border-color:#d6e6e0;max-width:920px}
-.ccdep-page.ccdep-operator h1,.ccdep-page.ccdep-operator h2,.ccdep-page.ccdep-operator label{color:#173d35!important}
+.ccdep-page.ccdep-operator{color:#173d35;color-scheme:light;background:linear-gradient(145deg,#f1f8f4,#fafcfd);border-color:#d6e6e0;max-width:920px}
 .ccdep-page.ccdep-operator .ccdep-panel{background:#fff;border-color:#deebe6}
-.ccdep-page.ccdep-operator p,.ccdep-page.ccdep-operator small{color:#4b625b}
-.ccdep-page.ccdep-operator input,.ccdep-page.ccdep-operator select,.ccdep-page.ccdep-operator textarea{background:#f7faf9;color:#173d35;border-color:#c5d9d1}
-.ccdep-page.ccdep-operator .secondary{background:#edf7f1;color:#185c45;border-color:#bedbd0}
-.ccdep-page.ccdep-operator th,.ccdep-page.ccdep-operator td{color:#284e44;border-color:#e0eae6}
-.ccdep-page.ccdep-operator .errorlist{color:#a32846}
+body.gl-page-call_center_lead_deposit .app-main .ccdep-page.ccdep-operator :is(h1,h2,label){color:#173d35!important}
+body.gl-page-call_center_lead_deposit .app-main .ccdep-page.ccdep-operator :is(p,small){color:#4b625b!important}
+body.gl-page-call_center_lead_deposit .app-main .ccdep-page.ccdep-operator :is(input,select,textarea){
+  background:#f7faf9!important;color:#173d35!important;border-color:#c5d9d1!important;
+}
+body.gl-page-call_center_lead_deposit .app-main .ccdep-page.ccdep-operator .secondary{
+  background:#edf7f1!important;color:#185c45!important;border-color:#bedbd0!important;
+}
+body.gl-page-call_center_lead_deposit .app-main .ccdep-page.ccdep-operator :is(th,td){color:#284e44!important;border-color:#e0eae6!important}
+body.gl-page-call_center_lead_deposit .app-main .ccdep-page.ccdep-operator .errorlist li{color:#a32846!important}
+@media(min-width:701px){
+  .ccdep-page.ccdep-operator{margin-inline-start:max(106px, calc((100% - 920px) / 2))}
+}
 @media(max-width:680px){.ccdep-page{padding:12px;margin:6px auto}.ccdep-page .ccdep-panel{padding:13px}.ccdep-page .ccdep-grid{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:900px){.ccdep-page:not(.ccdep-operator){display:none!important}}
 </style>
