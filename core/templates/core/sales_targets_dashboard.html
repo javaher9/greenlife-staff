@@ -262,7 +262,7 @@ body.gl-page-sales_targets_dashboard .app-main{
   </div>
  </section>
  <section class="st-panel">
-   <div class="st-title"><h2>◉ فروش گل‌های کال‌سنتر</h2><span class="st-sub">{{ flower_cards|length }} نفر — فروش تأییدشده منتسب به هر گل</span></div>
+   <div class="st-title"><h2>◉ مجموع فروش گل‌های کال‌سنتر</h2><span class="st-sub">{{ flower_cards|length }} نفر — بیعانه و فروش مراکز منتسب به هر گل</span></div>
    <div class="st-persons">
    {% for p in flower_cards %}
     <article class="st-person">
@@ -293,7 +293,7 @@ body.gl-page-sales_targets_dashboard .app-main{
  <form id="st-bulk-form" method="post" action="{% url 'sales_targets_dashboard' %}">
  {% csrf_token %}
  <input type="hidden" name="year" value="{{ period_year }}"><input type="hidden" name="month" value="{{ period_month }}"><input type="hidden" name="action" value="save_all">
- <div class="st-hint">فقط کف فروش را وارد کن؛ باقی مقادیر خودکار محاسبه می‌شوند. با جابه‌جایی اسلایدرها، نسبت رنگ‌های عقربه نیز پس از ذخیره تغییر می‌کند.</div>
+ <div class="st-hint">کف هر تارگت را وارد کن. باقی مقادیر خودکار محاسبه می‌شوند. با جابه‌جایی اسلایدرها، نسبت رنگ‌های عقربه نیز پس از ذخیره تغییر می‌کند.</div>
  <div class="st-percent-grid">
   <div class="st-slider-field"><label for="st-heavy">پایان جریمه سنگین <b id="st-heavy-value"></b></label>
   <input id="st-heavy" type="range" min="5" max="95" step="1" value="{{ target_policy.heavy_percent|stringformat:'.0f' }}" data-bind="heavy_percent">
@@ -312,7 +312,7 @@ body.gl-page-sales_targets_dashboard .app-main{
   <input type="hidden" name="subject" value="{{ r.key }}">
   <label>{{ r.label }} <small class="st-sub">({{ r.scope }})</small></label>
   <output class="st-auto" data-boundary="heavy">{% if r.band %}{{ r.band.heavy_limit|floatformat:0 }}{% else %}—{% endif %}</output>
-  <input type="number" class="st-floor-input" name="floor_{{ r.key }}" placeholder="کف فروش" step="0.01" min="0.01" value="{% if r.band %}{{ r.band.sales_floor|stringformat:'.2f' }}{% endif %}" aria-label="کف فروش {{ r.label }}">
+  <input type="number" class="st-floor-input" name="floor_{{ r.key }}" placeholder="{% if r.scope == 'بیعانه' %}کف بیعانه{% else %}کف فروش{% endif %}" step="0.01" min="0.01" value="{% if r.band %}{{ r.band.sales_floor|stringformat:'.2f' }}{% endif %}" aria-label="کف {{ r.scope }} {{ r.label }}">
   <output class="st-auto" data-boundary="one">{% if r.band %}{{ r.band.target_one|floatformat:0 }}{% else %}—{% endif %}</output>
   <output class="st-auto" data-boundary="two">{% if r.band %}{{ r.band.target_two|floatformat:0 }}{% else %}—{% endif %}</output>
  </div>

@@ -19,28 +19,21 @@
     <h2>بیعانه‌های من</h2>
     <div class="cc-table-scroll">
       <table>
-        <thead><tr><th>مراجع</th><th>شعبه</th><th>تاریخ ثبت</th><th>مبلغ (تومان)</th><th>وضعیت</th></tr></thead>
+        <thead><tr><th>مراجع</th><th>شعبه</th><th>تاریخ ثبت</th><th>وضعیت</th></tr></thead>
         <tbody>
           {% for receipt in deposits %}
           <tr><td>{{ receipt.person_name }}</td><td>{{ receipt.branch.name|default:"—" }}</td><td>{{ receipt.occurred_at|jdatetime }}</td>
-            <td>{{ receipt.amount_toman|floatformat:"0g" }}</td><td>{{ receipt.get_review_status_display }}</td></tr>
-          {% empty %}<tr><td colspan="5">برای این دوره بیعانه‌ای ثبت نشده است.</td></tr>{% endfor %}
+            <td>{{ receipt.get_review_status_display }}</td></tr>
+          {% empty %}<tr><td colspan="4">برای این دوره بیعانه‌ای ثبت نشده است.</td></tr>{% endfor %}
         </tbody>
       </table>
     </div>
   </section>
   <section class="cc-target-card">
-    <h2>فروش مراکز از لیدهای من</h2>
-    <div class="cc-table-scroll">
-      <table>
-        <thead><tr><th>مرکز</th><th>فروش قطعی (میلیون تومان)</th></tr></thead>
-        <tbody>
-          {% for branch, total in branch_sales %}<tr><td>{{ branch }}</td><td>{{ total|floatformat:"-2g" }}</td></tr>
-          {% empty %}<tr><td colspan="2">برای این دوره فروش قطعی ثبت نشده است.</td></tr>{% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% if commission is not None %}<p class="cc-commission">پورسانت طبق تنظیمات حقوق {{ commission_percent|floatformat:"-3" }}٪ · {{ commission|floatformat:"0g" }} تومان</p>{% endif %}
+    <h2>مراکز دارای فروش قطعی برای لیدهای من</h2>
+    {% if branch_names %}
+    <ul>{% for branch in branch_names %}<li>{{ branch }}</li>{% endfor %}</ul>
+    {% else %}<p>برای این دوره فروش در مراکز ثبت نشده است.</p>{% endif %}
   </section>
 </div>
 {% endblock %}

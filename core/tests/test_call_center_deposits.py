@@ -1,5 +1,5 @@
 import uuid
-from datetime import time
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
 from django.contrib.auth.models import User
@@ -8,6 +8,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
+from core.jalali import gregorian_to_jalali, jalali_to_gregorian
 from core.models import (
     AuditLog, Branch, ConsultationPlan, ConsultationPlanItem, EmployeeProfile, FinancialTransaction,
     PatientProfile,
@@ -175,7 +176,8 @@ class CallCenterDepositTests(TestCase):
         self.assertEqual(deposit.recorded_by_id, self.operator.pk)
         self.assertEqual(deposit.call_center_owner_id, self.operator.pk)
         personal = self.client.get(reverse("my_sales_targets"))
-        self.assertEqual(personal.context["targets"]["my_deposits_pending"], Decimal("50"))
+        self.assertTrue(personal.context["targets"]["has_pending_deposits"])
+        self.assertEqual(personal.context["targets"]["personal_deposit"]["value"], Decimal("0"))
         self.assertEqual(personal.context["targets"]["team_month"]["value"], Decimal("0"))
 
     def test_operator_cannot_register_against_an_unassigned_lead_or_foreign_appointment(self):
@@ -262,7 +264,7 @@ class CallCenterDepositTests(TestCase):
         })
         self.client.force_login(self.operator)
         before = self.client.get(reverse("my_sales_targets")).context["targets"]
-        self.assertEqual(before["personal"]["value"], Decimal("0"))
+        self.assertEqual(before["personal"]["value"], Decimal("50"))
         self.assertEqual(before["team_month"]["value"], Decimal("50"))
         self.assertEqual(before["team_day"]["value"], Decimal("50"))
 
@@ -278,5 +280,34 @@ class CallCenterDepositTests(TestCase):
         self.client.force_login(self.operator)
         cards = self.client.get(reverse("my_sales_targets")).context["targets"]
         self.assertEqual(cards["personal"]["value"], Decimal("80"))
-        self.assertEqual(cards["my_deposits_approved"], Decimal("50"))
+        self.assertEqual(cards["personal_deposit"]["value"], Decimal("50"))
         self.assertEqual(cards["team_month"]["value"], Decimal("50"))
+
+    def test_deposit_from_a_previous_month_stays_with_its_recorder(self):
+        deposit_owner = self.make_user("deposit-recorder", "", "", "call_center")
+        today = timezone.localdate()
+        year, month, _ = gregorian_to_jalali(today.year, today.month, today.day)
+        month_start = date(*jalali_to_gregorian(year, month, 1))
+        previous_day = month_start - timedelta(days=1)
+        previous_year, previous_month, _ = gregorian_to_jalali(
+            previous_day.year, previous_day.month, previous_day.day,
+        )
+        FinancialTransaction.objects.create(
+            source="manual", entry_type="inc", review_status="approved",
+            occurred_at=timezone.make_aware(datetime.combine(previous_day, time(14))),
+            amount=500000000, branch=self.branch, appointment=self.appt,
+            call_center_owner=deposit_owner, raw_data={"payment_kind": "call_center_deposit"},
+        )
+        ConsultationPlan.objects.create(
+            appointment=self.appt, status="paid", paid_at=timezone.now(), final_amount_toman=80000000,
+        )
+
+        self.client.force_login(self.operator)
+        result = self.client.get(reverse("my_sales_targets")).context["targets"]
+        self.assertEqual(result["personal_deposit"]["value"], Decimal("0"))
+        self.assertEqual(result["personal"]["value"], Decimal("30"))
+
+        self.client.force_login(deposit_owner)
+        history = self.client.get(reverse("my_sales_targets"), {"year": previous_year, "month": previous_month})
+        self.assertEqual(history.context["targets"]["personal_deposit"]["value"], Decimal("50"))
+        self.assertEqual(history.context["targets"]["personal"]["value"], Decimal("50"))

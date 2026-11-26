@@ -33,10 +33,13 @@
     const state=unit.querySelector(".care-target-state");
     const stateColors={red:"#bd334e",yellow:"#94600d",green:"#187550",blue:"#176ea6",purple:"#7850ae"};
     const stateKey=Object.keys(stateColors).find(key=>state.classList.contains("mt-"+key));
+    const statusOnly = box.hasAttribute("data-status-only");
     function labels(){
       svg.appendChild(elem("text",{x:110,y:79,fill:"#4d7168","font-size":17,"text-anchor":"middle","font-family":"Tahoma,Arial","font-weight":"bold"},title));
-      svg.appendChild(elem("text",{x:110,y:116,fill:"#244f49","font-size":29,"text-anchor":"middle","font-family":"Arial,Tahoma","font-weight":"bold"},Math.round(value)+"%"));
-      svg.appendChild(elem("text",{x:110,y:143,fill:stateColors[stateKey]||"#4d7168","font-size":15,"text-anchor":"middle","font-family":"Tahoma,Arial","font-weight":"bold"},state.textContent.trim()));
+      if (!statusOnly) {
+        svg.appendChild(elem("text",{x:110,y:116,fill:"#244f49","font-size":29,"text-anchor":"middle","font-family":"Arial,Tahoma","font-weight":"bold"},Math.round(value)+"%"));
+      }
+      svg.appendChild(elem("text",{x:110,y:statusOnly?116:143,fill:stateColors[stateKey]||"#4d7168","font-size":statusOnly?19:15,"text-anchor":"middle","font-family":"Tahoma,Arial","font-weight":"bold"},state.textContent.trim()));
     }
     function render() {
       labels();
