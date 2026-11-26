@@ -184,13 +184,13 @@
 .cc-target-details .cc-target-detail-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 12px}
 .cc-target-details .cc-target-detail-head a{color:#15664d;font-weight:800}
 .cc-target-details .cc-period-form{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
-.app-main .cc-target-details .cc-period-form label{display:grid;gap:3px;font-size:12px;color:#49675e!important}
-.app-main .cc-target-details .cc-period-form input{width:92px;background:#fff!important;color:#183c34!important;border:1px solid #b8cdc3!important}
-.app-main .cc-target-details .cc-period-form button{background:#236750!important;color:#fff!important;border:1px solid #236750;border-radius:9px;padding:7px 14px}
+body.gl-page-my_sales_targets .app-main .cc-target-details .cc-period-form label{display:grid;gap:3px;font-size:12px!important;color:#49675e!important}
+body.gl-page-my_sales_targets .app-main .cc-target-details .cc-period-form input[type=number]{width:92px;background:#fff!important;color:#183c34!important;caret-color:#183c34;color-scheme:light;border:1px solid #b8cdc3!important}
+body.gl-page-my_sales_targets .app-main .cc-target-details .cc-period-form button[type=submit]{background:#236750!important;color:#fff!important;border:1px solid #236750!important;border-radius:9px;padding:7px 14px}
 .cc-target-details > .cc-target-card{margin:0 0 12px}
 .cc-target-details .cc-target-card .cc-table-scroll{overflow:auto}
 .cc-target-details table{width:100%;border-collapse:collapse;text-align:right}
-.app-main .cc-target-details .cc-target-card :is(p,li,th,td){color:#193c34!important}
+.app-main .cc-target-details > .cc-target-card :is(p,li,th,td){color:#193c34!important}
 .app-main .cc-target-details .cc-target-card :is(th,td){padding:9px;border-bottom:1px solid #e7eeeb;white-space:nowrap;font-size:13px!important}
 
 /* Let each pair use the full width on phones and narrow workstations. */
