@@ -157,13 +157,15 @@ class SalesTargetsDashboardTests(TestCase):
         }
         response = self.client.post(self.url, payload, follow=True)
         self.assertEqual(response.context["branches"][-1]["plan"].target_one, Decimal("45.50"))
-        self.assertEqual(response.context["flower_cards"][0]["plan"].sales_floor, 150)
+        flower_card = next(card for card in response.context["flower_cards"] if card["key"] == sales)
+        self.assertEqual(flower_card["plan"].sales_floor, 150)
         self.assertEqual(response.context["configured_count"], 2)
 
         payload.update({"floor_call_center": "350", f"floor_{sales}": "125", f"floor_{deposit}": "40"})
         response = self.client.post(self.url, payload, follow=True)
         self.assertEqual(response.context["branches"][-1]["plan"].target_one, 52)
-        self.assertEqual(response.context["flower_cards"][0]["plan"].sales_floor, 125)
+        flower_card = next(card for card in response.context["flower_cards"] if card["key"] == sales)
+        self.assertEqual(flower_card["plan"].sales_floor, 125)
         self.assertEqual(SalesTargetBand.objects.get(scope="flower_deposit").employee, self.flower)
         self.assertFalse(SalesTargetBand.objects.filter(scope="call_center").exists())
 
