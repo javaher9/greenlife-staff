@@ -25,8 +25,12 @@ MILLION_TOMAN_RIAL = Decimal("10000000")
 ZERO = Decimal("0")
 
 
+def _millions(amount):
+    return (amount or ZERO) / MILLION_TOMAN_RIAL
+
+
 def _money(amount):
-    return ((amount or ZERO) / MILLION_TOMAN_RIAL).quantize(Decimal("0.01"))
+    return _millions(amount).quantize(Decimal("0.01"))
 
 
 def _month_params(request):
@@ -151,8 +155,45 @@ def _band_from_policy(policy, floor):
     return SimpleNamespace(heavy_limit=heavy, sales_floor=floor, target_one=one, target_two=two)
 
 
+def _team_flower_ids(year, month, *, closed):
+    profiles = EmployeeProfile.objects.filter(role="call_center")
+    if not closed:
+        return set(profiles.filter(is_active=True, user__is_active=True).values_list("user_id", flat=True))
+    # A later departure or role change must not erase a flower's monthly target.
+    assigned = SalesTargetBand.objects.filter(
+        period_year=year, period_month=month, scope__in=("flower_deposit", "flower"),
+        employee_id__isnull=False,
+    ).values_list("employee_id", flat=True)
+    return set(profiles.values_list("user_id", flat=True)).union(assigned)
+
+
+def _monthly_target_plans(policy, flower_ids, *, for_user_id=None):
+    period = f"{policy.period_year}-{policy.period_month:02d}:"
+    configs = SalesTargetBand.objects.filter(
+        period_year=policy.period_year, period_month=policy.period_month,
+    ).exclude(scope="call_center")
+    if for_user_id is not None:
+        configs = configs.filter(
+            Q(scope="flower_deposit", employee_id__in=flower_ids) | Q(key=f"{period}flower:{for_user_id}")
+        )
+    plans, deposits = {}, []
+    for key, scope, employee_id, floor in configs.values_list("key", "scope", "employee_id", "sales_floor"):
+        band = _band_from_policy(policy, floor)
+        plans[key.removeprefix(period)] = band
+        if scope == "flower_deposit" and employee_id in flower_ids:
+            deposits.append(band)
+    if deposits:
+        # Sum the individually rounded thresholds so the team target is exactly
+        # the sum of each flower's Target 1, including with fractional floors.
+        plans["call_center"] = SimpleNamespace(**{
+            field: sum(getattr(band, field) for band in deposits)
+            for field in ("heavy_limit", "sales_floor", "target_one", "target_two")
+        })
+    return plans
+
+
 def _call_center_gauge(key, label, amount, plans):
-    gauge = _gauge_row(key, label, _money(amount), plans)
+    gauge = _gauge_row(key, label, _millions(amount), plans)
     plan = gauge["plan"]
     if plan is None:
         return gauge
@@ -176,16 +217,13 @@ def _call_center_gauge(key, label, amount, plans):
 
 def _call_center_targets(user, jy, jm, start_date, end_date, today):
     """Build the shared and personal cards from the same month and management settings."""
-    period = f"{jy}-{jm:02d}"
     personal_key = f"flower:{user.pk}"
     deposit_key = f"flower_deposit:{user.pk}"
     policy = TargetPercentPolicy.objects.filter(period_year=jy, period_month=jm).first()
     if policy is None:
         policy = TargetPercentPolicy(period_year=jy, period_month=jm)
-    floors = SalesTargetBand.objects.filter(
-        key__in=(f"{period}:call_center", f"{period}:{personal_key}", f"{period}:{deposit_key}"),
-    ).values_list("key", "sales_floor")
-    plans = {key.split(":", 1)[1]: _band_from_policy(policy, floor) for key, floor in floors}
+    flower_ids = _team_flower_ids(jy, jm, closed=end_date <= today)
+    plans = _monthly_target_plans(policy, flower_ids, for_user_id=user.pk)
     daily_plans = {}
     if "call_center" in plans:
         plan = plans["call_center"]
@@ -194,13 +232,13 @@ def _call_center_targets(user, jy, jm, start_date, end_date, today):
             name: value / days for name, value in vars(plan).items()
         })
 
-    deposits = _period_receipts(start_date, end_date).filter(_deposit_filter())
-    team = deposits.filter(review_status="approved")
+    deposits = _attributed_flower_receipts(_period_receipts(start_date, end_date).filter(_deposit_filter()))
+    team = deposits.filter(review_status="approved", flower_id__in=flower_ids)
     day_start = timezone.make_aware(datetime.combine(today, time.min))
     day_end = timezone.make_aware(datetime.combine(today + timedelta(days=1), time.min))
     day_filter = Q(occurred_at__gte=day_start, occurred_at__lt=day_end)
     team_totals = team.aggregate(month=Sum("amount"), day=Sum("amount", filter=day_filter))
-    own_deposits = _attributed_flower_receipts(deposits).filter(flower_id=user.pk)
+    own_deposits = deposits.filter(flower_id=user.pk)
     own_totals = own_deposits.aggregate(
         approved=Sum("amount", filter=Q(review_status="approved")),
         pending=Count("pk", filter=Q(review_status="pending")),
@@ -262,10 +300,7 @@ def sales_targets_dashboard(request):
     flowers = [p for p in profiles if p.role == "call_center"]
     consultants = [p for p in profiles if p.role == "consultant" and p.branch_id in {b.pk for b in branches}]
 
-    valid_subjects = {
-        "overall": ("overall", None, None),
-        "call_center": ("call_center", None, None),
-    }
+    valid_subjects = {"overall": ("overall", None, None)}
     for b in branches:
         valid_subjects[f"branch:{b.pk}"] = ("branch", b, None)
     for p in flowers:
@@ -297,7 +332,9 @@ def sales_targets_dashboard(request):
                 # Validate updates against the existing row, not as a new
                 # conflicting monthly policy (unique year/month constraint).
                 form_policy.full_clean(exclude=["id", "period_year", "period_month"])
-                edited = request.POST.getlist("subject")
+                # A manager may still be editing an open pre-rollout form. Save
+                # the flower entries and discard its obsolete manual team row.
+                edited = [s for s in request.POST.getlist("subject") if s != "call_center"]
                 if len(edited) != len(set(edited)) or not edited or any(s not in valid_subjects for s in edited):
                     raise ValidationError("فهرست تنظیمات نامعتبر است؛ صفحه را تازه‌سازی کنید.")
                 # Staff may be added/removed while the manager edits. Do not
@@ -360,6 +397,8 @@ def sales_targets_dashboard(request):
                 messages.success(request, "درصدها ذخیره شدند؛ محدوده‌های رنگی تمام عقربه‌ها بر اساس درصدهای جدید محاسبه می‌شوند.")
             elif action == "set_floor":
                 subject = (request.POST.get("subject") or "").strip()
+                if subject == "call_center":
+                    raise ValidationError("تارگت بیعانهٔ تیم از جمع تارگت اول بیعانهٔ گل‌ها محاسبه می‌شود.")
                 if subject not in valid_subjects:
                     raise ValidationError("فروشنده یا مرکز معتبر نیست.")
                 floor = amount("sales_floor")
@@ -375,7 +414,7 @@ def sales_targets_dashboard(request):
                     scope=scope, branch=branch, employee=employee,
                     updated_by=user, **values,
                 )
-                band.full_clean()
+                band.full_clean(exclude=["key"])  # existing keys are updated below
                 SalesTargetBand.objects.update_or_create(
                     key=band.key,
                     defaults={
@@ -393,32 +432,28 @@ def sales_targets_dashboard(request):
             messages.error(request, "تارگت ذخیره نشد: عدد واردشده نامعتبر است. مقدارهای مثبت و درصدهای مرتب وارد کنید.")
         return HttpResponseRedirect(f"{reverse('sales_targets_dashboard')}?year={jy}&month={jm}&edit=1")
 
-    configs = SalesTargetBand.objects.filter(period_year=jy, period_month=jm)
-    # Changes to the shared policy apply to every card immediately.
-    plans = {
-        stored.key.removeprefix(period + ":"): _band_from_policy(policy, stored.sales_floor)
-        for stored in configs
-    }
+    flower_ids = _team_flower_ids(jy, jm, closed=end_date <= today)
+    plans = _monthly_target_plans(policy, flower_ids)
 
     # CRM imports may overlap with these same receipts.
     income = _period_receipts(start_date, end_date).filter(review_status="approved")
-    by_branch = {r["branch_id"]: _money(r["amount"]) for r in income.values("branch_id").annotate(amount=Sum("amount"))}
+    by_branch = {r["branch_id"]: _millions(r["amount"]) for r in income.values("branch_id").annotate(amount=Sum("amount"))}
     # The consultant owns the finalized consultation; a receptionist can record
     # the money on their behalf. Use the plan consultant first, then recorder.
-    by_consultant = {r["seller_id"]: _money(r["amount"]) for r in
+    by_consultant = {r["seller_id"]: _millions(r["amount"]) for r in
         income.annotate(seller_id=Coalesce(
             "appointment__consultation_plan__consultant_id", "recorded_by_id",
         )).values("seller_id").annotate(amount=Sum("amount"))}
-    deposits = income.filter(_deposit_filter())
-    by_flower = {
-        row["flower_id"]: row["amount"]
-        for row in _attributed_flower_receipts(deposits).order_by().values("flower_id").annotate(amount=Sum("amount"))
-    }
+    deposits = _attributed_flower_receipts(income.filter(_deposit_filter())).filter(flower_id__in=flower_ids)
+    by_flower = {}
+    deposit_count = 0
+    for row in deposits.order_by().values("flower_id").annotate(amount=Sum("amount"), receipts=Count("pk")):
+        by_flower[row["flower_id"]] = row["amount"]
+        deposit_count += row["receipts"]
+    call_center_deposit = _millions(sum(by_flower.values(), ZERO))
     for (flower_id, _branch_id), amount in _flower_branch_sales(start_date, end_date).items():
         by_flower[flower_id] = by_flower.get(flower_id, ZERO) + amount
-    total = _money(income.filter(branch__in=branches).aggregate(value=Sum("amount"))["value"])
-    call_center_deposit = _money(deposits.aggregate(value=Sum("amount"))["value"])
-    deposit_count = deposits.count()
+    total = _millions(income.filter(branch__in=branches).aggregate(value=Sum("amount"))["value"])
 
     consultants_by_branch = defaultdict(list)
     consultant_cards = []
@@ -442,7 +477,7 @@ def sales_targets_dashboard(request):
     flower_cards = [
         _gauge_row(
             f"flower:{p.user_id}", call_center_display_name(p.user),
-            _money(by_flower.get(p.user_id, ZERO)), plans,
+            _millions(by_flower.get(p.user_id, ZERO)), plans,
             avatar=p.avatar.url if p.avatar else "", group="کال‌سنتر",
         ) for p in flowers
     ]
@@ -480,7 +515,7 @@ def sales_targets_dashboard(request):
     edit_rows = [
         {"key":key, "label":label, "band":plans.get(key), "scope":scope}
         for key, label, scope in (
-            [("overall", "مجموع مراکز", "کل"), ("call_center", "کال‌سنتر ـ بیعانه", "کال‌سنتر")]
+            [("overall", "مجموع مراکز", "کل")]
             + [(f"branch:{b.pk}", b.name, "مرکز") for b in branches]
             + [
                 row for p in flowers for row in (
@@ -502,7 +537,7 @@ def sales_targets_dashboard(request):
         "ranking":ranking, "warnings":warnings, "trend":trend,
         "deposit_count":deposit_count, "edit_rows":edit_rows,
         "edit_mode":request.GET.get("edit") == "1",
-        "configured_count":len(plans), "person_count":len(all_people),
+        "configured_count":sum(row["band"] is not None for row in edit_rows), "person_count":len(all_people),
         "target_policy":policy,
     })
 
@@ -561,10 +596,10 @@ def my_sales_targets(request):
     ))
     display_name = request.user.get_full_name() or request.user.username
     mine = receipts.filter(seller=request.user.pk)
-    monthly = _money(mine.aggregate(value=Sum("amount"))["value"])
+    monthly = _millions(mine.aggregate(value=Sum("amount"))["value"])
     daily = _money(mine.filter(occurred_at__gte=today_start, occurred_at__lt=tomorrow_start).aggregate(value=Sum("amount"))["value"])
     days = (end_date - start_date).days
-    daily_floor = (plan.sales_floor / Decimal(days)).quantize(Decimal("0.01")) if plan else None
+    daily_target = plan.target_one / Decimal(days) if plan else None
     upper_percent = policy.target_two_percent * Decimal("1.20")
     segments = [
         policy.heavy_percent, Decimal("100") - policy.heavy_percent,
@@ -576,7 +611,7 @@ def my_sales_targets(request):
     row = _gauge_row(key, display_name, monthly, {key:plan} if plan else {})
     return render(request, "core/my_sales_targets.html", {
         "row":row, "period_label":f"{jy}/{jm:02d}", "monthly":monthly,
-        "daily":daily, "daily_floor":daily_floor, "days":days,
+        "daily":daily, "daily_target":daily_target, "days":days,
         "is_flower":False, "plan":plan,
         "policy":policy, "segments":segments, "avatar":profile.avatar.url if profile.avatar else "",
         "source_note":"فقط دریافت‌های دستی تأییدشده منتسب به حساب شما در این گزارش نمایش داده شده‌اند.",

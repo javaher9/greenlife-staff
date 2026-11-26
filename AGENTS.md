@@ -23,4 +23,5 @@ These rules are mandatory for all future UI design, implementation, review, and 
 5. Report separately: code committed, tests run/passed, deploy workflow status, and **live deployed version verified or unverified**. Never equate a GitHub commit with a successful live deployment.
 
 ## Notes
+- In GreenLife sales and deposit reporting, an unqualified «تارگت» means «تارگت اول» (Target 1). It is the threshold for 100% attainment. The call-center team's monthly deposit target is the sum of its flowers' monthly deposit Target 1 amounts.
 The project may contain older design documents (e.g. STAFF_V12_PREMIUM_UI_SYSTEM.md) describing an all-dark premium design. The owner clarified the three-context theme split on 2026-10-11; follow these rules over older blanket theme recommendations. Existing page-specific explicit design instructions still apply.

@@ -25,14 +25,14 @@
  <div class="notice"><strong>مهم:</strong> تارگت روزانه فقط راهنمای پیشرفت است و هیچ جریمه‌ای برای آن در نظر گرفته نشده است. ملاک بررسی وضعیت جریمه یا پاداش، فروش نهایی ماه است. این صفحه هیچ کسری یا پرداختی انجام نمی‌دهد.</div>
  <div class="cards">
    <section class="panel">
-      <h2>تارگت امروز</h2><small>هدف روزانه راهنما = کف فروش ماه ÷ {{ days }} روز</small>
-      <div class="value">{% if daily_floor != None %}{{ daily_floor|floatformat:2 }}{% else %}—{% endif %}</div><small>میلیون تومان</small>
+      <h2>تارگت امروز</h2><small>سهم امروز از تارگت اول ماه بر پایهٔ {{ days }} روز</small>
+      <div class="value">{% if daily_target != None %}{{ daily_target|floatformat:2 }}{% else %}—{% endif %}</div><small>میلیون تومان</small>
       <p>فروش ثبت‌شده امروز: <strong>{{ daily|floatformat:2 }}</strong> میلیون تومان</p>
       <p>{% if not plan %}کف فروش این ماه هنوز توسط مدیریت تعیین نشده است.{% else %}این عدد فقط برای برنامه‌ریزی روزانه است؛ جریمه روزانه نداریم.{% endif %}</p>
    </section>
    <section class="panel">
       <h2>تارگت ماه</h2><small>وضعیت ماهانه: {{ row.status }}</small>
-      <div class="value">{% if plan %}{{ plan.sales_floor|floatformat:2 }}{% else %}—{% endif %}</div><small>کف فروش ماه (میلیون تومان)</small>
+      <div class="value">{% if plan %}{{ plan.target_one|floatformat:2 }}{% else %}—{% endif %}</div><small>تارگت اول ماه (میلیون تومان)</small>
       <p>فروش ثبت‌شده ماه: <strong>{{ monthly|floatformat:2 }}</strong> میلیون تومان</p>
       <div class="ring" aria-label="پنج سطح فروش؛ قرمز، زرد، سبز، آبی و بنفش">
        <span style="background:#f25370;flex:{{ segments.0|stringformat:'f' }}"></span>
