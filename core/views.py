@@ -1672,11 +1672,13 @@ def finance_dashboard(request):
     branch=None
     if role_of(request.user)=='manager': branch=request.user.profile.branch
     summary=finance_summary(day,branch)
-    flower_sales=flower_sales_summary(timezone.localdate(),branch)
-    visual_analytics=finance_visual_analytics(timezone.localdate(),branch)
+    flower_sales=flower_sales_summary(day,branch)
+    visual_analytics=finance_visual_analytics(day,branch)
     # Same approved finance rows as the grand total; this is a breakdown,
     # never an additional amount to sum on top of finance_summary.
     jy,jm,_=gregorian_to_jalali(day.year,day.month,day.day)
+    prev_jy,prev_jm=(jy-1,12) if jm==1 else (jy,jm-1)
+    previous_month_date=format_jalali(date(*jalali_to_gregorian(prev_jy,prev_jm,1)))
     start_skin=timezone.make_aware(datetime.combine(date(*jalali_to_gregorian(jy,jm,1)),datetime.min.time()))
     next_year,next_month=(jy+1,1) if jm==12 else (jy,jm+1)
     end_skin=timezone.make_aware(datetime.combine(date(*jalali_to_gregorian(next_year,next_month,1)),datetime.min.time()))
@@ -1705,6 +1707,7 @@ def finance_dashboard(request):
         'ai_insight':ai_insight,'ai_live':ai_live,
         'logs':logs,'selected':day,'manual_entries':entries[:100],
         'skin_care_month_rial':skin_care_month_rial,
+        'previous_month_date':previous_month_date,
     })
 
 @finance_entry_required

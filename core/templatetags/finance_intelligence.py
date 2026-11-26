@@ -118,7 +118,7 @@ def _period_bounds(day, period):
         start_day = datetime(*jalali_to_gregorian(jy, jm, 1)).date()
         ny, nm = (jy + 1, 1) if jm == 12 else (jy, jm + 1)
         end_day = datetime(*jalali_to_gregorian(ny, nm, 1)).date()
-        return _aware_start(start_day), _aware_start(end_day), 'ماه جاری'
+        return _aware_start(start_day), _aware_start(end_day), f'ماه {jy}/{jm:02d}'
     if period == 'year':
         start_day = datetime(*jalali_to_gregorian(jy, 1, 1)).date()
         end_day = datetime(*jalali_to_gregorian(jy + 1, 1, 1)).date()
@@ -219,7 +219,15 @@ def _app_revenue_snapshot(day, branch=None, afsariyeh_only=False):
     # Keep every calendar day from month start through the selected day on the
     # X axis. Missing days are explicit zeros, so new App entries extend the
     # existing curve instead of replacing sparse historical points.
-    last_visible_day = min(day, month_end - timedelta(days=1))
+    # Historical months are complete: show their entire timeline even when the
+    # selected finance date is the first day of that month. Current month stays
+    # capped at today so future dates are not presented as missing sales.
+    today = timezone.localdate()
+    last_visible_day = (
+        min(today, month_end - timedelta(days=1))
+        if month_start <= today < month_end
+        else month_end - timedelta(days=1)
+    )
     timeline = []
     cursor = month_start
     while cursor <= last_visible_day:

@@ -7,6 +7,7 @@ from . import call_plaque_views
 from django.urls import path
 from . import views
 from . import executive_finance_hub_views
+from . import finance_month_comparison_views
 from . import skin_care_views
 from . import management_alert_views
 from . import action_center_views
@@ -77,6 +78,7 @@ path('management/all-leads/data/',all_leads_views.all_leads_data,name='managemen
 path('api/leads/last-arrival/',lead_freshness_views.live_last_lead,name='live_last_lead'),
 path('skin-care/',skin_care_views.skin_care_home,name='skin_care_home'),
 path('finance/executive/',executive_finance_hub_views.executive_finance_hub,name='executive_finance_hub'),
+    path('finance/compare/',finance_month_comparison_views.finance_month_comparison,name='finance_month_comparison'),
 path('call-center/deposits/new/',call_center_deposit_views.call_center_deposit_entry,name='call_center_deposit_entry'),
 path('sales-targets/',sales_target_views.sales_targets_dashboard,name='sales_targets_dashboard'),
 path('my-sales-targets/',sales_target_views.my_sales_targets,name='my_sales_targets'),
