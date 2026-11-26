@@ -3,7 +3,7 @@ from datetime import datetime, time, timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -182,6 +182,7 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertEqual(res.context["branches"][-1]["plan"].sales_floor, 800)
         self.assertFalse(SalesTargetBand.objects.filter(employee=extra).exists())
 
+    @override_settings(CALL_CENTER_TEAM_DEPOSIT_GAUGES_ENABLED=True)
     def test_monthly_team_goal_is_sum_of_individually_rounded_deposit_target_ones(self):
         period = {"year": self.year, "month": self.month}
         prefix = f"{self.year}-{self.month:02d}"
@@ -266,7 +267,7 @@ class SalesTargetsDashboardTests(TestCase):
         self.assertContains(view, "بیعانه‌های من")
         self.assertContains(view, "مجموع فروش من")
         self.assertContains(view, "هر دو تارگت ماهانه‌اند")
-        self.assertContains(view, 'class="cc-target-percent"', count=3)
+        self.assertContains(view, 'class="cc-target-percent"', count=1)
         self.assertContains(view, 'class="cc-paused-badge">غیرفعال')
         self.assertNotContains(view, 'class="cc-target-amount"')
         self.assertNotContains(view, '<th>مبلغ (تومان)</th>')
@@ -309,23 +310,28 @@ class SalesTargetsDashboardTests(TestCase):
                 response = self.client.get(reverse(url))
                 targets = response.context["targets"]
                 self.assertEqual(targets["personal_deposit"]["progress_text"], "50%")
-                self.assertEqual(targets["team_month"]["progress_text"], "50%")
-                self.assertEqual(targets["personal"]["level"], "paused")
-                self.assertNotIn("progress_text", targets["personal"])
-                self.assertContains(response, 'class="cc-target-percent"', count=3)
-                self.assertContains(response, 'class="cc-dial-needle"', count=3)
+                for key in ("team_day", "team_month", "personal"):
+                    self.assertEqual(targets[key]["level"], "paused")
+                    self.assertNotIn("progress_text", targets[key])
+                self.assertContains(response, 'class="cc-target-percent"', count=1)
+                self.assertContains(response, 'class="cc-dial-needle"', count=1)
                 self.assertContains(response, 'class="cc-target-legend"', count=1)
-                figure = response.content.decode().split('class="cc-target-unit cc-target-paused"', 1)[1].split("</figure>", 1)[0]
-                self.assertIn('aria-disabled="true"', figure)
-                self.assertIn("غیرفعال", figure)
-                for misleading in ("%", "تومان", "cc-dial-needle", "جریمه", "<a "):
-                    self.assertNotIn(misleading, figure)
+                self.assertNotContains(response, "جزئیات تیم")
+                self.assertContains(response, "در انتظار انتساب فروش مراکز", count=1)
+                figures = response.content.decode().split('class="cc-target-unit cc-target-paused"')[1:]
+                self.assertEqual(len(figures), 3)
+                for figure_start in figures:
+                    figure = figure_start.split("</figure>", 1)[0]
+                    self.assertIn('aria-disabled="true"', figure)
+                    self.assertIn("غیرفعال", figure)
+                    for misleading in ("%", "تومان", "cc-dial-needle", "جریمه", "<a "):
+                        self.assertNotIn(misleading, figure)
 
         with self.settings(CALL_CENTER_COMBINED_SALES_TARGET_ENABLED=True):
             active = self.client.get(reverse("my_sales_targets"))
             self.assertEqual(active.context["targets"]["personal"]["progress_text"], "50%")
-            self.assertContains(active, 'class="cc-target-percent"', count=4)
-            self.assertNotContains(active, 'aria-disabled="true"', html=False)
+            self.assertContains(active, 'class="cc-target-percent"', count=2)
+            self.assertContains(active, 'class="cc-target-unit cc-target-paused"', count=2)
             self.client.force_login(self.admin)
             active_manager = self.client.get(self.url)
             self.assertIn(sales_key, {r["key"] for r in active_manager.context["ranking"]})

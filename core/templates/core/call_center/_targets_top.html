@@ -1,7 +1,7 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'core/call-center-targets.css' %}?v=deposit-focus">
+<link rel="stylesheet" href="{% static 'core/call-center-targets.css' %}?v=personal-deposit-only">
 <section class="cc-targets" aria-label="تارگت‌های کال‌سنتر">
-  <article class="cc-target-card" id="team-targets">
+  <article class="cc-target-card" id="team-targets"{% if targets.team_month.level == 'paused' %} aria-disabled="true"{% endif %}>
     <div class="cc-target-heading">
       <span class="cc-target-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
@@ -12,7 +12,7 @@
         <h2>تارگت کل کال‌سنتر</h2>
         <p>جمع تارگت اول بیعانهٔ گل‌ها</p>
       </div>
-      {% if target_links %}<a class="cc-target-link" href="{% url 'my_sales_targets' %}#team-targets">جزئیات تیم</a>{% endif %}
+      {% if target_links and targets.team_month.level != 'paused' %}<a class="cc-target-link" href="{% url 'my_sales_targets' %}#team-targets">جزئیات تیم</a>{% endif %}
     </div>
     <div class="cc-target-pair">
       {% if targets.current_month %}{% include "core/call_center/_target_gauge.html" with gauge=targets.team_day detail_anchor="team-targets" %}{% endif %}
@@ -35,7 +35,7 @@
     </div>
     <div class="cc-target-pair">
       {% include "core/call_center/_target_gauge.html" with gauge=targets.personal_deposit detail_anchor="personal-targets" unset_label="کف بیعانه تعیین نشده" %}
-      {% include "core/call_center/_target_gauge.html" with gauge=targets.personal detail_anchor="personal-targets" unset_label="کف فروش تعیین نشده" %}
+      {% include "core/call_center/_target_gauge.html" with gauge=targets.personal detail_anchor="personal-targets" unset_label="کف فروش تعیین نشده" paused_caption="در انتظار انتساب فروش مراکز" %}
     </div>
   </article>
 

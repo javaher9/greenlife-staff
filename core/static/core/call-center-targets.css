@@ -31,6 +31,7 @@
   overflow: hidden;
   scroll-margin-top: 86px;
 }
+.cc-targets .cc-target-card[aria-disabled="true"] { filter: grayscale(1); }
 .cc-targets .cc-personal-card {
   --accent: #654588;
   --tint: #f4f0f8;
