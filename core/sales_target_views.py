@@ -275,7 +275,8 @@ def _call_center_targets(user, jy, jm, start_date, end_date, today):
     own_deposit = own_totals["approved"] or ZERO
     sales = _flower_branch_sales(start_date, end_date, user_id=user.pk)
     own_sales = own_deposit + sum(sales.values(), ZERO)
-    team_month = _call_center_gauge("call_center", "ماهانه", team_totals["month"], plans)
+    team_paused = not settings.CALL_CENTER_TEAM_DEPOSIT_GAUGES_ENABLED
+    team_month = _call_center_gauge("call_center", "ماهانه", team_totals["month"], plans, paused=team_paused)
     personal_deposit = _call_center_gauge(deposit_key, "بیعانه‌های من", own_deposit, plans)
     personal = _call_center_gauge(
         personal_key, "مجموع فروش من", own_sales, plans,
@@ -284,7 +285,7 @@ def _call_center_targets(user, jy, jm, start_date, end_date, today):
     return {
         "period_label": f"{jy}/{jm:02d}",
         "team_month": team_month,
-        "team_day": _call_center_gauge("call_center", "روزانه", team_totals["day"], daily_plans),
+        "team_day": _call_center_gauge("call_center", "روزانه", team_totals["day"], daily_plans, paused=team_paused),
         "personal_deposit": personal_deposit, "personal": personal,
         "color_guides": _call_center_color_guides((
             ("بیعانهٔ تیم", team_month), (personal_deposit["label"], personal_deposit), (personal["label"], personal),

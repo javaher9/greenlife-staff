@@ -67,6 +67,7 @@ BODY_PROGRESS_UPLOAD_ENABLED = os.getenv('BODY_PROGRESS_UPLOAD_ENABLED', '0') ==
 
 # Resume combined flower sales scoring once the centers attribute sales to their referring flower.
 CALL_CENTER_COMBINED_SALES_TARGET_ENABLED = os.getenv('CALL_CENTER_COMBINED_SALES_TARGET_ENABLED', '0') == '1'
+CALL_CENTER_TEAM_DEPOSIT_GAUGES_ENABLED = os.getenv('CALL_CENTER_TEAM_DEPOSIT_GAUGES_ENABLED', '0') == '1'
 
 # Canonical member app; keep Django CSRF verification on every write.
 CSRF_TRUSTED_ORIGINS.append("https://greenlife-me-preview.vercel.app")

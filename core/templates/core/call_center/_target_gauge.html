@@ -26,7 +26,7 @@
   </svg>
   <div class="cc-target-reading">
     {% if gauge.level == 'paused' %}
-      <span class="cc-paused-caption">در انتظار انتساب فروش مراکز</span>
+      {% if paused_caption %}<span class="cc-paused-caption">{{ paused_caption }}</span>{% endif %}
     {% elif gauge.plan %}
       <strong class="cc-target-percent"><span class="cc-sr-only">درصد تحقق تارگت اول </span><bdi dir="ltr">{{ gauge.progress_text }}</bdi></strong>
       <span class="cc-target-status cc-status-{{ gauge.level }}">{{ gauge.display_status }}</span>
