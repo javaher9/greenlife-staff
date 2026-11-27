@@ -1,7 +1,7 @@
 """Mobile-first verified customer portal; separate from internal staff appointment views."""
 import secrets
 from datetime import date, timedelta
-from urllib.parse import quote
+from urllib.parse import quote, unquote, urlsplit
 
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.cache import cache
@@ -10,7 +10,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Sum, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
+from django.urls import Resolver404, resolve, reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_http_methods, require_POST
@@ -73,6 +73,31 @@ def _require_member(request):
     return redirect(reverse('customer_login')+'?next='+quote(path,safe=''))
 
 
+def _customer_login_destination(request, candidate):
+    if not isinstance(candidate, str) or not candidate.startswith('/customer/'):
+        return None
+    if not url_has_allowed_host_and_scheme(candidate, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return None
+    path = unquote(urlsplit(candidate).path)
+    if any(part in ('.', '..') for part in path.split('/')) or '\\' in path:
+        return None
+    try:
+        route = resolve(path)
+    except Resolver404:
+        return None
+    if route.url_name not in {
+        'customer_club', 'customer_diets', 'customer_diet', 'customer_body',
+        'customer_body_photo', 'customer_intake_photo', 'customer_request',
+        'customer_appointments', 'me_member_inbox', 'me_connect',
+        'me_connect_section', 'me_connect_resume',
+        'schools_family', 'schools_join', 'schools_child_add',
+    }:
+        return None
+    if route.url_name == 'customer_request' and route.kwargs.get('kind') not in {'visit', 'device', 'network'}:
+        return None
+    return candidate
+
+
 def _new_member(phone):
     existing=CustomerPortalMember.objects.filter(phone=phone).first()
     if existing:
@@ -102,17 +127,19 @@ def _pending_invitation(request, member):
 @require_http_methods(['GET','POST'])
 def customer_login(request):
     """Fail-closed SMS OTP. Unverified phone never grants customer access."""
+    candidate = _customer_login_destination(request, request.GET.get('next'))
     current=_member(request)
     if current:
-        return redirect('customer_club')
+        request.session.pop('gl_customer_next', None)
+        response = redirect(candidate or reverse('customer_club'))
+        response['Cache-Control'] = 'private, no-store'
+        return response
     error=''
-    saved_next=request.session.get('gl_customer_next') or reverse('customer_club')
     if request.method=='GET':
-        candidate=request.GET.get('next','')
-        if candidate.startswith('/customer/') and url_has_allowed_host_and_scheme(
-            candidate,allowed_hosts={request.get_host()},require_https=request.is_secure()
-        ):
+        if candidate:
             request.session['gl_customer_next']=candidate
+        elif 'next' in request.GET or not request.session.get('gl_pending_phone'):
+            request.session.pop('gl_customer_next', None)
     step='verify' if request.session.get('gl_pending_phone') else 'send'
     if request.method=='POST':
         action=request.POST.get('action')
@@ -194,10 +221,11 @@ def customer_login(request):
                         request.session['gl_customer_auth_at']=now.timestamp()
                         request.session.pop('gl_pending_phone',None)
                         _pending_invitation(request,member)
-                        target=request.session.pop('gl_customer_next',None)
-                        if not target or not target.startswith('/customer/'):
-                            target=reverse('customer_club')
-                        return redirect(target)
+                        saved_next = request.session.pop('gl_customer_next', None)
+                        target = candidate or _customer_login_destination(request, saved_next)
+                        response = redirect(target or reverse('customer_club'))
+                        response['Cache-Control'] = 'private, no-store'
+                        return response
         elif action=='restart':
             request.session.pop('gl_pending_phone',None)
             step='send'
@@ -210,7 +238,7 @@ def customer_login(request):
 
 @require_POST
 def customer_logout(request):
-    for key in ('gl_customer_member_id','gl_customer_auth_at','gl_pending_phone'):
+    for key in ('gl_customer_member_id','gl_customer_auth_at','gl_pending_phone','gl_customer_next'):
         request.session.pop(key,None)
     return redirect('customer_login')
 

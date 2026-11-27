@@ -1,9 +1,11 @@
 """Member-only visit tracking. Internal staff notes and follow-up times stay private."""
 from datetime import datetime
+from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
-from .customer_portal_views import _member
+from .customer_portal_views import _member, _require_member
 from .me_sync_views import reply
+from .models import CustomerPortalMember, PatientDeviceProgram, PatientLipolyticProgram
 
 
 def visit_data(row):
@@ -44,14 +46,41 @@ def visit_data(row):
     }
 
 
-@require_GET
-def visits(request):
-    member = _member(request)
-    if not member:
-        return reply({'authenticated': False}, 401)
+def member_visit_requests(member):
     rows = member.requests.filter(kind='visit').select_related('branch', 'visit_appointment')
     data = [visit_data(row) for row in rows.order_by('-created_at', '-pk')[:20]]
     # Open coordination and upcoming/ongoing visits remain above closed history.
     priority = {'booked': 0, 'arrived': 1, 'contacted': 2, 'pending': 3}
     data.sort(key=lambda item: priority.get(item['state'], 4))
-    return reply({'authenticated': True, 'requests': data, 'checked_at': timezone.now().isoformat()})
+    return data
+
+
+@require_GET
+def visits(request):
+    member = _member(request)
+    if not member:
+        return reply({'authenticated': False}, 401)
+    return reply({'authenticated': True, 'requests': member_visit_requests(member), 'checked_at': timezone.now().isoformat()})
+
+
+@require_GET
+def customer_appointments(request):
+    member = _require_member(request)
+    if not isinstance(member, CustomerPortalMember):
+        return member
+    visit_requests = member_visit_requests(member)
+    for visit in visit_requests:
+        appointment = visit['appointment']
+        if appointment:
+            visit['appointment_at'] = datetime.fromisoformat(f"{appointment['date']}T{appointment['time']}")
+    device_requests = member.requests.filter(kind='device').select_related('branch', 'device_session')[:20]
+    device_programs = PatientDeviceProgram.objects.filter(patient__phone=member.phone)[:20]
+    lipolytic_programs = PatientLipolyticProgram.objects.filter(patient__phone=member.phone)[:20]
+    response = render(request, 'core/customer_portal/appointments.html', {
+        'visit_requests': visit_requests,
+        'device_requests': device_requests,
+        'device_programs': device_programs,
+        'lipolytic_programs': lipolytic_programs,
+    })
+    response['Cache-Control'] = 'private, no-store'
+    return response

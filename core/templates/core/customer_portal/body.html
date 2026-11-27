@@ -4,15 +4,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>بدن من | GreenLife Me</title>
+<title>آنالیز و روند بدن | گرین‌لایف من</title>
+<link rel="stylesheet" href="{% static 'core/customer-portal-navigation.css' %}?v=1">
 <style>
 :root{--paper:#f8f6f0;--card:#fffdf9;--green:#31533b;--gold:#b89b68;--ink:#2a3c2f;--muted:#807d70;--line:#e9e3d7}
 *{box-sizing:border-box}
 body{margin:0;background:#eae6de;color:var(--ink);font-family:Vazirmatn,Tahoma,Arial,sans-serif}
 .page{max-width:530px;min-height:100vh;margin:0 auto;background:var(--paper);padding:0 16px 38px;box-shadow:0 10px 45px #5d55301a}
-header{height:77px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}
-.brand{font:600 30px Georgia,serif;color:var(--green);direction:ltr}
-header a{color:var(--green);text-decoration:none;font-size:12px}
 .hero{margin:19px 0;padding:22px;border-radius:24px;background:linear-gradient(125deg,#e8efe1,#f9f3e5 70%,#ebe3d2);border:1px solid #e7e5d7}
 .eyebrow{color:#94784a;font-size:10px;letter-spacing:1.8px}
 .hero h1{font-size:30px;margin:8px 0 4px;font-weight:700}
@@ -46,8 +44,9 @@ footer{text-align:center;color:#7f8374;font:15px Georgia,serif;margin:27px 0 6px
 </head>
 <body>
 <main class="page">
-<header><a href="{% url 'customer_club' %}" aria-label="بازگشت">‹ بازگشت</a><div class="brand">GreenLife Me</div></header>
-<section class="hero"><div class="eyebrow">MY BODY JOURNEY</div><h1>بدن من</h1><p>{% if patient %}{{ patient.full_name }} · مسیر پیشرفت شخصی شما{% else %}پیشرفت شما اینجا ثبت خواهد شد{% endif %}</p></section>
+{% include 'core/customer_portal/home_header.html' %}
+{% include 'core/customer_portal/navigation.html' %}
+<section class="hero"><h1>آنالیز و روند بدن</h1><p>{% if patient %}{{ patient.full_name }} · مسیر پیشرفت شخصی شما{% else %}نتیجهٔ اسکن‌ها و عکس‌های پیشرفت شما{% endif %}</p></section>
 {% if latest %}
 <h2 class="section-title">آخرین آنالیز من</h2>
 <section class="metrics">
@@ -62,7 +61,7 @@ footer{text-align:center;color:#7f8374;font:15px Georgia,serif;margin:27px 0 6px
 {{ weight_series|json_script:"weight-series" }}
 {% endif %}
 {% else %}
-<div class="card empty">هنوز اسکن و آنالیزی در پرونده شما ثبت نشده است. بعد از اولین اسکن، نتایج اینجا ظاهر می‌شوند.</div>
+<div class="card empty">هنوز اسکن و آنالیزی در پروندهٔ این شماره دیده نمی‌شود. اگر در مطب اسکن انجام داده‌اید، از <a href="tel:02134247">مرکز</a> بخواهید شمارهٔ پرونده را بررسی کند.</div>
 {% endif %}
 <h2 class="section-title">تصاویر پیشرفت من</h2>
 {% if pairs %}

@@ -58,6 +58,7 @@ class CustomerPortalTests(TestCase):
     def test_needs_real_sms_otp_and_uses_one_time_code(self):
         member_response=self.client.get(reverse('customer_request',args=['visit']))
         self.assertEqual(member_response.status_code,302)
+        self.assertEqual(self.client.get(member_response.url).status_code, 200)
         with patch('core.customer_portal_views.send_sms') as sent:
             sent.return_value=(Mock(pk=1234),{})
             resp=self.client.post(reverse('customer_login'),{
@@ -77,10 +78,40 @@ class CustomerPortalTests(TestCase):
         otp.code_hash=make_password('123456')
         otp.save(update_fields=['code_hash'])
         result=self.client.post(reverse('customer_login'),{'action':'verify','code':'123456'})
-        self.assertEqual(result.status_code,302)
+        self.assertRedirects(result, reverse('customer_request', args=['visit']), fetch_redirect_response=False)
         self.assertTrue(self.client.session.get('gl_customer_member_id'))
         otp.refresh_from_db()
         self.assertFalse(otp.code_hash)
+
+    def test_signed_in_customer_resumes_the_requested_section(self):
+        self.authenticate_customer()
+        login = reverse('customer_login')
+        for target in (
+            reverse('customer_appointments'), reverse('customer_diets'),
+            '/customer/me/messages/?page=2', '/customer/me/home/connect/',
+            '/customer/me/diet/connect/', '/customer/me/visit/connect/',
+            '/customer/me/visits/connect/', '/customer/me/resume/nutrition/',
+        ):
+            with self.subTest(target=target):
+                response = self.client.get(login, {'next': target})
+                self.assertRedirects(response, target, fetch_redirect_response=False)
+                self.assertIn('no-store', response['Cache-Control'])
+        for target in ('https://example.test/', login, reverse('customer_logout'), '/customer/not-a-section/'):
+            with self.subTest(target=target):
+                self.assertRedirects(self.client.get(login, {'next': target}), reverse('customer_club'),
+                                     fetch_redirect_response=False)
+
+    def test_patient_pages_keep_home_and_the_same_section_links(self):
+        self.authenticate_customer()
+        sections = ('customer_diets', 'customer_body', 'customer_appointments', 'me_member_inbox')
+        for section in (*sections, 'customer_club'):
+            with self.subTest(section=section):
+                page = self.client.get(reverse(section))
+                self.assertContains(page, 'href="https://greenlife-me-preview.vercel.app/services.html"')
+                for link in sections:
+                    self.assertContains(page, f'href="{reverse(link)}"')
+                if section in sections:
+                    self.assertContains(page, f'href="{reverse(section)}" aria-current="page"')
 
     def test_visit_request_routes_to_staff_and_never_confirms_without_crm_appointment(self):
         member=self.authenticate_customer()

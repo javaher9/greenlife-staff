@@ -111,7 +111,12 @@ def _render(request,content,program=None):
 def customer_diet(request,pk):
     program,error=_owned(request,pk)
     if error:return error
-    return _render(request,_content(program),program)
+    try:
+        return _render(request, _content(program), program)
+    except Http404:
+        response = render(request, 'core/customer_portal/diet_unavailable.html', {'program': program}, status=404)
+        response['Cache-Control'] = 'private, no-store'
+        return response
 
 
 @require_GET

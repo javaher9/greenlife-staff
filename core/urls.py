@@ -4,7 +4,7 @@ from . import me_nutrition_views
 from . import me_sync_views
 from . import lead_contact_views, all_leads_views, follow_up_views
 from . import call_plaque_views
-from django.urls import path
+from django.urls import path, re_path
 from . import views
 from . import executive_finance_hub_views
 from . import skin_care_views
@@ -64,7 +64,9 @@ urlpatterns = [
     path("greenlife-me/members/", me_members_views.dashboard, name="me_members"),
     path("greenlife-me/members/<int:pk>/", me_members_views.detail, name="me_member_detail"),
     path("customer/me/messages/", me_members_views.inbox, name="me_member_inbox"),
-    path("customer/me/connect/", me_sync_views.connect),
+    path("customer/me/connect/", me_sync_views.connect, name="me_connect"),
+    re_path(r"^customer/me/(?P<module>home|diet|visit|visits)/connect/?$", me_sync_views.connect, name="me_connect_section"),
+    re_path(r"^customer/me/resume/(?P<module>[a-z]{1,32})/?$", me_sync_views.connect, name="me_connect_resume"),
     path("customer/me/state/", me_sync_views.state),
     path("customer/me/visits/", me_visit_views.visits, name="me_visits"),
     path("customer/me/diet/", me_diet_views.diet, name="me_diet"),
@@ -94,6 +96,7 @@ path('customer/intake/photo/<uuid:public_id>/',intake_views.intake_photo,name='c
 path('customer/login/',customer_portal_views.customer_login,name='customer_login'),
 path('customer/logout/',customer_portal_views.customer_logout,name='customer_logout'),
 path('customer/club/',customer_portal_views.customer_club,name='customer_club'),
+path('customer/appointments/',me_visit_views.customer_appointments,name='customer_appointments'),
 path('customer/invite/<str:code>/',customer_portal_views.customer_join,name='customer_join'),
 path('customer/request/<str:kind>/',customer_portal_views.customer_request,name='customer_request'),
 path('staff/customer-requests/',customer_portal_views.staff_customer_requests,name='staff_customer_requests'),

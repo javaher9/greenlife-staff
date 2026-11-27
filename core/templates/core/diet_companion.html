@@ -31,8 +31,11 @@ body{background:linear-gradient(180deg,#eef7f0,#f8faf7 720px)}
 .light-picker-option[aria-selected=true]::after{content:'✓';color:#3f8059}
 .nav .light-picker{max-width:190px}.nav .light-picker-trigger{height:auto;border-radius:14px}
 @media(max-width:400px){.meal-copy{padding:17px 14px}.log-form{margin:0 9px 9px;padding:11px;gap:8px}.log-form .btn{padding:9px 12px}.light-picker-trigger{padding:9px 10px;font-size:12px}}
-</style></head><body><main>
-<header><b>❧ همراه گرین‌لایف</b>{% if demo %}<a href="{% url 'treatment_content_browse' %}">بازگشت به برنامه‌ها</a>{% else %}<a href="{% url 'customer_diets' %}">برنامه‌های من</a>{% endif %}</header>
+</style>{% if not demo %}<link rel="stylesheet" href="{% static 'core/customer-portal-navigation.css' %}?v=1">{% endif %}</head><body><main>
+{% if demo %}<header><b>❧ همراه گرین‌لایف</b><a href="{% url 'treatment_content_browse' %}">بازگشت به برنامه‌ها</a></header>{% else %}
+{% include 'core/customer_portal/home_header.html' %}
+{% include 'core/customer_portal/navigation.html' %}
+{% endif %}
 {% if demo %}<div class="panel demo"><b>پیش‌نمایش آزمایشی</b><p class="muted">می‌توانید ثبت وعده و نشان‌ها را امتحان کنید. اطلاعات آزمایشی در پرونده هیچ مراجعی ذخیره نمی‌شود.</p></div>{% endif %}
 <section class="hero">{% if content.cover_url %}<img src="{{ content.cover_url }}" alt="تصویر {{ title }}">{% endif %}<div><span class="eyebrow">برنامه غذایی اختصاصی</span><h1>{{ title }}</h1>{% if program %}<p class="muted">{{ program.patient.full_name }} · {{ program.get_status_display }}</p>{% endif %}</div></section>
 {% if content.slogan %}<div class="panel slogan">{{ content.slogan }}</div>{% endif %}

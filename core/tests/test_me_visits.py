@@ -1,7 +1,11 @@
 from datetime import timedelta, time
 from django.test import TestCase, Client
+from django.urls import reverse
 from django.utils import timezone
-from core.models import Branch, CustomerPortalMember, CustomerServiceRequest, VisitAppointment
+from core.models import (
+    Branch, CustomerPortalMember, CustomerServiceRequest, PatientDeviceProgram,
+    PatientLipolyticProgram, PatientProfile, VisitAppointment,
+)
 
 
 class MeVisitTrackingTests(TestCase):
@@ -62,3 +66,34 @@ class MeVisitTrackingTests(TestCase):
         self.assertIsNone(data['appointment'])
         self.row.delete()
         self.assertEqual(self.data(),[])
+
+    def test_customer_appointments_from_real_requests_and_visible_booking(self):
+        url = reverse('customer_appointments')
+        self.assertIn('next=%2Fcustomer%2Fappointments%2F', Client().get(url).url)
+        response = self.client.get(url)
+        self.assertContains(response, 'ویزیت‌های من')
+        self.assertContains(response, 'در انتظار بررسی')
+        self.assertNotContains(response, 'private internal closure')
+        self.assertContains(response, f'href="{reverse("customer_request", args=["visit"])}"')
+        self.assertContains(response, f'href="{reverse("customer_request", args=["device"])}"')
+        self.assertEqual([row['id'] for row in response.context['visit_requests']], [self.row.pk])
+        self.assertIn('no-store', response['Cache-Control'])
+        self.row.status = 'booked'
+        self.row.visit_appointment = VisitAppointment.objects.create(
+            branch=self.branch, full_name='Test', phone=self.member.phone,
+            appointment_date=timezone.localdate() + timedelta(days=1), appointment_time=time(10, 30),
+        )
+        self.row.save()
+        self.assertContains(self.client.get(url), '10:30')
+
+    def test_program_counts_are_visible_only_for_the_verified_patient(self):
+        patient = PatientProfile.objects.create(full_name='Fixture patient', phone=self.member.phone)
+        other = PatientProfile.objects.create(full_name='Other patient', phone='09120003002')
+        PatientDeviceProgram.objects.create(patient=patient, device_name='Fixture device', sessions_prescribed=4, sessions_completed=2)
+        PatientLipolyticProgram.objects.create(patient=patient, protocol_name='Fixture lipolytic', sessions_prescribed=3, sessions_completed=1)
+        PatientDeviceProgram.objects.create(patient=other, device_name='Other patient device')
+        page = self.client.get(reverse('customer_appointments'))
+        self.assertContains(page, 'Fixture device')
+        self.assertContains(page, 'Fixture lipolytic')
+        self.assertContains(page, '2 از 4 جلسه')
+        self.assertNotContains(page, 'Other patient device')

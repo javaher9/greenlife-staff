@@ -1,0 +1,58 @@
+{% extends 'core/customer_portal/layout.html' %}
+{% load jalali_tags %}
+{% block title %}نوبت‌ها و درخواست‌های من | گرین‌لایف{% endblock %}
+{% block content %}
+<div class="hero">
+  <h1>نوبت‌ها و درخواست‌های من</h1>
+  <p>وضعیت درخواست‌های ثبت‌شده در حساب گرین‌لایف و زمان نوبت‌های تأییدشدهٔ آن‌ها</p>
+</div>
+<div class="panel portal-actions">
+  <a class="btn" href="{% url 'customer_request' 'visit' %}">درخواست ویزیت</a>
+  <a class="btn alt" href="{% url 'customer_request' 'device' %}">درخواست جلسهٔ دستگاه</a>
+</div>
+<section class="panel" aria-labelledby="visit-title">
+  <h2 id="visit-title">ویزیت‌های من</h2>
+  {% for visit in visit_requests %}
+    <article class="item">
+      <div class="flex"><b>{{ visit.title }}</b><span class="tag">{{ visit.label }}</span></div>
+      <p>{{ visit.branch }} · شماره پیگیری <bdi>{{ visit.id }}</bdi></p>
+      {% if visit.appointment_at %}<p>زمان ثبت‌شده: <bdi dir="ltr">{{ visit.appointment_at|jdatetime_en }}</bdi></p>{% endif %}
+      <p>{{ visit.next_step }}</p>
+    </article>
+  {% empty %}
+    <p>درخواست ویزیتی در این حساب ثبت نشده است. اگر مطب برایتان نوبت گذاشته، برای بررسی زمان با مرکز تماس بگیرید.</p>
+  {% endfor %}
+</section>
+<section class="panel" aria-labelledby="device-title">
+  <h2 id="device-title">نوبت‌های دستگاه من</h2>
+  {% for row in device_requests %}
+    <article class="item">
+      <div class="flex"><b>{{ row.branch.name }} · شماره پیگیری <bdi>{{ row.pk }}</bdi></b>
+        <span class="tag">{% if row.status == 'booked' and row.device_session %}{{ row.device_session.get_status_display }}{% elif row.status == 'booked' %}در حال بررسی زمان{% else %}{{ row.get_status_display }}{% endif %}</span>
+      </div>
+      {% if row.status == 'booked' and row.device_session %}<p>زمان ثبت‌شده: <bdi dir="ltr">{{ row.device_session.starts_at|jdatetime_en }}</bdi></p>{% endif %}
+    </article>
+  {% empty %}
+    <p>درخواست جلسهٔ دستگاهی در این حساب ثبت نشده است. برای جلسه‌های قبلی یا پکیج خود با مرکز تماس بگیرید.</p>
+  {% endfor %}
+</section>
+<section class="panel" id="treatments" aria-labelledby="program-title">
+  <h2 id="program-title">برنامه‌های دستگاه و لیپولیتیک</h2>
+  {% for program in device_programs %}
+    <article class="item">
+      <div class="flex"><b>{{ program.device_name }}</b><span class="tag">{{ program.get_status_display }}</span></div>
+      <p>{{ program.sessions_completed }} از {{ program.sessions_prescribed }} جلسه انجام شده است.</p>
+    </article>
+  {% endfor %}
+  {% for program in lipolytic_programs %}
+    <article class="item">
+      <div class="flex"><b>{{ program.protocol_name }}</b><span class="tag">{{ program.get_status_display }}</span></div>
+      <p>{{ program.sessions_completed }} از {{ program.sessions_prescribed }} جلسه انجام شده است.</p>
+    </article>
+  {% endfor %}
+  {% if not device_programs and not lipolytic_programs %}
+    <p>هنوز برنامه‌ای در پروندهٔ این شماره ثبت نشده است.</p>
+  {% endif %}
+</section>
+<a class="btn ghost" href="tel:02134247">تماس با مرکز <bdi dir="ltr">02134247</bdi></a>
+{% endblock %}

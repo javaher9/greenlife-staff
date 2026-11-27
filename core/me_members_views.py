@@ -14,7 +14,7 @@ from django.db import transaction
 from django.db.models import Q, Count, Sum, Exists, OuterRef, Subquery, Value, DateTimeField
 from django.db.models.functions import Coalesce, Greatest, Concat, Substr, TruncDate
 from django.http import HttpResponseBadRequest
-from django.shortcuts import get_object_or_404, render, redirect
+from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_GET, require_http_methods
@@ -22,7 +22,7 @@ from .models import FinancialTransaction, lead_phone_variants, CustomerPortalMem
 from .jalali import parse_jalali, format_jalali, LATIN_DIGITS
 from .me_diet_models import MeMealReport
 from .me_members_models import MeMemberCare, MeMemberAction
-from .customer_portal_views import _member
+from .customer_portal_views import _require_member
 
 
 def may_manage(user):
@@ -187,7 +187,8 @@ def detail(request,pk):
 
 @require_GET
 def inbox(request):
-    m=_member(request)
-    if not m:return redirect('/customer/login/?next=/customer/me/messages/')
+    m = _require_member(request)
+    if not isinstance(m, CustomerPortalMember):
+        return m
     rows=m.me_actions.filter(kind__in=('reply','points')).select_related('actor')
     return private(request,'core/customer_portal/me_messages.html',{'page':Paginator(rows,30).get_page(request.GET.get('page')),'points':rows.aggregate(n=Sum('points'))['n'] or 0})

@@ -1,0 +1,8 @@
+{% with section=request.resolver_match.url_name %}
+<nav class="patient-section-nav" aria-label="خدمات مطب گرین‌لایف">
+  <a href="{% url 'customer_diets' %}"{% if section == 'customer_diets' or section == 'customer_diet' %} aria-current="page"{% endif %}>رژیم تجویزشده</a>
+  <a href="{% url 'customer_body' %}"{% if section == 'customer_body' %} aria-current="page"{% endif %}>آنالیز و روند بدن</a>
+  <a href="{% url 'customer_appointments' %}"{% if section == 'customer_appointments' or section == 'customer_request' %} aria-current="page"{% endif %}>نوبت‌ها و درخواست‌ها</a>
+  <a href="{% url 'me_member_inbox' %}"{% if section == 'me_member_inbox' %} aria-current="page"{% endif %}>پیام‌های مرکز</a>
+</nav>
+{% endwith %}

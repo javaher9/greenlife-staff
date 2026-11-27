@@ -1,0 +1,11 @@
+{% extends 'core/customer_portal/layout.html' %}
+{% block title %}{{ program.diet_name }} | گرین‌لایف من{% endblock %}
+{% block content %}
+<div class="hero"><h1>{{ program.diet_name }}</h1></div>
+<section class="panel">
+  <h2>جزئیات این رژیم هنوز در اپ آماده نیست</h2>
+  <p>این نسخه در پروندهٔ شما ثبت شده است. برای دریافت جزئیات با مرکز تماس بگیرید.</p>
+  <a class="btn" href="tel:02134247">تماس با مرکز <bdi dir="ltr">02134247</bdi></a>
+  <a class="btn alt" href="{% url 'customer_diets' %}">برگشت به فهرست رژیم‌ها</a>
+</section>
+{% endblock %}

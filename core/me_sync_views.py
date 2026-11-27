@@ -1,5 +1,6 @@
 """Same-origin proxy API. Django CSRF + existing verified phone session required."""
 import json
+import re
 from datetime import date, timedelta
 from zoneinfo import ZoneInfo
 from django.db import transaction
@@ -9,7 +10,8 @@ from django.shortcuts import redirect
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
-from .customer_portal_views import _member
+from .customer_portal_views import _member, _require_member
+from .models import CustomerPortalMember
 from .me_sync_models import MeAccountState, MeDailyAward, MeSyncAudit
 
 KEYS = {'greenlife-interactive-preview-v1', 'greenlife-heart-v1', 'greenlife-me-member-v1',
@@ -24,10 +26,15 @@ def reply(value, status=200):
 
 
 @never_cache
-def connect(request):
-    if _member(request):
-        return redirect('https://greenlife-me-preview.vercel.app/my/')
-    return redirect('/customer/login/?next=/customer/me/connect/')
+def connect(request, module=None):
+    member = _require_member(request)
+    if not isinstance(member, CustomerPortalMember):
+        return member
+    app = 'https://greenlife-me-preview.vercel.app'
+    if module == 'home':
+        return redirect(app + '/services.html')
+    module = module or request.GET.get('module', '')
+    return redirect(app + '/my/' + (f'?module={module}' if re.fullmatch(r'[a-z]{1,32}', module) else ''))
 
 
 def clean_values(values):
@@ -128,7 +135,7 @@ def state(request):
 @never_cache
 @require_http_methods(['POST'])
 def logout(request):
-    for key in ('gl_customer_member_id', 'gl_customer_auth_at', 'gl_pending_phone'):
+    for key in ('gl_customer_member_id', 'gl_customer_auth_at', 'gl_pending_phone', 'gl_customer_next'):
         request.session.pop(key, None)
     request.session.cycle_key()
     return reply({'ok': True})
