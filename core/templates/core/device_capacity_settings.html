@@ -172,7 +172,7 @@ linear-gradient(135deg,#123c34 0%,#102c38 45%,#182846 100%);border-color:rgba(10
 <div class="cap-summary" aria-label="خلاصه دستگاه‌ها"><span class="cap-summary-pill"><b>{{ types|length }}</b> نوع دستگاه در بانک</span><span class="cap-summary-pill"><b>{{ devices|length }}</b> دستگاه در این مرکز</span></div>
 <div class="cap-hero-actions">
 {% if is_admin %}<form method="get" class="cap-branch-form"><label>شعبه<select name="branch">{% for b in branches %}<option value="{{ b.pk }}" {% if b.pk == branch.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></label><button>نمایش</button></form>{% endif %}
-<a class="cap-link" href="{% url 'device_booking_schedule' %}">تقویم و رزرو دستگاه‌ها</a>
+<a class="cap-link" href="{% url 'device_booking_schedule' %}?branch={{ branch.pk }}">تقویم و رزرو دستگاه‌ها</a>
 </div>
 </section>
 <div class="cap-grid">
