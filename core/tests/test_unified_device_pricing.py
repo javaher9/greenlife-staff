@@ -188,3 +188,21 @@ class UnifiedDevicePricingTests(TestCase):
         self.assertContains(response,"دستگاه غیرفعال")
         self.assertContains(response,'aria-pressed="false"')
         self.assertContains(response,"cap-device-row is-off")
+
+    def test_selected_branch_is_visible_in_device_settings_titles(self):
+        self.client.force_login(self.role_admin)
+        url=reverse("device_capacity_settings")
+        for branch in (self.branch,self.other_branch):
+            with self.subTest(branch=branch.name):
+                response=self.client.get(url+"?branch="+str(branch.pk))
+                self.assertEqual(response.status_code,200)
+                self.assertContains(response,"تنظیمات دستگاه‌های "+branch.name)
+                self.assertContains(response,"دستگاه‌های شعبه "+branch.name)
+                self.assertContains(response,'value="'+str(branch.pk)+'" selected')
+
+    def test_device_plaque_separation_styles_are_scoped_to_settings_page(self):
+        self.client.force_login(self.role_admin)
+        response=self.client.get(reverse("device_capacity_settings")+"?branch="+str(self.branch.pk))
+        self.assertContains(response,"v41.2: visually separate each independent device/type plaque")
+        self.assertContains(response,".cap-device-head{gap:14px;padding-bottom:14px")
+        self.assertContains(response,".cap-row{margin-top:0;margin-bottom:20px")
