@@ -180,6 +180,7 @@ class UnifiedDevicePricingTests(TestCase):
         self.assertContains(response,"دستگاه فعال")
         self.assertContains(response,'aria-pressed="true"')
         self.assertContains(response,"cap-summary-pill")
+        self.assertContains(response,reverse("device_booking_schedule")+"?branch="+str(self.branch.pk))
 
         self.physical.is_active=False
         self.physical.save(update_fields=["is_active"])
