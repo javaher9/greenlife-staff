@@ -16,7 +16,7 @@ from django.views.decorators.http import require_GET
 from .call_center_identity import call_center_display_name
 from .call_plaque import call_plaque_summaries
 from .jalali import format_jalali, gregorian_to_jalali, jalali_to_gregorian
-from .lead_management_views import ALLOWED_ROLES, _lead_hub_queryset
+from .lead_management_views import ALLOWED_ROLES, OPEN_STATUSES, _lead_hub_queryset
 from .models import Branch, CallCenterLeadGroup, EmployeeProfile, ReferralLead, VisitAppointment
 
 PAGE_SIZE = 120
@@ -106,7 +106,9 @@ def all_leads_data(request):
                     qs = qs.filter(**{field + '__isnull': True})
                 else:
                     qs = qs.filter(**{field: int(params[key])})
-        if params['state']:
+        if params['state'] == 'open':
+            qs = qs.filter(status__in=OPEN_STATUSES)
+        elif params['state']:
             if params['state'] not in STATES:
                 raise ValueError('وضعیت نامعتبر است.')
             qs = qs.filter(archive_state=params['state'])

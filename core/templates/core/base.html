@@ -563,6 +563,7 @@ html[dir="ltr"] .lead-page textarea{text-align:left!important;direction:ltr!impo
     {% endif %}
     {% if user.profile.role != 'employee' %}<a href="/action-center/"><span class="nav-ico">⚡</span><span>{% gl_t 'shell.action_center' %}</span></a>{% endif %}
     {% if user.profile.role == 'admin' or user.profile.role == 'internal_manager' or user.profile.role == 'manager' %}
+    <a href="{% url 'management_command_room' %}" class="{% if request.resolver_match.url_name == 'management_command_room' %}is-active{% endif %}"><span class="nav-ico" aria-hidden="true">⌘</span><span>اتاق فرمان لید</span></a>
     <a href="{% url 'management_all_leads' %}" class="{% if request.resolver_match.url_name == 'management_all_leads' %}is-active{% endif %}"><span class="nav-ico">▦</span><span>همه لیدها</span></a>
     {% endif %}
     {% if user.profile.role == 'admin' %}
