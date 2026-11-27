@@ -103,21 +103,84 @@ linear-gradient(135deg,#123c34 0%,#102c38 45%,#182846 100%);border-color:rgba(10
 .cap-badge{color:#d8f8e9!important}
 .cap-cabin-chip{color:#f4fbfa!important}
 .cap-type-row.is-off,.cap-device-row.is-off{opacity:.88!important}
+
+/* Device settings readability: local overrides, no effects on other Staff pages. */
+.cap{font-family:"Noto Sans Arabic",Tahoma,Arial,sans-serif;font-size:14px;line-height:1.7}
+.cap-panel{min-width:0}
+.cap-subtitle{font-size:13px!important;line-height:1.9}
+.cap label{font-size:13px!important;line-height:1.65;font-weight:800}
+.cap-note{font-size:13px!important;line-height:1.85}
+.cap-muted{color:#d0dfe0!important}
+.cap-row strong{font-size:15px!important;line-height:1.65}
+.cap-badge,.cap-status,.cap-catalog-chip{font-size:12px!important;line-height:1.5}
+.cap-cabin-chip{font-size:12px!important}
+.cap input,.cap select{font:inherit!important;font-size:14px!important;min-width:0;width:100%;min-height:46px;color-scheme:dark;background:#0b2330!important;border:1px solid #5e7b88!important}
+.cap input::placeholder{color:#c8d5dd!important}
+.cap input:focus-visible,.cap select:focus-visible{outline:2px solid #72ddb8!important;outline-offset:1px}
+.cap button,.cap-link{font:inherit;font-size:13px!important;line-height:1.5;min-height:44px;white-space:normal;text-align:center;transition:filter .16s ease,box-shadow .16s ease}
+.cap button:focus-visible,.cap-link:focus-visible{outline:3px solid #a5f2ce!important;outline-offset:3px}
+.cap form>label{flex:1 1 146px;min-width:0}
+.cap-branch-form>label{min-width:180px}
+.cap-branch-form select{min-width:160px}
+.cap-type-edit label{min-width:0}
+.cap-type-edit .cap-name-field{max-width:none}
+.cap-type-edit button{align-self:end}
+.cap-toggle,.cap-cabin-chip button{font-size:12px!important;min-height:36px!important}
+.cap-switch{min-height:44px!important;padding:7px 11px!important;gap:9px!important}
+.cap-switch-label{font-size:12px!important;color:#d2dee7!important}
+.cap-switch.is-on .on-label{color:#b5f7d7!important}
+.cap-switch.is-off .off-label{color:#ffd2cb!important}
+.cap-status.on{background:rgba(28,132,90,.32);border-color:#3eaa80;color:#c6ffe4!important}
+.cap-status.off{background:rgba(149,62,57,.33);border-color:#ba6b62;color:#ffd5ce!important}
+.cap-type-row.is-off,.cap-device-row.is-off{opacity:1!important;filter:none!important}
+.cap-device-row.is-off strong{color:#fff!important}
+.cap-device-row.is-off{border-color:rgba(180,135,122,.42)}
+.cap-device-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cap-device-title strong{margin:0}
+.cap-type-status{margin:0 0 9px}
+.cap-summary{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px;position:relative;z-index:1}
+.cap-summary-pill{display:inline-flex;align-items:center;gap:7px;border:1px solid #537e85;border-radius:999px;background:rgba(8,30,41,.73);color:#effefa;padding:7px 12px;font-size:13px;font-weight:800}
+.cap-summary-pill b{color:#9cf2cc;font-size:15px}
+.cap-hint{margin:8px 0 0;padding:9px 12px;border-right:3px solid #80d5b5;background:rgba(39,104,90,.16);border-radius:8px}
+.cap-hours-form{gap:11px!important}
+.cap-price-note{margin:8px 0 0}
+@media(max-width:1480px){.cap-grid{grid-template-columns:1fr}}
+@media(max-width:700px){
+  .cap{margin:8px 8px 24px;gap:10px}
+  .cap-panel{padding:14px;border-radius:16px}
+  .cap-hero{padding:20px 16px}
+  .cap h1{font-size:22px!important}
+  .cap h2{font-size:17px!important}
+  .cap-hero-actions,.cap-branch-form{align-items:stretch!important}
+  .cap-branch-form,.cap-hero-actions{width:100%}
+  .cap-branch-form>label,.cap-branch-form button,.cap-hero-actions>.cap-link{flex:1 1 100%}
+  .cap-type-edit{grid-template-columns:minmax(0,1fr)!important}
+  .cap-type-edit button{width:100%}
+  .cap-new-box form,.cap-hours-form,.cap-type-price{align-items:stretch!important}
+  .cap-new-box form>label,.cap-hours-form>label,.cap-type-price>label{flex:1 1 100%;width:100%}
+  .cap-new-box form>button,.cap-hours-form>button,.cap-type-price>button{width:100%}
+  .cap-device-head{align-items:flex-start}
+  .cap-status-wrap{width:100%;justify-content:space-between;flex-wrap:wrap}
+  .cap-row{padding:13px 11px}
+}
+@media(prefers-reduced-motion:reduce){.cap button,.cap-link,.cap-switch-track,.cap-switch-track i{transition:none!important}}
 </style>
 <div class="cap">
 <section class="cap-panel cap-hero">
 <h1>تنظیمات ظرفیت و زمان دستگاه‌ها</h1>
 <p class="cap-subtitle">شعبه: {{ branch.name }} · محور کار دستگاه فیزیکی است؛ هر دستگاه کد مستقل، ساعت کاری و وضعیت روشن/خاموش خودش را دارد.</p>
+<div class="cap-summary" aria-label="خلاصه دستگاه‌ها"><span class="cap-summary-pill"><b>{{ types|length }}</b> نوع دستگاه در بانک</span><span class="cap-summary-pill"><b>{{ devices|length }}</b> دستگاه در این مرکز</span></div>
 <div class="cap-hero-actions">
 {% if is_admin %}<form method="get" class="cap-branch-form"><label>شعبه<select name="branch">{% for b in branches %}<option value="{{ b.pk }}" {% if b.pk == branch.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></label><button>نمایش</button></form>{% endif %}
-<a class="cap-link" href="{% url 'device_booking_schedule' %}">تقویم و رزرو دستگاه‌ها</a>
+<a class="cap-link" href="{% url 'device_booking_schedule' %}?branch={{ branch.pk }}">تقویم و رزرو دستگاه‌ها</a>
 </div>
 </section>
 <div class="cap-grid">
 <section class="cap-panel">
-<div class="cap-section-head"><div><h2>بانک انواع دستگاه</h2><div class="cap-note">مدل‌های اصلی دستگاه را اینجا تعریف، ویرایش یا حذف کنید؛ بعد در هر مرکز از همین بانک دستگاه فیزیکی می‌چینید.</div></div><span class="cap-icon type-icon">◷</span></div>
+<div class="cap-section-head"><div><h2>بانک انواع دستگاه</h2><div class="cap-note">مدل‌های اصلی دستگاه را اینجا تعریف و ویرایش کنید؛ مشخصات و قیمت این بانک در همه شعب مشترک است.</div></div><span class="cap-icon type-icon">◷</span></div>
 <div class="cap-new-box cap-type-new"><span class="cap-badge">＋ نوع دستگاه جدید</span><form method="post">{% csrf_token %}<input type="hidden" name="branch" value="{{ branch.pk }}"><input type="hidden" name="action" value="new_type"><label class="cap-name-field">نام دستگاه<input name="name" placeholder="مثلاً کرایو یا SculpSure" required></label><label>درمان (دقیقه)<input type="number" min="10" max="240" name="treatment_minutes" value="60" required></label><label>آماده‌سازی (دقیقه)<input type="number" min="0" max="240" name="preparation_minutes" value="20" required></label><button type="submit">افزودن به بانک</button></form></div>
-{% for t in types %}<div class="cap-row cap-type-row">
+{% for t in types %}<div class="cap-row cap-type-row {% if not t.is_active %}is-off{% endif %}">
+<div class="cap-type-status"><span class="cap-status {% if t.is_active %}on{% else %}off{% endif %}">{% if t.is_active %}فعال در بانک{% else %}غیرفعال در بانک{% endif %}</span></div>
 <form method="post" class="cap-type-edit">{% csrf_token %}
   <input type="hidden" name="branch" value="{{ branch.pk }}">
   <input type="hidden" name="action" value="type">
@@ -150,17 +213,18 @@ linear-gradient(135deg,#123c34 0%,#102c38 45%,#182846 100%);border-color:rgba(10
 </section>
 <section class="cap-panel">
 <div class="cap-section-head"><div><h2>دستگاه‌های این مرکز</h2><div class="cap-note">برای هر دستگاه یک کد مشخص مثل RSA1، CRYO1 یا DF1 ثبت کنید؛ فقط دستگاه‌های روشن وارد نوبت‌دهی می‌شوند.</div></div><span class="cap-icon device-icon">▣</span></div>
+<p class="cap-note cap-hint">«آخرین شروع نوبت» آخرین زمانی است که یک جلسه درمان می‌تواند آغاز شود؛ این ساعت الزاماً پایان کار دستگاه نیست.</p>
 <div class="cap-new-box device"><span class="cap-badge">＋ چیدمان دستگاه فیزیکی</span><form method="post">{% csrf_token %}<input type="hidden" name="action" value="device"><input type="hidden" name="branch" value="{{ branch.pk }}"><label>کد / نام دستگاه<input name="name" placeholder="مثلاً RSA1 یا CRYO2" required></label><label>نوع دستگاه<select name="type_id">{% for t in active_types %}<option value="{{ t.pk }}">{{ t.name }}</option>{% endfor %}</select></label><button>افزودن به این مرکز</button></form></div>
 {% for device in devices %}<div class="cap-row cap-device-row {% if not device.is_active %}is-off{% endif %}">
 <div class="cap-device-head">
-  <strong>{{ device.name }} · {{ device.device_type.name }}</strong>
+  <div class="cap-device-title"><strong>{{ device.name }} · {{ device.device_type.name }}</strong><span class="cap-status {% if device.is_active %}on{% else %}off{% endif %}">{% if device.is_active %}دستگاه فعال{% else %}دستگاه غیرفعال{% endif %}</span></div>
   <div class="cap-status-wrap">
     <form method="post" class="cap-toggle-form">{% csrf_token %}
       <input type="hidden" name="action" value="toggle_device">
       <input type="hidden" name="branch" value="{{ branch.pk }}">
       <input type="hidden" name="device_id" value="{{ device.pk }}">
       <input type="hidden" name="active" value="{% if device.is_active %}0{% else %}1{% endif %}">
-      <button class="cap-switch {% if device.is_active %}is-on{% else %}is-off{% endif %}" type="submit" title="تغییر وضعیت {{ device.name }}">
+      <button class="cap-switch {% if device.is_active %}is-on{% else %}is-off{% endif %}" type="submit" title="تغییر وضعیت {{ device.name }}" aria-label="{% if device.is_active %}غیرفعال کردن{% else %}فعال کردن{% endif %} دستگاه {{ device.name }}" aria-pressed="{% if device.is_active %}true{% else %}false{% endif %}">
         <span class="cap-switch-label off-label">غیرفعال</span>
         <span class="cap-switch-track"><i></i></span>
         <span class="cap-switch-label on-label">فعال</span>
@@ -174,6 +238,6 @@ linear-gradient(135deg,#123c34 0%,#102c38 45%,#182846 100%);border-color:rgba(10
     </form>
   </div>
 </div>
-<form method="post">{% csrf_token %}<input type="hidden" name="action" value="move"><input type="hidden" name="branch" value="{{ branch.pk }}"><input type="hidden" name="device_id" value="{{ device.pk }}"><label>شروع کار<input name="work_start" type="time" value="{{ device.work_start|time:'H:i' }}"></label><label>آخرین شروع<input name="last_start" type="time" value="{{ device.last_start|time:'H:i' }}"></label><button>ذخیره ساعت</button></form></div>{% empty %}<p class="cap-note cap-muted">هنوز دستگاهی برای این مرکز تعریف نشده؛ از بانک دستگاه‌ها یک مدل انتخاب و دستگاه فیزیکی اضافه کنید.</p>{% endfor %}
+<form method="post" class="cap-hours-form">{% csrf_token %}<input type="hidden" name="action" value="move"><input type="hidden" name="branch" value="{{ branch.pk }}"><input type="hidden" name="device_id" value="{{ device.pk }}"><label>شروع کار<input name="work_start" type="time" value="{{ device.work_start|time:'H:i' }}"></label><label>آخرین شروع نوبت<input name="last_start" type="time" value="{{ device.last_start|time:'H:i' }}"></label><button>ذخیره ساعت</button></form></div>{% empty %}<p class="cap-note cap-muted">هنوز دستگاهی برای این مرکز تعریف نشده؛ از بانک دستگاه‌ها یک مدل انتخاب و دستگاه فیزیکی اضافه کنید.</p>{% endfor %}
 </section></div></div>
 {% endblock %}

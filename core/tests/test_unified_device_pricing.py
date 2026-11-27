@@ -168,3 +168,23 @@ class UnifiedDevicePricingTests(TestCase):
         from core.models import DeviceBaseTariff
         self.assertEqual(DeviceBaseTariff.current(),Decimal("10000000"))
         self.assertContains(response,'value="10"')
+
+    def test_device_capacity_page_displays_accessible_controls_and_device_statuses(self):
+        self.client.force_login(self.role_admin)
+        url=reverse("device_capacity_settings")+"?branch="+str(self.branch.pk)
+        self.physical.is_active=True
+        self.physical.save(update_fields=["is_active"])
+        response=self.client.get(url)
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,"آخرین شروع نوبت")
+        self.assertContains(response,"دستگاه فعال")
+        self.assertContains(response,'aria-pressed="true"')
+        self.assertContains(response,"cap-summary-pill")
+        self.assertContains(response,reverse("device_booking_schedule")+"?branch="+str(self.branch.pk))
+
+        self.physical.is_active=False
+        self.physical.save(update_fields=["is_active"])
+        response=self.client.get(url)
+        self.assertContains(response,"دستگاه غیرفعال")
+        self.assertContains(response,'aria-pressed="false"')
+        self.assertContains(response,"cap-device-row is-off")
