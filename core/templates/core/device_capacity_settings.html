@@ -164,11 +164,60 @@ linear-gradient(135deg,#123c34 0%,#102c38 45%,#182846 100%);border-color:rgba(10
   .cap-row{padding:13px 11px}
 }
 @media(prefers-reduced-motion:reduce){.cap button,.cap-link,.cap-switch-track,.cap-switch-track i{transition:none!important}}
+
+/* v41.2: visually separate each independent device/type plaque without changing theme or data. */
+.cap-grid{gap:24px;align-items:start}
+.cap-grid>.cap-panel{min-width:0;padding:22px 23px 28px}
+.cap-section-head{padding-bottom:17px;margin-bottom:18px;border-bottom:1px solid rgba(169,205,205,.32)}
+.cap-row{margin-top:0;margin-bottom:20px;padding:19px 19px 17px;border-radius:19px;
+ border:1.5px solid rgba(156,191,205,.52);
+ box-shadow:0 11px 22px rgba(0,0,0,.32),0 0 0 3px rgba(4,15,27,.38),inset 0 1px 0 rgba(255,255,255,.06);
+ background-color:#122c36}
+.cap-row:last-of-type{margin-bottom:0}
+.cap-row:before{width:5px;border-radius:0 18px 18px 0}
+.cap-type-row{border-color:rgba(147,157,211,.50)}
+.cap-device-row{border-color:rgba(100,192,165,.54)}
+.cap-device-row:nth-of-type(4n+2){border-color:rgba(103,155,219,.56)}
+.cap-device-row:nth-of-type(4n+3){border-color:rgba(159,129,218,.58)}
+.cap-device-row:nth-of-type(4n){border-color:rgba(214,161,103,.56)}
+.cap-row.is-off{border-style:dashed!important;border-color:rgba(174,160,153,.68)!important}
+.cap-type-status{margin-bottom:12px}
+.cap-device-head{gap:14px;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid rgba(163,205,211,.23)}
+.cap-device-title{gap:12px}
+.cap-device-title strong{font-size:16px!important;line-height:1.5}
+.cap-status-wrap{gap:10px;flex-wrap:wrap}
+.cap-hours-form{padding:12px;border-radius:13px;background:rgba(1,13,25,.20);border:1px solid rgba(126,167,177,.19);margin:0!important;align-items:end!important}
+.cap-hours-form>label{min-width:150px}
+.cap-hours-form>button{flex:0 0 auto;min-width:105px}
+.cap-type-edit{gap:11px!important;padding-top:3px}
+.cap-type-price{margin-top:17px!important;padding:14px!important;border-color:rgba(119,184,163,.46)!important;background:rgba(5,23,33,.27)!important}
+.cap-new-box{margin:10px 0 23px;padding:17px;border-width:1.5px}
+.cap-type-row>.cap-toggle-form{margin-top:12px!important}
+.cap-hero h1{font-size:26px!important}
+.cap-hero .cap-subtitle{max-width:900px}
+.cap-branch-form select{font-weight:850!important}
+.cap button{border:1px solid rgba(255,255,255,.15)}
+.cap-inline-delete,.cap-delete{margin-inline-start:3px}
+.cap-type-edit button,.cap-type-price button{min-width:94px}
+@media(min-width:1481px){.cap-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:1480px){.cap-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:900px){.cap-grid{gap:20px}.cap-grid>.cap-panel{padding:17px 16px 20px}.cap-row{margin-bottom:18px;padding:16px}}
+@media(max-width:700px){
+ .cap-grid{gap:16px}
+ .cap-grid>.cap-panel{padding:15px 12px}
+ .cap-row{padding:15px 12px 13px;margin-bottom:16px}
+ .cap-device-head{gap:12px}
+ .cap-device-title{width:100%}
+ .cap-status-wrap{justify-content:flex-start;gap:10px}
+ .cap-hours-form{padding:11px;gap:10px!important}
+ .cap-hours-form>button{width:100%;flex:1 1 100%}
+ .cap-hero h1{font-size:21px!important}
+}
 </style>
 <div class="cap">
 <section class="cap-panel cap-hero">
-<h1>تنظیمات ظرفیت و زمان دستگاه‌ها</h1>
-<p class="cap-subtitle">شعبه: {{ branch.name }} · محور کار دستگاه فیزیکی است؛ هر دستگاه کد مستقل، ساعت کاری و وضعیت روشن/خاموش خودش را دارد.</p>
+<h1>تنظیمات دستگاه‌های {{ branch.name }}</h1>
+<p class="cap-subtitle">ظرفیت، زمان‌بندی و دستگاه‌های فیزیکی شعبه {{ branch.name }} · هر دستگاه کد، ساعت کاری و وضعیت مستقل دارد.</p>
 <div class="cap-summary" aria-label="خلاصه دستگاه‌ها"><span class="cap-summary-pill"><b>{{ types|length }}</b> نوع دستگاه در بانک</span><span class="cap-summary-pill"><b>{{ devices|length }}</b> دستگاه در این مرکز</span></div>
 <div class="cap-hero-actions">
 {% if is_admin %}<form method="get" class="cap-branch-form"><label>شعبه<select name="branch">{% for b in branches %}<option value="{{ b.pk }}" {% if b.pk == branch.pk %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></label><button>نمایش</button></form>{% endif %}
@@ -212,7 +261,7 @@ linear-gradient(135deg,#123c34 0%,#102c38 45%,#182846 100%);border-color:rgba(10
 </div>{% empty %}<p class="cap-note cap-muted">هنوز نوع دستگاهی در بانک ثبت نشده است.</p>{% endfor %}
 </section>
 <section class="cap-panel">
-<div class="cap-section-head"><div><h2>دستگاه‌های این مرکز</h2><div class="cap-note">برای هر دستگاه یک کد مشخص مثل RSA1، CRYO1 یا DF1 ثبت کنید؛ فقط دستگاه‌های روشن وارد نوبت‌دهی می‌شوند.</div></div><span class="cap-icon device-icon">▣</span></div>
+<div class="cap-section-head"><div><h2>دستگاه‌های شعبه {{ branch.name }}</h2><div class="cap-note">برای هر دستگاه یک کد مشخص مثل RSA1، CRYO1 یا DF1 ثبت کنید؛ فقط دستگاه‌های روشن وارد نوبت‌دهی می‌شوند.</div></div><span class="cap-icon device-icon">▣</span></div>
 <p class="cap-note cap-hint">«آخرین شروع نوبت» آخرین زمانی است که یک جلسه درمان می‌تواند آغاز شود؛ این ساعت الزاماً پایان کار دستگاه نیست.</p>
 <div class="cap-new-box device"><span class="cap-badge">＋ چیدمان دستگاه فیزیکی</span><form method="post">{% csrf_token %}<input type="hidden" name="action" value="device"><input type="hidden" name="branch" value="{{ branch.pk }}"><label>کد / نام دستگاه<input name="name" placeholder="مثلاً RSA1 یا CRYO2" required></label><label>نوع دستگاه<select name="type_id">{% for t in active_types %}<option value="{{ t.pk }}">{{ t.name }}</option>{% endfor %}</select></label><button>افزودن به این مرکز</button></form></div>
 {% for device in devices %}<div class="cap-row cap-device-row {% if not device.is_active %}is-off{% endif %}">
