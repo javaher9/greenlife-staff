@@ -135,7 +135,6 @@ linear-gradient(135deg,#123c34 0%,#102c38 45%,#182846 100%);border-color:rgba(10
 .cap-type-row.is-off,.cap-device-row.is-off{opacity:1!important;filter:none!important}
 .cap-device-row.is-off strong{color:#fff!important}
 .cap-device-row.is-off{border-color:rgba(180,135,122,.42)}
-.cap-row{overflow:visible}
 .cap-device-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .cap-device-title strong{margin:0}
 .cap-type-status{margin:0 0 9px}
@@ -145,7 +144,7 @@ linear-gradient(135deg,#123c34 0%,#102c38 45%,#182846 100%);border-color:rgba(10
 .cap-hint{margin:8px 0 0;padding:9px 12px;border-right:3px solid #80d5b5;background:rgba(39,104,90,.16);border-radius:8px}
 .cap-hours-form{gap:11px!important}
 .cap-price-note{margin:8px 0 0}
-@media(max-width:1180px){.cap-grid{grid-template-columns:1fr}}
+@media(max-width:1480px){.cap-grid{grid-template-columns:1fr}}
 @media(max-width:700px){
   .cap{margin:8px 8px 24px;gap:10px}
   .cap-panel{padding:14px;border-radius:16px}
@@ -218,7 +217,7 @@ linear-gradient(135deg,#123c34 0%,#102c38 45%,#182846 100%);border-color:rgba(10
 <div class="cap-new-box device"><span class="cap-badge">＋ چیدمان دستگاه فیزیکی</span><form method="post">{% csrf_token %}<input type="hidden" name="action" value="device"><input type="hidden" name="branch" value="{{ branch.pk }}"><label>کد / نام دستگاه<input name="name" placeholder="مثلاً RSA1 یا CRYO2" required></label><label>نوع دستگاه<select name="type_id">{% for t in active_types %}<option value="{{ t.pk }}">{{ t.name }}</option>{% endfor %}</select></label><button>افزودن به این مرکز</button></form></div>
 {% for device in devices %}<div class="cap-row cap-device-row {% if not device.is_active %}is-off{% endif %}">
 <div class="cap-device-head">
-  <div class="cap-device-title"><strong>{{ device.name }} · {{ device.device_type.name }}</strong><span class="cap-status {% if device.is_active %}on{% else %}off{% endif %}">{% if device.is_active %}آماده نوبت‌دهی{% else %}خارج از نوبت‌دهی{% endif %}</span></div>
+  <div class="cap-device-title"><strong>{{ device.name }} · {{ device.device_type.name }}</strong><span class="cap-status {% if device.is_active %}on{% else %}off{% endif %}">{% if device.is_active %}دستگاه فعال{% else %}دستگاه غیرفعال{% endif %}</span></div>
   <div class="cap-status-wrap">
     <form method="post" class="cap-toggle-form">{% csrf_token %}
       <input type="hidden" name="action" value="toggle_device">
